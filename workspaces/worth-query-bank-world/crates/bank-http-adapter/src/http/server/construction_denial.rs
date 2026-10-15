@@ -5,7 +5,12 @@ use super::super::protocol::{
 use worth_query_host::facade::{
     application_entry::WorthQueryOperationInputCaptureDenial as Capture,
     declaration::application_operation::ApplicationMutationIntent,
-    runtime::{ExecutionAllocationDenialKind as Allocation, LeaseDenial, MemoryLimitLevel},
+    primary_graph::WorthQueryProviderSessionControlStopKind as Control,
+    runtime::{
+        ExecutionAllocationDenialClass as Allocation,
+        ExecutionPhysicalAllocationDenialKind as Physical, LeaseDenial, MapKernelStop,
+        MemoryLimitLevel, WorkCeilingDenial as Request,
+    },
 };
 pub(super) fn construction<I: ApplicationMutationIntent<bank_domain::schema::BankSchema>>(
     refusal: bank_server::BankOperationConstructionRefusal<I>,
@@ -24,21 +29,33 @@ fn capture(cause: &Capture) -> BankHttpDenial {
         Capture::Execution(cause) => super::advancement_denial::advancement(*cause),
         Capture::Encoding(_) => BankHttpDenial::new(Kind::MalformedRequest, Next::CorrectRequest),
         Capture::Allocation(cause) => {
-            let (kind, next) = match cause.kind() {
-                Allocation::Cancelled => (Kind::Cancelled, Next::Retry),
-                Allocation::DeadlineElapsed => (Kind::DeadlineExceeded, Next::Retry),
-                Allocation::Lease(LeaseDenial::MemoryExhausted(limit)) => match limit.level {
-                    MemoryLimitLevel::Process => (Kind::Unavailable, Next::Retry),
-                    MemoryLimitLevel::Policy { .. } | MemoryLimitLevel::Declared => {
-                        (Kind::ResourceExhausted, Next::NarrowRequest)
+            let (kind, next) = match cause.classify() {
+                Allocation::Request(Request::Stopped(MapKernelStop::Cancelled)) => {
+                    return super::mutation_application::pending_execution_stop(Err(
+                        Control::Cancelled,
+                    ));
+                }
+                Allocation::Request(Request::Stopped(MapKernelStop::DeadlineElapsed)) => {
+                    return super::mutation_application::pending_execution_stop(Err(
+                        Control::TimedOut,
+                    ));
+                }
+                Allocation::Request(Request::Admission(LeaseDenial::MemoryExhausted(limit))) => {
+                    match limit.level {
+                        MemoryLimitLevel::Process => (Kind::Unavailable, Next::Retry),
+                        MemoryLimitLevel::Policy { .. } | MemoryLimitLevel::Declared => {
+                            (Kind::ResourceExhausted, Next::NarrowRequest)
+                        }
                     }
-                },
-                Allocation::Allocator => (Kind::Unavailable, Next::Retry),
-                Allocation::Lease(_)
-                | Allocation::Layout
-                | Allocation::CapacityMismatch
-                | Allocation::WriteBeyondReserved
-                | Allocation::IncompleteSeal => (Kind::InternalDenied, Next::ContactOperator),
+                }
+                Allocation::Physical(Physical::Allocator) => (Kind::Unavailable, Next::Retry),
+                Allocation::Request(_)
+                | Allocation::Physical(
+                    Physical::Layout
+                    | Physical::CapacityMismatch
+                    | Physical::WriteBeyondReserved
+                    | Physical::IncompleteSeal,
+                ) => (Kind::InternalDenied, Next::ContactOperator),
             };
             BankHttpDenial::new(kind, next)
         }

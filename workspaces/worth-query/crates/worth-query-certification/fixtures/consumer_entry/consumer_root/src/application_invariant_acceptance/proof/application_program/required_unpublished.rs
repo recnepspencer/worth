@@ -234,14 +234,28 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         Err(WorthQueryOperationDeliveryDenial::Currentness(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial)))
         if matches!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
     );
-    assert!(matches!(
-        settled.read_current_with_policy(
+    let comparison_work = NonZeroUsize::new(
+        world
+            .application
+            .runtime()
+            .output_demand_resource_profile()
+            .limits()
+            .source_currentness_work(),
+    )
+    .expect("the installed profile admits positive source currentness work");
+    let stopped_query = settled
+        .read_current_with_policy(
             &request,
-            WorthQueryOperationDeliveryPolicy::currentness(NonZeroUsize::new(4096).unwrap())
-                .query(one, one)
+            WorthQueryOperationDeliveryPolicy::currentness(comparison_work).query(one, one),
+        )
+        .map(|_| ());
+    assert!(
+        matches!(
+            stopped_query,
+            Err(WorthQueryOperationDeliveryDenial::Query(_))
         ),
-        Err(WorthQueryOperationDeliveryDenial::Query(_))
-    ));
+        "the declared query limit must be reached after complete currentness: {stopped_query:?}"
+    );
     let delivered = settled
         .read_current(&request)
         .expect("current delivery retries the same settlement");

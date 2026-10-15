@@ -1,5 +1,9 @@
 //! Explicit native observation controls keep their original admitted demand.
 use super::*;
+/// Explicit native request for starting an assessment demand.
+///
+/// Use `retain_operation` on the ordinary assessment request to retain the
+/// admitted demand and its cleanup across fresh calls instead.
 pub struct WorthQueryAdvancedAssessmentRequest<'a, 'p, 's, S, Spec, D>
 where
     S: ApplicationSchema,
@@ -42,6 +46,10 @@ where
         self.request.start_native()
     }
 }
+/// Borrows an existing assessment handle for explicit native settlement.
+///
+/// Each `settle` uses a fresh request; observation does not approve or accept
+/// the workflow operation and does not discharge native cleanup.
 pub struct WorthQueryAdvancedAssessmentObservation<'b, 'a, S, Spec, D>
 where
     S: ApplicationSchema,

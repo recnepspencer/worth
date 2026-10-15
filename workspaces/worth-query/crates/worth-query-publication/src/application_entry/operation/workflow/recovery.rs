@@ -6,6 +6,11 @@ use worth_query_execution::facade::primary_graph::WorthQueryRecoveryHandleDenial
 use worth_query_execution::publication_boundary::workflow_advance::{
     WorthQueryGuardedWorkflowOperationCustody, WorthQueryWorkflowAdvanceAdapter,
 };
+/// Refuses a fresh attempt to inspect or progress the original workflow effect.
+///
+/// The operation retains its business evidence and any dispatch custody it still
+/// owns. `NativeHandleConsumed` does not recreate the consumed handle. This
+/// diagnostic grants no retry authority and does not prove settlement.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowEffectRecoveryDenial {
     Admission(crate::application_entry::WorthQueryApplicationRecoveryRequestDenial),

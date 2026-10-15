@@ -5,6 +5,11 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
 
+/// Binds an immutable operation description to its issued workflow requirement.
+///
+/// Construction verifies the original input, binding, branch and authority slot
+/// without executing the effect. `retain_operation` selects the installed action;
+/// fresh advancement still performs native admission before using the slot.
 #[must_use = "retain the bound original description before effectful advancement"]
 pub struct WorthQueryOwnedWorkflowBinding<'w, S: ApplicationSchema, I: ApplicationMutationIntent<S>>
 {

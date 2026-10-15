@@ -16,6 +16,10 @@ pub struct WorthQueryOperationInputCaptureRefusal<
     branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     denial: WorthQueryOperationInputCaptureDenial,
 }
+/// Why a fresh capture could not replace the retained pre-effect refusal.
+///
+/// The error is returned alongside the same original owner. `Capture` leaves
+/// its actual native diagnostic available through that owner's `denial` method.
 #[derive(Debug)]
 pub enum WorthQueryOperationInputCaptureRetryDenial {
     FreshRequestMismatch,

@@ -10,6 +10,13 @@ pub(super) enum WorkflowDispatchRecovery {
     Consumed,
     Terminal(worth_query_execution::facade::primary_graph::WorthQueryRecoveryHandleDenial),
 }
+/// Retains completed source evidence and the workflow's original requirement.
+///
+/// A local guarded effect may already have settled its operation node atomically.
+/// Completion does not by itself advance the successor or prove workflow
+/// terminality, and dispatch recovery and managed cleanup remain separate
+/// obligations. `close` returns this owner intact when that custody cannot
+/// lawfully be released.
 #[must_use = "effect completion is not workflow terminality or native cleanup"]
 pub struct WorthQueryCompletedWorkflowOperation<S, I, P, A>
 where
@@ -24,6 +31,11 @@ where
     pub(in crate::application_entry) recovery_result:
         Option<worth_query_execution::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission>,
 }
+/// Retains a terminal workflow operation's native denial and remaining custody.
+///
+/// Inspect source, abort or recovery evidence without treating terminality as
+/// effect success. `close` uses a fresh request and preserves this owner if its
+/// actual native obligations cannot yet be released.
 #[must_use = "retain native terminal evidence and close its actual cleanup"]
 pub struct WorthQueryTerminalWorkflowOperation<S, I, P, A>
 where
@@ -52,6 +64,10 @@ where
         denial: WorthQuerySourceOnlyDenial,
     },
 }
+/// Returns native workflow progress together with the continuing effect owner.
+///
+/// Keep `operation` after inspecting `progress`: accepting workflow evidence
+/// does not independently release dispatch recovery or managed cleanup.
 #[must_use = "native workflow progression does not discharge effect cleanup"]
 pub struct WorthQueryWorkflowAcceptance<O> {
     pub progress: WorkflowProgressOutcome,

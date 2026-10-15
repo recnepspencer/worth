@@ -5,6 +5,10 @@ use worth_query_declaration::facade::application_program::ApplicationProgramDefi
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 mod advance;
 mod close;
+/// Owns an assessment's original admitted demand and native cleanup custody.
+///
+/// Call `advance` with a fresh request for the same runtime and branch. Close
+/// this observation independently; observing evidence is not workflow approval.
 #[must_use = "retain the actual assessment observation until lawful close"]
 pub struct WorthQueryWorkflowAssessmentOperation<S, Spec, D, P>
 where

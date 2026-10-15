@@ -746,10 +746,10 @@ than translating every transport success or failure into a business result:
 <!-- doctest: bank-estate-certification -->
 ```rust,no_run
 # use bank_domain::{proposals::BankIdempotencyKey, schema::{BankSchema, SendMoney}};
-# use bank_server::{mutations, BankApplication, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls, SendMoneyAction};
+# use bank_server::{mutations, BankApplication, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls, BankOperationConstructionRefusal, SendMoneyAction};
 # use worth_query_host::facade::{
 #     admission::authenticated_principal::WorthQueryRequestScope,
-#     application_entry::{WorthQuerySourceOnlyOperation, WorthQueryOperationDescription, WorthQueryOperationConstructionDenial},
+#     application_entry::WorthQuerySourceOnlyOperation,
 #     declaration::application_program::ApplicationRetainedCommit,
 # };
 # type Operation = WorthQuerySourceOnlyOperation<BankSchema, SendMoney, BankApplication, SendMoneyAction, ApplicationRetainedCommit>;
@@ -759,7 +759,7 @@ than translating every transport success or failure into a business result:
 #     input: SendMoney,
 #     request_scope: WorthQueryRequestScope,
 #     idempotency_key: BankIdempotencyKey,
-# ) -> Result<Operation, (WorthQueryOperationDescription<BankSchema, SendMoney>, WorthQueryOperationConstructionDenial)> {
+# ) -> Result<Operation, BankOperationConstructionRefusal<SendMoney>> {
 bank.mutate(mutations::send_money(input))
     .as_principal(principal)
     .controls(BankMutationControls::new(request_scope, idempotency_key))
