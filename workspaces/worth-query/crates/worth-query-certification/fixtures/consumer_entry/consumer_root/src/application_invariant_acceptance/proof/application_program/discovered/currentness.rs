@@ -108,7 +108,23 @@ macro_rules! link {
         )
     };
 }
-fn work() -> NonZeroUsize {
+fn comparison_work(
+    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
+        MembershipSchema,
+        MembershipProgram,
+    >,
+) -> NonZeroUsize {
+    NonZeroUsize::new(
+        application
+            .runtime()
+            .output_demand_resource_profile()
+            .limits()
+            .source_currentness_work(),
+    )
+    .unwrap()
+}
+
+fn retained_bytes() -> NonZeroUsize {
     NonZeroUsize::new(8192).unwrap()
 }
 fn stale(result: Result<(), WorthQueryOutputCurrentnessDenial>) {
@@ -128,7 +144,10 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
         let historical = aggregate.observation();
         request
             .at(historical)
-            .require_current_discovered_program_outputs(&aggregate, work())
+            .require_current_discovered_program_outputs(
+                &aggregate,
+                comparison_work(&world.application),
+            )
             .unwrap();
         let before = request
             .query(PlanarDiscoveryRead {
@@ -175,17 +194,23 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
         for (_, root) in aggregate.root_outputs() {
             request
                 .at(&current)
-                .require_current_output_demand(root, work())
+                .require_current_output_demand(root, comparison_work(&world.application))
                 .unwrap();
         }
         stale(
             request
                 .at(&current)
-                .require_current_discovered_program_outputs(&aggregate, work()),
+                .require_current_discovered_program_outputs(
+                    &aggregate,
+                    comparison_work(&world.application),
+                ),
         );
         request
             .at(historical)
-            .require_current_discovered_program_outputs(&aggregate, work())
+            .require_current_discovered_program_outputs(
+                &aggregate,
+                comparison_work(&world.application),
+            )
             .unwrap();
         assert_eq!(
             world.application.retained_source_custody_count_for_test(),
@@ -202,7 +227,7 @@ fn discovered_currentness_foreign_runtime_preserves_owner() {
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_discovered_program_outputs(&aggregate, work())
+        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
         .unwrap();
     let other = membership::install();
     let adapter = authentication::admit(other.application.installed_schema());
@@ -216,14 +241,17 @@ fn discovered_currentness_foreign_runtime_preserves_owner() {
     let other_read = other_request.retain_current_read().unwrap();
     let refused = other_request
         .at(&other_read)
-        .require_current_discovered_program_outputs(&aggregate, work());
+        .require_current_discovered_program_outputs(
+            &aggregate,
+            comparison_work(&other.application),
+        );
     assert!(
         matches!(refused, Err(WorthQueryOutputCurrentnessDenial::Output(ref cause)) if cause.kind() == WorthQueryOutputDemandDenialKind::ForeignSettlement),
         "foreign runtime cannot borrow original settlement authority: {refused:?}"
     );
     request
         .at(&current)
-        .require_current_discovered_program_outputs(&aggregate, work())
+        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
         .unwrap();
     for (key, expected) in [("sibling-b", 22), ("sibling-c", 31), ("remote-b", 42)] {
         assert_eq!(
