@@ -1,6 +1,6 @@
 //! One native file-publication lock, also shared by independently opened runtimes.
 //! Only cooperating native owners are serialized; this is not a filesystem
-//! tamper-proofing claim. Unsupported OS locking refuses before data publication;
+//! tamper-proofing claim. Unsupported OS locking refuses durable file publication;
 //! directory/coordination-file setup may already have occurred.
 use super::*;
 use crate::capabilities::RuntimeConfigSource;
@@ -97,8 +97,10 @@ fn request_file(
         }
     }
 }
-/// Validate the actual current-format store before movement, including platform
-/// lock support. No segment bytes or authority are prepared from an old image.
+/// Inspect existing segment meaning before movement without initializing the store.
+/// Append owns directory setup and locking: their I/O failure defers durability
+/// after genuine in-memory publication. Unsupported/corrupt segments still refuse
+/// here before movement; this read is not a promise of later append availability.
 pub(crate) fn preflight_store(
     execution: &ExecutionRequest<'_, '_>,
     layout: &DurableStoreLayout,
@@ -106,7 +108,6 @@ pub(crate) fn preflight_store(
     execution
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
-    let _file = request_file(execution, open_layout(layout)?)?;
     crate::durability::log::native_file_codec::preflight_segments(layout)?;
     Ok(())
 }
