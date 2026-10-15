@@ -34,6 +34,7 @@ pub(crate) struct PerformedRelationalSettlement {
 /// external carrier this record exposes is a view of the record, so it may not
 /// hold a second copy of the obligation.
 pub(crate) struct DeferredRelationalSettlement {
+    pub(crate) durable_bytes: Option<worth_execution::ExecutionImmutableBytes>,
     pub(crate) positioned: Arc<PositionedCanonicalCommit>,
     pub(crate) performed_result: Arc<CommitResult>,
     pub(crate) snapshot_closeout: crate::runtime::PublishedSnapshotCloseout,

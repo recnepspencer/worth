@@ -132,6 +132,7 @@ impl RelationalRuntime {
             late_interruption,
         } = performed;
         let commit_id = positioned.envelope().commit.commit_id;
+        let durable_bytes = completion.durable_bytes();
         let diagnostic_capture = self.publication.diagnostics.begin_operation_capture();
         let (mut published, durability_error) =
             match publish_commit_execution(self, completion, published_snapshot_basis) {
@@ -160,6 +161,7 @@ impl RelationalRuntime {
                 .published_snapshot_closeout(committed.snapshot.snapshot_id())
                 .expect("deferred publication retains its exact published snapshot");
             record.record_durability_deferred(DeferredRelationalSettlement {
+                durable_bytes,
                 positioned,
                 performed_result: Arc::new(committed),
                 snapshot_closeout,
@@ -264,10 +266,11 @@ impl RelationalRuntime {
                         crate::durability::authority::DurableAppendAuthority::from_commit(
                             admission,
                         );
-                    if let Err(error) = self
-                        .durability_authority()
-                        .append_commit(authority, positioned.as_ref())
-                    {
+                    if let Err(error) = self.durability_authority().append_commit(
+                        authority,
+                        positioned.as_ref(),
+                        deferred.durable_bytes.as_ref(),
+                    ) {
                         record.restore_deferred(deferred);
                         return Err(RelationalSettlementStop::DurableAppend(error));
                     }

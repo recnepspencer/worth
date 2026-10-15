@@ -366,7 +366,8 @@ pub mod storage {
 
 pub mod symbols {
     pub use crate::symbols::data::{
-        ClientKey, ClientKeySymbolPolicy, InternedString, StringInterner, Symbol,
+        ClientKey, ClientKeySymbolPolicy, InternedString, RelationalFieldText,
+        RelationalFieldTextAdmissionDenial, StoredSymbolText, StringInterner, Symbol,
         SymbolTableSnapshot,
     };
 }

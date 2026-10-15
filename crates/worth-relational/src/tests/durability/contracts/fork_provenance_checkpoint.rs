@@ -16,10 +16,17 @@ fn fork_checkpoint_plan(
     runtime
         .fork_branch(BranchId("storm".to_owned()), basis)
         .expect("fork checkpoint fixture");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let mut plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint is selected");
     let cell = checkpoint
         .branch_cells
@@ -43,7 +50,10 @@ fn fork_tail_plan(
     runtime
         .fork_branch(BranchId("storm".to_owned()), basis)
         .expect("fork tail fixture");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     create_entity_outcome_on_branch(
         execution,
         &runtime,
@@ -52,7 +62,11 @@ fn fork_tail_plan(
     );
     let mut plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let envelope = plan
         .tail_log
         .iter_mut()

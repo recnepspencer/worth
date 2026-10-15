@@ -1,4 +1,5 @@
 use super::super::support::collect_subscriber_patches_from_head;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::tests::harness::certify::assertions::{
     assert_multi_subscriber_converges, assert_visible_truth_matches,
 };
@@ -142,8 +143,8 @@ proptest! {
             &head,
         );
 
-        world.runtime.durability_authority().checkpoint().unwrap();
-        let recovery_plan = world.runtime.durability().recovery_plan(crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification);
+        world.runtime.durability_authority().checkpoint(execution).unwrap();
+        let recovery_plan = world.runtime.durability().recovery_plan(execution, RecoveryMode::NormalRecoveryVerification).unwrap();
         let mut recovered = build_property_runtime(RuntimeHarnessMode::Persisted);
         recovered.durability_recovery().recover(execution, recovery_plan).unwrap();
         let recovered_patch_stream = collect_patch_stream_from_head(&recovered, 4096);

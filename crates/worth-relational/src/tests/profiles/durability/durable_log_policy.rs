@@ -15,7 +15,10 @@ fn durable_log_compaction_respects_checkpoint_policy() {
         .build();
 
     create_entity(execution, &runtime, "first");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     create_entity(execution, &runtime, "second");
     create_entity(execution, &runtime, "third");
 

@@ -60,6 +60,8 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
     let reader_ready_signal = Arc::clone(&reader_ready);
     let observed_identity = identity.clone();
     let reader = std::thread::spawn(move || {
+        let reader_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&reader_request);
         let mut observed_commits = Vec::new();
         observe_canonical_consumers(&runtime, &observed_identity, &mut observed_commits);
         observation_count.fetch_add(1, Ordering::Release);
@@ -71,10 +73,13 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         );
         let checkpoint_error = runtime
             .durability_authority()
-            .checkpoint()
+            .checkpoint(execution)
             .expect_err("checkpoint rejects instead of waiting on an active publication");
         assert_eq!(
-            checkpoint_error.class,
+            match checkpoint_error {
+                crate::durability::data::RelationalRecoveryStop::Durability(error) => error.class,
+                other => panic!("unexpected checkpoint stop: {other:?}"),
+            },
             crate::durability::data::RecoveryFailureClass::CheckpointPublicationInFlight
         );
         reader_ready_signal.store(true, Ordering::Release);
@@ -121,10 +126,13 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         .any(|patch| patch.position == performed.patch_position()));
     let checkpoint_error = runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect_err("performed publication still requires settlement");
     assert_eq!(
-        checkpoint_error.class,
+        match checkpoint_error {
+            crate::durability::data::RelationalRecoveryStop::Durability(error) => error.class,
+            other => panic!("unexpected checkpoint stop: {other:?}"),
+        },
         crate::durability::data::RecoveryFailureClass::PerformedPublicationRequiresSettlement
     );
     let committed = runtime
@@ -133,7 +141,7 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
     release_test_commit_snapshot(&runtime, &committed);
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("checkpoint admits after settlement");
 }
 

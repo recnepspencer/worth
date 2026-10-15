@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
@@ -20,10 +21,14 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
         )
         .unwrap();
     let _deleted = delete_entity(execution, &runtime, source_entity);
-    runtime.durability_authority().checkpoint().unwrap();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -87,7 +92,10 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
         .expect("test staging stays within configured resource budgets");
         txn.commit(execution, &runtime).unwrap()
     };
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let expected = capture_inspection_truth_bundle(
         execution,
         &runtime,
@@ -96,9 +104,10 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
         created.version_id,
     );
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()

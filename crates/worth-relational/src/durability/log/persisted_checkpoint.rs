@@ -22,6 +22,7 @@ use section_accounting::{MeasuredValue, NativeSection};
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct PersistedDurableCheckpointFile {
+    checkpoint_protocol_version: u16,
     checkpoint: PersistedDurableCheckpoint,
 }
 
@@ -64,7 +65,8 @@ impl Serialize for PersistedDurableCheckpointFileRef<'_> {
     where
         S: serde::Serializer,
     {
-        let mut fields = serializer.serialize_struct("PersistedDurableCheckpointFile", 1)?;
+        let mut fields = serializer.serialize_struct("PersistedDurableCheckpointFile", 2)?;
+        fields.serialize_field("checkpoint_protocol_version", &4u16)?;
         fields.serialize_field(
             "checkpoint",
             &PersistedDurableCheckpointRef {
@@ -105,7 +107,7 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
         // partitions retain their independently readmitted image.
         let aliases = PartitionAliasPlan::for_checkpoint(self.checkpoint)
             .map_err(serde::ser::Error::custom)?;
-        let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 21)?;
+        let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 20)?;
         fields.serialize_field("coverage", coverage)?;
         fields.serialize_field(
             "branch_cells",
@@ -189,10 +191,6 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
         fields.serialize_field("runtime_name", runtime_name)?;
         fields.serialize_field("partition_alias_format", &PARTITION_DELTA_FORMAT_VERSION)?;
         fields.serialize_field(
-            "branch_root_partition_aliases",
-            &[] as &[crate::history::data::CommitId],
-        )?;
-        fields.serialize_field(
             "branch_root_partition_aliases_v2",
             &MeasuredValue {
                 value: &aliases.roots,
@@ -218,6 +216,7 @@ impl Serialize for CheckpointEnvelopeRefs<'_> {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct PersistedDurableCheckpoint {
     coverage: crate::durability::data::CheckpointCoverage,
     #[serde(default)]
@@ -248,16 +247,9 @@ struct PersistedDurableCheckpoint {
     derived_index_checkpoint_format: u16,
     symbol_table: crate::symbols::data::SymbolTableSnapshot,
     runtime_name: String,
-    #[serde(default, skip_serializing_if = "is_zero_u16")]
     partition_alias_format: u16,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    branch_root_partition_aliases: Vec<crate::history::data::CommitId>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     branch_root_partition_aliases_v2: Vec<RootPartitionAliases>,
-}
-
-fn is_zero_u16(value: &u16) -> bool {
-    *value == 0
 }
 
 impl PersistedDurableCheckpointFile {
@@ -284,6 +276,7 @@ impl PersistedDurableCheckpointFile {
             runtime_name,
         } = checkpoint;
         Self {
+            checkpoint_protocol_version: 4,
             checkpoint: PersistedDurableCheckpoint {
                 coverage,
                 branch_cells,
@@ -306,14 +299,19 @@ impl PersistedDurableCheckpointFile {
                 derived_index_checkpoint_format,
                 symbol_table,
                 runtime_name,
-                partition_alias_format: 0,
-                branch_root_partition_aliases: Vec::new(),
+                partition_alias_format: PARTITION_DELTA_FORMAT_VERSION,
                 branch_root_partition_aliases_v2: Vec::new(),
             },
         }
     }
 
     pub(super) fn readmit(self) -> Result<DurableCheckpointFile, DurabilityError> {
+        if self.checkpoint_protocol_version != 4 {
+            return Err(DurabilityError::new(
+                RecoveryFailureClass::UnsupportedLegacySemantics,
+                "unsupported native checkpoint format",
+            ));
+        }
         let mut checkpoint = self.checkpoint;
         readmit_partition_aliases(&mut checkpoint)?;
         if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(
@@ -330,12 +328,7 @@ impl PersistedDurableCheckpointFile {
             .into_iter()
             .map(|raw| {
                 raw.readmit()
-                    .and_then(|readmitted| {
-                        readmitted.positioned().cloned().ok_or_else(|| {
-                            "native checkpoint readmission did not produce current authority"
-                                .to_string()
-                        })
-                    })
+                    .map(|readmitted| readmitted.into_positioned())
                     .map_err(|detail| {
                         DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
                     })
@@ -365,3 +358,6 @@ impl PersistedDurableCheckpointFile {
         })
     }
 }
+
+mod text_wire;
+pub(crate) use text_wire::CheckpointFileWire;

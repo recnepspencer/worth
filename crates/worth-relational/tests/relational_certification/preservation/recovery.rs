@@ -50,12 +50,16 @@ fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
     world
         .runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("checkpoint captures exact branch roots");
     let plan = world
         .runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .expect("original request admits native recovery input");
     let mut recovered = canonical_empty_supply_chain_runtime(scale);
     recovered
         .durability_recovery()

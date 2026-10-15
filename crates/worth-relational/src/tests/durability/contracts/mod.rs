@@ -12,6 +12,7 @@ mod legacy_segment_recovery;
 mod lineage_allocator_denials;
 mod lineage_artifact_recovery;
 mod lineage_event_allocator_recovery;
+mod managed_field_text;
 mod merge_replay_continuity;
 mod native_checkpoint;
 mod native_checkpoint_restore_benchmark;

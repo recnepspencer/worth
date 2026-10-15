@@ -80,11 +80,18 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
     );
     assert_eq!(first.commit.branch_id, branch);
     release_test_commit_snapshot(&runtime, &first);
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     assert_reopened(
         runtime
             .durability()
-            .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification),
+            .recovery_plan(
+                execution,
+                RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .unwrap(),
         inherited_generation,
         &anchor.commit,
         &first.commit,
@@ -104,11 +111,18 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
     );
     assert_eq!(second.commit.branch_id, branch);
     release_test_commit_snapshot(&runtime, &second);
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     assert_reopened(
         runtime
             .durability()
-            .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification),
+            .recovery_plan(
+                execution,
+                RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .unwrap(),
         own_generation,
         &first.commit,
         &second.commit,

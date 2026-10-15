@@ -166,6 +166,9 @@ impl<'runtime> ReplayAuthority<'runtime> {
             Err(RelationalRecoveryStop::Request(cause)) => {
                 return Err(RelationalRecoveryStop::Request(cause))
             }
+            Err(RelationalRecoveryStop::Allocation(error)) => {
+                return Err(RelationalRecoveryStop::Allocation(error))
+            }
             Err(RelationalRecoveryStop::Durability(error)) => {
                 return Ok(ControlFlow::Break(self.fail_and_record(
                     request.clone(),

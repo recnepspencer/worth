@@ -321,7 +321,10 @@ mod tests {
         let changed =
             create_entity_outcome_on_branch(execution, &runtime, "streamed-image-fork", sibling);
         release_test_commit_snapshot(&runtime, &changed);
-        let checkpoint = runtime.durability_authority().checkpoint().unwrap();
+        let checkpoint = runtime
+            .durability_authority()
+            .checkpoint(execution)
+            .unwrap();
         assert_eq!(checkpoint.branch_roots.len(), 2);
 
         for root in &checkpoint.branch_roots {

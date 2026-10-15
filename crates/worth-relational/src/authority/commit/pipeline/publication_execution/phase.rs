@@ -35,6 +35,7 @@ impl FinalizedPublicationPhase {
 }
 
 pub(super) struct DurableAppendPhaseInput<'a> {
+    pub(super) durable_bytes: Option<&'a worth_execution::ExecutionImmutableBytes>,
     pub(super) commit_log: &'a mut CommitLog,
     pub(super) phase_timing: &'a mut CommitPhaseTiming,
     pub(super) positioned_commit: &'a crate::history::data::PositionedCanonicalCommit,
@@ -48,6 +49,7 @@ pub(super) fn append_durable_commit_phase(
     input: DurableAppendPhaseInput<'_>,
 ) -> Result<(), TransactionCommitError> {
     let DurableAppendPhaseInput {
+        durable_bytes,
         commit_log,
         phase_timing,
         positioned_commit,
@@ -62,7 +64,7 @@ pub(super) fn append_durable_commit_phase(
         &branch_id.0,
         positioned_commit.position(),
     );
-    append_durable_commit(runtime, append_authority, positioned_commit)
+    append_durable_commit(runtime, append_authority, positioned_commit, durable_bytes)
         .map_err(|error| error.with_commit_log(commit_log.clone()))?;
     commit_log.complete_phase(CommitPhase::DurableAppend);
     phase_timing.durable_append_micros = elapsed_micros(phase_started);
@@ -78,6 +80,7 @@ pub(super) fn finalize_publication_phase(
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
 ) -> Result<FinalizedPublicationPhase, TransactionCommitError> {
     let PreparedPublicationCompletion {
+        durable_bytes,
         clone_mode,
         committed_partitions,
         prepared_history,
@@ -103,6 +106,7 @@ pub(super) fn finalize_publication_phase(
     let durability_error = append_durable_commit_phase(
         runtime,
         DurableAppendPhaseInput {
+            durable_bytes: durable_bytes.as_ref(),
             commit_log,
             phase_timing,
             positioned_commit: positioned_commit.as_ref(),

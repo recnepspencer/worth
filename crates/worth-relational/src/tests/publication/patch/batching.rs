@@ -63,7 +63,10 @@ fn patch_stream_uses_durable_canonical_history_when_retained_envelope_is_missing
 
     let runtime = persisted_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let _second = create_entity_outcome(execution, &runtime, "b");
     let _third = create_entity_outcome(execution, &runtime, "c");
 

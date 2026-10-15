@@ -10,11 +10,11 @@ use crate::publication::patch::data::PatchStreamPosition;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub(crate) struct PersistedCanonicalCommit {
     /// Version of this native commit entry, independent of domain schema IDs.
-    /// Missing is the prior version 2 map encoding.
+    /// Only the current format is readmitted; missing/prior versions refuse.
     #[serde(default)]
     canonical_protocol_version: u16,
     position: PatchStreamPosition,
-    #[serde(rename = "canonical_v3")]
+    #[serde(rename = "canonical_v4")]
     canonical: CanonicalCommitEnvelope,
 }
 
@@ -31,20 +31,19 @@ impl<'de> Deserialize<'de> for PersistedCanonicalCommit {
             #[serde(default)]
             canonical: Option<CanonicalCommitEnvelope>,
             #[serde(default)]
-            canonical_v3: Option<CanonicalCommitEnvelope>,
+            canonical_v4: Option<CanonicalCommitEnvelope>,
         }
         let Wire {
             canonical_protocol_version,
             position,
             canonical,
-            canonical_v3,
+            canonical_v4,
         } = Wire::deserialize(deserializer)?;
-        let canonical = match (canonical_protocol_version, canonical, canonical_v3) {
-            (0 | 2, Some(legacy), None) => legacy,
-            (3, None, Some(current)) => current,
+        let canonical = match (canonical_protocol_version, canonical, canonical_v4) {
+            (4, None, Some(current)) => current,
             _ => {
                 return Err(serde::de::Error::custom(
-                    "canonical commit protocol and required envelope field disagree",
+                    "unsupported native canonical format; v4 required",
                 ))
             }
         };
@@ -62,14 +61,14 @@ impl<'de> Deserialize<'de> for PersistedCanonicalCommit {
 pub(super) struct PersistedCheckpointCommitRef<'a> {
     canonical_protocol_version: u16,
     position: PatchStreamPosition,
-    #[serde(rename = "canonical_v3")]
+    #[serde(rename = "canonical_v4")]
     canonical: CheckpointCanonicalEnvelopeRef<'a>,
 }
 
 impl<'a> PersistedCheckpointCommitRef<'a> {
     pub(super) fn from_positioned(commit: &'a PositionedCanonicalCommit) -> Self {
         Self {
-            canonical_protocol_version: 3,
+            canonical_protocol_version: 4,
             position: commit.position(),
             canonical: CheckpointCanonicalEnvelopeRef::new(commit.envelope()),
         }
@@ -79,9 +78,20 @@ impl<'a> PersistedCheckpointCommitRef<'a> {
 impl PersistedCanonicalCommit {
     pub(crate) fn from_positioned(commit: &PositionedCanonicalCommit) -> Self {
         Self {
-            canonical_protocol_version: 3,
+            canonical_protocol_version: 4,
             position: commit.position(),
             canonical: commit.envelope().clone(),
+        }
+    }
+
+    pub(crate) fn from_parts(
+        position: PatchStreamPosition,
+        canonical: CanonicalCommitEnvelope,
+    ) -> Self {
+        Self {
+            canonical_protocol_version: 4,
+            position,
+            canonical,
         }
     }
 
@@ -94,36 +104,16 @@ impl PersistedCanonicalCommit {
         persisted
     }
 
-    pub(crate) fn into_receipt(self) -> crate::history::data::RelationalCommitReceipt {
-        self.canonical.commit
-    }
-
     #[cfg(test)]
     pub(crate) fn envelope_mut_for_test(&mut self) -> &mut CanonicalCommitEnvelope {
         &mut self.canonical
     }
 
     pub(crate) fn readmit(
-        mut self,
+        self,
     ) -> Result<crate::durability::migration::ReadmittedCanonicalCommit, String> {
-        match self.canonical_protocol_version {
-            0 | 2 => {
-                if self
-                    .canonical
-                    .descriptive_touches()
-                    .exact_touches()
-                    .is_some()
-                {
-                    return Err(
-                        "legacy canonical commit carries unsupported exact touch graph".into(),
-                    );
-                }
-                self.canonical.set_descriptive_touches_for_readmission(
-                    crate::history::data::RelationalDescriptiveTouchGraph::unavailable(),
-                );
-            }
-            3 => {}
-            _ => return Err("unsupported canonical commit protocol version".into()),
+        if self.canonical_protocol_version != 4 {
+            return Err("unsupported canonical commit protocol version".into());
         }
         crate::durability::migration::ReadmittedCanonicalCommit::readmit_current(
             self.position,
@@ -144,7 +134,7 @@ mod tests {
     use crate::tests::support::{create_entity_outcome, persisted_runtime_with_test_schema};
 
     #[test]
-    fn current_segment_and_checkpoint_readmit_exact_touches_while_legacy_requires_verification() {
+    fn current_segment_and_checkpoint_readmit_exact_touches_and_refuse_prior_format() {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -170,11 +160,11 @@ mod tests {
         ] {
             assert!(
                 rmp_serde::from_slice::<PriorReader>(&bytes).is_err(),
-                "prior readers must reject v3 rather than drop its touches"
+                "prior readers must reject current format rather than drop native meaning"
             );
             let decoded: PersistedCanonicalCommit =
                 rmp_serde::from_slice(&bytes).expect("native commit map decodes");
-            assert_eq!(decoded.canonical_protocol_version, 3);
+            assert_eq!(decoded.canonical_protocol_version, 4);
             let readmitted = decoded
                 .readmit()
                 .expect("current native commit is admitted");
@@ -200,17 +190,9 @@ mod tests {
         let prior: PriorReader = rmp_serde::from_slice(&old_wire).expect("prior reader decodes v2");
         assert_eq!(prior.position, positioned.position());
         assert_eq!(prior.canonical.commit, positioned.envelope().commit);
-        let legacy: PersistedCanonicalCommit =
-            rmp_serde::from_slice(&old_wire).expect("legacy map decodes");
-        assert_eq!(legacy.canonical_protocol_version, 0);
-        assert_eq!(
-            legacy
-                .readmit()
-                .expect("legacy commit readmits")
-                .envelope()
-                .descriptive_touches()
-                .exact_touches(),
-            None
+        assert!(
+            rmp_serde::from_slice::<PersistedCanonicalCommit>(&old_wire).is_err(),
+            "old native text formats are unsupported"
         );
 
         #[derive(Serialize)]
@@ -220,7 +202,7 @@ mod tests {
             canonical: CheckpointCanonicalEnvelopeRef<'a>,
         }
         let v3_with_legacy_field = rmp_serde::to_vec_named(&MismatchedRef {
-            canonical_protocol_version: 3,
+            canonical_protocol_version: 4,
             position: positioned.position(),
             canonical: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
         })
@@ -232,13 +214,13 @@ mod tests {
             canonical_protocol_version: u16,
             position: PatchStreamPosition,
             canonical: CheckpointCanonicalEnvelopeRef<'a>,
-            canonical_v3: CheckpointCanonicalEnvelopeRef<'a>,
+            canonical_v4: CheckpointCanonicalEnvelopeRef<'a>,
         }
         let dual = rmp_serde::to_vec_named(&DualRef {
-            canonical_protocol_version: 3,
+            canonical_protocol_version: 4,
             position: positioned.position(),
             canonical: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
-            canonical_v3: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
+            canonical_v4: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
         })
         .expect("dual native map");
         assert!(rmp_serde::from_slice::<PersistedCanonicalCommit>(&dual).is_err());
@@ -247,12 +229,12 @@ mod tests {
         struct V2WithV3FieldRef<'a> {
             canonical_protocol_version: u16,
             position: PatchStreamPosition,
-            canonical_v3: CheckpointCanonicalEnvelopeRef<'a>,
+            canonical_v4: CheckpointCanonicalEnvelopeRef<'a>,
         }
         let v2_with_v3_field = rmp_serde::to_vec_named(&V2WithV3FieldRef {
             canonical_protocol_version: 2,
             position: positioned.position(),
-            canonical_v3: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
+            canonical_v4: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
         })
         .expect("mismatched legacy map");
         assert!(rmp_serde::from_slice::<PersistedCanonicalCommit>(&v2_with_v3_field).is_err());
@@ -265,3 +247,6 @@ mod tests {
         );
     }
 }
+
+mod text_wire;
+pub(crate) use text_wire::CanonicalCommitWire;
