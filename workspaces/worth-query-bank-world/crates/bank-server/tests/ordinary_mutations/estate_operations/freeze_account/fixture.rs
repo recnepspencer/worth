@@ -42,23 +42,34 @@ impl FreezeFixture {
 
     pub(crate) fn revoke_freeze_permission(&self) {
         let grantor = self.authenticate_grantor();
-        let outcome = self
-            .world
-            .runtime
-            .revoke_estate_capability_with_key(
-                &grantor,
-                EstateAction::RevokeCapability {
-                    estate: self.estate,
-                    grant: GRANT,
-                },
-                &bank_domain::proposals::BankIdempotencyKey::new("owning-freeze-revoke").unwrap(),
-                &crate::support::request_scope(),
-            )
-            .expect("recorded issuer revokes the original native grant");
-        assert!(matches!(
-            outcome,
-            bank_server::BankMutationCommitOutcome::Committed(_)
-        ));
+        let request = crate::support::request_scope();
+        let mut command = match self.world.runtime.retain_estate_capability_revocation(
+            &grantor,
+            EstateAction::RevokeCapability {
+                estate: self.estate,
+                grant: GRANT,
+            },
+            bank_domain::proposals::BankIdempotencyKey::new("owning-freeze-revoke").unwrap(),
+            &request,
+        ) {
+            Ok(command) => command,
+            Err(_) => panic!("recorded issuer captures original revocation"),
+        };
+        use worth_query_host::facade::application_entry::WorthQueryCapabilityCommandAdvance as Advance;
+        loop {
+            match command.advance(&self.world.runtime.request(&grantor, &request)) {
+                Advance::Progress(next) => command = next,
+                Advance::Completed(done) => {
+                    assert!(matches!(done.evidence(),
+                        worth_query_host::facade::application_entry::WorthQueryCapabilityCommandCompletion::Fresh { .. }));
+                    assert!(done
+                        .close(&self.world.runtime.request(&grantor, &request))
+                        .is_ok());
+                    break;
+                }
+                _ => panic!("real permission revocation must complete and lawfully close"),
+            }
+        }
     }
 
     pub(crate) const fn action(&self, account: AccountId) -> EstateAction {

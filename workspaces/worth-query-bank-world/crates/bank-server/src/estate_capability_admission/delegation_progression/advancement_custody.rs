@@ -67,16 +67,18 @@ fn delegation_refuses_before_its_admitted_principal_reader() {
             }
             reports();
             let before = reads();
-            let outcome = fixture.runtime.delegate_estate_capability_with_key(
-                &principal,
-                delegated_action(DelegationLimit::generations(1)),
-                &idempotency(91),
-                &request_scope(),
-            );
+            let outcome =
+                crate::estate_progression::delegation::command_courts::complete_delegation(
+                    &fixture.runtime,
+                    &principal,
+                    delegated_action(DelegationLimit::generations(1)),
+                    &idempotency(91),
+                    &request_scope(),
+                );
             assert_eq!(
                 reports().len(),
-                1,
-                "one executing public call owns one request"
+                if refusal.is_some() { 1 } else { 3 },
+                "capture, native command advance and lawful close each own their request"
             );
             match refusal {
                 Some(memory) => {

@@ -219,18 +219,17 @@ fn revoke_exact_support(
     principal: &BankAuthenticatedPrincipal,
     idempotency_seed: u8,
 ) {
-    let outcome = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            principal,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: GRANT,
-            },
-            &bank_idempotency(idempotency_seed),
-            &request_scope(),
-        )
-        .expect("the independent capability-revocation command should execute");
+    let outcome = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        principal,
+        EstateAction::RevokeCapability {
+            estate: ESTATE,
+            grant: GRANT,
+        },
+        &bank_idempotency(idempotency_seed),
+        &request_scope(),
+    )
+    .expect("the independent capability-revocation command should execute");
     assert!(
         matches!(outcome, BankMutationCommitOutcome::Committed(_)),
         "the exact support revocation must commit once: {outcome:?}"

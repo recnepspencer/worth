@@ -36,15 +36,14 @@ fn child_institution_must_be_carried_by_the_exact_parent() {
 }
 
 fn assert_context_denied(fixture: CapabilityFixture, child: CapabilityGrantId, seed: u8) {
-    let denial = fixture
-        .runtime
-        .delegate_estate_capability_with_key(
-            &fixture.authenticate(),
-            delegated_action(child),
-            &BankIdempotencyKey::new(format!("delegation-context-{seed}")).unwrap(),
-            &request_scope(),
-        )
-        .expect_err("a child cannot replace an exact parent activation context");
+    let denial = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &fixture.authenticate(),
+        delegated_action(child),
+        &BankIdempotencyKey::new(format!("delegation-context-{seed}")).unwrap(),
+        &request_scope(),
+    )
+    .expect_err("a child cannot replace an exact parent activation context");
     let BankEstateProgressionDenial::Authorization(denial) = denial else {
         panic!("context narrowing must deny at Query delegation authorization: {denial:#?}");
     };

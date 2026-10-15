@@ -729,3 +729,15 @@ WorthQueryOperationInputCaptureDenial)`; keep all three for retry. Success admit
 one typed payload and shares its backing/charge through native input consumers.
 Nested caller Clone heaps and allocator/Arc metadata retain their existing
 contracts; this payload quote does not describe total heap or grant permission.
+
+### Owning native capability commands
+
+`application_entry` exposes `WorthQueryCapabilityCommand` from
+`request.retain_capability_delegation_in_program(..)` and
+`retain_capability_revocation_in_program(..)`. Move the original input and key
+once; keep capture-refusal custody. Supply fresh requests to `advance` and
+`close`, retain same-owner refusals, and use completed `close_with_evidence` to
+transfer native Fresh/Recovered receipt evidence after cleanup. Commands are
+not domain mutations and have no public execute/recover or clone escape.
+See [owning capability commands](../worth-query/docs/foundations/workflows.md#owning-capability-commands)
+for native replay and authority distinctions.

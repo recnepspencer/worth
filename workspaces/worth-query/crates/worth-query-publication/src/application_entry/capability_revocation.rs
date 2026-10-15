@@ -1,33 +1,7 @@
-use worth_query_declaration::facade::{
-    application_capability::{
-        ApplicationCapabilityRef, ApplicationCapabilityRequest,
-        ApplicationCapabilityRevocationRequest,
-    },
-    application_program::ApplicationProgramDefinition,
-    application_schema::{
-        ApplicationIdentityScalarValueBinding, ApplicationOperationMarkerIdentity,
-        ApplicationOperationRef, ApplicationPrincipalBindingRef, ApplicationStructuredValueBinding,
-        ApplicationValueEncodeDenial, TypedMutationPreconditions,
-    },
-};
-use worth_query_execution::facade::{
-    application_contribution::WorthQueryAdvancementDenial,
-    application_installation::WorthQueryProgramApplicationRuntime,
-    primary_graph::{
-        WorthQueryAdmittedApplicationOperation, WorthQueryApplicationCommitOutcome,
-        WorthQueryApplicationIdempotencyResolution, WorthQueryCapabilityRevocationProgram,
-        WorthQueryPrincipalResolutionMode,
-    },
-};
-use worth_query_installation::facade::ApplicationSchema;
+use worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial;
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 
-use super::WorthQueryApplicationRequest;
-use worth_query_declaration::facade::application_operation::ApplicationEncodedInput;
-use worth_query_execution::publication_boundary::{
-    capability_workflow::WorthQueryCapabilityWorkflowIdempotency, program_publication_access,
-};
-
-/// Why `execute_capability_revocation_in_program` refused. `ProgramMismatch` means the
+/// Why retaining or advancing a capability revocation command refused. `ProgramMismatch` means the
 /// program runtime is not this request's runtime; `IdempotencyIntentDrift` means the key
 /// was already recorded with a different intent.
 #[derive(Debug)]
@@ -36,6 +10,11 @@ pub enum WorthQueryApplicationCapabilityRevocationDenial<PreparationDenial> {
     ExecutionRequest(WorthQueryAdvancementDenial),
     Program(worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenial),
     ProgramMismatch,
+    /// The fresh actor differs from the original full native principal.
+    PrincipalMismatch,
+    InputCapture(worth_query_execution::publication_boundary::operation_input_capture::WorthQueryOperationInputCaptureDenial),
+    Recovery(worth_query_execution::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial),
+    Settlement(worth_query_execution::publication_boundary::capability_command::WorthQueryCommandSettlementDenial),
     PrincipalBindingInstallation(
         worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenial,
     ),
@@ -62,176 +41,4 @@ pub enum WorthQueryApplicationCapabilityRevocationDenial<PreparationDenial> {
     ),
     IdempotencyIntentDrift,
     Preparation(PreparationDenial),
-}
-
-impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema> {
-    pub fn execute_capability_revocation_in_program<
-        Program,
-        PrincipalBinding,
-        Mapping,
-        Principal,
-        PrincipalIdentity,
-        PrincipalIdentityBinding,
-        Capability,
-        Operation,
-        Input,
-        Key,
-        PreparationDenial,
-    >(
-        &self,
-        program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-        principal_binding: ApplicationPrincipalBindingRef<
-            Schema,
-            PrincipalBinding,
-            Mapping,
-            Principal,
-            PrincipalIdentity,
-            PrincipalIdentityBinding,
-        >,
-        capability: ApplicationCapabilityRef<Schema, Capability>,
-        operation: ApplicationOperationRef<Schema, Operation, Input>,
-        input: Input,
-        key: &Key,
-        preconditions: TypedMutationPreconditions<
-            Schema,
-            Operation,
-            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-        >,
-        prepare: impl FnOnce(
-            &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-            WorthQueryAdmittedApplicationOperation<
-                Schema,
-                Operation,
-                Input,
-                <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-            >,
-        ) -> Result<
-            WorthQueryCapabilityRevocationProgram<
-                Schema,
-                Operation,
-                Input,
-                <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-            >,
-            PreparationDenial,
-        >,
-    ) -> Result<
-        WorthQueryApplicationCommitOutcome,
-        WorthQueryApplicationCapabilityRevocationDenial<PreparationDenial>,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-        PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
-        PrincipalIdentity: 'static,
-        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
-        Input: serde::Serialize,
-        Key: serde::Serialize,
-        Input: ApplicationCapabilityRequest<Schema, Capability>
-            + ApplicationCapabilityRevocationRequest<Schema, Capability>
-            + Clone
-            + Send
-            + Sync
-            + 'static,
-    {
-        self.application
-            .with_application_advancement(self.scope, |phase| {
-                use WorthQueryApplicationCapabilityRevocationDenial as Denial;
-
-                if !std::ptr::eq(program.runtime(), self.application) {
-                    return Err(Denial::ProgramMismatch);
-                }
-                let program_action = program
-                    .admit_program_operation::<Operation>()
-                    .map_err(Denial::Program)?;
-                let capability = self
-                    .application
-                    .installed_schema()
-                    .capability(capability, operation)
-                    .map_err(Denial::CapabilityInstallation)?;
-                let principal_binding = self
-                    .application
-                    .installed_schema()
-                    .principal_binding(principal_binding)
-                    .map_err(Denial::PrincipalBindingInstallation)?;
-                let selected = self
-                    .application
-                    .on_branch(self.branch)
-                    .select(&phase)
-                    .map_err(Denial::ProductSelection)?;
-                let principal = selected
-                    .resolve_authenticated_principal(
-                        &phase,
-                        &principal_binding,
-                        self.principal,
-                        self.scope,
-                        WorthQueryPrincipalResolutionMode::Ordinary,
-                    )
-                    .map_err(Denial::PrincipalResolution)?;
-                let input = ApplicationEncodedInput::<Operation::InputBinding>::encode(input)
-                    .map_err(Denial::IdentityEncoding)?;
-                let workflow = WorthQueryCapabilityWorkflowIdempotency::bind::<
-                    Schema,
-                    Operation,
-                    Key,
-                    PrincipalIdentity,
-                    PrincipalIdentityBinding,
-                >(key, &input, principal.principal_identity())
-                .map_err(Denial::IdentityEncoding)?;
-                let idempotency = workflow.binding();
-                let publication = program_publication_access();
-                let mut access = selected
-                    .admit_encoded_capability_access(
-                        &phase,
-                        &publication,
-                        &principal,
-                        &capability,
-                        input,
-                        self.scope,
-                        None,
-                    )
-                    .map_err(Denial::Authorization)?;
-                access.record_request_identity_work(&publication, workflow.key_work());
-
-                let operation = self
-                    .application
-                    .installed_schema()
-                    .installed_operation(operation)
-                    .map_err(Denial::OperationInstallation)?;
-                let admission = self
-                    .application
-                    .authorize_capability_revocation(
-                        &phase,
-                        access,
-                        &capability,
-                        &operation,
-                        preconditions,
-                    )
-                    .map_err(Denial::Authorization)?;
-                match self
-                    .application
-                    .resolve_admitted_application_idempotency(&phase, &admission, idempotency)
-                    .map_err(Denial::Idempotency)?
-                    .into_resolution()
-                {
-                    WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                        return Ok(WorthQueryApplicationCommitOutcome::AlreadyCommitted(
-                            receipt,
-                        ));
-                    }
-                    WorthQueryApplicationIdempotencyResolution::IntentDrift => {
-                        return Err(Denial::IdempotencyIntentDrift);
-                    }
-                    WorthQueryApplicationIdempotencyResolution::Unseen => {}
-                }
-                let prepared = prepare(&phase, admission).map_err(Denial::Preparation)?;
-                Ok(
-                    program_action.compare_and_commit_capability_revocation_in_advancement(
-                        &phase,
-                        prepared,
-                        idempotency,
-                    ),
-                )
-            })
-            .map_err(WorthQueryApplicationCapabilityRevocationDenial::ExecutionRequest)?
-    }
 }

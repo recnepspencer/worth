@@ -1564,6 +1564,17 @@ intent, and the key is scoped to the operation and the requesting principal,
 so the same key from another principal or under another operation never
 replays the request.
 
+Capability delegation and revocation use retained native commands. Call
+`request.retain_capability_delegation_in_program(..)` or
+`request.retain_capability_revocation_in_program(..)` once with the owned original
+input and key. Capture refusal returns `(input, key, prepare, denial)` intact.
+The preparation closure may repeat under a fresh admission; it projects and
+materializes the native command program, while Query alone commits effects.
+Advance the returned owner with a fresh request rather than reissuing intent.
+A refusal returns the same command. A completed owner exposes native receipt
+evidence and still requires `close_with_evidence(&fresh_request)`; close refusal
+returns that same completed owner. See [owning capability commands](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands).
+
 **Provisional.** `compare_and_commit_program_undo::<Binding>` and
 `compare_and_commit_program_redo::<Binding>` take the effect program, the same
 mutation identities and idempotency extension, and the sealed progression

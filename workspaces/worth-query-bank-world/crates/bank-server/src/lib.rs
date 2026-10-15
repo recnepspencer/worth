@@ -83,7 +83,8 @@ pub use error::{
 pub use estate_progression::{
     BankApprovedEstateElevation, BankCapabilityDelegationProjectionDenial,
     BankCapabilityRevocationProjectionDenial, BankCommitRecoveryHandle,
-    BankDeathNotificationProjectionDenial, BankEstateCaseOpeningProjectionDenial,
+    BankDeathNotificationProjectionDenial, BankDelegationCaptureFailure, BankDelegationCommand,
+    BankDelegationPreparation, BankEstateCaseOpeningProjectionDenial,
     BankEstateDisbursementProjectionDenial, BankEstateElevationApprovalOutcome,
     BankEstateElevationCloseOutcome, BankEstateElevationClosureKind,
     BankEstateElevationRequestOutcome, BankEstateElevationRetentionWork,
@@ -98,6 +99,7 @@ pub use estate_progression::{
     BankRecoveryIdempotencyResolution, BankRecoveryInspection, BankRecoveryPosture,
     BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt, BankRecoverySupportTruth,
     BankRecoveryTransitionReceipt, BankRequestedEstateElevation, BankReviewedEstateElevation,
+    BankRevocationCaptureFailure, BankRevocationCommand, BankRevocationPreparation,
 };
 pub use external_effect_transport::BankExternalEffectTransportDenial;
 pub use identity_runtime::{BankAuthenticationConfiguration, BankIdentityRuntime};

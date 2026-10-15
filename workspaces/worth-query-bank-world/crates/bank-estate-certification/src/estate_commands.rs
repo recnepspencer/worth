@@ -3,7 +3,7 @@ use bank_server::{
     BankApprovedEstateElevation, BankAuthenticatedPrincipal, BankEstateElevationApprovalOutcome,
     BankEstateElevationCloseOutcome, BankEstateElevationRequestOutcome, BankEstateMandatoryReview,
     BankEstateMandatoryReviewOutcome, BankEstateProgressionDenial, BankIdentityRuntime,
-    BankMutationCommitOutcome, BankRequestedEstateElevation, BankReviewedEstateElevation,
+    BankRequestedEstateElevation, BankReviewedEstateElevation,
 };
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 
@@ -54,12 +54,11 @@ pub enum EstateCommandCertificationDenial {
 
 #[derive(Debug)]
 pub enum EstateCommandStoppedOutcome {
-    Mutation(BankMutationCommitOutcome),
     ElevationRequest(BankEstateElevationRequestOutcome),
 }
 
 /// Results from one phase per ordinary source command; specialized authorities stay distinct.
-pub struct EstateCommandOutcomes {
+pub struct EstateCommandOutcomes<'runtime> {
     pub notify: super::estate_source_outcome::EstateSourceCommandOutcome<
         bank_domain::schema::NotifyEstateDeath,
         bank_server::DeathNotificationAction,
@@ -88,14 +87,20 @@ pub struct EstateCommandOutcomes {
         bank_domain::schema::DisburseEstate,
         bank_server::EstateDisbursementAction,
     >,
+    pub delegate: super::capability_command_outcome::EstateCapabilityCommandOutcome<'runtime,
+        worth_query_host::facade::application_entry::WorthQueryApplicationCapabilityDelegationDenial<BankEstateProgressionDenial>,
+        bank_server::BankDelegationCaptureFailure<'runtime>>,
+    pub revoke: super::capability_command_outcome::EstateCapabilityCommandOutcome<'runtime,
+        worth_query_host::facade::application_entry::WorthQueryApplicationCapabilityRevocationDenial<BankEstateProgressionDenial>,
+        bank_server::BankRevocationCaptureFailure<'runtime>>,
     pub specialized: Vec<Result<(), EstateCommandCertificationDenial>>,
 }
-pub fn exercise_estate_commands(
-    runtime: &BankIdentityRuntime,
+pub fn exercise_estate_commands<'runtime>(
+    runtime: &'runtime BankIdentityRuntime,
     principal: &BankAuthenticatedPrincipal,
     request: &WorthQueryRequestScope,
     inputs: EstateCommandInputs,
-) -> EstateCommandOutcomes {
+) -> EstateCommandOutcomes<'runtime> {
     let [notify, retransmit, freeze, open, recognize, delegate, revoke, request_elevation, release, disburse] =
         inputs.actions;
     let notify = super::estate_source_commands::notify(
@@ -133,19 +138,24 @@ pub fn exercise_estate_commands(
         recognize,
         inputs.recognize_idempotency,
     );
-    let delegate = runtime
-        .delegate_estate_capability_with_key(
+    let delegate = super::capability_command_outcome::advance(
+        runtime.retain_estate_capability_delegation(
             principal,
             delegate,
-            &inputs.delegate_idempotency,
+            inputs.delegate_idempotency,
             request,
-        )
-        .map_err(EstateCommandCertificationDenial::Progression)
-        .and_then(committed_command);
-    let revoke = runtime
-        .revoke_estate_capability_with_key(principal, revoke, &inputs.revoke_idempotency, request)
-        .map_err(EstateCommandCertificationDenial::Progression)
-        .and_then(committed_command);
+        ),
+        &runtime.request(principal, request),
+    );
+    let revoke = super::capability_command_outcome::advance(
+        runtime.retain_estate_capability_revocation(
+            principal,
+            revoke,
+            inputs.revoke_idempotency,
+            request,
+        ),
+        &runtime.request(principal, request),
+    );
     let request_elevation = runtime
         .request_estate_emergency_access_with_key(
             principal,
@@ -179,20 +189,9 @@ pub fn exercise_estate_commands(
         recognize,
         release,
         disburse,
-        specialized: vec![delegate, revoke, request_elevation],
-    }
-}
-
-fn committed_command(
-    outcome: BankMutationCommitOutcome,
-) -> Result<(), EstateCommandCertificationDenial> {
-    match outcome {
-        BankMutationCommitOutcome::Committed(_)
-        | BankMutationCommitOutcome::AlreadyCommitted(_)
-        | BankMutationCommitOutcome::PreviouslyCommitted(_) => Ok(()),
-        stopped => Err(EstateCommandCertificationDenial::Stopped(Box::new(
-            EstateCommandStoppedOutcome::Mutation(stopped),
-        ))),
+        delegate,
+        revoke,
+        specialized: vec![request_elevation],
     }
 }
 
