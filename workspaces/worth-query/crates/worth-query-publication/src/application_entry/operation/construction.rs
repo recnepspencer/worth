@@ -9,6 +9,7 @@ pub enum WorthQueryOperationConstructionDenial {
     Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     UndeclaredRoot,
     RequiredOutputSource,
+    OutputSource(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
     ForeignRuntime,
     Query(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
 }

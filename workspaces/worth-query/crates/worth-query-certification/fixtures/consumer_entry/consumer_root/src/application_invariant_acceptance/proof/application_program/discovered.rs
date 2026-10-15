@@ -7,13 +7,17 @@ pub(super) mod publication_lifecycle;
 pub(super) mod recovery;
 pub(super) mod unpublished;
 
+use crate::application_program::discovered_delivery::{
+    Action, NoProjectionDelivery, Program, QueryDelivery,
+};
 use std::num::NonZeroUsize;
 use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation};
-
+use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationRequestExt,
-    WorthQueryDiscoveredProgramOutputProgress, WorthQueryOutputDemandControls,
+    WorthQueryOperationAdvance, WorthQueryOperationDeliveryPolicy,
 };
+
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 use worth_query_topology_entry::{
     PlanarEdit, PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead,
     PlanarSourceAdjustment,
@@ -22,13 +26,35 @@ use worth_query_topology_entry::{
 use super::super::super::{authentication, installation, seed::length};
 use crate::application_invariant_acceptance::proof::settle;
 use crate::{ConsumerDiscoveredProgramRoot, ConsumerProgram, ConsumerSchema};
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredProgramOutputProgress,
+    WorthQueryOutputDemandControls,
+};
 
 pub(super) fn performed_source_discovers_required_root(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
         ConsumerSchema,
     >,
 ) {
-    let world = installation::install(foreign);
+    let program = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
+        .validated_program()
+        .unwrap();
+    let grants = [
+        crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<Program<QueryDelivery>>(
+            "model-owner",
+            "model-owner",
+        ),
+    ];
+    let world = installation::install_selected_program(
+        foreign,
+        8192,
+        4096,
+        worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
+        ),
+        &grants,
+        program,
+    )
+    .unwrap();
     let scope = authentication::request_scope();
     let adapter = authentication::admit(world.application.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
@@ -53,44 +79,34 @@ pub(super) fn performed_source_discovers_required_root(
                 .expect("the prior source remains readable")
         })
         .expect("installed host call opens");
-    let outcome = request
+    let operation = request
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
         })
         .expect_source(source)
-        .idempotency(&10_030)
-        .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
-            &world.application,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the declared discovered root reaches source publication");
-    let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {
-        panic!("the authored edit must retain discovered-root custody")
-    };
-    let mut started = performed
-        .start_required_outputs(
-            &world.application,
-            &request,
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::new(4_096).unwrap(),
-                NonZeroUsize::new(8_192).unwrap(),
-            ),
-        )
-        .unwrap_or_else(|failure| {
-            panic!("performed discovered roots start: {:?}", failure.denial())
-        });
-    let settled = settle(|| {
-        match started
-            .required_output_mut()
-            .advance(&world.application, &request)
-            .expect("the discovered roots advance")
-        {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
-            WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
+        .idempotency_owned(10_030)
+        .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
+        .unwrap_or_else(|(_, denial)| panic!("declared discovered construction: {denial:?}"));
+    let mut operation = Some(operation);
+    let settled = settle(|| match operation.take().unwrap().advance(&request) {
+        WorthQueryOperationAdvance::Progress {
+            operation: next, ..
+        } => {
+            operation = Some(next);
+            None
+        }
+        WorthQueryOperationAdvance::Settled(settled) => Some(settled),
+        WorthQueryOperationAdvance::Refused { denial, .. }
+        | WorthQueryOperationAdvance::Terminal { denial, .. } => {
+            panic!("ordinary discovery: {denial:?}")
         }
     });
-    let roots = settled.root_outputs().collect::<Vec<_>>();
+    assert_eq!(
+        settled.read_current(&request).unwrap().rows()[0].value,
+        length(42)
+    );
+    let roots = settled.settlement().root_outputs().collect::<Vec<_>>();
     assert_eq!(roots.len(), 3);
     assert_eq!(
         roots
@@ -99,7 +115,7 @@ pub(super) fn performed_source_discovers_required_root(
             .collect::<Vec<_>>(),
         ["remote-b", "sibling-b", "sibling-c"]
     );
-    assert_eq!(settled.output_count(), 6);
+    assert_eq!(settled.settlement().output_count(), 6);
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),
         0,
@@ -112,7 +128,7 @@ pub(super) fn performed_source_discovers_required_root(
     ] {
         assert_eq!(
             request
-                .at(settled.observation())
+                .at(settled.settlement().observation())
                 .query(PlanarOutputRead {
                     body_key: key.to_owned()
                 })
@@ -135,6 +151,9 @@ pub(super) fn performed_source_discovers_required_root(
             .y,
         length(1)
     );
+    settled
+        .close(&request)
+        .unwrap_or_else(|(_, denial)| panic!("lawful discovered close: {denial:?}"));
 }
 
 pub(super) fn isolated_source_settles_without_roots(
@@ -142,7 +161,25 @@ pub(super) fn isolated_source_settles_without_roots(
         ConsumerSchema,
     >,
 ) {
-    let world = installation::install(foreign);
+    let program =
+        ApplicationProgramAuthoring::<ConsumerSchema, Program<NoProjectionDelivery>>::begin()
+            .validated_program()
+            .unwrap();
+    let grants = [
+        crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<
+            Program<NoProjectionDelivery>,
+        >("model-owner", "model-owner"),
+    ];
+    let world = installation::install_selected_program(
+        foreign,
+        8192,
+        4096,
+        worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
+        ),
+        &grants,
+        program,
+    )
+    .unwrap();
     let scope = authentication::request_scope();
     let adapter = authentication::admit(world.application.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
@@ -159,47 +196,60 @@ pub(super) fn isolated_source_settles_without_roots(
         .expect("the isolated source is readable")
         .observed_sources()[0]
         .clone();
-    let outcome = request
+    let operation = request
         .mutate(PlanarSourceAdjustment {
             scope_key: "sibling-a".to_owned(),
             replacement_y: length(22),
         })
         .expect_source(source)
-        .idempotency(&10_031)
-        .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
+        .idempotency_owned(10_031)
+        .retain_operation::<Program<NoProjectionDelivery>, Action<NoProjectionDelivery>>(
             &world.application,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .expect("the isolated source publication succeeds");
-    let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {
-        panic!("the isolated source edit is fresh")
-    };
-    let mut started = performed
-        .start_required_outputs(
-            &world.application,
+        .unwrap_or_else(|(_, denial)| panic!("declared no-projection construction: {denial:?}"));
+    let mut operation = Some(operation);
+    let settled = settle(|| match operation.take().unwrap().advance(&request) {
+        WorthQueryOperationAdvance::Progress {
+            operation: next, ..
+        } => {
+            operation = Some(next);
+            None
+        }
+        WorthQueryOperationAdvance::Settled(settled) => Some(settled),
+        WorthQueryOperationAdvance::Refused { denial, .. }
+        | WorthQueryOperationAdvance::Terminal { denial, .. } => {
+            panic!("ordinary empty discovery: {denial:?}")
+        }
+    });
+    let current = settled
+        .deliver_current(
             &request,
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::new(4_096).unwrap(),
-                NonZeroUsize::new(8_192).unwrap(),
+            WorthQueryOperationDeliveryPolicy::currentness(
+                NonZeroUsize::new(
+                    world
+                        .application
+                        .runtime()
+                        .output_demand_resource_profile()
+                        .limits()
+                        .source_currentness_work(),
+                )
+                .expect("installed finite positive currentness allowance"),
             ),
         )
-        .unwrap_or_else(|failure| panic!("empty discovery starts: {:?}", failure.denial()));
-    let WorthQueryDiscoveredProgramOutputProgress::Settled(settled) = started
-        .required_output_mut()
-        .advance(&world.application, &request)
-        .expect("empty discovery settles immediately")
-    else {
-        panic!("empty discovery has no output work")
-    };
-    assert_eq!(settled.root_outputs().count(), 0);
-    assert_eq!(settled.output_count(), 0);
+        .unwrap();
+    assert_eq!(
+        current.selected_commit(),
+        settled.settlement().observation().selected_commit()
+    );
+    assert_eq!(settled.settlement().root_outputs().count(), 0);
+    assert_eq!(settled.settlement().output_count(), 0);
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),
         0
     );
     assert_eq!(
         request
-            .at(settled.observation())
+            .at(settled.settlement().observation())
             .query(PlanarRead {
                 body_key: "sibling-a".to_owned(),
             })
@@ -209,6 +259,9 @@ pub(super) fn isolated_source_settles_without_roots(
             .y,
         length(22)
     );
+    settled
+        .close(&request)
+        .unwrap_or_else(|(_, denial)| panic!("lawful empty close: {denial:?}"));
 }
 
 #[cfg(test)]

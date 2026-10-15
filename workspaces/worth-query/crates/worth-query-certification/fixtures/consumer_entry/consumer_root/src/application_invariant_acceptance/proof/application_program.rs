@@ -20,6 +20,8 @@ mod discovered;
 #[cfg(test)]
 mod discovered_contracts;
 #[cfg(test)]
+mod discovered_owning;
+#[cfg(test)]
 mod fixed_action_instances;
 #[cfg(test)]
 mod fixed_batch;

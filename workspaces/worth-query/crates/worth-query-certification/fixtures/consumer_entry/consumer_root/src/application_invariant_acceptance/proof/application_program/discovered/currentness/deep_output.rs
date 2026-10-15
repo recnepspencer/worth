@@ -23,6 +23,7 @@ fn discovered_currentness_all_retained_dependent_settlements() {
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "sibling-a".to_owned(),
             replacement_y: length(22),
@@ -41,7 +42,7 @@ fn discovered_currentness_all_retained_dependent_settlements() {
         .start_required_outputs(
             &world.application,
             &request,
-            WorthQueryOutputDemandControls::new(NonZeroUsize::new(4096).unwrap(), work()),
+            WorthQueryOutputDemandControls::new(NonZeroUsize::new(4096).unwrap(), retained_bytes()),
         )
         .unwrap_or_else(|failure| panic!("native source: {:?}", failure.denial()));
     let aggregate = settled!(world, request, started);
@@ -61,7 +62,7 @@ fn discovered_currentness_all_retained_dependent_settlements() {
     let historical = aggregate.observation();
     request
         .at(historical)
-        .require_current_discovered_program_outputs(&aggregate, work())
+        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
         .unwrap();
     let final_value = request
         .query(PlanarOutputRead {
@@ -139,7 +140,7 @@ fn discovered_currentness_all_retained_dependent_settlements() {
     for (_, root) in aggregate.root_outputs() {
         request
             .at(&current)
-            .require_current_output_demand(root, work())
+            .require_current_output_demand(root, comparison_work(&world.application))
             .unwrap();
     }
     let (_, dependent) = aggregate
@@ -149,16 +150,19 @@ fn discovered_currentness_all_retained_dependent_settlements() {
     stale(
         request
             .at(&current)
-            .require_current_output_demand(dependent, work()),
+            .require_current_output_demand(dependent, comparison_work(&world.application)),
     );
     stale(
         request
             .at(&current)
-            .require_current_discovered_program_outputs(&aggregate, work()),
+            .require_current_discovered_program_outputs(
+                &aggregate,
+                comparison_work(&world.application),
+            ),
     );
     request
         .at(historical)
-        .require_current_discovered_program_outputs(&aggregate, work())
+        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
         .unwrap();
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),

@@ -5,6 +5,8 @@ pub use crate::indexes::data::{
     BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
     BoundedRelatedEntityOrderedLookupDenial, BoundedRelatedEntityOrderedLookupDenialKind,
     BoundedRelatedEntityOrderedLookupOutcome, BoundedRelatedEntityOrderedLookupRequest,
+    BoundedRelatedEntityPrefixBoundary, BoundedRelatedEntityPrefixDenial,
+    BoundedRelatedEntityPrefixLookupRequest, BoundedRelatedEntityPrefixPage,
     BoundedRelationJoinLookupDenial, BoundedRelationJoinLookupDenialKind,
     BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupRequest, DerivedIndexApplicability,
     DerivedIndexArtifacts, DerivedIndexBuildOutcome, DerivedIndexBuildRequest,

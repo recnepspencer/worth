@@ -70,10 +70,10 @@ impl RelationalPinnedRead {
 
 /// The generation this lookup is pinned to, carried by shared ownership so the
 /// entries stay readable without retaining the index subsystem lock.
-struct PreparedRelatedLookup<'request> {
-    generation_id: crate::indexes::data::DerivedIndexGenerationId,
-    generation: std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>,
-    contract: RelatedLookupContract<'request>,
+pub(super) struct PreparedRelatedLookup<'request> {
+    pub(super) generation_id: crate::indexes::data::DerivedIndexGenerationId,
+    pub(super) generation: std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>,
+    pub(super) contract: RelatedLookupContract<'request>,
 }
 
 impl PreparedRelatedLookup<'_> {
@@ -90,7 +90,7 @@ impl PreparedRelatedLookup<'_> {
 
 /// The lookup shape this request is bound to, holding its definition by shared
 /// ownership so the ordering fields outlive the subsystem read that found them.
-struct RelatedLookupContract<'request> {
+pub(super) struct RelatedLookupContract<'request> {
     definition: std::sync::Arc<crate::indexes::data::DerivedIndexDefinition>,
     relation_kind: crate::identity::data::KindId,
     parent_endpoint: RelatedEntityEndpoint,
@@ -100,7 +100,7 @@ struct RelatedLookupContract<'request> {
 }
 
 impl RelatedLookupContract<'_> {
-    fn ordering(&self) -> &[RelatedEntityOrderingField] {
+    pub(super) fn ordering(&self) -> &[RelatedEntityOrderingField] {
         let DerivedIndexKind::RelatedEntityOrdering { ordering, .. } = &self.definition.kind else {
             return &[];
         };
@@ -108,7 +108,7 @@ impl RelatedLookupContract<'_> {
     }
 }
 
-fn prepare_related_lookup<'request>(
+pub(super) fn prepare_related_lookup<'request>(
     read: &RelationalPinnedRead,
     request: &'request BoundedRelatedEntityOrderedLookupRequest,
 ) -> Result<PreparedRelatedLookup<'request>, BoundedRelatedEntityOrderedLookupDenial> {

@@ -3,7 +3,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use record
     original_parent, original_scope, original_transition, recorded_approval,
 };
 mod actors;
+mod read_only;
 mod retained_history;
+pub(in crate::domain_computation::primary_graph::application_attempt) use read_only::observe_read_only_history;
+pub(in crate::domain_computation::primary_graph) use read_only::ReadOnlyWorkflowHistory;
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::{EntityId, RelationId};
 
@@ -106,6 +109,11 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
     purpose: WorkflowInstanceObservationPurpose,
 ) -> Result<ObservedWorkflowInstance, WorthQueryApplicationAttemptDenial> {
+    if purpose == WorkflowInstanceObservationPurpose::ReadOnly {
+        return Err(denial(
+            "read-only history must use its non-progressing owner",
+        ));
+    }
     let entity = instance.entity_id();
     let kind = layout.instance.entity_kind;
     let mut facts = vec![WorthQueryApplicationObservedFact::Entity {

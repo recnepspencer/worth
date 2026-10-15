@@ -15,11 +15,13 @@ mod adoption_coverage;
 mod approval_binding;
 mod draft_vocabulary;
 mod installation;
+mod read_binding;
 mod support_identity;
 pub use adoption_coverage::{
     WorthQueryWorkflowNodeDependency, WorthQueryWorkflowVocabularyCoverage,
 };
 pub use installation::WorthQueryApplicationWorkflowSpecInstallation;
+pub use read_binding::WorthQueryInstalledWorkflowReadBinding;
 
 mod resource_ceiling;
 pub use resource_ceiling::{

@@ -1,0 +1,132 @@
+//! Original native start-intent selection at an explicitly retained data occurrence.
+//! Depends on the reviewed NativeStart header, pending its normal committed join.
+use super::admission::{admit, WorkflowReadAdmissionDenial as Denial};
+use crate::domain_computation::primary_graph::application_attempt::{
+    observe_adjacency, observe_field_value_borrowed, WorthQueryApplicationAdjacencyDirection,
+    WorthQueryWorkflowInstanceDiscoveryIntent,
+};
+use crate::domain_computation::primary_graph::index_currency::{
+    ensure_selected_field_indexes_admitted, SelectedFieldIndexAdmissionStop,
+};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::{
+    WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
+};
+use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_admission::facade::authenticated_principal::{
+    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
+};
+use worth_query_declaration::facade::{
+    application_program::{
+        ApplicationWorkflowReadBinding, ApplicationWorkflowReadRoute, ApplicationWorkflowSpec,
+    },
+    application_schema::ApplicationSchema,
+};
+use worth_query_installation::facade::WorthQueryInstalledWorkflowReadBinding;
+use worth_relational::facade::{
+    identity::EntityId,
+    indexes::{
+        BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldSelectedLookup,
+        BoundedIndexParityMode,
+    },
+    mvcc::CompanionPreflightStop,
+};
+
+/// Private data locator borrows the exact selected occurrence, never a grant.
+pub(super) struct OriginalWorkflowCandidate<'data, 'runtime, Schema> {
+    pub(super) data: &'data WorthQuerySelectedProductOperation<'runtime, Schema>,
+    pub(super) instance: EntityId,
+    pub(super) lineage: EntityId,
+    pub(super) subject: EntityId,
+}
+
+pub(super) fn lookup<'data, 'runtime, Schema, Spec, B>(
+    current: &WorthQuerySelectedProductOperation<'_, Schema>,
+    data: &'data WorthQuerySelectedProductOperation<'runtime, Schema>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    installed: &WorthQueryInstalledWorkflowReadBinding<'_, Schema, Spec, B>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    input: B::Input,
+    request: &WorthQueryRequestScope,
+    original: &WorthQueryWorkflowInstanceDiscoveryIntent<Schema>,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<
+    Option<(
+        OriginalWorkflowCandidate<'data, 'runtime, Schema>,
+        crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
+            Schema,
+            B::Capability,
+            B::Operation,
+            B::Input,
+        >,
+    )>,
+    Denial,
+>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    B: ApplicationWorkflowReadBinding<Schema>,
+{
+    if installed.route() != ApplicationWorkflowReadRoute::Subject {
+        return Err(Denial::PolicyMismatch);
+    }
+    let access = admit(
+        current, phase, installed, principal, input, request, admission,
+    )?;
+    // Caller supplied domain input, not a principal/entity forged from the missing target.
+    if access.resource_entity_id() != original.subject_entity_id()
+        || !std::ptr::eq(current.application(), data.application())
+        || current.product().branch_identity() != data.product().branch_identity()
+    {
+        return Err(Denial::PolicyMismatch);
+    }
+    let execution = phase
+        .execution_request_for(&current.application().product_runtime)
+        .map_err(Denial::Phase)?;
+    let graph = current
+        .application()
+        .runtime
+        .primary_graph()
+        .ok_or(Denial::BasisUnavailable)?;
+    let snapshot = data.application_basis().snapshot_handle();
+    graph.integration_handle().with_runtime(&execution,|runtime| {
+        let layout=graph.layout().workflow();
+        ensure_selected_field_indexes_admitted(&execution,runtime,data.product().relational_basis(),
+            [Some(layout.instance.identity_index_id),None],admission).map_err(|stop| match stop {
+                SelectedFieldIndexAdmissionStop::Admission(cause)=>Denial::Preparation(cause),
+                SelectedFieldIndexAdmissionStop::Native=>Denial::SelectedIndexUnavailable,
+            })?;
+        // The authentic canonical start owner fixes text at64 bytes. Pay actual text before copying.
+        let text=original.lookup_identity();
+        admission.admit_read_scratch(text.len() as u64).and_then(|()| admission.charge_external_work(text.len() as u64+1)).map_err(Denial::Preparation)?;
+        let value=AspectValue::String(InternedString::Raw(text.to_owned()));
+        let view=runtime.read_truth().project_snapshot(snapshot).ok_or(Denial::BasisUnavailable)?;
+        let selected=runtime.index_access().execute_bounded_entity_field_lookup(
+            BoundedEntityFieldSelectedLookup::new(&view,layout.instance.identity_index_id,layout.instance.entity_kind,
+                &layout.instance.identity,&value,2,|work,bytes| admission.charge_selected_index_read(work,bytes)),
+            BoundedIndexParityMode::Production,&execution).map_err(|cause| match cause {
+                BoundedEntityFieldLookupAdmissionStop::Admission(cause)=>Denial::Preparation(cause),
+                BoundedEntityFieldLookupAdmissionStop::Lookup(cause)=>Denial::Index(cause.kind()),
+                BoundedEntityFieldLookupAdmissionStop::AccountingOverflow=>Denial::Preparation(CompanionPreflightStop::WorkCounterOverflow),
+                BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired=>Denial::BasisUnavailable,
+            })?;
+        if selected.overflowed() || selected.candidate_entity_ids().len()>1 { return Err(Denial::Corrupt); }
+        let Some(instance)=selected.candidate_entity_ids().first().copied() else { return Ok(None); };
+        for (field,expected) in [(&layout.instance.protocol_version,crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION),
+            (&layout.instance.subject_partition,u64::from(original.subject_entity_id().partition_value())),
+            (&layout.instance.subject_slot,original.subject_entity_id().local_slot_value()),
+            (&layout.instance.subject_generation,u64::from(original.subject_entity_id().generation_value()))] {
+            let matches=observe_field_value_borrowed(runtime,&execution,snapshot,instance,layout.instance.entity_kind,field,
+                |value| value==Some(&AspectValue::UInt64(expected))).map_err(Denial::Relational)?;
+            if matches!=Some(true) { return Err(Denial::Corrupt); }
+        }
+        let lineages=observe_adjacency(runtime,&execution,snapshot,layout.instance_lineage_relation,instance,
+            WorthQueryApplicationAdjacencyDirection::Outgoing,2).map_err(Denial::Execution)?.ok_or(Denial::BasisUnavailable)?;
+        let [lineage]=lineages.as_slice() else { return Err(Denial::Corrupt); };
+        let matches=observe_field_value_borrowed(runtime,&execution,snapshot,lineage.to,layout.lineage.entity_kind,&layout.lineage.spec,
+            |value| matches!(value,Some(AspectValue::String(InternedString::Raw(value))) if value==Spec::IDENTITY.as_str()))
+            .map_err(Denial::Relational)?;
+        if matches!=Some(true) { return Err(Denial::PolicyMismatch); }
+        Ok(Some((OriginalWorkflowCandidate { data,instance,lineage:lineage.to,subject:original.subject_entity_id() },access)))
+    })
+}

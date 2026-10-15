@@ -12,6 +12,7 @@ fn discovered_currentness_all_native_retired_keeps_original_discovery() {
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -58,10 +59,11 @@ fn discovered_currentness_all_native_retired_keeps_original_discovery() {
         ));
     }
     let mut recovered = request
+        .advanced()
         .recover_discovered_required_outputs::<MembershipProgram, FanoutRoot>(
             &world.application,
             &receipt,
-            WorthQueryOutputDemandControls::new(NonZeroUsize::new(4096).unwrap(), work()),
+            WorthQueryOutputDemandControls::new(NonZeroUsize::new(4096).unwrap(), retained_bytes()),
         )
         .unwrap();
     let aggregate = settle(
@@ -76,14 +78,17 @@ fn discovered_currentness_all_native_retired_keeps_original_discovery() {
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_discovered_program_outputs(&aggregate, work())
+        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
         .unwrap();
     link!(world, request, "anchor-a", "anchor-b", 10_216u64);
     let current = request.retain_current_read().unwrap();
     stale(
         request
             .at(&current)
-            .require_current_discovered_program_outputs(&aggregate, work()),
+            .require_current_discovered_program_outputs(
+                &aggregate,
+                comparison_work(&world.application),
+            ),
     );
     assert_eq!(aggregate.superseded_roots().count(), 3);
     assert_eq!(

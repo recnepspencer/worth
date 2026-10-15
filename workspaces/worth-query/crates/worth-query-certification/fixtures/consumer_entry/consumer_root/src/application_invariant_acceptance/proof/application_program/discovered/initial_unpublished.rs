@@ -49,6 +49,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
         })
         .expect("installed host call opens");
     let outcome = request
+        .advanced()
         .mutate(intent.clone())
         .without_source()
         .idempotency(&key)
@@ -74,6 +75,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
     let fresh_request = world.application.request(&principal, &fresh_scope);
     assert_eq!(
         fresh_request
+            .advanced()
             .mutate(intent.clone())
             .without_source()
             .idempotency(&key)
@@ -84,6 +86,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
     // Re-entering a performed phase cannot take the one-use native carrier again.
     assert_eq!(
         fresh_request
+            .advanced()
             .mutate(intent.clone())
             .without_source()
             .idempotency(&key)
@@ -96,6 +99,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
         NonZeroUsize::new(8_192).unwrap(),
     );
     let (mut outputs, initial_cause, performed, prior_cleanup) = fresh_request
+        .advanced()
         .mutate(intent.clone())
         .without_source()
         .idempotency(&key)
@@ -130,6 +134,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
     // An ordinary duplicate returns its actual receipt, never another prepared
     // source or another handler result that could remint discovered custody.
     let repeated = fresh_request
+        .advanced()
         .mutate(intent)
         .without_source()
         .idempotency(&key)

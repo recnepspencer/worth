@@ -7,8 +7,12 @@
 mod actor_policy;
 mod authoring;
 mod observation_policy;
+mod read_binding;
+mod read_target;
 pub use actor_policy::*;
 pub use observation_policy::*;
+pub use read_binding::*;
+pub use read_target::*;
 mod canonical;
 mod expression;
 mod identity;

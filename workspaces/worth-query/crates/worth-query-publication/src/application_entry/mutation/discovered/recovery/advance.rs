@@ -103,5 +103,3 @@ where
                     .map_err(WorthQueryApplicationRecoveryRequestDenial::Recovery)
     }
 }
-
-mod ordinary;
