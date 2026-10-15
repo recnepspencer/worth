@@ -76,7 +76,7 @@ where
                 WorthQueryOperationCloseDenial::ManagedCleanup(kind),
             ));
         }
-        let action = match &self.state {
+        let action = match &mut self.state {
             State::Initial | State::RetryableNoEffect(_) => NativeCommandAction::Execute,
             State::Unpublished(recovery) => {
                 self.cleanup

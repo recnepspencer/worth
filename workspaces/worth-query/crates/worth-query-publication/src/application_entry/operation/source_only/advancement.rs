@@ -71,11 +71,11 @@ where
         WorthQuerySourceOnlyDenial,
     > {
         match &mut self.state {
-            SourceState::Initial | SourceState::RetryableNoEffect(_) => {
+            SourceState::<S, I>::Initial | SourceState::<S, I>::RetryableNoEffect(_) => {
                 let outcome = match self.admission.execute_in_advancement(phase, request) {
                     Ok(outcome) => outcome,
                     Err(denial) if native_posture::pinned_source_moved(&denial) => {
-                        self.state = SourceState::AdmissionStopped(denial);
+                        self.state = SourceState::<S, I>::AdmissionStopped(denial);
                         return Ok(Step::Terminal);
                     }
                     Err(denial) => return Err(WorthQuerySourceOnlyDenial::Mutation(denial)),
@@ -95,7 +95,7 @@ where
                     }
                 }
             }
-            SourceState::Unpublished(recovery) => {
+            SourceState::<S, I>::Unpublished(recovery) => {
                 self.cleanup
                     .reserve_release_failure()
                     .map_err(WorthQuerySourceOnlyDenial::Cleanup)?;
@@ -107,7 +107,7 @@ where
                 Ok(Step::Progress)
             }
 
-            SourceState::Performed(performed) => {
+            SourceState::<S, I>::Performed(performed) => {
                 self.cleanup
                     .absorb_recovered(performed)
                     .map_err(WorthQuerySourceOnlyDenial::Cleanup)?;
@@ -118,7 +118,7 @@ where
                     .into_resolution();
                 self.accept_keyed(resolution)
             }
-            SourceState::Keyed(_) | SourceState::UnresolvedAdvancement(_) => {
+            SourceState::<S, I>::Keyed(_) | SourceState::<S, I>::UnresolvedAdvancement(_) => {
                 let resolution = self
                     .admission
                     .resolve_keyed_in_advancement(phase, request)
@@ -126,7 +126,7 @@ where
                     .into_resolution();
                 self.accept_keyed(resolution)
             }
-            SourceState::RetainedPending(_) => {
+            SourceState::<S, I>::RetainedPending(_) => {
                 match self
                     .admission
                     .resolve_keyed_in_advancement(phase, request)
@@ -148,7 +148,9 @@ where
                 )
                 .map(Step::Completed)
             }
-            SourceState::Stopped(_) | SourceState::AdmissionStopped(_) => Ok(Step::Terminal),
+            SourceState::<S, I>::Stopped(_) | SourceState::<S, I>::AdmissionStopped(_) => {
+                Ok(Step::Terminal)
+            }
         }
     }
 
@@ -172,13 +174,14 @@ where
                 }))
             }
             O::AlreadyCommitted(receipt) if M::RETAIN_COMMIT => {
-                self.state = SourceState::RetainedPending(WorthQuerySourceCompletion::Recovered {
-                    retained: None,
-                    receipt,
-                    publication: None,
-                    initial_posture: None,
-                    initial_advancement_failure: None,
-                });
+                self.state =
+                    SourceState::<S, I>::RetainedPending(WorthQuerySourceCompletion::Recovered {
+                        retained: None,
+                        receipt,
+                        publication: None,
+                        initial_posture: None,
+                        initial_advancement_failure: None,
+                    });
                 Ok(Step::Progress)
             }
             O::AlreadyCommitted(receipt) => {
@@ -210,11 +213,11 @@ where
                 if self.admission.description.source.is_none()
                     && native_posture::fresh_retry_eligible::<S, I>(&other) =>
             {
-                self.state = SourceState::RetryableNoEffect(other);
+                self.state = SourceState::<S, I>::RetryableNoEffect(other);
                 Ok(Step::Progress)
             }
             other => {
-                self.state = SourceState::Stopped(other);
+                self.state = SourceState::<S, I>::Stopped(other);
                 Ok(Step::Terminal)
             }
         }
@@ -242,7 +245,7 @@ where
                     initial_advancement_failure: recovered.initial_advancement_failure,
                 };
                 if M::RETAIN_COMMIT {
-                    self.state = SourceState::RetainedPending(evidence);
+                    self.state = SourceState::<S, I>::RetainedPending(evidence);
                     Ok(Step::Progress)
                 } else {
                     Ok(Step::Completed(evidence))
