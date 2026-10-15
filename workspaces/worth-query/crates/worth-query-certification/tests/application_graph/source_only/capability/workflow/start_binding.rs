@@ -2,6 +2,9 @@
 use super::*;
 pub struct StartBinding;
 impl ApplicationMutationBinding<CapabilitySchema> for StartBinding {
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
     const WORKFLOW_CONTROL: bool = true;
     type Input = SetRetentionInput;
     type InputBinding = SetRetentionInputBinding;

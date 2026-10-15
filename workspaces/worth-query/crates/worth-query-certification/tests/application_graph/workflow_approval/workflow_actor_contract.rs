@@ -289,6 +289,8 @@ fn workflow_actor_contract_proposal_replay_preserves_original_execution_principa
     );
 }
 
+#[path = "workflow_actor_contract/generation.rs"]
 mod generation;
 
+#[path = "workflow_actor_contract/allocation.rs"]
 mod allocation;
