@@ -18,7 +18,9 @@ pub fn publish_owner_workflow_with_projection() -> (
     let mut projection = None;
     let application = in_memory_rostered_program(
         program,
-        WorthQueryApplicationProgramRoster::new(),
+        // The contribution installs both V1 and V2 rule contracts. Keep V2
+        // honestly declared in the existing roster; this branch still runs owner V1.
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         host_limits(),

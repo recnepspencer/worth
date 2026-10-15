@@ -311,7 +311,24 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
         !confirmed.terminal(),
         "confirmation cannot execute the successor"
     );
-    assert_eq!(confirmed.receipt(), &original_effect_receipt);
+    // Native custody readback is historical: terminal accounting is Recovered,
+    // while the unique fresh source receipt retains Executed/performed custody.
+    assert_eq!(
+        confirmed.receipt().commit_reference(),
+        original_effect_receipt.commit_reference()
+    );
+    assert_eq!(
+        confirmed.receipt().outcome_identity(),
+        original_effect_receipt.outcome_identity()
+    );
+    assert_eq!(
+        confirmed.receipt().authority_binding(),
+        original_effect_receipt.authority_binding()
+    );
+    assert_eq!(
+        confirmed.receipt().committed_changes(),
+        original_effect_receipt.committed_changes()
+    );
     assert!(confirmed.operation_receipt_identity().is_some());
     assert!(original_effect_receipt
         .committed_changes()
