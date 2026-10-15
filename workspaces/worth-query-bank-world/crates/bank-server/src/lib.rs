@@ -100,7 +100,9 @@ pub use estate_progression::{
     BankRecoveryTransitionReceipt, BankRequestedEstateElevation, BankReviewedEstateElevation,
 };
 pub use external_effect_transport::BankExternalEffectTransportDenial;
-pub use identity_runtime::{BankAuthenticationConfiguration, BankIdentityRuntime};
+pub use identity_runtime::{
+    BankAuthenticationConfiguration, BankIdentityRuntime, BankIdentityRuntimeWorkflowBinding,
+};
 pub use inbound_completion::{
     BankEstateRailCompletionInstallationDenial, BankEstateRailCompletionRoute,
     BankPaymentRailCompletionRoute,

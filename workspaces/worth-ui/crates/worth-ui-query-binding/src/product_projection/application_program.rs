@@ -1,8 +1,8 @@
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationCommitBoundary, ApplicationFeature, ApplicationFeatureInputLeaf,
+    ApplicationActionDelivery, ApplicationCommitBoundary, ApplicationFeature, ApplicationFeatureInputLeaf,
     ApplicationFeatureSpec, ApplicationLocalRuleRef, ApplicationNoOutputGraph,
     ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
-    ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
+    ApplicationProgramOutputs, ApplicationRetainedCommit, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
     ValidatedApplicationProgram,
 };
 
@@ -13,6 +13,22 @@ use crate::declaration::{
 
 pub(super) struct WorthUiStatusProgram;
 pub(super) struct WorthUiStatusFeature;
+
+pub(super) struct WorthUiStatusUpdateDelivery;
+impl ApplicationActionDelivery<WorthUiApplicationSchema, WorthUiStatusUpdateBinding>
+    for WorthUiStatusUpdateDelivery
+{
+    type Mode = ApplicationRetainedCommit;
+    const IDENTITY: &'static str = "worth.ui.status-update.retained.v1";
+}
+
+pub(super) struct WorthUiStatusActionDelivery;
+impl ApplicationActionDelivery<WorthUiApplicationSchema, WorthUiStatusActionBinding>
+    for WorthUiStatusActionDelivery
+{
+    type Mode = ApplicationRetainedCommit;
+    const IDENTITY: &'static str = "worth.ui.status-action.retained.v1";
+}
 
 impl ApplicationFeature<WorthUiApplicationSchema> for WorthUiStatusFeature {
     type Inputs = ApplicationFeatureInputLeaf;
@@ -41,8 +57,10 @@ impl ApplicationProgramDefinition<WorthUiApplicationSchema> for WorthUiStatusPro
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<WorthUiApplicationSchema, WorthUiStatusFeature>()
-                .mutation::<WorthUiStatusUpdateBinding>()
-                .mutation::<WorthUiStatusActionBinding>()
+                .action::<WorthUiStatusUpdateBinding, WorthUiStatusUpdateDelivery>()
+                .finish_action()
+                .action::<WorthUiStatusActionBinding, WorthUiStatusActionDelivery>()
+                .finish_action()
                 .finish(),
         ]
     }

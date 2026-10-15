@@ -59,45 +59,46 @@ fn bank_feature_specs_with_optional_effects(
 
     let estate = ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>();
     let estate = if include_estate_notification {
-        estate.operation_action::<NotifyEstateDeathMutationBinding, super::estate_actions::DeathNotificationDelivery>()
+        estate.action::<NotifyEstateDeathMutationBinding, super::estate_actions::DeathNotificationDelivery>().finish_action()
     } else {
         estate
     };
     let payments = ApplicationFeatureSpec::root::<BankSchema, BankPaymentsFeature>()
-        .operation_action::<ApplyOpeningFundingMutationBinding, super::money_actions::OpeningFundingDelivery>()
-        .operation_action::<DepositMutationBinding, super::money_actions::DepositDelivery>()
-        .operation_action::<WithdrawMutationBinding, super::money_actions::WithdrawalDelivery>()
-        .operation_action::<SendMoneyMutationBinding, super::money_actions::SendMoneyDelivery>()
-        .operation_action::<InitiateBusinessPaymentMutationBinding, super::payment_actions::PaymentInitiationDelivery>()
-        .mutation::<ApprovedBusinessPaymentAuthoringBinding>()
-        .mutation::<ApprovedBusinessPaymentApprovalBinding>()
-        .mutation::<ApprovedBusinessPaymentInstanceStartBinding>()
-        .mutation::<ApprovedBusinessPaymentAdvanceBinding>()
+        .action::<ApplyOpeningFundingMutationBinding, super::money_actions::OpeningFundingDelivery>().finish_action()
+        .action::<DepositMutationBinding, super::money_actions::DepositDelivery>().finish_action()
+        .action::<WithdrawMutationBinding, super::money_actions::WithdrawalDelivery>().finish_action()
+        .action::<SendMoneyMutationBinding, super::money_actions::SendMoneyDelivery>().finish_action()
+        .action::<InitiateBusinessPaymentMutationBinding, super::payment_actions::PaymentInitiationDelivery>().finish_action()
+        // These bindings prepare Query-owned workflow controls, not ordinary source effects.
+        .native_action::<ApprovedBusinessPaymentAuthoringBinding>().finish_action()
+        .native_action::<ApprovedBusinessPaymentApprovalBinding>().finish_action()
+        .native_action::<ApprovedBusinessPaymentInstanceStartBinding>().finish_action()
+        .native_action::<ApprovedBusinessPaymentAdvanceBinding>().finish_action()
         .conditional_operation::<PublishApprovedPaymentAssessment>();
     let payments = if include_ordinary_payment_approval {
-        payments.operation_action::<ApprovePaymentMutationBinding, super::workflow_actions::ApprovedPaymentEffectDelivery>()
+        payments.action::<ApprovePaymentMutationBinding, super::workflow_actions::ApprovedPaymentEffectDelivery>().finish_action()
     } else {
         payments
     };
     vec![
         ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
-            .operation_action::<ProgramDeploymentRevocationBinding, super::deployment_actions::ProgramDeploymentRevocationDelivery>()
-            .operation_action::<CreatePersonalAccountMutationBinding, super::account_actions::PersonalAccountCreationDelivery>()
-            .operation_action::<CreateBusinessAccountMutationBinding, super::account_actions::BusinessAccountCreationDelivery>()
-            .operation_action::<GrantAccountAccessMutationBinding, super::account_actions::AccountAccessGrantDelivery>()
-            .operation_action::<RevokeAccountAccessMutationBinding, super::account_actions::AccountAccessRevocationDelivery>()
+            .action::<ProgramDeploymentRevocationBinding, super::deployment_actions::ProgramDeploymentRevocationDelivery>().finish_action()
+            .action::<CreatePersonalAccountMutationBinding, super::account_actions::PersonalAccountCreationDelivery>().finish_action()
+            .action::<CreateBusinessAccountMutationBinding, super::account_actions::BusinessAccountCreationDelivery>().finish_action()
+            .action::<GrantAccountAccessMutationBinding, super::account_actions::AccountAccessGrantDelivery>().finish_action()
+            .action::<RevokeAccountAccessMutationBinding, super::account_actions::AccountAccessRevocationDelivery>().finish_action()
             .finish(),
         payments
-            .operation_action::<RejectPaymentMutationBinding, super::payment_actions::PaymentRejectionDelivery>()
-            .operation_action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>()
+            .action::<RejectPaymentMutationBinding, super::payment_actions::PaymentRejectionDelivery>().finish_action()
+            .action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>().finish_action()
             .finish(),
         estate
-            .operation_action::<FreezeEstateAccountMutationBinding, super::estate_actions::EstateAccountFreezeDelivery>()
-            .operation_action::<OpenEstateCaseMutationBinding, super::estate_actions::EstateCaseOpeningDelivery>()
-            .operation_action::<RecognizeEstateExecutorMutationBinding, super::estate_actions::ExecutorRecognitionDelivery>()
-            .operation_action::<ReleaseEstateMutationBinding, super::estate_actions::EstateReleaseDelivery>()
-            .operation_action::<DisburseEstateMutationBinding, super::estate_actions::EstateDisbursementDelivery>()
-            .operation_action::<RetransmitEstateDeathNoticeMutationBinding, super::estate_actions::DeathNoticeRetransmissionDelivery>()
+            .action::<FreezeEstateAccountMutationBinding, super::estate_actions::EstateAccountFreezeDelivery>().finish_action()
+            .action::<OpenEstateCaseMutationBinding, super::estate_actions::EstateCaseOpeningDelivery>().finish_action()
+            .action::<RecognizeEstateExecutorMutationBinding, super::estate_actions::ExecutorRecognitionDelivery>().finish_action()
+            .action::<ReleaseEstateMutationBinding, super::estate_actions::EstateReleaseDelivery>().finish_action()
+            .action::<DisburseEstateMutationBinding, super::estate_actions::EstateDisbursementDelivery>().finish_action()
+            .action::<RetransmitEstateDeathNoticeMutationBinding, super::estate_actions::DeathNoticeRetransmissionDelivery>().finish_action()
             .operation::<RequestEstateEmergencyAccessOperation>()
             .operation::<ApproveEstateEmergencyAccessOperation>()
             .operation::<RevokeEstateEmergencyAccessOperation>()

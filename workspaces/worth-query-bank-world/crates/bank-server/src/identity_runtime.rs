@@ -1,4 +1,6 @@
 mod advancement;
+mod workflow_binding;
+pub use workflow_binding::BankIdentityRuntimeWorkflowBinding;
 use std::collections::BTreeSet;
 
 #[path = "identity_runtime/certification_controls.rs"]
@@ -70,20 +72,22 @@ impl BankAuthenticationConfiguration {
     }
 }
 
+type InstalledBankPrincipalBinding = WorthQueryInstalledPrincipalBinding<
+    BankSchema,
+    BankPrincipalBinding,
+    ExternalPrincipalMapping,
+    Principal,
+    BankPrincipalId,
+    BankPrincipalIdBinding,
+>;
+
 pub struct BankIdentityRuntime {
     runtime: WorthQueryWorkflowApplicationRuntime<
         BankSchema,
         ApprovedBusinessPaymentWorkflow,
         BankApplication,
     >,
-    binding: WorthQueryInstalledPrincipalBinding<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    >,
+    binding: InstalledBankPrincipalBinding,
     invariant_projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
     approval_authentication: BankApprovalAuthenticationOwner,
 }
