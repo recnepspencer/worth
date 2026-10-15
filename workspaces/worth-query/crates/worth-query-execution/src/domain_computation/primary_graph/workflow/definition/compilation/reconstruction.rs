@@ -286,3 +286,7 @@ fn denial(subject: &str) -> WorthQueryApplicationAttemptDenial {
         subject,
     )
 }
+
+#[cfg(test)]
+#[path = "reconstruction/start_provenance_tests.rs"]
+mod start_provenance_tests;

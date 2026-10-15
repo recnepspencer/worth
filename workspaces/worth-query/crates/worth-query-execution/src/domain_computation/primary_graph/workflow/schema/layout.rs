@@ -224,6 +224,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
     pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) branch_occurrence: AspectFieldLocator,
+    /// Immutable canonical revision of this occurrence's genuine start.
+    pub(in crate::domain_computation::primary_graph) started_program_revision: AspectFieldLocator,
+    /// Mutable execution revision; Carry may advance it.
     pub(in crate::domain_computation::primary_graph) program_revision: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) definition_content_identity:
         AspectFieldLocator,

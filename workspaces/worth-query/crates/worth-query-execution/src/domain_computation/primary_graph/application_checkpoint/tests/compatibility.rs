@@ -35,7 +35,7 @@ fn unsupported_checkpoint_header_refuses_before_malformed_current_body() {
 
 #[test]
 fn unsupported_current_workflow_marker_refuses_before_native_bytes() {
-    for (facts, instances) in [(1u16, 3u16), (2, 2), (3, 3), (2, 4)] {
+    for (facts, instances) in [(1u16, 4u16), (2, 2), (3, 4), (2, 3), (2, 5)] {
         let mut body = checkpoint_body(0, Vec::new());
         body[2..4].copy_from_slice(&facts.to_be_bytes());
         body[4..6].copy_from_slice(&instances.to_be_bytes());

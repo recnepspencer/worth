@@ -87,6 +87,7 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
             return Err(unreadable);
         }
         record.text(execution, &layout.instance.program_revision)?;
+        record.required_symbol(execution, &layout.instance.started_program_revision)?;
         let owner_custody = record.optional_text(execution, &layout.instance.owner_custody)?;
         let definition =
             truth.single_target(execution, instance, layout.instance_definition_relation)?;

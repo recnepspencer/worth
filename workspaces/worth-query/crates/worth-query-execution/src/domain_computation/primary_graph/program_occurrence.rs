@@ -171,6 +171,16 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .and_then(|position| self.roster.entries().get(position))
     }
 
+    /// Resolves immutable native provenance to an already admitted revision.
+    pub(in crate::domain_computation::primary_graph) fn rostered_for_revision_text(
+        &self,
+        text: &str,
+    ) -> Option<&WorthQueryProgramSupportEntry> {
+        self.renderings.iter().position(|value| matches!(value,
+            AspectValue::String(worth_foundational::facade::InternedString::Raw(value)) if value == text))
+            .and_then(|position| self.roster.entries().get(position))
+    }
+
     pub(in crate::domain_computation::primary_graph) fn rostered_for_recovery(
         &self,
         revision: &ApplicationProgramRevision,

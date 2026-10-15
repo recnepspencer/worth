@@ -4,6 +4,7 @@ mod adoption_inventory;
 mod facts;
 mod migration;
 mod progression;
+pub(in crate::domain_computation::primary_graph) mod start_provenance;
 mod state;
 mod transition;
 

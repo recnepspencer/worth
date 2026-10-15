@@ -36,7 +36,7 @@ pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCaptur
 const MAGIC: &[u8; 8] = b"WQAPCP01";
 const FORMAT_VERSION: u16 = 10;
 const WORKFLOW_FACTS: u16 = 2;
-const WORKFLOW_INSTANCES: u16 = 3;
+const WORKFLOW_INSTANCES: u16 = 4;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 2 + 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
