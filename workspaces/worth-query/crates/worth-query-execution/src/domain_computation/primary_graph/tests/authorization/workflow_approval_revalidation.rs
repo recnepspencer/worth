@@ -11,11 +11,8 @@ use super::capability_delegation_mutation::{
 };
 use super::capability_delegation_progression::revoke_parent;
 use super::capability_progression::{admitted_capability_operation, time, Admission};
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::authorization::{
-    decode_workflow_approval_support, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryRetainedCapabilityRequest, WorthQueryWorkflowApprovalAuthorityBasis,
-};
 use worth_query_installation::facade::ApplicationScalarValueBinding;
 
 #[path = "workflow_approval_revalidation/native.rs"]
@@ -26,6 +23,7 @@ mod support;
 #[path = "workflow_approval_revalidation/field_text.rs"]
 mod field_text;
 
+#[path = "workflow_approval_revalidation/durable_basis.rs"]
 mod durable_basis;
 use durable_basis::{
     durable_approval_basis, durable_approval_basis_with_dependency_snapshot,

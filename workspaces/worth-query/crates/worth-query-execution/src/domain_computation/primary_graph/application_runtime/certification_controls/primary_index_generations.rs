@@ -30,7 +30,15 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Evicts only the named field's rebuildable equality generations, not authoritative facts.
     #[doc(hidden)]
-    pub fn release_equality_index_generations_for_test<E, A, F, V, W, Q, U>(
+    pub fn release_equality_index_generations_for_test<
+        E,
+        A,
+        F,
+        V,
+        W,
+        Q,
+        U: worth_query_installation::facade::ApplicationFieldUnit,
+    >(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         field: worth_query_installation::facade::ApplicationFieldRef<Schema, E, A, F, V, W, Q, U>,
@@ -55,7 +63,15 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     }
     /// Observes exact selected generation presence without preparing or reading the index.
     #[doc(hidden)]
-    pub fn has_equality_index_generation_for_test<E, A, F, V, W, Q, U>(
+    pub fn has_equality_index_generation_for_test<
+        E,
+        A,
+        F,
+        V,
+        W,
+        Q,
+        U: worth_query_installation::facade::ApplicationFieldUnit,
+    >(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,

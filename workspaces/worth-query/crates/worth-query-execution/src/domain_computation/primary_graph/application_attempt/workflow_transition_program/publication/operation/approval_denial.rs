@@ -66,6 +66,21 @@ pub(super) fn denial(
             AuthorizationRefusal::CapabilityAuthorizationMissing,
         )
         | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::WorkflowActorContextRequired,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::WorkflowActorAbsent,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::WorkflowActorComparisonMismatch,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::WorkflowActorSourceInvalid,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::WorkflowActorEvidenceUnavailable,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
             AuthorizationRefusal::PurposeMismatch,
         )
         | WorthQueryOperationAuthorizationDenialKind::Refused(
@@ -186,5 +201,35 @@ pub(super) fn denial(
             AuthorizationRefusal::PermissionDenied,
         ) => WorthQueryApplicationAttemptDenialKind::WorkflowApprovalAuthorityDenied,
     };
-    WorthQueryApplicationAttemptDenial::new(kind, denial.to_string())
+    WorthQueryApplicationAttemptDenial::authorization_denied(kind, denial)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn approval_readmission_preserves_native_actor_source_cause() {
+        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
+        for cause in [
+            Native::Cancelled,
+            Native::DeclaredMemoryExhausted {
+                requested: 37,
+                admitted: 0,
+            },
+        ] {
+            let original = WorthQueryOperationAuthorizationDenial::workflow_actor_native(
+                WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "actor source"),
+            );
+            let expected = original.clone();
+            let mapped = denial(original);
+            assert_eq!(mapped.request_authority(), Some(&expected));
+            let source = mapped
+                .request_authority()
+                .unwrap()
+                .workflow_actor_source_denial()
+                .unwrap();
+            assert_eq!(source.relational_execution_cause(), Some(cause));
+            assert!(std::error::Error::source(&mapped).is_some());
+        }
+    }
 }

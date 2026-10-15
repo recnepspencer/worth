@@ -1,5 +1,9 @@
 //! Existing durable approval fixture transport under its real host execution.
-use super::*;
+use super::Admission;
+use crate::domain_computation::authorization::{
+    decode_lineage, decode_principal, decode_workflow_approval_support,
+    WorthQueryRetainedCapabilityRequest, WorthQueryWorkflowApprovalAuthorityBasis,
+};
 
 pub(super) fn durable_approval_basis(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -39,7 +43,7 @@ pub(super) fn durable_approval_basis_with_dependency_snapshot(
             .unwrap(),
     )
     .unwrap();
-    let principal = crate::domain_computation::authorization::workflow_approval_authority::decoding::decode_principal(
+    let principal = decode_principal(
         &execution,
         &admission
             .workflow_approval_principal_snapshot(&execution)
@@ -51,8 +55,8 @@ pub(super) fn durable_approval_basis_with_dependency_snapshot(
         .workflow_approval_lineage_snapshot(&execution)
         .unwrap()
         .unwrap();
-    let lineage = crate::domain_computation::authorization::workflow_approval_authority::decoding::decode_lineage(
-        &execution, replacement_lineage.unwrap_or(&original_lineage)).unwrap();
+    let lineage =
+        decode_lineage(&execution, replacement_lineage.unwrap_or(&original_lineage)).unwrap();
     let original_support = admission
         .workflow_approval_support_snapshot(&execution)
         .unwrap()

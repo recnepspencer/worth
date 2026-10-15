@@ -101,8 +101,13 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         &layout.approval.authorization_principal,
         facts,
         |principal| {
-            crate::domain_computation::authorization::workflow_approval_authority::decoding::decode_principal(execution, principal)
-        .map_err(|cause| crate::domain_computation::primary_graph::workflow::actor::decoded_denial(cause, "workflow approval principal evidence is invalid"))
+            crate::domain_computation::authorization::decode_principal(execution, principal)
+                .map_err(|cause| {
+                    crate::domain_computation::primary_graph::workflow::actor::decoded_denial(
+                        cause,
+                        "workflow approval principal evidence is invalid",
+                    )
+                })
         },
     )?;
     let principal = principal_owner.value();

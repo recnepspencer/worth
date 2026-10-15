@@ -8,7 +8,18 @@ impl WorthQueryTemporalReentryDenial {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn from_authorization(
         denial: Failure,
     ) -> Self {
-        Self::authorization_kind(denial.kind(), Terminal::Authorization)
+        // Preserve the native actor-selection/storage cause on both stop and refusal.
+        if denial.workflow_actor_source_denial().is_some() {
+            return match denial.kind() {
+                Kind::Stopped(Err(_)) => Self::ControlStopped(
+                    super::super::WorthQueryTemporalControlStop::Authorization(denial),
+                ),
+                Kind::Stopped(Ok(_)) | Kind::Refused(_) => {
+                    Self::Terminal(Terminal::Authorization(denial))
+                }
+            };
+        }
+        Self::authorization_kind(denial.kind(), |_| Terminal::Authorization(denial))
     }
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn authorization_kind(
         kind: Kind,
@@ -47,6 +58,11 @@ impl WorthQueryTemporalReentryDenial {
             | Kind::Refused(AuthorizationRefusal::CapabilityProjectionRejected)
             | Kind::Refused(AuthorizationRefusal::CapabilityGrantMissing)
             | Kind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
+            | Kind::Refused(AuthorizationRefusal::WorkflowActorContextRequired)
+            | Kind::Refused(AuthorizationRefusal::WorkflowActorAbsent)
+            | Kind::Refused(AuthorizationRefusal::WorkflowActorComparisonMismatch)
+            | Kind::Refused(AuthorizationRefusal::WorkflowActorSourceInvalid)
+            | Kind::Refused(AuthorizationRefusal::WorkflowActorEvidenceUnavailable)
             | Kind::Refused(AuthorizationRefusal::PurposeMismatch)
             | Kind::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched)
             | Kind::Refused(AuthorizationRefusal::ConflictRuleMatched)

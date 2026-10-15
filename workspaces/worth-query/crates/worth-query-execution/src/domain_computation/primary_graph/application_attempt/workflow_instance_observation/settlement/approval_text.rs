@@ -73,16 +73,13 @@ pub(super) fn decode<Output>(
 pub(super) fn decode_lineage(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     lineage: &str,
-) -> Result<crate::domain_computation::authorization::workflow_approval_authority::decoding::DecodedApprovalLineage, Denial>{
+) -> Result<crate::domain_computation::authorization::DecodedApprovalLineage, Denial> {
     if lineage.len() > crate::domain_computation::authorization::MAXIMUM_PORTABLE_BYTES {
         return Err(denial(
             "workflow approval capability lineage exceeds its bound",
         ));
     }
-    crate::domain_computation::authorization::workflow_approval_authority::decoding::decode_lineage(
-        execution, lineage,
-    )
-    .map_err(|cause| {
+    crate::domain_computation::authorization::decode_lineage(execution, lineage).map_err(|cause| {
         crate::domain_computation::primary_graph::workflow::actor::decoded_denial(
             cause,
             "workflow approval capability lineage is invalid",

@@ -70,11 +70,25 @@ pub(super) fn authorization(
     if kind == Authorization::Refused(AuthorizationRefusal::SnapshotIdentityExhausted) {
         return snapshot_identity_reconstruction_denial();
     }
-    match Reentry::authorization_kind(kind, crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure::Authorization) {
-  Reentry::ExecutionStopped(kind) => read_stopped(Ok(kind)),
-  Reentry::ControlStopped(Control::Cancelled) => read_stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)),
-  Reentry::ControlStopped(Control::TimedOut) => read_stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)),
-  Reentry::ActiveSnapshotCapacityExhausted { maximum_active_snapshots } => snapshot_capacity_reconstruction_denial(maximum_active_snapshots), Reentry::RetentionCapacityExhausted => retention_capacity_reconstruction_denial(),
-  Reentry::Terminal(_) | Reentry::Retryable(_) => reconstruction_denial(WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionQuery, detail),
- }
+    match Reentry::authorization_kind(kind, |kind| {
+        crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure::Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(kind, detail))
+    }) {
+        Reentry::ExecutionStopped(kind) => read_stopped(Ok(kind)),
+        Reentry::ControlStopped(Control::Cancelled) => read_stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )),
+        Reentry::ControlStopped(Control::TimedOut) => read_stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )),
+        Reentry::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        } => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
+        Reentry::RetentionCapacityExhausted => retention_capacity_reconstruction_denial(),
+        Reentry::ControlStopped(Control::Authorization(_))
+        | Reentry::Terminal(_)
+        | Reentry::Retryable(_) => reconstruction_denial(
+            WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionQuery,
+            detail,
+        ),
+    }
 }

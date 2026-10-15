@@ -158,12 +158,21 @@ fn cause(
         },
         Decision::OperationControlStopped(_, Control::Cancelled) => Some(Cause::Cancelled),
         Decision::OperationControlStopped(_, Control::TimedOut) => Some(Cause::TimedOut),
+        Decision::OperationControlStopped(_, Control::Authorization(denial)) => {
+            Some(authorization_cause(denial))
+        }
+        Decision::OperationTerminalFailure(
+            _,
+            Terminal::Admission(Admission::Authorization(denial)),
+        ) if matches!(denial.kind(), AuthorizationKind::Stopped(_)) => {
+            Some(authorization_cause(denial))
+        }
         Decision::OperationTerminalFailure(
             _,
             Terminal::ApplicationCommit(CommitKind::RetentionIdentityExhausted),
         ) => Some(Cause::RetentionIdentityExhausted),
         Decision::OperationTerminalFailure(_, Terminal::Admission(failure))
-            if admission_retention_identity_exhausted(*failure) =>
+            if admission_retention_identity_exhausted(failure) =>
         {
             Some(Cause::RetentionIdentityExhausted)
         }
@@ -172,7 +181,7 @@ fn cause(
             Terminal::ApplicationCommit(CommitKind::SnapshotIdentityExhausted),
         ) => Some(Cause::SnapshotIdentityExhausted),
         Decision::OperationTerminalFailure(_, Terminal::Admission(failure))
-            if admission_snapshot_identity_exhausted(*failure) =>
+            if admission_snapshot_identity_exhausted(failure) =>
         {
             Some(Cause::SnapshotIdentityExhausted)
         }
@@ -223,7 +232,7 @@ fn provider_commit_cause(kind: graph::WorthQueryApplicationCommitDeferredKind) -
 }
 
 fn admission_retention_identity_exhausted(
-    failure: super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
+    failure: &super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
 ) -> bool {
     use reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
     match failure {
@@ -235,9 +244,9 @@ fn admission_retention_identity_exhausted(
             kind,
             graph::WorthQueryEntityResolutionRefusalKind::RetentionIdentityExhausted
         ),
-        Admission::Authorization(kind) => {
+        Admission::Authorization(denial) => {
             matches!(
-                kind,
+                denial.kind(),
                 AuthorizationKind::Refused(AuthorizationRefusal::RetentionIdentityExhausted)
             )
         }
@@ -254,7 +263,7 @@ fn admission_retention_identity_exhausted(
 }
 
 fn admission_snapshot_identity_exhausted(
-    failure: super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
+    failure: &super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
 ) -> bool {
     use reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
     match failure {
@@ -266,9 +275,9 @@ fn admission_snapshot_identity_exhausted(
             kind,
             graph::WorthQueryEntityResolutionRefusalKind::SnapshotIdentityExhausted
         ),
-        Admission::Authorization(kind) => {
+        Admission::Authorization(denial) => {
             matches!(
-                kind,
+                denial.kind(),
                 AuthorizationKind::Refused(AuthorizationRefusal::SnapshotIdentityExhausted)
             )
         }
@@ -338,5 +347,18 @@ fn terminal(
         | WorthQueryRetainedConditionalDecision::InterruptedDuringReentry => {
             WorthQueryConditionalExecutionTerminal::Failed
         }
+    }
+}
+
+fn authorization_cause(denial: &graph::WorthQueryOperationAuthorizationDenial) -> Cause {
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    match denial.kind() {
+        AuthorizationKind::Stopped(Err(Control::Cancelled)) => Cause::Cancelled,
+        AuthorizationKind::Stopped(Err(Control::TimedOut)) => Cause::TimedOut,
+        AuthorizationKind::Stopped(Ok(kind)) => Cause::ApplicationExecutionDenied {
+            stage: graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+            cause: Ok(kind),
+        },
+        AuthorizationKind::Refused(_) => Cause::TerminalFailure,
     }
 }
