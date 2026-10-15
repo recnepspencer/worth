@@ -15,8 +15,11 @@ use worth_execution::{CancellationToken, ExecutionRequest, ExecutionResourceLeas
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::{runtime::RelationalRuntime, transactions::*};
 
+#[path = "start_provenance_tests/corruption.rs"]
 mod corruption;
+#[path = "start_provenance_tests/definition_fixture.rs"]
 mod definition_fixture;
+#[path = "start_provenance_tests/fixture.rs"]
 mod fixture;
 use fixture::*;
 

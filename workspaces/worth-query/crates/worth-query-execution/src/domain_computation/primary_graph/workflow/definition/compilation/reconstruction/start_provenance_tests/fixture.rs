@@ -15,7 +15,7 @@ use worth_relational::facade::{
     symbols::ClientKey,
 };
 
-pub(super) fn payer() -> ExecutionResourceLease {
+pub(super) fn payer() -> ExecutionResourceLease<'static> {
     ExecutionResourceLease::serial(LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,

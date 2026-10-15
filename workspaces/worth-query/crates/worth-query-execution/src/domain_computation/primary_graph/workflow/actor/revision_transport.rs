@@ -1,6 +1,6 @@
 //! Convert only native observations at their original immutable basis.
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAdjacencyDirection as Direction,
+    application_attempt::WorthQueryApplicationAdjacencyDirection as Direction,
     WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
     WorthQueryApplicationObservedFact as Fact, WorthQueryApplicationSourceAdjacencyEndpoints,
 };

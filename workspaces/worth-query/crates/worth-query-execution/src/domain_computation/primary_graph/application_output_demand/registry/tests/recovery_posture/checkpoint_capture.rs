@@ -61,8 +61,8 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let accepted = registry.accepted_checkpoint_identities();
 
     assert_eq!(accepted.len(), 2);
-    assert_eq!(accepted[0].producer, "a-producer");
-    assert_eq!(accepted[1].producer, "z-producer");
+    assert_eq!(accepted[0].producer.as_str(), "a-producer");
+    assert_eq!(accepted[1].producer.as_str(), "z-producer");
     assert_eq!(accepted[0].source, a_source);
     assert_eq!(accepted[1].source, z_source);
 }

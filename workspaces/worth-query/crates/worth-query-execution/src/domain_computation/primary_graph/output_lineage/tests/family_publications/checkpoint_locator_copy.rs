@@ -120,7 +120,7 @@ fn accepted_native_head_skips_only_the_discarded_full_locator_copy() {
     let priors = select(&court, &mut admitted);
     let before = (admitted.charged_work(), admitted.charged_bytes());
     let mut accepted = expected(&court);
-    accepted.producer_facts = Some(vec![7, 8, 9]);
+    accepted.producer_facts = Some(Arc::new(vec![7, 8, 9]));
     accepted.producer_fact_wire_version = 4;
     let merged = merge_native_checkpoint_priors(
         &court.lineage,
@@ -173,8 +173,8 @@ fn absent_or_rejected_accepted_rows_preserve_the_complete_native_locator() {
             1 => binding = TypeId::of::<Preserve>(),
             2 => candidate.idempotency_key = [3; 32],
             3 => candidate.source = [12; 32],
-            4 => candidate.producer = "other-producer".into(),
-            5 => candidate.roles[1].entity = entity(4),
+            4 => candidate.producer = Arc::new("other-producer".to_owned()),
+            5 => Arc::make_mut(&mut candidate.roles)[1].entity = entity(4),
             _ => unreachable!(),
         }
         let rows = if drift == 0 {
