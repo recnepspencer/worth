@@ -64,6 +64,34 @@ impl WorthQueryAuthorizationSelectors {
                     }
                 }
                 ApplicationSchemaMember::ApplicationCapability { contract } => {
+                    if let Some(revocation) = contract.delegation().revocation() {
+                        if let Some(selected) = fields.get_mut(revocation.operation().operation()) {
+                            // Installation derives these native reads; applications
+                            // are forbidden to author OperationDecisionRead here.
+                            for target in worth_query_declaration::facade::application_capability::application_capability_revocation_decision_reads(contract).into_iter().flatten() {
+                                if let ApplicationOperationDecisionReadTarget::Field {entity,aspect,field}=target {
+                                    insert(selected,&entity,&aspect,&field);
+                                }
+                            }
+                            // The installed target relation binds the native resource
+                            // entity. Request selectors may use its declared equality
+                            // fields; no application-authored revocation read is needed.
+                            for member in schema.members() {
+                                if let ApplicationSchemaMember::Field {
+                                    entity,
+                                    aspect,
+                                    field,
+                                    equality_queryable: true,
+                                    ..
+                                } = member
+                                {
+                                    if entity == contract.target().resource().to() {
+                                        insert(selected, entity, aspect, field);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     if let Some(elevation) = contract.elevation().definition() {
                         let field = elevation.identity();
                         insert(
