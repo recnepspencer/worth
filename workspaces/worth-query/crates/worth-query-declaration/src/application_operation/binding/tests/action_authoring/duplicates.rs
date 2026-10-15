@@ -1,22 +1,76 @@
 //! Portable resolution identity and native type identity share one validator.
 use super::*;
 
-crate::worth_query_mutation_binding!(
-    SameIdentityBinding for RenameInput, schema MutationSchema,
-    identity "worth.query.test.rename-binding.v1",
-    input RenameInputBinding, operation RenameOperation, result RenameResultBinding,
-    idempotency u64, identity "worth.query.test.rename-idempotency.v1",
-    decision RenameDecision, denial RenameDenialBinding,
-    handler identity "worth.query.test.rename-handler.v1",
-    outputs RenameOutputs,
-    principal PrincipalBinding, mapping ExternalMapping, principal_entity Account,
-        principal_identity u64, identity_binding crate::application_schema::U64ApplicationValueBinding,
-    scope Account, AccountIdentity, AccountIdField, u64,
-        crate::application_schema::ReadOnly, crate::application_schema::NoApplicationUnit,
-    field AccountIdField::reference(), value rename_scope,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 1,
-    resources retained_representation_bytes 128
-);
+// This declaration shares valid domain contracts, not another intent impl.
+// Only its Rust binding type differs; the portable resolution key collides.
+struct SameIdentityBinding;
+
+impl ApplicationMutationBinding<MutationSchema> for SameIdentityBinding {
+    type Input = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Input;
+    type InputBinding =
+        <RenameBinding as ApplicationMutationBinding<MutationSchema>>::InputBinding;
+    type Result = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Result;
+    type ResultBinding =
+        <RenameBinding as ApplicationMutationBinding<MutationSchema>>::ResultBinding;
+    type IdempotencyKey =
+        <RenameBinding as ApplicationMutationBinding<MutationSchema>>::IdempotencyKey;
+    type Operation = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Operation;
+    type Decision = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Decision;
+    type Denial = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Denial;
+    type DenialBinding =
+        <RenameBinding as ApplicationMutationBinding<MutationSchema>>::DenialBinding;
+    type Output = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Output;
+    type ScopeBinding =
+        <RenameBinding as ApplicationMutationBinding<MutationSchema>>::ScopeBinding;
+    type PrincipalBinding =
+        <RenameBinding as ApplicationMutationBinding<MutationSchema>>::PrincipalBinding;
+    type Mapping = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Mapping;
+    type Principal = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Principal;
+    type PrincipalIdentity =
+        <RenameBinding as ApplicationMutationBinding<MutationSchema>>::PrincipalIdentity;
+    type PrincipalIdentityBinding =
+        <RenameBinding as ApplicationMutationBinding<MutationSchema>>::PrincipalIdentityBinding;
+    type SourceExpectation =
+        <RenameBinding as ApplicationMutationBinding<MutationSchema>>::SourceExpectation;
+
+    const IDENTITY: &'static str = RenameBinding::IDENTITY;
+    const HANDLER_IDENTITY: &'static str = RenameBinding::HANDLER_IDENTITY;
+    const IDEMPOTENCY_IDENTITY: &'static str = RenameBinding::IDEMPOTENCY_IDENTITY;
+    const CANDIDATES: crate::application_operation::ApplicationCandidateRequirements =
+        RenameBinding::CANDIDATES;
+
+    fn scope_field() -> crate::application_schema::ApplicationFieldRef<
+        MutationSchema,
+        Account,
+        AccountIdentity,
+        AccountIdField,
+        u64,
+        crate::application_schema::ReadOnly,
+        crate::application_schema::EqualityPredicate,
+        crate::application_schema::NoApplicationUnit,
+    > {
+        RenameBinding::scope_field()
+    }
+
+    fn principal_binding() -> crate::application_schema::ApplicationPrincipalBindingRef<
+        MutationSchema,
+        Self::PrincipalBinding,
+        Self::Mapping,
+        Self::Principal,
+        Self::PrincipalIdentity,
+        Self::PrincipalIdentityBinding,
+    > {
+        RenameBinding::principal_binding()
+    }
+}
+
+impl crate::application_operation::ApplicationMutationAdmissionBinding<MutationSchema>
+    for SameIdentityBinding
+{
+    type Admission = <RenameBinding as crate::application_operation::ApplicationMutationAdmissionBinding<
+        MutationSchema,
+    >>::Admission;
+}
 
 struct OtherOccurrence;
 impl ApplicationCompositionInstance for OtherOccurrence {
@@ -55,6 +109,12 @@ impl<const CASE: u8> ApplicationProgramDefinition<MutationSchema> for DuplicateP
                     .finish_action()
                     .finish(),
             ],
+            3 => vec![
+                ApplicationFeatureSpec::root::<MutationSchema, Source>()
+                    .native_action::<SameIdentityBinding>()
+                    .finish_action()
+                    .finish(),
+            ],
             _ => unreachable!(),
         }
     }
@@ -66,6 +126,10 @@ fn duplicate_action_refuses_both_native_type_and_portable_resolution_collisions(
         TypeId::of::<RenameBinding>(),
         TypeId::of::<SameIdentityBinding>()
     );
+    assert_eq!(RenameBinding::IDENTITY, SameIdentityBinding::IDENTITY);
+    ApplicationProgramAuthoring::<MutationSchema, DuplicateProgram<3>>::begin()
+        .validated_program()
+        .expect("the second binding is valid without a colliding action");
     for denial in [
         ApplicationProgramAuthoring::<MutationSchema, DuplicateProgram<0>>::begin()
             .validated_program()
