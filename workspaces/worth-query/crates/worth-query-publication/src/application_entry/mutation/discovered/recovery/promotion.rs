@@ -47,6 +47,8 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -106,7 +108,7 @@ where
         }
     }
 
-    fn promote_recovered_discovered_outputs_in_advancement<Program, Root>(
+    pub(in crate::application_entry) fn promote_recovered_discovered_outputs_in_advancement<Program, Root>(
         mut self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryUnpublishedDiscoveredApplicationMutation<Schema, Intent, Program, Root>,
@@ -235,7 +237,7 @@ where
         let prepared = self.authorize_discovered_source::<Program, Root>(
             phase,
             application,
-            &recovery.source,
+            Some(&recovery.source),
         )?;
         let read = self.read_recovery_idempotency(phase, &prepared)?;
         self.check_recovery_liveness()?;

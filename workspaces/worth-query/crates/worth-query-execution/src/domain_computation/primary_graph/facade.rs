@@ -119,6 +119,7 @@ pub use super::application_output_demand::{
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
 };
 pub use super::application_output_demand::{
+    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
     WorthQueryOutputReadinessDeliveryEvidence, WorthQueryOutputSettlementPosture,
 };

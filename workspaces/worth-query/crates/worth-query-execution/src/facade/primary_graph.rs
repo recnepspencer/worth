@@ -361,3 +361,7 @@ pub use crate::domain_computation::primary_graph::{
 pub use crate::domain_computation::WorthQueryManagedRunCleanupFailureKind;
 
 pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
+};

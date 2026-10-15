@@ -23,7 +23,11 @@ use std::cmp::Ordering;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod owned_affinity;
+mod reservation_control;
 mod retention;
+pub use reservation_control::{
+    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
+};
 mod undelivered_root;
 
 impl WorthQueryOutputDemandRegistry {

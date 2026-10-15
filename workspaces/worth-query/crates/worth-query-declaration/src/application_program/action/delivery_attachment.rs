@@ -28,12 +28,7 @@ impl ApplicationActionDeclaration {
             Binding,
             Delivery,
         >>::declaration());
-        if self
-            .delivery
-            .as_ref()
-            .and_then(|d| d.fixed_output())
-            .is_some()
-        {
+        if self.delivery.as_ref().and_then(|d| d.output()).is_some() {
             self.mark_required_output_source();
         }
     }

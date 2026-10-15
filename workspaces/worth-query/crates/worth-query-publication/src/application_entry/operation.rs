@@ -14,11 +14,15 @@ pub use source_only::{
 };
 mod construction;
 mod projection_installation;
-pub use projection_installation::WorthQueryFixedProjectionInstallation;
+pub use projection_installation::WorthQueryOutputProjectionInstallation;
 mod batch_delivery;
 mod current_delivery;
 mod delivery_policy;
 mod descriptor;
+#[cfg(test)]
+mod discovered_delivery_handoff_contract;
+#[cfg(test)]
+mod discovered_handoff_contract;
 mod fixed;
 mod fixed_advance;
 mod fixed_outputs;

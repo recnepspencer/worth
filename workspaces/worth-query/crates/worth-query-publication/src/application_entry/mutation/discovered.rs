@@ -12,9 +12,13 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::{WorthQueryApplicationMutationOutcome, WorthQueryRequiredOutputPreparationDenial};
 
+mod intent_handoff;
 mod outputs;
 mod recovered;
+mod retention_failure;
+pub use retention_failure::WorthQueryDiscoveredOutputRetentionFailure;
 mod recovery;
+pub(in crate::application_entry) use recovery::AdmittedDiscoveredRecoveryDenial;
 
 mod selected;
 mod start;
@@ -68,19 +72,15 @@ where
         WorthQueryUnpublishedDiscoveredApplicationMutation<Schema, Intent, Program, Root>,
     ),
     Performed(WorthQueryPerformedDiscoveredApplicationMutation<Schema, Intent, Program, Root>),
-    RequiredOutputDenied {
-        receipt: WorthQueryApplicationCommitReceipt,
-        result: MutationResult<Schema, Intent>,
-        denial: WorthQueryRequiredOutputPreparationDenial,
-        custody: Option<worth_query_execution::facade::primary_graph::WorthQueryRequiredOutputSourcePreparationFailure>,
-        discovery: Discovery<Schema, Root>,
-    },
+    RequiredOutputDenied(WorthQueryDiscoveredOutputRetentionFailure<Schema, Intent, Program, Root>),
     /// Performed or unresolved native outcome whose recovery is not supported here.
-    Blocked(super::performed_source::WorthQueryBlockedProgramSource<
-        <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-        MutationResult<Schema, Intent>,
-        Discovery<Schema, Root>,
-    >),
+    Blocked(
+        super::performed_source::WorthQueryBlockedProgramSource<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+            MutationResult<Schema, Intent>,
+            Discovery<Schema, Root>,
+        >,
+    ),
     NotPerformed(
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -227,13 +227,16 @@ where
     };
     match source.into_custody() {
         Err((denial, custody)) => {
-            WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied {
-                receipt,
-                result,
-                denial,
-                custody,
-                discovery,
-            }
+            WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied(
+                WorthQueryDiscoveredOutputRetentionFailure {
+                    receipt,
+                    result,
+                    denial,
+                    custody,
+                    discovery,
+                    program: std::marker::PhantomData,
+                },
+            )
         }
         Ok((prepared, retained_source)) => {
             WorthQueryApplicationDiscoveredMutationOutcome::Performed(

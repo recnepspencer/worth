@@ -91,6 +91,31 @@ proves refusal and fresh original-branch continuation. The
 uses one binding at two canonical instances with distinct installed delivery
 contracts; a caller cannot substitute one instance's delivery at the other.
 
+## Declared output delivery shapes
+
+`ApplicationOutputProjection` is the closed vocabulary for an installed output
+projection: `ApplicationNoProjection`, `ApplicationQueryProjection<Read>`, or
+`ApplicationQueryBatchProjection<Read, N>`. The batch has one query binding and
+an exact ordered selector count; an empty batch is rejected during authoring.
+Fixed delivery keeps its existing canonical encoding.
+
+A discovered declaration uses `ApplicationDiscoveredActionDelivery` and
+`ApplicationDiscoveredDeliveryMode<Root, Projection>`, with a genuine
+`ApplicationDiscoveredOutputRoot` from the program's actual output inventory.
+Attach it using `operation_action::<Binding, Delivery>()` at the same composition
+instance and source feature as that root. `ApplicationDiscoveredQueryDelivery`
+and `ApplicationDiscoveredBatchDelivery` bind selectors that borrow the original
+mutation input. Installation resolves the exact action occurrence and concrete
+delivery implementation; reusing its string identity does not replace its
+selector. Runtime type stamps are excluded from canonical meaning.
+
+The [nested Planar declaration](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_program/discovered_contracts.rs)
+shows a query, two-selector batch and explicit no-projection declaration against
+one real discovered root. These are declaration and installation contracts.
+They do not yet provide an ordinary discovered `retain_operation` factory or
+replace the current native discovered lifecycle. Fixed and SourceOnly owning
+entry points below retain their existing behavior.
+
 ## Owning fixed and source-only actions
 
 Install a program and declare the exact typed action occurrence and its delivery.

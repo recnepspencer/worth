@@ -1,20 +1,28 @@
+mod output_delivery;
+pub use output_delivery::ApplicationOutputActionDeliveryDeclaration;
+mod discovered_delivery;
+pub use discovered_delivery::{
+    ApplicationDiscoveredActionDelivery, ApplicationDiscoveredQueryDelivery,
+};
+mod discovered_batch_delivery;
+pub use discovered_batch_delivery::ApplicationDiscoveredBatchDelivery;
 mod batch_delivery;
 mod delivery;
 pub use batch_delivery::ApplicationFixedBatchDelivery;
 mod projection;
 pub use projection::{
-    ApplicationFixedProjection, ApplicationNoProjection, ApplicationQueryBatchProjection,
+    ApplicationNoProjection, ApplicationOutputProjection, ApplicationQueryBatchProjection,
     ApplicationQueryProjection,
 };
 mod delivery_attachment;
 mod delivery_contract;
 mod reference;
-pub use delivery::{
-    ApplicationFixedActionDelivery, ApplicationFixedActionDeliveryDeclaration,
-    ApplicationFixedQueryDelivery,
-};
+pub use delivery::{ApplicationFixedActionDelivery, ApplicationFixedQueryDelivery};
 pub use delivery_contract::*;
-pub use reference::{ApplicationAction, ApplicationActionReference, ApplicationFixedAction};
+pub use reference::{
+    ApplicationAction, ApplicationActionReference, ApplicationDiscoveredAction,
+    ApplicationFixedAction,
+};
 use std::any::TypeId;
 use std::marker::PhantomData;
 

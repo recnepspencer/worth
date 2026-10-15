@@ -83,6 +83,11 @@ pub struct WorthQueryRequiredOutputSourcePreparationFailure {
 }
 
 impl WorthQueryRequiredOutputSourcePreparationFailure {
+    /// Both actual one-shot native delivery parts remain available for promotion.
+    pub fn has_original_delivery(&self) -> bool {
+        self.carrier.has_original_delivery()
+    }
+
     pub fn receipt(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt {

@@ -32,6 +32,8 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -43,7 +45,7 @@ where
     /// Refusal and no effect leave its exact partial unchanged. A performed
     /// result retains every read/publication/cleanup result for promotion.
     pub fn recover_unpublished_discovered_in_program<Program, Root>(
-        mut self,
+        self,
         recovery: &mut WorthQueryUnpublishedDiscoveredApplicationMutation<
             Schema,
             Intent,
@@ -61,25 +63,44 @@ where
     {
         let runtime = self.request.application;
         let scope = self.request.scope.clone();
-        runtime
-            .with_application_advancement(&scope, |phase| {
+        runtime.with_application_advancement(&scope, |phase| {
+            self.recover_unpublished_discovered_in_program_in_advancement(&phase, recovery, application)
+        }).map_err(WorthQueryApplicationRecoveryRequestDenial::advancement)?
+    }
+
+    pub(in crate::application_entry) fn recover_unpublished_discovered_in_program_in_advancement<Program, Root>(
+        mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        recovery: &mut WorthQueryUnpublishedDiscoveredApplicationMutation<
+            Schema,
+            Intent,
+            Program,
+            Root,
+        >,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<WorthQueryDiscoveredRecoveryProgress, WorthQueryApplicationRecoveryRequestDenial>
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Program::Outputs: ApplicationProgramOutputsShape<Schema>,
+        Root: ApplicationOutputGraphShape<Schema> + ApplicationDiscoveredOutputRoot,
+        RootConnection<Schema, Root>:
+            WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
+    {
                 let prepared = self.authorize_discovered_source::<Program, Root>(
-                    &phase,
+                    phase,
                     application,
-                    &recovery.source,
+                    Some(&recovery.source),
                 )?;
                 recovery
                     .phase
                     .advance(
-                        &phase,
+                        phase,
                         self.request.application,
                         &prepared.admission,
                         prepared.idempotency,
                         &mut recovery.prior_cleanup,
                     )
                     .map_err(WorthQueryApplicationRecoveryRequestDenial::Recovery)
-            })
-            .map_err(WorthQueryApplicationRecoveryRequestDenial::advancement)?
     }
 }
 

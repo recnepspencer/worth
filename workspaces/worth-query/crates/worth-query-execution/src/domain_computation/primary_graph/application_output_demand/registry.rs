@@ -321,6 +321,7 @@ struct DemandRegistryState {
     pending_cleanup_head: Option<Arc<WorthQueryOutputDemandKey>>,
     closed_cleanup: cleanup::ClosedCleanupQueue,
     custody_cleanup: cleanup::CustodyCleanupQueue,
+    retention_reservation: Option<Arc<std::sync::atomic::AtomicBool>>,
     source_preparations:
         HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>,
     source_custody: BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, SourceCustody>,
@@ -349,6 +350,7 @@ impl Default for DemandRegistryState {
             pending_cleanup_head: None,
             closed_cleanup,
             custody_cleanup: Default::default(),
+            retention_reservation: None,
             source_preparations: HashMap::new(),
             source_custody: BTreeMap::new(),
         }
@@ -384,16 +386,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutput
     owner: WorthQueryOutputDemandRegistry,
 }
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputDemandAdvanceAdmission {
-    Schedule(Option<WorthQueryPerformedOutputDemandSource>),
-    Execute {
-        successor_of: Option<[u8; 32]>,
-    },
-    AdvanceCheckpoint {
-        claim: WorthQueryOutputClaimIdentity,
-        checkpoint: WorthQueryOutputCheckpoint,
-    },
-    Ready(ReadyCompletion),
-    Pending,
-    Failed(WorthQueryOutputDemandDenial),
-}
+mod advance_admission;
+pub(in crate::domain_computation::primary_graph) use advance_admission::WorthQueryOutputDemandAdvanceAdmission;
+
+pub use source_custody::{
+    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
+};

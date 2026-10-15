@@ -18,6 +18,8 @@ mod dependent_recovery;
 mod descriptor_result_set;
 mod discovered;
 #[cfg(test)]
+mod discovered_contracts;
+#[cfg(test)]
 mod fixed_action_instances;
 #[cfg(test)]
 mod fixed_batch;
