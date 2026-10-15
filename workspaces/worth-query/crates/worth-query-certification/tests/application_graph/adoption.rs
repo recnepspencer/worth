@@ -53,3 +53,6 @@ mod request_lifetime;
 
 #[path = "adoption/authorization.rs"]
 mod authorization;
+
+#[path = "adoption/workflow_runtime_binding.rs"]
+mod workflow_runtime_binding;

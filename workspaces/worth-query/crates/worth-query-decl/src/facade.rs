@@ -1,4 +1,9 @@
 //! Declaration-audience surface: exact re-exports from declaration authority.
+//!
+//! Feature actions compose explicit delivery and once-only typed metadata before
+//! `finish_action` returns the feature parent. The sealed action selector names
+//! an occurrence; Installation owns its complete resolved declaration. Meaning
+//! grants neither request permission nor a native recovery capability.
 
 pub use worth_query_declaration::facade::{
     application_aftermath, application_capability, application_operation, application_program,

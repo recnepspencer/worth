@@ -169,8 +169,10 @@ impl<const FRESH: bool> ApplicationProgramDefinition<CheckpointSchema> for Progr
                 .managed_computation::<Totals>()
                 .managed_computation::<program::UnretainedTotals<WORK>>()
                 .conditional_operation::<TotalRegionOutput>()
-                .mutation::<EntryEditBinding<CheckpointSchema>>()
-                .mutation::<RegionTotalsDemandBinding<CheckpointSchema>>()
+                .native_action::<EntryEditBinding<CheckpointSchema>>()
+                .finish_action()
+                .native_action::<RegionTotalsDemandBinding<CheckpointSchema>>()
+                .finish_action()
                 .finish(),
         )
     }

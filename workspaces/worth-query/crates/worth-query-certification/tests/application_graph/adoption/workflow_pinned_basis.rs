@@ -11,7 +11,7 @@ use worth_query_host::facade::domain::WorthQueryApplicationWorkflowResourceCeili
 
 use super::workflow_participant::expect_started;
 use crate::document_retention_model::{
-    host::{publish_on_first_program, DocumentWorkflowRuntime},
+    host::{DocumentWorkflowRuntime, publish_on_first_program},
     programs::RetentionProgramP1,
     workflow::{
         advance_instance, expect_capacity_refused, expect_superseded_start, install_workflow_spec,
@@ -67,7 +67,9 @@ fn a_waiting_instance_keeps_its_pinned_revision_across_a_definition_and_a_capaci
     application
         .workflow_mut()
         .support_workflow_spec(second_program)
-        .expect("the vocabulary belongs to a rostered program");
+        .unwrap_or_else(|(_, denial)| {
+            panic!("the vocabulary belongs to a rostered program: {denial:?}")
+        });
     let main = application.current_world();
     let first = published(
         &application,

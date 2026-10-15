@@ -25,6 +25,7 @@ use worth_query_topology_entry::{
 use crate::ConsumerSchema;
 #[cfg(test)]
 pub(crate) mod action_instances;
+pub(crate) mod composed_action;
 pub(crate) mod correspondence;
 #[cfg(test)]
 pub(crate) mod discovered_contracts;
@@ -41,6 +42,8 @@ pub(crate) mod historical;
 pub(crate) mod no_projection;
 #[cfg(test)]
 pub(crate) mod pinned_source;
+mod source_completion;
+mod source_output_overlap;
 pub use fixed_delivery::ConsumerFixedAction;
 pub(crate) use fixed_delivery::ConsumerFixedDelivery;
 mod omitted_program_binding;
@@ -339,43 +342,13 @@ impl ApplicationProgramDefinition<ConsumerSchema> for OmittedInstalledRuleProgra
     }
 }
 
-impl ApplicationProgramDefinition<ConsumerSchema> for RequiredSourceAsActionProgram {
-    type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
-    type Outputs = <ConsumerProgram as ApplicationProgramDefinition<ConsumerSchema>>::Outputs;
-    type Rules = ConsumerRules;
-    const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("worth.query.certification.source-action-overlap.v2");
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut specs = features::consumer_feature_specs();
-        let source = specs
-            .iter()
-            .position(|spec| {
-                spec.feature().identity()
-                    == <PlanarSourceFeature as ApplicationFeature<ConsumerSchema>>::IDENTITY
-            })
-            .expect("the source feature is present");
-        specs.remove(source);
-        specs.push(
-            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
-                .provides::<PlanarBodyOutput>()
-                .mutation::<PlanarEditBinding<ConsumerSchema>>()
-                .mutation::<PriorCycleAdjustmentBinding<ConsumerSchema>>()
-                .mutation::<VertexReplacementBinding<ConsumerSchema>>()
-                .mutation::<PlanarSourceAdjustmentBinding<ConsumerSchema>>()
-                .finish(),
-        );
-        specs
-    }
-}
-
 #[cfg(test)]
 pub(crate) fn source_delivery_specs<D>() -> Vec<ApplicationFeatureSpec>
 where
     D: worth_query_decl::facade::application_program::ApplicationActionDelivery<
-        ConsumerSchema,
-        PlanarSourceAdjustmentBinding<ConsumerSchema>,
-    >,
+            ConsumerSchema,
+            PlanarSourceAdjustmentBinding<ConsumerSchema>,
+        >,
 {
     features::source_delivery_specs::<D>()
 }

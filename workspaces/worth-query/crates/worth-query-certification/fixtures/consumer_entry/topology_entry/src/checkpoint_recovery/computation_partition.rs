@@ -233,7 +233,8 @@ impl<Binding: RegionTotalsBinding> ApplicationProgramDefinition<CheckpointSchema
             required_chain::output_feature_spec(),
             demand_policy::final_output_feature::<demand_policy::FinalArtifact>()
                 .managed_computation::<Binding::Computation>()
-                .mutation::<demand::RegionTotalsDemandBinding<CheckpointSchema>>()
+                .native_action::<demand::RegionTotalsDemandBinding<CheckpointSchema>>()
+                .finish_action()
                 .finish(),
         )
     }

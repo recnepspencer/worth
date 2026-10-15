@@ -11,8 +11,10 @@ use worth_query_topology_entry::{
 #[test]
 fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
     let foreign = crate::installed_schema();
-    let world = installation::install(&foreign);
+    let mut world = installation::install(&foreign);
     let scope = authentication::request_scope();
+    let request_runtime = world.application.clone();
+    let constructing = std::mem::replace(&mut world.application, request_runtime);
     let adapter = authentication::admit(world.application.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),
@@ -33,13 +35,24 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         .unwrap()
         .observed_sources()[0]
         .clone();
-    let first = request
-        .mutate(input.clone())
-        .expect_source(source.clone())
-        .idempotency_owned(10_091)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
-        .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+    let first = {
+        let construction_scope = authentication::request_scope();
+        let construction_principal = authentication::block_on(adapter.authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &construction_scope,
+        ))
+        .unwrap();
+        let construction_request =
+            constructing.request(&construction_principal, &construction_scope);
+        construction_request
+            .mutate(input.clone())
+            .expect_source(source.clone())
+            .idempotency_owned(10_091)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&constructing)
+            .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"))
+    };
+    drop(constructing);
     let first = match first.advance(&request) {
         Advance::Progress {
             operation,

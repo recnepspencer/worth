@@ -97,10 +97,13 @@ impl ApplicationProgramDefinition<Schema> for Program {
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new("neutral-history");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![ApplicationFeatureSpec::root::<Schema, Feature>()
-            .derived_artifact::<Artifact>()
-            .managed_computation::<computation::Computation>()
-            .mutation::<operation::Binding<Schema>>()
-            .finish()]
+        vec![
+            ApplicationFeatureSpec::root::<Schema, Feature>()
+                .derived_artifact::<Artifact>()
+                .managed_computation::<computation::Computation>()
+                .native_action::<operation::Binding<Schema>>()
+                .finish_action()
+                .finish(),
+        ]
     }
 }

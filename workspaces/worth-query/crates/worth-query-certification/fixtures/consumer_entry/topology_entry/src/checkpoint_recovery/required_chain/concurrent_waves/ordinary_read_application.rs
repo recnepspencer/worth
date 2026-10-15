@@ -63,7 +63,7 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
             let entity = match reader.resolve_entity(BodyKey::reference(), key) {
                 Ok(entity) => entity,
                 Err(error) => {
-                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error))
+                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error));
                 }
             };
             match reader.field(&entity, Length::reference()) {
@@ -71,10 +71,10 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
                 Ok(None) => {
                     return WorthQueryDecisionPlan::immediate(HandlerResult::DomainDenied(
                         PlanarMutationDenial::MissingCoordinate,
-                    ))
+                    ));
                 }
                 Err(error) => {
-                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error))
+                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error));
                 }
             }
         } else {
@@ -186,8 +186,10 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
             ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
                 .derived_artifact::<computation::Artifact>()
                 .managed_computation::<computation::Computation>()
-                .mutation::<PlanarEditBinding<CheckpointSchema>>()
-                .mutation::<VertexReplacementBinding<CheckpointSchema>>()
+                .native_action::<PlanarEditBinding<CheckpointSchema>>()
+                .finish_action()
+                .native_action::<VertexReplacementBinding<CheckpointSchema>>()
+                .finish_action()
                 .conditional_operation::<MutatePlanar>()
                 .finish(),
         );

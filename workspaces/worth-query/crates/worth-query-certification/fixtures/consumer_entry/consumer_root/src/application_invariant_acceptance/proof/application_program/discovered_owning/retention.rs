@@ -12,7 +12,7 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
             "model-owner",
         ),
     ];
-    let world = installation::install_selected_program(
+    let mut world = installation::install_selected_program(
         &crate::installed_schema(),
         8192,
         4096,
@@ -22,6 +22,8 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         program,
     )
     .unwrap();
+    let request_runtime = world.application.clone();
+    let constructing = std::mem::replace(&mut world.application, request_runtime);
     let adapter = authentication::admit(world.application.installed_schema());
     let scope = authentication::request_scope();
     let principal = authentication::block_on(adapter.authenticate(
@@ -82,17 +84,27 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         .unwrap()
         .observed_sources()[0]
         .clone();
-    let operation = request
-        .mutate(Original(input.clone()))
-        .expect_source(source)
-        .preconditions(TypedMutationPreconditions::new().expect_fact(
-            BodyKey::reference::<ConsumerSchema>(),
-            ApplicationEncodedScalarValue::try_new("anchor-a".to_owned()).unwrap(),
+    let operation = {
+        let construction_scope = authentication::request_scope();
+        let construction_principal = authentication::block_on(adapter.authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &construction_scope,
         ))
-        .idempotency_owned(110_012)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
-        .unwrap_or_else(|(_, denial)| panic!("ordinary installed construction: {denial:?}"));
+        .unwrap();
+        let construction_request =
+            constructing.request(&construction_principal, &construction_scope);
+        construction_request
+            .mutate(Original(input.clone()))
+            .expect_source(source)
+            .preconditions(TypedMutationPreconditions::new().expect_fact(
+                BodyKey::reference::<ConsumerSchema>(),
+                ApplicationEncodedScalarValue::try_new("anchor-a".to_owned()).unwrap(),
+            ))
+            .idempotency_owned(110_012)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&constructing)
+            .unwrap_or_else(|(_, denial)| panic!("ordinary installed construction: {denial:?}"))
+    };
     let guard = world
         .application
         .refuse_next_discovered_retention_reservation_for_test()
@@ -105,6 +117,7 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         _ => panic!("actual reservation must refuse after committing the source"),
     };
     drop(guard);
+    drop(constructing);
     assert_eq!(operation.handler_result().unwrap().changed_vertices, 1);
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
     assert_eq!(

@@ -37,8 +37,10 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Unowned {
                 .managed_computation::<OracleTotals<TOTALS_WORK>>()
                 .managed_computation::<program::UnretainedTotals<TOTALS_WORK>>()
                 .conditional_operation::<TotalRegionOutput>()
-                .mutation::<EntryEditBinding<CheckpointSchema>>()
-                .mutation::<RegionTotalsDemandBinding<CheckpointSchema>>()
+                .native_action::<EntryEditBinding<CheckpointSchema>>()
+                .finish_action()
+                .native_action::<RegionTotalsDemandBinding<CheckpointSchema>>()
+                .finish_action()
                 .finish(),
         )
     }

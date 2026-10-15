@@ -1,4 +1,5 @@
 //! Isolated receipt-only action; the existing consumer/P0 canonical meaning is unchanged.
+use super::source_completion::ConsumerSourceCompletion;
 use super::*;
 use worth_query_decl::facade::application_program::{
     ApplicationActionDelivery, ApplicationActionReference, ApplicationNoOutputGraph,
@@ -33,15 +34,21 @@ impl ApplicationProgramDefinition<ConsumerSchema> for PinnedSourceProgram {
         vec![
             ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
                 .provides::<PlanarBodyOutput>()
-                .repeated_optional_member_with_external_input::<PlanarEditBinding<ConsumerSchema>,
-                    correspondence::OptionalAdjustmentCorrespondence, external_input::NeutralExternalProvider>()
-                .mutation::<PriorCycleAdjustmentBinding<ConsumerSchema>>()
-                .mutation_with_external_input::<VertexReplacementBinding<ConsumerSchema>, external_input::NeutralExternalProvider>()
+                .action::<PlanarEditBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+                .correspondence::<correspondence::OptionalAdjustmentCorrespondence>()
+                .external_input::<external_input::NeutralExternalProvider>()
+                .finish_action()
+                .action::<PriorCycleAdjustmentBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+                .finish_action()
+                .action::<VertexReplacementBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+                .external_input::<external_input::NeutralExternalProvider>()
+                .finish_action()
                 .conditional_operation::<MutatePlanar>()
                 .conditional_operation::<PublishFinalPlanarOutput>()
                 .conditional_operation::<PreserveFinalPlanarOutput>()
                 .conditional_operation::<PublishAlternatePlanarOutput>()
-                .operation_action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, PinnedCompletion>()
+                .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, PinnedCompletion>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<ConsumerSchema, ParameterFeature>().finish(),
         ]

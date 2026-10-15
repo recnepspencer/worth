@@ -1,5 +1,4 @@
 use bank_domain::{
-    model::BankPrincipalId,
     queries::{PaymentAmountQueryBinding, PaymentDetailQueryBinding},
     schema::{
         ApprovePayment, ApprovePaymentMutationBinding, ApprovedBusinessPaymentAdvance,
@@ -7,20 +6,18 @@ use bank_domain::{
         ApprovedBusinessPaymentApprovalOperation, ApprovedBusinessPaymentAuthoring,
         ApprovedBusinessPaymentAuthoringBinding, ApprovedBusinessPaymentAuthoringOperation,
         ApprovedBusinessPaymentInstanceStart, ApprovedBusinessPaymentInstanceStartOperation,
-        ApprovedBusinessPaymentWorkflow, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
-        ExternalPrincipalMapping, Principal,
+        ApprovedBusinessPaymentWorkflow, BankPrincipalBinding, BankSchema,
     },
 };
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_host::facade::{
     application_installation::{
-        in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
         WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
+        in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
     },
     domain::{
         WorthQueryApplicationWorkflowResourceCeiling,
         WorthQueryApplicationWorkflowSpecInstallation, WorthQueryInstalledApplicationSchema,
-        WorthQueryInstalledPrincipalBinding,
     },
     primary_graph::{
         SignalConditionalEvaluationBudget, WorthQueryPrimaryGraphApplicationRuntime,
@@ -32,8 +29,9 @@ use worth_query_host::facade::{
     },
 };
 
-use super::{BankGraphSeed, BankIdentityRuntime};
+use super::{BankGraphSeed, BankIdentityRuntime, InstalledBankPrincipalBinding};
 use crate::{
+    BankApprovalAuthenticationConfiguration,
     application_definition::{
         validated_bank_application, validated_bank_application_p1, validated_bank_application_p2,
     },
@@ -41,17 +39,7 @@ use crate::{
     error::BankIdentityRuntimeBuildError,
     graph_bootstrap::bind_bank_world_with_estate,
     principal_seed::PreparedBankPrincipalSeed,
-    BankApprovalAuthenticationConfiguration,
 };
-
-type InstalledBankPrincipalBinding = WorthQueryInstalledPrincipalBinding<
-    BankSchema,
-    BankPrincipalBinding,
-    ExternalPrincipalMapping,
-    Principal,
-    BankPrincipalId,
-    BankPrincipalIdBinding,
->;
 
 pub(super) enum BankAuthorizationTimeInstallation {
     System,
@@ -64,6 +52,15 @@ pub(super) fn install_prepared(
     authorization_time: BankAuthorizationTimeInstallation,
     approval_authentication: BankApprovalAuthenticationConfiguration,
 ) -> Result<BankIdentityRuntime, BankIdentityRuntimeBuildError> {
+    prepare_installation(seeds, world, authorization_time, approval_authentication)?.bind()
+}
+
+pub(super) fn prepare_installation(
+    seeds: Vec<PreparedBankPrincipalSeed>,
+    world: Option<BankGraphSeed>,
+    authorization_time: BankAuthorizationTimeInstallation,
+    approval_authentication: BankApprovalAuthenticationConfiguration,
+) -> Result<super::BankIdentityRuntimeWorkflowBinding, BankIdentityRuntimeBuildError> {
     let program = validated_bank_application()
         .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
     let successor = validated_bank_application_p1()
@@ -123,58 +120,73 @@ pub(super) fn install_prepared(
         approval_authentication,
     )
     .map_err(BankIdentityRuntimeBuildError::WorkflowAuthenticationInstallation)?;
-    let workflow = WorthQueryApplicationWorkflowSpecInstallation::<
-        BankSchema,
-        ApprovedBusinessPaymentWorkflow,
-        crate::application_definition::BankApplication,
-    >::begin(
+    let workflow = install_payment_workflow_spec(
         runtime.runtime().installed_schema(),
         runtime.installed_program(),
+    )
+    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?;
+    Ok(super::BankIdentityRuntimeWorkflowBinding::new(
+        runtime,
+        workflow,
+        binding,
+        invariant_projection,
+        approval_authentication,
+    ))
+}
+
+pub(super) fn install_payment_workflow_spec<Program>(
+    schema: &WorthQueryInstalledApplicationSchema<BankSchema>,
+    program: &worth_query_host::facade::domain::WorthQueryInstalledApplicationProgram<
+        BankSchema,
+        Program,
+    >,
+) -> Result<
+    worth_query_host::facade::domain::WorthQueryInstalledApplicationWorkflowSpec<
+        BankSchema,
+        ApprovedBusinessPaymentWorkflow,
+    >,
+    worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenial,
+>
+where
+    Program:
+        worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+                BankSchema,
+            >,
+{
+    WorthQueryApplicationWorkflowSpecInstallation::<
+        BankSchema,
+        ApprovedBusinessPaymentWorkflow,
+        Program,
+    >::begin(
+        schema,
+        program,
         payment_workflow_resources(),
     )
-    .operation::<ApprovedBusinessPaymentAuthoringBinding>()
-    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
-    .operation::<ApprovePaymentMutationBinding>()
-    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
-    .assessment::<PaymentDetailQueryBinding>()
-    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
-    .condition_operand::<PaymentAmountQueryBinding>()
-    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
+    .operation::<ApprovedBusinessPaymentAuthoringBinding>()?
+    .operation::<ApprovePaymentMutationBinding>()?
+    .assessment::<PaymentDetailQueryBinding>()?
+    .condition_operand::<PaymentAmountQueryBinding>()?
     .approval::<
         ApprovedBusinessPaymentApproval,
         ApprovedBusinessPaymentApprovalOperation,
         ApprovePayment,
-    >()
-    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
+    >()?
     .authoring_capability::<
         ApprovedBusinessPaymentAuthoring,
         ApprovedBusinessPaymentAuthoringOperation,
         ApprovePayment,
-    >()
-    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
+    >()?
     .instance_start_capability::<
         ApprovedBusinessPaymentInstanceStart,
         ApprovedBusinessPaymentInstanceStartOperation,
         ApprovePayment,
-    >()
-    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
+    >()?
     .advance_capability::<
         ApprovedBusinessPaymentAdvance,
         ApprovedBusinessPaymentAdvanceOperation,
         ApprovePayment,
-    >()
-    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
+    >()?
     .finish()
-    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?;
-    let runtime = runtime
-        .retain_workflow_spec(workflow, approval_authentication.signing_owner())
-        .map_err(BankIdentityRuntimeBuildError::WorkflowRuntimeBinding)?;
-    Ok(BankIdentityRuntime {
-        runtime,
-        binding,
-        invariant_projection,
-        approval_authentication,
-    })
 }
 
 fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {

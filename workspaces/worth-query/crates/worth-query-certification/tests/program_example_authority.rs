@@ -13,7 +13,7 @@ use product_workflow_support::schema::{
     AmendTemporal, AmendTemporalInput, ExecuteTemporal, IntentIdentityField,
     RevokeTemporalPrincipal, TemporalHostSchema, TemporalPrincipalBinding,
 };
-use product_workflow_support::{principal, read_input, AmendTemporalIntent, ExampleApplication};
+use product_workflow_support::{AmendTemporalIntent, ExampleApplication, principal, read_input};
 use worth_query_decl::facade::application_operation::ApplicationMutationIdentities;
 use worth_query_host::facade::{
     application_discovery::WorthQueryApplicationCallablePosture,
@@ -80,7 +80,7 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for MissingConditionalActi
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<TemporalHostSchema, TemporalExampleFeature>()
-                .mutation::<AmendTemporalBinding>()
+                .action::<AmendTemporalBinding, product_workflow_support::program::TemporalCompletion>().finish_action()
                 .operation::<RevokeTemporalPrincipal>()
                 .finish(),
         ]
@@ -90,10 +90,12 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for MissingConditionalActi
 #[test]
 fn program_example_denies_plain_commit_and_conditional_client_admission() {
     let mut application = ExampleApplication::publish("blocked");
-    assert!(application
-        .runtime
-        .admit_program_operation::<ExecuteTemporal>()
-        .is_err());
+    assert!(
+        application
+            .runtime
+            .admit_program_operation::<ExecuteTemporal>()
+            .is_err()
+    );
 
     let scope = product_workflow_support::adapters::request_scope();
     let principal = principal(&application, &scope);

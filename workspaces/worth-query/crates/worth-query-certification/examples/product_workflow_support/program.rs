@@ -13,8 +13,7 @@ use super::schema::{
 };
 
 mod action;
-pub use action::AmendTemporalAction;
-use action::TemporalCompletion;
+pub use action::{AmendTemporalAction, TemporalCompletion};
 
 pub struct TemporalExampleProgram;
 pub struct TemporalExampleFeature;
@@ -42,7 +41,8 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalExampleProgram
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<TemporalHostSchema, TemporalExampleFeature>()
-                .operation_action::<AmendTemporalBinding, TemporalCompletion>()
+                .action::<AmendTemporalBinding, TemporalCompletion>()
+                .finish_action()
                 .conditional_operation::<ExecuteTemporal>()
                 .operation::<RevokeTemporalPrincipal>()
                 .finish(),

@@ -129,10 +129,10 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                 .managed_computation::<OracleTotals<WORK>>()
                 .managed_computation::<program::UnretainedTotals<WORK>>()
                 .conditional_operation::<TotalRegionOutput>()
-                .operation_action::<EntryEditBinding<CheckpointSchema>, super::source_delivery::RetainedEntry>()
-                .operation_action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema>, super::source_delivery::CorrectEntryCompletion>()
-                .mutation::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema, true>>()
-                .mutation::<RegionTotalsDemandBinding<CheckpointSchema>>()
+                .action::<EntryEditBinding<CheckpointSchema>, super::source_delivery::RetainedEntry>().finish_action()
+                .action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema>, super::source_delivery::CorrectEntryCompletion>().finish_action()
+                .native_action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema, true>>().finish_action()
+                .native_action::<RegionTotalsDemandBinding<CheckpointSchema>>().finish_action()
                 .finish(),
         )
     }

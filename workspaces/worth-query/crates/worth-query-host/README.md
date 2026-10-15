@@ -85,6 +85,30 @@ cannot execute, prepare or recover through that builder or its borrowed-key view
 The selected action carries composition instance, feature, binding and delivery;
 a binding label alone cannot select its contract.
 
+Declare each ordinary action with `.action::<Binding, Delivery>()`, its applicable
+metadata clauses, and `.finish_action()`. Metadata cannot be overwritten and
+must not be split into another action to attach delivery. The sealed
+`ApplicationActionReference` selects the exact occurrence; Installation resolves
+the full actual action, including metadata, for later comparison.
+
+Fixed, discovered and SourceOnly owners retain the authentic installed runtime
+allocation. Fixed/discovered returned owners have no construction-runtime
+lifetime and can be stored after the constructing borrow ends or handle is
+dropped. Keep a separate genuine runtime handle to create fresh requests;
+operations expose no runtime accessor or `Deref` as an admission entrance.
+Native source/output/cleanup obligations remain move-only.
+
+Bind workflow vocabulary and other unique-runtime configuration before cloning
+handles or retaining operations. Every `retain_workflow_spec` refusal preserves
+the original runtime, installed spec and signing owner in
+`WorthQueryWorkflowRuntimeBindingRefusal`; inspect `denial()` and consume
+`into_parts()` to recover them plus the denial. `support_workflow_spec` returns
+`Err((original_spec, denial))` while its borrowed runtime remains owned by the
+caller. Runtime close refuses `RuntimeKeepaliveRetained` while another genuine
+handle or operation retains the allocation. Release those keepalives before
+retrying configuration or runtime close; successful operation close releases its
+own keepalive, while refused close retains the whole owner.
+
 Capture the original meaning once. Supply a fresh authenticated ordinary request
 for every `advance`, delivery and close. Native admission checks current authority
 and the original runtime/branch/program affinity. The descriptor is not a grant.

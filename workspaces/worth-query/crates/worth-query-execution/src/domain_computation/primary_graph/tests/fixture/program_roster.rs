@@ -40,7 +40,8 @@ impl ApplicationProgramDefinition<IdentityExecutionSchema> for ProgramRequiredPr
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<IdentityExecutionSchema, ProgramRequiredFeature>()
-                .mutation::<ProgramRequiredMutationBinding>()
+                .native_action::<ProgramRequiredMutationBinding>()
+                .finish_action()
                 .finish(),
         ]
     }
@@ -67,7 +68,8 @@ impl ApplicationProgramDefinition<IdentityExecutionSchema> for UnadmittedProgram
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<IdentityExecutionSchema, UnadmittedFeature>()
-                .mutation::<ProgramRequiredMutationBinding>()
+                .native_action::<ProgramRequiredMutationBinding>()
+                .finish_action()
                 .finish(),
         ]
     }
@@ -83,14 +85,14 @@ where
 }
 
 /// The canonical revision of the program the fixture host rosters.
-pub(in crate::domain_computation::primary_graph) fn rostered_program_revision(
-) -> ApplicationProgramRevision {
+pub(in crate::domain_computation::primary_graph) fn rostered_program_revision()
+-> ApplicationProgramRevision {
     *validated::<ProgramRequiredProgram>().revision()
 }
 
 /// The canonical revision of a program no fixture host ever rosters.
-pub(in crate::domain_computation::primary_graph) fn unadmitted_program_revision(
-) -> ApplicationProgramRevision {
+pub(in crate::domain_computation::primary_graph) fn unadmitted_program_revision()
+-> ApplicationProgramRevision {
     *validated::<UnadmittedProgram>().revision()
 }
 

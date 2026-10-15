@@ -1,6 +1,9 @@
 //! Fresh operation admission observes the current action before output work.
 use super::*;
-use crate::application_program::{fixed_successors::RemovedFixed, ConsumerFixedAction};
+use crate::application_program::{
+    ConsumerFixedAction,
+    fixed_successors::{ChangedFixed, RemovedFixed},
+};
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_host::facade::{
     application_entry::{
@@ -14,10 +17,25 @@ use worth_query_topology_entry::{
 };
 #[test]
 fn fixed_fresh_readmission_rejects_removed_action_before_output_dispatch() {
+    refuse_changed_action(false);
+}
+#[test]
+fn fixed_fresh_readmission_rejects_changed_metadata_before_output_dispatch() {
+    refuse_changed_action(true);
+}
+fn refuse_changed_action(metadata_changed: bool) {
+    let changed = ApplicationProgramAuthoring::<ConsumerSchema, ChangedFixed>::begin()
+        .validated_program()
+        .unwrap();
+    let changed_revision = *changed.revision();
     let removed = ApplicationProgramAuthoring::<ConsumerSchema, RemovedFixed>::begin()
         .validated_program()
         .unwrap();
-    let removed_revision = *removed.revision();
+    let removed_revision = if metadata_changed {
+        changed_revision
+    } else {
+        *removed.revision()
+    };
     let original = ApplicationProgramAuthoring::<ConsumerSchema, crate::ConsumerProgram>::begin()
         .validated_program()
         .unwrap();
@@ -31,12 +49,18 @@ fn fixed_fresh_readmission_rejects_removed_action_before_output_dispatch() {
             "model-owner",
             "model-owner",
         ),
+        crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<ChangedFixed>(
+            "model-owner",
+            "model-owner",
+        ),
     ];
     let world = installation::install_with_roster(
         &crate::installed_schema(),
         8192,
         4096,
-        WorthQueryApplicationProgramRoster::new().support(removed),
+        WorthQueryApplicationProgramRoster::new()
+            .support(removed)
+            .support(changed),
         &grants,
     )
     .unwrap();
@@ -110,8 +134,18 @@ fn fixed_fresh_readmission_rejects_removed_action_before_output_dispatch() {
     let operation = match operation.advance(&fresh) {
         Advance::Refused {
             operation,
-            denial: Denial::Action(_),
-        } => operation,
+            denial: Denial::Action(cause),
+        } => {
+            assert_eq!(
+                cause,
+                if metadata_changed {
+                    worth_query_host::facade::domain::WorthQueryActionResolutionDenial::MeaningMismatch
+                } else {
+                    worth_query_host::facade::domain::WorthQueryActionResolutionDenial::Missing
+                }
+            );
+            operation
+        }
         Advance::Refused { denial, .. } | Advance::Terminal { denial, .. } => {
             panic!("wrong readmission boundary: {denial:?}")
         }

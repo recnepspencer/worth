@@ -59,7 +59,7 @@ macro_rules! historical_program {
                 specs.retain(|spec| !(spec.feature().composition_instance()==InitialDiscoveredPlanarRoot::PATH
                     && spec.feature().identity()==<PlanarSourceFeature as ApplicationFeature<ConsumerSchema>>::IDENTITY));
                 specs.push(ApplicationFeatureSpec::at::<ConsumerSchema,InitialDiscoveredPlanarRoot,PlanarSourceFeature>()
-                    .provides::<PlanarBodyOutput>().operation_action::<Binding,$delivery>().finish());
+                    .provides::<PlanarBodyOutput>().action::<Binding, $delivery>().finish_action().finish());
                 specs
             }
         }

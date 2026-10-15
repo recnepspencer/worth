@@ -10,7 +10,9 @@ Use this delivery when a response must describe the original committed state eve
 
 ## Stable Entry Points
 
-Declare `operation_action::<Binding, Delivery>()` with `Delivery::Mode = ApplicationRetainedCommit`. Retain the original description with `idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`.
+Declare `.action::<Binding, Delivery>()`, attach its applicable metadata, and
+call `.finish_action()` before finishing the feature. The real delivery declares
+`Delivery::Mode = ApplicationRetainedCommit`. Retain the original description with `idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`.
 
 Retained mode requires `advance(&fresh_request, maximum_history_work)`, where the bound is `NonZeroUsize`. Source-completion mode uses `advance(&fresh_request)` and carries no historical-read argument. There is one advance entrance for each declared mode.
 
@@ -21,6 +23,15 @@ The descriptor owns the original input, conditions, source, key and branch. It c
 ## Transfer and native cleanup custody
 
 A SourceOnly owner keeps the exact installed program runtime alive. It can leave the frame that borrowed the runtime during construction; cloning the program runtime retains that same allocation and does not install another program or copy admission authority. Each subsequent advance and historical read still takes a fresh request. Conditional runtime close refuses with `RuntimeKeepaliveRetained` while another owning handle remains; after dependent handles are released, close uses the existing native release path.
+
+Fixed and discovered owners now have the same authentic keepalive contract,
+while their output obligations remain distinct from SourceOnly completion. Keep
+a separate genuine runtime handle for fresh requests; an operation is not a
+runtime accessor. Bind workflow vocabulary and other unique-runtime setup before
+cloning runtime handles or retaining operations. Consuming vocabulary refusal
+preserves runtime, installed spec and signing owner through
+`WorthQueryWorkflowRuntimeBindingRefusal::into_parts()`; borrowed support refusal
+returns the original spec with its denial. Keep those inputs for a lawful retry.
 
 Keep the returned operation, completed owner, or terminal owner reachable across transport response loss. Dropping a listener does not authorize cleanup. Calling `into_runtime_for_cleanup()` on an active SourceOnly owner explicitly abandons the ordinary descriptor and returns its exact installed-runtime handle together with its owned cleanup collection. It performs no publication, settlement, or release, and the ordinary operation cannot subsequently be resumed. Keep both returned values. The collection carries actual failed managed-run cleanup that has no publication recovery record; use its funded `close_in_advancement` entrance with the returned runtime. Use the runtime's native recovery catalog and independent physical-cleanup inventory for their respective retained obligations. A refused native release returns its actual recovery or physical-cleanup owner; retain that owner for a freshly funded attempt.
 
@@ -34,7 +45,9 @@ Fresh retained execution already holds the exact native observation. Replay and 
 
 With your program and retained action declared:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let owner = request.mutate(intent)
     .without_source()
     .preconditions(original_conditions)
@@ -45,11 +58,13 @@ let next = owner.advance(&fresh_request, maximum_history_work);
 
 The history bound is supplied for this attempt. It is neither part of operation meaning nor inferred from query limits.
 
-## Real Example
+## Historical observation
 
 When an advance returns `Completed(completed)`, inspect its evidence and use the actual retained observation for a read with fresh authority:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let observation = match completed.evidence() {
     WorthQuerySourceCompletion::Fresh { retained: Some(read), .. }
     | WorthQuerySourceCompletion::Recovered { retained: Some(read), .. } => read,

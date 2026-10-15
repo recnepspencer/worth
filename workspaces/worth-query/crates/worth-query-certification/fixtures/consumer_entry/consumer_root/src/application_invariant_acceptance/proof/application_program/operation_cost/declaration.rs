@@ -48,7 +48,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         specs.push(
             ApplicationFeatureSpec::at::<Schema, Fanout, PlanarSourceFeature>()
                 .provides::<PlanarBodyOutput>()
-                .operation_action::<PlanarSourceAdjustmentBinding<Schema>, Delivery>()
+                .action::<PlanarSourceAdjustmentBinding<Schema>, Delivery>()
+                .finish_action()
                 .finish(),
         );
         specs

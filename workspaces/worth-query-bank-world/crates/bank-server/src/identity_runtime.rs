@@ -1,5 +1,7 @@
 mod advancement;
+mod workflow_binding;
 use std::collections::BTreeSet;
+pub use workflow_binding::BankIdentityRuntimeWorkflowBinding;
 
 #[path = "identity_runtime/certification_controls.rs"]
 mod certification_controls;
@@ -8,8 +10,8 @@ mod installation;
 pub(crate) mod product_world_resources;
 
 #[cfg(test)]
-pub(crate) fn bank_application_limits(
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+pub(crate) fn bank_application_limits()
+-> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
     installation::bank_application_limits()
 }
 
@@ -21,9 +23,9 @@ use bank_domain::schema::{
     ExternalPrincipalMapping, Principal,
 };
 use worth_query_host::facade::admission::authenticated_principal::{
-    admit_authentication_adapter, WorthQueryAuthenticationAdapter,
-    WorthQueryAuthenticationAdapterAdmission, WorthQueryAuthenticationAudience,
-    WorthQueryAuthenticationMethod, WorthQueryRequestScope,
+    WorthQueryAuthenticationAdapter, WorthQueryAuthenticationAdapterAdmission,
+    WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod, WorthQueryRequestScope,
+    admit_authentication_adapter,
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
@@ -70,20 +72,22 @@ impl BankAuthenticationConfiguration {
     }
 }
 
+type InstalledBankPrincipalBinding = WorthQueryInstalledPrincipalBinding<
+    BankSchema,
+    BankPrincipalBinding,
+    ExternalPrincipalMapping,
+    Principal,
+    BankPrincipalId,
+    BankPrincipalIdBinding,
+>;
+
 pub struct BankIdentityRuntime {
     runtime: WorthQueryWorkflowApplicationRuntime<
         BankSchema,
         ApprovedBusinessPaymentWorkflow,
         BankApplication,
     >,
-    binding: WorthQueryInstalledPrincipalBinding<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    >,
+    binding: InstalledBankPrincipalBinding,
     invariant_projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
     approval_authentication: BankApprovalAuthenticationOwner,
 }

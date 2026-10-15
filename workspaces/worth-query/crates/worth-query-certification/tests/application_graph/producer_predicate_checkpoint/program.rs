@@ -1,4 +1,5 @@
 //! A real required-output program over the existing retention contribution.
+use crate::document_retention_model::programs::RetentionCompletion;
 use crate::document_retention_model::{
     assessment_output::{PublishRetentionAssessment, RetentionAssessmentDemand},
     programs::{DocumentRetentionFeature, RetentionProgramP0},
@@ -66,6 +67,20 @@ impl WorthQueryApplicationRequiredOutputConnection<DocumentRetentionSchema>
         Ok(RetentionAssessmentDemand::new(&source.identity))
     }
 }
+pub struct AssessmentDelivery;
+impl ApplicationActionDelivery<DocumentRetentionSchema, ReviewedSetRetentionBinding>
+    for AssessmentDelivery
+{
+    type Mode = ApplicationFixedDeliveryMode<AssessmentRoot, ApplicationNoProjection>;
+    const IDENTITY: &'static str = "predicate-assessment.required-completion.v1";
+}
+impl ApplicationFixedActionDelivery<DocumentRetentionSchema, ReviewedSetRetentionBinding>
+    for AssessmentDelivery
+{
+    type Root = AssessmentRoot;
+    type Projection = ApplicationNoProjection;
+}
+
 impl ApplicationProgramDefinition<DocumentRetentionSchema> for AssessmentProgram {
     type Contributions = (DocumentRetentionContribution,);
     type Outputs = ApplicationProgramOutputs<AssessmentRoot>;
@@ -78,8 +93,10 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for AssessmentProgram
         vec![
             ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
                 .provides::<RetentionOutput>()
-                .mutation::<SetRetentionBinding>()
-                .mutation::<ReviewedSetRetentionBinding>()
+                .action::<SetRetentionBinding, RetentionCompletion>()
+                .finish_action()
+                .action::<ReviewedSetRetentionBinding, AssessmentDelivery>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<DocumentRetentionSchema, AssessmentFeature>()
                 .conditional_operation::<PublishRetentionAssessment>()
