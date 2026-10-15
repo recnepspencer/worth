@@ -54,6 +54,7 @@ fn an_ordinary_program_manifest_stays_inside_the_declared_budget() {
             &[],
             &[],
             &[],
+            None,
         ))
         .is_ok()
     );
@@ -63,7 +64,7 @@ fn an_ordinary_program_manifest_stays_inside_the_declared_budget() {
 /// the same declared feature repeated past the canonical entry ceiling.
 fn over_budget_manifest() -> ApplicationProgramManifest {
     let features = vec![declared_bounded_feature(); OVER_BUDGET_FEATURE_COUNT];
-    ApplicationProgramManifest::normalize(SHARED_IDENTITY.as_str(), &features, &[], &[], &[])
+    ApplicationProgramManifest::normalize(SHARED_IDENTITY.as_str(), &features, &[], &[], &[], None)
 }
 
 fn declared_bounded_feature() -> crate::application_program::ApplicationFeatureDeclaration {

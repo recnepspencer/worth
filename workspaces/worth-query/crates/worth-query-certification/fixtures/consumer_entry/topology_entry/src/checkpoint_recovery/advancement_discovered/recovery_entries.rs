@@ -44,6 +44,7 @@ fn one_admitted_request(entry: &str) {
 macro_rules! fresh {
     ($request:expr, $source:expr, $key:expr) => {
         $request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "anchor-a".into(),
                 replacement_y: length(2),
@@ -55,6 +56,7 @@ macro_rules! fresh {
 macro_rules! ordinary {
     ($request:expr, $source:expr, $key:expr) => {
         $request
+            .advanced()
             .mutate(crate::PlanarEdit(crate::PlanarMutation {
                 scope_key: "anchor-a".into(),
                 operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![

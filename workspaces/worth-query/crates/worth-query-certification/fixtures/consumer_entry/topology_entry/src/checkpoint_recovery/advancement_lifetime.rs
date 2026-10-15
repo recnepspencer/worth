@@ -188,6 +188,7 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .execute()
         .unwrap();
     let mut mutation = request
+        .advanced()
         .mutate(input())
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_762_u64);
@@ -224,6 +225,7 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .execute()
         .unwrap();
     let mut mutation = request
+        .advanced()
         .mutate(input())
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_763_u64);

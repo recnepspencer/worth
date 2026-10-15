@@ -37,6 +37,7 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
                 };
                 let before = reads();
                 let mutation = request
+                    .advanced()
                     .mutate(intent())
                     .expect_source(observed.observed_sources()[0].clone());
                 match entry {
@@ -79,6 +80,7 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
                 )));
                 let before = reads();
                 let mutation = request
+                    .advanced()
                     .mutate(intent())
                     .expect_source(observed.observed_sources()[0].clone());
                 let denial = match entry {

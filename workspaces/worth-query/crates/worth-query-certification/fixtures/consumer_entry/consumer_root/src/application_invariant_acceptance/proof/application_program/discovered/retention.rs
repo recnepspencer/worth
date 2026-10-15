@@ -96,6 +96,11 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         matches!(failure.denial(), WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial) if denial.kind()==WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded)
     );
     assert_eq!(
+        failure.denial().recovery_posture(),
+        WorthQueryRequiredOutputRecoveryPosture::Terminal,
+        "the diagnostic alone cannot recover an unregistered source"
+    );
+    assert_eq!(
         failure.recovery_posture(),
         WorthQueryRequiredOutputRecoveryPosture::Retryable
     );
@@ -120,11 +125,10 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         .selected_commit()
         .clone();
     assert!(
-        matches!(request.advanced().recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(&world.application, &receipt, controls), Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(ref denial)) if denial.kind()==WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)
+        matches!(request.recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(&world.application, &receipt, controls), Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(ref denial)) if denial.kind()==WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)
     );
     // Inspect prior registration, then release the acquired token before retry eligibility.
     let prior_registered = request
-        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &prior_receipt,
@@ -231,7 +235,6 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         &head
     );
     let prior_registered = request
-        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &prior_receipt,
@@ -262,7 +265,6 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         receipt.committed_product_publication().composite_commit()
     );
     let registered = request
-        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &receipt,
@@ -292,7 +294,8 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         ["remote-b", "sibling-b", "sibling-c"]
     );
     assert_eq!(settled.output_count(), 6);
-    for (key, expected) in [("sibling-b", 23), ("sibling-c", 31), ("remote-b", 42)] {
+    // Seeded source y values 21/30/41 each derive +1; only anchor-a was mutated.
+    for (key, expected) in [("sibling-b", 22), ("sibling-c", 31), ("remote-b", 42)] {
         assert_eq!(
             request
                 .at(settled.observation())

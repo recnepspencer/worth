@@ -73,15 +73,23 @@ where
     pub fn denial(&self) -> &WorthQueryRequiredOutputPreparationDenial {
         &self.denial
     }
-    /// Actual native carrier availability and posture, not a permission to retry without admission.
+    /// Describes retry of this original unregistered carrier, not receipt-based recovery.
+    /// Capacity refusal is retryable only while both native delivery parts remain owned.
+    /// Every retry still requires fresh admission and checked native promotion.
     pub fn recovery_posture(
         &self,
     ) -> crate::application_entry::WorthQueryRequiredOutputRecoveryPosture {
         use crate::application_entry::WorthQueryRequiredOutputRecoveryPosture as Posture;
         match self.custody.as_ref() {
             Some(custody) if custody.has_original_delivery() => {
-                WorthQueryRequiredOutputPreparationDenial::DemandExecution(custody.denial().clone())
-                    .recovery_posture()
+                if custody.denial().kind()
+                    == worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
+                {
+                    Posture::Retryable
+                } else {
+                    WorthQueryRequiredOutputPreparationDenial::DemandExecution(custody.denial().clone())
+                        .recovery_posture()
+                }
             }
             _ => Posture::Terminal,
         }

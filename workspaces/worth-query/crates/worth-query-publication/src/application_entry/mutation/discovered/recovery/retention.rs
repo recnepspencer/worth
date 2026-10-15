@@ -7,6 +7,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationIntent, ApplicationMutationScopeResolution,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramOutputsShape;
+use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryManagedApplicationRecoveryDenial,
 };
