@@ -4,19 +4,6 @@ impl ApplicationActionDeclaration {
     pub fn delivery(&self) -> Option<&ApplicationActionDeliveryDeclaration> {
         self.delivery.as_ref()
     }
-    pub(crate) fn attach_fixed_delivery<Schema, Binding, Delivery>(&mut self)
-    where
-        Schema: crate::application_schema::ApplicationSchema,
-        Binding: crate::application_operation::ApplicationMutationBinding<Schema>,
-        Delivery: ApplicationFixedActionDelivery<Schema, Binding>,
-    {
-        self.delivery = Some(ApplicationActionDeliveryDeclaration::fixed::<
-            Schema,
-            Binding,
-            Delivery,
-        >());
-    }
-
     pub(crate) fn attach_delivery<Schema, Binding, Delivery>(&mut self)
     where
         Schema: ApplicationSchema,

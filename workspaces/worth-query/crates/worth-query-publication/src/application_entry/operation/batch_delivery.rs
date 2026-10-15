@@ -3,8 +3,8 @@ use super::*;
 use worth_query_declaration::facade::application_program::ApplicationFixedBatchDelivery;
 type BatchRead<S, I, A, const N: usize> =
     <Delivery<S, I, A> as ApplicationFixedBatchDelivery<S, Binding<S, I>, N>>::Read;
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQuerySettledFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -13,7 +13,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
@@ -54,8 +54,8 @@ where
         {
             return Err(Denial::FreshRequestMismatch);
         }
-        self.runtime
-            .runtime()
+        request
+            .application
             .with_application_advancement(request.scope, |phase| {
                 let observation = self.current_observation(request, &phase, policy)?;
                 let inputs = <Delivery<Schema, Intent, Action> as ApplicationFixedBatchDelivery<
@@ -86,8 +86,8 @@ where
         {
             return Err(Denial::FreshRequestMismatch);
         }
-        self.runtime
-            .runtime()
+        request
+            .application
             .with_application_advancement(request.scope, |phase| {
                 let inputs = <Delivery<Schema, Intent, Action> as ApplicationFixedBatchDelivery<
                     Schema,

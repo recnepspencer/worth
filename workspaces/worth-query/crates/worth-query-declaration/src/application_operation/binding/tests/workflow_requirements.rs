@@ -69,7 +69,8 @@ impl<Binding: ApplicationMutationBinding<MutationSchema>>
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<MutationSchema, EvidenceFeature>()
-                .mutation::<Binding>()
+                .native_action::<Binding>()
+                .finish_action()
                 .finish(),
         ]
     }
@@ -77,8 +78,8 @@ impl<Binding: ApplicationMutationBinding<MutationSchema>>
 
 #[test]
 fn evidence_floor_changes_canonical_program_revision_and_operation_comparison() {
-    fn meaning<Binding: ApplicationMutationBinding<MutationSchema>>(
-    ) -> (ApplicationProgramRevision, ApplicationSemanticDescription) {
+    fn meaning<Binding: ApplicationMutationBinding<MutationSchema>>()
+    -> (ApplicationProgramRevision, ApplicationSemanticDescription) {
         let program =
             ApplicationProgramAuthoring::<MutationSchema, EvidenceProgram<Binding>>::begin()
                 .validated_program()
@@ -105,8 +106,8 @@ impl ApplicationWorkflowSpec for Workflow {
         ApplicationWorkflowSpecIdentity::new("test.workflow.v1");
 }
 
-fn authored<Binding: ApplicationMutationBinding<MutationSchema>>(
-) -> AuthoredWorkflowDefinition<Workflow> {
+fn authored<Binding: ApplicationMutationBinding<MutationSchema>>()
+-> AuthoredWorkflowDefinition<Workflow> {
     let limits = ApplicationWorkflowDefinitionLimits::new(
         8,
         8,

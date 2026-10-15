@@ -4,8 +4,8 @@ use super::*;
 use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
 
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -16,7 +16,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
     Program::Outputs: ApplicationProgramOutputsShape<Schema>,
@@ -39,7 +39,7 @@ where
     pub fn advance(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-    ) -> FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> {
+    ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         if !std::ptr::eq(self.runtime.runtime(), request.application)
             || self.description.branch != request.branch
         {
@@ -48,7 +48,7 @@ where
                 denial: Denial::FreshRequestMismatch,
             };
         }
-        let runtime = self.runtime.runtime();
+        let runtime = request.application;
         let mut retained = Some(self);
         match runtime.with_application_advancement(request.scope, |phase| {
             retained
@@ -68,7 +68,7 @@ where
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-    ) -> FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> {
+    ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         if !matches!(
             self.state,
             FixedState::Initial | FixedState::Blocked(_) | FixedState::NotPerformed(_)
@@ -84,7 +84,7 @@ where
                     .selected_program_owner(&selected)
                     .map_err(Denial::Program)?;
                 owner
-                    .resolve_declared_action::<Binding<Schema, Intent>>(self.installed_action)
+                    .resolve_declared_action::<Binding<Schema, Intent>>(&self.installed_action)
                     .map_err(Denial::Action)?;
                 Ok::<_, Denial>(())
             })();

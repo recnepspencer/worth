@@ -5,8 +5,8 @@ use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
 use WorthQueryOperationProgress as Progress;
 
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -17,7 +17,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
     Program::Outputs: ApplicationProgramOutputsShape<Schema>,
@@ -41,7 +41,7 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-    ) -> FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> {
+    ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         debug_assert!(matches!(self.state, FixedState::Initial));
         let progress = {
             let execution = match phase
@@ -58,16 +58,16 @@ where
             let mut work = worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
             let outcome = self
                 .description
-                .request_view(request, self.installed_action)
+                .request_view(request, &self.installed_action)
                 .execute_performed_with_work::<Program, Root>(
                     phase,
-                    self.runtime,
+                    &self.runtime,
                     &mut work,
                     execution.allocation_policy(),
                 );
             let outcome = match outcome {
                 Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, outcome }) => {
-                    self.cleanup.absorb_managed(self.runtime, cleanup);
+                    self.cleanup.absorb_managed(&self.runtime, cleanup);
                     Ok(*outcome)
                 }
                 other => other,
@@ -115,7 +115,7 @@ where
                     Progress::SourceReplayObserved
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome)) => {
-                    self.state = FixedState::NotPerformed(self.cleanup.absorb_native_outcome(self.runtime, outcome));
+                    self.state = FixedState::NotPerformed(self.cleanup.absorb_native_outcome(&self.runtime, outcome));
                     return Advance::Terminal {
                         operation: WorthQueryTerminalFixedOperation::new(self),
                         denial: Denial::NativeTerminal,

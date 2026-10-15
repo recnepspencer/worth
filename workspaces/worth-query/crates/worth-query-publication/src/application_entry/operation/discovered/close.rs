@@ -1,13 +1,13 @@
 //! Cleanup composes the existing collection; unresolved native obligations never become Closed.
 use super::*;
-impl<'r, S, I, P, R, A> WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQueryDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
     /// Closing Initial custody abandons unexecuted meaning; active native work stays owned.
@@ -36,12 +36,13 @@ where
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial> {
-        let runtime = self.runtime.runtime();
-        if !std::ptr::eq(runtime, request.application) || self.description.branch != request.branch
+        if !std::ptr::eq(self.runtime.runtime(), request.application)
+            || self.description.branch != request.branch
         {
             return Err(WorthQueryOperationCloseDenial::FreshRequestMismatch);
         }
-        runtime
+        request
+            .application
             .with_application_advancement(request.scope, |phase| self.release_in_phase(&phase))
             .map_err(WorthQueryOperationCloseDenial::Execution)?
     }
@@ -61,21 +62,21 @@ where
             .close_in_advancement(phase, self.runtime.runtime())
     }
 }
-impl<'r, S, I, P, R, A> WorthQuerySettledDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQuerySettledDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
     pub fn branch(&self) -> worth_query_execution::facade::product::WorthQueryProductBranch {
         self.description.branch
     }
     pub fn declared_action(&self) -> &ApplicationActionDeclaration {
-        self.installed_action
+        &self.installed_action
     }
     /// The native aggregate, including retired roots and every dependent settlement.
     /// This observation alone makes no currentness claim.
@@ -105,7 +106,7 @@ where
         {
             return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
         }
-        let runtime = self.runtime.runtime();
+        let runtime = request.application;
         let closed = runtime.with_application_advancement(request.scope, |phase| {
             while !self.prior_cleanup.is_empty() {
                 self.cleanup.reserve_release_failure()?;
@@ -126,14 +127,14 @@ where
         }
     }
 }
-impl<'r, S, I, P, R, A> WorthQueryTerminalDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQueryTerminalDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
     pub fn branch(&self) -> worth_query_execution::facade::product::WorthQueryProductBranch {
@@ -176,7 +177,7 @@ where
             }
             _ => false,
         };
-        let runtime = self.operation.runtime.runtime();
+        let runtime = request.application;
         let result = runtime.with_application_advancement(request.scope, |phase| {
             let terminal_carrier = match &mut self.operation.state {
                 State::Unpublished(partial)

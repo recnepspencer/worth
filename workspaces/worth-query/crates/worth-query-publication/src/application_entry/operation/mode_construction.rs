@@ -6,10 +6,10 @@ use worth_query_declaration::facade::application_program::{
     ApplicationRetainedCommit, ApplicationSourceCompletion,
 };
 mod sealed {
-    pub trait Factory<'r, S, I, P, A> {}
+    pub trait Factory<S, I, P, A> {}
 }
 /// Sealed construction dispatches installed delivery meaning to its concrete custody owner.
-pub trait WorthQueryOperationModeFactory<'r, S, I, P, A>: sealed::Factory<'r, S, I, P, A>
+pub trait WorthQueryOperationModeFactory<S, I, P, A>: sealed::Factory<S, I, P, A>
 where
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
@@ -19,7 +19,7 @@ where
     type Operation;
     fn construct(
         description: WorthQueryOperationDescription<S, I>,
-        runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
     ) -> Result<
         Self::Operation,
         (
@@ -31,43 +31,43 @@ where
 impl<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
     WorthQueryOperationDescription<S, I>
 {
-    pub fn retain_operation<'r, P, A>(self, runtime: &'r WorthQueryProgramApplicationRuntime<S, P>) -> Result<<<A::Delivery as ApplicationActionDelivery<S, I::Binding>>::Mode as WorthQueryOperationModeFactory<'r, S, I, P, A>>::Operation, (Self, WorthQueryOperationConstructionDenial)>
-    where P: ApplicationProgramDefinition<S>, A: ApplicationAction<S, I::Binding>, <A::Delivery as ApplicationActionDelivery<S, I::Binding>>::Mode: WorthQueryOperationModeFactory<'r, S, I, P, A>{
-        <<A::Delivery as ApplicationActionDelivery<S, I::Binding>>::Mode as WorthQueryOperationModeFactory<'r, S, I, P, A>>::construct(self, runtime)
+    pub fn retain_operation<P, A>(self, runtime: &WorthQueryProgramApplicationRuntime<S, P>) -> Result<<<A::Delivery as ApplicationActionDelivery<S, I::Binding>>::Mode as WorthQueryOperationModeFactory<S, I, P, A>>::Operation, (Self, WorthQueryOperationConstructionDenial)>
+    where P: ApplicationProgramDefinition<S>, A: ApplicationAction<S, I::Binding>, <A::Delivery as ApplicationActionDelivery<S, I::Binding>>::Mode: WorthQueryOperationModeFactory<S, I, P, A>{
+        <<A::Delivery as ApplicationActionDelivery<S, I::Binding>>::Mode as WorthQueryOperationModeFactory<S, I, P, A>>::construct(self, runtime)
     }
 }
-impl<'r, S, I, P, A, R, Q> sealed::Factory<'r, S, I, P, A> for ApplicationFixedDeliveryMode<R, Q>
+impl<S, I, P, A, R, Q> sealed::Factory<S, I, P, A> for ApplicationFixedDeliveryMode<R, Q>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding> + ApplicationFixedAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
     I::Binding: WorthQueryApplicationRequiredOutputSource<S, Connection<S, R>>,
-    <A as ApplicationFixedAction<S, I::Binding>>::Delivery:
+    <A as ApplicationAction<S, I::Binding>>::Delivery:
         ApplicationFixedActionDelivery<S, I::Binding, Root = R, Projection = Q>,
     Q: WorthQueryOutputProjectionInstallation<S>,
 {
 }
-impl<'r, S, I, P, A, R, Q> WorthQueryOperationModeFactory<'r, S, I, P, A>
+impl<S, I, P, A, R, Q> WorthQueryOperationModeFactory<S, I, P, A>
     for ApplicationFixedDeliveryMode<R, Q>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding> + ApplicationFixedAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
     I::Binding: WorthQueryApplicationRequiredOutputSource<S, Connection<S, R>>,
-    <A as ApplicationFixedAction<S, I::Binding>>::Delivery:
+    <A as ApplicationAction<S, I::Binding>>::Delivery:
         ApplicationFixedActionDelivery<S, I::Binding, Root = R, Projection = Q>,
     Q: WorthQueryOutputProjectionInstallation<S>,
 {
-    type Operation = WorthQueryFixedOperation<'r, S, I, P, R, A>;
+    type Operation = WorthQueryFixedOperation<S, I, P, R, A>;
     fn construct(
         description: WorthQueryOperationDescription<S, I>,
-        runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
     ) -> Result<
         Self::Operation,
         (
@@ -80,27 +80,25 @@ where
 }
 macro_rules! source_factory {
     ($mode:ty) => {
-        impl<'r, S, I, P, A> sealed::Factory<'r, S, I, P, A> for $mode
+        impl<S, I, P, A> sealed::Factory<S, I, P, A> for $mode
         where
             S: ApplicationSchema + 'static,
             I: ApplicationMutationIntent<S>,
             P: ApplicationProgramDefinition<S>,
             A: ApplicationAction<S, I::Binding>,
-            I::Binding: 'r,
         {
         }
-        impl<'r, S, I, P, A> WorthQueryOperationModeFactory<'r, S, I, P, A> for $mode
+        impl<S, I, P, A> WorthQueryOperationModeFactory<S, I, P, A> for $mode
         where
             S: ApplicationSchema + 'static,
             I: ApplicationMutationIntent<S>,
             P: ApplicationProgramDefinition<S>,
             A: ApplicationAction<S, I::Binding>,
-            I::Binding: 'r,
         {
             type Operation = super::source_only::WorthQuerySourceOnlyOperation<S, I, P, A, $mode>;
             fn construct(
                 description: WorthQueryOperationDescription<S, I>,
-                runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
+                runtime: &WorthQueryProgramApplicationRuntime<S, P>,
             ) -> Result<
                 Self::Operation,
                 (

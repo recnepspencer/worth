@@ -1,56 +1,73 @@
-//! Exact declaration-time action occurrence; this grants no permission.
-use super::super::{
-    ApplicationCompositionInstance, ApplicationFeature, ApplicationFixedActionDelivery,
+//! Typed occurrence selection grants neither complete installed meaning nor permission.
+use super::super::{ApplicationCompositionInstance, ApplicationFeature};
+use super::{
+    ApplicationActionDelivery, ApplicationActionDeliveryDeclaration, ApplicationActionDeliveryMode,
 };
-use super::{ApplicationActionDeclaration, ApplicationActionInstanceRef, ApplicationActionShape};
 use crate::{
     application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema,
 };
-use std::marker::PhantomData;
+use std::{any::TypeId, marker::PhantomData};
 
 pub struct ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery> {
     marker: PhantomData<fn() -> (Schema, Instance, Feature, Binding, Delivery)>,
 }
+
+/// Selection facts only; the installed program owns the complete action declaration.
+/// There is no public constructor or conversion to an action declaration.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ApplicationActionSelector {
+    composition_instance: &'static str,
+    feature: &'static str,
+    binding: &'static str,
+    mutation_binding_type: TypeId,
+    delivery: ApplicationActionDeliveryDeclaration,
+}
+impl ApplicationActionSelector {
+    pub const fn composition_instance(&self) -> &'static str {
+        self.composition_instance
+    }
+    pub const fn feature(&self) -> &'static str {
+        self.feature
+    }
+    pub const fn binding(&self) -> &'static str {
+        self.binding
+    }
+    pub const fn mutation_binding_type(&self) -> TypeId {
+        self.mutation_binding_type
+    }
+    pub const fn delivery(&self) -> &ApplicationActionDeliveryDeclaration {
+        &self.delivery
+    }
+}
 mod sealed {
     pub trait Action {}
 }
-pub trait ApplicationFixedAction<Schema, Binding>: sealed::Action + 'static
-where
-    Schema: ApplicationSchema,
-    Binding: ApplicationMutationBinding<Schema>,
+
+/// References one action occurrence and its concrete delivery implementation.
+///
+/// A selector cannot manufacture complete installed meaning.
+/// ```compile_fail,E0308
+/// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema};
+/// fn partial<S: ApplicationSchema, B: ApplicationMutationBinding<S>, A: ApplicationAction<S, B>>() -> ApplicationActionDeclaration {
+///     A::selector()
+/// }
+/// ```
+/// The same typed reference can select its installed occurrence.
+/// ```
+/// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema};
+/// fn select<S: ApplicationSchema, B: ApplicationMutationBinding<S>, A: ApplicationAction<S, B>>() -> ApplicationActionSelector {
+///     A::selector()
+/// }
+/// ```
+pub trait ApplicationAction<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>:
+    sealed::Action + 'static
 {
-    type Delivery: ApplicationFixedActionDelivery<Schema, Binding>;
-    fn declaration() -> ApplicationActionDeclaration;
+    type Delivery: ApplicationActionDelivery<Schema, Binding>;
+    fn selector() -> ApplicationActionSelector;
 }
 impl<Schema, Instance, Feature, Binding, Delivery> sealed::Action
     for ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>
 {
-}
-impl<
-        Schema: ApplicationSchema,
-        Instance: ApplicationCompositionInstance,
-        Feature: ApplicationFeature<Schema>,
-        Binding: ApplicationMutationBinding<Schema>,
-        Delivery: ApplicationFixedActionDelivery<Schema, Binding>,
-    > ApplicationFixedAction<Schema, Binding>
-    for ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>
-{
-    type Delivery = Delivery;
-    fn declaration() -> ApplicationActionDeclaration {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.mark_required_output_source();
-        action.attach_fixed_delivery::<Schema, Binding, Delivery>();
-        action
-    }
-}
-
-/// References one declared action occurrence and its concrete delivery implementation.
-pub trait ApplicationAction<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>:
-    sealed::Action + 'static
-{
-    type Delivery: super::ApplicationActionDelivery<Schema, Binding>;
-    fn declaration() -> ApplicationActionDeclaration;
 }
 impl<Schema, Instance, Feature, Binding, Delivery> ApplicationAction<Schema, Binding>
     for ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>
@@ -59,31 +76,20 @@ where
     Instance: ApplicationCompositionInstance,
     Feature: ApplicationFeature<Schema>,
     Binding: ApplicationMutationBinding<Schema>,
-    Delivery: super::ApplicationActionDelivery<Schema, Binding>,
+    Delivery: ApplicationActionDelivery<Schema, Binding>,
 {
     type Delivery = Delivery;
-    fn declaration() -> ApplicationActionDeclaration {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_delivery::<Schema, Binding, Delivery>();
-        action
+    fn selector() -> ApplicationActionSelector {
+        ApplicationActionSelector {
+            composition_instance: Instance::PATH,
+            feature: Feature::IDENTITY,
+            binding: Binding::IDENTITY,
+            mutation_binding_type: TypeId::of::<Binding>(),
+            delivery: <Delivery::Mode as ApplicationActionDeliveryMode<
+                Schema,
+                Binding,
+                Delivery,
+            >>::declaration(),
+        }
     }
-}
-
-/// Sealed typed occurrence whose declared output root is genuinely discovered.
-pub trait ApplicationDiscoveredAction<S, B>: ApplicationAction<S, B>
-where
-    S: ApplicationSchema,
-    B: ApplicationMutationBinding<S>,
-    Self::Delivery: super::ApplicationDiscoveredActionDelivery<S, B>,
-{
-}
-impl<S, I, F, B, D> ApplicationDiscoveredAction<S, B> for ApplicationActionReference<S, I, F, B, D>
-where
-    S: ApplicationSchema,
-    I: ApplicationCompositionInstance,
-    F: ApplicationFeature<S>,
-    B: ApplicationMutationBinding<S>,
-    D: super::ApplicationDiscoveredActionDelivery<S, B>,
-{
 }

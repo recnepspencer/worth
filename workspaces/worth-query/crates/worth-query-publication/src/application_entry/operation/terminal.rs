@@ -10,7 +10,7 @@ use worth_query_execution::facade::primary_graph::{
 /// use worth_query_publication::facade::application_entry::WorthQueryTerminalFixedOperation;
 /// use worth_query_declaration::facade::{application_operation::*, application_program::*, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::{application_installation::WorthQueryProgramApplicationRuntime, primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource}};
-/// fn cannot_advance<'r, S, I, P, R, A>(terminal: WorthQueryTerminalFixedOperation<'r, S, I, P, R, A>, request: &worth_query_publication::facade::application_entry::WorthQueryApplicationRequest<'_, '_, '_, S>)
+/// fn cannot_advance<S, I, P, R, A>(terminal: WorthQueryTerminalFixedOperation<S, I, P, R, A>, request: &worth_query_publication::facade::application_entry::WorthQueryApplicationRequest<'_, '_, '_, S>)
 /// where
 ///     S: ApplicationSchema + 'static,
 ///     I: ApplicationMutationIntent<S>,
@@ -18,7 +18,7 @@ use worth_query_execution::facade::primary_graph::{
 ///     R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
 ///     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S>,
 ///     I::Binding: WorthQueryApplicationRequiredOutputSource<S, <R::RootConnection as ApplicationConnectionShape<S>>::Binding>,
-///     A: ApplicationFixedAction<S, I::Binding>,
+///     A: ApplicationAction<S, I::Binding>,
 ///     A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R>,
 /// {
 ///     let _ = terminal.native_outcome(); // A valid terminal observation remains available.
@@ -30,7 +30,7 @@ use worth_query_execution::facade::primary_graph::{
 /// use worth_query_publication::facade::application_entry::WorthQueryTerminalFixedOperation;
 /// use worth_query_declaration::facade::{application_operation::*, application_program::*, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::{application_installation::WorthQueryProgramApplicationRuntime, primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource}};
-/// fn observe_terminal<'r, S, I, P, R, A>(terminal: WorthQueryTerminalFixedOperation<'r, S, I, P, R, A>, request: &worth_query_publication::facade::application_entry::WorthQueryApplicationRequest<'_, '_, '_, S>)
+/// fn observe_terminal<S, I, P, R, A>(terminal: WorthQueryTerminalFixedOperation<S, I, P, R, A>, request: &worth_query_publication::facade::application_entry::WorthQueryApplicationRequest<'_, '_, '_, S>)
 /// where
 ///     S: ApplicationSchema + 'static,
 ///     I: ApplicationMutationIntent<S>,
@@ -38,14 +38,14 @@ use worth_query_execution::facade::primary_graph::{
 ///     R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
 ///     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S>,
 ///     I::Binding: WorthQueryApplicationRequiredOutputSource<S, <R::RootConnection as ApplicationConnectionShape<S>>::Binding>,
-///     A: ApplicationFixedAction<S, I::Binding>,
+///     A: ApplicationAction<S, I::Binding>,
 ///     A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R>,
 /// {
 ///     let _ = terminal.native_outcome(); // A valid terminal observation remains available.
 ///     let _ = request;
 /// }
 /// ```
-pub struct WorthQueryTerminalFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+pub struct WorthQueryTerminalFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -54,14 +54,14 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
-    pub(super) operation: WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
+    pub(super) operation: WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>,
 }
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQueryTerminalFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQueryTerminalFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -70,12 +70,12 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
     pub(super) fn new(
-        mut operation: WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
+        mut operation: WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>,
     ) -> Self {
         // Before promotion, the partial is the sole owner of its prior cleanup.
         if let FixedState::Unpublished(partial) = &mut operation.state {
@@ -108,9 +108,12 @@ where
         {
             return Err(WorthQueryOperationCloseDenial::FreshRequestMismatch);
         }
-        runtime
+        request
+            .application
             .with_application_advancement(request.scope, |phase| {
-                self.operation.cleanup.close_in_advancement(&phase, runtime)
+                self.operation
+                    .cleanup
+                    .close_in_advancement(&phase, request.application)
             })
             .map_err(WorthQueryOperationCloseDenial::Execution)?
     }
@@ -153,10 +156,8 @@ where
             FixedState::NotPerformed(outcome) => super::close::terminal_outcome_can_close(outcome),
             _ => false,
         };
-        let result = self
-            .operation
-            .runtime
-            .runtime()
+        let result = request
+            .application
             .with_application_advancement(request.scope, |phase| {
                 let terminal_carrier = match &mut self.operation.state {
                     FixedState::Unpublished(partial)
@@ -177,7 +178,7 @@ where
                 let receipt = self
                     .operation
                     .cleanup
-                    .close_in_advancement(&phase, self.operation.runtime.runtime())?;
+                    .close_in_advancement(&phase, request.application)?;
                 Ok(WorthQueryClosedOperation::from_cleanup(receipt))
             });
         match result {

@@ -5,8 +5,8 @@ use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
 use WorthQueryOperationProgress as Progress;
 
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -17,7 +17,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
     Program::Outputs: ApplicationProgramOutputsShape<Schema>,
@@ -41,7 +41,7 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-    ) -> FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> {
+    ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         use worth_query_execution::facade::primary_graph::{
             WorthQueryApplicationIdempotencyResolution as Resolution,
             WorthQueryManagedApplicationRecoveryDenial as RecoveryDenial,
@@ -51,8 +51,8 @@ where
             unreachable!("replay dispatch owns committed evidence")
         };
         let admission = (|| {
-            let mut native = self.description.request_view(request, self.installed_action);
-            let prepared = native.authorize_fixed_source::<Program, Root>(phase, self.runtime, None)?;
+            let mut native = self.description.request_view(request, &self.installed_action);
+            let prepared = native.authorize_fixed_source::<Program, Root>(phase, &self.runtime, None)?;
             let read = native.read_recovery_idempotency(phase, &prepared)?;
             let Resolution::AlreadyCommitted(receipt) = read.into_resolution() else {
                 return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
@@ -81,7 +81,7 @@ where
             },
         };
         match request.recover_admitted_required_outputs_in_advancement::<Program, Root, _, _, _>(
-            phase, self.runtime, &receipt, demand,
+            phase, &self.runtime, &receipt, demand,
             WorthQueryOutputDemandControls::host_policy(), &prepared.admission,
         ) {
             Ok(outputs) => {

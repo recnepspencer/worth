@@ -5,8 +5,8 @@ use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
 use WorthQueryOperationProgress as Progress;
 
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -17,7 +17,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
     Program::Outputs: ApplicationProgramOutputsShape<Schema>,
@@ -41,7 +41,7 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-    ) -> FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> {
+    ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         let FixedState::Unpublished(mut partial) = self.state else {
             unreachable!("source dispatch retains partial custody")
         };
@@ -56,8 +56,8 @@ where
             if partial.performed().is_none() {
                 let outcome = self
                     .description
-                    .request_view(request, self.installed_action)
-                    .recover_unpublished_required_in_advancement(phase, &mut partial, self.runtime);
+                    .request_view(request, &self.installed_action)
+                    .recover_unpublished_required_in_advancement(phase, &mut partial, &self.runtime);
                 self.state = FixedState::Unpublished(partial);
                 match outcome {
                     Ok(progress) => Progress::Recovery(progress),
@@ -71,8 +71,8 @@ where
             } else {
                 match self
                     .description
-                    .request_view(request, self.installed_action)
-                    .promote_recovered_required_outputs_in_advancement(phase, partial, self.runtime)
+                    .request_view(request, &self.installed_action)
+                    .promote_recovered_required_outputs_in_advancement(phase, partial, &self.runtime)
                 {
                     Ok(recovered) => {
                         let (preparation, _initial_cause, performed, cleanup) =
@@ -104,15 +104,15 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-    ) -> FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> {
+    ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         let FixedState::Retention(failure) = self.state else {
             unreachable!("source dispatch retains retention custody")
         };
         let progress = {
             match self
                 .description
-                .request_view(request, self.installed_action)
-                .retry_required_output_retention_in_advancement(phase, failure, self.runtime)
+                .request_view(request, &self.installed_action)
+                .retry_required_output_retention_in_advancement(phase, failure, &self.runtime)
             {
                 Ok(performed) => {
                     let (result, preparation) = performed.into_preparation();

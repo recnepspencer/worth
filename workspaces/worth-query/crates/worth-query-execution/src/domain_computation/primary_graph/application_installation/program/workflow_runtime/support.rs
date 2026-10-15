@@ -24,45 +24,59 @@ where
     /// The spec must come from this host's schema and from an exact installed
     /// program the roster carries and has not retired. Each program has one
     /// vocabulary, so the initial program and an already supported program are
-    /// refused.
+    /// refused. Every refusal returns the original installed spec alongside its denial.
     pub fn support_workflow_spec(
         &mut self,
         workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
-    ) -> Result<(), WorthQueryWorkflowRuntimeBindingDenial> {
-        if workflow.schema_binding() != &self.runtime.installed_schema().binding_identity() {
-            return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
-        }
-        let revision = workflow.program_revision();
-        if revision == self.runtime.installed_program().revision()
-            || self
+    ) -> Result<
+        (),
+        (
+            WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+            WorthQueryWorkflowRuntimeBindingDenial,
+        ),
+    > {
+        let binding = (|| {
+            if workflow.schema_binding() != &self.runtime.installed_schema().binding_identity() {
+                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
+            }
+            let revision = workflow.program_revision();
+            if revision == self.runtime.installed_program().revision()
+                || self
+                    .supported
+                    .iter()
+                    .any(|supported| supported.program_revision() == revision)
+            {
+                return Err(WorthQueryWorkflowRuntimeBindingDenial::AlreadySupported);
+            }
+            let rostered = self
+                .runtime
+                .backing
                 .supported
                 .iter()
-                .any(|supported| supported.program_revision() == revision)
-        {
-            return Err(WorthQueryWorkflowRuntimeBindingDenial::AlreadySupported);
+                .any(|rostered| rostered.revision() == revision);
+            let present = self
+                .runtime
+                .backing
+                .runtime
+                .installed_program_support()
+                .and_then(|support| support.present(revision))
+                .is_some();
+            if !(rostered && present) {
+                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
+            }
+            std::sync::Arc::get_mut(&mut self.runtime.backing)
+                .ok_or(WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained)?
+                .runtime
+                .workflow_coverage
+                .register(workflow.adoption_coverage())
+                .map_err(|_| {
+                    WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage
+                })?;
+            Ok(())
+        })();
+        if let Err(denial) = binding {
+            return Err((workflow, denial));
         }
-        let rostered = self
-            .runtime
-            .backing
-            .supported
-            .iter()
-            .any(|rostered| rostered.revision() == revision);
-        let present = self
-            .runtime
-            .backing
-            .runtime
-            .installed_program_support()
-            .and_then(|support| support.present(revision))
-            .is_some();
-        if !(rostered && present) {
-            return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
-        }
-        std::sync::Arc::get_mut(&mut self.runtime.backing)
-            .ok_or(WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained)?
-            .runtime
-            .workflow_coverage
-            .register(workflow.adoption_coverage())
-            .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;
         self.supported.push(workflow);
         Ok(())
     }

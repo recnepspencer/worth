@@ -3,8 +3,8 @@ use super::*;
 use worth_query_declaration::facade::application_program::ApplicationDiscoveredBatchDelivery;
 type BatchRead<S, I, A, const N: usize> =
     <ActionDelivery<S, I, A> as ApplicationDiscoveredBatchDelivery<S, Binding<S, I>, N>>::Read;
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQuerySettledDiscoveredOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQuerySettledDiscoveredOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -12,7 +12,7 @@ where
     Root: ApplicationOutputGraphShape<Schema> + ApplicationDiscoveredOutputRoot,
     Connection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
-    Action: ApplicationDiscoveredAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     ActionDelivery<Schema, Intent, Action>:
         ApplicationDiscoveredActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
@@ -24,11 +24,11 @@ where
     /// use worth_query_publication::facade::application_entry::*;
     /// use worth_query_declaration::facade::{application_program::*,application_operation::ApplicationMutationIntent,application_query::*,application_schema::{ApplicationSchema,ApplicationStructuredValueBinding}};
     /// use worth_query_execution::facade::primary_graph::{WorthQueryApplicationDiscoveredOutputConnection,WorthQueryApplicationProjection};
-    /// fn exact<S,I,P,R,A,Q>(owner:&WorthQuerySettledDiscoveredOperation<'_,S,I,P,R,A>,request:&WorthQueryApplicationRequest<'_, '_, '_, S>)
+    /// fn exact<S,I,P,R,A,Q>(owner:&WorthQuerySettledDiscoveredOperation<S,I,P,R,A>,request:&WorthQueryApplicationRequest<'_, '_, '_, S>)
     /// where S:ApplicationSchema+'static,I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,
     /// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
     /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding>,
-    /// A:ApplicationDiscoveredAction<S,I::Binding>,A::Delivery:ApplicationDiscoveredBatchDelivery<S,I::Binding,2,Root=R,Read=Q>,
+    /// A:ApplicationAction<S,I::Binding>,A::Delivery:ApplicationDiscoveredBatchDelivery<S,I::Binding,2,Root=R,Read=Q>,
     /// Q:ApplicationQueryBinding<S>,Q::Input:ApplicationQueryIntent<S,Binding=Q>,
     /// Q::ScopeBinding:ApplicationQueryScopeResolution<S,Q::PrincipalIdentity>,
     /// <Q::ResultBinding as ApplicationStructuredValueBinding>::Value:WorthQueryApplicationProjection<S,Q::Query> {
@@ -40,11 +40,11 @@ where
     /// use worth_query_publication::facade::application_entry::*;
     /// use worth_query_declaration::facade::{application_program::*,application_operation::ApplicationMutationIntent,application_query::*,application_schema::{ApplicationSchema,ApplicationStructuredValueBinding}};
     /// use worth_query_execution::facade::primary_graph::{WorthQueryApplicationDiscoveredOutputConnection,WorthQueryApplicationProjection};
-    /// fn exact<S,I,P,R,A,Q>(owner:&WorthQuerySettledDiscoveredOperation<'_,S,I,P,R,A>,request:&WorthQueryApplicationRequest<'_, '_, '_, S>)
+    /// fn exact<S,I,P,R,A,Q>(owner:&WorthQuerySettledDiscoveredOperation<S,I,P,R,A>,request:&WorthQueryApplicationRequest<'_, '_, '_, S>)
     /// where S:ApplicationSchema+'static,I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,
     /// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
     /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding>,
-    /// A:ApplicationDiscoveredAction<S,I::Binding>,A::Delivery:ApplicationDiscoveredBatchDelivery<S,I::Binding,2,Root=R,Read=Q>,
+    /// A:ApplicationAction<S,I::Binding>,A::Delivery:ApplicationDiscoveredBatchDelivery<S,I::Binding,2,Root=R,Read=Q>,
     /// Q:ApplicationQueryBinding<S>,Q::Input:ApplicationQueryIntent<S,Binding=Q>,
     /// Q::ScopeBinding:ApplicationQueryScopeResolution<S,Q::PrincipalIdentity>,
     /// <Q::ResultBinding as ApplicationStructuredValueBinding>::Value:WorthQueryApplicationProjection<S,Q::Query> {
@@ -86,8 +86,7 @@ where
         {
             return Err(Denial::FreshRequestMismatch);
         }
-        self.runtime
-            .runtime()
+        request.application
             .with_application_advancement(request.scope, |phase| {
                 let observation = self.current_observation(request, &phase, policy)?;
                 let inputs = <ActionDelivery<Schema, Intent, Action> as ApplicationDiscoveredBatchDelivery<
@@ -118,8 +117,7 @@ where
         {
             return Err(Denial::FreshRequestMismatch);
         }
-        self.runtime
-            .runtime()
+        request.application
             .with_application_advancement(request.scope, |phase| {
                 let inputs = <ActionDelivery<Schema, Intent, Action> as ApplicationDiscoveredBatchDelivery<
                     Schema,

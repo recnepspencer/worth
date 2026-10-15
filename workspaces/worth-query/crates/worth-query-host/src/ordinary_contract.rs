@@ -231,3 +231,56 @@
 //!         ApplicationMutationScopeResolution<S, <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
 //! { let _ = keyed.advanced().execute_in_program(program, todo!()); }
 //! ```
+
+//! Fixed and discovered owners outlive the authentic runtime handle used for construction.
+//! These compile through the application audience and impose no Clone bound on intent.
+//! Applications keep a separate authentic handle for later fresh requests.
+//! ```
+//! use worth_query_host::facade::{
+//!     application_entry::{WorthQueryOperationDescription, WorthQueryOperationConstructionDenial,
+//!         WorthQueryFixedOperation, WorthQueryDiscoveredOperation, WorthQueryOutputProjectionInstallation},
+//!     application_installation::WorthQueryProgramApplicationRuntime,
+//!     declaration::{application_operation::*, application_program::*, application_schema::ApplicationSchema},
+//!     primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource,
+//!         WorthQueryApplicationDiscoveredOutputConnection},
+//! };
+//! fn fixed<S, I, P, R, A>(
+//!     description: WorthQueryOperationDescription<S, I>,
+//!     constructing: WorthQueryProgramApplicationRuntime<S, P>,
+//! ) -> Result<WorthQueryFixedOperation<S, I, P, R, A>,
+//!     (WorthQueryOperationDescription<S, I>, WorthQueryOperationConstructionDenial)>
+//! where
+//!     S: ApplicationSchema + 'static,
+//!     I: ApplicationMutationIntent<S>,
+//!     P: ApplicationProgramDefinition<S>,
+//!     R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
+//!     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S>,
+//!     I::Binding: WorthQueryApplicationRequiredOutputSource<S, <R::RootConnection as ApplicationConnectionShape<S>>::Binding>,
+//!     A: ApplicationAction<S, I::Binding>,
+//!     A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R>,
+//!     <A::Delivery as ApplicationFixedActionDelivery<S, I::Binding>>::Projection: WorthQueryOutputProjectionInstallation<S>,
+//! {
+//!     let retained = description.retain_operation::<P, A>(&constructing);
+//!     drop(constructing);
+//!     retained
+//! }
+//! fn discovered<S, I, P, R, A>(
+//!     description: WorthQueryOperationDescription<S, I>,
+//!     constructing: WorthQueryProgramApplicationRuntime<S, P>,
+//! ) -> Result<WorthQueryDiscoveredOperation<S, I, P, R, A>,
+//!     (WorthQueryOperationDescription<S, I>, WorthQueryOperationConstructionDenial)>
+//! where
+//!     S: ApplicationSchema + 'static,
+//!     I: ApplicationMutationIntent<S>,
+//!     P: ApplicationProgramDefinition<S>,
+//!     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
+//!     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
+//!     A: ApplicationAction<S, I::Binding>,
+//!     A::Delivery: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
+//!     <A::Delivery as ApplicationDiscoveredActionDelivery<S, I::Binding>>::Projection: WorthQueryOutputProjectionInstallation<S>,
+//! {
+//!     let retained = description.retain_operation::<P, A>(&constructing);
+//!     drop(constructing);
+//!     retained
+//! }
+//! ```

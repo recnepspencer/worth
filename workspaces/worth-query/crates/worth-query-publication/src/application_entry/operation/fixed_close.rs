@@ -1,7 +1,7 @@
 //! Live fixed cleanup release and unexecuted Initial close use the native collection.
 use super::*;
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -10,7 +10,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
@@ -44,9 +44,11 @@ where
         {
             return Err(WorthQueryOperationCloseDenial::FreshRequestMismatch);
         }
-        runtime
+        request
+            .application
             .with_application_advancement(request.scope, |phase| {
-                self.cleanup.close_in_advancement(&phase, runtime)
+                self.cleanup
+                    .close_in_advancement(&phase, request.application)
             })
             .map_err(WorthQueryOperationCloseDenial::Execution)?
     }
