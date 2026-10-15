@@ -1,10 +1,15 @@
 //! Closed typed bindings selecting native recorded occurrences for policy.
 use super::ApplicationWorkflowSpec;
-use crate::application_capability::{ApplicationWorkflowRecordedActorSource, ApplicationCapabilityMarkerIdentity};
+use crate::application_capability::{
+    ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRequest,
+    ApplicationWorkflowRecordedActorSource,
+};
 use crate::application_operation::{
     ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
+    ApplicationMutationScopeBinding,
 };
 use crate::application_schema::ApplicationOperationMarkerIdentity;
+use crate::portable_identity::WorthQueryPortableType;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 /// Installed operation/binding identity paired with its original native source.
@@ -18,7 +23,9 @@ pub struct ApplicationWorkflowActorBinding {
 }
 impl ApplicationWorkflowActorBinding {
     /// Exact capability declaration selected by this typed mutation binding.
-    pub fn capability(&self) -> (&str, &str) { (&self.capability, &self.capability_type) }
+    pub fn capability(&self) -> (&str, &str) {
+        (&self.capability, &self.capability_type)
+    }
 
     /// The declared operation identifier.
     pub fn operation(&self) -> &str {
@@ -52,13 +59,20 @@ impl ApplicationWorkflowActorPolicy {
     where
         Spec: ApplicationWorkflowSpec,
         Binding: ApplicationCapabilityMutationBinding<Spec::Schema>,
+        <Binding as ApplicationMutationBinding<Spec::Schema>>::Input: ApplicationCapabilityRequest<
+            Spec::Schema,
+            Binding::Capability,
+            Scope = <Binding::ScopeBinding as ApplicationMutationScopeBinding<Spec::Schema>>::Scope,
+        >,
     {
         Self::Bound(vec![ApplicationWorkflowActorBinding {
             operation: Binding::Operation::IDENTIFIER.to_owned(),
             binding: Binding::IDENTITY.to_owned(),
             source,
             capability: Binding::Capability::IDENTIFIER.to_owned(),
-            capability_type: Binding::Capability::PORTABLE_TYPE_IDENTITY.as_str().to_owned(),
+            capability_type: Binding::Capability::PORTABLE_TYPE_IDENTITY
+                .as_str()
+                .to_owned(),
         }])
     }
     /// Binds a genuine approval command to its native original occurrence source.
@@ -66,6 +80,11 @@ impl ApplicationWorkflowActorPolicy {
     where
         Spec: ApplicationWorkflowSpec,
         Binding: ApplicationCapabilityMutationBinding<Spec::Schema>,
+        <Binding as ApplicationMutationBinding<Spec::Schema>>::Input: ApplicationCapabilityRequest<
+            Spec::Schema,
+            Binding::Capability,
+            Scope = <Binding::ScopeBinding as ApplicationMutationScopeBinding<Spec::Schema>>::Scope,
+        >,
     {
         Self::for_operation::<Spec, Binding>(source)
     }
@@ -101,7 +120,13 @@ impl ApplicationWorkflowActorPolicy {
                     value.operation,
                     value.binding,
                     value.source
-                ) + &format!(":{}:{}:{}{}", value.capability.len(), value.capability_type.len(), value.capability, value.capability_type)
+                ) + &format!(
+                    ":{}:{}:{}{}",
+                    value.capability.len(),
+                    value.capability_type.len(),
+                    value.capability,
+                    value.capability_type
+                )
             }),
         }
     }

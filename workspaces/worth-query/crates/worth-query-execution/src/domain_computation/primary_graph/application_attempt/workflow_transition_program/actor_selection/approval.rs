@@ -106,7 +106,7 @@ pub(super) fn approval_actor(
             facts,
         )?;
     }
-    WorkflowActorFields {
+    let actor = WorkflowActorFields {
         partition: layout.approval.approver_partition.clone(),
         slot: layout.approval.approver_slot.clone(),
         generation: layout.approval.approver_generation.clone(),
@@ -118,7 +118,7 @@ pub(super) fn approval_actor(
         entity,
         layout.approval.entity_kind,
         facts,
-    )?
-    .ok_or_else(|| affinity("current approval has no approver"))
-    .map(|actor| (Some(actor), Some(entity)))
+    )?;
+    let actor = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, true)?;
+    Ok((actor, Some(entity)))
 }
