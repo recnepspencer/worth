@@ -103,10 +103,10 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
                 "caller stopped",
             )));
         }
-        if self.contacts.armed.load(Ordering::SeqCst) {
-            if let Some(source) = &self.cancellation {
-                source.cancel();
-            }
+        if self.contacts.armed.load(Ordering::SeqCst)
+            && let Some(source) = &self.cancellation
+        {
+            source.cancel();
         }
         if !budget.checkpoint(0) {
             return Some(Err(WorthQueryApplicationInvariantPreparationError::new(

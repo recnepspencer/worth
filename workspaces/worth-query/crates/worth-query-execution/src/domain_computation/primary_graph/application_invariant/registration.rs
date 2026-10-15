@@ -136,10 +136,10 @@ where
         context: &CustomInvariantExecutionContext<'_>,
         scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
-        if let Some(selection) = &self.program_selection {
-            if selection.standing(context)? == WorthQueryProgramRuleStanding::Silent {
-                return Ok(CustomInvariantVerdict::Pass);
-            }
+        if let Some(selection) = &self.program_selection
+            && selection.standing(context)? == WorthQueryProgramRuleStanding::Silent
+        {
+            return Ok(CustomInvariantVerdict::Pass);
         }
         let context = super::WorthQueryApplicationInvariantContext::new(
             context,

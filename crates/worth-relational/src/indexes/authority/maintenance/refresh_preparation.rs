@@ -62,26 +62,26 @@ impl IndexAuthority<'_> {
                     index_id,
                 ));
             }
-            if let Some(generation) = current {
-                if generation.applicability.schema_version == schema_version {
-                    work.grow_vec(&mut reused)?;
-                    let initialized = generation
-                        .source_branch_id
-                        .0
-                        .len()
-                        .checked_add(generation.applicability.branch_id.0.len())
-                        .ok_or(DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded)?;
-                    let backing = generation
-                        .source_branch_id
-                        .0
-                        .capacity()
-                        .checked_add(generation.applicability.branch_id.0.capacity())
-                        .ok_or(DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded)?;
-                    work.prepare(initialized as u64 + 1, backing as u64)?;
-                    reused.push(generation.as_ref().clone());
-                    work.note_reused_generations(1);
-                    continue;
-                }
+            if let Some(generation) = current
+                && generation.applicability.schema_version == schema_version
+            {
+                work.grow_vec(&mut reused)?;
+                let initialized = generation
+                    .source_branch_id
+                    .0
+                    .len()
+                    .checked_add(generation.applicability.branch_id.0.len())
+                    .ok_or(DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded)?;
+                let backing = generation
+                    .source_branch_id
+                    .0
+                    .capacity()
+                    .checked_add(generation.applicability.branch_id.0.capacity())
+                    .ok_or(DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded)?;
+                work.prepare(initialized as u64 + 1, backing as u64)?;
+                reused.push(generation.as_ref().clone());
+                work.note_reused_generations(1);
+                continue;
             }
             if let Some(seed) = self.fork_seed_admitted(
                 index_id,

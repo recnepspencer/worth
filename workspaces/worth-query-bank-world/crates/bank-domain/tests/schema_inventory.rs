@@ -95,6 +95,8 @@ fn assert_entity_and_relation_inventory(members: &[ApplicationSchemaMember]) {
             "PaymentIntent",
             "Posting",
             "Principal",
+            "ProgramDeploymentGrant",
+            "ProgramDeploymentScope",
         ])
     );
     assert_eq!(
@@ -149,6 +151,10 @@ fn assert_entity_and_relation_inventory(members: &[ApplicationSchemaMember]) {
             "PersonalOwner",
             "PostingAccount",
             "PrincipalCustomer",
+            "ProgramDeploymentGrantGrantee",
+            "ProgramDeploymentGrantGrantor",
+            "ProgramDeploymentGrantParent",
+            "ProgramDeploymentGrantResource",
             "ReviewEstate",
             "ReviewPrincipal",
         ])
@@ -170,6 +176,7 @@ fn assert_operation_inventory(members: &[ApplicationSchemaMember]) {
             "CreateBusinessAccountOperation",
             "CreatePersonalAccountOperation",
             "DelegateEstateCapabilityOperation",
+            "DeployBankProgramOperation",
             "DepositOperation",
             "DisburseEstateOperation",
             "FreezeEstateAccountOperation",
@@ -177,6 +184,7 @@ fn assert_operation_inventory(members: &[ApplicationSchemaMember]) {
             "InitiateBusinessPaymentOperation",
             "NotifyDeathEstateOperation",
             "OpenEstateCaseOperation",
+            "ProgramDeploymentRevocationOperation",
             "PublishApprovedPaymentAssessment",
             "RecognizeEstateExecutorOperation",
             "RejectPaymentOperation",
@@ -205,6 +213,7 @@ fn assert_capability_inventory(members: &[ApplicationSchemaMember]) {
             "ApprovedBusinessPaymentInstanceStart",
             "CompleteEstateMandatoryReviewCapability",
             "DelegateEstateCapability",
+            "DeployBankProgram",
             "DisburseEstateCapability",
             "FreezeEstateAccountCapability",
             "NotifyDeathEstateCapability",

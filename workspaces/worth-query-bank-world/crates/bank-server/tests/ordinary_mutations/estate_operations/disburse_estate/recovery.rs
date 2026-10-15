@@ -11,10 +11,7 @@ fn disbursement_recovery_uses_its_own_admitted_operation() {
     let outcome = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&fixture)
-            .world
-            .runtime
-            .request(closing_actor, &closing_scope);
+        let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = disburse(&fixture, &specialist, action, idempotency(91))
@@ -60,10 +57,7 @@ fn disbursement_compensation_uses_its_own_admitted_operation() {
     let outcome = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&fixture)
-            .world
-            .runtime
-            .request(closing_actor, &closing_scope);
+        let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = disburse(&fixture, &specialist, action, idempotency(92))

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Workflow refusals preserve complete native operation recovery and cleanup custody without allocation"
+)]
+
 use bank_domain::{
     proposals::{BankIdempotencyKey, BankProposalDenial},
     schema::{

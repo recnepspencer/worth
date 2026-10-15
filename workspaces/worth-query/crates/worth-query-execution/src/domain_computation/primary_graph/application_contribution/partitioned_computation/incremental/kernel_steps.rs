@@ -10,14 +10,14 @@ impl KernelSteps {
         units: u64,
         mut reserve: impl FnMut(u64) -> bool,
     ) -> bool {
-        if let Some((previous, repetitions)) = self.0.last_mut() {
-            if *previous == units {
-                let Some(next) = repetitions.checked_add(1) else {
-                    return false;
-                };
-                *repetitions = next;
-                return true;
-            }
+        if let Some((previous, repetitions)) = self.0.last_mut()
+            && *previous == units
+        {
+            let Some(next) = repetitions.checked_add(1) else {
+                return false;
+            };
+            *repetitions = next;
+            return true;
         }
         if self.0.len() == self.0.capacity() {
             let capacity = self.0.capacity().max(1);

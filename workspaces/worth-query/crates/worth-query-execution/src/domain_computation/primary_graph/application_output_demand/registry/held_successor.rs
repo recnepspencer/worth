@@ -49,13 +49,13 @@ impl WorthQueryOutputDemandRegistry {
             key,
             &mut super::lifecycle::release::CleanupWalk::new(),
         ));
-        let result = match state.records.get_mut(key) {
+
+        match state.records.get_mut(key) {
             Some(mut record) if needs_successor(&record) && (record.interests > 1 || awaited) => {
                 record.held_successor.replace(successor)
             }
             _ => Some(successor),
-        };
-        result
+        }
     }
 
     /// Take the successor held on `key`'s row so a dependent can resume it.

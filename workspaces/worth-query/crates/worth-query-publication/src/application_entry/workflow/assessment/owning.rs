@@ -32,7 +32,8 @@ where
     P: ApplicationProgramDefinition<S>,
 {
     runtime: WorthQueryProgramApplicationRuntime<S, P>,
-    observation: WorthQueryApplicationOutputDemandContinuation<S, D>,
+    // Retain the closed native interest until this receipt's owner is dropped.
+    _observation: WorthQueryApplicationOutputDemandContinuation<S, D>,
     cleanup: Option<
         worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
     >,

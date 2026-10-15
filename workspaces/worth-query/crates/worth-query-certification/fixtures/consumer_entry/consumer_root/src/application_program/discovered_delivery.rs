@@ -35,7 +35,9 @@ impl ApplicationDiscoveredQueryDelivery<ConsumerSchema, Binding> for QueryDelive
         }
     }
 }
+#[cfg(test)]
 pub(crate) struct BatchDelivery<const N: usize>;
+#[cfg(test)]
 impl<const N: usize> ApplicationActionDelivery<ConsumerSchema, Binding> for BatchDelivery<N> {
     type Mode = ApplicationDiscoveredDeliveryMode<
         ConsumerDiscoveredProgramRoot,
@@ -43,12 +45,14 @@ impl<const N: usize> ApplicationActionDelivery<ConsumerSchema, Binding> for Batc
     >;
     const IDENTITY: &'static str = "consumer.discovered-batch.v2";
 }
+#[cfg(test)]
 impl<const N: usize> ApplicationDiscoveredActionDelivery<ConsumerSchema, Binding>
     for BatchDelivery<N>
 {
     type Root = ConsumerDiscoveredProgramRoot;
     type Projection = ApplicationQueryBatchProjection<Read, N>;
 }
+#[cfg(test)]
 impl ApplicationDiscoveredBatchDelivery<ConsumerSchema, Binding, 2> for BatchDelivery<2> {
     type Read = Read;
     fn read_inputs(input: &PlanarSourceAdjustment) -> [PlanarOutputRead; 2] {

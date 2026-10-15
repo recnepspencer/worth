@@ -126,14 +126,14 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
         binding: &WorthQueryExistingTruthTargetBinding,
     ) -> Result<(), WorthQueryExistingTruthBindingDenial> {
         let state = self.state.borrow();
-        if let Some(expected_collection) = binding.terminal_target_collection_projection() {
-            if !state.installed_collections.contains(expected_collection) {
-                return Err(WorthQueryExistingTruthBindingDenial::new(
-                    binding,
-                    WorthQueryExistingTruthBindingDenialKind::CollectionMismatch,
-                    format!("declared target collection `{expected_collection}` is not installed"),
-                ));
-            }
+        if let Some(expected_collection) = binding.terminal_target_collection_projection()
+            && !state.installed_collections.contains(expected_collection)
+        {
+            return Err(WorthQueryExistingTruthBindingDenial::new(
+                binding,
+                WorthQueryExistingTruthBindingDenialKind::CollectionMismatch,
+                format!("declared target collection `{expected_collection}` is not installed"),
+            ));
         }
         let resolved_target_identity = binding
             .resolved_target_identity()
@@ -149,9 +149,10 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
                 ),
             ));
         };
-        if let Some(expected_collection) = binding.terminal_target_collection_projection() {
-            if actual_collection != expected_collection {
-                return Err(WorthQueryExistingTruthBindingDenial::new(
+        if let Some(expected_collection) = binding.terminal_target_collection_projection()
+            && actual_collection != expected_collection
+        {
+            return Err(WorthQueryExistingTruthBindingDenial::new(
                     binding,
                     WorthQueryExistingTruthBindingDenialKind::CollectionMismatch,
                     format!(
@@ -159,7 +160,6 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
                         resolved_target_identity
                     ),
                 ));
-            }
         }
         Ok(())
     }

@@ -313,10 +313,10 @@ impl Drop for WorthQueryProgramSupportRetirementAttempt {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(entry) = state.entries.get_mut(&self.revision) {
-            if entry.status == WorthQueryProgramSupportStatus::Retiring {
-                entry.status = WorthQueryProgramSupportStatus::Active;
-            }
+        if let Some(entry) = state.entries.get_mut(&self.revision)
+            && entry.status == WorthQueryProgramSupportStatus::Retiring
+        {
+            entry.status = WorthQueryProgramSupportStatus::Active;
         }
     }
 }

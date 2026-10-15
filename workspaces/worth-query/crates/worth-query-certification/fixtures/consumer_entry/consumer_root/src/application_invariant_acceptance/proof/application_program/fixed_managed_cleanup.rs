@@ -128,7 +128,7 @@ fn terminal_court(interference: Interference) {
             winner
         });
         let outcome = original.advance(&request);
-        assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
+        assert_eq!(planar_source_adjustment_contacts(input), (1, 1));
         release.send(()).unwrap_or_else(|_| match &outcome {
             Advance::Terminal { operation, denial } => panic!(
                 "actual source stopped before World seam: {denial:?}, native {:?}",
@@ -210,7 +210,6 @@ fn terminal_court(interference: Interference) {
     ));
     assert!(terminal.native_outcome().is_some());
     assert!(terminal.managed_cleanup_failure().is_some());
-    drop(request);
     drop(principal);
     drop(scope);
     let fresh_scope = authentication::request_scope();

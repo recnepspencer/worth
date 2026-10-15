@@ -169,10 +169,8 @@ impl ResourceRuntimeState {
             transition,
         );
 
-        if count_scalar_boundary {
-            if let Some(telemetry) = telemetry.as_deref_mut() {
-                telemetry.resource_completion_admission_count += 1;
-            }
+        if count_scalar_boundary && let Some(telemetry) = telemetry.as_deref_mut() {
+            telemetry.resource_completion_admission_count += 1;
         }
         let performance = ResourceBoundaryPerformanceEnvelope::completion_admission(1, 0, 1)
             .with_density_strategy(ResourceDensityStrategy::scalar_completion());

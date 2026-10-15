@@ -6,7 +6,7 @@ pub(super) fn fund_opening(
     created_personal: bank_domain::model::AccountId,
 ) {
     let scope = request_scope();
-    let request = fixture.world.runtime.request(&teller, &scope);
+    let request = fixture.world.runtime.request(teller, &scope);
     let source = fixture
         .world
         .runtime
@@ -15,7 +15,7 @@ pub(super) fn fund_opening(
             account: created_personal,
             amount: Money::from_minor(3_000).unwrap(),
         }))
-        .as_principal(&teller)
+        .as_principal(teller)
         .controls(BankMutationControls::new(
             scope.clone(),
             key("opening-funding"),
@@ -50,7 +50,7 @@ pub(super) fn reverse_deposit(
     journal: bank_domain::model::JournalEntryId,
 ) {
     let scope = request_scope();
-    let request = fixture.world.runtime.request(&teller, &scope);
+    let request = fixture.world.runtime.request(teller, &scope);
     let source = fixture
         .world
         .runtime
@@ -59,7 +59,7 @@ pub(super) fn reverse_deposit(
             journal,
             reason: ReversalReason::OperatorCorrection,
         }))
-        .as_principal(&teller)
+        .as_principal(teller)
         .controls(BankMutationControls::new(scope.clone(), key("reverse")))
         .retain_operation()
         .unwrap_or_else(|cause| panic!("declared retained money: {cause:?}"));

@@ -22,9 +22,10 @@ pub(super) fn validate_hostile_diagnostic_alignment(
     support: &QuerySubscriptionSupportReport,
     lifecycle: &SubscriptionLifecycleCertificationBundle,
 ) -> Result<(), QuerySubscriptionRuntimeCertificationError> {
-    if let Some(support_report_identity) = diagnostic.support_report_identity() {
-        if typed_identity_drift(support_report_identity, support.report_identity()) {
-            return Err(QuerySubscriptionRuntimeCertificationError::new(
+    if let Some(support_report_identity) = diagnostic.support_report_identity()
+        && typed_identity_drift(support_report_identity, support.report_identity())
+    {
+        return Err(QuerySubscriptionRuntimeCertificationError::new(
                 QuerySubscriptionRuntimeCertificationErrorKind::ScopeSourceMismatch,
                 "hostile family coverage rows require denied diagnostic bundles to preserve support-report identity when support evidence is present",
                 &[
@@ -34,7 +35,6 @@ pub(super) fn validate_hostile_diagnostic_alignment(
                 ],
                 QuerySubscriptionRuntimeCertificationCounters::default(),
             ));
-        }
     }
 
     validate_trace_stage_source(

@@ -94,12 +94,12 @@ impl PreparedBranchPublicationPreflight {
             ));
         }
 
-        if let (Some(effect), Some(binding)) = (&self.companion, &self.companion_binding) {
-            if let Err(stop) = effect.matches(binding) {
-                return RelationalPublicationOutcome::deferred(
-                    RelationalPublicationDeferred::CompanionPreflight(stop),
-                );
-            }
+        if let (Some(effect), Some(binding)) = (&self.companion, &self.companion_binding)
+            && let Err(stop) = effect.matches(binding)
+        {
+            return RelationalPublicationOutcome::deferred(
+                RelationalPublicationDeferred::CompanionPreflight(stop),
+            );
         }
         let mut companion_cutover = match self.companion.as_mut() {
             Some(effect) => match effect.enter_cutover() {

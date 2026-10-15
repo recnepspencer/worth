@@ -41,10 +41,10 @@ fn explain_with_policy_resolver_mode(
     } else {
         policy::ExplanationDiagnosticPolicy::reconstruct_only()
     };
-    if diagnostic_policy.retained_fast_path_allowed() {
-        if let Some(explanation) = policy::retained_explanation(graph, node)? {
-            return Ok(explanation);
-        }
+    if diagnostic_policy.retained_fast_path_allowed()
+        && let Some(explanation) = policy::retained_explanation(graph, node)?
+    {
+        return Ok(explanation);
     }
 
     let resolution = assembly::assemble(graph, node, comparator_resolver)?;

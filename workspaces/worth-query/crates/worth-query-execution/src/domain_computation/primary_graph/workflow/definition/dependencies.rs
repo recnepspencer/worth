@@ -69,13 +69,11 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
     for node in &nodes {
         if let [WorthQueryWorkflowNodeDependency::Operation { identifier, .. }] =
             node.dependencies.as_slice()
-        {
-            if operation_by_path
+            && operation_by_path
                 .insert(node.path.clone(), identifier.clone())
                 .is_some()
-            {
-                return Err(unreadable);
-            }
+        {
+            return Err(unreadable);
         }
     }
     for node in &mut nodes {

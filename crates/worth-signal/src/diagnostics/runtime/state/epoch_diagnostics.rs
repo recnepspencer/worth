@@ -236,83 +236,77 @@ impl PreparedEpochDiagnostics {
             ));
         }
         self.recorded_fact_nodes += 1;
-        if let Some(fact) = explanation {
-            if self.staged.installed_retention_budget.explanation_retention
+        if let Some(fact) = explanation
+            && self.staged.installed_retention_budget.explanation_retention
                 == crate::diagnostics::policy::ArtifactRetentionPolicy::Retain
-            {
-                work.reserve_visits(self.staged.explanation_facts.lookup_steps())
-                    .map_err(map_node_edit_accounting)?;
-                let replaced = self
-                    .staged
+        {
+            work.reserve_visits(self.staged.explanation_facts.lookup_steps())
+                .map_err(map_node_edit_accounting)?;
+            let replaced = self
+                .staged
+                .explanation_facts
+                .get(&fact.node)
+                .map(|old| old.retained_heap_charge(work))
+                .transpose()
+                .map_err(map_node_edit_accounting)?
+                .unwrap_or(Charge::ZERO);
+            let charge = fact
+                .retained_heap_charge(work)
+                .and_then(|charge| charge.checked_add(replaced))
+                .and_then(|charge| charge.checked_add(arc_allocation_charge::<ExplanationFact>()?))
+                .and_then(|charge| {
+                    charge.checked_add(arc_allocation_charge::<crate::data::handle::NodeId>()?)
+                })
+                .map_err(map_node_edit_accounting)?;
+            self.admit_fact_payload(charge, request.as_deref_mut())?;
+            work.reserve_visits(
+                self.staged
                     .explanation_facts
-                    .get(&fact.node)
-                    .map(|old| old.retained_heap_charge(work))
-                    .transpose()
-                    .map_err(map_node_edit_accounting)?
-                    .unwrap_or(Charge::ZERO);
-                let charge = fact
-                    .retained_heap_charge(work)
-                    .and_then(|charge| charge.checked_add(replaced))
-                    .and_then(|charge| {
-                        charge.checked_add(arc_allocation_charge::<ExplanationFact>()?)
-                    })
-                    .and_then(|charge| {
-                        charge.checked_add(arc_allocation_charge::<crate::data::handle::NodeId>()?)
-                    })
-                    .map_err(map_node_edit_accounting)?;
-                self.admit_fact_payload(charge, request.as_deref_mut())?;
-                work.reserve_visits(
-                    self.staged
-                        .explanation_facts
-                        .lookup_steps()
-                        .saturating_mul(32),
-                )
-                .map_err(map_node_edit_accounting)?;
-                accounted(
-                    self.staged
-                        .explanation_facts
-                        .insert_with_retained_charge(fact.node, fact, work),
-                )?;
-            }
+                    .lookup_steps()
+                    .saturating_mul(32),
+            )
+            .map_err(map_node_edit_accounting)?;
+            accounted(
+                self.staged
+                    .explanation_facts
+                    .insert_with_retained_charge(fact.node, fact, work),
+            )?;
         }
-        if let Some(fact) = provenance {
-            if self.staged.installed_retention_budget.provenance_retention
+        if let Some(fact) = provenance
+            && self.staged.installed_retention_budget.provenance_retention
                 == crate::diagnostics::policy::ArtifactRetentionPolicy::Retain
-            {
-                work.reserve_visits(self.staged.provenance_facts.lookup_steps())
-                    .map_err(map_node_edit_accounting)?;
-                let replaced = self
-                    .staged
-                    .provenance_facts
-                    .get(&fact.node)
-                    .map(|old| old.retained_heap_charge(work))
-                    .transpose()
-                    .map_err(map_node_edit_accounting)?
-                    .unwrap_or(Charge::ZERO);
-                let charge = fact
-                    .retained_heap_charge(work)
-                    .and_then(|charge| charge.checked_add(replaced))
-                    .and_then(|charge| {
-                        charge.checked_add(arc_allocation_charge::<ProvenanceFact>()?)
-                    })
-                    .and_then(|charge| {
-                        charge.checked_add(arc_allocation_charge::<crate::data::handle::NodeId>()?)
-                    })
-                    .map_err(map_node_edit_accounting)?;
-                self.admit_fact_payload(charge, request)?;
-                work.reserve_visits(
-                    self.staged
-                        .provenance_facts
-                        .lookup_steps()
-                        .saturating_mul(32),
-                )
+        {
+            work.reserve_visits(self.staged.provenance_facts.lookup_steps())
                 .map_err(map_node_edit_accounting)?;
-                accounted(
-                    self.staged
-                        .provenance_facts
-                        .insert_with_retained_charge(fact.node, fact, work),
-                )?;
-            }
+            let replaced = self
+                .staged
+                .provenance_facts
+                .get(&fact.node)
+                .map(|old| old.retained_heap_charge(work))
+                .transpose()
+                .map_err(map_node_edit_accounting)?
+                .unwrap_or(Charge::ZERO);
+            let charge = fact
+                .retained_heap_charge(work)
+                .and_then(|charge| charge.checked_add(replaced))
+                .and_then(|charge| charge.checked_add(arc_allocation_charge::<ProvenanceFact>()?))
+                .and_then(|charge| {
+                    charge.checked_add(arc_allocation_charge::<crate::data::handle::NodeId>()?)
+                })
+                .map_err(map_node_edit_accounting)?;
+            self.admit_fact_payload(charge, request)?;
+            work.reserve_visits(
+                self.staged
+                    .provenance_facts
+                    .lookup_steps()
+                    .saturating_mul(32),
+            )
+            .map_err(map_node_edit_accounting)?;
+            accounted(
+                self.staged
+                    .provenance_facts
+                    .insert_with_retained_charge(fact.node, fact, work),
+            )?;
         }
         Ok(())
     }

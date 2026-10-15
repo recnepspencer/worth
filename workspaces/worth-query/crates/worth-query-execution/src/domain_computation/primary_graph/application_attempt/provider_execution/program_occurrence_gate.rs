@@ -50,17 +50,17 @@ pub(super) fn require_selected_program_matches_occurrence(
         &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     )>,
 ) -> Result<(), WorthQueryApplicationCommitDenial> {
-    if let Some((identity, revision)) = selected_program {
-        if occurrence.entry().identity() != identity || occurrence.entry().revision() != revision {
-            return Err(
-                WorthQueryApplicationCommitDenial::program_revision_not_active_on_occurrence(
-                    identity,
-                    revision,
-                    occurrence.entry().identity(),
-                    occurrence.entry().revision(),
-                ),
-            );
-        }
+    if let Some((identity, revision)) = selected_program
+        && (occurrence.entry().identity() != identity || occurrence.entry().revision() != revision)
+    {
+        return Err(
+            WorthQueryApplicationCommitDenial::program_revision_not_active_on_occurrence(
+                identity,
+                revision,
+                occurrence.entry().identity(),
+                occurrence.entry().revision(),
+            ),
+        );
     }
     Ok(())
 }

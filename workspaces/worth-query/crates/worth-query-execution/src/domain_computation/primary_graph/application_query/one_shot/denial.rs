@@ -179,15 +179,15 @@ pub(in crate::domain_computation::primary_graph) fn retain_reconstruction_result
 ) -> Result<T, super::super::WorthQueryManagedDerivedViewDenial> {
     use super::super::WorthQueryManagedDerivedViewDenial as Denial;
     use worth_execution::ChargedBytes;
-    if let Err(Denial::ReadDenied { denial, .. }) = &result {
-        if denial.payload.custody.get().is_none() {
-            let hold = worth_execution::ExecutionMemoryReservation::reserve_in_scope(
-                lease,
-                denial.additional_charged_bytes(),
-            )
-            .map_err(on_admission_denial)?;
-            denial.retain_custody(hold);
-        }
+    if let Err(Denial::ReadDenied { denial, .. }) = &result
+        && denial.payload.custody.get().is_none()
+    {
+        let hold = worth_execution::ExecutionMemoryReservation::reserve_in_scope(
+            lease,
+            denial.additional_charged_bytes(),
+        )
+        .map_err(on_admission_denial)?;
+        denial.retain_custody(hold);
     }
     result
 }

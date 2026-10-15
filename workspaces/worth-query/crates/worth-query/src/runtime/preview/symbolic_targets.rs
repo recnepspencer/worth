@@ -6,10 +6,10 @@ pub(super) fn admit_preview_batch_symbolic_references(
     let mut planned_symbolic_targets =
         BTreeMap::<WorthQuerySameBatchSymbolicTargetKey, WorthQuerySameBatchSymbolicTarget>::new();
     for command in commands {
-        if let Some(reference) = command.symbolic_target_reference() {
-            if command.mutation_family() != crate::runtime::WorthQueryMutationFamily::Insert {
-                resolve_preview_symbolic_target(&planned_symbolic_targets, reference)?;
-            }
+        if let Some(reference) = command.symbolic_target_reference()
+            && command.mutation_family() != crate::runtime::WorthQueryMutationFamily::Insert
+        {
+            resolve_preview_symbolic_target(&planned_symbolic_targets, reference)?;
         }
         for reference in command.symbolic_aspect_references() {
             resolve_preview_symbolic_target(&planned_symbolic_targets, reference.reference())?;
@@ -88,14 +88,14 @@ pub(super) fn resolve_preview_symbolic_target(
             ),
         ));
     };
-    if let Some(expected_collection) = reference.target_collection_identity() {
-        if resolved_target
+    if let Some(expected_collection) = reference.target_collection_identity()
+        && resolved_target
             .target_collection_identity()
             .is_none_or(|resolved_collection| {
                 !resolved_collection.same_target_collection_as(expected_collection)
             })
-        {
-            return Err(WorthQueryRuntimeError::MutationTargetReferenceDenied(
+    {
+        return Err(WorthQueryRuntimeError::MutationTargetReferenceDenied(
                 WorthQuerySymbolicTargetReferenceDenial::new(
                     reference,
                     WorthQuerySymbolicTargetReferenceDenialKind::CollectionMismatch,
@@ -110,7 +110,6 @@ pub(super) fn resolve_preview_symbolic_target(
                     ),
                 ),
             ));
-        }
     }
     Ok(resolved_target.clone())
 }

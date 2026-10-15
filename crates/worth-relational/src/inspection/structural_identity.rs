@@ -133,13 +133,11 @@ impl<'runtime> InspectionAccess<'runtime> {
                 execution,
                 InspectionScope::Version(version_id),
                 RecordRef::Entity(record.entity_id),
-            )? {
-                if item
-                    .structural_fingerprint
-                    .is_some_and(|fingerprint| fingerprint.family == request.fingerprint_family)
-                {
-                    evidence.push(item);
-                }
+            )? && item
+                .structural_fingerprint
+                .is_some_and(|fingerprint| fingerprint.family == request.fingerprint_family)
+            {
+                evidence.push(item);
             }
         }
         Ok(evidence)

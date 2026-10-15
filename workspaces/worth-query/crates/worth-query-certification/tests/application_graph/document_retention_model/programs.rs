@@ -379,6 +379,5 @@ fn retention_feature_specs() -> Vec<ApplicationFeatureSpec> {
 #[path = "programs/workflow_owner.rs"]
 mod workflow_owner;
 pub use workflow_owner::{
-    GrantStatusAction, OccurrenceAction, ReviewedAction, ReviewedEffectDelivery, SavedSourceAction,
-    SavedSourceDelivery, WorkflowEffectDelivery, WorkflowOwnerProgram,
+    GrantStatusAction, OccurrenceAction, ReviewedAction, SavedSourceAction, WorkflowOwnerProgram,
 };

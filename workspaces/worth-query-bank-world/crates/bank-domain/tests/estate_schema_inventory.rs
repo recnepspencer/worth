@@ -28,7 +28,8 @@ fn required_estate_topology_and_policy_contributions_are_present() {
             .collect::<BTreeSet<_>>(),
         [
             "ApprovedBusinessPaymentControlContext",
-            "EstateActionContext"
+            "EstateActionContext",
+            "ProgramDeploymentContext",
         ]
         .into_iter()
         .collect()
@@ -54,6 +55,7 @@ fn required_estate_topology_and_policy_contributions_are_present() {
         [
             "ApprovedBusinessPaymentGrantProvenance",
             "EstateGrantChainProvenance",
+            "ProgramDeploymentProvenance",
         ]
         .into_iter()
         .collect()
@@ -126,6 +128,7 @@ fn delegation_activation_keeps_bank_reads_without_an_application_effect_program(
             ("field", "BranchIdentityField"),
             // The child id naming no grant is decided on.
             ("field", "CapabilityGrantIdentityField"),
+            ("field", "EstateCaseIdentityField"),
             ("field", "InstitutionIdentityField"),
             ("relation", "BranchInstitution"),
             ("relation", "EstateAccount"),
@@ -347,6 +350,7 @@ fn estate_capabilities() -> BTreeSet<&'static str> {
         "ApprovedBusinessPaymentInstanceStart",
         "CompleteEstateMandatoryReviewCapability",
         "DelegateEstateCapability",
+        "DeployBankProgram",
         "DisburseEstateCapability",
         "FreezeEstateAccountCapability",
         "NotifyDeathEstateCapability",

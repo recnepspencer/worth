@@ -364,10 +364,10 @@ fn proposed_relation_scope(
         &access,
         &super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(4096).unwrap()),
     );
-    let touched = test_scope_planner(runtime, &observation, proposed_version, &prepared)
+
+    test_scope_planner(runtime, &observation, proposed_version, &prepared)
         .touched()
-        .clone();
-    touched
+        .clone()
 }
 
 fn test_access_contract() -> crate::validation::data::CustomInvariantAccessContract {

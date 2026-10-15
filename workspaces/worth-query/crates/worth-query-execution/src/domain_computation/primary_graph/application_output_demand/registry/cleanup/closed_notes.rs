@@ -225,12 +225,11 @@ impl DemandRegistryState {
             super::super::IdleRowDisposition::Retired(
                 super::super::RowRetirement::AbandonedPublication
             )
-        ) {
-            if let Some(scope) = row.source_scope {
-                for commit in &row.source_commits {
-                    if let Some(custody) = self.source_custody.get_mut(commit) {
-                        custody.return_undelivered_root(&key.source, scope);
-                    }
+        ) && let Some(scope) = row.source_scope
+        {
+            for commit in &row.source_commits {
+                if let Some(custody) = self.source_custody.get_mut(commit) {
+                    custody.return_undelivered_root(&key.source, scope);
                 }
             }
         }

@@ -102,11 +102,11 @@ impl WorkflowDefinitionCompilationReuse {
         candidate: Arc<CompiledWorkflowSemanticPlan>,
         binding: WorkflowDefinitionPublicationBinding,
     ) -> Result<Arc<CompiledWorkflowSemanticPlan>, WorkflowDefinitionCompilationReuseDenial> {
-        if let Some(retained) = self.semantics.get(&semantic_key) {
-            if retained.plan.as_ref() != candidate.as_ref() {
-                self.denials = self.denials.saturating_add(1);
-                return Err(WorkflowDefinitionCompilationReuseDenial::SemanticCollision);
-            }
+        if let Some(retained) = self.semantics.get(&semantic_key)
+            && retained.plan.as_ref() != candidate.as_ref()
+        {
+            self.denials = self.denials.saturating_add(1);
+            return Err(WorkflowDefinitionCompilationReuseDenial::SemanticCollision);
         }
         let semantic_was_retained = self.semantics.contains_key(&semantic_key);
         let semantic_bytes = if semantic_was_retained {

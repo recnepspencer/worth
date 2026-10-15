@@ -264,10 +264,10 @@ impl RelationalBranchReferenceCell {
         &self,
         target: FoundationalBranchTarget<RelationalBranchTarget>,
     ) -> Result<(), RelationalBranchCellDenial> {
-        if let FoundationalBranchTarget::Basis(target) = &target {
-            if target.runtime_instance_id() != self.identity.runtime_instance_id() {
-                return Err(RelationalBranchCellDenial::RuntimeInstanceMismatch);
-            }
+        if let FoundationalBranchTarget::Basis(target) = &target
+            && target.runtime_instance_id() != self.identity.runtime_instance_id()
+        {
+            return Err(RelationalBranchCellDenial::RuntimeInstanceMismatch);
         }
         let mut state = self.state();
         state.observation = RelationalBranchReferenceObservation::new(
@@ -301,10 +301,10 @@ impl RelationalBranchReferenceCell {
             target,
             generation,
         );
-        if let FoundationalBranchTarget::Basis(target) = candidate.target() {
-            if target.runtime_instance_id() != self.identity.runtime_instance_id() {
-                return Err(RelationalBranchCellDenial::RuntimeInstanceMismatch);
-            }
+        if let FoundationalBranchTarget::Basis(target) = candidate.target()
+            && target.runtime_instance_id() != self.identity.runtime_instance_id()
+        {
+            return Err(RelationalBranchCellDenial::RuntimeInstanceMismatch);
         }
         state.observation = candidate;
         state.truth_version = truth_version;

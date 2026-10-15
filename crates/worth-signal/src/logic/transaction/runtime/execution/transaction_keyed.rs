@@ -275,14 +275,13 @@ where
             }
             Err(err) => self.apply_result(Err(err)),
         };
-        if result.is_ok() {
-            if let Ok(mut guard) = last_result.lock() {
-                if let Some(last_result) = guard.take() {
-                    self.scratch
-                        .staged_memo_writes
-                        .insert((family_id, key_id, resolve_memo_key_id()?), last_result);
-                }
-            }
+        if result.is_ok()
+            && let Ok(mut guard) = last_result.lock()
+            && let Some(last_result) = guard.take()
+        {
+            self.scratch
+                .staged_memo_writes
+                .insert((family_id, key_id, resolve_memo_key_id()?), last_result);
         }
         result
     }

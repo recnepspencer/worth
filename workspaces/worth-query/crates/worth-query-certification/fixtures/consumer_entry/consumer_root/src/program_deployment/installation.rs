@@ -5,7 +5,7 @@ use worth_query_decl::facade::application_capability::*;
 pub(crate) fn install(
     schema: ApplicationSchemaDeclarationBuilder<ConsumerSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<ConsumerSchema> {
-    let schema = schema
+    schema
         .entity(ProgramDeploymentScope::reference())
         .aspect(
             ProgramDeploymentScope::reference(),
@@ -86,8 +86,7 @@ pub(crate) fn install(
             DeployConsumerProgramOperation::reference(),
             ProgramDeploymentSourceRevision::reference(),
         )
-        .capability(contract());
-    schema
+        .capability(contract())
 }
 fn contract() -> ApplicationCapabilityContract<
     ConsumerSchema,

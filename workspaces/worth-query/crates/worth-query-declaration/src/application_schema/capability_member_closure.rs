@@ -99,23 +99,23 @@ fn specialized_operations_have_one_posture(
     let mut operations = BTreeMap::new();
     for contract in contracts {
         let delegation = contract.delegation();
-        if let Some(activation) = delegation.activation() {
-            if !record_posture(
+        if let Some(activation) = delegation.activation()
+            && !record_posture(
                 &mut operations,
                 activation.operation(),
                 SpecializedExecutionPosture::DelegationActivation,
-            ) {
-                return false;
-            }
+            )
+        {
+            return false;
         }
-        if let Some(revocation) = delegation.revocation() {
-            if !record_posture(
+        if let Some(revocation) = delegation.revocation()
+            && !record_posture(
                 &mut operations,
                 revocation.operation(),
                 SpecializedExecutionPosture::CapabilityRevocation,
-            ) {
-                return false;
-            }
+            )
+        {
+            return false;
         }
         if let ApplicationCapabilityElevationRule::Governed(elevation) = contract.elevation() {
             for transition in elevation.lifecycle().transitions() {

@@ -5,6 +5,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+#[path = "../query_ordinary_entry_fixture/mod.rs"]
+mod query_ordinary_entry_fixture;
+
 /// A documented engine whose items the audience leaf facades re-export, so
 /// the facade documentation ratchet resolves every leaf name.
 const STUB_ENGINE: &str = r#"//! Stub Query engine.
@@ -107,6 +110,7 @@ publish = false
 
     /// Minimal production-shaped Query audience leaves for BC3003 contract checks.
     fn write_query_audience_leaf_facades(&self) {
+        query_ordinary_entry_fixture::write(&self.root);
         self.write_file(
             "crates/worth-query/Cargo.toml",
             r#"[package]

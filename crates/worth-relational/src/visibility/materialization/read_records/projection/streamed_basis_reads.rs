@@ -74,10 +74,9 @@ pub(crate) trait ProjectionRecordSource {
             if let Some(record) = self
                 .authoritative_entity_record(execution, EntityId::new(partition_id, slot as u64, 0))
                 .map_err(ReadStop::Request)?
+                && kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id)
             {
-                if kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id) {
-                    visit(&record).map_err(ReadStop::Admission)?;
-                }
+                visit(&record).map_err(ReadStop::Admission)?;
             }
             Ok(())
         };
@@ -117,10 +116,9 @@ pub(crate) trait ProjectionRecordSource {
                     RelationId::new(partition_id, slot as u64, 0),
                 )
                 .map_err(ReadStop::Request)?
+                && kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id)
             {
-                if kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id) {
-                    visit(&record).map_err(ReadStop::Admission)?;
-                }
+                visit(&record).map_err(ReadStop::Admission)?;
             }
             Ok(())
         };

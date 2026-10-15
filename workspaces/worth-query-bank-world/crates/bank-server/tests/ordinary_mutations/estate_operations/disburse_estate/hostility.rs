@@ -104,10 +104,7 @@ fn a_recognized_exact_executor_authority_is_required_but_not_artificially_unique
     let outcome = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&fixture)
-            .world
-            .runtime
-            .request(closing_actor, &closing_scope);
+        let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = disburse(&fixture, &specialist, fixture.action(250), idempotency(74))
@@ -145,10 +142,7 @@ fn source_and_destination_must_both_be_open() {
         let denial = {
             let closing_actor = &specialist;
             let closing_scope = crate::support::request_scope();
-            let closing_request = (&fixture)
-                .world
-                .runtime
-                .request(closing_actor, &closing_scope);
+            let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
             let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
                 done,
             ) = disburse(

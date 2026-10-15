@@ -94,7 +94,7 @@ where
             }
             self.cleanup
                 .close_in_advancement(&phase, runtime)
-                .map(|receipt| WorthQueryClosedOperation::from_cleanup(receipt))
+                .map(WorthQueryClosedOperation::from_cleanup)
         });
         match outcome {
             Ok(Ok(closed)) => Ok(closed),

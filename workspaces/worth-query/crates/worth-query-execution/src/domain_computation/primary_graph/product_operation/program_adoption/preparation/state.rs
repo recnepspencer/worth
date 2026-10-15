@@ -29,8 +29,7 @@ fn map_relational_preparation_denial(
     if let worth_relational::facade::transactions::TransactionCommitError::Conflict {
         error, ..
     } = &denial
-    {
-        if let worth_relational::facade::transactions::ConflictClass::InvariantViolation {
+        && let worth_relational::facade::transactions::ConflictClass::InvariantViolation {
             fields:
                 worth_relational::facade::transactions::InvariantViolationFields::CustomInvariantViolation {
                     identity,
@@ -42,7 +41,6 @@ fn map_relational_preparation_denial(
                 identity: identity.clone(),
             };
         }
-    }
     WorthQueryBranchAdoptionPreparationDenial::RelationalPreparation(denial)
 }
 
@@ -68,14 +66,14 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     if &requirements != expected_requirements {
         return Err(WorthQueryBranchAdoptionPreparationDenial::RequirementsChanged);
     }
-    if migration.is_none() {
-        if let Some(requirement) = requirements.migration_assessment_requirements().first() {
-            return Err(
-                WorthQueryBranchAdoptionPreparationDenial::MigrationAssessmentRequired(
-                    requirement.clone(),
-                ),
-            );
-        }
+    if migration.is_none()
+        && let Some(requirement) = requirements.migration_assessment_requirements().first()
+    {
+        return Err(
+            WorthQueryBranchAdoptionPreparationDenial::MigrationAssessmentRequired(
+                requirement.clone(),
+            ),
+        );
     }
     let custody = dispositions::derive(&requirements)
         .map_err(WorthQueryBranchAdoptionPreparationDenial::CustodyDispositionUnsupported)?;

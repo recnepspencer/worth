@@ -120,13 +120,13 @@ fn collect_certification_failures(
                 family: record.family,
             });
         }
-        if let Some(parity) = record.parity.as_ref() {
-            if !parity.parity {
-                failures.push(TemporalCertificationFailure::ParityMismatch {
-                    family: record.family,
-                    mismatch_classes: parity.mismatch_classes.clone(),
-                });
-            }
+        if let Some(parity) = record.parity.as_ref()
+            && !parity.parity
+        {
+            failures.push(TemporalCertificationFailure::ParityMismatch {
+                family: record.family,
+                mismatch_classes: parity.mismatch_classes.clone(),
+            });
         }
     }
     failures

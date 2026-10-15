@@ -1,6 +1,10 @@
 //! Named owning action installation retains an independent native read authority.
 use super::super::programs::WorkflowOwnerProgram;
 use super::*;
+#[allow(
+    dead_code,
+    reason = "Shared fixture factory is used by the compiled authored_workflow example"
+)]
 pub fn publish_owner_workflow() -> DocumentWorkflowRuntime<WorkflowOwnerProgram> {
     publish_owner_workflow_with_projection().0
 }

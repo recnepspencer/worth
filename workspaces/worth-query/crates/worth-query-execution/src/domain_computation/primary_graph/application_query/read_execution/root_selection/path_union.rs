@@ -140,10 +140,10 @@ fn traverse_path(
                 step.relation(),
                 work,
             )?;
-            if let Some(set_source) = set_source {
-                if set_source.record_adjacency(observed) {
-                    work.charge_source_copy(1, step.relation())?;
-                }
+            if let Some(set_source) = set_source
+                && set_source.record_adjacency(observed)
+            {
+                work.charge_source_copy(1, step.relation())?;
             }
         }
         work.checkpoint(step.relation())?;
@@ -258,10 +258,10 @@ fn apply_guards(
                 guard.field(),
                 work,
             )?;
-            if let Some(set_source) = &mut *set_source {
-                if set_source.record_field(observed) {
-                    work.charge_source_copy(1, guard.field().as_str())?;
-                }
+            if let Some(set_source) = &mut *set_source
+                && set_source.record_field(observed)
+            {
+                work.charge_source_copy(1, guard.field().as_str())?;
             }
         }
         let candidates = frontier.keys().copied().collect::<BTreeSet<_>>();

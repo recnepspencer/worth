@@ -187,7 +187,7 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
         self.release_cleanup(request)
-            .map(|receipt| WorthQueryClosedOperation::from_cleanup(receipt))
+            .map(WorthQueryClosedOperation::from_cleanup)
     }
 
     /// Discharges this cleanup collection only; original business evidence stays owned.

@@ -173,10 +173,10 @@ where
             capture_telemetry.then_some(&mut self.telemetry.resource),
         );
 
-        if report.denied_retry().is_some() {
-            if let Some(wake) = scheduled_timeout_wake {
-                self.dispose_resource_timeout_wake(&wake);
-            }
+        if report.denied_retry().is_some()
+            && let Some(wake) = scheduled_timeout_wake
+        {
+            self.dispose_resource_timeout_wake(&wake);
         }
 
         Ok(report)

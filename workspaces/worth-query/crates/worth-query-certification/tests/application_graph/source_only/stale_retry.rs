@@ -206,21 +206,44 @@ fn unpinned_stale_retry_lost_answer_uses_keyed_recovery_without_third_handler_ru
 }
 
 #[test]
-fn unpinned_unchanged_source_completes_once_and_initial_owner_cannot_close_as_noeffect() {
+fn unexecuted_source_closes_without_effect_and_a_fresh_owner_completes_once() {
     let host = fixture::install();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
+    let before = observe_head(host.runtime(), host.current_world());
+    let other = host
+        .runtime()
+        .with_host_advancement(|phase| {
+            host.runtime()
+                .branches()
+                .fork(host.current_world())
+                .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+                .unwrap()
+        })
+        .unwrap();
     let (operation, denial) = fixture::operation(&host, &request, 19, 0x9176_5019)
-        .close(&request)
+        .close(&host.runtime().request(&principal, &scope).on_branch(other))
         .err()
-        .expect("initial owner has no native no-effect evidence");
+        .expect("foreign close must retain the unexecuted owner");
     assert!(matches!(
         denial,
-        WorthQueryOperationCloseDenial::NativeObligationRetained
+        WorthQueryOperationCloseDenial::FreshRequestMismatch
     ));
+    assert_eq!(operation.posture(), WorthQuerySourceOnlyPosture::Initial);
     assert!(operation.native_retry_outcome().is_none());
+    operation
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("unexecuted owner closes: {cause:?}"));
+    assert_eq!(
+        observe_head(host.runtime(), host.current_world()).selected_commit(),
+        before.selected_commit()
+    );
+    assert_eq!(read_retention(host.runtime(), host.current_world()), 7);
     assert_eq!(host.contacts.counts(), (0, 0));
+    assert_eq!(host.runtime().active_application_attempts_for_test(), 0);
+    let operation = fixture::operation(&host, &request, 19, 0x9176_5019);
     let done = fixture::completed(operation, &request);
     assert_eq!(host.contacts.counts(), (1, 1));
     assert_eq!(read_retention(host.runtime(), host.current_world()), 19);

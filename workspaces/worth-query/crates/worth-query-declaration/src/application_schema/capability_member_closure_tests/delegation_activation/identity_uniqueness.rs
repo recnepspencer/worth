@@ -6,10 +6,10 @@ use super::*;
 fn activation_identity_must_be_a_unique_field() {
     let mut members = activation_members();
     for member in &mut members {
-        if let ApplicationSchemaMember::Field { field, unique, .. } = member {
-            if field == "Identity" {
-                *unique = false;
-            }
+        if let ApplicationSchemaMember::Field { field, unique, .. } = member
+            && field == "Identity"
+        {
+            *unique = false;
         }
     }
     assert_eq!(

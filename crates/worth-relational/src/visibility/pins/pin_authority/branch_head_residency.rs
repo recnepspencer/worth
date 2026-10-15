@@ -71,20 +71,17 @@ impl<'runtime> VisibilityPinAuthority<'runtime> {
                 self.runtime.services.instrumentation.count(|counters| {
                     counters.visibility_cache_branch_head_promotions += 1;
                 });
-            } else {
-                match VisibilitySnapshotBasis::capture_current_for_optional_maintenance(
+            } else if let Some(basis) =
+                VisibilitySnapshotBasis::capture_current_for_optional_maintenance(
                     self.runtime,
                     branch_id,
                     version_id,
-                ) {
-                    Some(basis) => {
-                        protect_branch_head_state(self.runtime, &basis);
-                        self.runtime.services.instrumentation.count(|counters| {
-                            counters.visibility_cache_branch_head_promotions += 1;
-                        });
-                    }
-                    _ => {}
-                }
+                )
+            {
+                protect_branch_head_state(self.runtime, &basis);
+                self.runtime.services.instrumentation.count(|counters| {
+                    counters.visibility_cache_branch_head_promotions += 1;
+                });
             }
         }
         evict_cache_if_needed(self.runtime);

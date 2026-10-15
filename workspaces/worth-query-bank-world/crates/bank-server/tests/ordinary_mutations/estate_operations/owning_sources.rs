@@ -17,54 +17,54 @@ use worth_query_host::facade::{
 #[test]
 fn owning_freeze_partial_fresh_permission_recovery_and_issuer_cleanup() {
     let fixture = revocable_freeze_world("owning-freeze-partial");
-    let specialist = fixture.authenticate_specialist();
-    let scope = request_scope();
-    let input = FreezeEstateAccount::try_from(fixture.action(fixture.estate_account)).unwrap();
-    let source = fixture
-        .world
-        .runtime
-        .mutate(mutations::freeze_estate_account(input))
-        .as_principal(&specialist)
-        .controls(BankMutationControls::new(
-            scope.clone(),
-            BankIdempotencyKey::new("owning-freeze-partial").unwrap(),
-        ))
-        .retain_operation()
-        .unwrap_or_else(|cause| panic!("exact native construction: {cause:?}"));
-    fixture.world.runtime.fail_next_durable_append_for_test();
-    let request = fixture.world.runtime.request(&specialist, &scope);
-    let Advance::Progress(source) = source.advance(&request) else {
-        panic!("actual append partial")
+    let source = {
+        let specialist = fixture.authenticate_specialist();
+        let scope = request_scope();
+        let input = FreezeEstateAccount::try_from(fixture.action(fixture.estate_account)).unwrap();
+        let source = fixture
+            .world
+            .runtime
+            .mutate(mutations::freeze_estate_account(input))
+            .as_principal(&specialist)
+            .controls(BankMutationControls::new(
+                scope.clone(),
+                BankIdempotencyKey::new("owning-freeze-partial").unwrap(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("exact native construction: {cause:?}"));
+        fixture.world.runtime.fail_next_durable_append_for_test();
+        let request = fixture.world.runtime.request(&specialist, &scope);
+        let Advance::Progress(source) = source.advance(&request) else {
+            panic!("actual append partial")
+        };
+        assert_eq!(
+            source.posture(),
+            WorthQuerySourceOnlyPosture::ProductUnpublished
+        );
+        source
     };
-    assert_eq!(
-        source.posture(),
-        WorthQuerySourceOnlyPosture::ProductUnpublished
-    );
-    drop(request);
-    drop(specialist);
-    drop(scope);
-    let foreign = fixture.authenticate_foreign_owner();
-    let scope = request_scope();
-    let request = fixture.world.runtime.request(&foreign, &scope);
-    let source = match source.advance(&request) {
-        Advance::Refused {
-            operation,
-            denial:
-                WorthQuerySourceOnlyDenial::Recovery(
-                    WorthQueryApplicationRecoveryRequestDenial::Request(
-                        WorthQueryApplicationRequestMutationDenial::Authorization(_),
+    let source = {
+        let foreign = fixture.authenticate_foreign_owner();
+        let scope = request_scope();
+        let request = fixture.world.runtime.request(&foreign, &scope);
+        let source = match source.advance(&request) {
+            Advance::Refused {
+                operation,
+                denial:
+                    WorthQuerySourceOnlyDenial::Recovery(
+                        WorthQueryApplicationRecoveryRequestDenial::Request(
+                            WorthQueryApplicationRequestMutationDenial::Authorization(_),
+                        ),
                     ),
-                ),
-        } => operation,
-        _ => panic!("fresh foreign actor retains the real partial owner"),
+            } => operation,
+            _ => panic!("fresh foreign actor retains the real partial owner"),
+        };
+        assert_eq!(
+            source.posture(),
+            WorthQuerySourceOnlyPosture::ProductUnpublished
+        );
+        source
     };
-    assert_eq!(
-        source.posture(),
-        WorthQuerySourceOnlyPosture::ProductUnpublished
-    );
-    drop(request);
-    drop(foreign);
-    drop(scope);
     let specialist = fixture.authenticate_specialist();
     let scope = request_scope();
     let request = fixture.world.runtime.request(&specialist, &scope);

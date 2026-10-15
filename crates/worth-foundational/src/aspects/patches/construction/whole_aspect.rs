@@ -44,16 +44,15 @@ impl AuthoritativeRecordAspectPatch {
                     ),
                 );
             }
-            if let Some(clear_contract) = patch.whole_aspect_clears.get(entry.key()) {
-                if clear_contract.identity() != entry.contract_identity()
-                    || clear_contract.revision() != entry.contract_revision()
-                {
-                    return TransitionOutcome::denied(
-                        AuthoritativePatchConstructionDenial::OverlappingWholeAspectContractMismatch(
-                            entry.key().clone(),
-                        ),
-                    );
-                }
+            if let Some(clear_contract) = patch.whole_aspect_clears.get(entry.key())
+                && (clear_contract.identity() != entry.contract_identity()
+                    || clear_contract.revision() != entry.contract_revision())
+            {
+                return TransitionOutcome::denied(
+                    AuthoritativePatchConstructionDenial::OverlappingWholeAspectContractMismatch(
+                        entry.key().clone(),
+                    ),
+                );
             }
             patch.whole_aspect_clears.remove(entry.key());
             patch.whole_aspect_sets.insert(entry.key().clone(), entry);

@@ -117,12 +117,12 @@ impl BankHttpContinuationExecutor {
         if self.sender.try_send(job).is_err() {
             return denied(Some(request_id), saturated());
         }
-        let outcome = match tokio::time::timeout_at(deadline.into(), receiver).await {
+
+        match tokio::time::timeout_at(deadline.into(), receiver).await {
             Ok(Ok(outcome)) => outcome,
             Ok(Err(_)) => denied(Some(request_id), unavailable()),
             Err(_) => denied(Some(request_id), deadline_denial()),
-        };
-        outcome
+        }
     }
 }
 
@@ -171,19 +171,17 @@ where
         if matches!(
             outcome,
             BankHttpAccountActivityPageOutcome::Delivered { .. }
+        ) && let Err(denial) = revalidate_replay(
+            application,
+            &principal,
+            request.account,
+            &request.controls,
+            &scope,
         ) {
-            if let Err(denial) = revalidate_replay(
-                application,
-                &principal,
-                request.account,
-                &request.controls,
-                &scope,
-            ) {
-                if revokes_cached_access(denial) {
-                    registry.deny_protected_replay(&token, denial);
-                }
-                return denied(Some(request.request_id.clone()), denial);
+            if revokes_cached_access(denial) {
+                registry.deny_protected_replay(&token, denial);
             }
+            return denied(Some(request.request_id.clone()), denial);
         }
         return outcome;
     }
@@ -262,19 +260,17 @@ where
             if matches!(
                 outcome,
                 BankHttpAccountActivityPageOutcome::Delivered { .. }
+            ) && let Err(denial) = revalidate_replay(
+                application,
+                &principal,
+                request.account,
+                &request.controls,
+                &scope,
             ) {
-                if let Err(denial) = revalidate_replay(
-                    application,
-                    &principal,
-                    request.account,
-                    &request.controls,
-                    &scope,
-                ) {
-                    if revokes_cached_access(denial) {
-                        registry.deny_protected_replay(&job.request.continuation, denial);
-                    }
-                    return denied(Some(request.request_id.clone()), denial);
+                if revokes_cached_access(denial) {
+                    registry.deny_protected_replay(&job.request.continuation, denial);
                 }
+                return denied(Some(request.request_id.clone()), denial);
             }
             return outcome;
         }

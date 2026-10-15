@@ -92,13 +92,13 @@ fn classify_request(
     if preview_basis_drifted(original_basis, request.current_truth_view_basis()) {
         return Ok(BridgeAsyncCompletionSupersessionClass::PreviewBasisDrifted);
     }
-    if let Some(current_subscription_instance) = request.current_subscription_instance() {
-        if subscription_instance_drifted(
+    if let Some(current_subscription_instance) = request.current_subscription_instance()
+        && subscription_instance_drifted(
             denied_completion.request_identity().subscription_instance(),
             current_subscription_instance,
-        ) {
-            return Ok(BridgeAsyncCompletionSupersessionClass::SubscriptionInstanceSuperseded);
-        }
+        )
+    {
+        return Ok(BridgeAsyncCompletionSupersessionClass::SubscriptionInstanceSuperseded);
     }
     if branch_drifted(original_basis, request.current_truth_view_basis()) {
         return Ok(BridgeAsyncCompletionSupersessionClass::BranchDrifted);

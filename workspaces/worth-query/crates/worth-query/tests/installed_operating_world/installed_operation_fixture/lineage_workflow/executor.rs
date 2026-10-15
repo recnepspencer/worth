@@ -107,7 +107,8 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
 
 fn lineage_read_declaration() -> &'static read::WorthQueryReadDeclaration {
     static DECLARATION: OnceLock<read::WorthQueryReadDeclaration> = OnceLock::new();
-    let declaration = DECLARATION.get_or_init(|| {
+
+    DECLARATION.get_or_init(|| {
         read::declare(|builder| {
             builder.local_collection(
                 "Vertex",
@@ -120,8 +121,7 @@ fn lineage_read_declaration() -> &'static read::WorthQueryReadDeclaration {
             )
         })
         .expect("lineage collection read declaration is canonical")
-    });
-    declaration
+    })
 }
 
 fn lineage_schema() -> read::QuerySchemaView {

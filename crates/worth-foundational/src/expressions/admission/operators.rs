@@ -15,10 +15,10 @@ impl Checker<'_> {
         op: UnaryOp,
         operand: NodeId,
     ) -> ExpressionResult<u32> {
-        if op == UnaryOp::Negate {
-            if let Some(folded) = self.negated_literal(id, operand)? {
-                return Ok(folded);
-            }
+        if op == UnaryOp::Negate
+            && let Some(folded) = self.negated_literal(id, operand)?
+        {
+            return Ok(folded);
         }
         let expected = (op == UnaryOp::Not).then_some(ExpressionType::Bool);
         let operand = self.check(operand, expected.as_ref())?;

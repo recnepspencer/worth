@@ -137,18 +137,15 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
         MoneyCommand::Read {
             maximum_results,
             maximum_work,
-        } => {
-            let outcome = retained_read(
-                runtime,
-                &principal,
-                &scope,
-                &command,
-                &record,
-                maximum_results,
-                maximum_work,
-            );
-            outcome
-        }
+        } => retained_read(
+            runtime,
+            &principal,
+            &scope,
+            &command,
+            &record,
+            maximum_results,
+            maximum_work,
+        ),
         MoneyCommand::ResumeSource => {
             refused(&command, denial(BankHttpDenialKind::MalformedRequest))
         }

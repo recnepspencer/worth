@@ -1,9 +1,7 @@
 use std::net::SocketAddr;
 
 use bank_external_rail::test_control::FaultScript;
-use bank_http_adapter::{
-    BankHttpCommitDisposition, BankHttpDenialKind, BankHttpRecoveryRetryDisposition,
-};
+use bank_http_adapter::{BankHttpDenialKind, BankHttpRecoveryRetryDisposition};
 use bank_user_node::{
     BankUserNodeEstateNotificationOutcome, BankUserNodeRecoveryInspectionOutcome,
     BankUserNodeRecoverySafeRetryOutcome,

@@ -117,13 +117,12 @@ impl AdmittedSemanticDependencyRegistry {
             if let Some(existing) = by_authority
                 .get(&authority_key)
                 .map(|position| &authoritative[*position])
+                && existing.dependency != registration.dependency
             {
-                if existing.dependency != registration.dependency {
-                    return Err(BridgeBuildError::new(
+                return Err(BridgeBuildError::new(
                         BridgeBuildErrorKind::AmbiguousSemanticDependencyRegistration,
                         "One installed source dependency authority resolved to conflicting semantic meaning.",
                     ));
-                }
             }
             if let Some(position) = index.get(&key).copied() {
                 authoritative[position]

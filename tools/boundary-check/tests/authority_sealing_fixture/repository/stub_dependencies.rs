@@ -2,6 +2,9 @@
 
 use super::AuthoritySealingTestRepository;
 
+#[path = "../../query_ordinary_entry_fixture/mod.rs"]
+mod query_ordinary_entry_fixture;
+
 /// A documented engine whose items the audience leaf facades re-export, so
 /// the facade documentation ratchet resolves every leaf name.
 const STUB_ENGINE: &str = r#"//! Stub Query engine.
@@ -43,6 +46,7 @@ pub struct Proof<P, A>(core::marker::PhantomData<(P, A)>);
     }
 
     pub(super) fn write_query_audience_leaf_facades(&self) {
+        query_ordinary_entry_fixture::write(&self.root);
         self.write_file(
             "crates/worth-query/Cargo.toml",
             r#"[package]

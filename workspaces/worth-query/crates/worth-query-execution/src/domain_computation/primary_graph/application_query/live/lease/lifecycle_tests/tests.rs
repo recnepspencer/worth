@@ -53,7 +53,8 @@ impl LiveContext {
                     .execution_request_for(world.application.product_runtime())
                     .expect("the installed fixture lends its own phase");
                 let execution = &borrowed_execution;
-                let principal = world
+
+                world
                     .application
                     .select_product_branch(
                         execution,
@@ -67,9 +68,7 @@ impl LiveContext {
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
                     )
-                    .unwrap();
-
-                principal
+                    .unwrap()
             })
             .expect("the fixture host admits its identity reads");
         Self {

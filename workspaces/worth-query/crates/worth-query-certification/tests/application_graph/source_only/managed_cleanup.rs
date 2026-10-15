@@ -13,50 +13,53 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
     let branch = host.current_world();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let original_head = request.retain_current_read().unwrap();
-    let record = host
-        .runtime()
-        .with_host_advancement(|phase| {
-            host.runtime()
-                .on_branch(branch)
-                .select(&phase)
-                .unwrap()
-                .resolve_entity(
-                    &phase,
-                    DocumentIdentityField::reference(),
-                    DOCUMENT_IDENTITY.to_owned(),
-                    &scope,
-                    WorthQueryPrincipalResolutionMode::Certification,
-                )
-                .unwrap()
-                .relational_record_identity_parts()
-        })
-        .unwrap();
-    let original = request
-        .mutate(OriginalRetention {
-            input: SetRetentionInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 19,
-            },
-        })
-        .without_source()
-        .preconditions(
-            TypedMutationPreconditions::new()
-                .expect_fact(
-                    DocumentIdentityField::reference(),
-                    ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
-                )
-                .expect_fact(
-                    DocumentRetentionField::reference(),
-                    ApplicationEncodedScalarValue::try_new(7_u64).unwrap(),
-                ),
-        )
-        .idempotency_owned(0x9176_6019)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<SourceOnlyRetentionProgram, RetentionAction>(&host)
-        .unwrap_or_else(|(_, cause)| panic!("original descriptor: {cause:?}"));
-    drop(request);
+    let (original_head, record, original) = {
+        let request = host.runtime().request(&principal, &scope);
+        let original_head = request.retain_current_read().unwrap();
+        let record = host
+            .runtime()
+            .with_host_advancement(|phase| {
+                host.runtime()
+                    .on_branch(branch)
+                    .select(&phase)
+                    .unwrap()
+                    .resolve_entity(
+                        &phase,
+                        DocumentIdentityField::reference(),
+                        DOCUMENT_IDENTITY.to_owned(),
+                        &scope,
+                        WorthQueryPrincipalResolutionMode::Certification,
+                    )
+                    .unwrap()
+                    .relational_record_identity_parts()
+            })
+            .unwrap();
+        let original = request
+            .mutate(OriginalRetention {
+                input: SetRetentionInput {
+                    identity: DOCUMENT_IDENTITY.to_owned(),
+                    retention_days: 19,
+                },
+            })
+            .without_source()
+            .preconditions(
+                TypedMutationPreconditions::new()
+                    .expect_fact(
+                        DocumentIdentityField::reference(),
+                        ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned())
+                            .unwrap(),
+                    )
+                    .expect_fact(
+                        DocumentRetentionField::reference(),
+                        ApplicationEncodedScalarValue::try_new(7_u64).unwrap(),
+                    ),
+            )
+            .idempotency_owned(0x9176_6019)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<SourceOnlyRetentionProgram, RetentionAction>(&host)
+            .unwrap_or_else(|(_, cause)| panic!("original descriptor: {cause:?}"));
+        (original_head, record, original)
+    };
     let _cleanup = host
         .runtime()
         .schedule_next_managed_cleanup_on_worker_for_test()
@@ -151,22 +154,24 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
             None,
             cancellation.token(),
         );
-    let request = host.runtime().request(&principal, &stopped);
-    let (terminal, cause) = terminal
-        .close(&request)
-        .err()
-        .expect("close cannot bypass a stopped scope");
-    assert!(matches!(
-        cause,
-        WorthQueryOperationCloseDenial::Execution(_)
-    ));
-    assert!(matches!(
-        terminal.native_outcome(),
-        Some(WorthQueryApplicationMutationOutcome::Commit(
-            WorthQueryApplicationUncommitted::ProductStale(_)
-        ))
-    ));
-    drop(request);
+    let terminal = {
+        let request = host.runtime().request(&principal, &stopped);
+        let (terminal, cause) = terminal
+            .close(&request)
+            .err()
+            .expect("close cannot bypass a stopped scope");
+        assert!(matches!(
+            cause,
+            WorthQueryOperationCloseDenial::Execution(_)
+        ));
+        assert!(matches!(
+            terminal.native_outcome(),
+            Some(WorthQueryApplicationMutationOutcome::Commit(
+                WorthQueryApplicationUncommitted::ProductStale(_)
+            ))
+        ));
+        terminal
+    };
     drop(principal);
     drop(scope);
     let fresh_scope = request_scope();
@@ -262,18 +267,20 @@ fn managed_failure_abandonment_transfers_actual_collection_and_installed_keepali
     let contacts = host.contacts.clone();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let _guard = host
-        .runtime()
-        .schedule_next_managed_cleanup_on_worker_for_test()
-        .unwrap();
-    let operation = match operation(&host, &request, 19, 0x9176_6819).advance(&request) {
-        WorthQuerySourceOnlyAdvance::Progress(operation) => operation,
-        _ => panic!("real cleanup refusal preserves the source owner"),
+    let (mut runtime, mut cleanup, _guard) = {
+        let request = host.runtime().request(&principal, &scope);
+        let _guard = host
+            .runtime()
+            .schedule_next_managed_cleanup_on_worker_for_test()
+            .unwrap();
+        let operation = match operation(&host, &request, 19, 0x9176_6819).advance(&request) {
+            WorthQuerySourceOnlyAdvance::Progress(operation) => operation,
+            _ => panic!("real cleanup refusal preserves the source owner"),
+        };
+        let (runtime, cleanup) = operation.into_runtime_for_cleanup();
+        assert_native_failure(cleanup.managed_failure().unwrap());
+        (runtime, cleanup, _guard)
     };
-    let (mut runtime, mut cleanup) = operation.into_runtime_for_cleanup();
-    assert_native_failure(cleanup.managed_failure().unwrap());
-    drop(request);
     drop(principal);
     drop(scope);
     drop(host);

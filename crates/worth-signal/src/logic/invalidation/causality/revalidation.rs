@@ -245,20 +245,18 @@ impl SignalGraph {
                     scoped_aspects,
                     ..
                 } = basis
-                {
-                    if basis_aspects.is_empty()
+                    && (basis_aspects.is_empty()
                         || scoped_aspects.windows(2).any(|pair| pair[0] >= pair[1])
                         || scoped_aspects.iter().any(|(aspect, _)| {
                             !basis_aspects.contains(
                                 crate::data::aspect::AspectMask::from_aspect(*aspect),
                             )
-                        })
+                        }))
                     {
                         return Err(SignalError::invalid_input(
                             "source recompute basis is empty or non-canonical",
                         ));
                     }
-                }
                 if basis.generation() == 0
                     || basis.generation() != self.node_direct_invalidation_generation(node)?
                 {

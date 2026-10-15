@@ -35,18 +35,26 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
-    // A native independent build gives the required receipt before request funding.
-    let baseline = runtime
-        .index_authority()
-        .refresh_for_basis(request.clone(), &basis, None, cold_budget(), execution)
+    // Quote the complete request, including preparation beyond native visits.
+    let (baseline, baseline_report) = execution
+        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+            runtime.index_authority().refresh_for_basis(
+                request.clone(),
+                &basis,
+                None,
+                cold_budget(),
+                execution,
+            )
+        })
         .unwrap();
+    let baseline = baseline.unwrap();
     runtime
         .index_authority()
         .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
             definition.index_id,
         ))
         .unwrap();
-    let needed = baseline.work.work_units as u64;
+    let needed = baseline_report.charged_work();
     let (short, _) = execution
         .run(ExecutionWorkCeiling::new(needed - 1), |_| {
             runtime.index_authority().refresh_for_basis(
@@ -84,7 +92,8 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
         enough.generations[0].entries,
         baseline.generations[0].entries
     );
-    assert_eq!(report.charged_work(), enough.work.work_units as u64);
+    assert_eq!(report.charged_work(), needed);
+    assert!(report.charged_work() >= enough.work.work_units as u64);
     release_test_commit_snapshot(&runtime, &created);
 }
 
@@ -118,10 +127,18 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
-    let baseline = runtime
-        .index_authority()
-        .refresh_for_basis(request.clone(), &basis, None, cold_budget(), execution)
+    let (baseline, baseline_report) = execution
+        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+            runtime.index_authority().refresh_for_basis(
+                request.clone(),
+                &basis,
+                None,
+                cold_budget(),
+                execution,
+            )
+        })
         .unwrap();
+    baseline.unwrap();
     runtime
         .index_authority()
         .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
@@ -130,12 +147,19 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
         .unwrap();
     let mut ordinary = cold_budget();
     ordinary.maximum_cold_record_slots = 0;
-    let first = runtime
-        .index_authority()
-        .refresh_for_basis(request.clone(), &basis, None, ordinary, execution)
-        .unwrap_err();
-    assert_eq!(first.kind, Denial::ColdReconstructionRequired);
-    let needed = (first.work.work_units + baseline.work.work_units) as u64;
+    let (first, first_report) = execution
+        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+            runtime.index_authority().refresh_for_basis(
+                request.clone(),
+                &basis,
+                None,
+                ordinary,
+                execution,
+            )
+        })
+        .unwrap();
+    assert_eq!(first.unwrap_err().kind, Denial::ColdReconstructionRequired);
+    let needed = first_report.charged_work() + baseline_report.charged_work();
     let (retry, _) = execution
         .run(ExecutionWorkCeiling::new(needed - 1), |_| {
             let first = runtime

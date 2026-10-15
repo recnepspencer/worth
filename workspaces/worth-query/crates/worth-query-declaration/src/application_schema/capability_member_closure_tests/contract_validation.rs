@@ -185,10 +185,9 @@ fn capability_validity_timeline_requires_compatible_field_families() {
             scalar_family,
             ..
         } = member
+            && field == "ValidFrom"
         {
-            if field == "ValidFrom" {
-                *scalar_family = ScalarAspectType::Int64;
-            }
+            *scalar_family = ScalarAspectType::Int64;
         }
     }
     assert_eq!(

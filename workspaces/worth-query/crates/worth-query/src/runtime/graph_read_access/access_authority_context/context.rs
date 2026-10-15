@@ -233,17 +233,15 @@ pub fn admit_graph_read_access_authority(
 
     if let (Some(policy_tenant), Some(relationship_proof)) =
         (policy_tenant.as_ref(), relationship_proof.as_ref())
-    {
-        if relationship_proof.policy_digest() != policy_tenant.bundle().policy_digest()
+        && (relationship_proof.policy_digest() != policy_tenant.bundle().policy_digest()
             || relationship_proof.tenant_schema_basis_digest()
-                != policy_tenant.bundle().tenant_schema_basis_digest()
-        {
-            return Err(WorthQueryGraphReadAccessAuthorityDenial::new(
-                WorthQueryGraphReadAccessAuthorityDenialKind::RelationshipProofPolicyTenantMismatch,
-                "relationship proof admission must belong to the same admitted policy/tenant context",
-                WorthQueryGraphReadAccessAuthorityCounters::denied(true, true),
-            ));
-        }
+                != policy_tenant.bundle().tenant_schema_basis_digest())
+    {
+        return Err(WorthQueryGraphReadAccessAuthorityDenial::new(
+            WorthQueryGraphReadAccessAuthorityDenialKind::RelationshipProofPolicyTenantMismatch,
+            "relationship proof admission must belong to the same admitted policy/tenant context",
+            WorthQueryGraphReadAccessAuthorityCounters::denied(true, true),
+        ));
     }
 
     let policy_tenant_digest = policy_tenant

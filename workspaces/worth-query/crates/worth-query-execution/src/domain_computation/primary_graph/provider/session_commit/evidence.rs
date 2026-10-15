@@ -83,12 +83,12 @@ impl WorthQueryCompletedCommitEvidenceStore {
         if self.by_idempotency.get(&keys.idempotency) == Some(&commit) {
             self.by_idempotency.remove(&keys.idempotency);
         }
-        if let Some(correlation) = keys.dispatch_correlation {
-            if let Some(indexed) = self.by_dispatch_correlation.get_mut(&correlation) {
-                indexed.remove(&commit);
-                if indexed.is_empty() {
-                    self.by_dispatch_correlation.remove(&correlation);
-                }
+        if let Some(correlation) = keys.dispatch_correlation
+            && let Some(indexed) = self.by_dispatch_correlation.get_mut(&correlation)
+        {
+            indexed.remove(&commit);
+            if indexed.is_empty() {
+                self.by_dispatch_correlation.remove(&correlation);
             }
         }
         let world = evidence.committed_product_publication().composite_commit();

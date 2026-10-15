@@ -214,7 +214,7 @@ fn lower_reuse_descriptor(
         return HistoricalPathReuseDescriptor::no_reuse();
     };
 
-    let retained_reuse = if record.materialization_paths().iter().any(|path| {
+    if record.materialization_paths().iter().any(|path| {
         matches!(
             path,
             BridgeHistoricalMaterializationPath::DirectSnapshotRead
@@ -230,7 +230,5 @@ fn lower_reuse_descriptor(
         HistoricalPathReuseDescriptor::with_replay_tail_reuse()
     } else {
         HistoricalPathReuseDescriptor::no_reuse()
-    };
-
-    retained_reuse
+    }
 }

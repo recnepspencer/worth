@@ -140,17 +140,14 @@ pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0
     publish_on_first_program_with_limits(host_limits())
 }
 
-/// Scheduled 10k publication lane: 200k candidate items, 128 MiB candidate
-/// bytes, 20M candidate work, 200k operation width, and WorkflowScale's
-/// finite Relational publication and integrity ceilings. Ordinary actions retain smaller
-/// handler-level candidate requirements.
-pub fn publish_on_first_program_for_workflow_scale(
-    nodes: u16,
-    connections: u16,
-) -> DocumentRetentionRuntime<RetentionProgramP0> {
+/// Scale publication lane: 200k candidate items and operation width, 128 MiB
+/// candidate bytes, and WorkflowScale's finite Relational publication and
+/// integrity ceilings. Ordinary handlers retain their narrower requirements.
+pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime<RetentionProgramP0>
+{
     publish_on_first_program_with_limits(
         WorthQueryInMemoryApplicationLimits::new(
-            world_resources::workflow_scale_resources(nodes, connections),
+            world_resources::workflow_scale_resources(),
             runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
                 world_resources::WORKFLOW_SCALE_WIDTH,
                 128 * 1024 * 1024,
@@ -365,6 +362,9 @@ pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
 
 #[path = "host/owning_workflow.rs"]
 mod owning_workflow;
-pub use owning_workflow::{
-    publish_owner_workflow, publish_owner_workflow_with_projection, read_owner_approval_grant,
-};
+#[allow(
+    unused_imports,
+    reason = "Shared fixture factory is used by compiled workflow examples"
+)]
+pub use owning_workflow::publish_owner_workflow;
+pub use owning_workflow::{publish_owner_workflow_with_projection, read_owner_approval_grant};

@@ -168,10 +168,10 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         match policy.retention_mode {
             DurableLogRetentionMode::RetainAllInMemory => {}
             DurableLogRetentionMode::CompactAfterCheckpoint => {
-                if let Some(checkpoint) = self.runtime.durability.latest_checkpoint() {
-                    if let Some(commit) = checkpoint.coverage.up_to_commit.as_ref() {
-                        self.runtime.durability.retain_log_after(commit.commit_id);
-                    }
+                if let Some(checkpoint) = self.runtime.durability.latest_checkpoint()
+                    && let Some(commit) = checkpoint.coverage.up_to_commit.as_ref()
+                {
+                    self.runtime.durability.retain_log_after(commit.commit_id);
                 }
                 let log_len = self.runtime.durability.log_len();
                 if log_len > policy.max_in_memory_envelopes {

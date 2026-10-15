@@ -20,14 +20,14 @@ impl HistorySubsystem {
         for cell in self.branch_cells.values() {
             let branch = cell.identity().branch_id().clone();
             roots.latest_branches.insert(branch.clone());
-            if let Some(root) = cell.root() {
-                if let Some(envelope) = root.canonical_envelope() {
-                    roots.live.insert((
-                        branch,
-                        envelope.commit.version_id,
-                        root.schema_authority().schema_version(),
-                    ));
-                }
+            if let Some(root) = cell.root()
+                && let Some(envelope) = root.canonical_envelope()
+            {
+                roots.live.insert((
+                    branch,
+                    envelope.commit.version_id,
+                    root.schema_authority().schema_version(),
+                ));
             }
         }
         roots

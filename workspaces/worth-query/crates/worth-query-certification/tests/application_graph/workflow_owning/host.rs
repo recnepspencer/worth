@@ -134,27 +134,31 @@ impl Host {
         let scope = model::operator_identity::request_scope();
         let actor =
             model::operator_identity::authenticate_operator(runtime.installed_schema(), &scope);
-        let request = runtime.request(&actor, &scope).on_branch(instance.branch());
-        let owner = request
-            .mutate(WorkflowAdvanceIntent {
-                input: WorkflowAdvanceInput {
-                    document_identity: model::retention_entry::DOCUMENT_IDENTITY.into(),
-                },
-            })
-            .without_source()
-            .idempotency(&key)
-            .prepare_workflow_advance(&self.workflow, instance)
-            .unwrap()
-            .into_assessment_demand(model::assessment_output::RetentionAssessmentDemand::new(
-                model::retention_entry::DOCUMENT_IDENTITY,
-            ))
-            .unwrap()
-            .controls(WorthQueryOutputDemandControls::new(
-                std::num::NonZeroUsize::new(512).unwrap(),
-                std::num::NonZeroUsize::new(1024).unwrap(),
-            ))
-            .retain_operation(self.workflow.program_runtime())
-            .unwrap();
+        let owner = {
+            let request = runtime.request(&actor, &scope).on_branch(instance.branch());
+            request
+                .mutate(WorkflowAdvanceIntent {
+                    input: WorkflowAdvanceInput {
+                        document_identity: model::retention_entry::DOCUMENT_IDENTITY.into(),
+                    },
+                })
+                .without_source()
+                .idempotency(&key)
+                .prepare_workflow_advance(&self.workflow, instance)
+                .unwrap()
+                .into_assessment_demand(model::assessment_output::RetentionAssessmentDemand::new(
+                    model::retention_entry::DOCUMENT_IDENTITY,
+                ))
+                .unwrap()
+                .controls(WorthQueryOutputDemandControls::new(
+                    std::num::NonZeroUsize::new(512).unwrap(),
+                    std::num::NonZeroUsize::new(1024).unwrap(),
+                ))
+                .retain_operation(self.workflow.program_runtime())
+                .unwrap()
+        };
+        drop(actor);
+        drop(scope);
         owner
     }
     pub fn assessment(

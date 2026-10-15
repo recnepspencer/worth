@@ -23,6 +23,10 @@ type RootDemand<S, R> =
 type RootSource<S,R> = <<RootDemand<S,R> as WorthQueryApplicationOutputDemand<S>>::OutputFamily as WorthQueryProducerOutputFamily<S>>::Source;
 type RootQuery<S, R> = <RootSource<S, R> as ApplicationQueryBinding<S>>::Query;
 type RootValue<S,R> = <<RootSource<S,R> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+#[allow(
+    clippy::type_complexity,
+    reason = "Compiler-only witness keeps the exact move-only success and refusal owners visible"
+)]
 pub(super) fn start_preserves_storable_owner_on_both_returns<S,I,P,R>(
     description: WorthQueryOperationDescription<S,NonCloneOriginal<I>>,
     performed: Performed<S,&NonCloneOriginal<I>,P,R>,
@@ -59,6 +63,10 @@ where
     (description, started)
 }
 
+#[allow(
+    clippy::type_complexity,
+    reason = "Compiler-only witness keeps the exact move-only success and refusal owners visible"
+)]
 pub(super) fn fresh_partial_promotion_preserves_storable_refusal<S,I,P,R>(
     description: WorthQueryOperationDescription<S,NonCloneOriginal<I>>,
     partial: Partial<S,NonCloneOriginal<I>,P,R>,

@@ -37,7 +37,7 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
         .expect("the recovered root is observable");
     request
         .at(&retained)
-        .require_current_program_output(&restored_settlement, NonZeroUsize::new(4_096).unwrap())
+        .require_current_program_output(&restored_settlement, support::currentness_work_limit())
         .expect("the restored settlement is current at its recovered source");
 
     let repeated_restored_settlement = settle(&request, &restored);
@@ -72,7 +72,7 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
     assert!(matches!(
         request.at(&current).require_current_program_output(
             &restored_settlement,
-            NonZeroUsize::new(4_096).unwrap(),
+            support::currentness_work_limit(),
         ),
         Err(WorthQueryOutputCurrentnessDenial::Output(denial))
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded

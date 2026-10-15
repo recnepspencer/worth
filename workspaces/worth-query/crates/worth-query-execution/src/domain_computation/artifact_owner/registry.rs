@@ -221,12 +221,12 @@ impl WorthQueryWorkflowArtifactRegistry {
                 .expect("workflow artifact registry lock must remain available");
             let generation = production_generation(state.posture);
             state.posture = WorthQueryWorkflowArtifactRegistryPosture::Closed(generation);
-            let owners = state
+
+            state
                 .owners
                 .values()
                 .filter_map(|entry| entry.owner.upgrade())
-                .collect::<Vec<_>>();
-            owners
+                .collect::<Vec<_>>()
         };
         for owner in owners {
             owner.request_registry_close(disposition);

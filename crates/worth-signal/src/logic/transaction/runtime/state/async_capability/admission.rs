@@ -314,13 +314,12 @@ where
             return Ok(ready.condition() == condition);
         }
         if let Some(wake_id) = self.temporal.active_wake_for_owner(owner) {
-            if let Some(scheduled) = self.temporal.scheduled_wake(wake_id) {
-                if scheduled.condition() == condition
-                    && scheduled.due_tick() <= self.clock_basis().current_tick()
-                {
-                    let ready = self.promote_temporal_wake_ready(wake_id)?;
-                    return Ok(ready.condition() == condition);
-                }
+            if let Some(scheduled) = self.temporal.scheduled_wake(wake_id)
+                && scheduled.condition() == condition
+                && scheduled.due_tick() <= self.clock_basis().current_tick()
+            {
+                let ready = self.promote_temporal_wake_ready(wake_id)?;
+                return Ok(ready.condition() == condition);
             }
         } else {
             self.admit_node_temporal_wake_with_summary(node)?;

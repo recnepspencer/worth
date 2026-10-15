@@ -76,7 +76,7 @@ fn protected_foreign_status(fixture: &FreezeFixture) -> AccountStatus {
 
 fn commit_freeze(fixture: &FreezeFixture, key: u8) -> bank_server::BankCommitReceipt {
     let specialist = fixture.authenticate_specialist();
-    let outcome = {
+    {
         let source_actor = &specialist;
         let source_scope = &request_scope();
         let source_key = &BankIdempotencyKey::new(format!("publication-freeze-{key}")).unwrap();
@@ -110,8 +110,5 @@ fn commit_freeze(fixture: &FreezeFixture, key: u8) -> bank_server::BankCommitRec
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
         bank_server::BankCommitReceipt::from_closed_source(closed_source)
-    };
-    let receipt = outcome;
-
-    receipt
+    }
 }

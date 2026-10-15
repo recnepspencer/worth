@@ -95,10 +95,10 @@ impl<'a> GraphObserver<'a> {
 
     pub fn execution_history_summary(&self, profile: DiagnosticsTier) -> ExecutionHistorySummary {
         let retention_budget = self.graph.installed_runtime_policy().retention_budget();
-        if let Some(summary) = self.graph.diagnostics_state().recent_history().back() {
-            if !retention_budget.retain_history_details || !summary.nodes.is_empty() {
-                return summary.with_profile(profile);
-            }
+        if let Some(summary) = self.graph.diagnostics_state().recent_history().back()
+            && (!retention_budget.retain_history_details || !summary.nodes.is_empty())
+        {
+            return summary.with_profile(profile);
         }
         ExecutionHistorySummary::from_graph(
             self.graph,

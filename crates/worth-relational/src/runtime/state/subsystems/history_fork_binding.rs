@@ -144,26 +144,26 @@ impl RelationalForkOwnerBinding {
                 .saturating_add(cost.authoritative_bytes);
         });
         self.head_versions.move_head(None, head_version);
-        if let (Some(visibility), Some(version_id)) = (&self.visibility, head_version) {
-            if visibility.protect_branch_heads {
-                let root = cell
-                    .root()
-                    .expect("installed fork cell retains its exact source root");
-                let key = crate::visibility::snapshot_states::VisibilitySnapshotStateKey::for_root(
-                    cell.identity().branch_id().clone(),
-                    version_id,
-                    &root,
-                );
-                visibility.cache.track_branch_head_state(&key);
-                visibility.cache.update_residency(&key, |residency| {
-                    residency.branch_head_refs = residency.branch_head_refs.saturating_add(1);
-                });
-                visibility.instrumentation.count(|counters| {
-                    counters.visibility_cache_branch_head_promotions = counters
-                        .visibility_cache_branch_head_promotions
-                        .saturating_add(1);
-                });
-            }
+        if let (Some(visibility), Some(version_id)) = (&self.visibility, head_version)
+            && visibility.protect_branch_heads
+        {
+            let root = cell
+                .root()
+                .expect("installed fork cell retains its exact source root");
+            let key = crate::visibility::snapshot_states::VisibilitySnapshotStateKey::for_root(
+                cell.identity().branch_id().clone(),
+                version_id,
+                &root,
+            );
+            visibility.cache.track_branch_head_state(&key);
+            visibility.cache.update_residency(&key, |residency| {
+                residency.branch_head_refs = residency.branch_head_refs.saturating_add(1);
+            });
+            visibility.instrumentation.count(|counters| {
+                counters.visibility_cache_branch_head_promotions = counters
+                    .visibility_cache_branch_head_promotions
+                    .saturating_add(1);
+            });
         }
     }
 }

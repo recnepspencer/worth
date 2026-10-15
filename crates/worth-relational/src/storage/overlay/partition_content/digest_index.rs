@@ -51,11 +51,11 @@ impl DigestIndex {
 
     pub(super) fn visit_allocations(&self, visitor: &mut dyn StorageAllocationVisitor) {
         fn walk(node: &Arc<Node>, visitor: &mut dyn StorageAllocationVisitor) {
-            if visitor.visit(node.observation(false)) {
-                if let Some(children) = &node.children {
-                    for child in children {
-                        walk(child, visitor);
-                    }
+            if visitor.visit(node.observation(false))
+                && let Some(children) = &node.children
+            {
+                for child in children {
+                    walk(child, visitor);
                 }
             }
         }

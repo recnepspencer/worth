@@ -78,7 +78,7 @@ fn execution_denial(
     cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
 ) -> WorthQueryRequiredSetCurrentnessDenial {
     WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+        WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
         "original discovery dependencies",
     )
     .into()

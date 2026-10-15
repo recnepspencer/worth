@@ -51,20 +51,19 @@ impl DirtyBatch {
             });
             let mut merged = Vec::<DirtyBatchEntry>::with_capacity(entries.len());
             for entry in entries {
-                if let Some(previous) = merged.last_mut() {
-                    if previous.source == entry.source
-                        && previous.changed_aspect == entry.changed_aspect
-                    {
-                        previous.changed_regions = CanonicalChangedRegions::new(
-                            previous
-                                .changed_regions
-                                .as_slice()
-                                .iter()
-                                .cloned()
-                                .chain(entry.changed_regions.into_vec()),
-                        );
-                        continue;
-                    }
+                if let Some(previous) = merged.last_mut()
+                    && previous.source == entry.source
+                    && previous.changed_aspect == entry.changed_aspect
+                {
+                    previous.changed_regions = CanonicalChangedRegions::new(
+                        previous
+                            .changed_regions
+                            .as_slice()
+                            .iter()
+                            .cloned()
+                            .chain(entry.changed_regions.into_vec()),
+                    );
+                    continue;
                 }
                 merged.push(entry);
             }

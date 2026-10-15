@@ -127,10 +127,10 @@ pub(super) fn execution_failed(
         }
         error => error,
     };
-    if let MutationHandlerExecutionDenial::Attempt(attempt) = &error {
-        if let Some(authority) = attempt.request_authority() {
-            return request_authority_denied(subject, authority.clone());
-        }
+    if let MutationHandlerExecutionDenial::Attempt(attempt) = &error
+        && let Some(authority) = attempt.request_authority()
+    {
+        return request_authority_denied(subject, authority.clone());
     }
     let interruption = match &error {
         MutationHandlerExecutionDenial::Projection(projection) => projection
@@ -149,10 +149,10 @@ pub(super) fn execution_failed(
         };
         return request_admission_rejected(denial(kind, format!("{subject}: {error:?}")));
     }
-    if let MutationHandlerExecutionDenial::Projection(projection) = &error {
-        if let Some(kind) = projection_budget(projection.kind()) {
-            return denial(kind, format!("{subject}: {projection}")).into();
-        }
+    if let MutationHandlerExecutionDenial::Projection(projection) = &error
+        && let Some(kind) = projection_budget(projection.kind())
+    {
+        return denial(kind, format!("{subject}: {projection}")).into();
     }
     if matches!(
         error,

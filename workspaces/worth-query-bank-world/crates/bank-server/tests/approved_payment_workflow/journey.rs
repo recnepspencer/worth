@@ -49,8 +49,8 @@ pub(super) fn start_approved_payment_instance(
         WorkflowInstanceStartOutcome::Started(started) => started,
         other => panic!("expected workflow instance, got {other:?}"),
     };
-    let instance = started.instance().clone();
-    instance
+
+    started.instance().clone()
 }
 
 pub(super) fn prepare_approved_payment_approval_on_instance(

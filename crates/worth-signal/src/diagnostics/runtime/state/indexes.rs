@@ -68,10 +68,10 @@ impl DiagnosticsState {
             remove_event_from_index(&mut self.replay_events_by_artifact, &artifact_id, event);
         }
         self.replay_cursor_offsets.remove(&event.cursor);
-        if let Some(snapshot_id) = event.snapshot_id {
-            if self.snapshot_replay_cursors.get(&snapshot_id) == Some(&event.cursor) {
-                self.snapshot_replay_cursors.remove(&snapshot_id);
-            }
+        if let Some(snapshot_id) = event.snapshot_id
+            && self.snapshot_replay_cursors.get(&snapshot_id) == Some(&event.cursor)
+        {
+            self.snapshot_replay_cursors.remove(&snapshot_id);
         }
     }
 

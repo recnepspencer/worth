@@ -213,15 +213,14 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
                 sum.1 + r.report.charged_span(),
             )
         });
-        assert_eq!(
-            retained_total, full_total,
-            "the same edited request has identical advancement work and span with reuse on or off"
-        );
+        // These siblings have different native branch identities, so their
+        // owner-read bills need not match. The worker matrix compares each
+        // branch's whole bill across identical posture/reuse counterfactuals.
         assert_eq!(
             retained.outcome, reference.outcome,
             "reuse preserves the same request's result or typed stop"
         );
-        println!("SAME_REQUEST_BILL:reuse={reuse}:edited_retained_work={}:edited_retained_span={}:edited_reuse_off_work={}:edited_reuse_off_span={}", retained_total.0, retained_total.1, full_total.0, full_total.1);
+        println!("SIBLING_BRANCH_BILLS:reuse={reuse}:edited_retained_work={}:edited_retained_span={}:edited_reuse_off_work={}:edited_reuse_off_span={}", retained_total.0, retained_total.1, full_total.0, full_total.1);
         if ceiling_family {
             ceiling_pair::assert_stop(&retained, &reference, &model, reuse);
             return;
@@ -236,8 +235,8 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     });
     // A freshly seeded world has no prior edit/publication history. Its whole
     // advancement bill is a different input; only its declared computation
-    // charge is compared below. Gather's same-history counterpart above pins
-    // the reuse law for the entire advancement, including native owner reads.
+    // charge is compared below. The worker matrix separately pins each native
+    // branch's whole advancement across posture and reuse choices.
     println!(
         "HISTORY_BILLS:edited_work={}:edited_span={}:new_installation_work={}:new_installation_span={}:declared={declared_work}",
         retained_total.0, retained_total.1, fresh_total.0, fresh_total.1

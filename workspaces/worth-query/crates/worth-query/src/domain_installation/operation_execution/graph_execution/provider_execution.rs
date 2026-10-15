@@ -63,18 +63,18 @@ fn plan_bound_graph_invocations<D, O, F, L: BasisOperationLane>(
         if matches!(&semantics.touches, WorthQueryOperationTouchContract::Declared { graph_roles, .. } if graph_roles.contains(&participation.role))
         {
             touches.push(participation);
-            if bound.commit_posture() == WorthQueryBoundCommitPosture::Atomic {
-                if let Some(authority) = &participation.record.commit_authority {
-                    match commit_groups.iter_mut().find(|(candidate, _)| {
-                        std::sync::Arc::ptr_eq(candidate, authority)
-                            && candidate.identity() == authority.identity()
-                    }) {
-                        Some((_, roles)) => roles.push(participation.role.clone()),
-                        None => commit_groups.push((
-                            std::sync::Arc::clone(authority),
-                            vec![participation.role.clone()],
-                        )),
-                    }
+            if bound.commit_posture() == WorthQueryBoundCommitPosture::Atomic
+                && let Some(authority) = &participation.record.commit_authority
+            {
+                match commit_groups.iter_mut().find(|(candidate, _)| {
+                    std::sync::Arc::ptr_eq(candidate, authority)
+                        && candidate.identity() == authority.identity()
+                }) {
+                    Some((_, roles)) => roles.push(participation.role.clone()),
+                    None => commit_groups.push((
+                        std::sync::Arc::clone(authority),
+                        vec![participation.role.clone()],
+                    )),
                 }
             }
         }

@@ -4,6 +4,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+#[path = "../query_ordinary_entry_fixture/mod.rs"]
+mod query_ordinary_entry_fixture;
+
 pub fn unique_temp_root(label: &str) -> PathBuf {
     worth_harness::tooling::fixture_path::unique_path(&format!(
         "boundary-check-query-audience-{label}"
@@ -291,6 +294,7 @@ pub mod facade {
 "#;
 
 pub fn write_query_stubs(root: &Path) {
+    query_ordinary_entry_fixture::write(root);
     // Vendor stubs resolve Cargo metadata for governed Road 1 packages.
     write_stub_lib(root, "vendor/worth-query", "worth-query");
     write_stub_lib(root, "vendor/worth-query-decl", "worth-query-decl");

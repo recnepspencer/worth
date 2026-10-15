@@ -101,12 +101,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         ),
         WorthQueryProductBranchAdmissionDenial,
     > {
-        if let SecurityIndexCurrency::PreparedSelectedGraphRead(prepared) = index_currency {
-            if !prepared.matches_basis(observation.basis().relational_basis()) {
-                return Err(WorthQueryProductBranchAdmissionDenial::Refused(
-                    AdmissionRefusal::IncarnationChanged,
-                ));
-            }
+        if let SecurityIndexCurrency::PreparedSelectedGraphRead(prepared) = index_currency
+            && !prepared.matches_basis(observation.basis().relational_basis())
+        {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::IncarnationChanged,
+            ));
         }
         if matches!(index_currency, SecurityIndexCurrency::GraphRead) {
             let graph = self

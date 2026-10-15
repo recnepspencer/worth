@@ -40,6 +40,7 @@ where
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
 {
     /// Moves the same-binding evidence; it neither retains an intent borrow nor admits work.
+    #[cfg(test)]
     pub(in crate::application_entry) fn into_same_binding_intent<Original>(
         self,
     ) -> WorthQueryStartedDiscoveredOutputs<Schema, Original, Program, Root>

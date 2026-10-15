@@ -1,5 +1,6 @@
 pub(super) mod capacity_region;
 mod execution_policy;
+pub(super) use execution_policy::currentness_work_limit;
 pub(super) mod observation;
 pub(super) mod retained_inventory;
 use std::sync::{

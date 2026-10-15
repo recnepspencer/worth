@@ -66,7 +66,8 @@ pub(super) enum WorkerCommand {
 }
 pub(super) struct MutationTransport {
     application: Arc<dyn super::inbound_completion::BankRailCompletionRuntime>,
-    pub(super) recovery: Arc<Mutex<super::recovery_registry::BankHttpRecoveryRegistry>>,
+    // Native recovery custody outlives worker shutdown while this transport is retained.
+    pub(super) _recovery_registry: Arc<Mutex<super::recovery_registry::BankHttpRecoveryRegistry>>,
     pub(super) senders: Vec<mpsc::Sender<WorkerCommand>>,
     workers: Mutex<Vec<JoinHandle<std::io::Result<()>>>>,
     pub(super) queue_slots: Arc<Semaphore>,
@@ -125,7 +126,7 @@ impl BankHttpMutationContinuation {
         Ok(Self {
             transport: Arc::new(MutationTransport {
                 application,
-                recovery,
+                _recovery_registry: recovery,
                 senders,
                 workers: Mutex::new(workers),
                 queue_slots: Arc::new(Semaphore::new(queue_capacity.get())),

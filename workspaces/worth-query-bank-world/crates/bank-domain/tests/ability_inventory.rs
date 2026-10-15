@@ -2,7 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bank_domain::schema::BankSchema;
 use worth_query_decl::facade::application_schema::{
-    ApplicationAuthorizationPathEffect, ApplicationSchemaMember,
+    ApplicationAuthorizationPathEffect, ApplicationAuthorizationTraversalDirection,
+    ApplicationSchemaMember,
 };
 
 #[test]
@@ -28,6 +29,7 @@ fn bank_ability_inventory_and_operation_requirements_are_exact() {
             ("InitiateBusinessFunds", "Business"),
             ("ManageAccountAccess", "Account"),
             ("OpenAccount", "Institution"),
+            ("RevokeProgramDeploymentGrant", "ProgramDeploymentGrant"),
             ("SendPersonalFunds", "Account"),
             ("ServiceInstitutionAccount", "Institution"),
             ("ViewAccount", "Account"),
@@ -96,6 +98,10 @@ fn bank_ability_inventory_and_operation_requirements_are_exact() {
                 "RevokeAccountAuthorizationOperation",
                 ("ManageAccountAccess", "Account")
             ),
+            (
+                "ProgramDeploymentRevocationOperation",
+                ("RevokeProgramDeploymentGrant", "ProgramDeploymentGrant")
+            ),
             ("SendMoneyOperation", ("SendPersonalFunds", "Account")),
             (
                 "WithdrawOperation",
@@ -123,7 +129,33 @@ fn bank_ability_policies_are_closed_over_declared_graph_paths() {
         })
         .collect::<BTreeMap<_, _>>();
 
-    assert_eq!(policies.len(), 14);
+    assert_eq!(policies.len(), 15);
+    let (revocation_scope, revocation_paths) = policies
+        .get("RevokeProgramDeploymentGrant")
+        .expect("program grant revocation policy must be installed");
+    assert_eq!(*revocation_scope, "ProgramDeploymentGrant");
+    assert_eq!(revocation_paths.len(), 1);
+    let issuer_path = &revocation_paths[0];
+    assert_eq!(
+        issuer_path.effect(),
+        ApplicationAuthorizationPathEffect::Allow
+    );
+    assert_eq!(issuer_path.principal_entity(), "Principal");
+    assert_eq!(issuer_path.scope_entity(), "ProgramDeploymentGrant");
+    assert!(issuer_path.predicates().is_empty());
+    assert_eq!(
+        issuer_path
+            .traversals()
+            .iter()
+            .map(|step| (step.relation(), step.from(), step.to(), step.direction()))
+            .collect::<Vec<_>>(),
+        vec![(
+            "ProgramDeploymentGrantGrantor",
+            "Principal",
+            "ProgramDeploymentGrant",
+            ApplicationAuthorizationTraversalDirection::Forward,
+        )]
+    );
     let (approval_scope, approval_paths) = policies
         .get("ApproveBusinessFunds")
         .expect("approval policy must be installed");

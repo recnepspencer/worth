@@ -16,14 +16,14 @@ impl<'a> SupportPinSnapshotIndex<'a> {
     ) -> Result<Self, WorthQuerySupportPinningError> {
         let mut by_family = BTreeMap::new();
         for row in snapshot.rows() {
-            if let Some(family) = row.facade_family() {
-                if by_family.insert(family, row).is_some() {
-                    return Err(WorthQuerySupportPinningError::with_family(
-                        WorthQuerySupportPinningErrorKind::DuplicateSnapshotFamily,
-                        "support pin snapshot contains duplicate facade family rows",
-                        family,
-                    ));
-                }
+            if let Some(family) = row.facade_family()
+                && by_family.insert(family, row).is_some()
+            {
+                return Err(WorthQuerySupportPinningError::with_family(
+                    WorthQuerySupportPinningErrorKind::DuplicateSnapshotFamily,
+                    "support pin snapshot contains duplicate facade family rows",
+                    family,
+                ));
             }
         }
         Ok(Self { by_family })

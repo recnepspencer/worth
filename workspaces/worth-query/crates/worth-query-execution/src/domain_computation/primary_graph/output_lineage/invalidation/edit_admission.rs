@@ -185,10 +185,10 @@ impl InvalidationEditAdmission {
         &mut self,
         owner: &SourceInvalidationOwner,
     ) -> Result<CarriedRequestInvalidationAdmission, CompanionPreflightStop> {
-        if let AdmissionCounters::Carried(carried) = &self.counters {
-            if carried.runtime_instance_id != owner.runtime_instance_id {
-                return Err(CompanionPreflightStop::SelectedSourceMismatch);
-            }
+        if let AdmissionCounters::Carried(carried) = &self.counters
+            && carried.runtime_instance_id != owner.runtime_instance_id
+        {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
         }
         self.work(1)?;
         if matches!(self.counters, AdmissionCounters::Local(_)) {

@@ -114,7 +114,6 @@ fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh
         &head
     );
     let retained = builder.into_capture_refusal(returned_key, denial);
-    drop(request);
     drop(principal);
     drop(scope);
     let foreign = installation::install(1, 0);

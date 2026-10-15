@@ -76,10 +76,10 @@ fn append_prohibition_causes(
             ),
         ),
     ] {
-        if let Some(index) = index {
-            if matched(index)? {
-                causes.push(kind);
-            }
+        if let Some(index) = index
+            && matched(index)?
+        {
+            causes.push(kind);
         }
     }
     Ok(())

@@ -80,13 +80,13 @@ impl WorthQueryOutputDemandRegistry {
                 return false;
             }
             released_bytes += record.release_obligations();
-            if !record.is_required() {
-                if let Some(member) = required_keys.take(key) {
-                    *required_reserved_bytes = required_reserved_bytes.saturating_sub(
-                        super::required_members::member_bytes(member.as_ref())
-                            .expect("admitted key charge fits"),
-                    );
-                }
+            if !record.is_required()
+                && let Some(member) = required_keys.take(key)
+            {
+                *required_reserved_bytes = required_reserved_bytes.saturating_sub(
+                    super::required_members::member_bytes(member.as_ref())
+                        .expect("admitted key charge fits"),
+                );
             }
             true
         });

@@ -95,10 +95,3 @@ pub(super) const fn deadline_exceeded() -> BankHttpDenial {
         BankHttpNextAction::Retry,
     )
 }
-
-pub(super) const fn conflicting_idempotency_key() -> BankHttpDenial {
-    BankHttpDenial::new(
-        BankHttpDenialKind::MalformedRequest,
-        BankHttpNextAction::CorrectRequest,
-    )
-}

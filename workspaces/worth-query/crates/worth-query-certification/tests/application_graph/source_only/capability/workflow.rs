@@ -70,99 +70,101 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
     let runtime = workflow.runtime();
     let scope = request_scope();
     let actor = host::authenticate(&host, 1, &scope);
-    let request = runtime.request(&actor, &scope);
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<Spec>::new(
-        "capability-completion",
-        definition_limits(),
-    )
-    .unwrap();
-    let propose = builder.operation::<SetRetention>("propose", false).unwrap();
-    let effect = builder
-        .operation_binding::<bindings::GuardedBinding>("effect")
-        .unwrap();
-    let done = builder.terminal("done").unwrap();
-    builder
-        .start(&propose)
-        .control(
-            &propose,
-            ApplicationWorkflowControlOutcome::Completed,
-            &effect,
+    let (instance, required, owner, competitor, _published, _started) = {
+        let request = runtime.request(&actor, &scope);
+        let mut builder = ApplicationWorkflowDefinitionBuilder::<Spec>::new(
+            "capability-completion",
+            definition_limits(),
         )
-        .control(&effect, ApplicationWorkflowControlOutcome::Completed, &done)
-        .operation_input(&propose, &effect);
-    let contract = workflow
-        .workflow_spec()
-        .bind_definition(builder.finish().unwrap().validate().unwrap())
         .unwrap();
-    let WorkflowDefinitionPublicationOutcome::Published(published) = request
-        .mutate(Control(input()))
-        .without_source()
-        .idempotency(&0x9176ca00_u64)
-        .prepare_workflow_publication(contract, WorkflowDefinitionExpectedPredecessor::Absent)
-        .unwrap()
-        .execute()
-    else {
-        panic!("real capability definition publication")
+        let propose = builder.operation::<SetRetention>("propose", false).unwrap();
+        let effect = builder
+            .operation_binding::<bindings::GuardedBinding>("effect")
+            .unwrap();
+        let done = builder.terminal("done").unwrap();
+        builder
+            .start(&propose)
+            .control(
+                &propose,
+                ApplicationWorkflowControlOutcome::Completed,
+                &effect,
+            )
+            .control(&effect, ApplicationWorkflowControlOutcome::Completed, &done)
+            .operation_input(&propose, &effect);
+        let contract = workflow
+            .workflow_spec()
+            .bind_definition(builder.finish().unwrap().validate().unwrap())
+            .unwrap();
+        let WorkflowDefinitionPublicationOutcome::Published(published) = request
+            .mutate(Control(input()))
+            .without_source()
+            .idempotency(&0x9176ca00_u64)
+            .prepare_workflow_publication(contract, WorkflowDefinitionExpectedPredecessor::Absent)
+            .unwrap()
+            .execute()
+        else {
+            panic!("real capability definition publication")
+        };
+        let WorkflowInstanceStartOutcome::Started(started) = request
+            .mutate(Start(input()))
+            .without_source()
+            .idempotency(&0x9176ca01_u64)
+            .prepare_workflow_instance_start(&workflow, published.definition().clone())
+            .unwrap()
+            .execute()
+        else {
+            panic!("real capability instance start")
+        };
+        let instance = started.instance().clone();
+        let WorkflowProposalOutcome::Published(_) = request
+            .mutate(Control(input()))
+            .without_source()
+            .idempotency(&0x9176ca02_u64)
+            .prepare_workflow_proposal(&workflow, instance.clone())
+            .unwrap()
+            .execute()
+        else {
+            panic!("actual original proposal")
+        };
+        let required = match request
+            .mutate(Advance(advance_input()))
+            .without_source()
+            .idempotency(&0x9176ca03_u64)
+            .prepare_workflow_advance(&workflow, instance.clone())
+            .unwrap()
+            .execute()
+        {
+            WorkflowProgressOutcome::AwaitingOperation(required) => required,
+            _ => panic!("native capability guarded requirement"),
+        };
+        let owner = request
+            .mutate(Effect(input()))
+            .without_source()
+            .preconditions(TypedMutationPreconditions::new().expect_fact(
+                DocumentIdentityField::reference(),
+                ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
+            ))
+            .idempotency_owned(0x9176ca04_u64)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .for_workflow_operation(&workflow, &required)
+            .unwrap_or_else(|_| panic!("original binding"))
+            .retain_operation::<Program, Action>(workflow.program_runtime())
+            .unwrap_or_else(|_| panic!("actual capability action"));
+        let competitor = request
+            .mutate(Effect(input()))
+            .without_source()
+            .preconditions(TypedMutationPreconditions::new().expect_fact(
+                DocumentIdentityField::reference(),
+                ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
+            ))
+            .idempotency_owned(0x9176ca08_u64)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .for_workflow_operation(&workflow, &required)
+            .unwrap_or_else(|_| panic!("same original issued requirement"))
+            .retain_operation::<Program, Action>(workflow.program_runtime())
+            .unwrap_or_else(|_| panic!("preconstructed competing key"));
+        (instance, required, owner, competitor, published, started)
     };
-    let WorkflowInstanceStartOutcome::Started(started) = request
-        .mutate(Start(input()))
-        .without_source()
-        .idempotency(&0x9176ca01_u64)
-        .prepare_workflow_instance_start(&workflow, published.definition().clone())
-        .unwrap()
-        .execute()
-    else {
-        panic!("real capability instance start")
-    };
-    let instance = started.instance().clone();
-    let WorkflowProposalOutcome::Published(_) = request
-        .mutate(Control(input()))
-        .without_source()
-        .idempotency(&0x9176ca02_u64)
-        .prepare_workflow_proposal(&workflow, instance.clone())
-        .unwrap()
-        .execute()
-    else {
-        panic!("actual original proposal")
-    };
-    let required = match request
-        .mutate(Advance(advance_input()))
-        .without_source()
-        .idempotency(&0x9176ca03_u64)
-        .prepare_workflow_advance(&workflow, instance.clone())
-        .unwrap()
-        .execute()
-    {
-        WorkflowProgressOutcome::AwaitingOperation(required) => required,
-        _ => panic!("native capability guarded requirement"),
-    };
-    let owner = request
-        .mutate(Effect(input()))
-        .without_source()
-        .preconditions(TypedMutationPreconditions::new().expect_fact(
-            DocumentIdentityField::reference(),
-            ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
-        ))
-        .idempotency_owned(0x9176ca04_u64)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .for_workflow_operation(&workflow, &required)
-        .unwrap_or_else(|_| panic!("original binding"))
-        .retain_operation::<Program, Action>(workflow.program_runtime())
-        .unwrap_or_else(|_| panic!("actual capability action"));
-    let competitor = request
-        .mutate(Effect(input()))
-        .without_source()
-        .preconditions(TypedMutationPreconditions::new().expect_fact(
-            DocumentIdentityField::reference(),
-            ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
-        ))
-        .idempotency_owned(0x9176ca08_u64)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .for_workflow_operation(&workflow, &required)
-        .unwrap_or_else(|_| panic!("same original issued requirement"))
-        .retain_operation::<Program, Action>(workflow.program_runtime())
-        .unwrap_or_else(|_| panic!("preconstructed competing key"));
-    drop(request);
     drop(actor);
     drop(scope);
     let authentication_scope = request_scope();
@@ -196,60 +198,62 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
     drop(authentication_scope);
     let scope = request_scope();
     let actor = host::authenticate(&host, 1, &scope);
-    let request = runtime.request(&actor, &scope).on_branch(instance.branch());
-    let completed = match owner.advance(&request) {
-        WorthQueryWorkflowOperationAdvance::Completed(done) => done,
-        _ => panic!("returned original owner still admits one real capability effect"),
+    let completed = {
+        let request = runtime.request(&actor, &scope).on_branch(instance.branch());
+        let completed = match owner.advance(&request) {
+            WorthQueryWorkflowOperationAdvance::Completed(done) => done,
+            _ => panic!("returned original owner still admits one real capability effect"),
+        };
+        assert!(
+            matches!(completed.evidence(), WorthQuerySourceCompletion::Fresh { result, .. } if result.retention_days == 18)
+        );
+        assert_eq!(host.contacts.counts(), (1, 1));
+        let before_competitor = runtime
+            .with_host_advancement(|phase| request.retain_read(&phase).unwrap())
+            .unwrap();
+        let terminal = match competitor.advance(&request) {
+            WorthQueryWorkflowOperationAdvance::Terminal(terminal) => terminal,
+            _ => panic!("competing key cannot duplicate original issued authority"),
+        };
+        assert!(
+            matches!(
+                terminal
+                    .native_terminal()
+                    .and_then(|owner| owner.native_outcome()),
+                Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
+            ),
+            "competing original client key must retain native guarded intent drift"
+        );
+        assert!(
+            terminal.denial().is_none(),
+            "this early keyed stop is not a slot-take denial"
+        );
+        assert_eq!(host.contacts.counts(), (1, 1));
+        let after_competitor = runtime
+            .with_host_advancement(|phase| request.retain_read(&phase).unwrap())
+            .unwrap();
+        assert_eq!(
+            before_competitor.selected_commit(),
+            after_competitor.selected_commit()
+        );
+        assert_eq!(
+            request
+                .query(super::readback::ReadRetention {
+                    identity: DOCUMENT_IDENTITY.to_owned()
+                })
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .retention_days,
+            18
+        );
+        drop(before_competitor);
+        drop(after_competitor);
+        terminal
+            .close(&request)
+            .unwrap_or_else(|_| panic!("native unexecuted competitor cleanup"));
+        completed
     };
-    assert!(
-        matches!(completed.evidence(), WorthQuerySourceCompletion::Fresh { result, .. } if result.retention_days == 18)
-    );
-    assert_eq!(host.contacts.counts(), (1, 1));
-    let before_competitor = runtime
-        .with_host_advancement(|phase| request.retain_read(&phase).unwrap())
-        .unwrap();
-    let terminal = match competitor.advance(&request) {
-        WorthQueryWorkflowOperationAdvance::Terminal(terminal) => terminal,
-        _ => panic!("competing key cannot duplicate original issued authority"),
-    };
-    assert!(
-        matches!(
-            terminal
-                .native_terminal()
-                .and_then(|owner| owner.native_outcome()),
-            Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
-        ),
-        "competing original client key must retain native guarded intent drift"
-    );
-    assert!(
-        terminal.denial().is_none(),
-        "this early keyed stop is not a slot-take denial"
-    );
-    assert_eq!(host.contacts.counts(), (1, 1));
-    let after_competitor = runtime
-        .with_host_advancement(|phase| request.retain_read(&phase).unwrap())
-        .unwrap();
-    assert_eq!(
-        before_competitor.selected_commit(),
-        after_competitor.selected_commit()
-    );
-    assert_eq!(
-        request
-            .query(super::readback::ReadRetention {
-                identity: DOCUMENT_IDENTITY.to_owned()
-            })
-            .execute()
-            .unwrap()
-            .rows()[0]
-            .retention_days,
-        18
-    );
-    drop(before_competitor);
-    drop(after_competitor);
-    terminal
-        .close(&request)
-        .unwrap_or_else(|_| panic!("native unexecuted competitor cleanup"));
-    drop(request);
     drop(actor);
     drop(scope);
     let denied_scope = request_scope();

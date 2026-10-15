@@ -77,6 +77,10 @@ pub(super) async fn safe_retry(
     safe_retry_response(outcome)
 }
 
+#[allow(
+    clippy::result_large_err,
+    reason = "Admission preserves the by-value protocol refusal without a wrapper allocation"
+)]
 fn admit_notification(
     request: BankHttpEstateNotificationRequest,
     maximum_deadline: Duration,

@@ -38,12 +38,12 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
     let publish = |mut attempt: WorthQueryPreparedBranchAdoption| {
         for _ in 0..SAME_HEAD_RETRIES {
             let outcome = attempt.publish(host.runtime(), &principal, &scope);
-            if let WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) = &outcome {
-                if winner_in_flight(no_effect.cause()) {
-                    await_settled(&settled);
-                    attempt = prepare()?;
-                    continue;
-                }
+            if let WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) = &outcome
+                && winner_in_flight(no_effect.cause())
+            {
+                await_settled(&settled);
+                attempt = prepare()?;
+                continue;
             }
             mark_settled(&settled);
             return Ok(outcome);

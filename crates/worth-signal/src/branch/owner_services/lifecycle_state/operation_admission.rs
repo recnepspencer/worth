@@ -176,12 +176,11 @@ impl Drop for SignalOwnerOperationAdmission<'_> {
                 Some(coordinator) => {
                     coordinator.finish_owner_close();
                 }
-                _ => match self.lifecycle.claim_cleanup() {
-                    Some(claim) => {
+                _ => {
+                    if let Some(claim) = self.lifecycle.claim_cleanup() {
                         claim.complete();
                     }
-                    _ => {}
-                },
+                }
             }
         }
     }
@@ -209,12 +208,11 @@ impl Drop for SignalOwnerPendingAdmission<'_> {
             Some(coordinator) => {
                 coordinator.finish_owner_close();
             }
-            _ => match self.lifecycle.claim_cleanup() {
-                Some(claim) => {
+            _ => {
+                if let Some(claim) = self.lifecycle.claim_cleanup() {
                     claim.complete();
                 }
-                _ => {}
-            },
+            }
         }
     }
 }

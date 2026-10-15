@@ -6,10 +6,10 @@ pub(super) fn admit_atomic_batch_symbolic_references(
     >,
     command: &WorthQueryWriteCommand,
 ) -> Result<(), WorthQueryRuntimeError> {
-    if let Some(reference) = command.symbolic_target_reference() {
-        if !matches!(command.mutation_family(), WorthQueryMutationFamily::Insert) {
-            resolve_same_batch_symbolic_target(planned_symbolic_targets, reference)?;
-        }
+    if let Some(reference) = command.symbolic_target_reference()
+        && !matches!(command.mutation_family(), WorthQueryMutationFamily::Insert)
+    {
+        resolve_same_batch_symbolic_target(planned_symbolic_targets, reference)?;
     }
     for reference in command.symbolic_aspect_references() {
         resolve_same_batch_symbolic_target(planned_symbolic_targets, reference.reference())?;

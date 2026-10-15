@@ -249,26 +249,24 @@ where
     }
     .map_err(Denial::Graph)?;
     graph.mutation_handlers = handlers;
-    if restoring {
-        if let Some(support) = &admitted_program_support {
-            if let Some(transition) = checkpoint_transition {
-                super::bootstrap::checkpoint_transition::transition_checkpoint(
-                    phase,
-                    &mut graph,
-                    &installed,
-                    support,
-                    &activation,
-                    transition,
-                )?;
-            } else {
-                super::bootstrap::recover_program_activation(
-                    phase,
-                    &graph.graph,
-                    &support.roster,
-                    &activation,
-                )
-                .map_err(Denial::Graph)?;
-            }
+    if restoring && let Some(support) = &admitted_program_support {
+        if let Some(transition) = checkpoint_transition {
+            super::bootstrap::checkpoint_transition::transition_checkpoint(
+                phase,
+                &mut graph,
+                &installed,
+                support,
+                &activation,
+                transition,
+            )?;
+        } else {
+            super::bootstrap::recover_program_activation(
+                phase,
+                &graph.graph,
+                &support.roster,
+                &activation,
+            )
+            .map_err(Denial::Graph)?;
         }
     }
     if !restoring {

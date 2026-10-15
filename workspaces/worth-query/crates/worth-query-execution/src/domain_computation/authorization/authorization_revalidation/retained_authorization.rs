@@ -66,14 +66,14 @@ where
             .integration_handle()
             .with_runtime_mut(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
-                let current = validate_retained_currentness(
+
+                validate_retained_currentness(
                     execution,
                     authorization,
                     runtime,
                     snapshot,
                     self.authorization.bridge(),
-                );
-                current
+                )
             })
     }
 
@@ -106,15 +106,15 @@ where
                 let primary = self.validate_retained_capability_observation(
                     execution, capability, installed, &sample, runtime, snapshot,
                 );
-                let result = primary.and_then(|()| {
+
+                primary.and_then(|()| {
                     self.readmit_retained_capability_support(
                         execution,
                         capability.supporting(),
                         runtime,
                         snapshot,
                     )
-                });
-                result
+                })
             })
     }
 

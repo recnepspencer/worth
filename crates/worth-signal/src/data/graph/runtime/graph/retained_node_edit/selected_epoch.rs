@@ -204,11 +204,11 @@ impl NodeArena {
             self.warm[index]
                 .admit_clone_work(&mut copies)
                 .map_err(map_clone_work_denial)?;
-            if role == SelectedNodeRole::ProducerFull {
-                if let Some(cold) = &self.cold[index] {
-                    cold.admit_clone_work(&mut copies)
-                        .map_err(map_clone_work_denial)?;
-                }
+            if role == SelectedNodeRole::ProducerFull
+                && let Some(cold) = &self.cold[index]
+            {
+                cold.admit_clone_work(&mut copies)
+                    .map_err(map_clone_work_denial)?;
             }
         }
         Ok(())

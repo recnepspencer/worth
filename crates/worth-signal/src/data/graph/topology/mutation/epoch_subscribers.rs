@@ -103,10 +103,10 @@ impl SignalGraph {
                 .map(DependencyEdge::source)
                 .collect::<BTreeSet<_>>();
             for source in touched {
-                if !changed.contains_key(&source) {
-                    if let Some(budget) = preparation.as_deref_mut() {
-                        budget.claim_vec::<u8>(128)?;
-                    }
+                if !changed.contains_key(&source)
+                    && let Some(budget) = preparation.as_deref_mut()
+                {
+                    budget.claim_vec::<u8>(128)?;
                 }
                 if let std::collections::btree_map::Entry::Vacant(entry) = changed.entry(source) {
                     let subscribers = self.raw_subscribers_of(source)?;

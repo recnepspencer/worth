@@ -281,10 +281,10 @@ where
                             admission,
                         )
                         .map_err(|stop| MemberStop::member(failure.index, stop))?;
-                    if credit.is_some() {
-                        if let Some(slot) = frontier.members[failure.index].queued {
-                            queue.discard_selection(slot);
-                        }
+                    if credit.is_some()
+                        && let Some(slot) = frontier.members[failure.index].queued
+                    {
+                        queue.discard_selection(slot);
                     }
                     if frontier
                         .queued_member(failure.index)

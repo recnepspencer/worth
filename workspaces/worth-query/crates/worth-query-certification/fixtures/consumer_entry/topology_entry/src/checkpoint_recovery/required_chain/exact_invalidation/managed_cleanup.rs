@@ -82,8 +82,7 @@ fn noncaller_queued_producer_keeps_unique_cleanup_after_refusal_suppression() {
             .join()
             .unwrap()
     })
-    .err()
-    .expect("the actual Signal terminal refuses a different native thread");
+    .expect_err("the actual Signal terminal refuses a different native thread");
     assert!(
         matches!(refused, WorthQueryApplicationOutputDemandDenial::Demand(ref denial)
         if denial.kind() == primary_graph::WorthQueryOutputDemandDenialKind::ManagedCleanupRequired(Failure::Native(

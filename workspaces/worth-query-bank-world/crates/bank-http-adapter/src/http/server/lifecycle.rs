@@ -93,9 +93,9 @@ impl BankHttpServer {
 }
 
 fn retain_first_error(first: &mut Option<io::Error>, result: io::Result<()>) {
-    if let Err(error) = result {
-        if first.is_none() {
-            *first = Some(error);
-        }
+    if let Err(error) = result
+        && first.is_none()
+    {
+        *first = Some(error);
     }
 }

@@ -263,11 +263,10 @@ where
     if matches!(&outcome, WorthQueryApplicationMutationOutcome::Commit(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::SettlementDeferred(_)
         | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_)
-)) {
-        if let Some(preparation) = source.take_unpublished() {
+))
+        && let Some(preparation) = source.take_unpublished() {
             return WorthQueryApplicationPerformedMutationOutcome::Blocked(super::performed_source::WorthQueryBlockedProgramSource { _preparation: preparation, payload: demand, outcome });
         }
-    }
     let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
         return WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome);
     };

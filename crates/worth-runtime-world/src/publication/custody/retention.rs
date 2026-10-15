@@ -66,26 +66,28 @@ impl ActiveAttemptCustody {
                 .into_parts();
             resources.history_custody = ActiveHistoryCustody::Installed(history);
         }
-        if resources.pin_denial.is_none() {
-            if let ActivePinCustody::Reserved(capacity) = &mut resources.pins {
-                match capacity.try_bind_publication(commit.basis()) {
-                    Ok(obligation) => resources.pins = ActivePinCustody::Bound(obligation),
-                    Err(denial) => resources.pin_denial = Some(denial),
-                }
+        if resources.pin_denial.is_none()
+            && let ActivePinCustody::Reserved(capacity) = &mut resources.pins
+        {
+            match capacity.try_bind_publication(commit.basis()) {
+                Ok(obligation) => resources.pins = ActivePinCustody::Bound(obligation),
+                Err(denial) => resources.pin_denial = Some(denial),
             }
         }
         match disposition {
             RetainedCommitDisposition::InstallSuccessor => {
                 if let ActiveHistoryCustody::Reserved(capacity) = &mut resources.history_custody {
-                    if resources.history_pins.is_none() {
-                        if let ActivePinCustody::Bound(pins) = &resources.pins {
-                            match pins.fork_history(commit.basis()) {
-                                Ok(history) => resources.history_pins = Some(history),
-                                Err(denial) => resources.pin_denial = Some(
+                    if resources.history_pins.is_none()
+                        && let ActivePinCustody::Bound(pins) = &resources.pins
+                    {
+                        match pins.fork_history(commit.basis()) {
+                            Ok(history) => resources.history_pins = Some(history),
+                            Err(denial) => {
+                                resources.pin_denial = Some(
                                     crate::retention::RetentionObligationDenial::HistoryDependency(
                                         denial,
                                     ),
-                                ),
+                                )
                             }
                         }
                     }

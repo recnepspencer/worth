@@ -39,13 +39,13 @@ pub fn trace_denied_query_subscription_diagnostics(
             ));
     }
 
-    if let Some(declaration) = declaration {
-        if selection_context
+    if let Some(declaration) = declaration
+        && selection_context
             .selection()
             .map(|selection| selection.family())
             != Some(declaration.family())
-        {
-            return Err(QuerySubscriptionDiagnosticBundleError::new(
+    {
+        return Err(QuerySubscriptionDiagnosticBundleError::new(
                 QuerySubscriptionDiagnosticBundleErrorKind::DeclarationSourceMismatch,
                 "diagnostic trace assembly requires declaration and family selection to preserve the same query subscription family",
                 &[
@@ -56,14 +56,14 @@ pub fn trace_denied_query_subscription_diagnostics(
                     format!("declaration_family:{}", declaration.family().as_str()),
                 ],
             ));
-        }
     }
-    if let (Some(declaration), Some(lowering)) = (declaration, lowering) {
-        if typed_identity_drift(
+    if let (Some(declaration), Some(lowering)) = (declaration, lowering)
+        && typed_identity_drift(
             declaration.declaration_identity(),
             lowering.query_declaration_identity(),
-        ) {
-            return Err(QuerySubscriptionDiagnosticBundleError::new(
+        )
+    {
+        return Err(QuerySubscriptionDiagnosticBundleError::new(
                 QuerySubscriptionDiagnosticBundleErrorKind::BridgeLoweringSourceMismatch,
                 "diagnostic trace assembly requires bridge lowering to bind the same declaration artifact",
                 &[
@@ -71,46 +71,48 @@ pub fn trace_denied_query_subscription_diagnostics(
                     format!("lowering:{}", lowering.query_declaration_projection().label()),
                 ],
             ));
-        }
     }
-    if let (Some(declaration), Some(admission)) = (declaration, admission) {
-        if typed_identity_drift(
+    if let (Some(declaration), Some(admission)) = (declaration, admission)
+        && typed_identity_drift(
             declaration.declaration_identity(),
             admission.query_declaration_identity(),
-        ) {
-            return Err(QuerySubscriptionDiagnosticBundleError::new(
-                QuerySubscriptionDiagnosticBundleErrorKind::AdmissionSourceMismatch,
-                "diagnostic trace assembly requires admission to preserve declaration identity",
-                &[
-                    format!(
-                        "declaration:{}",
-                        declaration.declaration_projection().label()
-                    ),
-                    format!(
-                        "admission:{}",
-                        admission.query_declaration_projection().label()
-                    ),
-                ],
-            ));
-        }
+        )
+    {
+        return Err(QuerySubscriptionDiagnosticBundleError::new(
+            QuerySubscriptionDiagnosticBundleErrorKind::AdmissionSourceMismatch,
+            "diagnostic trace assembly requires admission to preserve declaration identity",
+            &[
+                format!(
+                    "declaration:{}",
+                    declaration.declaration_projection().label()
+                ),
+                format!(
+                    "admission:{}",
+                    admission.query_declaration_projection().label()
+                ),
+            ],
+        ));
     }
-    if let (Some(declaration), Some(support)) = (declaration, support) {
-        if typed_identity_drift(
+    if let (Some(declaration), Some(support)) = (declaration, support)
+        && typed_identity_drift(
             declaration.declaration_identity(),
             support.support_subject().declaration_identity(),
-        ) {
-            return Err(QuerySubscriptionDiagnosticBundleError::new(
-                QuerySubscriptionDiagnosticBundleErrorKind::SupportSourceMismatch,
-                "diagnostic trace assembly requires support reporting to preserve declaration identity",
-                &[
-                    format!("declaration:{}", declaration.declaration_projection().label()),
-                    format!(
-                        "support_declaration:{}",
-                        support.support_subject().declaration_projection().label()
-                    ),
-                ],
-            ));
-        }
+        )
+    {
+        return Err(QuerySubscriptionDiagnosticBundleError::new(
+            QuerySubscriptionDiagnosticBundleErrorKind::SupportSourceMismatch,
+            "diagnostic trace assembly requires support reporting to preserve declaration identity",
+            &[
+                format!(
+                    "declaration:{}",
+                    declaration.declaration_projection().label()
+                ),
+                format!(
+                    "support_declaration:{}",
+                    support.support_subject().declaration_projection().label()
+                ),
+            ],
+        ));
     }
 
     let failure_source_identity = failure.source_identity();

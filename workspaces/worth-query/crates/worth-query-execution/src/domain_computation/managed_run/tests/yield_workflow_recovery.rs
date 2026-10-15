@@ -272,13 +272,13 @@ fn terminalize_recovery_world(
             _ => panic!("recovery provider did not reach its safe point"),
         }
     };
-    let recovery = match paused.yield_run() {
+
+    match paused.yield_run() {
         crate::domain_computation::WorthQueryWorkflowYieldOutcome::RecoveryRequired(recovery) => {
             recovery
         }
         _ => panic!("provider suspension failure did not return recovery authority"),
-    };
-    recovery
+    }
 }
 
 struct RecoveryArtifactResource(Arc<AtomicUsize>);

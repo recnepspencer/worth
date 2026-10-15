@@ -8,10 +8,8 @@ impl<'runtime> HistoryAuthority<'runtime> {
         let position = self.runtime.history.canonical_stream_position(commit_id);
         let removed = self.runtime.history.with_ledger_mut(|ledger| {
             let removed = ledger.commit_envelopes.remove(&commit_id).is_some();
-            if removed {
-                if let Some(position) = position {
-                    ledger.patch_stream_index.remove(&position);
-                }
+            if removed && let Some(position) = position {
+                ledger.patch_stream_index.remove(&position);
             }
             removed
         });

@@ -2,9 +2,7 @@
 use super::{host, model};
 use model::{operator_identity::*, retention_entry::*, schema::*, workflow::*};
 use std::{num::NonZeroUsize, time::Duration};
-use worth_query_host::facade::{
-    application_entry::*, declaration::application_schema::*, primary_graph::*,
-};
+use worth_query_host::facade::{application_entry::*, primary_graph::*};
 #[test]
 fn workflow_owning_assessment_retains_failed_producer_until_fresh_owner_close() {
     let host = host::install();
@@ -55,7 +53,7 @@ fn workflow_owning_assessment_retains_failed_producer_until_fresh_owner_close() 
         });
         assert!(
             owner
-                .advance(&runtime.request(&actor, &scope).on_branch(instance.branch()))
+                .advance(&runtime.request(&actor, scope).on_branch(instance.branch()))
                 .is_err(),
             "actual native stale producer refuses settlement"
         );

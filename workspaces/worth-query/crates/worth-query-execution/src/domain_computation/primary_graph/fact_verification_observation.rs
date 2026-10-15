@@ -36,12 +36,12 @@ pub struct WorthQueryFactVerificationForTest {
 }
 
 thread_local! {
-    static OBSERVED: Cell<WorthQueryFactVerificationForTest> = Cell::new(WorthQueryFactVerificationForTest {
+    static OBSERVED: Cell<WorthQueryFactVerificationForTest> = const { Cell::new(WorthQueryFactVerificationForTest {
         source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,
         rebase_preparation_visits: 0, rebase_resolution_visits: 0, rebase_unanswered_visits: 0,
         value_comparison_visits: 0, retained_bound_visits: 0,
         retained_computation_visits: 0, retained_native_visits: 0, carried_seal_visits: 0,
-    });
+    }) };
     static CLEANUP_REGISTERED: Cell<bool> = const { Cell::new(false) };
 }
 

@@ -181,10 +181,10 @@ impl BankHttpContinuationRegistry {
         if let Some(record) = self.records.get_mut(token) {
             record.state = ContinuationState::Terminal;
             record.last_request_id = request_id;
-            if let BankHttpAccountActivityPageOutcome::Denied { denial, .. } = &outcome {
-                if scrub_initial {
-                    record.initial_outcome = denied(record.initial_request_id.clone(), *denial);
-                }
+            if let BankHttpAccountActivityPageOutcome::Denied { denial, .. } = &outcome
+                && scrub_initial
+            {
+                record.initial_outcome = denied(record.initial_request_id.clone(), *denial);
             }
             record.last_outcome = outcome;
             record.expires_at = Instant::now() + self.lifetime;

@@ -206,15 +206,15 @@ fn current_relation(
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
-            let relation = runtime
+
+            runtime
                 .read_truth()
                 .visible_relations_of_kind(execution, kind, snapshot.version_id())
                 .expect("fixture read request remains live")
                 .into_iter()
                 .find(|record| record.source == source && record.target == target)
                 .unwrap()
-                .relation_id;
-            relation
+                .relation_id
         })
 }
 

@@ -66,10 +66,10 @@ fn judge(
             tree::expected_nodes(&now, prior.as_ref())
         );
         *prior = now.completes().then(|| now.clone());
-        if index == 0 {
-            if let Some(write) = write {
-                now.written(write);
-            }
+        if index == 0
+            && let Some(write) = write
+        {
+            now.written(write);
         }
     }
 }
