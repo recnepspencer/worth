@@ -84,25 +84,37 @@ pub(super) struct InstalledFixtureWorld {
 }
 
 pub(super) fn install_fixture_world(spec: FixtureWorldSpec<'_>) -> InstalledFixtureWorld {
-    install_fixture_world_with_source(spec, None)
+    install_fixture_world_with_source(spec, None, None)
+}
+
+pub(super) fn install_fixture_world_with_deployment(
+    spec: FixtureWorldSpec<'_>,
+    grant: crate::BankProgramDeploymentGrantSeed,
+) -> InstalledFixtureWorld {
+    install_fixture_world_with_source(spec, None, Some(grant))
 }
 
 pub(super) fn install_fixture_world_with_authorization_time(
     spec: FixtureWorldSpec<'_>,
     authorization_time: AuthorizationTimeController,
 ) -> InstalledFixtureWorld {
-    install_fixture_world_with_source(spec, Some(authorization_time))
+    install_fixture_world_with_source(spec, Some(authorization_time), None)
 }
 
 fn install_fixture_world_with_source(
     spec: FixtureWorldSpec<'_>,
     authorization_time: Option<AuthorizationTimeController>,
+    deployment_grant: Option<crate::BankProgramDeploymentGrantSeed>,
 ) -> InstalledFixtureWorld {
     let identities = seed::identities(spec.scenario);
     let snapshot = snapshot_fixture::snapshot(additional_principal_count(&spec));
     let estate = compose_estate(&spec);
     let estate_world = estate.clone();
     let world_seed = seed::assemble(snapshot, estate, &identities, &spec);
+    let world_seed = match deployment_grant {
+        Some(grant) => world_seed.program_deployment_grant(grant),
+        None => world_seed,
+    };
     let runtime = install_runtime(world_seed, authorization_time);
     InstalledFixtureWorld {
         runtime,

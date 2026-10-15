@@ -9,7 +9,7 @@ pub use continuation::{
 pub use controls::BankMutationControls;
 pub use outcome::{
     BankAuthorizationDenial, BankAuthorizationDenialKind, BankEntityResolutionDenial,
-    BankEntityResolutionDenialKind, BankMoneyMovementExecution, BankOperationInstallationDenial,
-    BankOperationInstallationDenialKind, BankProgramMutationExecution,
+    BankEntityResolutionDenialKind, BankOperationInstallationDenial,
+    BankOperationInstallationDenialKind,
 };
 pub use query::{mutations, BankMutation, BankMutationForPrincipal, BankReadyMutation};

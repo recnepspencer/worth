@@ -63,6 +63,7 @@ pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthent
         },
         MoneyCommand::Close => {
             let mut registry = record.registry.lock().await;
+            registry.purge_expired(application.runtime());
             let replay = match record.action {
                 bank_domain::estate::EstateAction::NotifyDeath { .. } => {
                     registry.notification_replay(&record.owner, &record.key, record.action)
@@ -117,11 +118,59 @@ pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthent
                 _ => unreachable!("source action declaration"),
             };
             match reservation {
-                None => refused(
-                    &command,
-                    denial(BankHttpDenialKind::Saturated),
-                    Some(command.sequence),
-                ),
+                None => match record.custody.close(&request) {
+                    Err((custody, cause)) => {
+                        record.custody = custody;
+                        refused(&command, cause, Some(command.sequence))
+                    }
+                    Ok(None) => {
+                        return BankHttpMutationOutcome::Closed {
+                            request_id: command.request_id,
+                            custody_id: command.custody_id,
+                            sequence: command.sequence,
+                        };
+                    }
+                    Ok(Some(receipt)) => {
+                        // A full host registry cannot change native claim truth.
+                        // An unclaimed commit still needs a slot before minting a handle.
+                        let status = application.runtime().commit_recovery_claim_status(&receipt);
+                        match status {
+                            Ok(status)
+                                if status != bank_server::BankRecoveryClaimStatus::Unclaimed =>
+                            {
+                                return BankHttpMutationOutcome::RailRecoveryReady {
+                                    request_id: command.request_id,
+                                    custody_id: command.custody_id,
+                                    sequence: command.sequence,
+                                    commit: super::recovery_executor::outcome::commit_description(
+                                        &receipt,
+                                    ),
+                                    recovery: None,
+                                    recovery_status: if status
+                                        == bank_server::BankRecoveryClaimStatus::Completed
+                                    {
+                                        super::super::protocol::BankHttpRecoveryStatus::Completed
+                                    } else {
+                                        super::super::protocol::BankHttpRecoveryStatus::OperatorRequired
+                                    },
+                                };
+                            }
+                            status => {
+                                record.custody =
+                                    EstateSourceCustody::retain_closed(receipt, record.action);
+                                refused(
+                                    &command,
+                                    denial(if status.is_ok() {
+                                        BankHttpDenialKind::Saturated
+                                    } else {
+                                        BankHttpDenialKind::Unavailable
+                                    }),
+                                    Some(command.sequence),
+                                )
+                            }
+                        }
+                    }
+                },
                 Some(reservation) => match record.custody.close(&request) {
                     Err((custody, cause)) => {
                         record.custody = custody;

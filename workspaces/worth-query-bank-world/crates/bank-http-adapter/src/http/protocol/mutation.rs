@@ -218,26 +218,6 @@ pub enum BankHttpMutationPosture {
     Indeterminate,
     Terminal,
 }
-impl From<worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture>
-    for BankHttpMutationPosture
-{
-    fn from(
-        value: worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture,
-    ) -> Self {
-        use worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture as Native;
-        match value {
-            Native::Initial => Self::Initial,
-            Native::ProductUnpublished => Self::ProductUnpublished,
-            Native::RecoveryPerformed => Self::RecoveryPerformed,
-            Native::RetainedDeliveryPending => Self::RetainedDeliveryPending,
-            Native::ProvedAborted => Self::ProvedAborted,
-            Native::RetryableNoEffect => Self::RetryableNoEffect,
-            Native::Indeterminate => Self::Indeterminate,
-            Native::Terminal => Self::Terminal,
-        }
-    }
-}
-
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BankHttpNativeCleanupDescription {
     pub logical_run_identity: String,

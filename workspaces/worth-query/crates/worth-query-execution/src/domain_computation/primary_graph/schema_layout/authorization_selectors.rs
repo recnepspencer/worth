@@ -93,6 +93,30 @@ impl WorthQueryAuthorizationSelectors {
                         }
                     }
                     if let Some(elevation) = contract.elevation().definition() {
+                        // Lifecycle resource selection is structural contract meaning,
+                        // not an additional read in the exact native effect graph.
+                        if let Some(resource) = elevation.resource_relation() {
+                            for transition in elevation.lifecycle().transitions() {
+                                if let Some(selected) =
+                                    fields.get_mut(transition.operation().operation())
+                                {
+                                    for member in schema.members() {
+                                        if let ApplicationSchemaMember::Field {
+                                            entity,
+                                            aspect,
+                                            field,
+                                            equality_queryable: true,
+                                            ..
+                                        } = member
+                                        {
+                                            if entity == resource.to() {
+                                                insert(selected, entity, aspect, field);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         let field = elevation.identity();
                         insert(
                             fields.get_mut(contract.operation()).unwrap(),

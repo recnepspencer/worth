@@ -4,6 +4,7 @@
 //! Build the separate rail first: `cargo build -p bank-external-rail`.
 //! This example issues a real Bank outbox, lets the separate rail perform its
 //! consequence, and receives its signed callback through the installed host.
+#![recursion_limit = "256"]
 
 #[allow(dead_code)]
 #[path = "../../bank-server/tests/ordinary_mutations/authorization_time.rs"]
@@ -42,16 +43,20 @@ use worth_query_decl::facade::application_schema::OperationEmits;
 use rail_transport::BankEstateRailTransport;
 
 fn main() -> Result<(), ExampleFailure> {
-    std::thread::Builder::new()
+    let close = std::thread::Builder::new()
         .name("inbound-completion-example".to_owned())
         .stack_size(16 * 1024 * 1024)
         .spawn(run)
         .map_err(|error| format!("example thread refused: {error}"))?
         .join()
-        .map_err(|_| "example thread panicked".to_owned())?
+        .map_err(|_| "example thread panicked".to_owned())??;
+    // The returned continuation remains owned through the reported assessment.
+    // Final example exit is not a promise of native disposal or crash durability.
+    println!("callback host stopped: {:?}", close.assessment());
+    Ok(())
 }
 
-fn run() -> Result<(), ExampleFailure> {
+fn run() -> Result<bank_http_adapter::BankRailCompletionClose, ExampleFailure> {
     let _declared = BankSchema::declaration().expect("Bank publishes its Query schema");
     fn require_declared_effect<Operation, Effect: OperationEmits<Operation>>() {}
     require_declared_effect::<NotifyDeathEstateOperation, EstateDeathNotificationEffect>();
@@ -93,7 +98,7 @@ async fn receive_completion(
     transport: &Arc<BankEstateRailTransport>,
     specialist: &BankAuthenticatedPrincipal,
     action: EstateAction,
-) -> Result<(), ExampleFailure> {
+) -> Result<bank_http_adapter::BankRailCompletionClose, ExampleFailure> {
     let rail_signer = SigningKey::from_bytes(&[7; 32]);
     let source = BankRailCompletionServerInstallation::new(
         rail_signer.verifying_key().to_bytes(),
@@ -164,9 +169,12 @@ async fn receive_completion(
     // One shutdown attempt is made even when the source attempt failed. Its
     // failure cannot replace an error that owns the original native custody.
     match (result, shutdown) {
-        (Err(original), _) => Err(original),
-        (Ok(()), Err(cause)) => Err(format!("callback host close refused: {cause}").into()),
-        (Ok(()), Ok(())) => Ok(()),
+        (Err(original), close) => Err(ExampleFailure::SourceAndHost {
+            original: Box::new(original),
+            close: close.map(Box::new).map_err(Box::new),
+        }),
+        (Ok(()), Err(cause)) => Err(ExampleFailure::Host(Box::new(cause))),
+        (Ok(()), Ok(close)) => Ok(close),
     }
 }
 

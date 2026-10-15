@@ -641,57 +641,34 @@ than translating every transport success or failure into a business result:
 
 <!-- doctest: bank-estate-certification -->
 ```rust,no_run
-# use bank_domain::{proposals::{BankIdempotencyKey, BankProposalDenial}, schema::SendMoney};
-# use bank_server::{
-#     mutations, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls,
-# };
+# use bank_domain::{proposals::BankIdempotencyKey, schema::{BankSchema, SendMoney}};
+# use bank_server::{mutations, BankApplication, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls, SendMoneyAction};
 # use worth_query_host::facade::{
 #     admission::authenticated_principal::WorthQueryRequestScope,
-#     application_entry::{
-#         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
-#     },
-#     primary_graph::{
-#         WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted,
-#         WorthQueryHistoricalApplicationCommit,
-#     },
+#     application_entry::{WorthQuerySourceOnlyOperation, WorthQueryOperationDescription, WorthQueryOperationConstructionDenial},
+#     declaration::application_program::ApplicationRetainedCommit,
 # };
-# fn publish(_: WorthQueryApplicationCommitReceipt) {}
-# fn refresh_current_state(_: WorthQueryHistoricalApplicationCommit) {}
-# fn inspect_uncommitted(_: WorthQueryApplicationUncommitted) {}
-# fn explain_domain(_: BankProposalDenial) {}
-# fn explain_request(_: WorthQueryApplicationRequestMutationDenial) {}
-# fn handle_terminal_stop() {}
+# type Operation = WorthQuerySourceOnlyOperation<BankSchema, SendMoney, BankApplication, SendMoneyAction, ApplicationRetainedCommit>;
 # fn send_money(
 #     bank: &BankIdentityRuntime,
 #     principal: &BankAuthenticatedPrincipal,
 #     input: SendMoney,
 #     request_scope: WorthQueryRequestScope,
 #     idempotency_key: BankIdempotencyKey,
-# ) {
-let outcome = bank
-    .mutate(mutations::send_money(input))
-    .as_principal(&principal)
-    .controls(BankMutationControls::new(
-        request_scope,
-        idempotency_key,
-    ))
-    .execute();
-
-match outcome {
-    Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. })
-    | Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)) => publish(receipt),
-    Ok(WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation)) => {
-        refresh_current_state(observation)
-    }
-    Ok(WorthQueryApplicationMutationOutcome::Commit(uncommitted)) => inspect_uncommitted(uncommitted),
-    Ok(WorthQueryApplicationMutationOutcome::DomainDenied(reason)) => explain_domain(reason),
-    Err(reason) => explain_request(reason),
-    Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
-    | Ok(WorthQueryApplicationMutationOutcome::Cancelled)
-    | Ok(WorthQueryApplicationMutationOutcome::DeadlineExceeded) => handle_terminal_stop(),
-}
+# ) -> Result<Operation, (WorthQueryOperationDescription<BankSchema, SendMoney>, WorthQueryOperationConstructionDenial)> {
+bank.mutate(mutations::send_money(input))
+    .as_principal(principal)
+    .controls(BankMutationControls::new(request_scope, idempotency_key))
+    .retain_operation()
 # }
 ```
+
+Construction captures the original input and key without executing a source.
+Keep the returned operation and call `advance(&fresh_request, maximum_history_work)`
+with an explicit nonzero history bound. Preserve the actual pending, completed or
+terminal owner returned by that attempt. Completed evidence distinguishes the
+fresh business result from a recovered native receipt; recovery does not invent a
+second business result. A refused close returns its owner for a fresh lawful retry.
 
 The idempotency binding is application meaning installed by Query. The
 provider owns the commit. Deferred and indeterminate commit outcomes retain the

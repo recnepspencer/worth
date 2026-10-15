@@ -1,6 +1,4 @@
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-#[path = "ordinary_mutations/assertions.rs"]
-mod assertions;
 #[path = "ordinary_mutations/authorization_time.rs"]
 mod authorization_time;
 #[path = "ordinary_mutations/estate_operations.rs"]
@@ -38,24 +36,8 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitTerminalKind;
 
-use assertions::assert_program_committed;
 use fixture::{ordinary_read_world, principal_id, APPROVER, OWNER, RECIPIENT, STRANGER, TELLER};
 use support::request_scope;
-
-macro_rules! execute {
-    ($fixture:expr, $principal:expr, $mutation:expr, $idempotency:expr $(,)?) => {
-        $fixture
-            .world
-            .runtime
-            .mutate($mutation)
-            .as_principal(&$principal)
-            .controls(BankMutationControls::new(
-                request_scope(),
-                key($idempotency),
-            ))
-            .execute()
-    };
-}
 
 #[path = "ordinary_mutations/money_families.rs"]
 mod money_families;

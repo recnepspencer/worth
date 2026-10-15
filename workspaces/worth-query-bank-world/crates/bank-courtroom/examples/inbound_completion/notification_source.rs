@@ -50,6 +50,14 @@ pub(super) enum NotificationCustody {
 pub(super) enum ExampleFailure {
     Message(String),
     Notification(Box<NotificationCustody>),
+    Host(Box<bank_http_adapter::BankRailCompletionCloseFailure>),
+    SourceAndHost {
+        original: Box<ExampleFailure>,
+        close: Result<
+            Box<bank_http_adapter::BankRailCompletionClose>,
+            Box<bank_http_adapter::BankRailCompletionCloseFailure>,
+        >,
+    },
 }
 impl From<String> for ExampleFailure {
     fn from(message: String) -> Self {
@@ -60,6 +68,20 @@ impl std::fmt::Debug for ExampleFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Message(message) => f.write_str(message),
+            Self::Host(failure) => write!(f, "callback host close refused: {failure}"),
+            Self::SourceAndHost { original, close } => match close {
+                Ok(close) => write!(
+                    f,
+                    "{original:?}; callback host assessment: {:?}",
+                    close.assessment()
+                ),
+                Err(failure) => {
+                    write!(
+                        f,
+                        "{original:?}; callback host close also refused: {failure}"
+                    )
+                }
+            },
             Self::Notification(custody) => {
                 let label = match custody.as_ref() {
                     NotificationCustody::WrongInput(action) => {

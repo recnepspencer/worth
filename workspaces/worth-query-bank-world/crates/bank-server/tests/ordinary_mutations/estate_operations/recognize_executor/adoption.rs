@@ -1,5 +1,5 @@
 //! A non-scope context selector remains usable at the actual adoption successor.
-use super::fixture::exact_recognition_world;
+use super::fixture::adoption_recognition_world;
 use crate::support::request_scope;
 use bank_server::{BankApplicationP1, BankMutationControls};
 use worth_query_host::facade::application_entry::{
@@ -9,7 +9,7 @@ use worth_query_host::facade::application_entry::{
 
 #[test]
 fn executor_context_selector_survives_unwarmed_program_adoption() {
-    let fixture = exact_recognition_world("recognition-context-adoption");
+    let fixture = adoption_recognition_world("recognition-context-adoption");
     let actor = fixture.authenticate_specialist();
     let runtime = &fixture.world.runtime;
     let scope = request_scope();

@@ -1440,6 +1440,30 @@ category = "async-runtime"
 reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
 
 [[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mutation_executor.rs"
+item = "BankHttpMutationContinuation::start"
+kind = "async-runtime"
+count = 1
+category = "async-runtime"
+reason = "Current-thread Tokio and LocalSet drive bounded transport commands and I/O while preserving the owning thread for failed native Signal cleanup."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mutation_executor.rs"
+item = "BankHttpMutationContinuation::start"
+kind = "thread-builder"
+count = 1
+category = "owner-thread"
+reason = "Configured finite dedicated threads retain native request and cleanup custody across transport awaits and listener loss; native computation remains Query-owned."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mutation_executor.rs"
+item = "BankHttpMutationContinuation::join_closed"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Tokio's blocking executor joins the actual owned OS threads after quiescence reports zero custody; it schedules no parallel computation."
+
+[[threading_sites]]
 source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/lifecycle.rs"
 item = "BankHttpServer::shutdown"
 kind = "async-blocking"

@@ -1,10 +1,7 @@
 //! Preauthenticated capability admission observes the unwarmed adoption successor.
-use super::fixture::{
-    capability_world_with_specialist_authority, request_scope, GrantSpec, AUTHORITY, ESTATE,
-    EXECUTOR,
-};
+use super::fixture::{adoption_context_world, request_scope, AUTHORITY, ESTATE, EXECUTOR};
 use bank_domain::{
-    estate::{EstateAction, EstateWorkflowStage},
+    estate::EstateAction,
     schema::{RecognizeEstateExecutorCapability, RecognizeEstateExecutorOperation},
 };
 use worth_query_host::facade::{
@@ -16,11 +13,7 @@ use worth_query_host::facade::{
 
 #[test]
 fn retained_principal_reads_non_scope_context_on_adoption_successor() {
-    let fixture = capability_world_with_specialist_authority(
-        "unwarmed-context-successor",
-        GrantSpec::recognize(),
-        EstateWorkflowStage::Administration,
-    );
+    let fixture = adoption_context_world("unwarmed-context-successor");
     let principal = fixture.authenticate();
     let runtime = &fixture.runtime;
     let scope = request_scope();
