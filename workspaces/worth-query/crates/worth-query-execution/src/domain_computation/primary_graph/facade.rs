@@ -55,7 +55,8 @@ pub use super::application_attempt::{
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
     WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
     WorthQueryRequestedElevation, WorthQueryReviewedElevation, WorthQueryWorkflowAdvanceAdapter,
-    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowProposalAdapter,
+    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
+    WorthQueryWorkflowProposalAdapter,
 };
 pub use super::application_checkpoint::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,

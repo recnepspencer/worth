@@ -146,7 +146,7 @@ where
             .resumed_at(resume_at)
             .ok_or_else(|| unmapped("the resume node is not in the target definition"))?;
         let subject = self.admission.scope_entity_id();
-        let (instance_identity, instance_intent_identity) = intent_identity::migration_identity(
+        let discovery_intent = intent_identity::migration_identity(
             &resumed,
             source.entity_id(),
             fork,
@@ -230,7 +230,7 @@ where
                 let successor = handle.with_runtime(execution, |runtime| {
                     successor_identity(execution, runtime, snapshot, &layout, source.entity_id())
                 })?;
-                if successor.as_deref() != Some(instance_identity.as_str()) {
+                if successor.as_deref() != Some(discovery_intent.lookup_identity()) {
                     return Err(ended);
                 }
                 facts.push(WorthQueryApplicationObservedFact::Field {
@@ -275,7 +275,7 @@ where
                 successor_effects(
                     &layout,
                     &resumed,
-                    &instance_identity,
+                    discovery_intent.lookup_identity(),
                     self.lease.product().product_branch().occurrence_ordinal(),
                     subject,
                     (source.entity_id(), live_membership, carry),
@@ -303,8 +303,7 @@ where
             program_revision: *resumed.program_revision(),
             definition: resumed.definition(),
             definition_content_identity: resumed.content_identity().clone(),
-            instance_identity,
-            instance_intent_identity,
+            discovery_intent,
             instance_identity_locator: layout.instance.identity.clone(),
             start_path: resumed.start_path().to_owned(),
             supersession: None,
