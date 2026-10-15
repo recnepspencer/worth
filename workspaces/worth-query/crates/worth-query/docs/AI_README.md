@@ -138,7 +138,7 @@ exposes it. Read the linked section for the behavior; change the owner crate.
 | Outcomes | [§11](../../../../../docs/how-it-works.md#11-outcomes-every-way-a-request-can-end) | `worth-query-publication` (`WorthQueryApplicationMutationOutcome`); `worth-query-execution` (`WorthQueryApplicationCommitOutcome`) | `application_entry`, `primary_graph` |
 | Branches, programs, adoption | [§12](../../../../../docs/how-it-works.md#12-branches-programs-and-adoption); calls in [Build an Application §7](../../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch); full guide [foundations/programs-and-adoption.md](foundations/programs-and-adoption.md) | `worth-query-execution` for rosters, activation, and adoption publication; `worth-query-publication` for `programs()` and branch-set requests | `application_entry`, `application_installation`, `product`, `primary_graph` |
 | Workflows | [§13](../../../../../docs/how-it-works.md#13-workflows); calls in [Build an Application §6](../../../../../docs/build-an-application.md#6-author-publish-and-run-workflows); full guide [foundations/workflows.md](foundations/workflows.md) | `worth-query-declaration` for specs, builders, and node kinds; `worth-query-installation` for vocabulary installation and resource ceilings; `worth-query-execution` for the workflow kernel, runtime, outcomes, discovery, and adoption inventory; `worth-query-publication` for workflow requests and their preparation denials | `application_program`, `domain`, `application_installation`, `application_discovery`, `application_entry`, `primary_graph` |
-| Workflow-bound operation checks (operation authorization, occurrence authority, approval evidence) | [workflows guide, Operations](foundations/workflows.md#operations); summary in [three independent checks](#workflow-bound-operations-three-independent-checks) | `worth-query-declaration` for `workflow_authority` and `ApplicationWorkflowExecutionRequirements`; `worth-query-execution` for admission, authority issue, and commit rechecks; `worth-query-publication` for `for_workflow_operation` | `worth_query_decl::facade::application_operation`; `declaration`, `application_entry`, `primary_graph` |
+| Workflow-bound operation checks (operation authorization, occurrence authority, approval evidence) | [workflows guide, Operations](foundations/workflows.md#operations); summary in [three independent checks](#three-independent-checks) | `worth-query-declaration` for `workflow_authority` and `ApplicationWorkflowExecutionRequirements`; `worth-query-execution` for admission, authority issue, and commit rechecks; `worth-query-publication` for `for_workflow_operation` | `worth_query_decl::facade::application_operation`; `declaration`, `application_entry`, `primary_graph` |
 | Aftermath and recovery | [§14](../../../../../docs/how-it-works.md#14-aftermath-and-recovery) | `worth-query-execution` for recovery and provisional aftermath; `worth-query-publication` for published aftermath | `primary_graph`, `publication`, `provisional_aftermath` |
 
 ## Engine Laws
@@ -1006,7 +1006,7 @@ and [Signal Orchestration](./domain-capabilities/signal-compatibility-orchestrat
 ### Continuations and managed runs
 
 The checks a workflow-bound business operation passes are in
-[Workflow-bound operations: three independent checks](#workflow-bound-operations-three-independent-checks).
+[Workflow-bound operations: three independent checks](#three-independent-checks).
 
 Application workflows are in How WORTH Works
 [§13](../../../../../docs/how-it-works.md#13-workflows) and the full
