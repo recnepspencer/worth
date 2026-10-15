@@ -232,6 +232,21 @@ selected branch runs and uses the vocabulary installed for that program.
 - `program_runtime()` returns the underlying `WorthQueryProgramApplicationRuntime`, which guarded effects execute through.
 - `WorthQueryProgramApplicationRuntime::supported_program::<Program>()` (reach it as `workflow.program_runtime().supported_program::<Program>()`) returns `Option<WorthQuerySupportedProgramHandle>`. It is `None` unless this host rostered that program and still supports it. The handle's `installed_program()` is what you install the extra vocabulary against.
 
+Bind the initial vocabulary and support extra program vocabularies before
+cloning runtime handles or retaining operations. These operations require the
+authentic runtime's unique configuration custody. A retained fixed/discovered
+or SourceOnly operation keeps that allocation alive without granting any
+workflow permission.
+
+Every consuming `retain_workflow_spec` refusal returns
+`WorthQueryWorkflowRuntimeBindingRefusal<Schema, Spec, Program>`. Its `denial()`
+borrows the reason, and consuming `into_parts()` restores the original runtime,
+installed spec, signing owner and denial. The signing owner is custody, not
+safe diagnostic text. `support_workflow_spec(&mut self, installed)` returns
+`Err((installed, denial))`; the borrowed workflow runtime remains with its
+caller. Release the actual keepalives before retrying a keepalive refusal;
+never rebuild the runtime or drop the original vocabulary to make setup pass.
+
 `WorthQueryWorkflowRuntimeBindingDenial`:
 
 | Variant | Cause |
@@ -241,6 +256,7 @@ selected branch runs and uses the vocabulary installed for that program.
 | `ForeignAuthenticationOwner` | The signing owner belongs to another authentication owner. |
 | `AlreadySupported` | The program already has a vocabulary on this runtime. The initial program always has one. |
 | `ConflictingVocabularyCoverage` | The spec was installed for the program with different node vocabulary. |
+| `RuntimeKeepaliveRetained` | Another authentic runtime handle or retained operation prevents unique configuration; the refusal preserves the supplied inputs. |
 
 A branch whose program has no installed vocabulary is refused before any effect.
 

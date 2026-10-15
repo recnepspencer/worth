@@ -257,52 +257,87 @@ which you may override.
 
 ### 3.2 Attach actions to features
 
-`ApplicationFeatureSpec` records which feature owns which actions. Build one
-per feature with `ApplicationFeatureSpec::root::<Schema, Feature>()`, add its
-actions, and call `finish()`.
+`ApplicationFeatureSpec` records which feature owns which actions. Begin a
+feature with `root::<Schema, Feature>()` or
+`at::<Schema, Instance, Feature>()`, then begin each ordinary action with
+`.action::<Binding, Delivery>()`. Delivery is mandatory and names the real
+source-completion, retained-commit, fixed-output or discovered-output contract.
+Attach the action's optional metadata before `.finish_action()` returns the
+feature parent. Only then can you add another action or finish the feature.
 
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-// bank-server/src/application_definition/composition.rs (abridged)
-vec![
-    ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
-        .mutation::<CreatePersonalAccountMutationBinding>()
-        .mutation::<GrantAccountAccessMutationBinding>()
-        .finish(),
-    ApplicationFeatureSpec::root::<BankSchema, BankPaymentsFeature>()
-        .mutation::<DepositMutationBinding>()
-        .mutation::<SendMoneyMutationBinding>()
-        .conditional_operation::<PublishApprovedPaymentAssessment>()
-        .finish(),
-    ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>()
-        .mutation::<FreezeEstateAccountMutationBinding>()
-        .operation::<RequestEstateEmergencyAccessOperation>()
-        .finish(),
-]
+The neutral consumer's actual fixed source action retains locality/change,
+evaluated requirement and external-input metadata alongside its real output
+delivery. This excerpt uses the surrounding imports and source-feature members
+from [the compiled declaration owner](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_program/composed_action.rs):
+
+<!-- compiled: composed_action.rs -->
+```rust
+pub(crate) fn source_feature_spec() -> ApplicationFeatureSpec {
+    features::source_builder()
+        .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, ConsumerFixedDelivery>()
+        .locality_and_change::<SourceLocality, SourceChange>()
+        .evaluated_requirement::<CatalogInputRequirement>()
+        .external_input::<external_input::NeutralExternalProvider>()
+        .finish_action()
+        .finish()
+}
 ```
 
-Builder methods on `ApplicationFeatureSpecBuilder`:
-
-| Method | Attaches |
+| On the feature parent | Result |
 |---|---|
-| `mutation::<Binding>()` | A mutation binding the feature owns |
-| `mutation_with_requirement_and_external_input::<B, Rule, Provider>()` | A mutation with a rule requirement and an external input provider |
-| `mutation_with_locality_and_change::<B, Scope, Shape>()` | A mutation with a declared locality and change contract |
-| `repeated_optional_member::<B, Corr>()` and its `_with_external_input` / `_output_with_locality_and_change` variants | Actions over a repeated, optional member |
-| `operation::<Op>()` | A declared operation (on the root-composition builder only) |
-| `conditional_operation::<Op>()` and `conditional_operation_with_requirement_and_external_input` | A conditional (clock- or signal-driven) operation |
+| `action::<Binding, Delivery>()` | An unfinished ordinary action with explicit delivery |
+| `native_action::<Binding>()` | An unfinished deliberately specialized native action, without delivery |
+| `operation::<Op>()` | A declared operation on the root-composition builder |
+| `conditional_operation::<Op>()` and `conditional_operation_with_requirement_and_external_input` | A conditional operation |
 | `provides::<Port>()` | An output port this feature provides |
 | `derived_artifact`, `managed_computation`, `derived_collection` | Derived outputs the feature produces |
-| `finish()` | Returns the `ApplicationFeatureSpec` |
+| `finish()` | The complete `ApplicationFeatureSpec` |
 
-`ApplicationFeatureSpec::at::<Schema, Instance, Feature>()` places a feature
-inside a named composition instance instead of the root
-([§3.4](#34-ports-connections-and-the-output-graph)).
+| On the unfinished action | Contract |
+|---|---|
+| `locality_and_change::<Scope, Shape>()` | The paired locality and change shape |
+| `correspondence::<Correspondence>()` | Correspondence for this mutation binding |
+| `evaluated_requirement::<Rule>()` | An evaluated rule for the binding's operation |
+| `external_input::<Provider>()` | An external-input provider for the binding's operation |
+| `finish_action()` | Append exactly one complete declaration and return its feature parent |
 
-There is also a `worth_query_feature_spec!` macro on the decl facade. It covers
-only part of the builder and is not re-exported by the host facade. **Use the
-builder.**
+Each optional clause consumes its unconfigured state; setting it twice is a
+compiler error. All subsets are legal under their existing trait bounds,
+including a rule without a provider and a provider without a rule. No incomplete
+action is appended, and the action builder has no feature `finish()` or
+`provides()` method. Ordinary delivery derives required-output-source meaning;
+there is no output-source override. A source-only declaration cannot erase a
+binding's actual required-output obligation: owning construction refuses it.
+
+`ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>`
+selects this exact occurrence. Its sealed `ApplicationAction::selector()`
+returns selection facts, not a complete declaration. Installation resolves the
+complete actual action, including every metadata contract; fresh progression
+compares that full installed meaning. Duplicate binding types and duplicate
+portable `(instance, feature, binding identity)` keys are rejected. Distinct
+legal composition occurrences remain distinct.
+
+Correspondence lookup is binding-scoped. Rule/provider capabilities are scoped
+to operation plus rule/provider type across declared actions; they do not become
+occurrence-isolated permission. Installing a clause neither evaluates a rule nor
+admits an external revision. Use the installed evaluator's result for guidance
+and submission enforcement; native authorization remains with its existing owner.
+Resolve external input, admit its captured revision and pass the accepted values
+into the original mutation intent.
+
+The `worth_query_feature_spec!` macro on the decl facade lowers
+`action(Binding, Delivery) { ... };` and `native_action(Binding) { ... };`
+through that same builder. Clauses are `locality_and_change(Scope, Shape);`,
+`correspondence(Correspondence);`, `evaluated_requirement(Rule);` and
+`external_input(Provider);`. Empty blocks are valid. Clause order preserves
+canonical meaning; unsupported or repeated clauses fail rather than disappear.
+See [Feature Capsule Authoring](../workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md).
+
+Use `native_action` only for a present specialized native responsibility, such
+as staging, authority/phase certification or explicit branch/host control.
+Ordinary product mutations and retries use explicit owning delivery, including
+when a native caller also consumes that occurrence. Native required-output
+membership comes from actual declared roots; there is no native output toggle.
 
 ### 3.3 Declare the program
 
@@ -1604,8 +1639,8 @@ ordered:
 
 Every ordinary application installs a program with `in_memory_program` or
 `in_memory_rostered_program`. Declare a no-output action with
-`operation_action::<Binding, Delivery>()`; its delivery mode is
-`ApplicationSourceCompletion` or `ApplicationRetainedCommit`. Select the complete
+`.action::<Binding, Delivery>() ... .finish_action()`; its delivery mode is
+`ApplicationSourceCompletion` or `ApplicationRetainedCommit`. Select the exact
 `ApplicationActionReference`, rather than a first matching binding.
 
 <!-- illustrative -->
@@ -1637,10 +1672,11 @@ and reads both current and retained product truth through the public facade.
 Install a program and declare the exact typed action occurrence and its delivery.
 `request.mutate(intent)` returns `WorthQueryOperationBuilder`; it exposes original
 source preparation, preconditions and `idempotency_owned(key)`, followed by
-`retain_operation::<Program, Action>(&runtime)`. Fixed and source-only callers
+`retain_operation::<Program, Action>(&runtime)`. Fixed, discovered and source-only callers
 cannot execute, prepare or recover through that builder or its borrowed-key view.
-The selected action carries composition instance, feature, binding and delivery;
-a binding label alone cannot select its contract.
+The selector carries composition instance, feature, binding and delivery;
+Installation resolves the complete actual action, including every metadata
+contract. A binding label alone cannot select its contract.
 
 `idempotency_owned` first opens the initiating request's native capture phase and
 returns `Result<Description, (original_builder, owned_key, capture_denial)>`.
@@ -1662,6 +1698,20 @@ failure. Bank construction returns this owner in
 `BankOperationConstructionRefusal::Capture`; declaration refusal retains the
 funded description separately. Transport may decline an unexecuted request,
 which is distinct from losing a post-effect cleanup obligation.
+
+Fixed, discovered and source-only owners retain the authentic installed runtime
+allocation and complete installed action by value. Their returned types have no
+construction-runtime lifetime; they can be stored after the constructing borrow
+ends or the constructing handle is dropped. Keep a separate genuine runtime
+handle for fresh request construction. Operation owners expose no runtime
+accessor or `Deref` for admission. Retention shares the existing allocation; it
+copies neither the graph nor native obligations and grants no permission.
+
+Configure workflow vocabulary and other unique-runtime setup before cloning
+handles or retaining operations. While an operation retains the allocation,
+runtime close refuses with `RuntimeKeepaliveRetained`. Successful operation
+close releases that operation's keepalive; refusal returns the complete owner.
+Dropping an owner abandons custody and does not perform successful cleanup.
 
 Capture the original meaning once. Supply a fresh authenticated ordinary request
 for every `advance`, delivery and close. Native admission checks current authority
@@ -1744,6 +1794,22 @@ uses its admitted native policy. Unsupported predecessors refuse before effects
 or executable readmission and preserve original bytes; no compatibility entrance
 is retained.
 
+#### Storage beyond the construction borrow
+
+`WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>` and
+`WorthQueryDiscoveredOperation<Schema, Intent, Program, Root, Action>` carry no
+runtime lifetime parameter. Return or store the actual owner across commands;
+retain the operation returned on each progress or refusal. Fresh requests must
+come from a separate genuine handle for that same allocation and original
+branch, not from the operation itself.
+
+The fixed consumer below first clones its authentic runtime handle for request
+construction, moves the original handle into `constructing`, retains the
+operation, and drops `constructing` before advancement. It uses the still-owned
+original allocation to construct request authority, resolves and admits the external
+provider's actual value and checks the resulting source and outputs. This is
+the same installed fixed journey, not a second runtime or a fabricated lifetime.
+
 ### Compiled owning call bodies
 
 These excerpts are byte-bound to their actual compiled consumer fixtures or
@@ -1753,13 +1819,61 @@ standalone programs. The existing bounded fixture pump calls one fresh native
 advancement at a time; production code retains the returned owner between
 requests, including every refusal and pending result.
 
-Fixed: the existing two-instance court selects its primary declared action, advances the original owner, reads only that action's output and closes.
+Fixed: the two-instance court selects its complete primary action, uses admitted
+external input and the installed evaluator, drops the constructing runtime
+handle, advances the original owner, observes source/output truth and closes.
 
 <!-- compiled: owning_fixed.rs -->
 ```rust
+    use crate::application_program::{
+        composed_action::CatalogInputRequirement,
+        external_input::{NeutralExternalDenial, NeutralExternalProvider},
+    };
+    use worth_query_topology_entry::AdjustPlanarSource;
+    let external = constructing
+        .installed_program()
+        .external_input_provider::<AdjustPlanarSource, NeutralExternalProvider>()
+        .unwrap();
+    let provider = NeutralExternalProvider::new(7);
+    let before_input_refusal = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
+    let captured = external.resolve(&provider, "replacement-y").unwrap();
+    provider.change(2);
+    assert_eq!(
+        captured.admit(&provider).err(),
+        Some(NeutralExternalDenial::Changed)
+    );
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &before_input_refusal
+    );
+    let accepted = external
+        .resolve(&provider, "replacement-y")
+        .unwrap()
+        .admit(&provider)
+        .unwrap()
+        .into_resolution();
+    assert_eq!(accepted.revision(), &2);
+    let requirement = constructing
+        .installed_program()
+        .evaluated_requirement::<AdjustPlanarSource, CatalogInputRequirement>()
+        .unwrap()
+        .evaluate(accepted.revision());
+    assert_eq!(
+        requirement.required_input_guidance(),
+        Some(&"catalog-value")
+    );
+    assert_eq!(
+        requirement.enforce_submission(false).unwrap_err().missing(),
+        &"catalog-value"
+    );
+    requirement.enforce_submission(true).unwrap();
     let primary_input = PlanarSourceAdjustment {
         scope_key: "anchor-a".to_owned(),
-        replacement_y: length(2),
+        replacement_y: length(*accepted.values()),
     };
     reset_planar_source_adjustment_contacts(&primary_input);
     let source = request
@@ -1775,8 +1889,19 @@ Fixed: the existing two-instance court selects its primary declared action, adva
         .expect_source(source)
         .idempotency_owned(10_193)
         .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<ActionInstanceProgram, ConsumerFixedAction>(&world.application)
+        .retain_operation::<ActionInstanceProgram, ConsumerFixedAction>(&constructing)
         .unwrap_or_else(|(_, denial)| panic!("primary exact contract: {denial:?}"));
+    drop(constructing);
+    assert_eq!(world.application.close_conditional_runtime().unwrap_err().kind(),
+        worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained);
+    // Fresh requests come from the independently retained authentic allocation.
+    let fresh_scope = authentication::request_scope();
+    let fresh_principal = authentication::block_on(adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &fresh_scope,
+    ))
+    .unwrap();
+    let request = world.application.request(&fresh_principal, &fresh_scope);
     let mut primary = Some(primary);
     let primary = (0..32)
         .find_map(|_| match primary.take().unwrap().advance(&request) {
@@ -1799,10 +1924,22 @@ Fixed: the existing two-instance court selects its primary declared action, adva
     let output_delivery = primary.read_current(&request).unwrap();
     assert_eq!(output_delivery.rows()[0].body_key, "anchor-a");
     assert_eq!(output_delivery.rows()[0].value, length(3));
+    assert_eq!(
+        request
+            .query(PlanarRead {
+                body_key: primary_input.scope_key.clone()
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .y,
+        length(*accepted.values())
+    );
     assert_eq!(planar_source_adjustment_contacts(&primary_input), (1, 1));
     primary
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("primary close: {cause:?}"));
+    world.application.close_conditional_runtime().unwrap();
 ```
 
 Discovered: the existing public journey carries its original input through required-set settlement, guarded delivery and close.
@@ -1992,7 +2129,7 @@ type cannot substitute its selector by copying the delivery identity, root, and
 read metadata. The identity still supplies stable canonical meaning; runtime type
 stamps are not persisted.
 
-Author that source with `fixed_output_action::<Binding, Delivery>()`; use an
+Author that source with `.action::<Binding, Delivery>() ... .finish_action()`; use an
 `ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>` to
 select it. Program validation requires the delivery root to belong to that
 program and to start at the action's actual source occurrence.
@@ -2000,7 +2137,7 @@ program and to start at the action's actual source occurrence.
 An action with no native output-source obligation declares
 `ApplicationActionDelivery::Mode = ApplicationSourceCompletion` for no projection,
 or `ApplicationRetainedCommit` for its authentic commit observation. Author it
-with `operation_action::<Binding, Delivery>()` and select its exact
+with `.action::<Binding, Delivery>() ... .finish_action()` and select its exact
 `ApplicationActionReference` through the same `retain_operation`. A copied
 identity cannot replace a required-output delivery, and the runtime's actual
 output-source inventory must also permit the no-output lane.
@@ -2385,7 +2522,7 @@ runtime dereferences back to it.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// bank-server/src/identity_runtime/installation.rs (error mapping removed; Bank names the result `runtime`)
+// Direct Query vocabulary setup; Bank retains refusal custody in identity_runtime/workflow_binding.rs.
 use worth_query_host::facade::domain::WorthQueryApplicationWorkflowSpecInstallation;
 
 let workflow = WorthQueryApplicationWorkflowSpecInstallation::<
@@ -2430,6 +2567,26 @@ let workflow_runtime = runtime.retain_workflow_spec(workflow, approval_authentic
   event policy.
 - A host supporting several programs calls `support_workflow_spec` on the
   returned workflow runtime for each extra program.
+
+Bind this vocabulary, and support any extra program vocabularies, before cloning
+runtime handles or retaining operations. `retain_workflow_spec` returns
+`WorthQueryWorkflowRuntimeBindingRefusal<Schema, Spec, Program>` on any refusal.
+Inspect `denial()` and consume `into_parts()` to recover the original runtime,
+installed spec, signing owner and denial, in that order. Release the real
+keepalives before retrying a `RuntimeKeepaliveRetained` refusal. No refusal
+silently drops those inputs or requires a replacement runtime or signing owner.
+`support_workflow_spec(&mut self, installed)` returns `Err((installed, denial))`;
+the caller still owns the borrowed workflow runtime and the returned original
+spec. Signing custody must not be logged as diagnostic material.
+
+Bank retains its surrounding application inputs too:
+`BankIdentityRuntimeBuildError::WorkflowRuntimeBinding { binding, denial }`
+returns an opaque `BankIdentityRuntimeWorkflowBinding` alongside the denial.
+Keep that stage. When correcting vocabulary, `replace_workflow_spec` returns
+the original installed spec to the caller. After releasing actual dependent
+operations, `(*binding).bind()` retries the same authentic runtime, spec,
+signing owner and Bank companions. A repeated refusal returns the complete
+stage again; keeping only its denial would discard retry custody.
 
 **Control bindings.** Each control step (authoring, instance start, advance,
 approval) is a mutation intent whose binding sets `WORKFLOW_CONTROL = true`.

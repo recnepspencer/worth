@@ -6,29 +6,56 @@ place to associate typed actions, ports, derived truth, managed computation,
 requirements, correspondence, and external input. It does not install handlers,
 publish results, or create a second registry.
 
-The compact form and the builder form produce the same canonical spec:
+The compact form and the builder form produce the same canonical spec. An
+ordinary action begins with `.action::<Binding, Delivery>()`; its real delivery
+selects source completion, retained commit, fixed output or discovered output.
+Attach the applicable metadata, then call `.finish_action()` to append one
+complete declaration and resume feature authoring. The unfinished action has
+neither feature `finish()` nor `provides()` and cannot expose mutable meaning.
 
+The [neutral consumer declaration](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_program/composed_action.rs)
+keeps locality/change, a rule and an external provider on its actual fixed
+source action. The surrounding source module supplies its typed imports and
+other feature members:
+
+<!-- compiled: composed_action.rs -->
 ```rust
-use worth_query_decl::facade::worth_query_feature_spec;
-
-let capsule = worth_query_feature_spec!(
-    root(ProductSchema, PricingFeature);
-    provides(PricingOutput);
-    mutation_with_locality_and_change(
-        RepriceBinding,
-        ProductNeighborhood,
-        RebuildPrice
-    );
-    derived_artifact(CurrentPriceArtifact);
-    managed_computation(PriceComputation);
-);
+pub(crate) fn source_feature_spec() -> ApplicationFeatureSpec {
+    features::source_builder()
+        .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, ConsumerFixedDelivery>()
+        .locality_and_change::<SourceLocality, SourceChange>()
+        .evaluated_requirement::<CatalogInputRequirement>()
+        .external_input::<external_input::NeutralExternalProvider>()
+        .finish_action()
+        .finish()
+}
 ```
 
 Use `root(Schema, Feature)` for the root composition and
-`at(Schema, Instance, Feature)` when the same feature meaning participates in a
-named composition instance. The macro only removes builder plumbing. Its typed
-members call the same builder methods and its result enters the same program
-validation and installation path.
+`at(Schema, Instance, Feature)` for a named composition occurrence. The macro's
+block grammar is:
+
+```text
+action(Binding, Delivery) {
+    locality_and_change(Scope, Shape);
+    correspondence(Correspondence);
+    evaluated_requirement(Rule);
+    external_input(Provider);
+};
+native_action(Binding) {
+    // The same optional metadata clauses; no delivery or output-source override.
+};
+```
+
+Each optional clause is consuming and once-only. All subsets are legal under
+the existing trait bounds; empty blocks work. Metadata order preserves canonical
+meaning. Equivalent authoring preserves the program revision; changing actual
+delivery or metadata contracts changes canonical meaning through the existing
+identity owner. Unsupported or repeated clauses are rejected, and each block delegates
+to one typed builder and one `finish_action()`. Non-mutation members such as
+`provides`, `derived_artifact`, `derived_collection`, `managed_computation` and
+`conditional_operation` retain their semantics. Root-only `.operation::<Op>()`
+remains a builder capability.
 
 ## Ports and connections
 
@@ -44,19 +71,36 @@ feature. Declaration order and matching strings cannot create a connection.
 
 ## Scope and actions
 
-Mutation and query bindings retain scope authority. A mutation binding identifies
+Mutation and query bindings declare scope meaning. A mutation binding identifies
 its typed scope field, value extractor, principal binding, source expectation,
 finite candidate limits, and output posture. `worth_query_mutation_binding!`
 supports both concrete schemas and generic consumer schemas; the generic form
 keeps the typed source expectation and schema-provided principal contract in the
 same declaration.
 
-Add the binding to a capsule with `mutation(Binding)` or, when derived truth is
-affected, with:
+The feature parent owns Schema, Instance and Feature; the action entry selects
+Binding and Delivery once. `.locality_and_change::<Scope, Shape>()` attaches the
+paired contract. `.correspondence::<C>()` requires correspondence for that exact
+binding, and `.evaluated_requirement::<Rule>()` / `.external_input::<Provider>()`
+require the binding's operation type. Callers supply neither state flags nor
+raw type identities. Delivery derives required-output-source meaning; an
+ordinary source-only declaration cannot erase a real required-output obligation.
+The actual owning constructor refuses that mismatch.
 
-```rust
-mutation_with_locality_and_change(Binding, NeighborhoodLocality, ChangeShape);
-```
+Use `.native_action::<Binding>()` only for a present specialized native
+responsibility, such as native staging, authority/phase certification or
+explicit branch/host control. Ordinary product mutations and retries require
+real delivery, including when a deliberate native caller also consumes the
+same occurrence. Native required-output membership is derived from actual
+program roots; there is no output-source toggle or second mutation spelling.
+
+The five-part `ApplicationActionReference<Schema, Instance, Feature, Binding,
+Delivery>` is a sealed selector. `ApplicationAction::selector()` does not expose
+or manufacture full declaration meaning. Installation resolves the complete
+actual action and later progression compares all metadata against that installed
+meaning. The existing definition validator rejects duplicate binding TypeIds
+and duplicate portable `(instance, feature, binding identity)` keys while
+preserving separate legal composition occurrences.
 
 Query rejects a field from another schema, a value extractor with the wrong
 value type, a foreign principal contract, an undeclared operation, or a mutation
@@ -69,11 +113,19 @@ Repeated product rows use the binding's typed action correspondence. The
 installed correspondence derives initial state and exact row targets and
 preserves `Unchanged`, `Set`, and `Clear`. It is not a client payload mapping.
 
-An evaluated requirement is the one governed result used for both guidance and
-submission enforcement. A separate UI predicate cannot grant callability.
-External input resolution captures the selected values, provider revision, and
-provenance before candidate validation; revision mismatch or unavailable input
-is denied before effects.
+Correspondence capability lookup is binding-type scoped. Evaluated-rule and
+external-provider lookup is scoped to operation plus rule/provider type across
+declared actions. Delivery/locality/change remain exact-occurrence meaning;
+this composition does not introduce occurrence-isolated permission or a new
+policy engine.
+
+The installed evaluator returns one result for guidance and explicit submission
+enforcement. Installing the clause does not run it or turn rule evaluation into a native
+authorization gate. Rule-without-provider and provider-without-rule are
+both legal. External input resolution captures values, revision and provenance;
+its actual admission revalidates the revision before those accepted values enter
+the original source action. Declaration alone does not prove an external source
+stayed current through later graph publication.
 
 The production consumer proofs live under
 `worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_program/`.
@@ -133,7 +185,9 @@ state.
 
 Build through the canonical program boundary:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let program = ApplicationProgramAuthoring::<ProductSchema, ProductProgram>::begin()
     .validated_program()?;
 let manifest = program.normalized_manifest();
@@ -155,14 +209,12 @@ examples compile against the public facade and execute through the host entry.
 
 ## Authoring rule
 
-An ordinary mutation may attach an external source contract with
-`mutation_with_external_input::<Binding, Provider>()` or the matching
-`mutation_with_external_input(Binding, Provider);` capsule form. This requires no
-evaluated requirement or output correspondence. The installed provider slot
-captures the provider's resolved values and revision; admission revalidates that
-revision. The caller must pass those captured values into the ordinary operation.
-The declaration does not itself replace the mutation input or prove the external
-source stayed current through graph publication.
+An ordinary action composes `.external_input::<Provider>()` on its
+`.action::<Binding, Delivery>()` progression before `.finish_action()`.
+It requires neither an evaluated requirement nor correspondence. Resolve and
+admit the external input through the installed provider, then use its accepted
+values in the actual source intent. Keep every contract on this same action;
+adding another feature action is not a metadata attachment.
 
 Add meaning at its owner: schema members in the schema declaration, operation
 and scope in the binding, feature membership in the capsule, cross-feature

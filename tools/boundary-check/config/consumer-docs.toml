@@ -6,6 +6,9 @@ documents = [
   "docs/capability-index.md",
   "workspaces/worth-query/README.md",
   "workspaces/worth-query/crates/worth-query-host/README.md",
+  "workspaces/worth-query/crates/worth-query-decl/README.md",
+  "workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md",
+  "workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md",
   "workspaces/worth-query/crates/worth-query/docs/AI_README.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md",
   "workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md",
@@ -46,3 +49,9 @@ name = "owning_workflow.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification"
 target = "examples/authored_workflow/main.rs"
 source = "examples/authored_workflow/main.rs"
+
+[[compiled_sources]]
+name = "composed_action.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_program/composed_action.rs"

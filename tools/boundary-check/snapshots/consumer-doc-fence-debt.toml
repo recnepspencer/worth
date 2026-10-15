@@ -51,3 +51,15 @@ unclassified = 0
 [[documents]]
 path = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
 unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query-decl/README.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md"
+unclassified = 0
