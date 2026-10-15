@@ -27,34 +27,32 @@ impl IndexAuthority<'_> {
             requested.insert(*index_id);
         }
         for index_id in requested {
-            let (definition, admitted_generation) = if work.has_preparation() {
-                self.runtime
-                    .indexes
-                    .field_maintenance_inputs_admitted(
-                        index_id,
-                        &request.branch_id,
-                        request.source_commit_id,
-                        after.version_id(),
-                        |units, bytes| work.prepare(units, bytes),
-                    )
-                    .map_err(|stop| match stop {
-                        SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
-                        SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
-                            DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
-                        }
-                    })?
-                    .ok_or(DerivedIndexMaintenanceDenialKind::IndexUnavailable(
-                        index_id,
-                    ))?
-            } else {
-                (
-                    self.runtime.indexes.definition(index_id).ok_or(
-                        DerivedIndexMaintenanceDenialKind::IndexUnavailable(index_id),
-                    )?,
-                    None,
+            let compatible_before = before.filter(|view| {
+                view.selected_schema_authority()
+                    .map(|schema| schema.schema_version())
+                    == Some(schema_version)
+            });
+            let (definition, current, prior) = self
+                .runtime
+                .indexes
+                .maintenance_inputs_admitted(
+                    index_id,
+                    &request.branch_id,
+                    request.source_commit_id,
+                    after.version_id(),
+                    compatible_before.map(|view| (view.version_id(), schema_version)),
+                    |units, bytes| work.prepare(units, bytes),
                 )
-            };
-            if work.has_preparation()
+                .map_err(|stop| match stop {
+                    SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
+                    SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
+                        DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
+                    }
+                })?
+                .ok_or(DerivedIndexMaintenanceDenialKind::IndexUnavailable(
+                    index_id,
+                ))?;
+            if work.field_indexes_only()
                 && !matches!(
                     &definition.kind,
                     DerivedIndexKind::EntityField { .. } | DerivedIndexKind::RelationField { .. }
@@ -64,18 +62,6 @@ impl IndexAuthority<'_> {
                     index_id,
                 ));
             }
-            // A global index is current from any branch's generation at this
-            // exact commit and version; a scoped one only from its own.
-            let current = if work.has_preparation() {
-                admitted_generation
-            } else {
-                self.runtime.indexes.published_generation_for_commit(
-                    index_id,
-                    definition.branch_scoped.then_some(&request.branch_id),
-                    request.source_commit_id,
-                    after.version_id(),
-                )
-            };
             if let Some(generation) = current {
                 if generation.applicability.schema_version == schema_version {
                     work.grow_vec(&mut reused)?;
@@ -97,43 +83,25 @@ impl IndexAuthority<'_> {
                     continue;
                 }
             }
-            if let Some(seed) = (!work.has_preparation())
-                .then(|| {
-                    self.fork_seed(
-                        index_id,
-                        request,
-                        authoring,
-                        after.version_id(),
-                        schema_version,
-                    )
-                })
-                .flatten()
-            {
+            if let Some(seed) = self.fork_seed_admitted(
+                index_id,
+                request,
+                authoring,
+                after.version_id(),
+                schema_version,
+                work,
+            )? {
                 work.grow_vec(&mut prepared)?;
                 work.prepare(1, 0)?;
                 prepared.push((index_id, seed.entries.clone()));
                 work.note_seeded_generations(1);
                 continue;
             }
-            let prior = before
-                .filter(|view| {
-                    view.selected_schema_authority().map(|s| s.schema_version())
-                        == Some(schema_version)
-                })
-                .and_then(|view| {
-                    self.runtime
-                        .indexes
-                        .exact_generation(
-                            index_id,
-                            Some(&request.branch_id),
-                            view.version_id(),
-                            schema_version,
-                        )
-                        .filter(|generation| {
-                            view.selected_root().and_then(|root| root.commit_id())
-                                == Some(generation.source_commit_id)
-                        })
-                });
+            let prior = prior.filter(|generation| {
+                compatible_before
+                    .and_then(|view| view.selected_root().and_then(|root| root.commit_id()))
+                    == Some(generation.source_commit_id)
+            });
             let (entries, changes, old) = if let Some(prior) = prior {
                 if patch_changes.is_none() {
                     patch_changes = Some(changes::ChangedRecords::patch(root, work)?);
@@ -144,6 +112,9 @@ impl IndexAuthority<'_> {
                     before,
                 )
             } else {
+                if work.prohibits_population_reconstruction() {
+                    return Err(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired);
+                }
                 if cold_changes.is_none() {
                     cold_changes = Some(changes::ChangedRecords::cold(after, work)?);
                 }

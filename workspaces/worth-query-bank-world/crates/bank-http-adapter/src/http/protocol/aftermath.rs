@@ -23,12 +23,8 @@ pub struct BankHttpEstateDisbursementRequest {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpEstateDisbursementOutcome {
-    Applied {
-        request_id: String,
-        disposition: BankHttpCommitDisposition,
-        commit: BankHttpCommitDescription,
-        recovery: Option<String>,
-        recovery_status: BankHttpRecoveryStatus,
+    Owning {
+        outcome: super::BankHttpMutationOutcome,
     },
     Denied {
         request_id: Option<String>,

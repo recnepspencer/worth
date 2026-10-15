@@ -47,6 +47,22 @@ pub enum BankHttpMutationRequest {
         sequence: u64,
         controls: BankHttpMutationReadControls,
     },
+    ResumeSource {
+        protocol: BankHttpProtocolVersion,
+        request_id: String,
+        credential: BankHttpCredential,
+        custody_id: String,
+        sequence: u64,
+        controls: super::BankHttpEffectControls,
+    },
+    ReleaseCleanup {
+        protocol: BankHttpProtocolVersion,
+        request_id: String,
+        credential: BankHttpCredential,
+        custody_id: String,
+        sequence: u64,
+        controls: super::BankHttpEffectControls,
+    },
     Close {
         protocol: BankHttpProtocolVersion,
         request_id: String,
@@ -108,6 +124,7 @@ pub enum BankHttpMutationOutcome {
         custody_id: String,
         sequence: u64,
         posture: BankHttpMutationPosture,
+        cleanup: Option<BankHttpNativeCleanupFailureDescription>,
     },
     Refused {
         request_id: String,
@@ -134,6 +151,36 @@ pub enum BankHttpMutationOutcome {
         sequence: u64,
         activity: BankHttpAccountActivity,
         publication: BankHttpQueryPublication,
+    },
+    AwaitingRailHandoff {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        commit: BankHttpCommitDescription,
+    },
+    RailRecoveryReady {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        commit: BankHttpCommitDescription,
+        recovery: Option<String>,
+        recovery_status: super::BankHttpRecoveryStatus,
+    },
+    CollectionReleased {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        retired_component_count: usize,
+        managed: Option<BankHttpNativeCleanupDescription>,
+    },
+    CleanupReleased {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        logical_run_identity: String,
+        run_identity: String,
+        provider_session_identity: String,
+        resources_released: bool,
     },
     Closed {
         request_id: String,
@@ -189,4 +236,19 @@ impl From<worth_query_host::facade::application_entry::WorthQuerySourceOnlyPostu
             Native::Terminal => Self::Terminal,
         }
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct BankHttpNativeCleanupDescription {
+    pub logical_run_identity: String,
+    pub run_identity: String,
+    pub provider_session_identity: String,
+    pub resources_released: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct BankHttpNativeCleanupFailureDescription {
+    pub run_identity: String,
+    pub graph_session_identity: String,
+    pub failure: String,
 }

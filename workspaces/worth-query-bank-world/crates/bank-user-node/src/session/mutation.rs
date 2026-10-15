@@ -71,6 +71,42 @@ impl BankUserSession {
                 request_id,
                 custody_id,
             ),
+            BankUserNodeMutationRequest::ResumeSource {
+                request_id,
+                custody_id,
+                sequence,
+                controls,
+            } => (
+                BankHttpMutationRequest::ResumeSource {
+                    protocol,
+                    request_id: request_id.clone(),
+                    credential,
+                    custody_id: custody_id.clone(),
+                    sequence,
+                    controls,
+                },
+                controls.deadline_milliseconds,
+                request_id,
+                custody_id,
+            ),
+            BankUserNodeMutationRequest::ReleaseCleanup {
+                request_id,
+                custody_id,
+                sequence,
+                controls,
+            } => (
+                BankHttpMutationRequest::ReleaseCleanup {
+                    protocol,
+                    request_id: request_id.clone(),
+                    credential,
+                    custody_id: custody_id.clone(),
+                    sequence,
+                    controls,
+                },
+                controls.deadline_milliseconds,
+                request_id,
+                custody_id,
+            ),
             BankUserNodeMutationRequest::Close {
                 request_id,
                 custody_id,

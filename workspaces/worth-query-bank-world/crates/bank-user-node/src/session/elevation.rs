@@ -45,7 +45,12 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeElevationRequestOutcome::Forwarded { response },
-            Err(kind) => request_denied(kind),
+            Err(_) => BankUserNodeElevationRequestOutcome::Forwarded {
+                response: BankHttpElevationRequestOutcome::OutcomeUnknown {
+                    request_id: upstream.request_id.clone(),
+                    custody_id: upstream.request_id.clone(),
+                },
+            },
         }
     }
 
@@ -73,7 +78,12 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeElevationApprovalOutcome::Forwarded { response },
-            Err(kind) => approval_denied(kind),
+            Err(_) => BankUserNodeElevationApprovalOutcome::Forwarded {
+                response: BankHttpElevationApprovalOutcome::OutcomeUnknown {
+                    request_id: upstream.request_id.clone(),
+                    custody_id: upstream.request_id.clone(),
+                },
+            },
         }
     }
 
@@ -101,7 +111,12 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeElevationRevocationOutcome::Forwarded { response },
-            Err(kind) => revocation_denied(kind),
+            Err(_) => BankUserNodeElevationRevocationOutcome::Forwarded {
+                response: BankHttpElevationRevocationOutcome::OutcomeUnknown {
+                    request_id: upstream.request_id.clone(),
+                    custody_id: upstream.request_id.clone(),
+                },
+            },
         }
     }
 
@@ -129,7 +144,12 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeMandatoryReviewOutcome::Forwarded { response },
-            Err(kind) => review_denied(kind),
+            Err(_) => BankUserNodeMandatoryReviewOutcome::Forwarded {
+                response: BankHttpMandatoryReviewOutcome::OutcomeUnknown {
+                    request_id: upstream.request_id.clone(),
+                    custody_id: upstream.request_id.clone(),
+                },
+            },
         }
     }
 }

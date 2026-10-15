@@ -21,12 +21,8 @@ pub struct BankHttpEstateNotificationRequest {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpEstateNotificationOutcome {
-    Applied {
-        request_id: String,
-        disposition: BankHttpCommitDisposition,
-        commit: BankHttpCommitDescription,
-        recovery: Option<String>,
-        recovery_status: BankHttpRecoveryStatus,
+    Owning {
+        outcome: super::BankHttpMutationOutcome,
     },
     Denied {
         request_id: Option<String>,
@@ -92,6 +88,10 @@ pub enum BankHttpRecoveryRetryDisposition {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpRecoverySafeRetryOutcome {
+    OutcomeUnknown {
+        request_id: String,
+        recovery: String,
+    },
     Applied {
         request_id: String,
         disposition: BankHttpRecoveryRetryDisposition,

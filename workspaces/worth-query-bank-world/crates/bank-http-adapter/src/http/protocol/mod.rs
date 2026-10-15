@@ -35,6 +35,7 @@ pub use mutation::{
     BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpExpectedAccountStatus,
     BankHttpMutationControls, BankHttpMutationOperation, BankHttpMutationOutcome,
     BankHttpMutationPosture, BankHttpMutationReadControls, BankHttpMutationRequest,
+    BankHttpNativeCleanupDescription, BankHttpNativeCleanupFailureDescription,
 };
 pub use query_publication::{
     BankHttpQueryBasis, BankHttpQueryBasisPosture, BankHttpQueryCapabilityPurpose,

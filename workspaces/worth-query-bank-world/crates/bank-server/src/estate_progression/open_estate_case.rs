@@ -1,22 +1,17 @@
 use bank_domain::{
     estate::{DeathNoticeId, DeathNoticeStatus, EstateAction, EstateCaseId, EstateCaseStatus},
-    proposals::BankIdempotencyKey,
     schema::{
         BankSchema, DeathNoticeIdentityField, DeathNoticeStatusField, EstateCase,
         EstateCaseIdentityField, EstateCaseStatusField, EstateDeathNotice, OpenEstateCaseOperation,
     },
 };
-use worth_query_host::facade::{
-    admission::authenticated_principal::WorthQueryRequestScope,
-    primary_graph::{
-        WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryEntityResolutionDenial,
-        WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
-        WorthQueryInvariantProjectionTraversalDenial,
-    },
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryEntityResolutionDenial,
+    WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
+    WorthQueryInvariantProjectionTraversalDenial,
 };
 
 use super::BankEstateProgressionDenial;
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
 
 #[derive(Debug)]
 pub enum BankEstateCaseOpeningProjectionDenial {
@@ -32,37 +27,6 @@ pub enum BankEstateCaseOpeningProjectionDenial {
     EntityResolution(crate::BankEntityResolutionDenial),
     DecisionPlan(crate::BankInvariantDecisionPlanDenial),
     Traversal(crate::BankInvariantProjectionTraversalDenial),
-}
-
-impl BankIdentityRuntime {
-    pub fn open_estate_case_with_key(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        key: &BankIdempotencyKey,
-        request: &WorthQueryRequestScope,
-    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let EstateAction::OpenEstateCase { estate, notice } = action else {
-            return Err(BankEstateProgressionDenial::CommandInput(
-                "OpenEstateCaseOperation",
-            ));
-        };
-        super::program_outcome::program_outcome(
-            self.request(principal, request)
-                .mutate(bank_domain::schema::OpenEstateCase::new(estate, notice))
-                .idempotency(key)
-                .execute_capability_in_program(
-                    self.application_program(),
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                ),
-            "OpenEstateCaseOperation",
-            |denial| {
-                denial
-                    .downcast::<BankEstateCaseOpeningProjectionDenial>()
-                    .map(BankEstateProgressionDenial::CaseOpeningProjection)
-            },
-        )
-    }
 }
 
 #[derive(Clone, Copy)]

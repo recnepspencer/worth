@@ -14,6 +14,16 @@ impl WorthQueryPrimaryGraphLayout {
             .filter(|layout| layout.equality_queryable)
     }
 
+    pub(in crate::domain_computation) fn equality_selector_index(
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Option<DerivedIndexId> {
+        self.equality_field(entity, aspect, field)
+            .and_then(|layout| layout.equality_index_id)
+    }
+
     /// One owned lookup key and the comparison work of one std B-tree search.
     /// A non-leaf root has at least two children; each lower node has at
     /// least six, yielding minimum key counts 1, 11, 71, ... by level.

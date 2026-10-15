@@ -102,16 +102,21 @@ impl IndexingSubsystem {
             .generations
             .publish_batch_admitted(generations, &mut prepare)
     }
-    pub(crate) fn field_maintenance_inputs_admitted<Stop>(
+    pub(crate) fn maintenance_inputs_admitted<Stop>(
         &self,
         index: DerivedIndexId,
         branch: &crate::history::data::BranchId,
         commit: crate::history::data::CommitId,
         version: crate::identity::data::VersionId,
+        before: Option<(
+            crate::identity::data::VersionId,
+            crate::schema::data::SchemaVersionId,
+        )>,
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<
         Option<(
             std::sync::Arc<crate::indexes::data::DerivedIndexDefinition>,
+            Option<std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>>,
             Option<std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>>,
         )>,
         SelectedIndexGenerationAdmissionStop<Stop>,
@@ -129,7 +134,26 @@ impl IndexingSubsystem {
             version,
             &mut prepare,
         )?;
-        Ok(Some((std::sync::Arc::clone(definition), generation)))
+        let prior = if let Some((version, schema)) = before {
+            state.generations.exact_admitted(
+                index,
+                definition.branch_scoped.then_some(branch),
+                version,
+                schema,
+                &mut |units, bytes| {
+                    prepare(
+                        match units {
+                            SelectedIndexReadWork::Operation(units)
+                            | SelectedIndexReadWork::OrderedNavigation(units) => units,
+                        },
+                        bytes,
+                    )
+                },
+            )?
+        } else {
+            None
+        };
+        Ok(Some((std::sync::Arc::clone(definition), generation, prior)))
     }
     /// Check one selected published index under a single owner read lock.
     /// Each actual catalog descent and the branch-key copy is admitted before

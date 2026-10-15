@@ -50,11 +50,42 @@ where
         &self.evidence
     }
     pub fn close(
-        mut self,
+        self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        self.close_with_evidence(request).map(|(closed, _)| closed)
+    }
+
+    /// Releases native cleanup before transferring the original completion evidence.
+    /// Refusal returns this owner with its receipt and performed-change witness intact.
+    /// The borrowed evidence accessor cannot transfer a performed witness.
+    /// ```compile_fail,E0596
+    /// use worth_query_publication::facade::application_entry::*;
+    /// use worth_query_declaration::facade::{application_schema::ApplicationSchema,application_operation::ApplicationMutationIntent,application_program::ApplicationProgramDefinition};
+    /// fn borrowed<S:ApplicationSchema+'static,I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,A,M>(done:WorthQueryCompletedSourceOperation<S,I,P,A,M>) {
+    ///     if let WorthQuerySourceCompletion::Fresh { receipt, .. }=done.evidence() { let _=receipt.take_performed_relational_product_change(); }
+    /// }
+    /// ```
+    /// Lawful close supplies the actual owned counterpart.
+    /// ```
+    /// use worth_query_publication::facade::application_entry::*;
+    /// use worth_query_declaration::facade::{application_schema::ApplicationSchema,application_operation::ApplicationMutationIntent,application_program::ApplicationProgramDefinition};
+    /// fn transfer<S:ApplicationSchema+'static,I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,A,M>(done:WorthQueryCompletedSourceOperation<S,I,P,A,M>,request:&WorthQueryApplicationRequest<'_,'_,'_,S>) {
+    ///     if let Ok((_closed,WorthQuerySourceCompletion::Fresh { mut receipt, .. }))=done.close_with_evidence(request) { let _=receipt.take_performed_relational_product_change(); }
+    /// }
+    /// ```
+    pub fn close_with_evidence(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        (
+            WorthQueryClosedOperation,
+            WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
+        ),
+        (Self, WorthQueryOperationCloseDenial),
+    > {
         match self.operation.close_cleanup(request) {
-            Ok(closed) => Ok(closed),
+            Ok(closed) => Ok((closed, self.evidence)),
             Err(denial) => Err((self, denial)),
         }
     }

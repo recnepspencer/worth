@@ -15,10 +15,10 @@ use super::authentication::BankHttpApplicationAuthenticator;
 use super::recovery_registry::BankHttpRecoveryRegistry;
 
 mod disbursement;
-mod inspection;
-mod notification;
-mod outcome;
-mod safe_retry;
+pub(super) mod inspection;
+pub(super) mod notification;
+pub(super) mod outcome;
+pub(super) mod safe_retry;
 
 use disbursement::execute_disbursement;
 use inspection::execute_inspection;
@@ -52,14 +52,25 @@ pub(super) struct AdmittedBankHttpDisbursementRequest {
 #[derive(Clone)]
 pub(super) struct BankHttpRecoveryExecutor {
     sender: mpsc::Sender<RecoveryCommand>,
+    notify: Arc<
+        dyn Fn(
+                AdmittedBankHttpNotificationRequest,
+                WorthQueryCancellationSource,
+                oneshot::Sender<BankHttpEstateNotificationOutcome>,
+            ) + Send
+            + Sync,
+    >,
+    disburse: Arc<
+        dyn Fn(
+                AdmittedBankHttpDisbursementRequest,
+                WorthQueryCancellationSource,
+                oneshot::Sender<BankHttpEstateDisbursementOutcome>,
+            ) + Send
+            + Sync,
+    >,
 }
 
 enum RecoveryCommand {
-    Notify {
-        request: AdmittedBankHttpNotificationRequest,
-        cancellation: WorthQueryCancellationSource,
-        response: oneshot::Sender<BankHttpEstateNotificationOutcome>,
-    },
     Inspect {
         request: AdmittedBankHttpRecoveryRequest,
         cancellation: WorthQueryCancellationSource,
@@ -70,56 +81,116 @@ enum RecoveryCommand {
         cancellation: WorthQueryCancellationSource,
         response: oneshot::Sender<BankHttpRecoverySafeRetryOutcome>,
     },
-    Disburse {
-        request: AdmittedBankHttpDisbursementRequest,
-        cancellation: WorthQueryCancellationSource,
-        response: oneshot::Sender<BankHttpEstateDisbursementOutcome>,
-    },
 }
 
 impl BankHttpRecoveryExecutor {
     pub(super) fn start<A>(
         application: Arc<A>,
         queue_capacity: usize,
-        registry_capacity: usize,
-        lifetime: std::time::Duration,
+        registry: Arc<tokio::sync::Mutex<BankHttpRecoveryRegistry>>,
+        mutations: super::mutation_executor::BankHttpMutationContinuation,
     ) -> (Self, JoinHandle<()>)
     where
         A: BankHttpApplicationAuthenticator,
     {
         let (sender, receiver) = mpsc::channel(queue_capacity);
-        let task = tokio::spawn(run(
-            application,
-            receiver,
-            BankHttpRecoveryRegistry::new(registry_capacity, lifetime),
-        ));
-        (Self { sender }, task)
+        let notify = {
+            let application = Arc::clone(&application);
+            let registry = Arc::clone(&registry);
+            let mutations = mutations.clone();
+            Arc::new(
+                move |request: AdmittedBankHttpNotificationRequest, cancellation, response| {
+                    let application = Arc::clone(&application);
+                    let registry = Arc::clone(&registry);
+                    let id = request.request_id.clone();
+                    let denied_id = id.clone();
+                    mutations.submit_native(
+                        id,
+                        super::native_route::job(
+                            move || async move {
+                                execute_notification(
+                                    application.as_ref(),
+                                    registry,
+                                    request,
+                                    cancellation,
+                                )
+                                .await
+                            },
+                            move |kind| {
+                                notification_denied(
+                                    Some(denied_id),
+                                    super::mutation_refusal::denial(kind),
+                                )
+                            },
+                            response,
+                        ),
+                    );
+                },
+            )
+        };
+        let disburse = {
+            let application = Arc::clone(&application);
+            let registry = Arc::clone(&registry);
+            let mutations = mutations.clone();
+            Arc::new(
+                move |request: AdmittedBankHttpDisbursementRequest, cancellation, response| {
+                    let application = Arc::clone(&application);
+                    let registry = Arc::clone(&registry);
+                    let id = request.request_id.clone();
+                    let denied_id = id.clone();
+                    mutations.submit_native(
+                        id,
+                        super::native_route::job(
+                            move || async move {
+                                execute_disbursement(
+                                    application.as_ref(),
+                                    registry,
+                                    request,
+                                    cancellation,
+                                )
+                                .await
+                            },
+                            move |kind| {
+                                disbursement_denied(
+                                    Some(denied_id),
+                                    super::mutation_refusal::denial(kind),
+                                )
+                            },
+                            response,
+                        ),
+                    );
+                },
+            )
+        };
+        let task = tokio::spawn(run(application, receiver, registry));
+        (
+            Self {
+                sender,
+                notify,
+                disburse,
+            },
+            task,
+        )
     }
 
     pub(super) async fn notify(
         &self,
         request: AdmittedBankHttpNotificationRequest,
     ) -> BankHttpEstateNotificationOutcome {
-        let request_id = request.request_id.clone();
+        let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
         let _cancel_on_drop = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
-        if self
-            .sender
-            .try_send(RecoveryCommand::Notify {
-                request,
-                cancellation,
-                response,
-            })
-            .is_err()
-        {
-            return notification_denied(Some(request_id), saturated());
-        }
+        (self.notify)(request, cancellation, response);
         match tokio::time::timeout_at(deadline.into(), receiver).await {
             Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => notification_denied(Some(request_id), unavailable()),
-            Err(_) => notification_denied(Some(request_id), deadline_exceeded()),
+            _ => BankHttpEstateNotificationOutcome::Owning {
+                outcome: super::super::protocol::BankHttpMutationOutcome::OutcomeUnknown {
+                    request_id: id.clone(),
+                    custody_id: id,
+                },
+            },
         }
     }
 
@@ -155,6 +226,7 @@ impl BankHttpRecoveryExecutor {
         request: AdmittedBankHttpRecoveryRequest,
     ) -> BankHttpRecoverySafeRetryOutcome {
         let request_id = request.request_id.clone();
+        let recovery = request.token.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
         let _cancel_on_drop = CancelOnDrop(cancellation.clone());
@@ -172,8 +244,10 @@ impl BankHttpRecoveryExecutor {
         }
         match tokio::time::timeout_at(deadline.into(), receiver).await {
             Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => safe_retry_denied(Some(request_id), unavailable()),
-            Err(_) => safe_retry_denied(Some(request_id), deadline_exceeded()),
+            _ => BankHttpRecoverySafeRetryOutcome::OutcomeUnknown {
+                request_id,
+                recovery,
+            },
         }
     }
 
@@ -181,26 +255,20 @@ impl BankHttpRecoveryExecutor {
         &self,
         request: AdmittedBankHttpDisbursementRequest,
     ) -> BankHttpEstateDisbursementOutcome {
-        let request_id = request.request_id.clone();
+        let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
         let _cancel_on_drop = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
-        if self
-            .sender
-            .try_send(RecoveryCommand::Disburse {
-                request,
-                cancellation,
-                response,
-            })
-            .is_err()
-        {
-            return disbursement_denied(Some(request_id), saturated());
-        }
+        (self.disburse)(request, cancellation, response);
         match tokio::time::timeout_at(deadline.into(), receiver).await {
             Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => disbursement_denied(Some(request_id), unavailable()),
-            Err(_) => disbursement_denied(Some(request_id), deadline_exceeded()),
+            _ => BankHttpEstateDisbursementOutcome::Owning {
+                outcome: super::super::protocol::BankHttpMutationOutcome::OutcomeUnknown {
+                    request_id: id.clone(),
+                    custody_id: id,
+                },
+            },
         }
     }
 }
@@ -216,28 +284,14 @@ impl Drop for CancelOnDrop {
 async fn run<A>(
     application: Arc<A>,
     mut receiver: mpsc::Receiver<RecoveryCommand>,
-    mut registry: BankHttpRecoveryRegistry,
+    registry: Arc<tokio::sync::Mutex<BankHttpRecoveryRegistry>>,
 ) where
     A: BankHttpApplicationAuthenticator,
 {
     while let Some(command) = receiver.recv().await {
+        let mut registry = registry.lock().await;
         registry.purge_expired(application.runtime());
         match command {
-            RecoveryCommand::Notify {
-                request,
-                cancellation,
-                response,
-            } => {
-                let _ = response.send(
-                    execute_notification(
-                        application.as_ref(),
-                        &mut registry,
-                        request,
-                        cancellation,
-                    )
-                    .await,
-                );
-            }
             RecoveryCommand::Inspect {
                 request,
                 cancellation,
@@ -256,21 +310,6 @@ async fn run<A>(
                 let _ = response.send(
                     execute_safe_retry(application.as_ref(), &mut registry, request, cancellation)
                         .await,
-                );
-            }
-            RecoveryCommand::Disburse {
-                request,
-                cancellation,
-                response,
-            } => {
-                let _ = response.send(
-                    execute_disbursement(
-                        application.as_ref(),
-                        &mut registry,
-                        request,
-                        cancellation,
-                    )
-                    .await,
                 );
             }
         }

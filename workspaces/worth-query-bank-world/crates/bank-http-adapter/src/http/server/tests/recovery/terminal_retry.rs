@@ -52,7 +52,8 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         "first-key",
     )
     .await;
-    let (_, token) = applied_notification(first);
+    let (_, token) =
+        rail_notification_parts(close_notification(&client, server.local_address(), first).await);
     let retry = post_typed::<BankHttpRecoverySafeRetryOutcome>(
         &client,
         server.local_address(),
@@ -93,22 +94,29 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         "first-key",
     )
     .await;
+    let completed_commit_replay =
+        close_notification(&client, server.local_address(), completed_commit_replay).await;
     assert!(matches!(
         completed_commit_replay,
-        BankHttpEstateNotificationOutcome::Applied {
+        crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
             recovery_status: BankHttpRecoveryStatus::Completed,
             recovery: Some(_),
             ..
         }
     ));
     let alternate = alternate_recovery_action();
-    applied_notification(
-        notify_with_key(
+    rail_notification_parts(
+        close_notification(
             &client,
             server.local_address(),
-            &alternate,
-            "second-notification",
-            "second-key",
+            notify_with_key(
+                &client,
+                server.local_address(),
+                &alternate,
+                "second-notification",
+                "second-key",
+            )
+            .await,
         )
         .await,
     );
@@ -120,10 +128,11 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         "first-key",
     )
     .await;
+    let old_replay = close_notification(&client, server.local_address(), old_replay).await;
     assert!(
         matches!(
             &old_replay,
-            BankHttpEstateNotificationOutcome::Applied {
+            crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
                 disposition:
                     super::super::super::super::protocol::BankHttpCommitDisposition::AlreadyCommitted,
                 recovery: None,

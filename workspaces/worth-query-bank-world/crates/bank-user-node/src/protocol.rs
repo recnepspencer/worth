@@ -71,6 +71,18 @@ pub enum BankUserNodeMutationRequest {
         sequence: u64,
         controls: BankHttpMutationReadControls,
     },
+    ResumeSource {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpEffectControls,
+    },
+    ReleaseCleanup {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpEffectControls,
+    },
     Close {
         request_id: String,
         custody_id: String,

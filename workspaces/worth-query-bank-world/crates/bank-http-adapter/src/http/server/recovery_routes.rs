@@ -32,9 +32,7 @@ pub(super) async fn notify_death(
         Err(outcome) => return notification_response(outcome),
     };
     let outcome = state.recovery.notify(admitted).await;
-    if matches!(&outcome, BankHttpEstateNotificationOutcome::Applied {
-        disposition: BankHttpCommitDisposition::Committed, commit, ..
-    } if commit.emitted_effect_count > 0)
+    if matches!(&outcome, BankHttpEstateNotificationOutcome::Owning { outcome: super::super::protocol::BankHttpMutationOutcome::Completed { commit, .. } } if commit.emitted_effect_count > 0)
     {
         state.rail_maintenance_wake.notify_one();
     }
@@ -103,7 +101,7 @@ fn admit_notification(
     })
 }
 
-fn admit_recovery(
+pub(super) fn admit_recovery(
     request: BankHttpRecoveryRequest,
     maximum_deadline: Duration,
 ) -> Result<AdmittedBankHttpRecoveryRequest, (Option<String>, BankHttpDenial)> {
@@ -162,7 +160,9 @@ fn notification_response(
     outcome: BankHttpEstateNotificationOutcome,
 ) -> (StatusCode, Json<BankHttpEstateNotificationOutcome>) {
     let status = match &outcome {
-        BankHttpEstateNotificationOutcome::Applied { .. } => StatusCode::OK,
+        BankHttpEstateNotificationOutcome::Owning { outcome } => {
+            super::mutation_routes::mutation_status(outcome)
+        }
         BankHttpEstateNotificationOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))
@@ -182,6 +182,7 @@ fn safe_retry_response(
     outcome: BankHttpRecoverySafeRetryOutcome,
 ) -> (StatusCode, Json<BankHttpRecoverySafeRetryOutcome>) {
     let status = match &outcome {
+        BankHttpRecoverySafeRetryOutcome::OutcomeUnknown { .. } => StatusCode::ACCEPTED,
         BankHttpRecoverySafeRetryOutcome::Applied { .. }
         | BankHttpRecoverySafeRetryOutcome::AlreadyCompleted { .. } => StatusCode::OK,
         BankHttpRecoverySafeRetryOutcome::Denied { denial, .. } => response_status(denial.kind),

@@ -41,13 +41,20 @@ where
         configuration.stream_queue_capacity().get(),
         configuration.maximum_live_streams().get(),
     )?;
+    let recovery_registry = Arc::new(tokio::sync::Mutex::new(
+        recovery_registry::BankHttpRecoveryRegistry::new(
+            configuration.opaque_handle_capacity().get(),
+            configuration.opaque_handle_lifetime(),
+        ),
+    ));
     let mutations = BankHttpMutationContinuation::start(
         Arc::clone(&application),
         configuration.queue_capacity(),
         configuration.maximum_concurrency(),
         configuration.opaque_handle_capacity(),
         configuration.maximum_deadline(),
-    );
+        Arc::clone(&recovery_registry),
+    )?;
     let (queue, dispatcher_task) = BankHttpExecutionQueue::start(
         Arc::clone(&application),
         configuration.queue_capacity().get(),
@@ -63,14 +70,15 @@ where
     let (recovery, recovery_task) = recovery_executor::BankHttpRecoveryExecutor::start(
         Arc::clone(&application),
         configuration.queue_capacity().get(),
-        configuration.opaque_handle_capacity().get(),
-        configuration.opaque_handle_lifetime(),
+        recovery_registry,
+        mutations.clone(),
     );
-    let (elevation, elevation_task) = elevation_executor::BankHttpElevationExecutor::start(
+    let elevation = elevation_executor::BankHttpElevationExecutor::start(
         Arc::clone(&application),
         configuration.queue_capacity().get(),
         configuration.opaque_handle_capacity().get(),
         configuration.opaque_handle_lifetime(),
+        mutations.clone(),
     );
     let live_shutdown = live.shutdown_signal();
     let rail_maintenance_wake = Arc::new(tokio::sync::Notify::new());
@@ -115,7 +123,6 @@ where
         recovery_task: Some(recovery_task),
         rail_maintenance_task,
         rail_maintenance_deadline: configuration.maximum_deadline(),
-        elevation_task: Some(elevation_task),
         live_thread: Some(live_thread),
     };
     Ok(BankHttpServerInstallation {

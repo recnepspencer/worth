@@ -36,7 +36,6 @@ impl BankHttpServer {
             self.dispatcher_task.take(),
             self.continuation_task.take(),
             self.recovery_task.take(),
-            self.elevation_task.take(),
         ]
         .into_iter()
         .flatten()

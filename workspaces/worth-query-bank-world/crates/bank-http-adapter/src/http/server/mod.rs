@@ -76,7 +76,6 @@ pub struct BankHttpServer {
     server_task: Option<JoinHandle<io::Result<()>>>,
     dispatcher_task: Option<JoinHandle<()>>,
     continuation_task: Option<JoinHandle<()>>,
-    elevation_task: Option<JoinHandle<()>>,
     recovery_task: Option<JoinHandle<()>>,
     rail_maintenance_task: Option<JoinHandle<io::Result<()>>>,
     rail_maintenance_deadline: std::time::Duration,
@@ -212,9 +211,6 @@ impl Drop for BankHttpServer {
         if let Some(task) = self.recovery_task.take() {
             task.abort();
         }
-        if let Some(task) = self.elevation_task.take() {
-            task.abort();
-        }
         if let Some(task) = self.rail_maintenance_task.take() {
             task.abort();
         }
@@ -222,3 +218,22 @@ impl Drop for BankHttpServer {
 }
 
 mod advancement_denial;
+
+mod native_cleanup_custody;
+mod native_route;
+
+mod native_cleanup_command;
+
+mod cleanup_description;
+
+mod native_cleanup_handoff;
+pub use native_cleanup_custody::{BankHttpCleanupRuntime, BankHttpReleasedCleanup};
+
+mod estate_source_command;
+mod estate_source_custody;
+
+mod mutation_advancement;
+
+mod recovery_handoff;
+
+mod native_cleanup_delivery;

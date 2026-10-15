@@ -34,10 +34,12 @@ async fn authority_remains_behind_one_opaque_transport_handle() {
         &notification_request(&action),
     )
     .await;
+    let notified = close_notification(&client, server.local_address(), notified).await;
     let recovery = match notified {
-        BankHttpEstateNotificationOutcome::Applied { recovery, .. } => {
-            recovery.expect("first commit must issue a recovery token")
-        }
+        super::super::super::protocol::BankHttpMutationOutcome::RailRecoveryReady {
+            recovery,
+            ..
+        } => recovery.expect("first commit must issue a recovery token"),
         other => panic!("notification did not commit: {other:?}"),
     };
     assert_recovery_inspects(&client, server.local_address(), &action, &recovery).await;
@@ -59,8 +61,10 @@ async fn lost_notification_response_replays_the_exact_opaque_handle() {
     let action = recovery_action();
     let first = notify(&client, server.local_address(), &action, "notification-a").await;
     let replay = notify(&client, server.local_address(), &action, "notification-b").await;
-    let (first_commit, first_recovery) = applied_notification(first);
-    let (replay_commit, replay_recovery) = applied_notification(replay);
+    let (first_commit, first_recovery) =
+        rail_notification_parts(close_notification(&client, server.local_address(), first).await);
+    let (replay_commit, replay_recovery) =
+        rail_notification_parts(close_notification(&client, server.local_address(), replay).await);
     assert_eq!(replay_commit, first_commit);
     assert_eq!(replay_recovery, first_recovery);
     server.shutdown().await.expect("server should shut down");
@@ -86,7 +90,9 @@ async fn local_token_lifetime_cannot_discard_live_query_recovery() {
         "expiring-notification",
     )
     .await;
-    let (_, recovery) = applied_notification(notified);
+    let (_, recovery) = rail_notification_parts(
+        close_notification(&client, server.local_address(), notified).await,
+    );
     assert_recovery_inspects(&client, server.local_address(), &action, &recovery).await;
     let replay = notify(
         &client,
@@ -95,14 +101,15 @@ async fn local_token_lifetime_cannot_discard_live_query_recovery() {
         "expiring-notification-replay",
     )
     .await;
-    let (_, replay_recovery) = applied_notification(replay);
+    let (_, replay_recovery) =
+        rail_notification_parts(close_notification(&client, server.local_address(), replay).await);
     assert_eq!(replay_recovery, recovery);
     server.shutdown().await.expect("server should shut down");
     assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
-async fn saturated_recovery_registry_rejects_before_the_domain_effect() {
+async fn native_source_capacity_rejects_before_the_domain_effect() {
     let application = Arc::new(application(AccountId::new(100).unwrap()));
     let (server, _mutation_continuation) = bind_application(
         Arc::clone(&application),
@@ -115,7 +122,7 @@ async fn saturated_recovery_registry_rejects_before_the_domain_effect() {
     let server = server.activate();
     let client = reqwest::Client::new();
     let first = recovery_action();
-    applied_notification(notify(&client, server.local_address(), &first, "fill-registry").await);
+    let first_owner = notify(&client, server.local_address(), &first, "fill-registry").await;
 
     let alternate = alternate_recovery_action();
     let denied = notify_with_key(
@@ -140,6 +147,7 @@ async fn saturated_recovery_registry_rejects_before_the_domain_effect() {
             .await,
         DeathNoticeStatus::Reported
     );
+    rail_notification_parts(close_notification(&client, server.local_address(), first_owner).await);
     server.shutdown().await.expect("server should shut down");
     assert!(_mutation_continuation.finish().await.is_ok());
 }
@@ -238,20 +246,43 @@ async fn notify(
     .await
 }
 
-fn applied_notification(
+async fn close_notification(
+    client: &reqwest::Client,
+    address: std::net::SocketAddr,
     outcome: BankHttpEstateNotificationOutcome,
+) -> super::super::super::protocol::BankHttpMutationOutcome {
+    let BankHttpEstateNotificationOutcome::Owning {
+        outcome:
+            super::super::super::protocol::BankHttpMutationOutcome::Completed {
+                custody_id,
+                sequence,
+                ..
+            },
+    } = outcome
+    else {
+        panic!("notification must return its actual completed SourceOnly owner: {outcome:?}")
+    };
+    post_typed(
+        client,
+        address,
+        "/v1/mutations",
+        &super::mutation::command(&custody_id, "close", sequence + 1),
+    )
+    .await
+}
+fn rail_notification_parts(
+    outcome: super::super::super::protocol::BankHttpMutationOutcome,
 ) -> (
     super::super::super::protocol::BankHttpCommitDescription,
     String,
 ) {
     match outcome {
-        BankHttpEstateNotificationOutcome::Applied {
-            commit, recovery, ..
-        } => (
+        super::super::super::protocol::BankHttpMutationOutcome::RailRecoveryReady {
             commit,
-            recovery.expect("first commit or live replay must retain its recovery token"),
-        ),
-        other => panic!("notification did not commit: {other:?}"),
+            recovery: Some(recovery),
+            ..
+        } => (commit, recovery),
+        other => panic!("actual closed source must hand off its rail recovery: {other:?}"),
     }
 }
 

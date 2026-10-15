@@ -167,3 +167,11 @@ pub(super) fn install(
             RevokeProgramDeploymentGrant::reference(),
         )
 }
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+    for ProgramDeploymentRevocationBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
+}

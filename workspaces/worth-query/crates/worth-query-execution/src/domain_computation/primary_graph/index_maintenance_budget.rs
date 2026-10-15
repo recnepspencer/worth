@@ -2,7 +2,8 @@ use worth_relational::facade::indexes::DerivedIndexMaintenanceBudget;
 
 /// Ordinary commit publication pays for changed records, bounded adjacency,
 /// and persistent entry paths. It never admits a full-root reconstruction.
-pub(super) const fn ordinary_index_maintenance_budget() -> DerivedIndexMaintenanceBudget {
+pub(in crate::domain_computation) const fn ordinary_index_maintenance_budget(
+) -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
         maximum_work_units: 4_000_000,
         maximum_cold_record_slots: 0,

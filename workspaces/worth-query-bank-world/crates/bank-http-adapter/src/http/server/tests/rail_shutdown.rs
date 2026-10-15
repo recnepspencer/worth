@@ -57,7 +57,6 @@ async fn failed_http_worker_preserves_rail_route_in_close_failure() {
         })),
         dispatcher_task: None,
         continuation_task: None,
-        elevation_task: None,
         recovery_task: None,
         rail_maintenance_task: None,
         rail_maintenance_deadline: Duration::from_secs(1),

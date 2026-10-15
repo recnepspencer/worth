@@ -22,6 +22,8 @@ pub(super) enum MoneyCommand {
         maximum_results: usize,
         maximum_work: usize,
     },
+    ResumeSource,
+    ReleaseCleanup,
     Close,
 }
 pub(super) struct AdmittedMoneyCommand {
@@ -159,6 +161,38 @@ pub(super) fn admit(
                 },
             )
         }
+        BankHttpMutationRequest::ResumeSource {
+            protocol,
+            request_id,
+            credential,
+            custody_id,
+            sequence,
+            controls,
+        } => (
+            protocol,
+            request_id,
+            credential,
+            custody_id,
+            sequence,
+            controls.deadline_milliseconds,
+            MoneyCommand::ResumeSource,
+        ),
+        BankHttpMutationRequest::ReleaseCleanup {
+            protocol,
+            request_id,
+            credential,
+            custody_id,
+            sequence,
+            controls,
+        } => (
+            protocol,
+            request_id,
+            credential,
+            custody_id,
+            sequence,
+            controls.deadline_milliseconds,
+            MoneyCommand::ReleaseCleanup,
+        ),
         BankHttpMutationRequest::Close {
             protocol,
             request_id,

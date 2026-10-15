@@ -17,6 +17,7 @@ mod fixture;
 mod historical_cancellation;
 mod mutation;
 mod mutation_transport;
+mod native_cleanup;
 mod protocol;
 mod rail_audience_facade;
 mod rail_protocol;

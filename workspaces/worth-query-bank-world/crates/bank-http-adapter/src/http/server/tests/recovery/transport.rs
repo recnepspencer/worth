@@ -63,12 +63,17 @@ async fn unresolved_http_retry_keeps_the_same_token_until_completion() {
     let server = server.activate();
     let client = reqwest::Client::new();
     let action = recovery_action();
-    let (_, token) = applied_notification(
-        notify(
+    let (_, token) = rail_notification_parts(
+        close_notification(
             &client,
             server.local_address(),
-            &action,
-            "unresolved-commit",
+            notify(
+                &client,
+                server.local_address(),
+                &action,
+                "unresolved-commit",
+            )
+            .await,
         )
         .await,
     );
@@ -91,9 +96,10 @@ async fn unresolved_http_retry_keeps_the_same_token_until_completion() {
         "unresolved-replay",
     )
     .await;
+    let replay = close_notification(&client, server.local_address(), replay).await;
     assert!(matches!(
         replay,
-        BankHttpEstateNotificationOutcome::Applied {
+        crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
             recovery: Some(ref replay_token),
             recovery_status: BankHttpRecoveryStatus::TokenIssued,
             ..
@@ -138,15 +144,20 @@ async fn expired_query_recovery_replay_reports_operator_required() {
     let server = server.activate();
     let client = reqwest::Client::new();
     let action = recovery_action();
-    let (_, token) = applied_notification(
-        notify(&client, server.local_address(), &action, "expiring-commit").await,
+    let (_, token) = rail_notification_parts(
+        close_notification(
+            &client,
+            server.local_address(),
+            notify(&client, server.local_address(), &action, "expiring-commit").await,
+        )
+        .await,
     );
     time.advance_to(5_601);
     let replay = notify(&client, server.local_address(), &action, "expired-replay").await;
+    let replay = close_notification(&client, server.local_address(), replay).await;
     assert!(matches!(
         replay,
-        BankHttpEstateNotificationOutcome::Applied {
-            disposition: crate::http::protocol::BankHttpCommitDisposition::AlreadyCommitted,
+        crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
             recovery: None,
             recovery_status: BankHttpRecoveryStatus::OperatorRequired,
             ..

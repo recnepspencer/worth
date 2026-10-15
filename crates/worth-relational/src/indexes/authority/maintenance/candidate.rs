@@ -18,29 +18,34 @@ use super::super::{prepared_generation, IndexAuthority};
 /// Fully derived payload owned by one single-use Relational candidate. Only
 /// catalog installation remains after its canonical branch movement.
 pub(crate) struct PreparedCandidateIndexPublication {
+    prepared: CandidateIndexPreparation,
+    funding: worth_execution::ExecutionMemoryReservation,
+}
+
+struct CandidateIndexPreparation {
     root_id: u64,
     branch_id: BranchId,
     commit_id: crate::history::data::CommitId,
     version_id: crate::identity::data::VersionId,
     schema_version: crate::schema::data::SchemaVersionId,
-    generations: Vec<DerivedIndexGeneration>,
+    publication: crate::runtime::PreparedGenerationBatch,
 }
 
 impl PreparedCandidateIndexPublication {
     pub(crate) fn matches_root(&self, root: &Arc<RelationalBranchRoot>) -> bool {
-        root.id() == self.root_id
-            && root.commit_id() == Some(self.commit_id)
+        root.id() == self.prepared.root_id
+            && root.commit_id() == Some(self.prepared.commit_id)
             && root.canonical_envelope().is_some_and(|envelope| {
-                envelope.branch_context == self.branch_id
-                    && envelope.commit.version_id == self.version_id
+                envelope.branch_context == self.prepared.branch_id
+                    && envelope.commit.version_id == self.prepared.version_id
             })
-            && root.schema_authority().schema_version() == self.schema_version
+            && root.schema_authority().schema_version() == self.prepared.schema_version
     }
 
-    pub(crate) fn publish(self, runtime: &crate::runtime::RelationalRuntime) {
-        for generation in self.generations {
-            runtime.indexes.publish_generation(generation);
-        }
+    pub(crate) fn publish(self, _runtime: &crate::runtime::RelationalRuntime) {
+        let funding = self.funding;
+        self.prepared.publication.publish();
+        drop(funding);
     }
 }
 
@@ -59,8 +64,33 @@ impl IndexAuthority<'_> {
         let (prepared, counts) = super::request_payment::run(execution, budget, |work| {
             self.prepare_candidate_indexes(candidate, index_ids, before, work, execution)
         })?;
+        let (prepared, funding) = prepared.into_funded_parts();
+        let publication = PreparedCandidateIndexPublication { prepared, funding };
         candidate
-            .attach_prepared_indexes(prepared.value)
+            .attach_prepared_indexes(publication)
+            .map(|()| counts)
+            .map_err(|kind| DerivedIndexMaintenanceDenial { kind, work: counts })
+    }
+
+    /// Prepares selected generations from the authentic candidate predecessor.
+    /// The original request funds all work and memory; missing predecessors refuse
+    /// rather than entering population reconstruction. Publication stays candidate-owned.
+    pub fn prepare_incremental_indexes_for_candidate(
+        &self,
+        candidate: &mut PreparedRelationalCommitCandidate,
+        index_ids: &[DerivedIndexId],
+        before: &SnapshotHandle,
+        budget: DerivedIndexMaintenanceBudget,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<DerivedIndexMaintenanceWork, DerivedIndexMaintenanceDenial> {
+        let (prepared, counts) = super::request_payment::run(execution, budget, |work| {
+            work.restrict_to_incremental_indexes();
+            self.prepare_candidate_indexes(candidate, index_ids, Some(before), work, execution)
+        })?;
+        let (prepared, funding) = prepared.into_funded_parts();
+        let publication = PreparedCandidateIndexPublication { prepared, funding };
+        candidate
+            .attach_prepared_indexes(publication)
             .map(|()| counts)
             .map_err(|kind| DerivedIndexMaintenanceDenial { kind, work: counts })
     }
@@ -72,7 +102,7 @@ impl IndexAuthority<'_> {
         before: Option<&SnapshotHandle>,
         work: &mut MaintenanceWork,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<PreparedCandidateIndexPublication, Denial> {
+    ) -> Result<CandidateIndexPreparation, Denial> {
         if candidate.runtime_instance_id() != self.runtime.runtime_instance_id() {
             return Err(Denial::ForeignCandidate);
         }
@@ -139,13 +169,23 @@ impl IndexAuthority<'_> {
                 prepared_generation(&prepared.publication, generation_id, index_id, entries)
             })
             .collect();
-        Ok(PreparedCandidateIndexPublication {
+        let publication = self
+            .runtime
+            .indexes
+            .prepare_generation_batch(generations, |units, bytes| work.prepare(units, bytes))
+            .map_err(|stop| match stop {
+                crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
+                crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
+                    Denial::WorkBudgetExceeded
+                }
+            })?;
+        Ok(CandidateIndexPreparation {
             root_id: prepared_root.id(),
             branch_id,
             commit_id: request.source_commit_id,
             version_id: after.version_id(),
             schema_version: prepared_root.schema_authority().schema_version(),
-            generations,
+            publication,
         })
     }
 }

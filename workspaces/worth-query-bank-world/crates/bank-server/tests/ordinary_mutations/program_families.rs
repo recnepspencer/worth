@@ -113,19 +113,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
             .unwrap_or_else(|(_, cause)| panic!("plain close: {cause:?}"));
         result
     };
-    assert_program_committed(
-        execute!(
-            fixture,
-            teller,
-            mutations::apply_opening_funding(ApplyOpeningFunding {
-                institution: fixture.institution,
-                account: created_personal,
-                amount: Money::from_minor(3_000).unwrap(),
-            }),
-            "opening-funding",
-        ),
-        true,
-    );
+    retained_money::fund_opening(&fixture, &teller, created_personal);
     super::money_families::exercise(&fixture);
 
     let initiation = {
@@ -336,17 +324,8 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         .find(|item| item.purpose() == PostingPurpose::Deposit)
         .expect("deposit journal must be query-visible")
         .journal();
-    assert_program_committed(
-        execute!(
-            fixture,
-            teller,
-            mutations::reverse_journal(ReverseJournal {
-                institution: id(InstitutionId::new, 1),
-                journal,
-                reason: ReversalReason::OperatorCorrection,
-            }),
-            "reverse",
-        ),
-        true,
-    );
+    retained_money::reverse_deposit(&fixture, &teller, journal);
 }
+
+#[path = "program_families/retained_money.rs"]
+mod retained_money;

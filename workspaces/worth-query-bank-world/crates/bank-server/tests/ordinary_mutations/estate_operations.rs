@@ -47,3 +47,6 @@ mod undeclared_external_effect;
 
 #[path = "estate_operations/program_adoption_authorization.rs"]
 mod program_adoption_authorization;
+
+#[path = "estate_operations/owning_sources.rs"]
+mod owning_sources;

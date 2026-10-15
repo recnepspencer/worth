@@ -18,7 +18,7 @@ pub(super) async fn execute_mandatory_review<A>(
     registry: &mut BankHttpElevationRegistry,
     request: AdmittedBankHttpElevationTransition,
     cancellation: WorthQueryCancellationSource,
-) -> BankHttpMandatoryReviewOutcome
+) -> super::super::native_route::NativeRouteResult<BankHttpMandatoryReviewOutcome>
 where
     A: BankHttpApplicationAuthenticator,
 {
@@ -26,24 +26,25 @@ where
     let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token());
     let principal = match application.authenticate(request.credential, &scope).await {
         Ok(principal) => principal,
-        Err(denial) => return review_denied(Some(request_id), denial),
+        Err(denial) => return (review_denied(Some(request_id), denial)).into(),
     };
     let owner = BankHttpAuthenticatedOwner::from_principal(&principal);
     match registry.review_replay(&owner, &request.token, &request.idempotency_key) {
         BankHttpElevationReplay::Applied(facts) => {
-            return reviewed(
+            return (reviewed(
                 request_id,
                 BankHttpCommitDisposition::AlreadyCommitted,
                 facts,
-            );
+            ))
+            .into();
         }
         BankHttpElevationReplay::Conflicting => {
-            return review_denied(Some(request_id), malformed());
+            return (review_denied(Some(request_id), malformed())).into();
         }
         BankHttpElevationReplay::Missing => {}
     }
     let Some(mandatory) = registry.take_mandatory_review(&request.token) else {
-        return review_denied(Some(request_id), stale());
+        return (review_denied(Some(request_id), stale())).into();
     };
     let action = mandatory.context.review_action();
     let outcome = match application
@@ -61,20 +62,31 @@ where
             if let Some(authority) = authority {
                 registry.restore_mandatory_review(&request.token, authority);
             }
-            return review_denied(Some(request_id), estate_denial(denial));
+            return (review_denied(Some(request_id), estate_denial(denial))).into();
         }
     };
     let (reviewed_authority, disposition) = match outcome {
+        BankEstateMandatoryReviewOutcome::CleanupRequired(custody) => {
+            return super::super::native_route::NativeRouteResult::Cleanup {
+                owner,
+                custody,
+                outcome: BankHttpMandatoryReviewOutcome::CleanupRequired {
+                    request_id: request_id.clone(),
+                    custody_id: request_id,
+                    sequence: 1,
+                },
+            };
+        }
         BankEstateMandatoryReviewOutcome::ProductStale(_, mandatory) => {
             registry.restore_mandatory_review(&request.token, mandatory);
-            return review_denied(Some(request_id), stale());
+            return (review_denied(Some(request_id), stale())).into();
         }
         BankEstateMandatoryReviewOutcome::NoEffect(_, mandatory) => {
             registry.restore_mandatory_review(&request.token, mandatory);
-            return review_denied(Some(request_id), unavailable());
+            return (review_denied(Some(request_id), unavailable())).into();
         }
         BankEstateMandatoryReviewOutcome::ProductUnpublished(_) => {
-            return review_denied(Some(request_id), indeterminate());
+            return (review_denied(Some(request_id), indeterminate())).into();
         }
         BankEstateMandatoryReviewOutcome::Reviewed(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
@@ -84,24 +96,24 @@ where
         }
         BankEstateMandatoryReviewOutcome::Stale { mandatory, .. } => {
             registry.restore_mandatory_review(&request.token, mandatory);
-            return review_denied(Some(request_id), stale());
+            return (review_denied(Some(request_id), stale())).into();
         }
         BankEstateMandatoryReviewOutcome::Cancelled(mandatory) => {
             registry.restore_mandatory_review(&request.token, mandatory);
-            return review_denied(Some(request_id), cancelled());
+            return (review_denied(Some(request_id), cancelled())).into();
         }
         BankEstateMandatoryReviewOutcome::TimedOut => {
-            return review_denied(Some(request_id), deadline_exceeded());
+            return (review_denied(Some(request_id), deadline_exceeded())).into();
         }
         BankEstateMandatoryReviewOutcome::Denied { mandatory, .. }
         | BankEstateMandatoryReviewOutcome::Aborted(mandatory) => {
             registry.restore_mandatory_review(&request.token, mandatory);
-            return review_denied(Some(request_id), unavailable());
+            return (review_denied(Some(request_id), unavailable())).into();
         }
         BankEstateMandatoryReviewOutcome::Deferred(_)
         | BankEstateMandatoryReviewOutcome::SettlementDeferred(_)
         | BankEstateMandatoryReviewOutcome::Indeterminate => {
-            return review_denied(Some(request_id), indeterminate());
+            return (review_denied(Some(request_id), indeterminate())).into();
         }
     };
     let facts = BankHttpElevationReviewFacts {
@@ -109,7 +121,7 @@ where
         changed_record_count: reviewed_authority.review_changed_record_count(),
     };
     registry.install_reviewed(&request.token, owner, request.idempotency_key, facts);
-    reviewed(request_id, disposition, facts)
+    reviewed(request_id, disposition, facts).into()
 }
 
 fn reviewed(

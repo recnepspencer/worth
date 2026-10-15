@@ -174,6 +174,7 @@ pub(super) const fn response_status(kind: BankHttpDenialKind) -> StatusCode {
             StatusCode::REQUEST_TIMEOUT
         }
         BankHttpDenialKind::Stale => StatusCode::CONFLICT,
+        BankHttpDenialKind::ManagedCleanupRequired => StatusCode::SERVICE_UNAVAILABLE,
         BankHttpDenialKind::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
         BankHttpDenialKind::ResourceExhausted | BankHttpDenialKind::Saturated => {
             StatusCode::TOO_MANY_REQUESTS

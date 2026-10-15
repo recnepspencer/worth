@@ -34,7 +34,7 @@ runtime-issued release authority and fresh admitted scope; an actor business
 grant is not a substitute for those cleanup rights.
 
 A record occupies one globally bounded permit before its first advance. Commands
-for the same ID route to one persistent worker. Each accepted command increments
+for the same ID route to one persistent worker on a dedicated execution thread. Each accepted command increments
 that record's sequence exactly once. A stale or duplicate sequence performs no
 second advancement and replays no protected query rows. Native refusal retains
 the returned owner; a sequence refused before record admission is not consumed.
@@ -91,6 +91,52 @@ successful shutdown joins the mutation workers. After listener loss,
 refusal returns the continuation. Rail completion custody retains
 its separate handoff contract.
 
+## Estate and native cleanup custody
+
+Estate notification and disbursement construct declared SourceCompletion owners.
+Their bounded, client-chosen request ID is the initial custody address (sequence
+1), independent of the native key and permissions. An `owning` response contains
+the actual operation posture. Use `resume_source` with fresh effect controls;
+this no-output declaration needs no retained history argument. A successful
+`close` of a completed estate owner uses `close_with_evidence` and transfers its
+original witness to separate rail recovery. `rail_recovery_ready` reports the
+actual recovery token or the native completed/operator-required claim posture.
+It does not manufacture the handler's result after recovery.
+
+`release_cleanup` invokes the native owner's physical cleanup under a fresh
+bounded issuer. `collection_released` describes only that cleanup collection;
+the original source owner and publication uncertainty remain retained. It does
+not authorize another source effect, establish completion, or clear a live
+unpublished operation. Failed release leaves exact custody in its worker.
+
+Four elevation transitions can return `cleanup_required`. Their actual native
+owner and original uncommitted evidence occupy the same finite transport custody.
+They never expire with an elevation token. Execution and physical retry remain
+on the original dedicated thread. After `cleanup_released`, the host calls
+`take_released_cleanup` with fresh authenticated close controls to receive a
+move-only `BankHttpReleasedCleanup`. The reserved transport delivery guard returns
+that exact evidence if the handoff response is not consumed; shutdown sees its
+outstanding custody. `into_parts()` transfers a `BankHttpCleanupRuntime` keeper
+and the actual `BankReleasedManagedCleanup`, whose physical receipt remains
+separate from its original business outcome. This handoff does not restore a
+consumed requested, approved, or mandatory-review authority.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let handoff = continuation.take_released_cleanup(fresh_close_command).await?;
+let (keeper, evidence) = handoff.into_parts();
+let original = evidence.business();
+let physical = evidence.receipt();
+// Retain keeper while using the actual runtime's fresh inspection/recovery entrances.
+let runtime = keeper.runtime();
+```
+
+Listener-independent `inspect_recovery` and `retry_recovery` delegate to the
+existing estate recovery registry under fresh credentials. They do not advance
+the source handler. The continuation keeps this actual registry and installation
+alive across listener loss; a queued rail retry can also return `outcome_unknown`.
+
 ## How it relates to other features
 
 Payment continuation describes a business payment; estate recovery owns external
@@ -100,8 +146,9 @@ not a current-view reconstruction from commit receipt counts.
 
 ## Inspection and debugging
 
-Wire outcomes are `rejected`, `outcome_unknown`, `pending`, `refused`, `completed`,
-`terminal`, `delivered` and `closed`. A close refusal does not discharge custody.
+Wire outcomes distinguish `rejected`, `outcome_unknown`, `pending`, `refused`,
+`completed`, `terminal`, `delivered`, physical collection release, rail handoff
+and native `closed`. A close refusal does not discharge custody.
 Duplicate live custody IDs and exhausted capacity reject before another effect.
 A full command queue reports `saturated`; a closed worker reports `unavailable`.
 `continuation.runtime()` lends the exact retained installation for independent

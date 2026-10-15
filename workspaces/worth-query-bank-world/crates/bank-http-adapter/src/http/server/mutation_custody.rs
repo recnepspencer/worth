@@ -106,6 +106,21 @@ macro_rules! custody {
                     }
                 }
             }
+            fn release_cleanup(
+                &mut self,
+                request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
+            ) -> Result<WorthQueryOperationCleanupReceipt, BankHttpDenial> {
+                match self {
+                    Self::Active(operation) => operation.release_cleanup(request),
+                    Self::Terminal(operation) => operation.release_cleanup(request),
+                    Self::Completed(_) => {
+                        return Err(super::mutation_refusal::denial(
+                            super::super::protocol::BankHttpDenialKind::Stale,
+                        ))
+                    }
+                }
+                .map_err(super::mutation_refusal::close_denial)
+            }
             fn observation(&self) -> Option<&WorthQueryApplicationReadObservation> {
                 match self {
                     Self::Completed(operation) => match operation.evidence() {
@@ -119,9 +134,12 @@ macro_rules! custody {
             }
             fn description(&self) -> CustodyDescription {
                 match self {
-                    Self::Active(operation) => {
-                        CustodyDescription::Pending(operation.posture().into())
-                    }
+                    Self::Active(operation) => CustodyDescription::Pending(
+                        operation.posture().into(),
+                        operation
+                            .managed_cleanup_failure()
+                            .map(super::cleanup_description::failure),
+                    ),
                     Self::Terminal(_) => CustodyDescription::Terminal,
                     Self::Completed(operation) => {
                         let (receipt, recovered) = match operation.evidence() {
@@ -150,7 +168,10 @@ pub(super) enum MoneyCustody {
     SendMoney(SendMoneyCustody),
 }
 pub(super) enum CustodyDescription {
-    Pending(super::super::protocol::BankHttpMutationPosture),
+    Pending(
+        super::super::protocol::BankHttpMutationPosture,
+        Option<super::super::protocol::BankHttpNativeCleanupFailureDescription>,
+    ),
     Completed {
         recovered: bool,
         commit: BankHttpCommitDescription,
@@ -194,6 +215,16 @@ impl MoneyCustody {
                 .map_err(|(owner, denial)| (Self::SendMoney(owner), denial)),
         }
     }
+    pub(super) fn release_cleanup(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
+    ) -> Result<WorthQueryOperationCleanupReceipt, BankHttpDenial> {
+        match self {
+            Self::Deposit(owner) => owner.release_cleanup(request),
+            Self::Withdraw(owner) => owner.release_cleanup(request),
+            Self::SendMoney(owner) => owner.release_cleanup(request),
+        }
+    }
     pub(super) fn observation(&self) -> Option<&WorthQueryApplicationReadObservation> {
         match self {
             Self::Deposit(owner) => owner.observation(),
@@ -209,14 +240,14 @@ impl MoneyCustody {
         }
     }
 }
-pub(super) struct MutationRecord {
+pub(super) struct MoneyRecord {
     pub(super) owner: super::authenticated_owner::BankHttpAuthenticatedOwner,
     pub(super) sequence: u64,
     pub(super) account: AccountId,
     pub(super) custody: MoneyCustody,
     pub(super) _permit: tokio::sync::OwnedSemaphorePermit,
 }
-fn describe_commit(
+pub(super) fn describe_commit(
     receipt: &worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt,
 ) -> BankHttpCommitDescription {
     let preconditions = receipt.precondition_comparison();
@@ -230,4 +261,14 @@ fn describe_commit(
             .mutation_work()
             .and_then(|work| usize::try_from(work.invariant_work_units()).ok()),
     }
+}
+
+pub(super) enum MutationRecord {
+    Handoff(super::native_cleanup_custody::HandoffRecord),
+    Money(MoneyRecord),
+    Native(super::native_cleanup_custody::NativeCleanupRecord),
+    Estate(
+        super::estate_source_custody::EstateSourceRecord,
+        tokio::sync::OwnedSemaphorePermit,
+    ),
 }

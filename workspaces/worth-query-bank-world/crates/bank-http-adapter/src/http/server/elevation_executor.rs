@@ -3,8 +3,7 @@ use std::time::Instant;
 
 use bank_domain::estate::EstateAction;
 use bank_domain::proposals::BankIdempotencyKey;
-use tokio::sync::{mpsc, oneshot};
-use tokio::task::JoinHandle;
+use tokio::sync::oneshot;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource;
 
 use super::super::protocol::{
@@ -45,222 +44,273 @@ pub(super) struct AdmittedBankHttpElevationTransition {
 
 #[derive(Clone)]
 pub(super) struct BankHttpElevationExecutor {
-    sender: mpsc::Sender<ElevationCommand>,
+    request: Arc<
+        dyn Fn(
+                AdmittedBankHttpElevationRequest,
+                WorthQueryCancellationSource,
+                oneshot::Sender<BankHttpElevationRequestOutcome>,
+            ) + Send
+            + Sync,
+    >,
+    approve: Arc<
+        dyn Fn(
+                AdmittedBankHttpElevationTransition,
+                WorthQueryCancellationSource,
+                oneshot::Sender<BankHttpElevationApprovalOutcome>,
+            ) + Send
+            + Sync,
+    >,
+    revoke: Arc<
+        dyn Fn(
+                AdmittedBankHttpElevationTransition,
+                WorthQueryCancellationSource,
+                oneshot::Sender<BankHttpElevationRevocationOutcome>,
+            ) + Send
+            + Sync,
+    >,
+    review: Arc<
+        dyn Fn(
+                AdmittedBankHttpElevationTransition,
+                WorthQueryCancellationSource,
+                oneshot::Sender<BankHttpMandatoryReviewOutcome>,
+            ) + Send
+            + Sync,
+    >,
 }
-
-enum ElevationCommand {
-    Request {
-        request: AdmittedBankHttpElevationRequest,
-        cancellation: WorthQueryCancellationSource,
-        response: oneshot::Sender<BankHttpElevationRequestOutcome>,
-    },
-    Approve {
-        request: AdmittedBankHttpElevationTransition,
-        cancellation: WorthQueryCancellationSource,
-        response: oneshot::Sender<BankHttpElevationApprovalOutcome>,
-    },
-    Revoke {
-        request: AdmittedBankHttpElevationTransition,
-        cancellation: WorthQueryCancellationSource,
-        response: oneshot::Sender<BankHttpElevationRevocationOutcome>,
-    },
-    Review {
-        request: AdmittedBankHttpElevationTransition,
-        cancellation: WorthQueryCancellationSource,
-        response: oneshot::Sender<BankHttpMandatoryReviewOutcome>,
-    },
-}
-
 impl BankHttpElevationExecutor {
-    pub(super) fn start<A>(
+    pub(super) fn start<A: BankHttpApplicationAuthenticator>(
         application: Arc<A>,
-        queue_capacity: usize,
-        registry_capacity: usize,
+        _queue_capacity: usize,
+        capacity: usize,
         lifetime: std::time::Duration,
-    ) -> (Self, JoinHandle<()>)
-    where
-        A: BankHttpApplicationAuthenticator,
-    {
-        let (sender, receiver) = mpsc::channel(queue_capacity);
-        let task = tokio::spawn(run(
-            application,
-            receiver,
-            BankHttpElevationRegistry::new(registry_capacity, lifetime),
-        ));
-        (Self { sender }, task)
+        mutations: super::mutation_executor::BankHttpMutationContinuation,
+    ) -> Self {
+        let registry = Arc::new(tokio::sync::Mutex::new(BankHttpElevationRegistry::new(
+            capacity, lifetime,
+        )));
+        let request = {
+            let application = Arc::clone(&application);
+            let registry = Arc::clone(&registry);
+            let mutations = mutations.clone();
+            Arc::new(
+                move |request: AdmittedBankHttpElevationRequest, cancellation, response| {
+                    let application = Arc::clone(&application);
+                    let registry = Arc::clone(&registry);
+                    let id = request.request_id.clone();
+                    let denied_id = id.clone();
+                    mutations.submit_native(
+                        id,
+                        super::native_route::job(
+                            move || async move {
+                                let mut registry = registry.lock().await;
+                                execute_request(
+                                    application.as_ref(),
+                                    &mut registry,
+                                    request,
+                                    cancellation,
+                                )
+                                .await
+                            },
+                            move |kind| {
+                                request_denied(
+                                    Some(denied_id),
+                                    super::mutation_refusal::denial(kind),
+                                )
+                            },
+                            response,
+                        ),
+                    );
+                },
+            )
+        };
+        let approve = {
+            let application = Arc::clone(&application);
+            let registry = Arc::clone(&registry);
+            let mutations = mutations.clone();
+            Arc::new(
+                move |request: AdmittedBankHttpElevationTransition, cancellation, response| {
+                    let application = Arc::clone(&application);
+                    let registry = Arc::clone(&registry);
+                    let id = request.request_id.clone();
+                    let denied_id = id.clone();
+                    mutations.submit_native(
+                        id,
+                        super::native_route::job(
+                            move || async move {
+                                let mut registry = registry.lock().await;
+                                execute_approval(
+                                    application.as_ref(),
+                                    &mut registry,
+                                    request,
+                                    cancellation,
+                                )
+                                .await
+                            },
+                            move |kind| {
+                                approval_denied(
+                                    Some(denied_id),
+                                    super::mutation_refusal::denial(kind),
+                                )
+                            },
+                            response,
+                        ),
+                    );
+                },
+            )
+        };
+        let revoke = {
+            let application = Arc::clone(&application);
+            let registry = Arc::clone(&registry);
+            let mutations = mutations.clone();
+            Arc::new(
+                move |request: AdmittedBankHttpElevationTransition, cancellation, response| {
+                    let application = Arc::clone(&application);
+                    let registry = Arc::clone(&registry);
+                    let id = request.request_id.clone();
+                    let denied_id = id.clone();
+                    mutations.submit_native(
+                        id,
+                        super::native_route::job(
+                            move || async move {
+                                let mut registry = registry.lock().await;
+                                execute_revocation(
+                                    application.as_ref(),
+                                    &mut registry,
+                                    request,
+                                    cancellation,
+                                )
+                                .await
+                            },
+                            move |kind| {
+                                revocation_denied(
+                                    Some(denied_id),
+                                    super::mutation_refusal::denial(kind),
+                                )
+                            },
+                            response,
+                        ),
+                    );
+                },
+            )
+        };
+        let review = {
+            let application = Arc::clone(&application);
+            let registry = Arc::clone(&registry);
+            let mutations = mutations.clone();
+            Arc::new(
+                move |request: AdmittedBankHttpElevationTransition, cancellation, response| {
+                    let application = Arc::clone(&application);
+                    let registry = Arc::clone(&registry);
+                    let id = request.request_id.clone();
+                    let denied_id = id.clone();
+                    mutations.submit_native(
+                        id,
+                        super::native_route::job(
+                            move || async move {
+                                let mut registry = registry.lock().await;
+                                execute_mandatory_review(
+                                    application.as_ref(),
+                                    &mut registry,
+                                    request,
+                                    cancellation,
+                                )
+                                .await
+                            },
+                            move |kind| {
+                                review_denied(
+                                    Some(denied_id),
+                                    super::mutation_refusal::denial(kind),
+                                )
+                            },
+                            response,
+                        ),
+                    );
+                },
+            )
+        };
+        Self {
+            request,
+            approve,
+            revoke,
+            review,
+        }
     }
-
     pub(super) async fn request(
         &self,
         request: AdmittedBankHttpElevationRequest,
     ) -> BankHttpElevationRequestOutcome {
-        let request_id = request.request_id.clone();
+        let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let _cancel = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
-        if self
-            .sender
-            .try_send(ElevationCommand::Request {
-                request,
-                cancellation,
-                response,
-            })
-            .is_err()
-        {
-            return request_denied(Some(request_id), saturated());
-        }
+        (self.request)(request, cancellation, response);
         match tokio::time::timeout_at(deadline.into(), receiver).await {
             Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => request_denied(Some(request_id), unavailable()),
-            Err(_) => request_denied(Some(request_id), deadline_exceeded()),
+            _ => BankHttpElevationRequestOutcome::OutcomeUnknown {
+                request_id: id.clone(),
+                custody_id: id,
+            },
         }
     }
-
     pub(super) async fn approve(
         &self,
         request: AdmittedBankHttpElevationTransition,
     ) -> BankHttpElevationApprovalOutcome {
-        let request_id = request.request_id.clone();
+        let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let _cancel = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
-        if self
-            .sender
-            .try_send(ElevationCommand::Approve {
-                request,
-                cancellation,
-                response,
-            })
-            .is_err()
-        {
-            return approval_denied(Some(request_id), saturated());
-        }
+        (self.approve)(request, cancellation, response);
         match tokio::time::timeout_at(deadline.into(), receiver).await {
             Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => approval_denied(Some(request_id), unavailable()),
-            Err(_) => approval_denied(Some(request_id), deadline_exceeded()),
+            _ => BankHttpElevationApprovalOutcome::OutcomeUnknown {
+                request_id: id.clone(),
+                custody_id: id,
+            },
         }
     }
-
     pub(super) async fn revoke(
         &self,
         request: AdmittedBankHttpElevationTransition,
     ) -> BankHttpElevationRevocationOutcome {
-        let request_id = request.request_id.clone();
+        let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let _cancel = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
-        if self
-            .sender
-            .try_send(ElevationCommand::Revoke {
-                request,
-                cancellation,
-                response,
-            })
-            .is_err()
-        {
-            return revocation_denied(Some(request_id), saturated());
-        }
+        (self.revoke)(request, cancellation, response);
         match tokio::time::timeout_at(deadline.into(), receiver).await {
             Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => revocation_denied(Some(request_id), unavailable()),
-            Err(_) => revocation_denied(Some(request_id), deadline_exceeded()),
+            _ => BankHttpElevationRevocationOutcome::OutcomeUnknown {
+                request_id: id.clone(),
+                custody_id: id,
+            },
         }
     }
-
     pub(super) async fn review(
         &self,
         request: AdmittedBankHttpElevationTransition,
     ) -> BankHttpMandatoryReviewOutcome {
-        let request_id = request.request_id.clone();
+        let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let _cancel = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
-        if self
-            .sender
-            .try_send(ElevationCommand::Review {
-                request,
-                cancellation,
-                response,
-            })
-            .is_err()
-        {
-            return review_denied(Some(request_id), saturated());
-        }
+        (self.review)(request, cancellation, response);
         match tokio::time::timeout_at(deadline.into(), receiver).await {
             Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => review_denied(Some(request_id), unavailable()),
-            Err(_) => review_denied(Some(request_id), deadline_exceeded()),
+            _ => BankHttpMandatoryReviewOutcome::OutcomeUnknown {
+                request_id: id.clone(),
+                custody_id: id,
+            },
         }
     }
 }
-
 struct CancelOnDrop(WorthQueryCancellationSource);
-
 impl Drop for CancelOnDrop {
     fn drop(&mut self) {
         self.0.cancel();
-    }
-}
-
-async fn run<A>(
-    application: Arc<A>,
-    mut receiver: mpsc::Receiver<ElevationCommand>,
-    mut registry: BankHttpElevationRegistry,
-) where
-    A: BankHttpApplicationAuthenticator,
-{
-    while let Some(command) = receiver.recv().await {
-        match command {
-            ElevationCommand::Request {
-                request,
-                cancellation,
-                response,
-            } => {
-                let _ = response.send(
-                    execute_request(application.as_ref(), &mut registry, request, cancellation)
-                        .await,
-                );
-            }
-            ElevationCommand::Approve {
-                request,
-                cancellation,
-                response,
-            } => {
-                let _ = response.send(
-                    execute_approval(application.as_ref(), &mut registry, request, cancellation)
-                        .await,
-                );
-            }
-            ElevationCommand::Revoke {
-                request,
-                cancellation,
-                response,
-            } => {
-                let _ = response.send(
-                    execute_revocation(application.as_ref(), &mut registry, request, cancellation)
-                        .await,
-                );
-            }
-            ElevationCommand::Review {
-                request,
-                cancellation,
-                response,
-            } => {
-                let _ = response.send(
-                    execute_mandatory_review(
-                        application.as_ref(),
-                        &mut registry,
-                        request,
-                        cancellation,
-                    )
-                    .await,
-                );
-            }
-        }
     }
 }

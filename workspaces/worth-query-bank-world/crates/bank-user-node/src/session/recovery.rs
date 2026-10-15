@@ -39,7 +39,14 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeEstateNotificationOutcome::Forwarded { response },
-            Err(kind) => notification_denied(kind),
+            Err(_) => BankUserNodeEstateNotificationOutcome::Forwarded {
+                response: bank_http_adapter::BankHttpEstateNotificationOutcome::Owning {
+                    outcome: bank_http_adapter::BankHttpMutationOutcome::OutcomeUnknown {
+                        request_id: upstream.request_id.clone(),
+                        custody_id: upstream.request_id.clone(),
+                    },
+                },
+            },
         }
     }
 

@@ -34,6 +34,7 @@ pub(crate) use history::{
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
 pub(crate) use indexing::{
     ExactLookupInputs, IndexDefinitionReadBinding, IndexingState, IndexingSubsystem,
+    PreparedGenerationBatch,
 };
 pub(crate) use lineage::{LineageState, LineageSubsystem, ValidatedLineageEventBatch};
 pub(crate) use lineage_identity::LineageIdentityAllocator;

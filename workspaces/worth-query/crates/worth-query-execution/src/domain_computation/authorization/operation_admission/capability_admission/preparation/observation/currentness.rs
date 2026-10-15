@@ -88,6 +88,14 @@ where
 {
     validate_approval_lifecycle(&prepared)?;
     let principal = capture_current_principal(&prepared)?;
+    super::super::selector_indexes::prepare(
+        execution,
+        prepared.runtime(),
+        prepared.graph_work(),
+        prepared.projection(),
+        prepared.capability().contract().operation(),
+        &principal.layout,
+    )?;
     let observation = observe_relational_truth(execution, &prepared, &principal)?;
     validate_admission(&prepared, &observation)?;
     prepared.record_admission_decisions();
