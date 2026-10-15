@@ -13,6 +13,7 @@ mod execution;
 mod prepared_entity_field_lookup;
 mod prepared_field_certification;
 mod prepared_lookup_admission;
+mod related_entity_prefix;
 #[cfg(test)]
 mod routing;
 #[cfg(test)]
