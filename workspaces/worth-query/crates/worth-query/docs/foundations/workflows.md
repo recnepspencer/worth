@@ -312,10 +312,11 @@ The sequence:
 6. **External effects** settle through [owner custody](#owner-custody) and an `AwaitInbound` node.
 7. **Advance again** to move to the successor or terminal.
 
-Advancing at a proposal slot returns `PreparationDenied` whose kind is
-`WorkflowTransitionNodeUnsupported` and whose subject is the node path. It means "this node
-needs a proposal", not a fault. There is no `AwaitingProposal` outcome (see
-[Known gaps](#known-gaps)).
+Advancing at a proposal slot returns `AwaitingProposal(required)`. Inspect
+`required.node_path()`, `operation()` and `input_type()` to prepare the actual
+proposal input, then call `prepare_workflow_proposal` under fresh admission.
+The need grants no authority and waiting records no transition. This joined
+source is awaiting compiler and runtime qualification (see [Known gaps](#known-gaps)).
 
 ## Author a definition
 
@@ -556,6 +557,7 @@ authoring control intent:
 | Variant | What the instance needs next |
 |---|---|
 | `Completed(PerformedWorkflowTransition)` | Nothing; a step was recorded. `node_path()` names it; `terminal()` says whether the instance ended. |
+| `AwaitingProposal(RequiredWorkflowProposal)` | A proposal of the named operation/input; fresh `prepare_workflow_proposal` admission owns publication. Joined source; qualification pending. |
 | `AwaitingActor(RequiredWorkflowActor)` | The pumping principal is not authorized for this step. `instance()` names the instance; `denial()` says why. A principal authorized for the step pumps the same instance again. |
 | `AwaitingAssessment(RequiredWorkflowAssessment)` | Evidence from an assessment. `node_path()` names it. |
 | `AwaitingCondition(RequiredWorkflowCondition)` | A condition result. |
@@ -568,9 +570,11 @@ authoring control intent:
 | `AuthenticationDenied(..)` | The authentication event was refused. |
 | `IdempotencyDenied(..)` | The key conflicts with a different recorded request. |
 
-At a proposal slot, `execute()` returns `PreparationDenied` whose kind is
-`WorkflowTransitionNodeUnsupported` and whose subject is the node path: the
-node needs a proposal, not another advance.
+At a proposal slot, `execute()` returns `AwaitingProposal(required)` with the
+actual node, operation, input type and occurrence. `run_workflow` stops with
+`Outcome(WorkflowProgressOutcome::AwaitingProposal(required))`; supply a real
+proposal through fresh admission before advancing again. This source surface
+still awaits joined compiler and runtime qualification.
 
 `WorthQueryWorkflowAdvancePreparationDenial` has `RuntimeMismatch`,
 `RequestAdmission(..)`, `TransitionPreparation(..)`, `Authentication(..)`, and
@@ -1078,7 +1082,7 @@ until a row is removed, its "Do not" rule stands and no substitute may be built.
 | Broader workflow discovery and state/history views | The unreleased original-intent retained-read surface above exposes native state and recorded paths, with independent audit withholding; its joined compilation/runtime certification is pending. Enumeration, proposals/approvals and live views remain unfinished. | Views never authorize advancement. Do not mirror kernel state into your schema as authority; use fresh native command admission. |
 | Proposal reacquisition and subject/definition enumeration remain unfinished (published references have no public constructor or serialization) | Keep the original native discovery intent for exact governed instance lookup; preserve proposal references until their governed reacquisition lands | Do not serialize, forge, or re-derive references; do not build an instance registry and treat it as authority. |
 | Full proposal/approval audit observation and recorded-role certification remain unfinished | The original-intent read uses canonical native actor fields under a separate audit grant; the new source surface still awaits joined certification | Do not supply an actor field or resolve a current logical identity to replace the historical native actor. |
-| No outcome names "awaiting a proposal" | `PreparationDenied(WorkflowTransitionNodeUnsupported)` with the node path | Do not treat it as a fault to retry blindly. |
+| Current proposal slot (joined M9.17.6.5 source; qualification pending) | `AwaitingProposal(RequiredWorkflowProposal)` names the actual instance, node path, operation, input type and occurrence. Ordinary `run_workflow` returns it through `Outcome`. | Propose through fresh `prepare_workflow_proposal` admission. The need grants no authority; waiting publishes no transition. |
 
 ## Cancellation
 
@@ -1511,6 +1515,7 @@ not grant authority or replace the lifecycle explanations above.
 
 | Variant | Shape |
 | --- | --- |
+| `AwaitingProposal` | tuple (RequiredWorkflowProposal); joined M9.17.6.5 source, qualification pending |
 | `AwaitingActor` | tuple (RequiredWorkflowActor) |
 | `AwaitingAssessment` | tuple (RequiredWorkflowAssessment) |
 | `AwaitingCondition` | tuple (RequiredWorkflowCondition) |

@@ -196,9 +196,10 @@ pub use workflow_transition_program::{
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    WorkflowApprovalDecision, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
-    WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
-    WorthQueryWorkflowActorContext, WorthQueryWorkflowAdvanceAdapter,
+    RequiredWorkflowProposal, WorkflowApprovalDecision, WorkflowOperationAuthority,
+    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
+    WorkflowTransitionPreparationDenial, WorthQueryWorkflowActorContext,
+    WorthQueryWorkflowAdvanceAdapter,
 };
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;

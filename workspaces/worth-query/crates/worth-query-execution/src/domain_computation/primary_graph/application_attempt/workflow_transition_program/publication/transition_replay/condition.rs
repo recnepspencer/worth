@@ -75,6 +75,12 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 replays,
                 ..
             }
+            | Self::AwaitingProposal {
+                read_set,
+                transition_identity_locator,
+                replays,
+                ..
+            }
             | Self::AwaitingApproval {
                 read_set,
                 transition_identity_locator,

@@ -34,12 +34,12 @@ impl Host {
     ) -> PublishedWorkflowInstanceRef {
         self.begin_with_proposal(definition, retention, key).0
     }
-    pub fn begin_with_proposal(
+    pub fn begin_without_proposal(
         &self,
         definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
         retention: u64,
         key: u64,
-    ) -> (PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef) {
+    ) -> PublishedWorkflowInstanceRef {
         let runtime = self.workflow.runtime();
         let scope = model::operator_identity::request_scope();
         let principal =
@@ -81,7 +81,19 @@ impl Host {
         let WorkflowInstanceStartOutcome::Started(started) = started else {
             panic!("real instance start")
         };
-        let instance = started.instance().clone();
+        started.instance().clone()
+    }
+    pub fn begin_with_proposal(
+        &self,
+        definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
+        retention: u64,
+        key: u64,
+    ) -> (PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef) {
+        let instance = self.begin_without_proposal(definition, retention, key);
+        let runtime = self.workflow.runtime();
+        let scope = model::operator_identity::request_scope();
+        let principal =
+            model::operator_identity::authenticate_operator(runtime.installed_schema(), &scope);
         let next = key + 2;
         let proposal = runtime
             .request(&principal, &scope)

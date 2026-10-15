@@ -56,8 +56,8 @@ pub use publication::{
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowCondition,
     PreparedWorkflowOperation, RequiredWorkflowActor, RequiredWorkflowApproval,
     RequiredWorkflowAssessment, RequiredWorkflowCondition, RequiredWorkflowEvidence,
-    RequiredWorkflowOperation, WorkflowApprovalDecision, WorkflowOperationAuthority,
-    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
+    RequiredWorkflowOperation, RequiredWorkflowProposal, WorkflowApprovalDecision,
+    WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
 };
 
 #[derive(Clone, Eq, PartialEq)]

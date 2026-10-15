@@ -12,6 +12,10 @@ use crate::domain_computation::primary_graph::workflow::instance::{
     WorkflowTransitionReplayProjection,
 };
 
+mod proposal_need;
+pub(in crate::domain_computation::primary_graph) use proposal_need::{
+    select_current_proposal_need, SelectedWorkflowProposal,
+};
 mod approval;
 mod collection;
 mod identity;
@@ -255,19 +259,13 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
     let progress = progress_basis.progress();
     let node = select_current_node(compiled, progress)?;
-    match node.kind() {
-        CompiledWorkflowNodeKind::Operation {
-            operation: installed_operation,
-            input_type: installed_input_type,
-            requires_workflow_authority: false,
-            ..
-        } if installed_operation == operation && installed_input_type == input_type => {}
-        _ => {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
-                node.path(),
-            ))
-        }
+    if !proposal_need::proposal_node(node).is_some_and(|selected| {
+        selected.operation == operation && selected.input_type == input_type
+    }) {
+        return Err(denial(
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
+            node.path(),
+        ));
     }
     let occurrence = progress.next_occurrence();
     select_transition(
@@ -298,19 +296,13 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_replay_trans
             "settled proposal node is absent from the compiled node inventory",
         )
     })?;
-    match node.kind() {
-        CompiledWorkflowNodeKind::Operation {
-            operation: installed_operation,
-            input_type: installed_input_type,
-            requires_workflow_authority: false,
-            ..
-        } if installed_operation == operation && installed_input_type == input_type => {}
-        _ => {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
-                node.path(),
-            ))
-        }
+    if !proposal_need::proposal_node(node).is_some_and(|selected| {
+        selected.operation == operation && selected.input_type == input_type
+    }) {
+        return Err(denial(
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
+            node.path(),
+        ));
     }
     if replay.node_path != node.path() || replay.terminal {
         return Err(denial(

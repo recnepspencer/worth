@@ -11,11 +11,12 @@ use crate::domain_computation::primary_graph::workflow::instance::progression::{
 
 mod selection;
 pub(in crate::domain_computation::primary_graph) use selection::{
-    select_assessment_collection, select_current_transition, select_navigation_back_transition,
-    select_proposal_replay_transition, select_proposal_transition,
-    select_settled_replay_transition, select_terminal_transition, SelectedWorkflowApproval,
-    SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowInbound,
-    SelectedWorkflowOperation, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
+    select_assessment_collection, select_current_proposal_need, select_current_transition,
+    select_navigation_back_transition, select_proposal_replay_transition,
+    select_proposal_transition, select_settled_replay_transition, select_terminal_transition,
+    SelectedWorkflowApproval, SelectedWorkflowAssessment, SelectedWorkflowCondition,
+    SelectedWorkflowInbound, SelectedWorkflowOperation, SelectedWorkflowProposal,
+    SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
 };
 
 pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransition<
