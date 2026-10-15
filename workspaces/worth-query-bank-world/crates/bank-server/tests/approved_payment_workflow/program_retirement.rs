@@ -98,6 +98,6 @@ fn p2_retirement_waits_for_the_exact_workflow_instance_to_finish() {
     );
     assert!(matches!(
         denied,
-        Err(BankProgramAdoptionPreparationDenial::LiveWorkflowInstances)
+        Err(BankProgramAdoptionPreparationDenial::Query(denial)) if matches!(*denial, worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))
     ));
 }

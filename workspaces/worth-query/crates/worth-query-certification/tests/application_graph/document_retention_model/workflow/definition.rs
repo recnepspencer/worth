@@ -17,8 +17,8 @@ use worth_query_host::facade::{
     declaration::application_program::{
         ApplicationWorkflowComponentLimits, ApplicationWorkflowConditionOperands,
         ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
-        ApplicationWorkflowDefinitionLimits, AuthoredWorkflowDefinition,
-        ValidatedWorkflowDefinition,
+        ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionLimits,
+        AuthoredWorkflowDefinition, ValidatedWorkflowDefinition,
     },
 };
 
@@ -39,8 +39,10 @@ use super::{
 #[path = "definition/authoring.rs"]
 mod authoring;
 pub use authoring::{authoring_intent, publish_definition, retire_definition};
+mod discovery;
 #[path = "definition/instance.rs"]
 mod instance;
+pub use discovery::discover_definition_metadata;
 pub use instance::{
     advance_instance, advance_instance_on, approve_instance, cancel_instance, continue_on_fork,
     migrate_instance, prepare_cancellation, prepare_cancellation_on, propose_authoring_instance,

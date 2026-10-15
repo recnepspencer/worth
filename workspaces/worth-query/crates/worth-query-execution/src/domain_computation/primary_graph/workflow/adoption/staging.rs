@@ -23,8 +23,8 @@ use worth_relational::facade::transactions::{
 use super::super::instance::WorkflowInstanceState;
 use super::super::schema::WorthQueryWorkflowLayout;
 use super::{
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowDefinitionDisposition,
-    WorthQueryWorkflowDispositions, WorthQueryWorkflowInstanceDisposition,
+    AdmittedWorkflowDispositions, WorthQueryWorkflowAdoptionInventory,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowInstanceDisposition,
 };
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
 
@@ -33,7 +33,7 @@ use crate::domain_computation::primary_graph::program_occurrence::program_revisi
 pub(in crate::domain_computation::primary_graph) fn stage_workflow_dispositions(
     layout: &WorthQueryWorkflowLayout,
     inventory: &WorthQueryWorkflowAdoptionInventory,
-    choices: &WorthQueryWorkflowDispositions,
+    choices: &AdmittedWorkflowDispositions,
     target: &ApplicationProgramRevision,
     advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
 ) -> Vec<MutationIntent> {

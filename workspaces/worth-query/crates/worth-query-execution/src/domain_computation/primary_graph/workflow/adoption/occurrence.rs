@@ -69,7 +69,7 @@ pub enum WorthQueryWorkflowInstanceDisposition {
 
 /// One current definition on the adopting branch.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryWorkflowDefinitionOccurrence {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowDefinitionOccurrence {
     pub(super) lineage: EntityId,
     pub(super) definition: EntityId,
     pub(super) current_relation: RelationId,
@@ -101,7 +101,7 @@ impl WorthQueryWorkflowDefinitionOccurrence {
 
 /// One live instance this exact branch incarnation authored.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryWorkflowInstanceOccurrence {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowInstanceOccurrence {
     pub(super) instance: EntityId,
     pub(super) lineage: EntityId,
     pub(super) definition: EntityId,
@@ -147,7 +147,7 @@ impl WorthQueryWorkflowInstanceOccurrence {
 /// Every workflow fact a program change must decide on one branch, bound to
 /// the exact owner truth it was read from by its digest.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryWorkflowAdoptionInventory {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowAdoptionInventory {
     pub(super) source: ApplicationProgramRevision,
     pub(super) target: ApplicationProgramRevision,
     pub(super) definitions: Box<[WorthQueryWorkflowDefinitionOccurrence]>,

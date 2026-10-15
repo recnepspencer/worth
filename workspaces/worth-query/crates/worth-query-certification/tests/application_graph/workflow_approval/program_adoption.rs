@@ -8,9 +8,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowProposalPreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryBranchAdoptionPreparationDenial, WorthQueryWorkflowAdoptionInventory,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositionDenial,
-    WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceDisposition,
+    WorthQueryBranchAdoptionPreparationDenial, WorthQueryWorkflowDefinitionDisposition,
+    WorthQueryWorkflowInstanceDisposition,
 };
 
 use super::super::document_retention_model::{
@@ -18,7 +17,7 @@ use super::super::document_retention_model::{
     workflow::{
         accept_early_assessment, advance_instance, approve_instance, cancel_instance,
         prepare_second_program_adoption, propose_instance, publish_adoption,
-        second_program_workflow_inventory, settle_early_assessment_for, support_workflow_program,
+        settle_early_assessment_for, support_workflow_program,
     },
 };
 use super::fork_continuation::fork_of;
@@ -31,17 +30,12 @@ fn a_carried_instance_refuses_evidence_collected_under_the_source_program() {
     let (mut application, _, instance, proposal, _, _) = approval_journey("approved", 86_000);
     support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
-    let inventory = second_program_workflow_inventory(&application, main);
-    let waiting = inventory
-        .instance(instance.entity_id())
-        .expect("the instance waiting for approval is inventoried");
-    assert!(!waiting.requires_migration(), "{waiting:?}");
     publish_adoption(
         &application,
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| inventory.carry_compatible().unwrap()),
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
         ),
     );
 
@@ -118,7 +112,7 @@ fn a_sibling_instance_keeps_its_program_after_its_parent_adopts() {
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| inventory.carry_compatible().unwrap()),
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
         ),
     );
 
@@ -140,7 +134,7 @@ fn a_sibling_instance_keeps_its_program_after_its_parent_adopts() {
 
 #[test]
 fn an_outstanding_approval_requires_migration_before_adoption() {
-    let (mut application, _, instance, proposal, required, _) =
+    let (mut application, definition, instance, proposal, required, _) =
         approval_journey("approved", 86_100);
     match approve_instance(
         &application,
@@ -155,54 +149,24 @@ fn an_outstanding_approval_requires_migration_before_adoption() {
     }
     support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
-    let inventory = second_program_workflow_inventory(&application, main);
-    let approved = inventory
-        .instance(instance.entity_id())
-        .expect("the approved instance is inventoried");
-    assert_eq!(
-        approved.custody(),
-        &WorthQueryWorkflowInstanceCustody::ApprovalOutstanding {
-            approval_node_path: "approval".to_owned(),
-        },
-    );
-    assert!(approved.requires_migration());
-    assert!(approved.legal_dispositions().is_empty());
-    let migration_required = WorthQueryWorkflowDispositionDenial::MigrationRequired {
-        instance: instance.entity_id(),
-    };
-    assert_eq!(
-        inventory.carry_compatible(),
-        Err(migration_required.clone())
-    );
-    assert_eq!(
-        inventory
-            .dispositions()
-            .instance(approved, WorthQueryWorkflowInstanceDisposition::Cancel),
-        Err(migration_required.clone()),
-        "an approved obligation is never cancelled away",
-    );
-
-    let definitions_only = |inventory: &WorthQueryWorkflowAdoptionInventory| {
-        inventory
-            .dispositions()
-            .definition(
-                &inventory.definitions()[0],
-                WorthQueryWorkflowDefinitionDisposition::Carry,
-            )
-            .unwrap()
-    };
-    match prepare_second_program_adoption(&application, main, Some(&definitions_only)) {
-        Err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
-            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected(denial),
-        )) => assert_eq!(denial, migration_required),
-        Err(other) => panic!("the outstanding approval must be named: {other:?}"),
-        Ok(_) => panic!("an outstanding approval must not be carried or dropped"),
+    for choices in [
+        worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible(),
+        worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+            .definition(&definition, WorthQueryWorkflowDefinitionDisposition::Carry)
+            .instance(&instance, WorthQueryWorkflowInstanceDisposition::Cancel),
+        worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+            .definition(&definition, WorthQueryWorkflowDefinitionDisposition::Carry),
+    ] {
+        assert!(matches!(prepare_second_program_adoption(&application, main, Some(choices)),
+            Err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+                WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))),
+            "the existing native legality owner preserves approval custody for Carry, Cancel and omission");
     }
 }
 
 #[test]
 fn a_cancelled_instance_names_its_cancellation_to_every_request() {
-    let (mut application, _, instance, proposal, required, _) =
+    let (mut application, definition, instance, proposal, required, _) =
         approval_journey("approved", 86_200);
     support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
@@ -211,21 +175,11 @@ fn a_cancelled_instance_names_its_cancellation_to_every_request() {
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| {
-                let waiting = inventory
-                    .instance(instance.entity_id())
-                    .expect("the waiting instance is inventoried");
-                inventory
-                    .dispositions()
-                    .definition(
-                        &inventory.definitions()[0],
-                        WorthQueryWorkflowDefinitionDisposition::Carry,
-                    )
-                    .and_then(|choices| {
-                        choices.instance(waiting, WorthQueryWorkflowInstanceDisposition::Cancel)
-                    })
-                    .expect("an unperformed instance may be cancelled")
-            }),
+            Some(
+                worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+                    .definition(&definition, WorthQueryWorkflowDefinitionDisposition::Carry)
+                    .instance(&instance, WorthQueryWorkflowInstanceDisposition::Cancel),
+            ),
         ),
     );
 

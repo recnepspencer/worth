@@ -12,7 +12,6 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationUncommitted, WorthQueryBranchAdoptionPreparationDenial,
     WorthQueryWorkflowDefinitionDisposition as DefinitionDisposition,
-    WorthQueryWorkflowInstanceCustody,
     WorthQueryWorkflowInstanceDisposition as InstanceDisposition,
 };
 
@@ -21,8 +20,7 @@ use crate::document_retention_model::{
     programs::RetentionProgramP1,
     workflow::{
         advance_instance, prepare_second_program_adoption, publish_adoption, publish_definition,
-        second_program_workflow_inventory, second_revision, start_instance,
-        support_workflow_program, terminal_definition,
+        second_revision, start_instance, support_workflow_program, terminal_definition,
     },
 };
 
@@ -31,33 +29,14 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
     let (application, definition, instance) = live_instance_on_first_program(85_000);
     let main = application.current_world();
 
-    let inventory = match prepare_second_program_adoption(&application, main, None) {
-        Err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
-            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired { inventory },
-        )) => inventory,
-        Err(other) => panic!("live workflow facts must be decided: {other:?}"),
-        Ok(_) => panic!("live workflow facts must be decided before adoption"),
-    };
-    let current = inventory
-        .definition(definition.entity_id())
-        .expect("the current definition is inventoried");
-    assert!(current.compatibility().is_compatible());
-    assert_eq!(
-        current.legal_dispositions(),
-        &[DefinitionDisposition::Carry, DefinitionDisposition::Retire],
-    );
-    let live = inventory
-        .instance(instance.entity_id())
-        .expect("the live instance is inventoried");
-    assert_eq!(
-        live.custody(),
-        &WorthQueryWorkflowInstanceCustody::Unperformed
-    );
-    assert_eq!(
-        live.legal_dispositions(),
-        &[InstanceDisposition::Carry, InstanceDisposition::Cancel],
-    );
-
+    assert!(matches!(
+        prepare_second_program_adoption(&application, main, None),
+        Err(
+            WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+                WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired
+            )
+        )
+    ));
     let (published_under, carried) = application
         .with_host_advancement(|host_phase| {
             application
@@ -73,7 +52,7 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| inventory.carry_compatible().unwrap()),
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
         ),
     );
     let (still_published_under, carried) = application
@@ -111,8 +90,6 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
         matches!(restarted, Ok(WorkflowInstanceStartOutcome::Started(_))),
         "the carried definition starts new P1 instances: {restarted:?}",
     );
-    let carried = second_program_workflow_inventory(&application, main);
-    assert_eq!(carried.source(), &second_revision(&application));
 }
 
 #[test]
@@ -124,15 +101,11 @@ fn retire_and_cancel_end_the_source_workflow_on_the_branch() {
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| {
-                let current = &inventory.definitions()[0];
-                let live = &inventory.instances()[0];
-                inventory
-                    .dispositions()
-                    .definition(current, DefinitionDisposition::Retire)
-                    .and_then(|choices| choices.instance(live, InstanceDisposition::Cancel))
-                    .expect("retire and cancel are legal for a compatible, unperformed instance")
-            }),
+            Some(
+                worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+                    .definition(&definition, DefinitionDisposition::Retire)
+                    .instance(&instance, InstanceDisposition::Cancel),
+            ),
         ),
     );
 
@@ -146,27 +119,24 @@ fn retire_and_cancel_end_the_source_workflow_on_the_branch() {
         retired.is_err(),
         "a retired definition starts nothing: {retired:?}"
     );
-    let inventory = second_program_workflow_inventory(&application, main);
-    assert!(
-        inventory.is_empty(),
-        "nothing remains live on the branch: {inventory:?}"
-    );
 }
 
 #[test]
 fn choices_made_against_a_moved_inventory_are_refused() {
-    let (application, definition, _) = live_instance_on_first_program(85_200);
+    let (application, definition, first) = live_instance_on_first_program(85_200);
     let main = application.current_world();
-    let stale = second_program_workflow_inventory(&application, main)
-        .carry_compatible()
-        .expect("everything is compatible");
+    let stale = worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+        .definition(&definition, DefinitionDisposition::Carry)
+        .instance(&first, InstanceDisposition::Carry);
     expect_started(start_instance(&application, definition, 85_210));
 
-    match prepare_second_program_adoption(&application, main, Some(&move |_| stale.clone())) {
+    match prepare_second_program_adoption(&application, main, Some(stale)) {
         Err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
-            WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryChanged { inventory },
-        )) => assert_eq!(inventory.instances().len(), 2),
-        Err(other) => panic!("stale choices must name the fresh inventory: {other:?}"),
+            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected,
+        )) => {}
+        Err(other) => {
+            panic!("incomplete choices must refuse without disclosing fresh inventory: {other:?}")
+        }
         Ok(_) => panic!("choices made before the second start must not adopt"),
     }
     publish_adoption(
@@ -174,7 +144,7 @@ fn choices_made_against_a_moved_inventory_are_refused() {
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| inventory.carry_compatible().unwrap()),
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
         ),
     );
 }

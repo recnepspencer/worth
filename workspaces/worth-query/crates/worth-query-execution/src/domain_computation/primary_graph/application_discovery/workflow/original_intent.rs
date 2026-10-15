@@ -123,16 +123,13 @@ where
         let lineages=observe_adjacency(runtime,&execution,snapshot,layout.instance_lineage_relation,instance,
             WorthQueryApplicationAdjacencyDirection::Outgoing,2).map_err(Denial::Execution)?.ok_or(Denial::BasisUnavailable)?;
         let [lineage]=lineages.as_slice() else { return Err(Denial::Corrupt); };
-        let matches=observe_field_value_borrowed(runtime,&execution,snapshot,lineage.to,layout.lineage.entity_kind,&layout.lineage.spec,
-            |value| match value {
-                Some(AspectValue::String(InternedString::Raw(value))) if !value.is_empty() => Some(value==Spec::IDENTITY.as_str()),
-                _=>None,
-            })
-            .map_err(Denial::Relational)?;
+        let pinned=runtime.read_truth().pin_read_capability(snapshot,&[],&execution).map_err(Denial::PinnedRead)?;
+        let matches=super::text::inspect(runtime,&execution,&pinned,lineage.to,layout.lineage.entity_kind,&layout.lineage.spec,
+            |value|value.filter(|value|!value.is_empty()).map(|value|value==Spec::IDENTITY.as_str()))?;
         match matches {
-            Some(Some(true))=>{},
-            Some(Some(false))=>return Ok(None), // A valid foreign Spec is undisclosed, just like absence.
-            _=>return Err(Denial::Corrupt),
+            Some(true)=>{},
+            Some(false)=>return Ok(None),
+            None=>return Err(Denial::Corrupt),
         }
         Ok(Some((OriginalWorkflowCandidate { data,instance,lineage:lineage.to,subject:original.subject_entity_id() },access)))
     })

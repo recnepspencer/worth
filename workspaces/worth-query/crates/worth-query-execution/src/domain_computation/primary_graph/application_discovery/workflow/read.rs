@@ -96,7 +96,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;
         let current_basis = self.product().selected_commit() == data.product().selected_commit();
-        let mut record = graph
+        let record = graph
             .integration_handle()
             .with_runtime(&execution, |runtime| {
                 governed_record::observe(
@@ -109,10 +109,15 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     current_basis,
                     target.lineage,
                     workflow.program_revision(),
-                    original.original_start_revision(),
+                    self.application()
+                        .installed_program_support()
+                        .ok_or(Denial::PolicyMismatch)?,
                     workflow.resources(),
                 )
             })?;
+        if &record.original_start_revision != original.original_start_revision() {
+            return Err(Denial::Corrupt);
+        }
         let audit = audit::observe(
             self,
             &target,
@@ -126,31 +131,39 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             &mut admission,
             &record.history,
         )?;
-        let posture = if record.occurrence != data.product().product_branch().occurrence_ordinal() {
-            WorthQueryWorkflowHistoricalPosture::Fork
-        } else if record.state != WorthQueryWorkflowObservedState::Ready {
-            WorthQueryWorkflowHistoricalPosture::Ended
-        } else if !record.live {
-            WorthQueryWorkflowHistoricalPosture::Unlinked
-        } else {
-            WorthQueryWorkflowHistoricalPosture::RetainedBasis
-        };
-        let live = record.reference.take();
-        let observation = WorthQueryWorkflowObservation {
-            basis: WorthQueryWorkflowReadBasis::retained(data.retain_application_read()),
-            state: record.state,
-            history: record.history,
-            audit,
-        };
-        match live {
-            Some(instance) => Ok(WorthQueryWorkflowInstanceRead::Live {
-                instance,
-                observation,
-            }),
-            None => Ok(WorthQueryWorkflowInstanceRead::Historical {
-                posture,
-                observation,
-            }),
-        }
+        Ok(project_record(record, data, audit))
+    }
+}
+
+pub(super) fn project_record<Schema: ApplicationSchema>(
+    mut record: governed_record::WorkflowRecord,
+    data: &WorthQuerySelectedProductOperation<'_, Schema>,
+    audit: WorthQueryWorkflowAudit,
+) -> WorthQueryWorkflowInstanceRead {
+    let posture = if record.occurrence != data.product().product_branch().occurrence_ordinal() {
+        WorthQueryWorkflowHistoricalPosture::Fork
+    } else if record.state != WorthQueryWorkflowObservedState::Ready {
+        WorthQueryWorkflowHistoricalPosture::Ended
+    } else if !record.live {
+        WorthQueryWorkflowHistoricalPosture::Unlinked
+    } else {
+        WorthQueryWorkflowHistoricalPosture::RetainedBasis
+    };
+    let live = record.reference.take();
+    let observation = WorthQueryWorkflowObservation {
+        basis: WorthQueryWorkflowReadBasis::retained(data.retain_application_read()),
+        state: record.state,
+        history: record.history,
+        audit,
+    };
+    match live {
+        Some(instance) => WorthQueryWorkflowInstanceRead::Live {
+            instance,
+            observation,
+        },
+        None => WorthQueryWorkflowInstanceRead::Historical {
+            posture,
+            observation,
+        },
     }
 }

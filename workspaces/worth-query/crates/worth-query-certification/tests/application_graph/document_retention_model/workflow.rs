@@ -51,8 +51,8 @@ pub(crate) use definition::definition_limits;
 pub use definition::{
     advance_instance, advance_instance_on, approval_retry_definition, approve_instance,
     authoring_intent, cancel_instance, condition_terminal_definition, condition_terminal_draft,
-    continue_on_fork, expression_condition_terminal_definition, migrate_instance,
-    prepare_cancellation, prepare_cancellation_on, proposal_terminal_definition,
+    continue_on_fork, discover_definition_metadata, expression_condition_terminal_definition,
+    migrate_instance, prepare_cancellation, prepare_cancellation_on, proposal_terminal_definition,
     propose_authoring_instance, propose_authoring_instance_with_retention, propose_instance,
     propose_instance_on_branch, publish_definition, repeated_proposal_definition,
     reproposing_document_definition, retire_definition, reviewed_document_definition,
@@ -73,10 +73,7 @@ pub use mutation::{
     WorkflowInstanceStartBinding, WorkflowInstanceStartIntent,
 };
 pub use ordinary_run::run_instance;
-pub use program_adoption::{
-    prepare_second_program_adoption, publish_adoption, second_program_workflow_inventory,
-    second_revision,
-};
+pub use program_adoption::{prepare_second_program_adoption, publish_adoption, second_revision};
 pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
 pub use review_requirement::{
     link_review_requirement, link_review_requirement_on, unlink_review_requirement,

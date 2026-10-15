@@ -3,9 +3,9 @@
 //! Authors a reviewed-document workflow from one reusable review component:
 //! a proposed change to a document's retention period is checked twice and
 //! approved before it applies. The example publishes the definition,
-//! discovers it, rejects the first proposal so the loop asks for a revised
+//! demonstrates disabled disclosure, rejects the first proposal so the loop asks for a revised
 //! one, approves the revision and completes. A second revision of the
-//! definition reuses the same component; discovery then names it, and a start
+//! definition reuses the same component; its native publication names it, and a start
 //! from the superseded revision is refused naming the current one.
 
 #[allow(dead_code, unused_imports)]
@@ -29,7 +29,6 @@ use document_retention_model::{
 };
 use review::{review, Review};
 use worth_query_host::facade::{
-    application_discovery::WorthQueryWorkflowDefinitionDiscovery,
     application_entry::{
         PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
         RequiredWorkflowApproval, WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
@@ -139,25 +138,19 @@ fn reviewed_document(
 
 fn run() {
     information::run();
-    let host_request = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let application = publish_owner_workflow();
     let review = review();
     let first = reviewed_document(&review, "applied");
     let identity = first.identity().clone();
     assert_eq!(first.component_expansions().len(), 1);
-    assert_discovery_disabled(request_execution, &application, &identity);
+    assert_discovery_disabled(&application, &identity);
     let first = publish(
         &application,
         first,
         WorkflowDefinitionExpectedPredecessor::Absent,
         1,
     );
-    assert_discovery_disabled(request_execution, &application, &identity);
+    assert_discovery_disabled(&application, &identity);
 
     let instance = match start_instance(&application, first.clone(), 2)
         .expect("the original published definition starts")
@@ -221,13 +214,13 @@ fn run() {
         WorkflowDefinitionExpectedPredecessor::Published(first.clone()),
         500,
     );
-    assert_discovery_disabled(request_execution, &application, &identity);
+    assert_discovery_disabled(&application, &identity);
     let current = expect_superseded_start(start_instance(&application, first, 501));
     assert_eq!(
         current, second,
         "the native refusal names the replacement publication"
     );
-    println!("authored, reused, rejected, revised, approved, completed; standalone discovery is disabled until its governed owner lands");
+    println!("authored, reused, rejected, revised, approved, completed; this ReviewedDocumentWorkflow Spec deliberately disables metadata disclosure");
 }
 
 fn publish(
@@ -247,21 +240,15 @@ fn publish(
 }
 
 fn assert_discovery_disabled(
-    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     identity: &ApplicationWorkflowDefinitionIdentity,
 ) {
-    let result = application
-        .with_host_advancement(|host_phase| {
-            application
-                .runtime()
-                .on_branch(application.runtime().current_world())
-                .select(&host_phase)
-                .expect("the main branch selects its exact occurrence")
-        })
-        .expect("installed host call opens")
-        .discover_workflow_definition::<ReviewedDocumentWorkflow>(request_execution, identity);
-    assert_eq!(result, Err(worth_query_host::facade::application_discovery::WorthQueryWorkflowDefinitionDiscoveryDenial::ObservationDisabled))
+    let result = document_retention_model::workflow::discover_definition_metadata(
+        application,
+        application.runtime().current_world(),
+        identity,
+    );
+    assert_eq!(result, Err(()));
 }
 
 /// A proposed retention reviewed up to its approval.

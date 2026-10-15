@@ -7,14 +7,16 @@ pub use description::{
     WorthQueryApplicationCallablePosture, WorthQueryApplicationFieldDescription,
     WorthQueryApplicationMutationDescription, WorthQueryApplicationQueryDescription,
 };
+pub(in crate::domain_computation::primary_graph) use workflow::indexes::WorkflowReadIndexes;
 pub(in crate::domain_computation::primary_graph) use workflow::{
     current_definition, WorkflowDefinitionCurrentness,
 };
 pub use workflow::{
     WorthQueryWorkflowAudit, WorthQueryWorkflowDefinitionDiscovery,
-    WorthQueryWorkflowDefinitionDiscoveryDenial, WorthQueryWorkflowHistoricalPosture,
-    WorthQueryWorkflowInstanceRead, WorthQueryWorkflowObservation, WorthQueryWorkflowObservedState,
-    WorthQueryWorkflowReadBasis, WorthQueryWorkflowReadDenial, WorthQueryWorkflowRecordedActor,
+    WorthQueryWorkflowDefinitionRead, WorthQueryWorkflowHistoricalPosture,
+    WorthQueryWorkflowIndexRead, WorthQueryWorkflowInstancePage, WorthQueryWorkflowInstanceRead,
+    WorthQueryWorkflowObservation, WorthQueryWorkflowObservedState, WorthQueryWorkflowReadBasis,
+    WorthQueryWorkflowReadDenial, WorthQueryWorkflowReadExtent, WorthQueryWorkflowRecordedActor,
     WorthQueryWorkflowTransitionActors,
 };
 use worth_query_declaration::facade::application_schema::{

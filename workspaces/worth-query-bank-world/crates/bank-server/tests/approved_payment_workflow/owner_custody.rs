@@ -11,7 +11,6 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationUncommitted,
-    WorthQueryWorkflowInstanceCustody,
 };
 
 use super::assertions::key;
@@ -205,18 +204,11 @@ fn adoption_leaves_a_payment_the_rail_holds_with_no_disposition() {
         .on_branch(runtime.current_branch())
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
-    let inventory = programs
-        .adopt(&requirements)
+    let denied = programs.adopt(&requirements)
         .expect("declared program adoption permission admits")
-        .workflow_inventory(4_096)
-        .expect("the workflow inventory reads");
-    let payment = inventory
-        .instance(ready.instance.entity_id())
-        .expect("the payment workflow is inventoried");
-    assert_eq!(
-        payment.custody(),
-        &WorthQueryWorkflowInstanceCustody::OperationInOwnerCustody,
-        "the rail owner settles the payment under the source program",
-    );
-    assert!(payment.legal_dispositions().is_empty());
+        .workflow(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()).prepare(4_096);
+    assert!(matches!(denied,
+        Err(worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+            worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))),
+        "the actual rail custody forbids adoption without disclosing the private inventory");
 }

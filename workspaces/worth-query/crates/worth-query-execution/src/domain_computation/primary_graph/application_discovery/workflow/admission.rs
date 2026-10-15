@@ -20,6 +20,11 @@ use worth_query_installation::facade::WorthQueryInstalledWorkflowReadBinding;
 #[derive(Debug)]
 pub enum WorthQueryWorkflowReadDenial {
     PolicyMismatch,
+    ContinuationMismatch,
+    Page(worth_relational::facade::indexes::BoundedRelatedEntityPrefixDenial),
+    PageShape(worth_relational::facade::indexes::BoundedRelatedEntityOrderedLookupDenial),
+    Reconstruction(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
+    PinnedRead(worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial),
     Installation(worth_query_installation::facade::WorthQueryApplicationWorkflowInstallationDenial),
     Allocation(worth_execution::ExecutionAllocationDenial),
     Preparation(worth_relational::facade::mvcc::CompanionPreflightStop),
@@ -27,6 +32,7 @@ pub enum WorthQueryWorkflowReadDenial {
     SelectedIndexUnavailable,
     BasisUnavailable,
     Corrupt,
+    UnsupportedInstanceProtocol(u64),
     Relational(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Phase(crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase),
     Inspection(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial),

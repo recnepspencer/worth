@@ -347,12 +347,8 @@ pub use super::workflow::{
     WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
 };
 pub use super::workflow::{
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
-    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,
-    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
-    WorthQueryWorkflowInstanceProgressCounters,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceProgressCounters,
 };
 pub use crate::basis::{
     WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,

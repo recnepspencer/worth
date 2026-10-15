@@ -30,6 +30,7 @@ mod support_admission;
 #[cfg(test)]
 mod tests;
 mod unique_fields;
+mod workflow_reads;
 pub(in crate::domain_computation::primary_graph) use support_admission::WorthQuerySupportLookupStop;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use unique_fields::WorthQueryUniqueFieldFixture;
@@ -85,6 +86,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     provider_aftermath_causality: WorthQueryAftermathCausalityLayout,
     program_activation: WorthQueryProgramActivationLayout,
     workflow: WorthQueryWorkflowLayout,
+    workflow_reads: Option<super::application_discovery::WorkflowReadIndexes>,
 }
 
 #[derive(Clone, Debug)]
@@ -234,6 +236,7 @@ impl WorthQueryPrimaryGraphLayout {
                 provider_aftermath_causality: platform_entities.provider_aftermath_causality,
                 program_activation: platform_entities.program_activation,
                 workflow: platform_entities.workflow,
+                workflow_reads: None,
             },
             registry,
         ))
