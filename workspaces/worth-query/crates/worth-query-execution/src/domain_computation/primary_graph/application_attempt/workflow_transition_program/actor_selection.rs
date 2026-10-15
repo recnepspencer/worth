@@ -234,12 +234,11 @@ fn currentness_denial(
     if let Some(native) = cause.relational_execution_cause() {
         return Err(native);
     }
-    if let Some(allocation) = cause.allocation_denial() {
-        if let worth_execution::ExecutionAllocationDenialClass::Request(stop) =
+    if let Some(allocation) = cause.allocation_denial()
+        && let worth_execution::ExecutionAllocationDenialClass::Request(stop) =
             allocation.classify()
-        {
-            return Err(stop.into());
-        }
+    {
+        return Err(stop.into());
     }
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
     match cause.kind() {

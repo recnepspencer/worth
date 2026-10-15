@@ -78,20 +78,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowDefini
 }
 
 impl WorthQueryWorkflowDefinitionOccurrence {
-    pub const fn lineage(&self) -> EntityId {
-        self.lineage
-    }
-
     pub const fn entity_id(&self) -> EntityId {
         self.definition
-    }
-
-    pub fn spec(&self) -> &str {
-        &self.spec
-    }
-
-    pub const fn compatibility(&self) -> &WorthQueryWorkflowCompatibility {
-        &self.compatibility
     }
 
     pub fn legal_dispositions(&self) -> &'static [WorthQueryWorkflowDefinitionDisposition] {
@@ -115,21 +103,9 @@ impl WorthQueryWorkflowInstanceOccurrence {
         self.instance
     }
 
-    pub const fn lineage(&self) -> EntityId {
-        self.lineage
-    }
-
     /// The definition this instance is pinned to, current or not.
     pub const fn definition(&self) -> EntityId {
         self.definition
-    }
-
-    pub const fn compatibility(&self) -> &WorthQueryWorkflowCompatibility {
-        &self.compatibility
-    }
-
-    pub const fn custody(&self) -> &WorthQueryWorkflowInstanceCustody {
-        &self.custody
     }
 
     pub fn legal_dispositions(&self) -> &'static [WorthQueryWorkflowInstanceDisposition] {
@@ -157,14 +133,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowAdopti
 }
 
 impl WorthQueryWorkflowAdoptionInventory {
-    pub fn source(&self) -> &ApplicationProgramRevision {
-        &self.source
-    }
-
-    pub fn target(&self) -> &ApplicationProgramRevision {
-        &self.target
-    }
-
     pub fn definitions(&self) -> &[WorthQueryWorkflowDefinitionOccurrence] {
         &self.definitions
     }

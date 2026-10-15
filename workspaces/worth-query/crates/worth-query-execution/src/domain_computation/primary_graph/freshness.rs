@@ -201,26 +201,6 @@ impl WorthQueryPrincipalFreshnessEvidence {
         }
     }
 
-    pub(in crate::domain_computation) fn durable(
-        &self,
-        binding: &str,
-    ) -> WorthQueryDurablePrincipalCurrentness {
-        WorthQueryDurablePrincipalCurrentness {
-            binding: binding.to_owned(),
-            mapping: self.mapping.entity_id,
-            mapping_kind: self.mapping.kind_id,
-            mapping_identity: self.mapping.identity.clone(),
-            mapping_identity_revision: self.mapping.identity_revision,
-            mapping_status_revision: self.mapping.status_revision,
-            target_relation: self.target.relation_id,
-            relation_kind: self.target.relation_kind,
-            principal: self.target.target,
-            principal_kind: self.target.principal_kind,
-            principal_identity: self.target.principal_identity.clone(),
-            principal_identity_revision: self.target.principal_identity_revision,
-            target_adjacency_revision: self.target.adjacency_revision,
-        }
-    }
     pub(in crate::domain_computation) fn durable_view<'a>(
         &'a self,
         binding: &'a str,

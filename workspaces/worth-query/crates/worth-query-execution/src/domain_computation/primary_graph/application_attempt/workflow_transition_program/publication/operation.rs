@@ -145,7 +145,7 @@ impl RequiredWorkflowOperation {
     pub fn workflow_execution_requirements(&self) -> &worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements{
         &self.workflow_execution_requirements
     }
-    pub(in crate::domain_computation::primary_graph) fn from_selected(
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn from_selected(
         branch: crate::basis::WorthQueryProductBranch,
         original_runtime: u64,
         original_instance: super::super::super::PublishedWorkflowInstanceRef,

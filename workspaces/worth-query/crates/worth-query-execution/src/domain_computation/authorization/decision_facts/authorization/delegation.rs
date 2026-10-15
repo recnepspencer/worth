@@ -46,27 +46,6 @@ pub(in crate::domain_computation::authorization) enum WorthQueryDelegationDecisi
 }
 
 impl WorthQueryDelegationDecisionFact {
-    pub(super) fn durable_lineage(&self) -> WorthQueryDurableCapabilityLineage {
-        match self {
-            Self::Root {
-                status_revision, ..
-            } => WorthQueryDurableCapabilityLineage::Root {
-                status_revision: *status_revision,
-            },
-            Self::Delegated {
-                grantor,
-                parent_grant,
-                parent,
-                status_revision,
-                ..
-            } => WorthQueryDurableCapabilityLineage::Delegated {
-                grantor: *grantor,
-                parent_grant: *parent_grant,
-                status_revision: *status_revision,
-                parent: Box::new(parent.durable_lineage()),
-            },
-        }
-    }
     pub(in crate::domain_computation::authorization) fn root(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
