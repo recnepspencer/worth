@@ -8,9 +8,9 @@ use bank_domain::model::BankPrincipalId;
 use bank_domain::proposals::BankIdempotencyKey;
 
 use super::super::protocol::{
-    BankHttpCommitDisposition, BankHttpDenial, BankHttpDenialKind,
-    BankHttpEstateNotificationOutcome, BankHttpEstateNotificationRequest, BankHttpNextAction,
-    BankHttpRecoveryInspectionOutcome, BankHttpRecoveryRequest, BankHttpRecoverySafeRetryOutcome,
+    BankHttpDenial, BankHttpDenialKind, BankHttpEstateNotificationOutcome,
+    BankHttpEstateNotificationRequest, BankHttpNextAction, BankHttpRecoveryInspectionOutcome,
+    BankHttpRecoveryRequest, BankHttpRecoverySafeRetryOutcome,
 };
 use super::recovery_executor::{
     AdmittedBankHttpNotificationRequest, AdmittedBankHttpRecoveryRequest,

@@ -13,7 +13,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
-pub(super) async fn execute_notification<A: BankHttpApplicationAuthenticator>(
+pub(in crate::http::server) async fn execute_notification<A: BankHttpApplicationAuthenticator>(
     application: &A,
     registry: Arc<Mutex<BankHttpRecoveryRegistry>>,
     request: AdmittedBankHttpNotificationRequest,

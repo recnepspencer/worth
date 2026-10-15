@@ -5,7 +5,6 @@ use super::{
     authentication::BankHttpApplicationAuthenticator,
     mutation_command::{reject, AdmittedMoneyCommand, MoneyCommand},
     mutation_custody::*,
-    mutation_executor::WorkerCommand,
     mutation_refusal::denial,
 };
 use bank_server::{BankMutationControls, BankReadControls};
@@ -16,7 +15,7 @@ use std::{
         Arc,
     },
 };
-use tokio::sync::{mpsc, Semaphore};
+use tokio::sync::Semaphore;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 
 pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(

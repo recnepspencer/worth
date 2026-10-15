@@ -3,6 +3,8 @@
 //! Authentik tokens and protocol types terminate in this crate.
 
 #![forbid(unsafe_code)]
+// Owned native collection graphs require deeper structural Send evaluation.
+#![recursion_limit = "256"]
 
 mod adapter;
 mod authorization;
@@ -31,7 +33,6 @@ pub use error::{
     AuthentikOidcAdapterBuildError, AuthentikOidcFlowError,
 };
 pub use http::{
-    BankHttpNativeCleanupDescription, BankHttpNativeCleanupFailureDescription,
     run_bank_http_server_process, BankHttpAccountActivity, BankHttpAccountActivityEvent,
     BankHttpAccountActivityItem, BankHttpAccountActivityPageOutcome,
     BankHttpAccountActivityPageRequest, BankHttpAccountActivityResumeRequest,
@@ -48,7 +49,8 @@ pub use http::{
     BankHttpMandatoryReviewOutcome, BankHttpMandatoryReviewRequest, BankHttpMutationContinuation,
     BankHttpMutationControls, BankHttpMutationOperation, BankHttpMutationOutcome,
     BankHttpMutationPosture, BankHttpMutationReadControls, BankHttpMutationRequest,
-    BankHttpNextAction, BankHttpPostingPurpose, BankHttpPreparedListener, BankHttpProcessAccount,
+    BankHttpNativeCleanupDescription, BankHttpNativeCleanupFailureDescription, BankHttpNextAction,
+    BankHttpPostingPurpose, BankHttpPreparedListener, BankHttpProcessAccount,
     BankHttpProcessAccountStatus, BankHttpProcessColdCertification, BankHttpProcessConfiguration,
     BankHttpProcessConfigurationError, BankHttpProcessEstateAftermathWorld,
     BankHttpProcessEstateElevationWorld, BankHttpProcessEstateWorld,

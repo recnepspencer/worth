@@ -17,10 +17,3 @@ pub type BankProgramMutationExecution<Output> = Result<
 >;
 pub type BankMoneyMovementExecution =
     BankProgramMutationExecution<bank_domain::schema::MoneyMovementResult>;
-pub type BankMoneyMovementRetainedExecution = Result<
-    worth_query_host::facade::application_entry::WorthQueryApplicationRetainedMutationOutcome<
-        BankProposalDenial,
-        bank_domain::schema::MoneyMovementResult,
-    >,
-    worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial,
->;

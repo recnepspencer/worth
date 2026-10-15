@@ -128,13 +128,23 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         "first-key",
     )
     .await;
+    assert!(
+        matches!(
+            &old_replay,
+            crate::http::protocol::BankHttpEstateNotificationOutcome::Owning {
+                outcome: crate::http::protocol::BankHttpMutationOutcome::Completed {
+                    recovered: true,
+                    ..
+                }
+            }
+        ),
+        "the original key must return recovered native evidence: {old_replay:?}"
+    );
     let old_replay = close_notification(&client, server.local_address(), old_replay).await;
     assert!(
         matches!(
             &old_replay,
             crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
-                disposition:
-                    super::super::super::super::protocol::BankHttpCommitDisposition::AlreadyCommitted,
                 recovery: None,
                 recovery_status: BankHttpRecoveryStatus::Completed,
                 ..

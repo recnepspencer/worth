@@ -10,7 +10,7 @@ use super::super::super::protocol::{
     BankHttpRecoveryStatus,
 };
 
-pub(super) fn omitted_recovery_status(
+pub(in crate::http::server) fn omitted_recovery_status(
     runtime: &BankIdentityRuntime,
     receipt: &BankCommitReceipt,
 ) -> Result<BankHttpRecoveryStatus, BankRecoveryDenial> {
@@ -25,7 +25,7 @@ pub(super) fn omitted_recovery_status(
     })
 }
 
-pub(super) fn commit_description(
+pub(in crate::http::server) fn commit_description(
     receipt: &bank_server::BankCommitReceipt,
 ) -> BankHttpCommitDescription {
     BankHttpCommitDescription {

@@ -4,7 +4,7 @@ use super::{
     mutation_command::{AdmittedMoneyCommand, MoneyCommand},
     mutation_custody::MutationRecord,
     mutation_refusal::denial,
-    native_cleanup_custody::{NativeCleanupCustody, NativeCleanupRecord},
+    native_cleanup_custody::NativeCleanupCustody,
 };
 use std::collections::HashMap;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;

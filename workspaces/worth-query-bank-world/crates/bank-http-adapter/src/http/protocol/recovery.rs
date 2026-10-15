@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpCredential, BankHttpDenial,
-    BankHttpEffectControls, BankHttpProtocolVersion,
+    BankHttpCommitDescription, BankHttpCredential, BankHttpDenial, BankHttpEffectControls,
+    BankHttpProtocolVersion,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -22,6 +22,7 @@ pub struct BankHttpEstateNotificationRequest {
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpEstateNotificationOutcome {
     Owning {
+        #[serde(rename = "operation")]
         outcome: super::BankHttpMutationOutcome,
     },
     Denied {

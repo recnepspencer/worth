@@ -19,7 +19,8 @@ use crate::application_entry::{
 };
 
 use super::{
-    WorthQueryWorkflowOperationAcceptanceDenial, WorthQueryWorkflowOperationBindingDenial,
+    WorthQueryBoundWorkflowOperation, WorthQueryWorkflowOperationAcceptanceDenial,
+    WorthQueryWorkflowOperationBindingDenial,
 };
 
 /// Where the owner of a workflow operation's idempotency key stands when it has not
@@ -90,10 +91,11 @@ where
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {
+    /// Consumes the exact constrained workflow binding and admits fresh owner inspection.
     pub fn accept_operation_from_owner<Intent, SourcePreparation>(
         self,
         required: &RequiredWorkflowOperation,
-        mut operation: WorthQueryApplicationMutationRequestWithIdempotency<
+        operation: WorthQueryBoundWorkflowOperation<
             '_,
             '_,
             '_,
@@ -113,6 +115,7 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
     {
+        let mut operation = operation.native;
         let application = self.application;
         let scope = self.scope.clone();
         application
@@ -147,10 +150,12 @@ where
             })?
     }
 
+    /// Consumes the constrained binding with the native safe-retry admission.
+    /// The original owner remains authoritative for performed and recovered custody.
     pub fn accept_recovered_operation_from_owner<Intent, SourcePreparation>(
         self,
         required: &RequiredWorkflowOperation,
-        mut operation: WorthQueryApplicationMutationRequestWithIdempotency<
+        operation: WorthQueryBoundWorkflowOperation<
             '_,
             '_,
             '_,
@@ -171,6 +176,7 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
     {
+        let mut operation = operation.native;
         let application = self.application;
         let scope = self.scope.clone();
         application

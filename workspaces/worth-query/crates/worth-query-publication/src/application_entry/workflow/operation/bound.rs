@@ -6,7 +6,10 @@ use worth_query_execution::facade::application_installation::WorthQueryProgramAp
 use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 
 /// An exact workflow-bound operation. Execute through the installed program or
-/// prepare recovery from the original native owner. This interim funnel is
+/// prepare recovery from the original native owner. Pass this view directly to
+/// `accept_operation_from_owner` or `accept_recovered_operation_from_owner` on
+/// the prepared workflow advance; no native request extraction is available.
+/// This interim funnel is
 /// replaced by the owning workflow adapter in Phase C; callers must not create
 /// their own continuation or effect retry owner.
 #[must_use = "execute the bound workflow operation or recover its original owner custody"]
