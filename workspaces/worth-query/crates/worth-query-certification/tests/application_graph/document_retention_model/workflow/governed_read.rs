@@ -10,11 +10,15 @@ use worth_query_decl::facade::{
     worth_query_operation, worth_query_operation_reads, worth_query_portable_type,
     worth_query_structured_value_binding,
 };
+#[path = "governed_read/contract.rs"]
 mod contract;
+#[path = "governed_read/runtime.rs"]
 mod runtime;
 pub use runtime::{install, GovernedRuntime};
 #[cfg(test)]
+#[path = "governed_read/court.rs"]
 mod court;
+#[path = "governed_read/grants.rs"]
 mod grants;
 pub(in super::super) use grants::seed;
 

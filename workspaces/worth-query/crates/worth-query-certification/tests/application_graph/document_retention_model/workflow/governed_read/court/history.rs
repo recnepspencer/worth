@@ -4,6 +4,7 @@ use super::*;
 use worth_query_host::facade::declaration::application_program::{
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionReadTarget,
 };
+#[path = "history/pages.rs"]
 mod pages;
 fn target(
     application: &GovernedRuntime,
