@@ -427,13 +427,18 @@ receipt reconstruction or all-native fallback to avoid the cutover.
 
 ## Fan-Out And Integration
 
-Use persistent implementers and independent reviewers. Initially partition:
+Use persistent implementers and independent reviewers. Start only the independent
+Declaration and Lifecycle implementation lanes after Phase 0. Caller inventory
+is preparation, not a separately staffed cutover lane while the APIs are absent.
+Use the spare worker slot for scoped review when an owner has a concrete delta.
+Resume the Consumer implementer only after both owner batches are implemented
+and integrated; agreed signatures alone do not make that dependency ready.
 
 | Lane | Owned production responsibility | Shared dependency / handoff |
 | --- | --- | --- |
 | Declaration | Action authoring, typed states, feature entry, macro, action-module/audience export wiring and declaration compiler evidence. | Phase 0 signatures; hands exact API and canonical meaning to consumers. Owns facade wiring exclusively, applying Lifecycle's supplied selector export delta. |
 | Lifecycle | Selector definitions in `action/reference.rs`, resolution in Installation `action_resolution.rs` and Execution `selected_owner.rs`, both selector-twin removals; fixed/discovered owner bounds/lifetimes, mode factory, move/phase handoffs and keepalive-sensitive runtime configuration. | Lands selector and lifetime edits together in Phase 2. Supplies exact export changes to Declaration; does not edit that lane's facade wiring. Hands final owner signatures to consumers. |
-| Consumer | Caller inventory and concrete cutover plan first; after signatures exist, Query/Bank fixtures, examples and authoritative docs. | Receives both owner APIs; does not invent shims or change their semantics. |
+| Consumer (dependency-gated) | After the concrete owner batches are integrated, Query/Bank fixtures, examples and authoritative docs. | Reuses the prepared caller inventory and actual implemented APIs; remains parked beforehand. Does not invent shims or change owner semantics. |
 | Coordinator / review | Integrates coherent commits, owns all Cargo/native/oracle runs and routes scoped independent review. | One dependency-ready integration batch; no per-edit merge/rebuild loop. |
 
 Respect available global agent slots; reviewers replace idle implementer slots
