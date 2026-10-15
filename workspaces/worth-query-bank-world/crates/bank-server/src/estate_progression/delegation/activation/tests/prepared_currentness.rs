@@ -1,4 +1,5 @@
 use super::*;
+use crate::BankMutationCommitOutcome;
 
 /// A prepared delegation decided on its parent's authority and on its child
 /// id naming no grant. An unrelated revocation moves neither fact. A commit
