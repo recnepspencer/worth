@@ -514,7 +514,12 @@ the sealed `WorthQueryHistoricalApplicationCommit` and its `commit_id()`. This
 is a landed historical fact: the request commits nothing again. It carries no
 handler result, publication authority, workflow settlement authority, or live
 receipt. Query current state through a freshly admitted request before further
-work. In-process retries whose original receipt remains retained continue to
+work. An owning operation preserves `PreviouslyCommitted` as terminal historical
+evidence: it does not rerun the handler, recover a handler result, or complete
+output settlement. Retain that terminal owner and close it with a fresh request;
+a refused close returns its custody.
+
+In-process retries whose original receipt remains retained continue to
 return `AlreadyCommitted(receipt)`.
 
 Lower APIs that require a live receipt retain the typed

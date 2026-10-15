@@ -136,6 +136,9 @@ A fixed settled owner borrows its complete settlement for `read_current` or a
 finite `read_current_with_policy`; the currentness check and declared query share
 one observation and one native phase. Read refusal retains the owner. Stale
 settlement supports `read_historical` and `close`, never output advancement.
+Current and historical reads return the same published result type. The selected
+method and `result.receipt().inspect().basis()` distinguish their observation
+basis; a historical result is not evidence of currentness.
 No-projection delivery uses `deliver_current` without a dummy query. Source-only
 completion is distinct from required-output settlement; retained delivery selects
 the action's authentic original commit observation.
@@ -274,7 +277,7 @@ Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed
 Native request rebuilding in this section requires explicit `advanced()` selection.
 
 
-Ordinary mutation execution, preparation and publication take an explicit
+Native mutation execution, preparation and publication take an explicit
 `ExecutionAllocationPolicy`. A host may choose `SystemAllocation`, or supply
 `Execution(&lease)` from its caller-owned process authority. The policy governs
 the completed decision and provider read-set arrays; it grants no graph authority
@@ -512,8 +515,8 @@ phases do not resolve latest product truth again.
 #### Advanced native branch lanes
 
 Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed, discovered and source-only actions.
-The covered manual lanes below require `request.advanced()`. Only the issued
-bound workflow funnel remains ordinary until its owning adapter lands.
+The covered manual lanes below require `request.advanced()`. Guarded workflow
+actions use the [ordinary workflow owner](workflows.md#operations), retaining the original issued requirement.
 
 
 A mutation does not name the program that commits it. Each lane selects the
@@ -555,7 +558,7 @@ cannot commit the removed action.
 A key records its intent durably, and that intent names no runtime, so the same
 request matches it before and after a restore or reopen, and a changed request
 under the key is still `IdempotencyIntentDrift`. The recorded receipt is not
-durable. An ordinary request retry whose receipt is no longer retained answers
+durable. A native request retry whose receipt is no longer retained answers
 `PreviouslyCommitted(observation)`, naming the original `commit_id()` and
 committing nothing. It carries no live receipt or handler result; read current
 state under fresh authorization before further work. Lower surfaces that
@@ -865,9 +868,8 @@ their native lifetimes. Native `ProductStale` and `NoEffect` outcomes likewise
 retain their descriptive observations until close; they carry no unpublished
 recovery receipt. Unresolved publication postures remain owned. The [commit-time pinned court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/source_only_pinned/commit_stale.rs)
 covers the exact native `ProductBasisStale` invariant refusal while retaining
-the original loan. Moved-membership result-set coverage, public World
-`ProductStale` and generic `NoEffect` cause/refusal-cleanup courts, and ordinary
-consumer cutover remain separate work.
+the original loan. SourceOnly owning operations retain native stopped evidence
+and cleanup; ordinary callers do not switch to manual execution to handle a stop.
 
 An unpinned SourceOnly operation can return `Progress` with
 `RetryableNoEffect` after native sealed-read staleness or an exact
@@ -929,8 +931,8 @@ The executable
 [`fixed partial-publication journey`](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/required_unpublished.rs)
 uses the actual append fault, fresh recovery, all four dependent settlements,
 World observation-capacity refusal and World caller-capability cleanup refusal.
-Source-only and the remaining native adapter lanes retain their existing
-entrances until their owning replacement is complete.
+Fixed, discovered, source-only and guarded workflow actions use their ordinary
+owning entrances. Deliberate native adapters remain under `advanced()`.
 
 ## How It Relates To Other Features
 

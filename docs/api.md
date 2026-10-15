@@ -155,7 +155,6 @@ The ordinary builder has no manual execution, preparation or recovery methods.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// Illustrative: not compiled.
 let operation = request.mutate(intent)
     .without_source() // only a declaration-authorized no-source binding
     .preconditions(original_conditions)

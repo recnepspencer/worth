@@ -163,10 +163,10 @@ Both output-source lanes retain unsupported `SettlementDeferred` and
 `Blocked` custody. They are not no-effect outcomes or evidence that recovery
 finished. Workflow recovery remains outside these entrances.
 
-> **Discovered owning entry.** Fixed, discovered and source-only actions use
+> **Ordinary owning actions.** Fixed, discovered, source-only and guarded workflow actions use
 > `retain_operation` and fresh-request advancement, delivery and close. Deliberate
-> native custody controls require `advanced()`; only the issued workflow funnel
-> remains ordinary until its owning adapter lands.
+> native custody controls require `advanced()`. Guarded workflow actions retain
+> their original issued requirement in an ordinary owning operation.
 
 A native candidate-preparation refusal before product publication is a typed
 `Denied` outcome, with its original native error available through
