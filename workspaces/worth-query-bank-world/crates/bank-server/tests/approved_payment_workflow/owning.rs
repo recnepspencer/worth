@@ -5,6 +5,7 @@ use worth_query_host::facade::{admission::authenticated_principal::*, applicatio
 #[test]
 fn owning_bank_payment_refuses_cancellation_then_commits_once() {
     let ready = ReadyPaymentWorld::new("owning-workflow-payment", FaultScript::Succeed);
+    let route = ready.install_synchronous_completion();
     let runtime = &ready.fixture.world.runtime;
     let owner = runtime
         .approved_business_payment(&ready.principal, &ready.scope)
@@ -27,18 +28,65 @@ fn owning_bank_payment_refuses_cancellation_then_commits_once() {
     };
     assert!(ready.rail.attempts().is_empty());
     let fresh = support::request_scope();
+    let actor = ready.fixture.authenticate(super::fixture::APPROVER);
     let completed = match owner.advance(
         &runtime
-            .request(&ready.principal, &fresh)
+            .request(&actor, &fresh)
             .on_branch(ready.instance.branch()),
     ) {
         WorthQueryWorkflowOperationAdvance::Completed(done) => done,
-        _ => panic!("lawful fresh Bank effect"),
+        WorthQueryWorkflowOperationAdvance::Refused { denial, .. } => {
+            panic!("installed completion refused: {denial:?}")
+        }
+        _ => panic!("installed synchronous completion must return its actual completed owner"),
     };
-    assert!(
-        matches!(completed.evidence(),WorthQuerySourceCompletion::Fresh{receipt,..} if receipt.emitted_effect_count()==1)
+    let WorthQuerySourceCompletion::Fresh { receipt, .. } = completed.evidence() else {
+        panic!("first actual effect has its original fresh receipt");
+    };
+    assert_eq!(receipt.emitted_effect_count(), 3);
+    let token = ready.rail.attempts()[0]
+        .token()
+        .try_into()
+        .expect("actual rail correlation has 32 bytes");
+    let terminal = runtime
+        .observe_payment_rail_completion(&route, token)
+        .expect("actual native World terminal for the original dispatch");
+    assert_eq!(
+        terminal.original_world_commit(),
+        receipt.committed_product_publication().composite_commit()
     );
+    assert_ne!(
+        terminal.original_world_commit(),
+        terminal.completion_world_commit()
+    );
+    assert_eq!(ready.rail.attempts().len(), 1);
+    assert!(matches!(
+        runtime
+            .approved_business_payment(&actor, &fresh)
+            .advance(
+                ready.instance.clone(),
+                ready.authority.clone(),
+                &key("approved-payment:owned:completion-still-awaiting")
+            )
+            .unwrap(),
+        WorkflowProgressOutcome::AwaitingOperation(_)
+    ));
     assert_eq!(ready.rail.completed_effect_count(), 1);
+    let observed = runtime
+        .request(&actor, &fresh)
+        .on_branch(ready.instance.branch())
+        .query(bank_domain::queries::payment(ready.fixture.payment))
+        .execute()
+        .expect("independent payment truth after one effect");
+    assert_eq!(observed.rows().len(), 1);
+    assert_eq!(
+        observed.rows()[0].status(),
+        bank_domain::schema::PaymentStatus::Committed
+    );
+    assert_eq!(
+        observed.rows()[0].deciding_principal(),
+        Some(super::fixture::principal_id(super::fixture::APPROVER))
+    );
     completed
         .close(
             &runtime
