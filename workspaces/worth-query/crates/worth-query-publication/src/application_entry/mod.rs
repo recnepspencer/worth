@@ -23,12 +23,12 @@ pub use ordinary::{WorthQueryOperationBuilder, WorthQueryPendingApplicationLane}
 mod operation;
 pub use operation::{
     WorthQueryClosedOperation, WorthQueryCompletedSourceOperation, WorthQueryFixedOperation,
-    WorthQueryFixedProjectionInstallation, WorthQueryOperationAdvance,
-    WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
+    WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
     WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
     WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
     WorthQueryOperationDeliveryPolicy, WorthQueryOperationDescription,
-    WorthQueryOperationModeFactory, WorthQueryOperationProgress, WorthQuerySettledFixedOperation,
+    WorthQueryOperationModeFactory, WorthQueryOperationProgress,
+    WorthQueryOutputProjectionInstallation, WorthQuerySettledFixedOperation,
     WorthQuerySourceCompletion, WorthQuerySourceDeliveryMode, WorthQuerySourceOnlyAdvance,
     WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture,
     WorthQuerySourceOperationAdmission, WorthQueryTerminalFixedOperation,

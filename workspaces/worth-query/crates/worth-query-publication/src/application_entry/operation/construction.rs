@@ -81,7 +81,7 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
         <Delivery<Schema, Intent, Action> as ApplicationFixedActionDelivery<
             Schema,
             Binding<Schema, Intent>,
-        >>::Projection: WorthQueryFixedProjectionInstallation<Schema>,
+        >>::Projection: WorthQueryOutputProjectionInstallation<Schema>,
     {
         if !program
             .runtime()

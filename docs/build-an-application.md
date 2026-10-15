@@ -1868,7 +1868,7 @@ When no projected rows are needed, declare `ApplicationNoProjection` and use
 the real required outputs. It returns an authentic observation, not query
 permission or rows. The compiled public API example and negative counterpart are
 on [`deliver_current`](../workspaces/worth-query/crates/worth-query-publication/src/application_entry/operation/current_delivery.rs).
-`ApplicationFixedProjection` and `WorthQueryFixedProjectionInstallation` are
+`ApplicationOutputProjection` and `WorthQueryOutputProjectionInstallation` are
 sealed composition contracts; applications choose the provided projection shape
 rather than implementing another installation or authorization policy.
 

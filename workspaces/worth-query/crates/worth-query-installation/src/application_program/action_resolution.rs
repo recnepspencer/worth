@@ -1,5 +1,8 @@
 //! Exact action occurrence and delivery resolution from real installed meaning.
 use super::WorthQueryInstalledApplicationProgram;
+use worth_query_declaration::facade::application_program::{
+    ApplicationActionDeclaration, ApplicationDiscoveredAction, ApplicationDiscoveredActionDelivery,
+};
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema,
 };
@@ -43,6 +46,18 @@ impl<Schema: ApplicationSchema, Program> WorthQueryInstalledApplicationProgram<S
     {
         self.action_inventory()
             .resolve_fixed_action::<Schema, Binding, Action>()
+    }
+    /// Resolves a genuine discovered action and its concrete installed delivery.
+    pub fn resolve_discovered_action<Binding, Action>(
+        &self,
+    ) -> Result<&ApplicationActionDeclaration, WorthQueryActionResolutionDenial>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Action: ApplicationDiscoveredAction<Schema, Binding>,
+        Action::Delivery: ApplicationDiscoveredActionDelivery<Schema, Binding>,
+    {
+        self.action_inventory()
+            .resolve_discovered_action::<Schema, Binding, Action>()
     }
 }
 
@@ -88,6 +103,27 @@ impl<'installed> WorthQueryInstalledActionInventory<'installed> {
         let declared = Action::declaration();
         let actual = self.resolve_occurrence::<Schema, Binding>(&declared)?;
         if actual.delivery() != declared.delivery() || !actual.required_output_source() {
+            return Err(WorthQueryActionResolutionDenial::DeliveryMismatch);
+        }
+        Ok(actual)
+    }
+    /// Pure resolution grants no request admission or output-source custody.
+    pub fn resolve_discovered_action<Schema, Binding, Action>(
+        &self,
+    ) -> Result<&'installed ApplicationActionDeclaration, WorthQueryActionResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Binding: ApplicationMutationBinding<Schema>,
+        Action: ApplicationDiscoveredAction<Schema, Binding>,
+        Action::Delivery: ApplicationDiscoveredActionDelivery<Schema, Binding>,
+    {
+        let actual = self.resolve_action::<Schema, Binding, Action>()?;
+        if !actual.required_output_source()
+            || actual
+                .delivery()
+                .and_then(|delivery| delivery.discovered_output())
+                .is_none()
+        {
             return Err(WorthQueryActionResolutionDenial::DeliveryMismatch);
         }
         Ok(actual)

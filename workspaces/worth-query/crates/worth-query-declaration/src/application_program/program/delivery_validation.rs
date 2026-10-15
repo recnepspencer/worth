@@ -1,4 +1,4 @@
-//! Fixed delivery closes over the program's actual root topology and source occurrence.
+//! Output delivery closes over the program's actual root topology and source occurrence.
 use super::*;
 pub(super) fn validate_action_deliveries<Schema, Program>(
     actions: &[ApplicationActionDeclaration],
@@ -13,7 +13,11 @@ where
             continue;
         };
         require_identity(delivery.identity())?;
-        let Some(delivery) = delivery.fixed_output() else {
+        let discovered = matches!(
+            delivery,
+            super::super::ApplicationActionDeliveryDeclaration::Discovered(_)
+        );
+        let Some(delivery) = delivery.output() else {
             if action.required_output_source() {
                 return Err(denial(
                     ApplicationProgramValidationDenialKind::InvalidActionDelivery,
@@ -26,7 +30,8 @@ where
             require_identity(read.identity())?;
         }
         let connection = delivery.root_connection();
-        if !action.required_output_source()
+        if discovered != delivery.is_discovered()
+            || !action.required_output_source()
             || delivery.batch_items() == Some(0)
             || !roots.contains(&delivery.root_type())
             || connection.source_instance() != action.composition_instance()
