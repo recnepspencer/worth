@@ -10,7 +10,7 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::declaration::application_program::ApplicationProgramRevision;
 use worth_query_host::facade::primary_graph::{
     WorthQueryBranchAdoptionPublicationOutcome, WorthQueryPreparedBranchAdoption,
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowDispositions,
 };
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
@@ -20,35 +20,11 @@ use super::super::{
     programs::RetentionProgramP1,
 };
 
-/// The caller's decision over the inventory the owner just read.
-pub type WorkflowDecision<'decide> =
-    &'decide dyn Fn(&WorthQueryWorkflowAdoptionInventory) -> WorthQueryWorkflowDispositions;
-
-pub fn second_program_workflow_inventory(
-    application: &DocumentWorkflowRuntime,
-    branch: WorthQueryProductBranch,
-) -> WorthQueryWorkflowAdoptionInventory {
-    let target = second_revision(application);
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    let programs = runtime
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .programs();
-    let requirements = programs.compare(&target).expect("P0 to P1 compares");
-    programs
-        .adopt(&requirements)
-        .expect("declared adoption capability admits")
-        .workflow_inventory(1_024)
-        .expect("the owner inventories the branch's workflow facts")
-}
-
 /// Prepares the move to P1, deciding the fresh inventory when `decide` is set.
 pub fn prepare_second_program_adoption(
     application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
-    decide: Option<WorkflowDecision<'_>>,
+    decide: Option<WorthQueryWorkflowDispositions>,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryApplicationProgramAdoptionPreparationDenial>
 {
     let target = second_revision(application);
@@ -64,12 +40,7 @@ pub fn prepare_second_program_adoption(
         .adopt(&requirements)
         .expect("declared adoption capability admits");
     let request = match decide {
-        Some(decide) => {
-            let inventory = request
-                .workflow_inventory(1_024)
-                .expect("the owner inventories the branch's workflow facts");
-            request.workflow(decide(&inventory))
-        }
+        Some(choices) => request.workflow(choices),
         None => request,
     };
     request.prepare(1_024)

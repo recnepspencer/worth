@@ -7,6 +7,8 @@ use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeili
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowRecord {
     pub(in crate::domain_computation::primary_graph) state: State,
+    pub(in crate::domain_computation::primary_graph) original_start_revision:
+        worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph) occurrence: u64,
     pub(in crate::domain_computation::primary_graph) live: bool,
     pub(in crate::domain_computation::primary_graph) history: ReadOnlyWorkflowHistory,
@@ -14,7 +16,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowRecord {
         Option<PublishedWorkflowInstanceRef>,
 }
 /// Capability admission and full subject/Spec validation occur before this native record read.
-pub(in crate::domain_computation::primary_graph) fn observe(
+pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -24,9 +26,15 @@ pub(in crate::domain_computation::primary_graph) fn observe(
     is_current_observation: bool,
     lineage: EntityId,
     revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-    original_start_revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    support: &crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport<Schema>,
     resources: WorthQueryApplicationWorkflowResourceCeiling,
 ) -> Result<WorkflowRecord, Denial> {
+    // Historical data is decoded against the admitted roster, NOT re-authorized as active.
+    let original_start_revision=crate::domain_computation::primary_graph::workflow::instance::start_provenance::read(
+        execution,runtime,snapshot,layout,instance,support).map_err(|cause| {
+            use crate::domain_computation::primary_graph::workflow::instance::start_provenance::StartProvenanceReadDenial as Native;
+            match cause {Native::Corrupt=>Denial::Corrupt,Native::UnsupportedProtocol(version)=>Denial::UnsupportedInstanceProtocol(version),Native::Execution(cause)=>Denial::Relational(cause)}
+        })?;
     let kind = layout.instance.entity_kind;
     let mut facts = Vec::new();
     let state = exact_u64(
@@ -160,7 +168,7 @@ pub(in crate::domain_computation::primary_graph) fn observe(
             instance,
             *definition,
             content,
-            *original_start_revision,
+            original_start_revision,
             path,
         ))
     } else {
@@ -178,6 +186,7 @@ pub(in crate::domain_computation::primary_graph) fn observe(
     .map_err(Denial::Execution)?;
     Ok(WorkflowRecord {
         state,
+        original_start_revision,
         occurrence,
         live,
         history,

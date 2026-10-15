@@ -21,12 +21,10 @@ pub(in crate::domain_computation::primary_graph) use assessment::{
     WorkflowAssessmentEvidenceMeaning,
 };
 
+pub(in crate::domain_computation::primary_graph) use adoption::WorthQueryWorkflowAdoptionInventory;
 pub use adoption::{
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
-    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,
-    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowInstanceDisposition,
 };
 pub use definition::{
     WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,

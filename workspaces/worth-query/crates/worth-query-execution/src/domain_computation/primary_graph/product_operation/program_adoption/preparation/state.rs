@@ -26,6 +26,33 @@ use crate::domain_computation::primary_graph::workflow::{
 fn map_relational_preparation_denial(
     denial: worth_relational::facade::transactions::TransactionCommitError,
 ) -> WorthQueryBranchAdoptionPreparationDenial {
+    // Execution control remains typed, but native partition context and the
+    // private workflow candidate's commit log never cross the disclosure boundary.
+    use worth_relational::facade::transactions::{
+        CommitExecutionDenialKind, RelationalExecutionDenialCause as Cause, TransactionCommitError,
+    };
+    let execution_cause = match &denial {
+        TransactionCommitError::Execution { denial, .. } => {
+            let CommitExecutionDenialKind::Cause(cause) = denial.kind;
+            Some(cause)
+        }
+        TransactionCommitError::Interrupted { interruption, .. } => {
+            Some(match interruption.interruption() {
+                worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
+                    Cause::Cancelled
+                }
+                worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
+                    Cause::DeadlineElapsed
+                }
+            })
+        }
+        _ => None,
+    };
+    if let Some(cause) = execution_cause {
+        return WorthQueryBranchAdoptionPreparationDenial::ReadExecution(
+            crate::facade::primary_graph::relational_execution_kind(cause, None),
+        );
+    }
     if let worth_relational::facade::transactions::TransactionCommitError::Conflict {
         error, ..
     } = &denial
@@ -43,7 +70,7 @@ fn map_relational_preparation_denial(
             };
         }
     }
-    WorthQueryBranchAdoptionPreparationDenial::RelationalPreparation(denial)
+    WorthQueryBranchAdoptionPreparationDenial::RelationalPreparation
 }
 
 pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
@@ -140,17 +167,15 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             target,
             maximum_work_units: maximum_selection_work.saturating_sub(selection.work_units),
         };
-        let inventory =
-            inventory_workflows(execution, view, &workflow_request).map_err(|denial| {
-                workflow_read_denial(denial, maximum_selection_work, selection.work_units)
-            })?;
+        let inventory = inventory_workflows(execution, view, &workflow_request)
+            .map_err(|denial| workflow_read_denial(denial))?;
         Ok((selection, Some(inventory)))
     })?;
     let selected_entity_count = selection.entities.len();
     let workflow_intents = match workflow_inventory.as_ref() {
-        Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref())?
+        Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref(), selected.product().product_branch())?
             .map(|choices| {
-                stage_workflow_dispositions(graph.layout.workflow(), inventory, choices, target,
+                stage_workflow_dispositions(graph.layout.workflow(), inventory, &choices, target,
                     crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission))
             })
             .unwrap_or_default(),

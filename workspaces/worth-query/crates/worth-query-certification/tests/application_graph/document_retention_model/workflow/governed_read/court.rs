@@ -19,6 +19,8 @@ use worth_query_host::facade::{
     application_discovery::*,
     application_entry::*,
 };
+mod definition;
+mod enumeration;
 mod provenance;
 mod publication;
 use publication::{prepare, publish, revoke};
@@ -82,6 +84,21 @@ fn governed_original_intent_read_uses_fresh_subject_and_independent_audit_at_ret
         }
         _ => panic!("the current source must be live"),
     }
+    let metadata_target=worth_query_host::facade::declaration::application_program::ApplicationWorkflowDefinitionReadTarget::<GovernedDocumentWorkflow>::new(
+        worth_query_host::facade::declaration::application_program::ApplicationWorkflowDefinitionIdentity::new("governed-original-intent").unwrap());
+    let metadata = runtime
+        .request(&operator, &scope)
+        .at(&observation)
+        .discover_workflow_definition::<GovernedDocumentWorkflow, MetadataRead>(
+            application.vocabulary(),
+            &metadata_target,
+            input(),
+        )
+        .unwrap();
+    assert!(matches!(
+        metadata.definition(),
+        WorthQueryWorkflowDefinitionDiscovery::Current(_)
+    ));
     let audited = read(&application, &reviewer, &scope, &observation, &original).unwrap();
     match audited {
         WorthQueryWorkflowInstanceRead::Live {

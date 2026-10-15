@@ -2,14 +2,12 @@
 //! on the fork only as an explicitly admitted successor under the migration
 //! law, and the instance on its own branch is untouched.
 
-use worth_query_host::facade::primary_graph::{
-    WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceDisposition,
-};
+use worth_query_host::facade::primary_graph::WorthQueryWorkflowInstanceDisposition;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
 use super::super::document_retention_model::{
     programs::RetentionProgramP1,
-    workflow::{continue_on_fork, second_program_workflow_inventory, support_workflow_program},
+    workflow::{continue_on_fork, support_workflow_program},
 };
 use super::instance_migration::{migration_denial, perform_approved_effect, started, supersede};
 use super::journey::approval_requirement;
@@ -208,32 +206,14 @@ fn a_fork_carries_performed_effects_and_never_continues_an_unsettled_approval() 
     );
 
     support_workflow_program::<RetentionProgramP1>(&mut application);
-    assert!(
-        second_program_workflow_inventory(&application, early)
-            .instances()
-            .is_empty(),
-        "a copied instance is historical on the fork until a continuation",
-    );
-    let forked = second_program_workflow_inventory(&application, fork);
-    assert_eq!(forked.instances().len(), 1);
-    assert!(forked.instance(instance.entity_id()).is_none());
-    let carried = forked
-        .instance(successor.entity_id())
-        .expect("the successor is the fork's live instance");
-    assert_eq!(
-        carried.custody(),
-        &WorthQueryWorkflowInstanceCustody::Performed
-    );
-    assert_eq!(
-        carried.legal_dispositions(),
-        &[WorthQueryWorkflowInstanceDisposition::Carry],
-    );
-    assert!(
-        second_program_workflow_inventory(&application, instance.branch())
-            .instance(instance.entity_id())
-            .is_some(),
-        "the instance still needs its disposition on its own branch",
-    );
+    let decisions =
+        worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()
+            .instance(&successor, WorthQueryWorkflowInstanceDisposition::Cancel);
+    assert!(matches!(crate::document_retention_model::workflow::prepare_second_program_adoption(
+        &application, fork, Some(decisions)),
+        Err(worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+            worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))),
+        "a genuine fork successor retains its inherited effect obligation");
     assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
     assert_eq!(read_retention(application.runtime(), fork), 8);
 }

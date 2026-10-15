@@ -58,6 +58,28 @@ fn foreign_spec_present_and_unperformed_intents_are_both_undisclosed() {
         .request(&operator, &scope)
         .retain_current_read()
         .unwrap();
+    for name in [
+        "reviewed-document-terminal",
+        "foreign-definition-never-published",
+    ] {
+        let target=worth_query_host::facade::declaration::application_program::ApplicationWorkflowDefinitionReadTarget::<GovernedDocumentWorkflow>::new(
+            worth_query_host::facade::declaration::application_program::ApplicationWorkflowDefinitionIdentity::new(name).unwrap());
+        let found = application
+            .runtime()
+            .request(&operator, &scope)
+            .at(&basis)
+            .discover_workflow_definition::<GovernedDocumentWorkflow, MetadataRead>(
+                application.vocabulary(),
+                &target,
+                input(),
+            )
+            .unwrap();
+        assert_eq!(
+            found.definition(),
+            &WorthQueryWorkflowDefinitionDiscovery::Unpublished
+        );
+        assert_eq!(found.basis().selected_commit(), basis.selected_commit());
+    }
     for original in [&present, &missing] {
         match read(&application, &operator, &scope, &basis, original).unwrap() {
             WorthQueryWorkflowInstanceRead::Missing { basis: found } => {
@@ -191,7 +213,6 @@ fn carry_keeps_original_start_revision_while_fresh_advance_uses_current_program(
     application.support_workflow_spec(supported).unwrap();
     let definition = publish(&application);
     let prepared = prepare(&application, definition, 91_640);
-    let original = prepared.discovery_intent();
     let performed = started(prepared.execute());
     let started_under = *performed.instance().program_revision();
     let scope = request_scope();
@@ -205,9 +226,8 @@ fn carry_keeps_original_start_revision_while_fresh_advance_uses_current_program(
     let programs = application.runtime().request(&operator, &scope).programs();
     let requirements = programs.compare(&target).unwrap();
     let request = programs.adopt(&requirements).unwrap();
-    let inventory = request.workflow_inventory(1_024).unwrap();
     let prepared = request
-        .workflow(inventory.carry_compatible().unwrap())
+        .workflow(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible())
         .prepare(1_024)
         .unwrap();
     assert!(matches!(prepared.publish(application.runtime(), &operator, &scope),
@@ -217,7 +237,27 @@ fn carry_keeps_original_start_revision_while_fresh_advance_uses_current_program(
         .request(&operator, &scope)
         .retain_current_read()
         .unwrap();
-    let found = live(read(&application, &operator, &scope, &retained, &original).unwrap());
+    let target=worth_query_host::facade::declaration::application_program::ApplicationWorkflowDefinitionReadTarget::<GovernedDocumentWorkflow>::new(
+        worth_query_host::facade::declaration::application_program::ApplicationWorkflowDefinitionIdentity::new("governed-original-intent").unwrap());
+    let page = application
+        .runtime()
+        .request(&operator, &scope)
+        .at(&retained)
+        .read_workflow_instances::<GovernedDocumentWorkflow, DefinitionRead>(
+            application.vocabulary(),
+            &target,
+            input(),
+            WorthQueryWorkflowReadExtent::Definition,
+            8,
+            WorthQueryWorkflowIndexRead::PublishedOnly,
+            None,
+        )
+        .unwrap();
+    assert_eq!(page.entries().len(), 1);
+    let found = match &page.entries()[0] {
+        WorthQueryWorkflowInstanceRead::Live { instance, .. } => instance.clone(),
+        _ => panic!("token-free carried enumeration must find a live native occurrence"),
+    };
     assert_eq!(
         found.program_revision(),
         performed.instance().program_revision()

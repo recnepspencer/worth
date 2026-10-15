@@ -22,6 +22,7 @@ worth_query_capability_context!(pub WorkflowReadContext in DocumentRetentionSche
 worth_query_capability_provenance!(pub WorkflowReadProvenance in DocumentRetentionSchema);
 worth_query_capability!(pub SubjectReadCapability in DocumentRetentionSchema);
 worth_query_capability!(pub DefinitionReadCapability in DocumentRetentionSchema);
+worth_query_capability!(pub MetadataReadCapability in DocumentRetentionSchema);
 worth_query_capability!(pub AuditReadCapability in DocumentRetentionSchema);
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct WorkflowReadInput {
@@ -31,9 +32,11 @@ worth_query_portable_type!(WorkflowReadInput => "worth.query.certification.workf
 worth_query_structured_value_binding!(pub WorkflowReadInputBinding for WorkflowReadInput {identity:"worth.query.certification.workflow-read-input.v1"});
 worth_query_operation!(pub SubjectReadOperation for DocumentRetentionSchema,input WorkflowReadInputBinding);
 worth_query_operation!(pub DefinitionReadOperation for DocumentRetentionSchema,input WorkflowReadInputBinding);
+worth_query_operation!(pub MetadataReadOperation for DocumentRetentionSchema,input WorkflowReadInputBinding);
 worth_query_operation!(pub AuditReadOperation for DocumentRetentionSchema,input WorkflowReadInputBinding);
 worth_query_operation_reads!(SubjectReadOperation => [DocumentIdentityField]);
 worth_query_operation_reads!(DefinitionReadOperation => [DocumentIdentityField]);
+worth_query_operation_reads!(MetadataReadOperation => [DocumentIdentityField]);
 worth_query_operation_reads!(AuditReadOperation => [DocumentIdentityField]);
 trait ReadCapability: ApplicationCapabilityMarkerIdentity<Schema = DocumentRetentionSchema> {
     const ACTION: &'static str;
@@ -43,6 +46,9 @@ impl ReadCapability for SubjectReadCapability {
 }
 impl ReadCapability for DefinitionReadCapability {
     const ACTION: &'static str = "enumerate-workflow-definition";
+}
+impl ReadCapability for MetadataReadCapability {
+    const ACTION: &'static str = "read-workflow-definition-metadata";
 }
 impl ReadCapability for AuditReadCapability {
     const ACTION: &'static str = "audit-workflow-subject";
@@ -76,6 +82,7 @@ impl<C: ReadCapability> ApplicationCapabilityRequest<DocumentRetentionSchema, C>
 pub struct SubjectRead;
 pub struct DefinitionRead;
 pub struct AuditRead;
+pub struct MetadataRead;
 impl ApplicationWorkflowReadBinding<DocumentRetentionSchema> for SubjectRead {
     const IDENTITY: &'static str = "worth.query.certification.workflow-subject-read.v1";
     type Capability = SubjectReadCapability;
@@ -104,6 +111,28 @@ impl ApplicationWorkflowReadBinding<DocumentRetentionSchema> for DefinitionRead 
     type Input = WorkflowReadInput;
     type InputBinding = WorkflowReadInputBinding;
     type Operation = DefinitionReadOperation;
+    type PrincipalBinding = DocumentPrincipalBinding;
+    type Mapping = ExternalMapping;
+    type Principal = Principal;
+    type PrincipalIdentity = u64;
+    type PrincipalIdentityBinding = U64ApplicationValueBinding;
+    fn principal_binding() -> ApplicationPrincipalBindingRef<
+        DocumentRetentionSchema,
+        DocumentPrincipalBinding,
+        ExternalMapping,
+        Principal,
+        u64,
+        U64ApplicationValueBinding,
+    > {
+        DocumentPrincipalBinding::reference()
+    }
+}
+impl ApplicationWorkflowReadBinding<DocumentRetentionSchema> for MetadataRead {
+    const IDENTITY: &'static str = "worth.query.certification.workflow-metadata-read.v1";
+    type Capability = MetadataReadCapability;
+    type Input = WorkflowReadInput;
+    type InputBinding = WorkflowReadInputBinding;
+    type Operation = MetadataReadOperation;
     type PrincipalBinding = DocumentPrincipalBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -169,6 +198,15 @@ pub(super) fn declare(
             DefinitionReadCapability,
             DefinitionReadOperation,
         >(DefinitionReadCapability::reference(), op));
+    let op = MetadataReadOperation::reference();
+    let schema = schema
+        .operation(op.definition().no_external_effect().no_aftermath().finish())
+        .operation_projection_work_budget(op, 512)
+        .operation_read_field(op, DocumentIdentityField::reference())
+        .capability(contract::read::<
+            MetadataReadCapability,
+            MetadataReadOperation,
+        >(MetadataReadCapability::reference(), op));
     let op = AuditReadOperation::reference();
     let schema = schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
@@ -195,7 +233,10 @@ impl ApplicationWorkflowSpec for GovernedDocumentWorkflow {
         ApplicationWorkflowObservationPolicy::governed(
             ApplicationWorkflowReadRule::subject::<Self, SubjectRead>(),
             ApplicationWorkflowReadRule::definition::<Self, DefinitionRead>(),
-            None,
+            Some(ApplicationWorkflowReadRule::definition_metadata::<
+                Self,
+                MetadataRead,
+            >()),
             ApplicationWorkflowAuditPolicy::Governed(ApplicationWorkflowReadRule::subject::<
                 Self,
                 AuditRead,

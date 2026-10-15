@@ -1691,18 +1691,21 @@ revision, in one product publication:
 // Illustrative: not compiled.
 let programs     = request.on_branch(branch).programs();
 let requirements = programs.compare(&target)?;          // what adoption needs
-let adoption     = programs.adopt(&requirements);
-let inventory    = adoption.workflow_inventory(max_work)?;
-let dispositions = /* a decision for every workflow, built from `inventory` */;
+let adoption     = programs.adopt(&requirements)?;
+let dispositions = WorthQueryWorkflowDispositions::carry_compatible(); // explicit fresh native policy
 let prepared     = adoption.workflow(dispositions).prepare(max_work)?;
-let outcome      = prepared.publish();                  // Performed | NoEffect | ProductUnpublished
+let outcome      = prepared.publish(runtime, &principal, &scope); // native publication outcome
 ```
 
 - You must compare before adopting: the requirements are an input to `adopt`.
 - Every pending custody item needs a supported disposition.
-- Every workflow definition and instance on the branch needs a legal
-  disposition (carry, retire, or cancel). Some need migration, and some block
-  adoption until they settle.
+- Native preparation privately checks a total legal disposition for every
+  current definition and live instance. Submit opaque-reference choices or
+  explicit carry-compatible intent. The complete safety inventory is not
+  disclosed. Consumer reads use an explicit typed definition and its installed
+  governed read binding; metadata alone grants no enumeration. Some custody
+  needs migration or blocks adoption until it settles. The new governed read
+  and choice source is authored but uncompiled and unreleased.
 - Adoption across a **set of branches is not atomic**. Each branch publishes
   on its own, and progress can be resumed.
 - Support for a revision can be retired only when no branch and no retained

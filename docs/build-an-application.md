@@ -2552,33 +2552,29 @@ let definition: PublishedWorkflowDefinitionRef = published.definition().clone();
 `expected_predecessor` is `WorkflowDefinitionExpectedPredecessor::Absent` for
 the first revision, or `Published(previous_ref)` for a revision.
 
-**Discover** the current definition on a branch:
+**Discover** metadata only through an explicitly governed retained read. This
+source-preparation surface is unreleased; joined compilation and runtime
+certification are pending. The workflow must declare a `definition_metadata`
+rule naming the concrete installed read binding. Subject permission does not
+open this separate route.
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// examples/authored_workflow/main.rs (`discover`)
-// `request_execution` is the caller's `ExecutionRequest`
-// (`worth_query_host::facade::primary_graph::ExecutionRequest`; the example
-// opens a serial one in `run`).
-application
-    .with_host_advancement(|host_phase| {
-        application
-            .runtime()
-            .on_branch(application.runtime().current_world())
-            .select(&host_phase)
-            .expect("the main branch selects its exact occurrence")
-    })
-    .expect("installed host call opens")
-    .discover_workflow_definition::<ReviewedDocumentWorkflow>(request_execution, identity)
-    .expect("the workflow lineage reads within its bound")
-// -> WorthQueryWorkflowDefinitionDiscovery::{Current(ref), Retired, Unpublished}
+let basis = request.retain_current_read()?;
+let target = ApplicationWorkflowDefinitionReadTarget::<PurchaseWorkflowSpec>::new(identity);
+let found = request.at(&basis)
+    .discover_workflow_definition::<PurchaseWorkflowSpec, DefinitionMetadataRead>(
+        workflow, &target, independently_supplied_read_input,
+    )?;
+// found.basis() identifies the exact data; found.definition() is Current,
+// Retired or Unpublished. Neither the result nor a reference authorizes a start.
 ```
 
-Branch selection needs a host advancement phase (`with_host_advancement`);
-discovery reads under the caller's execution request. A refused discovery is
-a `WorthQueryWorkflowDefinitionDiscoveryDenial` (for example `ForeignLineage`,
-`Cancelled`, or a stopped `ExecutionRequest(..)`).
+Fresh current capability admission precedes any existence-dependent lookup.
+Foreign-Spec names are undisclosed as `Unpublished`; technical/native corruption
+failures remain typed errors. A revoked disclosure grant cannot read even an old
+retained basis. There is no execution-request-only discovery overload.
 
 **Start** an instance, **propose**, and **advance**:
 
@@ -2916,30 +2912,41 @@ until the adoption publishes.
 
 ### 7.4 Workflows and custody during adoption
 
-Every workflow definition and instance on the branch needs a legal
-disposition. Ask for the inventory, decide each item, and pass the decisions:
+The runtime privately checks every current definition and live instance before
+adoption. That complete safety inventory is not a consumer read surface.
+For disclosure, select one typed definition with `read_workflow_instances`,
+its installed Definition read binding and fresh principal/input. A metadata
+read does not grant instance enumeration.
+
+Submit explicit choices for opaque references already possessed, or request
+native carry-compatible handling of every fact found by the fresh safety check:
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// Illustrative: not compiled.
-// tests/application_graph/adoption/workflow_custody.rs (abridged)
-let adoption = programs.adopt(&requirements)?;
-let inventory = adoption.workflow_inventory(1_024)?;
-let decisions = inventory
-    .dispositions()
-    .definition(&inventory.definitions()[0], WorthQueryWorkflowDefinitionDisposition::Retire)?;
-let prepared = adoption.workflow(decisions).prepare(1_024)?;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryWorkflowDispositions, WorthQueryWorkflowDefinitionDisposition,
+};
+let choices = WorthQueryWorkflowDispositions::new()
+    .definition(&definition, WorthQueryWorkflowDefinitionDisposition::Retire);
+let prepared = programs.adopt(&requirements)?.workflow(choices).prepare(1_024)?;
+// When every fresh fact should be carried, use instead:
+let choices = WorthQueryWorkflowDispositions::carry_compatible();
 ```
 
-- Definitions are `Carry` or `Retire`; instances are `Carry` or `Cancel`. Each
-  occurrence's `legal_dispositions()` lists what is allowed.
-- An instance that must be migrated refuses a plain disposition
-  (`MigrationRequired`).
-- Missing decisions deny preparation with
-  `WorkflowDispositionRequired { inventory }`.
-- Custody dispositions for owner-held effects are derived by the runtime, not
-  chosen by you.
+Explicit choices must totally and legally decide the fresh native inventory.
+An omitted live instance refuses; retiring a definition does not cancel its
+instances. A performed effect or pending external-owner/approval obligation
+cannot be cancelled away. The existing source-program adoption authority is
+still required. References and read views grant no adoption permission.
+
+`WorkflowDispositionRequired` and `WorkflowDispositionRejected` carry no
+inventory or occurrence identities. Native candidate preparation logs also stay
+private; execution cancellation/resource causes retain their typed category. A new start can invalidate explicit
+choices; take a fresh governed view and decide again. A start after preparation
+is still fenced by the native expected head at publication. The carry-compatible
+policy explicitly applies to fresh native truth; it is not a cached inventory.
+The new governed disclosure/choice source remains uncompiled and unreleased.
 
 ### 7.5 Several branches
 

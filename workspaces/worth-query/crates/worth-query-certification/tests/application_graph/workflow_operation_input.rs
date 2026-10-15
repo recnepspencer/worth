@@ -10,9 +10,7 @@ use super::document_retention_model::{
     },
 };
 use worth_query_decl::facade::application_program::*;
-use worth_query_host::facade::{
-    application_discovery::WorthQueryWorkflowDefinitionDiscovery, application_entry::*,
-};
+use worth_query_host::facade::application_entry::*;
 use worth_query_package_archive::facade::{
     decode_workflow_definition_draft, WorthQueryPackageArchiveLimits,
 };
@@ -74,24 +72,13 @@ fn ordinary_publication_refuses_zero_and_two_inputs_before_publication() {
             })
             .unwrap();
     }
-    let policy = crate::test_request_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&policy);
-    let selected = runtime
-        .with_host_advancement(|phase| {
-            runtime
-                .on_branch(runtime.current_world())
-                .select(&phase)
-                .unwrap()
-        })
-        .unwrap();
     assert_eq!(
-        selected
-            .discover_workflow_definition::<ReviewedDocumentWorkflow>(
-                &execution,
-                &ApplicationWorkflowDefinitionIdentity::new("input-cardinality").unwrap()
-            )
-            ,
-        Err(worth_query_host::facade::application_discovery::WorthQueryWorkflowDefinitionDiscoveryDenial::ObservationDisabled)
+        super::document_retention_model::workflow::discover_definition_metadata(
+            &application,
+            runtime.current_world(),
+            &ApplicationWorkflowDefinitionIdentity::new("input-cardinality").unwrap()
+        ),
+        Err(())
     );
     let published = runtime
         .with_host_advancement(|phase| {

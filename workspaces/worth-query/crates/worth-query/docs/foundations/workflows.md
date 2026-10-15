@@ -104,7 +104,7 @@ read a workflow instance.
 | Author | Application code | `ApplicationWorkflowDefinitionBuilder` | `AuthoredWorkflowDefinition`, then `ValidatedWorkflowDefinition` |
 | Bind | Application code | `bind_definition` | `WorthQueryInstalledWorkflowDefinitionContract` |
 | Publish | Caller request | `prepare_workflow_publication` | `WorkflowDefinitionPublicationOutcome` |
-| Discover | Caller | `discover_workflow_definition` | `WorthQueryWorkflowDefinitionDiscovery` |
+| Discover metadata | Caller with explicit metadata read | retained `discover_workflow_definition` | `WorthQueryWorkflowDefinitionRead` |
 | Start | Caller request | `prepare_workflow_instance_start` | `WorkflowInstanceStartOutcome` |
 | Propose | Caller request | `prepare_workflow_proposal` | `WorkflowProposalOutcome` |
 | Advance | Caller request | `prepare_workflow_advance` | `WorkflowProgressOutcome` |
@@ -442,20 +442,25 @@ Preparation refusals are `WorthQueryWorkflowDefinitionPublicationPreparationDeni
 
 ## Discover and retire definitions
 
-Discovery asks one selected branch occurrence which revision is current for an identity:
+The unreleased metadata route requires an explicit `definition_metadata` read rule,
+its concrete installed read binding, and independently supplied domain read input.
+It authorizes the current principal before looking up the name at the retained
+basis. It grants neither subject access nor definition-wide enumeration. Joined
+compilation and runtime certification are pending.
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// `execution` is the host's `ExecutionRequest`
-// (`worth_query_host::facade::primary_graph::ExecutionRequest`).
-let selected = runtime
-    .with_host_advancement(|phase| runtime.on_branch(branch).select(&phase))??;
-let found = selected.discover_workflow_definition::<PurchaseWorkflowSpec>(execution, &identity)?;
+let target = ApplicationWorkflowDefinitionReadTarget::<PurchaseWorkflowSpec>::new(identity);
+let found = request.at(&basis).discover_workflow_definition::<PurchaseWorkflowSpec, DefinitionMetadataRead>(
+    workflow, &target, independently_supplied_read_input,
+)?;
 ```
 
-The runnable example builds its `ExecutionRequest` with `ExecutionRequest::serial(..)`
-(`worth-query-certification/examples/authored_workflow/main.rs`).
+`WorthQueryWorkflowDefinitionRead` retains the exact data basis. Inspect its
+`definition()` for the result below. A well-formed foreign Spec is undisclosed as
+`Unpublished`; malformed native facts remain typed corruption. The disabled
+reviewed-document example demonstrates refusal through the same request route.
 
 `WorthQueryWorkflowDefinitionDiscovery`:
 
@@ -465,16 +470,11 @@ The runnable example builds its `ExecutionRequest` with `ExecutionRequest::seria
 | `Retired` | The lineage was retired. It admits no new starts. |
 | `Unpublished` | Nothing was published under this identity on this occurrence. |
 
-`WorthQueryWorkflowDefinitionDiscoveryDenial`:
-
-| Variant | Meaning |
-|---|---|
-| `ExecutionRequest(..)` | The native request stopped while reading the selected occurrence. |
-| `Cancelled` | The caller cancelled this discovery. |
-| `DeadlineExceeded` | The caller's deadline elapsed during discovery. |
-| `ForeignLineage` | Another spec published this identity. Discover it through that spec. |
-| `LineageUnreadable` | The lineage records cannot be read within their fixed bounds. Retrying the same discovery cannot succeed. |
-| `IndexUnavailable` | The lineage index could not be made current within its reconstruction budget. |
+`WorthQueryWorkflowObservationDenial` preserves request/selection failures and
+native read denials. Disabled or incompatible policy refuses at installation;
+unauthorized names refuse at fresh capability admission, equally for present and
+absent names. Native read, preparation, index and corruption failures remain typed;
+they are never converted into an empty discovery result.
 
 The answer is exact for that occurrence only. A later start that finds the
 definition superseded or retired says so with a typed outcome. A discovered
@@ -910,9 +910,10 @@ an unchanged subject or a caller-supplied actor field.
 Every workflow spec explicitly declares `observation_policy()` and
 `actor_policy()`. `ApplicationWorkflowObservationPolicy::disabled()` closes the
 public discovery route. Governed original-intent reads enter through the
-principal-bearing retained request described below. The older definition-discovery
-entrance remains closed with `ObservationNotImplemented`; a declaration alone
-cannot open it. Actor capability enforcement is independent of read disclosure.
+principal-bearing retained request described below. Exact definition metadata
+requires its separate concrete `DefinitionMetadata` read slot; the former
+execution-only entrance is removed. Both surfaces remain unreleased source
+preparation pending joined proof. Actor capability enforcement is independent of read disclosure.
 Public workflow views never serve as permission.
 
 Current workflow layouts and portable definitions admit only their current
@@ -1211,7 +1212,7 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | `ApplicationWorkflowValidationDenial` | `validate()` |
 | `WorthQueryApplicationWorkflowInstallationDenial` | Installation and `bind_definition` |
 | `WorthQueryWorkflowRuntimeBindingDenial` | `retain_workflow_spec`, `support_workflow_spec` |
-| `WorthQueryWorkflowDefinitionDiscoveryDenial` | Discovery |
+| `WorthQueryWorkflowReadDenial` | Discovery |
 | `WorthQueryWorkflowProposalPreparationDenial` | `prepare_workflow_proposal`. Variants: `RuntimeMismatch`, `RequestAdmission(..)`, `ProposalPreparation(..)`, `IdempotencyResolution(..)`, `InstanceBranchMismatch` |
 | `WorthQueryWorkflowAdvancePreparationDenial` | `prepare_workflow_advance` |
 | `WorthQueryWorkflowAssessmentAcceptanceDenial`, `WorthQueryWorkflowConditionAcceptanceDenial` | Accepting assessment evidence and condition results |

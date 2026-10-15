@@ -31,7 +31,7 @@ fn program_entries_refuse_before_the_reader_used_by_their_admitted_control() {
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         for zero_memory in [false, true] {
-            for entry in 0..4 {
+            for entry in 0..3 {
                 bound(None);
                 let before = reads();
                 match entry {
@@ -42,13 +42,6 @@ fn program_entries_refuse_before_the_reader_used_by_their_admitted_control() {
                         programs().inspect().unwrap();
                     }
                     2 => {
-                        programs()
-                            .adopt(&requirements)
-                            .expect("declared adoption capability admits")
-                            .workflow_inventory(64)
-                            .unwrap();
-                    }
-                    3 => {
                         drop(
                             programs()
                                 .adopt(&requirements)
@@ -85,14 +78,6 @@ fn program_entries_refuse_before_the_reader_used_by_their_admitted_control() {
                         other => panic!("inspection must refuse at open: {other:?}"),
                     },
                     2 => preparation_cause(
-                        admitted_adoption
-                            .take()
-                            .unwrap()
-                            .workflow_inventory(64)
-                            .err()
-                            .unwrap(),
-                    ),
-                    3 => preparation_cause(
                         admitted_adoption.take().unwrap().prepare(64).err().unwrap(),
                     ),
                     _ => unreachable!(),

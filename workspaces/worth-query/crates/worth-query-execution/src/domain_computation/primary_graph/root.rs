@@ -159,6 +159,11 @@ impl WorthQueryPrimaryGraph {
             .chain(self.layout.equality_index_ids())
             .chain(self.layout.continuation_ordering_index_ids())
             .chain(self.layout.capability_grant_join_index_ids())
+            .chain(
+                self.layout
+                    .workflow_reads()
+                    .map(|indexes| indexes.instances),
+            )
             .chain(std::iter::once(
                 self.layout.provider_idempotency().key_index_id,
             ))
