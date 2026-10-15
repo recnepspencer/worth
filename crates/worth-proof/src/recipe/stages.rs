@@ -83,14 +83,11 @@ mod tests {
         assert_eq!(recipe.basis(), &NoAssumptionBasis);
     }
 
-    #[test]
-    fn recipe_is_size_honest_for_representation() {
-        assert_eq!(size_of::<Recipe<Unresolved, u64>>(), size_of::<u64>());
-        assert_eq!(
-            size_of::<Recipe<Resolved, u64, AssumptionBasis<u8>>>(),
-            size_of::<(u64, AssumptionBasis<u8>)>()
-        );
-    }
+    const _: () = assert!(size_of::<Recipe<Unresolved, u64>>() == size_of::<u64>());
+    const _: () = assert!(
+        size_of::<Recipe<Resolved, u64, AssumptionBasis<u8>>>()
+            == size_of::<(u64, AssumptionBasis<u8>)>()
+    );
 
     #[test]
     fn recipe_clone_preserves_stage_payload_and_basis() {

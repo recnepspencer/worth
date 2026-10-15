@@ -8,7 +8,9 @@ use worth_proof::TransitionOutcome;
 use super::json_lowering_fixtures::{
     field_source_for, scalar_input, source_for, task_summary_contract,
 };
-use crate::foundational_vocabulary::{field, identity, key, revision, scalar_contract};
+use crate::certification::foundational_vocabulary::{
+    field, identity, key, revision, scalar_contract,
+};
 
 #[test]
 fn json_lowering_rejects_unknown_struct_fields_with_source_locus() {

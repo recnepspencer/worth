@@ -121,11 +121,8 @@ mod tests {
         "redone"
     }
 
-    #[test]
-    fn causal_evidence_is_zero_sized() {
-        assert_eq!(size_of::<DerivedFrom<ApplyEntry, LedgerAuthority>>(), 0);
-        assert_eq!(size_of::<Inverts<ApplyEntry, LedgerAuthority>>(), 0);
-    }
+    const _: () = assert!(size_of::<DerivedFrom<ApplyEntry, LedgerAuthority>>() == 0);
+    const _: () = assert!(size_of::<Inverts<ApplyEntry, LedgerAuthority>>() == 0);
 
     #[test]
     fn a_redo_is_reachable_only_through_a_performed_undo() {

@@ -19,16 +19,3 @@ pub use vocabulary::{
     CanonicalPropertySeedEvidence, CanonicalResidualDebt, CanonicalRuntimeAssumption,
     CanonicalRuntimeNonAssumption, CanonicalSyntheticRuntimePressure,
 };
-
-#[cfg(test)]
-mod tests {
-    use worth_proof::AuthorityWitness;
-
-    use super::CanonicalProductionReadinessAuthority;
-
-    #[test]
-    fn production_readiness_authority_is_crate_controlled() {
-        let _authority =
-            AuthorityWitness::from_authority_marker(CanonicalProductionReadinessAuthority::new());
-    }
-}

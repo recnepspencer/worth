@@ -1,5 +1,6 @@
 [package]
 name = "worth-foundational"
+autotests = false
 edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -18,3 +19,11 @@ trybuild.workspace = true
 
 [lints]
 workspace = true
+
+[[test]]
+name = "foundational_contracts"
+path = "tests/foundational_contracts.rs"
+
+[[test]]
+name = "borrowed_canonical_material"
+path = "tests/isolated/borrowed_canonical_material.rs"

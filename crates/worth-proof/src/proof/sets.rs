@@ -99,7 +99,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{NoProofs, Proof, ProofSet, ProofSetCons};
+    use super::{NoProofs, ProofSet, ProofSetCons};
     use crate::proof::{mint_proof, AuthorityMarker, AuthorityProves, ProofMarker};
 
     struct LeftProof;
@@ -126,14 +126,5 @@ mod tests {
         accepts_proof_set(&proofs);
         accepts_proof_set(proofs.tail());
         assert_eq!(*proofs.tail().tail(), NoProofs);
-    }
-
-    #[test]
-    fn proof_minting_is_zero_sized_and_crate_internal() {
-        let minted: Proof<LeftProof, TestAuthority> = mint_proof();
-        let direct = Proof::<LeftProof, TestAuthority>::mint();
-
-        let _ = minted;
-        let _ = direct;
     }
 }

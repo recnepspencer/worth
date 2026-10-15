@@ -6,7 +6,7 @@ use worth_foundational::{
 use super::readiness_fixtures::{
     ready_contract, task_summary_contract, task_summary_contract_with_reversed_declaration_order,
 };
-use crate::foundational_vocabulary::{field, identity, key, revision};
+use crate::certification::foundational_vocabulary::{field, identity, key, revision};
 
 #[test]
 fn contract_digest_preparation_basis_uses_declared_field_semantics_in_canonical_order() {

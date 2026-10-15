@@ -5,7 +5,7 @@ use worth_foundational::{
 use worth_proof::TransitionOutcome;
 
 use super::readiness_fixtures::ready_patch;
-use crate::foundational_vocabulary::validated_scalar;
+use crate::certification::foundational_vocabulary::validated_scalar;
 
 #[test]
 fn patch_digest_preparation_basis_is_ordered_independent_of_construction_path() {

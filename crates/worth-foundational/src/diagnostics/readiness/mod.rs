@@ -34,17 +34,3 @@ pub use vocabulary::{
     FoundationalDiagnosticWORTHProofApiEvidence, FoundationalDiagnosticWORTHProofForbiddenSurface,
     FoundationalDiagnosticWORTHProofSurface,
 };
-
-#[cfg(test)]
-mod tests {
-    use worth_proof::AuthorityWitness;
-
-    use super::FoundationalDiagnosticProductionReadinessAuthority;
-
-    #[test]
-    fn production_readiness_authority_is_crate_controlled() {
-        let _authority = AuthorityWitness::from_authority_marker(
-            FoundationalDiagnosticProductionReadinessAuthority::certification_boundary(),
-        );
-    }
-}

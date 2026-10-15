@@ -14,7 +14,9 @@ use worth_proof::TransitionOutcome;
 use super::readiness_fixtures::{
     admitted_state, task_summary_contract, task_summary_contract_with_reversed_declaration_order,
 };
-use crate::foundational_vocabulary::{field, identity, key, revision, validated_scalar};
+use crate::certification::foundational_vocabulary::{
+    field, identity, key, revision, validated_scalar,
+};
 
 fn version() -> CanonicalizationRuleVersion {
     CanonicalizationRuleVersion::new("m2.surface-basis").expect("valid version")

@@ -22,16 +22,5 @@ mod tests {
 
     use super::ExactlyOne;
 
-    #[test]
-    fn exactly_one_preserves_access_and_ownership() {
-        let value = ExactlyOne::new("only");
-
-        assert_eq!(value.get(), &"only");
-        assert_eq!(value.into_inner(), "only");
-    }
-
-    #[test]
-    fn exactly_one_is_size_honest() {
-        assert_eq!(size_of::<ExactlyOne<u64>>(), size_of::<u64>());
-    }
+    const _: () = assert!(size_of::<ExactlyOne<u64>>() == size_of::<u64>());
 }

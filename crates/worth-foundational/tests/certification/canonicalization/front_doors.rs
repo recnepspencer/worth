@@ -7,7 +7,7 @@ use worth_foundational::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::foundational_vocabulary::{key, scalar_contract};
+use crate::certification::foundational_vocabulary::{key, scalar_contract};
 
 fn version() -> CanonicalizationRuleVersion {
     CanonicalizationRuleVersion::new("m2.dx.front-door").expect("valid version")

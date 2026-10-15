@@ -119,11 +119,8 @@ mod tests {
 
     use super::{with_brand, Branded};
 
-    #[test]
-    fn branding_costs_nothing_at_run_time() {
-        assert_eq!(size_of::<Branded<'_, u64>>(), size_of::<u64>());
-        assert_eq!(size_of::<Branded<'_, ()>>(), 0);
-    }
+    const _: () = assert!(size_of::<Branded<'static, u64>>() == size_of::<u64>());
+    const _: () = assert!(size_of::<Branded<'static, ()>>() == 0);
 
     #[test]
     fn values_bound_by_one_brand_stay_usable_together() {

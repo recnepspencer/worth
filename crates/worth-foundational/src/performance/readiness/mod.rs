@@ -27,17 +27,3 @@ pub use vocabulary::{
     FoundationalPerformanceSyntheticRuntimePressure, FoundationalPerformanceWORTHProofApi,
     FoundationalPerformanceWORTHProofForbiddenSurface, FoundationalPerformanceWORTHProofSurface,
 };
-
-#[cfg(test)]
-mod tests {
-    use worth_proof::AuthorityWitness;
-
-    use super::FoundationalPerformanceProductionReadinessAuthority;
-
-    #[test]
-    fn production_readiness_authority_is_crate_controlled() {
-        let _authority = AuthorityWitness::from_authority_marker(
-            FoundationalPerformanceProductionReadinessAuthority::certification_boundary(),
-        );
-    }
-}

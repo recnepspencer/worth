@@ -5,7 +5,7 @@ use worth_foundational::{
 use worth_proof::TransitionOutcome;
 
 use super::patch_fixtures::{task_summary_contract, validated_task_summary};
-use crate::foundational_vocabulary::{field, key};
+use crate::certification::foundational_vocabulary::{field, key};
 
 #[test]
 fn whole_and_field_patch_overlap_is_rejected_as_ambiguous() {
