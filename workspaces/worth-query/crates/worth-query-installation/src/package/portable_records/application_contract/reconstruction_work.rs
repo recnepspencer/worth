@@ -102,7 +102,10 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                     use worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource as Source;
                     work.observe_text(operand.name());
                     match operand.source() {
-                        Source::SignedEvidence(source) => {
+                        Source::SignedEvidence(source)
+                        | Source::RelatedSignedEvidence {
+                            evidence: source, ..
+                        } => {
                             for text in [
                                 &source.mutation_binding,
                                 &source.operation,
@@ -123,6 +126,14 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                                 work.observe_text(text);
                             }
                             work.observe_fixed(1);
+                            if let Source::RelatedSignedEvidence {
+                                relation, from, to, ..
+                            } = operand.source()
+                            {
+                                for text in [relation, from, to] {
+                                    work.observe_text(text);
+                                }
+                            }
                         }
                         Source::PrincipalIdentity {
                             scope,

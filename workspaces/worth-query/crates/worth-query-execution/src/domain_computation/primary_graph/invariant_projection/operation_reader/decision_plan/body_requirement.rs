@@ -29,6 +29,9 @@ impl<Schema: ApplicationSchema, Operation>
             Source::SignedEvidence(source) => {
                 self.signed_evidence_operand(identity, source, execution, context)
             }
+            Source::RelatedSignedEvidence { .. } => {
+                self.related_signed_evidence_operand(identity, source, execution, context)
+            }
             Source::PrincipalIdentity { field, .. } => {
                 let principal = self.body_principal_identity(field)?;
                 self.scalar_requirement_operand(

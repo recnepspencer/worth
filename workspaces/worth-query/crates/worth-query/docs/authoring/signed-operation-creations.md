@@ -31,6 +31,9 @@ Declare through `worth_query_decl::facade::application_schema`:
 - `completed_body.signed_evidence::<Binding>()` derives a typed descriptive
   producer reference; `operation.requirement_operands().signed_evidence(name, &reference)`
   binds its current-evidence existence as a Boolean in the normal requirement evaluator.
+- `operation.requirement_operands().signed_evidence_from_related(name, relation, &reference)`
+  selects one outgoing related subject before using that same evaluator. The
+  relation's target type must be the producer binding's scope type.
 
 Install the body through the usual contribution's `operation_body::<Binding>()`.
 Install a genuine authentication-event owner using
@@ -101,6 +104,24 @@ requires the row's sealed canonical program revision to equal the native active
 revision observed at the consumer's snapshot. Cross-revision compatibility is
 not inferred. Revision mismatch is nonmatching evidence, not a supersession event.
 
+When the consumer's root and the signable subject differ, use
+`signed_evidence_from_related` rather than supplying a subject ID or evidence
+path in React or the host. The declared outgoing relation selects exactly one
+distinct live subject. No subject produces Boolean `false` (and `Unmet` for a
+bare `verified` requirement); the authored expression determines status. Multiple subjects produce
+typed `AmbiguousRelation`, even if only one is signed. Duplicate edges to the
+same subject do not multiply it. A dangling endpoint is unavailable, not absent.
+The selected subject's actual native identity—not the root's identity—is checked
+against provenance. Evidence is never unioned across related subjects.
+
+A real round can therefore be a separate signable subject. Selecting another
+subject does not itself supersede the old subject's signatures. That alone is
+not a complete round lifecycle: the supplier must still author round creation,
+current-round replacement, history retention and when signing/editing is allowed.
+An incoming relationship count does not replace capability policy, assignment,
+parent isolation or business-open guards. Do not increment a certified mutable
+round counter and call that historical-round preservation.
+
 ## How It Executes
 
 1. Ordinary authorization, capability policy and body requirements admit the
@@ -138,6 +159,12 @@ validity: a no-op write may move a native stamp while preserving Current members
 An unrelated source edit need not stale the candidate. Exact logical replay
 resolves before asking for another event. Deferred and indeterminate outcomes
 retain their usual native recovery meanings; do not rerun effects on them.
+
+Related selection also seals root/subject liveness and the exact root-to-subject
+adjacency in that same native read set. Changing selection after preparation
+makes publication stale, including when a second subject is added. A successful
+guarded receipt describes the checked observation; it is not a permanent grant
+or permission to keep using a subsequently changed selection.
 
 ## Small Example
 
@@ -240,6 +267,24 @@ A genuine acknowledgement can share the evidence kind and lifecycle but have a
 different purpose and certified footprint. It neither satisfies this reference
 nor becomes superseded by an edit outside its own `Subject` dependencies.
 
+For a document whose current approval round is a different entity, replace only
+the operand declaration with the typed outgoing selector:
+
+```rust,ignore
+// CurrentRound: Document -> ApprovalRound; SignRoundBinding is scoped to ApprovalRound.
+let round_evidence = completed_sign_round_body.signed_evidence::<SignRoundBinding>()?;
+let operands = CompleteDocument::reference().requirement_operands()
+    .signed_evidence_from_related("verified", CurrentRound::reference(), &round_evidence)?;
+// Admit the same Boolean requirement and attach it to the Document-scoped body.
+// Register completed_sign_round_body itself and declare CurrentRound read membership.
+```
+
+The actual supplier example also declares a tenant-scoped guarded check over
+`TenantDrafts` and the completed `VerifyBinding` producer. Its preservation-only
+body returns the checked tenant without inventing a business transition. It is
+intentionally an exact-one check: a tenant with two drafts is ambiguous, not
+"whichever draft has a signature." It does not implement current-round replacement.
+
 With v2, the governed result's `provenance.dependencies()` exposes the installed
 source-to-snapshot correspondence. `provenance.authentication()` exposes the
 authentication metadata. These are inspection data, not reusable authority.
@@ -316,8 +361,11 @@ Checkpoint restoration preserves signed data and durable idempotency facts, not
 live event or receipt authority. The current-evidence requirement uses body v16;
 v1–v15 records are unchanged and cannot silently acquire the new operand. It
 requires v2 provenance and the declared native lifecycle, and matches only the
-same canonical active program revision. Approval-round selection, automatic
-conversion of early evidence into kernel approval, regulatory
+same canonical active program revision. Related-subject requirements use body
+v18; earlier opcodes/records keep their existing meaning. This selector supports
+one outgoing hop, not arbitrary paths, input-supplied IDs or first/latest selection.
+Native round creation/replacement and Reopen are not supplied by this selector.
+Automatic conversion of early evidence into kernel approval, regulatory
 signature manifestation and UTC evidence are not supplied by this feature.
 
 ## Related Docs

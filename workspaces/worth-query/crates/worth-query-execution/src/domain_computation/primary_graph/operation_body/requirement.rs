@@ -34,6 +34,13 @@ pub enum WorthQueryOperationBodyRequirementTarget {
     SignedEvidence(
         worth_query_declaration::facade::application_schema::ApplicationSigningEvidenceSource,
     ),
+    RelatedSignedEvidence {
+        relation: String,
+        from: String,
+        to: String,
+        evidence:
+            worth_query_declaration::facade::application_schema::ApplicationSigningEvidenceSource,
+    },
     Field(ApplicationFieldBindingLocus),
     RelatedItems {
         relation: String,
@@ -88,6 +95,17 @@ impl WorthQueryOperationBodyRequirementFinding {
             ApplicationOperationBodyRequirementSource::SignedEvidence(source) => {
                 WorthQueryOperationBodyRequirementTarget::SignedEvidence(source.clone())
             }
+            ApplicationOperationBodyRequirementSource::RelatedSignedEvidence {
+                relation,
+                from,
+                to,
+                evidence,
+            } => WorthQueryOperationBodyRequirementTarget::RelatedSignedEvidence {
+                relation: relation.clone(),
+                from: from.clone(),
+                to: to.clone(),
+                evidence: evidence.clone(),
+            },
             ApplicationOperationBodyRequirementSource::Field { field, .. }
             | ApplicationOperationBodyRequirementSource::PrincipalIdentity { field, .. } => {
                 WorthQueryOperationBodyRequirementTarget::Field(field.clone())

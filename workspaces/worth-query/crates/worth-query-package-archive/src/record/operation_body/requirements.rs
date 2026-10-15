@@ -30,6 +30,18 @@ pub(super) fn write(
                     output.u16(4)?;
                     signed_evidence::write(output, source)
                 }
+                Source::RelatedSignedEvidence {
+                    relation,
+                    from,
+                    to,
+                    evidence,
+                } => {
+                    output.u16(5)?;
+                    output.text(relation)?;
+                    output.text(from)?;
+                    output.text(to)?;
+                    signed_evidence::write(output, evidence)
+                }
                 Source::PrincipalIdentity {
                     scope,
                     mutation_binding,
@@ -104,6 +116,12 @@ pub(super) fn decode(
         let operands = decode_sequence(input, budget, 12, |input, _| {
             let name = input.text()?.to_owned();
             let source = match input.u16()? {
+                5 if version >= 18 => Source::RelatedSignedEvidence {
+                    relation: input.text()?.to_owned(),
+                    from: input.text()?.to_owned(),
+                    to: input.text()?.to_owned(),
+                    evidence: signed_evidence::decode(input)?,
+                },
                 4 if version >= 16 => Source::SignedEvidence(signed_evidence::decode(input)?),
                 3 if version >= 13 => Source::PrincipalIdentity {
                     scope: input.text()?.to_owned(),

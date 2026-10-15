@@ -22,6 +22,18 @@ impl ApplicationOperationBodyRequirementProgram {
                     part("current-signed-evidence");
                     part(&source.canonical_record());
                 }
+                Source::RelatedSignedEvidence {
+                    relation,
+                    from,
+                    to,
+                    evidence,
+                } => {
+                    part("related-current-signed-evidence-v1");
+                    part(relation);
+                    part(from);
+                    part(to);
+                    part(&evidence.canonical_record());
+                }
                 Source::Field {
                     field,
                     binding,

@@ -471,6 +471,19 @@ other attestations do not match; unavailable/malformed observations deny. Do not
 reconstruct approval authority, compare field stamps for continued validity,
 or duplicate evidence selectors in the host. Body v16 carries this operand;
 cross-program-revision compatibility is not inferred and mismatch does not supersede history.
+When the consumer root differs from the signable subject, use
+`signed_evidence_from_related(name, relation, &reference)`. The typed outgoing
+relation targets the producer binding's actual scope. Native selection admits
+one distinct live subject, evaluates that subject's evidence, and seals selection
+adjacency/liveness together with the evidence facts. Zero yields Boolean false
+(requirement status comes from the authored expression); multiple
+subjects deny with `AmbiguousRelation`; dangling endpoints remain unavailable.
+No first/latest choice, evidence union or host-selected ID supplies this truth.
+Body v18 carries the distinct selector; older encodings keep their meaning.
+Changing selection is not signature supersession. Model historical rounds as
+separate signable subjects; this selector does not supply round creation,
+relationship replacement, business-open policy or Reopen. Do not implement
+those missing joins with host effects or a mutable certified round counter.
 Context alone is not domain membership; membership alone is not authorization
 and does not replace a capability's grant witness. General assignment expressions,
 multiple creations, arbitrary relation edits, conversion into kernel approval authority and multi-operation commands

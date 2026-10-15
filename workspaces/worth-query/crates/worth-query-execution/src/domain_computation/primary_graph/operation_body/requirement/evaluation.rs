@@ -87,6 +87,16 @@ fn finding_quote(
     for requirement in body.requirements() {
         let target = match requirement.target() {
             Source::SignedEvidence(source) => source.retained_string_bytes(),
+            Source::RelatedSignedEvidence {
+                relation,
+                from,
+                to,
+                evidence,
+            } => evidence
+                .retained_string_bytes()
+                .and_then(|bytes| bytes.checked_add(relation.len()))
+                .and_then(|bytes| bytes.checked_add(from.len()))
+                .and_then(|bytes| bytes.checked_add(to.len())),
             Source::Field { field, .. } | Source::PrincipalIdentity { field, .. } => {
                 field_bytes(field)
             }

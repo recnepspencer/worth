@@ -22,6 +22,12 @@ pub(in crate::application_schema::operation_definition::body) fn validate_requir
             }
             let bound = match operand.source() {
                 Source::SignedEvidence(source) => source.is_declared(members),
+                Source::RelatedSignedEvidence { relation: name, from: source, to: target, evidence } => {
+                    target == &evidence.lifecycle.source_entity
+                        && evidence.is_declared(members)
+                        && members.iter().any(|member| matches!(member, Member::Relation { relation, from, to, .. }
+                            if relation == name && from == source && to == target))
+                },
                 Source::Field { field: locus, binding, scalar_family: family, presence: posture, presence_only, .. } => members.iter().any(|member| {
                     matches!(member, Member::Field { entity, aspect, field, scalar_family, value_type, presence, unit, .. }
                         if entity == locus.entity() && aspect == locus.aspect() && field == locus.field()

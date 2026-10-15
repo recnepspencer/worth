@@ -8,9 +8,8 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodySigningLifecycleSpec as Lifecycle,
     ApplicationSigningEvidenceSource as Evidence,
 };
-#[test]
-fn current_signed_evidence_v16_preserves_the_producer_and_v15_cannot_accept_it() {
-    let evidence = Evidence {
+fn evidence() -> Evidence {
+    Evidence {
         mutation_binding: "SignBinding".into(),
         operation: "Sign".into(),
         evidence_entity: "Evidence".into(),
@@ -25,14 +24,17 @@ fn current_signed_evidence_v16_preserves_the_producer_and_v15_cannot_accept_it()
             consequence_field: ApplicationFieldBindingLocus::new("Supersession", "Facts", "Record"),
             maximum_evidence: 32,
         },
-    };
+    }
+}
+#[test]
+fn current_signed_evidence_v16_preserves_the_producer_and_v15_cannot_accept_it() {
     let reader =
         worth_foundational::expression_api::expressions().reading_within(Expression::PROFILE);
     let requirement = Requirement::from_untrusted(
         "verified".into(),
         vec![Operand::from_untrusted(
             "verified".into(),
-            Source::SignedEvidence(evidence),
+            Source::SignedEvidence(evidence()),
         )],
         None,
         reader.parse("verified").unwrap().encode(),
@@ -69,4 +71,64 @@ fn current_signed_evidence_v16_preserves_the_producer_and_v15_cannot_accept_it()
     )
     .unwrap();
     assert!(decode(&mut BinaryInput::new(&bytes), &mut budget).is_err());
+}
+
+#[test]
+fn related_signed_evidence_v18_preserves_selection_and_rejects_older_opcode_profiles() {
+    let reader =
+        worth_foundational::expression_api::expressions().reading_within(Expression::PROFILE);
+    let requirement = Requirement::from_untrusted(
+        "verified".into(),
+        vec![Operand::from_untrusted(
+            "verified".into(),
+            Source::RelatedSignedEvidence {
+                relation: "CurrentRound".into(),
+                from: "Root".into(),
+                to: "Item".into(),
+                evidence: evidence(),
+            },
+        )],
+        None,
+        reader.parse("verified").unwrap().encode(),
+        "verified".into(),
+    )
+    .unwrap();
+    let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        "Root".into(),
+        vec![],
+        None,
+        vec![requirement],
+    );
+    let mut output = BinaryOutput::with_capacity(2048);
+    write(&mut output, &body).unwrap();
+    let bytes = output.into_bytes();
+    assert_eq!(&bytes[..2], &18_u16.to_be_bytes());
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    let mut input = BinaryInput::new(&bytes);
+    assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
+    assert!(input.is_finished());
+    let mut measure = crate::binary_encoding::BinaryEncodingMeasure::default();
+    write(&mut measure, &body).unwrap();
+    assert_eq!(measure.nested_entries(), budget.finish().nested_entries());
+    for version in [16_u16, 17] {
+        let mut old = bytes.clone();
+        old[..2].copy_from_slice(&version.to_be_bytes());
+        let mut budget = RecordDecodeAttempt::begin(
+            Default::default(),
+            old.len() as u64,
+            WorthQueryPackageArchiveLimits::DEFAULT,
+        )
+        .unwrap();
+        assert_eq!(
+            decode(&mut BinaryInput::new(&old), &mut budget)
+                .unwrap_err()
+                .kind(),
+            Kind::UnsupportedRecordVariant
+        );
+    }
 }

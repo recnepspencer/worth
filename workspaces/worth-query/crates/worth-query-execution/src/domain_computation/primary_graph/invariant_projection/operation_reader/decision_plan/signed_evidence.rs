@@ -1,4 +1,5 @@
 //! Native current attestation observation, never conversion of descriptive bytes into a grant.
+mod related;
 use super::{
     ApplicationSchema, WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryInvariantEntityIdentity,

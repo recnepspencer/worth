@@ -36,7 +36,10 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.creation().is_some_and(|creation| creation.enrollment().is_some()) {
+    let version = if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
+        matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::RelatedSignedEvidence { .. })) {
+        18
+    } else if body.creation().is_some_and(|creation| creation.enrollment().is_some()) {
         17
     } else if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
         matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::SignedEvidence(_))) {
@@ -205,7 +208,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=17) {
+    if !matches!(version, 1..=18) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {

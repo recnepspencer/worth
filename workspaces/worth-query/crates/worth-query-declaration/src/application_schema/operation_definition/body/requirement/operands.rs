@@ -24,6 +24,13 @@ pub enum ApplicationOperationBodyRequirementDirection {
 pub enum ApplicationOperationBodyRequirementSource {
     /// True when at least one current native attestation matches this exact producer.
     SignedEvidence(crate::application_schema::ApplicationSigningEvidenceSource),
+    /// Select exactly one outgoing subject, then observe that producer's current evidence.
+    RelatedSignedEvidence {
+        relation: String,
+        from: String,
+        to: String,
+        evidence: crate::application_schema::ApplicationSigningEvidenceSource,
+    },
     Field {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -70,6 +77,7 @@ impl ApplicationOperationBodyRequirementSource {
     pub fn scope_entity(&self) -> &str {
         match self {
             Self::SignedEvidence(source) => &source.lifecycle.source_entity,
+            Self::RelatedSignedEvidence { from, .. } => from,
             Self::Field { field, .. } => field.entity(),
             Self::PrincipalIdentity { scope, .. } => scope,
             Self::RelatedItemCount {
@@ -86,6 +94,26 @@ impl ApplicationOperationBodyRequirementSource {
     pub fn decision_reads(&self) -> Vec<ApplicationOperationDecisionReadTarget> {
         match self {
             Self::SignedEvidence(source) => source.decision_reads(),
+            Self::RelatedSignedEvidence {
+                relation,
+                from,
+                to,
+                evidence,
+            } => {
+                let mut reads = evidence.decision_reads();
+                reads.extend([
+                    ApplicationOperationDecisionReadTarget::Relation {
+                        relation: relation.clone(),
+                        from: from.clone(),
+                        to: to.clone(),
+                    },
+                    ApplicationOperationDecisionReadTarget::Entity {
+                        entity: from.clone(),
+                    },
+                    ApplicationOperationDecisionReadTarget::Entity { entity: to.clone() },
+                ]);
+                reads
+            }
             Self::Field { field, .. } | Self::PrincipalIdentity { field, .. } => {
                 vec![ApplicationOperationDecisionReadTarget::Field {
                     entity: field.entity().to_owned(),
@@ -113,7 +141,9 @@ impl ApplicationOperationBodyRequirementSource {
     ) -> Result<ExpressionType, ApplicationOperationBodyRequirementDenial> {
         use ScalarAspectType as Scalar;
         let (scalar_family, presence, presence_only) = match self {
-            Self::SignedEvidence(_) => return Ok(ExpressionType::Bool),
+            Self::SignedEvidence(_) | Self::RelatedSignedEvidence { .. } => {
+                return Ok(ExpressionType::Bool)
+            }
             Self::Field {
                 scalar_family,
                 presence,
