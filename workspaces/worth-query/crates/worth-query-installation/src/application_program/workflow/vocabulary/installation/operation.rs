@@ -39,7 +39,7 @@ where
                     Binding::IDENTITY,
                 )
             })?;
-        let supports_back_action = Binding::REQUIRES_APPLICATION_PROGRAM
+        let supports_local_workflow_action = Binding::REQUIRES_APPLICATION_PROGRAM
             && Binding::REQUIRES_WORKFLOW_AUTHORITY
             && !Binding::WORKFLOW_CONTROL
             && !installed
@@ -52,7 +52,7 @@ where
                     .is_none_or(|creation| creation.signing().is_none())
             });
         let mut operation =
-            InstalledWorkflowOperation::declared::<Spec, Binding>(supports_back_action);
+            InstalledWorkflowOperation::declared::<Spec, Binding>(supports_local_workflow_action);
         operation.inbound_ref = self
             .schema
             .installed_workflow_inbound_ref(Binding::Operation::IDENTIFIER);

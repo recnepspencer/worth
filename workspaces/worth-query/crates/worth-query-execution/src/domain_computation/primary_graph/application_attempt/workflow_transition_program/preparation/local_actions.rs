@@ -1,6 +1,6 @@
 use super::{
-    PreparedWorkflowAdvance, WorkflowTransitionPreparationDenial, WorkflowTransitionRequestKind,
-    WorthQueryWorkflowAdvanceAdapter,
+    PreparedWorkflowAdvance, WorkflowLocalActionKind, WorkflowTransitionPreparationDenial,
+    WorkflowTransitionRequestKind, WorthQueryWorkflowAdvanceAdapter,
 };
 use crate::domain_computation::primary_graph::{
     application_attempt::{
@@ -30,12 +30,13 @@ use worth_query_installation::facade::{
 
 impl WorthQueryWorkflowAdvanceAdapter {
     #[allow(clippy::too_many_arguments)]
-    pub fn prepare_back_action<Schema, Capability, Operation, Input, Scope, Spec, Binding>(
+    pub fn prepare_local_action<Schema, Capability, Operation, Input, Scope, Spec, Binding>(
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        kind: WorkflowLocalActionKind,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorkflowTransitionPreparationDenial,
@@ -60,25 +61,27 @@ impl WorthQueryWorkflowAdvanceAdapter {
                 subject,
             ))
         };
-        if !installed.supports_back_action::<Binding>() {
-            return Err(deny("binding has no installed local native Back body"));
+        if !installed.supports_local_workflow_action::<Binding>() {
+            return Err(deny(
+                "binding has no installed local native workflow action body",
+            ));
         }
         let capability = selected.application().installed_schema().capability(
             ApplicationCapabilityRef::<Schema, Capability>::from_declaration(),
             ApplicationOperationRef::<Schema, Binding::Operation, Binding::Input>::from_declaration(),
-        ).map_err(|_| deny("Back binding capability is not installed"))?;
+        ).map_err(|_| deny("workflow action binding capability is not installed"))?;
         if admission.installed_capability_identity() != Some(*capability.identity().bytes()) {
             return Err(deny(
-                "Back authority requires the binding's exact admitted capability",
+                "workflow action requires the binding's exact admitted capability",
             ));
         }
         let input_identity = admission
             .governed_input_identity()
             .copied()
-            .ok_or_else(|| deny("Back authority requires admitted input provenance"))?;
+            .ok_or_else(|| deny("workflow action requires admitted input provenance"))?;
         let execution = phase
             .execution_request_for(&selected.application().product_runtime)
-            .map_err(|_| deny("foreign Back preparation phase"))?;
+            .map_err(|_| deny("foreign workflow action preparation phase"))?;
         let requested = SelectedWorkflowOperation {
             operation: Operation::IDENTIFIER.to_owned(),
             input_type: Binding::InputBinding::IDENTITY.as_str().to_owned(),
@@ -90,7 +93,8 @@ impl WorthQueryWorkflowAdvanceAdapter {
             installed,
             instance,
             admission,
-            WorkflowTransitionRequestKind::BackAction {
+            WorkflowTransitionRequestKind::LocalAction {
+                kind,
                 requested,
                 input_identity,
             },

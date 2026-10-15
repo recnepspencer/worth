@@ -5,7 +5,7 @@ use worth_query_declaration::facade::{
     application_program::{ApplicationWorkflowOperationRef, ApplicationWorkflowSpec},
 };
 impl InstalledWorkflowOperation {
-    pub(super) fn declared<Spec, Binding>(supports_back_action: bool) -> Self
+    pub(super) fn declared<Spec, Binding>(supports_local_workflow_action: bool) -> Self
     where
         Spec: ApplicationWorkflowSpec,
         Binding: ApplicationMutationBinding<Spec::Schema>,
@@ -18,7 +18,7 @@ impl InstalledWorkflowOperation {
             binding_type: std::any::TypeId::of::<Binding>(),
             binding_identity: Binding::IDENTITY,
             requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
-            supports_back_action,
+            supports_local_workflow_action,
             reference,
             inbound_ref: None,
         }
@@ -50,12 +50,15 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     #[doc(hidden)]
-    pub fn supports_back_action<Binding: ApplicationMutationBinding<Schema>>(&self) -> bool {
+    pub fn supports_local_workflow_action<Binding: ApplicationMutationBinding<Schema>>(
+        &self,
+    ) -> bool {
         let reference = ApplicationWorkflowOperationRef::declared_binding::<Spec, Binding>();
         self.operations
             .iter()
             .filter(|operation| {
-                operation.supports_back_action && operation.matches_reference(&reference, true)
+                operation.supports_local_workflow_action
+                    && operation.matches_reference(&reference, true)
             })
             .count()
             == 1

@@ -251,7 +251,7 @@ where
     assessment_bindings.sort_unstable_by(|left, right| left.0.cmp(&right.0));
     for edge in definition.connections() {
         if let worth_query_declaration::facade::application_program::ApplicationWorkflowConnectionKind::BackAction(operation) = edge.kind() {
-            if installed.operations.iter().filter(|candidate| candidate.supports_back_action && candidate.matches_reference(&operation, true)).count() != 1 {
+            if installed.operations.iter().filter(|candidate| candidate.supports_local_workflow_action && candidate.matches_reference(&operation, true)).count() != 1 {
                 return Err(denial(WorthQueryApplicationWorkflowInstallationDenialKind::UnsupportedDefinitionMember, edge.source().as_str()));
             }
         }
@@ -259,6 +259,24 @@ where
     condition_bindings.sort_unstable_by(|left, right| {
         (&left.node_path, &left.operand).cmp(&(&right.node_path, &right.operand))
     });
+    for action in definition.global_actions() {
+        let operation = action.operation();
+        if installed
+            .operations
+            .iter()
+            .filter(|candidate| {
+                candidate.supports_local_workflow_action
+                    && candidate.matches_reference(operation, true)
+            })
+            .count()
+            != 1
+        {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::UnsupportedDefinitionMember,
+                operation.identifier(),
+            ));
+        }
+    }
     approval_bindings.sort_unstable_by(|left, right| left.node_path.cmp(&right.node_path));
     Ok(WorthQueryInstalledWorkflowDefinitionContract {
         schema_binding: installed.schema_binding.clone(),

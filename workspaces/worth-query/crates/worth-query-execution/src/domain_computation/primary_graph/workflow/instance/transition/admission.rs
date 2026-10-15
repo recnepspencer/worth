@@ -14,9 +14,9 @@ pub(in crate::domain_computation::primary_graph) use selection::{
     select_assessment_collection, select_back_action_transition, select_current_transition,
     select_navigation_back_transition, select_proposal_replay_transition,
     select_proposal_transition, select_settled_replay_transition, select_terminal_transition,
-    SelectedWorkflowApproval, SelectedWorkflowAssessment, SelectedWorkflowCondition,
-    SelectedWorkflowInbound, SelectedWorkflowOperation, SelectedWorkflowTransition,
-    SelectedWorkflowTransitionKind,
+    select_termination_action_transition, SelectedWorkflowApproval, SelectedWorkflowAssessment,
+    SelectedWorkflowCondition, SelectedWorkflowInbound, SelectedWorkflowOperation,
+    SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
 };
 
 pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransition<
@@ -72,6 +72,13 @@ impl WorkflowOperationSettlementBasis {
         mut self,
     ) -> Self {
         self.outcome = ApplicationWorkflowControlOutcome::Returned;
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) const fn for_business_termination(
+        mut self,
+    ) -> Self {
+        self.outcome = ApplicationWorkflowControlOutcome::Terminated;
+        self.retire_live_membership = true;
         self
     }
     pub(in crate::domain_computation::primary_graph) const fn instance(&self) -> EntityId {

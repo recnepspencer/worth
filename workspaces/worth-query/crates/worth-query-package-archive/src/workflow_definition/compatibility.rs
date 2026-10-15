@@ -116,6 +116,9 @@ impl WorthQueryUntrustedWorkflowDefinitionDraft {
         for connection in &self.connections {
             commands.push(command(connection, installed)?);
         }
+        for action in &self.global_actions {
+            commands.push(super::global_actions::command(action, installed)?);
+        }
         ApplicationWorkflowCommandAdapter::author::<Spec>(
             self.identity.as_str(),
             self.limits,
@@ -332,7 +335,7 @@ where
     command.map_err(|refused| authoring(source, refused))
 }
 
-fn denial(kind: Kind, subject: &str) -> Denial {
+pub(super) fn denial(kind: Kind, subject: &str) -> Denial {
     Denial {
         kind,
         subject: subject.to_owned(),

@@ -10,6 +10,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowDef
 
 mod codec;
 mod compatibility;
+mod global_actions;
 mod records;
 #[cfg(test)]
 mod tests;
@@ -34,6 +35,7 @@ pub struct WorthQueryUntrustedWorkflowDefinitionDraft {
     start: String,
     nodes: Box<[DraftNode]>,
     connections: Box<[DraftConnection]>,
+    global_actions: Box<[global_actions::DraftGlobalAction]>,
 }
 
 impl WorthQueryUntrustedWorkflowDefinitionDraft {

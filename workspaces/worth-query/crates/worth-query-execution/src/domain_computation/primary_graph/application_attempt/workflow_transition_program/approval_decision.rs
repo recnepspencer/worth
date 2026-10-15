@@ -202,6 +202,7 @@ where
                     instance.entity_id(),
                     settled.settlement(),
                     observed.progress_basis.progress().back_edge_iterations(),
+                    required.transition_identity(),
                 )?;
                 (
                     selected.node_path().to_owned(),

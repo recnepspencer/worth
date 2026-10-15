@@ -80,7 +80,9 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_set
         layout,
         TransitionFactBasis::from_settlement(basis),
         basis.outcome(),
-        super::super::state::WorkflowInstanceState::Ready,
+        if basis.outcome() == worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Terminated {
+            super::super::state::WorkflowInstanceState::Terminated
+        } else { super::super::state::WorkflowInstanceState::Ready },
         Some(operation_receipt_identity),
         emit,
     )

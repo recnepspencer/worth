@@ -278,6 +278,7 @@ pub(super) const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
         ApplicationWorkflowControlOutcome::NavigatedBack => 8,
         ApplicationWorkflowControlOutcome::Returned => 9,
+        ApplicationWorkflowControlOutcome::Terminated => 10,
     }
 }
 

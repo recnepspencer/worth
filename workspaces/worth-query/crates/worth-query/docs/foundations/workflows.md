@@ -39,20 +39,21 @@ effects when an instance is canceled, migrated, or continued on a fork.
 16. [Approvals](#approvals)
 17. [Operations](#operations)
 18. [Navigate back](#navigate-back)
-19. [The ordinary convenience lane](#the-ordinary-convenience-lane)
-20. [Caller-pumped progression](#caller-pumped-progression)
-21. [Cancellation](#cancellation)
-22. [Owner custody](#owner-custody)
-23. [Budgets and deadlines](#budgets-and-deadlines)
-24. [Observations and notifications](#observations-and-notifications)
-25. [Migration and fork continuation](#migration-and-fork-continuation)
-26. [Portable definition drafts (WQWD)](#portable-definition-drafts-wqwd)
-27. [Denials](#denials)
-28. [You can](#you-can)
-29. [You cannot](#you-cannot)
-30. [Misconceptions](#misconceptions)
-31. [Worked example: purchase-request approval](#worked-example-purchase-request-approval)
-32. [Related documents](#related-documents)
+19. [Business termination](#business-termination)
+20. [The ordinary convenience lane](#the-ordinary-convenience-lane)
+21. [Caller-pumped progression](#caller-pumped-progression)
+22. [Cancellation](#cancellation)
+23. [Owner custody](#owner-custody)
+24. [Budgets and deadlines](#budgets-and-deadlines)
+25. [Observations and notifications](#observations-and-notifications)
+26. [Migration and fork continuation](#migration-and-fork-continuation)
+27. [Portable definition drafts (WQWD)](#portable-definition-drafts-wqwd)
+28. [Denials](#denials)
+29. [You can](#you-can)
+30. [You cannot](#you-cannot)
+31. [Misconceptions](#misconceptions)
+32. [Worked example: purchase-request approval](#worked-example-purchase-request-approval)
+33. [Related documents](#related-documents)
 
 ## Terms
 
@@ -107,7 +108,7 @@ read a workflow instance.
 | Propose | Caller request | `prepare_workflow_proposal` | `WorkflowProposalOutcome` |
 | Advance | Caller request | `prepare_workflow_advance` | `WorkflowProgressOutcome` |
 | Settle a need | Caller request | assessment, condition, approval, or operation lanes | `WorkflowProgressOutcome` or a mutation outcome |
-| End | Caller request | terminal node, `prepare_workflow_instance_cancellation`, or migration | Terminal transition, cancellation, or successor |
+| End | Caller request | terminal node, `prepare_workflow_termination_action`, cancellation, or migration | Terminal transition, jointly performed business ending, cancellation, or successor |
 | Retire a lineage | Caller request | `prepare_workflow_definition_retirement` | `WorkflowDefinitionRetirementOutcome` |
 
 ## Declare a workflow vocabulary
@@ -801,13 +802,87 @@ Back declarations participate in canonical definition identity, retained native
 facts and adoption dependency coverage even when their operation appears only
 on the action edge. Draft protocol v5 carries the operation, input, binding and
 execution requirements and readmits them against installed vocabulary; it carries
-no authority. Definitions without Back retain their v4 draft encoding. Missing
+no authority. Definitions with neither Back nor global actions retain v4; Back-only definitions retain v5. Missing
 or changed members refuse readmission and incompatible program adoption cannot
 silently carry the route.
 
-This surface does not implement business Void, Reopen, an atomic multi-operation
-Submit, external-effect Back, automatic signature invalidation or compensation
-of earlier performed effects. Use the separate owners for those semantics.
+Back does not implement Reopen, an atomic multi-operation Submit, external-effect
+Back, automatic signature invalidation or compensation of earlier performed
+effects. For an authored business ending such as Void, use the following surface.
+
+## Business termination
+
+Use one definition-level action when an application body must run together with
+ending a live instance. This is not a fake terminal node, cancellation, rollback,
+or a second host call after the business mutation:
+
+```rust,ignore
+definition.termination_action::<VoidBinding>();
+```
+
+The declaration applies at every live frontier, including a terminal cursor
+whose completion has not yet published. Actual ended state and membership—not
+node kind—govern availability. The native body owns business eligibility; for
+example, it can require Active status, assign Voided, preserve CurrentStage and
+append an immutable audit containing the actual preimage, admitted actor and
+input justification. Query owns occurrence selection and native ending.
+
+Install the actual local, unsigned body as a vocabulary operation. Like business
+Back, the binding requires program and workflow authority with explicit empty
+workflow execution requirements. External effects and approval floors are not
+supported by this local join. Each binding appears at most once in the global
+collection, and each action counts against the declared effect ceiling. Multiple
+distinct bindings are allowed; canonical identity retains their exact contracts.
+
+Prepare under the action's own capability, then retain the returned requirement
+with the original input and logical key:
+
+```rust,ignore
+let intent = VoidRequest { identity, justification };
+let required = application.request(&principal, &scope)
+    .on_branch(instance.branch()).mutate(intent.clone())
+    .without_source().idempotency(&key)
+    .prepare_workflow_termination_action(&workflow, instance)?;
+
+let outcome = application.request(&principal, &scope)
+    .on_branch(required.branch()).mutate(intent)
+    .without_source().idempotency(&key)
+    .for_workflow_operation(&workflow, &required)?
+    .execute_capability_in_program(&program, ExecutionAllocationPolicy::SystemAllocation)?;
+```
+
+The issuer derives identity from admitted input and verifies the exact
+binding-associated installed capability. Normal execution freshly authorizes
+and admits the native body. Business writes, audit, receipted `Terminated`
+settlement, distinct Terminated instance state and live-membership retirement
+publish in one candidate. There is no successor progress update. A denied body
+publishes none of these; a competing forward publication makes the whole
+candidate stale, and a winning ending prevents held forward authority publishing.
+External owner custody must settle first; termination cannot abandon it.
+
+Exact retry through the retained requirement returns the original outcome even
+after ending. Different input cannot bind that requirement, and a different key
+is not the original request. Preserve the complete native outcome family; never
+automatically retry stale or indeterminate work. Fresh requests to a terminated
+instance return `WorkflowInstanceTerminated`. A live requirement is not a
+restart-stable recovery carrier.
+
+Global actions are retained immutable definition facts, cold compiled meaning
+and definition-level adoption dependencies—not synthetic node dependencies.
+Draft v6 carries them and readmits against installed vocabulary. Old v1–v5 drafts
+remain readable; absent global actions do not change earlier canonical meaning
+or encoding. Missing/changed suppliers cannot silently carry a performed instance.
+`Terminated` is kernel settlement meaning, never an authored control arm.
+
+Current limits: fresh business endings still spend native step/deadline budgets;
+this does not establish Void after expiry or exhaustion. Budget/deadline refusal
+retains its native typed cause. Ordinary cancellation refuses to bypass an
+attached business ending; explicit administrative adoption dispositions retain
+their separate authority. A global attachment also requires an enrolled native
+instance—it does not terminate a business draft before enrollment. Reopen must
+create a fresh instance/round through its own supported join; this API never
+revives an ended instance. Signature supersession remains dependency-owned, not
+an automatic consequence of termination.
 
 ## The ordinary convenience lane
 
@@ -851,6 +926,7 @@ instance where it stands, on the request's branch.
 
 - Cancellation is not rollback. Every effect the instance performed remains, and the outcome names each one.
 - The start capability authorizes cancellation.
+- Ordinary cancellation cannot bypass a definition's declared business termination body; use its action binding. Explicit program-adoption dispositions are separate administrative authority, not business Void.
 - The same key replays exactly. Any other request for a canceled instance is refused with `WorkflowInstanceCancelled`.
 - A step admitted before the cancellation commits goes stale before its effect. A cancellation prepared before a step settles goes stale in turn.
 - Other instances keep running.
@@ -905,6 +981,12 @@ stops. The [aftermath guide](../execution/application-aftermath-and-recovery.md#
 describes accepted-pending recovery and duplicate outcomes.
 
 ## Budgets and deadlines
+
+Fresh business termination remains a budgeted guarded operation, unlike bare
+cancellation. Where a global ending is attached, ordinary cancellation cannot
+bypass that body; the cancellation-after-expiry allowances below describe the
+bare cancellation owner, not business Void. Explicit administrative adoption
+dispositions retain their separate authority.
 
 | Budget | Where it is set | Refusal |
 |---|---|---|
@@ -996,7 +1078,7 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | Family | Kinds |
 |---|---|
 | Definition | `WorkflowDefinitionAffinityMismatch`, `WorkflowDefinitionAuthorityMismatch`, `WorkflowDefinitionIntentIdentityUnavailable`, `WorkflowLineageUnavailable`, `WorkflowDefinitionCompilationUnavailable`, `WorkflowDefinitionSuperseded`, `WorkflowDefinitionRetired` |
-| Instance lifecycle | `WorkflowInstanceCancelled`, `WorkflowInstanceCompleted`, `WorkflowInstanceMigrated`, `WorkflowInstanceMigrationUnmapped`, `WorkflowInstanceHistoryUnavailable`, `WorkflowOperationInOwnerCustody` |
+| Instance lifecycle | `WorkflowInstanceCancelled`, `WorkflowInstanceTerminated`, `WorkflowInstanceCompleted`, `WorkflowInstanceMigrated`, `WorkflowInstanceMigrationUnmapped`, `WorkflowInstanceHistoryUnavailable`, `WorkflowOperationInOwnerCustody` |
 | Budgets and time | `WorkflowInstanceCapacityUnavailable`, `WorkflowInstanceEvidenceCapacityUnavailable`, `WorkflowLineageCapacityUnavailable`, `WorkflowInstanceDeadlineElapsed`, `WorkflowTrustedTimeUnavailable`, `WorkflowHistoryReconstructionBudgetExceeded` |
 | Evidence | `WorkflowAssessmentEvidenceIncomplete`, `WorkflowAssessmentEvidenceMismatch` |
 | Condition | `WorkflowConditionExpressionDenied` |

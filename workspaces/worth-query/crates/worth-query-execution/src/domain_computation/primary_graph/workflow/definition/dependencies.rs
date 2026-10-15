@@ -26,6 +26,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowRetainedNode {
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionDependencies {
     pub(in crate::domain_computation::primary_graph) spec: String,
+    pub(in crate::domain_computation::primary_graph) global_actions:
+        Box<[worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency]>,
     pub(in crate::domain_computation::primary_graph) nodes: Vec<WorkflowRetainedNode>,
     /// `(approval, operation)` node pairs joined by approval authority.
     pub(in crate::domain_computation::primary_graph) approval_authorities:
@@ -49,7 +51,18 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
     definition: EntityId,
 ) -> Result<WorkflowDefinitionDependencies, WorkflowAdoptionReadDenial> {
     let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity: definition };
-    truth.entity(execution, definition, layout.definition.entity_kind)?;
+    let record = truth.entity(execution, definition, layout.definition.entity_kind)?;
+    let global_actions = match record.optional_text(execution, &layout.definition.global_actions)? {
+        None => Box::new([]),
+        Some(encoded) => super::global_actions::decode(
+            &encoded,
+            usize::try_from(record.u64(execution, &layout.definition.maximum_effects)?)
+                .map_err(|_| unreadable)?,
+            usize::try_from(record.u64(execution, &layout.definition.maximum_canonical_bytes)?)
+                .map_err(|_| unreadable)?,
+        )
+        .ok_or(unreadable)?,
+    };
     let lineage_record = truth.entity(execution, lineage, layout.lineage.entity_kind)?;
     if lineage_record.u64(execution, &layout.lineage.protocol_version)?
         != crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION
@@ -141,6 +154,7 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
     }
     let dependencies = WorkflowDefinitionDependencies {
         spec,
+        global_actions,
         nodes,
         approval_authorities,
     };

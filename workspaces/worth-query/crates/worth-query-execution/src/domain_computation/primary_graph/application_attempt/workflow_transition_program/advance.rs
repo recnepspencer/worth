@@ -36,11 +36,11 @@ where
                 self.admission.operation(),
             ));
         }
-        let business_back = matches!(
+        let business_action = matches!(
             request_kind,
-            WorkflowTransitionRequestKind::BackAction { .. }
+            WorkflowTransitionRequestKind::LocalAction { .. }
         );
-        if !business_back
+        if !business_action
             && (!installed.advance_binding_matches::<Capability, Operation>()
                 || self.admission.installed_capability_identity()
                     != Some(*installed.advance_capability_identity_bytes()))
@@ -94,10 +94,10 @@ where
         let (live_membership, retire_live_membership) = match observed.live_membership {
             Some(membership) => (membership, true),
             None => {
-                if business_back {
+                if business_action {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
-                        "settled workflow has no business Back action",
+                        "settled workflow has no live business action",
                     ));
                 }
                 if request_kind == WorkflowTransitionRequestKind::NavigateBack {
@@ -197,12 +197,13 @@ where
                 });
             }
         };
-        if let WorkflowTransitionRequestKind::BackAction {
+        if let WorkflowTransitionRequestKind::LocalAction {
+            kind,
             requested,
             input_identity,
         } = &request_kind
         {
-            let selected = self.select_observed_back_action(
+            let selected = self.select_observed_local_action(
                 execution,
                 &layout,
                 &compiled,
@@ -210,9 +211,10 @@ where
                 &mut observed,
                 requested,
                 maximum_transitions,
+                *kind,
             )?;
             facts.append(&mut observed.facts);
-            return self.materialize_back_action_requirement(
+            return self.materialize_local_action_requirement(
                 &layout,
                 &compiled,
                 instance,
@@ -222,6 +224,7 @@ where
                 requested.clone(),
                 *input_identity,
                 allowance,
+                *kind,
             );
         }
         if request_kind == WorkflowTransitionRequestKind::NavigateBack {
@@ -273,8 +276,8 @@ where
                 )
             }
             WorkflowTransitionRequestKind::NavigateBack => unreachable!("Back returned above"),
-            WorkflowTransitionRequestKind::BackAction { .. } => {
-                unreachable!("business Back returned above")
+            WorkflowTransitionRequestKind::LocalAction { .. } => {
+                unreachable!("local business action returned above")
             }
         };
         let selected = match selection {

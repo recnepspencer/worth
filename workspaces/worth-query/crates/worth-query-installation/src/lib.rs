@@ -200,8 +200,8 @@ pub mod facade {
         WorthQueryProgramSupportRetirementDenial, WorthQueryProgramSupportRetirementInventory,
         WorthQueryProgramSupportRoster, WorthQueryProgramValidationScope,
         WorthQueryRepeatedOptionalMemberState, WorthQueryWorkflowDependencyName,
-        WorthQueryWorkflowHistoryReconstructionBudget, WorthQueryWorkflowNodeDependency,
-        WorthQueryWorkflowVocabularyCoverage,
+        WorthQueryWorkflowGlobalActionDependency, WorthQueryWorkflowHistoryReconstructionBudget,
+        WorthQueryWorkflowNodeDependency, WorthQueryWorkflowVocabularyCoverage,
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryAdmittedReadGraphPlanningInventory,

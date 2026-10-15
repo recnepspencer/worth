@@ -27,6 +27,11 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn deny_en
     )?;
     for (ended, denial_kind, subject) in [
         (
+            WorkflowInstanceState::Terminated,
+            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceTerminated,
+            "workflow instance was ended by its business termination action",
+        ),
+        (
             WorkflowInstanceState::Cancelled,
             WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
             "workflow instance was cancelled",

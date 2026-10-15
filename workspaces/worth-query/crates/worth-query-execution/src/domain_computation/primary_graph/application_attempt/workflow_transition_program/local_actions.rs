@@ -1,7 +1,7 @@
-//! Fresh Back authority reuses guarded body execution and local atomic settlement.
+//! Fresh local actions share exact admission, custody fencing and joint publication.
 use super::{
     PreparedWorkflowAdvance, PreparedWorkflowOperation, RequiredWorkflowOperation,
-    WorkflowOperationAuthority,
+    WorkflowLocalActionKind, WorkflowOperationAuthority,
 };
 use crate::domain_computation::primary_graph::{
     application_attempt::{PublishedWorkflowInstanceRef, WorkflowStepAllowance},
@@ -32,7 +32,7 @@ where
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn select_observed_back_action(
+    pub(super) fn select_observed_local_action(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &WorthQueryWorkflowLayout,
@@ -41,11 +41,12 @@ where
         observed: &mut super::super::workflow_instance_observation::ObservedWorkflowInstance,
         requested: &SelectedWorkflowOperation,
         maximum_transitions: usize,
+        kind: WorkflowLocalActionKind,
     ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
         if self.admission.operation() != requested.operation {
             return Err(super::denial(
                 super::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch,
-                "admitted operation differs from Back body",
+                "admitted operation differs from the local workflow action body",
             ));
         }
         self.lease.handle().with_runtime(execution, |runtime| {
@@ -68,11 +69,15 @@ where
                 layout,
                 instance.entity_id(),
                 &observed.transitions,
-                "business Back cannot abandon owner custody",
+                "local workflow action cannot abandon owner custody",
             )
         })?;
         observed.facts.push(custody);
-        crate::domain_computation::primary_graph::workflow::instance::select_back_action_transition(
+        let select = match kind {
+            WorkflowLocalActionKind::Terminate => crate::domain_computation::primary_graph::workflow::instance::select_termination_action_transition,
+            WorkflowLocalActionKind::Return => crate::domain_computation::primary_graph::workflow::instance::select_back_action_transition,
+        };
+        select(
             compiled,
             instance.entity_id(),
             &observed.progress_basis,
@@ -81,7 +86,7 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn materialize_back_action_requirement(
+    pub(super) fn materialize_local_action_requirement(
         mut self,
         layout: &WorthQueryWorkflowLayout,
         compiled: &CompiledWorkflowDefinition,
@@ -92,6 +97,7 @@ where
         operation: SelectedWorkflowOperation,
         input_identity: [u8; 32],
         allowance: WorkflowStepAllowance,
+        kind: WorkflowLocalActionKind,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -114,14 +120,14 @@ where
         let binding = operation
             .binding
             .clone()
-            .expect("validated Back route binding");
+            .expect("validated local workflow action binding");
         let admitted = admit_workflow_transition(
             self,
             selected,
             instance.entity_id(),
             subject,
             membership,
-            false,
+            matches!(kind, WorkflowLocalActionKind::Terminate),
             allowance,
         );
         let authority = WorkflowOperationAuthority::new(
@@ -133,7 +139,14 @@ where
             session,
             observation,
             authority_facts,
-            admitted.operation_settlement_basis().for_business_return(),
+            match kind {
+                WorkflowLocalActionKind::Terminate => admitted
+                    .operation_settlement_basis()
+                    .for_business_termination(),
+                WorkflowLocalActionKind::Return => {
+                    admitted.operation_settlement_basis().for_business_return()
+                }
+            },
             layout.clone(),
             None,
             operation.workflow_execution_requirements.clone(),

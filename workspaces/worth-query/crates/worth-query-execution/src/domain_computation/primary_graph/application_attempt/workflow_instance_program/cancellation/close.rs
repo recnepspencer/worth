@@ -82,6 +82,12 @@ where
             usize::from(installed.resources().maximum_definition_connections()),
             WorkflowDefinitionCompilationPosture::Retained,
         )?;
+        if !compiled.global_actions().is_empty() {
+            return Err(WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch,
+                "ordinary cancellation cannot bypass a declared business termination action",
+            ));
+        }
         let maximum_transitions = super::maximum_transitions(installed);
         let budget = installed.resources().history_reconstruction_budget();
         let entity = instance.entity_id();

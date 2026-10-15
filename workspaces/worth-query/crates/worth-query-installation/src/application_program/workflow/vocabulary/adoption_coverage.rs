@@ -9,6 +9,8 @@ use worth_query_declaration::facade::application_schema::{
 };
 
 use super::WorthQueryInstalledApplicationWorkflowSpec;
+mod global_actions;
+pub use global_actions::WorthQueryWorkflowGlobalActionDependency;
 
 /// One node a published workflow definition depends on, exactly as its
 /// retained definition facts record it.
@@ -106,6 +108,7 @@ pub struct WorthQueryWorkflowVocabularyCoverage {
     spec: String,
     identity: [u8; 32],
     nodes: Box<[WorthQueryWorkflowNodeDependency]>,
+    global_actions: Box<[WorthQueryWorkflowGlobalActionDependency]>,
 }
 
 impl WorthQueryWorkflowVocabularyCoverage {
@@ -128,6 +131,10 @@ impl WorthQueryWorkflowVocabularyCoverage {
     /// Whether this vocabulary executes the node exactly as retained.
     pub fn covers(&self, node: &WorthQueryWorkflowNodeDependency) -> bool {
         self.nodes.binary_search(node).is_ok()
+    }
+
+    pub fn covers_global_action(&self, action: &WorthQueryWorkflowGlobalActionDependency) -> bool {
+        self.global_actions.binary_search(action).is_ok()
     }
 }
 
@@ -206,7 +213,7 @@ where
             .chain(
                 self.operations
                     .iter()
-                    .filter(|operation| operation.supports_back_action)
+                    .filter(|operation| operation.supports_local_workflow_action)
                     .filter_map(|operation| {
                         Some(WorthQueryWorkflowNodeDependency::BackAction {
                             identifier: operation.identifier.to_owned(),
@@ -227,12 +234,31 @@ where
             .collect::<Vec<_>>();
         nodes.sort_unstable();
         nodes.dedup();
+        let mut global_actions = self
+            .operations
+            .iter()
+            .filter(|operation| operation.supports_local_workflow_action)
+            .filter_map(|operation| {
+                Some(WorthQueryWorkflowGlobalActionDependency::Terminate {
+                    identifier: operation.identifier.to_owned(),
+                    input_type: operation.input_type.as_str().to_owned(),
+                    binding: operation.binding_identity.to_owned(),
+                    requirements: operation
+                        .reference
+                        .workflow_execution_requirements()?
+                        .clone(),
+                })
+            })
+            .collect::<Vec<_>>();
+        global_actions.sort_unstable();
+        global_actions.dedup();
         WorthQueryWorkflowVocabularyCoverage {
             schema_binding: self.schema_binding.clone(),
             program_revision: self.program_revision,
             spec: Spec::IDENTITY.as_str().to_owned(),
             identity: self.support_identity,
             nodes: nodes.into_boxed_slice(),
+            global_actions: global_actions.into_boxed_slice(),
         }
     }
 }

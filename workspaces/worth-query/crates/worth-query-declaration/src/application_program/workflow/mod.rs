@@ -7,6 +7,7 @@
 mod authoring;
 mod canonical;
 mod expression;
+mod global_action;
 mod identity;
 mod inbound;
 mod limits;
@@ -37,6 +38,7 @@ pub use expression::{
     ApplicationWorkflowConditionOperands, ApplicationWorkflowConditionQuery,
     MIGRATED_WORKFLOW_CONDITION_OPERAND,
 };
+pub use global_action::ApplicationWorkflowGlobalAction;
 pub use identity::{
     ApplicationWorkflowComponentIdentity, ApplicationWorkflowDefinitionContentIdentity,
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowNodeIdentity,

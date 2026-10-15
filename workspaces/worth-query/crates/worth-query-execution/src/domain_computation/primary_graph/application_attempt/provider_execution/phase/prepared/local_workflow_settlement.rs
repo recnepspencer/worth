@@ -105,6 +105,11 @@ impl WorthQueryProviderAttemptPreparation {
         if external {
             return Ok((self, None));
         }
+        // An ending has no successor. Its transition-membership revision
+        // invalidates retained progress; fresh admission names the ended state.
+        if binding.settlement_basis.outcome() == worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Terminated {
+            return Ok((self, None));
+        }
         let progress_update = binding
             .settlement_basis
             .prepare_progress_update(receipt_identity)?;

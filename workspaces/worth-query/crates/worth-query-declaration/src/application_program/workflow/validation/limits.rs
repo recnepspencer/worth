@@ -25,10 +25,13 @@ where
             authored.connections.len().to_string(),
         ));
     }
-    let effects = authored.nodes.iter().fold(0_usize, |effects, node| {
-        work.visit_limit_node();
-        effects + usize::from(node.kind().is_effect())
-    });
+    let effects = authored
+        .nodes
+        .iter()
+        .fold(authored.global_actions.len(), |effects, node| {
+            work.visit_limit_node();
+            effects + usize::from(node.kind().is_effect())
+        });
     if effects > usize::from(limits.maximum_effects()) {
         return Err(denial(
             ApplicationWorkflowValidationDenialKind::EffectLimitExceeded,

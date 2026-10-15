@@ -29,8 +29,14 @@ mod adapter_owner;
 mod adapter_preparation;
 #[path = "preparation/adapter_replay.rs"]
 mod adapter_replay;
-#[path = "preparation/back_action.rs"]
-mod back_action;
+#[path = "preparation/local_actions.rs"]
+mod local_actions;
+/// Which authored local action the binding requests; never a destination or authority.
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub enum WorkflowLocalActionKind {
+    Return,
+    Terminate,
+}
 
 /// Why a workflow transition could not bind to the branch's program: the installed spec
 /// belongs to another schema, the adopted program could not be inspected, the branch runs

@@ -14,7 +14,9 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 
 mod approval;
 mod back_action;
+mod termination_action;
 pub(in crate::domain_computation::primary_graph) use back_action::select_back_action_transition;
+pub(in crate::domain_computation::primary_graph) use termination_action::select_termination_action_transition;
 mod collection;
 mod identity;
 mod inbound;

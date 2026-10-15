@@ -33,6 +33,19 @@ pub(super) fn definition_compatibility(
             spec: dependencies.spec.clone(),
         });
     };
+    for action in &dependencies.global_actions {
+        if let Some(name) = requirements.changed_workflow_global_action_dependency(action) {
+            return Compatibility::Incompatible(Incompatibility::GlobalActionDependencyChanged {
+                binding: action.binding().to_owned(),
+                name: name.as_str().to_owned(),
+            });
+        }
+        if !coverage.covers_global_action(action) {
+            return Compatibility::Incompatible(Incompatibility::GlobalActionUncovered {
+                binding: action.binding().to_owned(),
+            });
+        }
+    }
     let mut nodes = dependencies
         .nodes
         .iter()

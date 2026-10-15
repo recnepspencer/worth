@@ -120,10 +120,7 @@ where
         WorthQueryWorkflowAdvancePreparationDenial>
     where Spec: ApplicationWorkflowSpec<Schema = Schema> {
         let prepared = self.prepare_workflow_request(workflow.into(), instance, WorkflowRequestedAction::BackAction)?;
-        match prepared.prepared {
-            worth_query_execution::publication_boundary::workflow_advance::PreparedWorkflowAdvance::AwaitingOperation(operation) => Ok(operation.into_required()),
-            _ => Err(WorthQueryWorkflowAdvancePreparationDenial::BackActionUnavailable),
-        }
+        required_local_action(prepared.prepared, WorthQueryWorkflowAdvancePreparationDenial::BackActionUnavailable)
     }
 
     pub fn prepare_workflow_navigate_back<Spec>(
@@ -137,5 +134,41 @@ where
         let workflow = workflow.into();
         self.prepare_workflow_request(workflow, instance, WorkflowRequestedAction::NavigateBack)
             .map(WorthQueryWorkflowNavigateBackRequest)
+    }
+
+    /// Freshly binds the declared global ending to this intent's admitted input
+    /// and capability. Execute the returned requirement through the ordinary
+    /// guarded mutation path; body, audit and ending publish together.
+    pub fn prepare_workflow_termination_action<Spec>(
+        self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
+        instance: PublishedWorkflowInstanceRef,
+    ) -> Result<worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowOperation, WorthQueryWorkflowAdvancePreparationDenial>
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        let prepared = self.prepare_workflow_request(workflow.into(), instance, WorkflowRequestedAction::TerminationAction)?;
+        required_local_action(prepared.prepared, WorthQueryWorkflowAdvancePreparationDenial::TerminationActionUnavailable)
+    }
+}
+
+fn required_local_action<Schema, Operation, Input, Scope>(
+    prepared: worth_query_execution::publication_boundary::workflow_advance::PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+    unavailable: WorthQueryWorkflowAdvancePreparationDenial,
+) -> Result<
+    worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowOperation,
+    WorthQueryWorkflowAdvancePreparationDenial,
+> {
+    use worth_query_execution::publication_boundary::workflow_advance::{
+        PreparedWorkflowAdvance, WorkflowTransitionPreparationDenial,
+    };
+    match prepared {
+        PreparedWorkflowAdvance::AwaitingOperation(operation) => Ok(operation.into_required()),
+        PreparedWorkflowAdvance::ReplayOnly { denial, .. } => Err(
+            WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
+                WorkflowTransitionPreparationDenial::Attempt(denial),
+            ),
+        ),
+        _ => Err(unavailable),
     }
 }

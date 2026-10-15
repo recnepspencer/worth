@@ -100,6 +100,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// An explicit cancellation or program adoption cancelled the instance;
     /// no request can advance it.
     WorkflowInstanceCancelled,
+    WorkflowInstanceTerminated,
     /// The instance completed; nothing is left to cancel.
     WorkflowInstanceCompleted,
     /// An external operation the instance ran committed into its owner's

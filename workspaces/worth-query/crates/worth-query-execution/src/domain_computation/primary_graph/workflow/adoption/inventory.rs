@@ -222,6 +222,15 @@ fn push_compatibility(bytes: &mut Vec<u8>, compatibility: &WorthQueryWorkflowCom
                 push_text(bytes, node_path);
                 push_text(bytes, name);
             }
+            WorthQueryWorkflowIncompatibility::GlobalActionUncovered { binding } => {
+                bytes.push(4);
+                push_text(bytes, binding);
+            }
+            WorthQueryWorkflowIncompatibility::GlobalActionDependencyChanged { binding, name } => {
+                bytes.push(5);
+                push_text(bytes, binding);
+                push_text(bytes, name);
+            }
         },
     }
 }

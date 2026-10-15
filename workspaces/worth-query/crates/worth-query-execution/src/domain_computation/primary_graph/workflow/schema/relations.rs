@@ -79,6 +79,7 @@ pub(super) fn lower_definition(
     let maximum_nodes = planned_field_locator(DEFINITION_ASPECT, "maximum-nodes")?;
     let maximum_connections = planned_field_locator(DEFINITION_ASPECT, "maximum-connections")?;
     let maximum_effects = planned_field_locator(DEFINITION_ASPECT, "maximum-effects")?;
+    let global_actions = planned_field_locator(DEFINITION_ASPECT, "global-actions")?;
     let maximum_component_occurrences =
         planned_field_locator(DEFINITION_ASPECT, "maximum-component-occurrences")?;
     let maximum_component_depth =
@@ -101,6 +102,7 @@ pub(super) fn lower_definition(
         .required("maximum-nodes", ScalarAspectType::UInt64)
         .required("maximum-connections", ScalarAspectType::UInt64)
         .required("maximum-effects", ScalarAspectType::UInt64)
+        .optional("global-actions", ScalarAspectType::String)
         .required("maximum-component-occurrences", ScalarAspectType::UInt64)
         .required("maximum-component-depth", ScalarAspectType::UInt64)
         .required("maximum-node-provenance", ScalarAspectType::UInt64)
@@ -130,6 +132,7 @@ pub(super) fn lower_definition(
             maximum_nodes,
             maximum_connections,
             maximum_effects,
+            global_actions,
             maximum_component_occurrences,
             maximum_component_depth,
             maximum_node_provenance,

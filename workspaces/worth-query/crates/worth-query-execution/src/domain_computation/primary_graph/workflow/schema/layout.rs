@@ -158,6 +158,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionLayout
     pub(in crate::domain_computation::primary_graph) maximum_nodes: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_connections: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_effects: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) global_actions: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_component_occurrences:
         AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_component_depth: AspectFieldLocator,

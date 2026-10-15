@@ -8,6 +8,7 @@ mod back_actions;
 mod connections;
 mod control;
 mod dominance;
+mod global_actions;
 mod index;
 mod limits;
 mod work;
@@ -54,6 +55,8 @@ pub enum ApplicationWorkflowValidationDenialKind {
     CanonicalBudgetExceeded,
     InvalidBackAction,
     AmbiguousBackAction,
+    InvalidGlobalAction,
+    DuplicateGlobalAction,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -85,7 +88,7 @@ impl std::fmt::Display for ApplicationWorkflowValidationDenial {
 impl std::error::Error for ApplicationWorkflowValidationDenial {}
 
 pub(super) fn validate<Spec>(
-    authored: AuthoredWorkflowDefinition<Spec>,
+    mut authored: AuthoredWorkflowDefinition<Spec>,
 ) -> Result<ValidatedWorkflowDefinition<Spec>, ApplicationWorkflowValidationDenial>
 where
     Spec: ApplicationWorkflowSpec,
@@ -98,6 +101,10 @@ where
     })?;
     let mut validation_work = ValidationWorkMeter::default();
     let effects = limits::enforce(&authored, &mut validation_work)?;
+    global_actions::validate(&authored.global_actions)?;
+    authored
+        .global_actions
+        .sort_by_key(super::canonical::global_action_record);
     let graph = index::ValidationGraph::build(
         &authored.nodes,
         &authored.connections,
@@ -131,6 +138,7 @@ where
         start.as_str(),
         authored.nodes,
         authored.connections,
+        &authored.global_actions,
     )
     .map_err(canonical_denial)?;
     let mut component_expansions = authored.component_expansions;
@@ -146,6 +154,7 @@ where
         start,
         nodes,
         connections,
+        global_actions: authored.global_actions.into_boxed_slice(),
         component_expansions: component_expansions.into_boxed_slice(),
         validation_work,
         marker: PhantomData,

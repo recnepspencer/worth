@@ -109,6 +109,36 @@ pub(super) fn business_return_identity(
     Ok((encode(bytes)?, bytes))
 }
 
+pub(super) fn business_termination_identity(
+    compiled: &CompiledWorkflowDefinition,
+    instance: EntityId,
+    node: &CompiledWorkflowNode,
+    occurrence: u64,
+    iterations: &OrdMap<(EntityId, EntityId), u64>,
+    action: &worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency,
+) -> Result<(String, [u8; 32]), WorthQueryApplicationAttemptDenial> {
+    let worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency::Terminate {
+        identifier,
+        input_type,
+        binding,
+        requirements,
+    } = action;
+    let (base, _) = transition_identity(compiled, instance, node, occurrence, iterations, false)?;
+    let material = canonical_operation_material(vec![
+        ("workflow.transition", base),
+        ("workflow.action", "business-termination-v1".to_owned()),
+        ("workflow.termination.operation", identifier.clone()),
+        ("workflow.termination.input", input_type.clone()),
+        ("workflow.termination.binding", binding.clone()),
+        (
+            "workflow.termination.requirements",
+            requirements.persistence_identity(),
+        ),
+    ]);
+    let bytes: [u8; 32] = Sha256::digest(material.as_bytes()).into();
+    Ok((encode(bytes)?, bytes))
+}
+
 fn encode(identity: [u8; 32]) -> Result<String, WorthQueryApplicationAttemptDenial> {
     let mut text = String::with_capacity(64);
     for byte in identity {

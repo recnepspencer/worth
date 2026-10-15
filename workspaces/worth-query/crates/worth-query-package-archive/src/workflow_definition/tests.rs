@@ -19,6 +19,7 @@ const RETRY: u8 = 3;
 /// the caller writes.
 struct Draft {
     output: BinaryOutput,
+    version: u16,
 }
 
 impl Draft {
@@ -39,7 +40,7 @@ impl Draft {
         output.u32(4096);
         output.u64(0);
         output.text("a");
-        Self { output }
+        Self { output, version }
     }
 
     fn current() -> Self {
@@ -64,7 +65,10 @@ impl Draft {
         self
     }
 
-    fn bytes(self) -> Vec<u8> {
+    fn bytes(mut self) -> Vec<u8> {
+        if self.version >= 6 {
+            self.output.u32(0);
+        }
         self.output.into_bytes()
     }
 }
@@ -303,5 +307,9 @@ fn control_and_data_wire_tags_are_pinned() {
         assert_eq!(data_flow(tag).ok(), Some(flow));
     }
     assert!(control_outcome(9).is_err());
+    assert!(
+        control_outcome(10).is_err(),
+        "business termination is not a portable authored control arm"
+    );
     assert!(data_flow(7).is_err());
 }

@@ -1016,6 +1016,13 @@ installed evidence floor. Use the existing `for_workflow_operation` plus
 `execute_in_program` funnel. Do not invent signed/unsigned authorization modes,
 dummy approvals, host permit flags, or a parallel state machine to bridge it.
 
+Business lifecycle actions use this same native funnel: attach an explicit prior
+route with `back_action::<Binding, _, _>` or one definition-wide ending with
+`termination_action::<Binding>()`. Fresh preparation uses the binding's own
+capability; its guarded native body and kernel return/ending publish together.
+Do not implement a business mutation followed by a separate cursor/end call.
+See the workflows guide for retained exact retry and current support limits.
+
 Application workflows are in How WORTH Works
 [§13](../../../../../docs/how-it-works.md#13-workflows) and the full
 [workflows guide](foundations/workflows.md). Underneath, a

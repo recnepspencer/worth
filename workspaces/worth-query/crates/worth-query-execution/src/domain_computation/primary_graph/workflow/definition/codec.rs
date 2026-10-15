@@ -165,6 +165,7 @@ impl WorkflowConnectionTag {
             Self::Control(ApplicationWorkflowControlOutcome::ConditionUnsatisfied) => 7,
             Self::Control(ApplicationWorkflowControlOutcome::NavigatedBack) => 8,
             Self::Control(ApplicationWorkflowControlOutcome::Returned) => 9,
+            Self::Control(ApplicationWorkflowControlOutcome::Terminated) => 10,
             Self::Data(ApplicationWorkflowDataFlow::ConditionSubject) => 6,
             Self::Retry(outcome) => control_variant(outcome),
         }
@@ -195,6 +196,7 @@ impl WorkflowConnectionTag {
                 "control-navigated-back"
             }
             Self::Control(ApplicationWorkflowControlOutcome::Returned) => "control-returned",
+            Self::Control(ApplicationWorkflowControlOutcome::Terminated) => "control-terminated",
             Self::Data(ApplicationWorkflowDataFlow::ProposalSubject) => "data-proposal-subject",
             Self::Data(ApplicationWorkflowDataFlow::AssessmentSubject) => "data-assessment-subject",
             Self::Data(ApplicationWorkflowDataFlow::AssessmentEvidence) => {
@@ -221,6 +223,7 @@ const fn control_variant(outcome: ApplicationWorkflowControlOutcome) -> u64 {
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
         ApplicationWorkflowControlOutcome::NavigatedBack => 8,
         ApplicationWorkflowControlOutcome::Returned => 9,
+        ApplicationWorkflowControlOutcome::Terminated => 10,
     }
 }
 

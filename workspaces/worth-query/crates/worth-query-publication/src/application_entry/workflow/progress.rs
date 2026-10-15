@@ -63,6 +63,7 @@ pub(super) enum WorkflowRequestedAction {
     Advance,
     NavigateBack,
     BackAction,
+    TerminationAction,
     CollectAssessment { node_path: String },
 }
 
@@ -231,11 +232,14 @@ where
             }
         };
         let prepared = match action {
-            WorkflowRequestedAction::BackAction => WorthQueryWorkflowAdvanceAdapter::prepare_back_action::<
+            WorkflowRequestedAction::BackAction | WorkflowRequestedAction::TerminationAction => WorthQueryWorkflowAdvanceAdapter::prepare_local_action::<
                 Schema, <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
                 MutationOperation<Schema, Intent>, MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>, Spec, IntentBinding<Schema, Intent>
-            >(phase, &selected, workflow.workflow_spec_for(&selected), instance, mutation.admission),
+            >(phase, &selected, workflow.workflow_spec_for(&selected), instance, mutation.admission,
+                if matches!(action, WorkflowRequestedAction::TerminationAction) {
+                    worth_query_execution::publication_boundary::workflow_advance::WorkflowLocalActionKind::Terminate
+                } else { worth_query_execution::publication_boundary::workflow_advance::WorkflowLocalActionKind::Return }),
             WorkflowRequestedAction::Advance => WorthQueryWorkflowAdvanceAdapter::prepare::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,

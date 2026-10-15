@@ -25,9 +25,9 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 
 const MAGIC: &[u8; 4] = b"WQWD";
 
-/// V5 carries business Back actions. Definitions without them retain v4 bytes;
-/// v1 through v4 remain readable unchanged.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 5;
+/// V6 carries definition-level global actions. Back-only definitions retain
+/// v5 bytes, definitions with neither retain v4; readers preserve v1 through v5.
+pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 6;
 
 /// The oldest draft protocol still read. Its conditions readmit as migrated
 /// expressions; nothing writes it.
@@ -45,7 +45,7 @@ where
     let limits = limits.narrowed();
     let mut output = BinaryOutput::with_capacity(256);
     output.raw_bytes(MAGIC);
-    let version = if definition.connections().iter().any(|edge| matches!(edge.kind(),
+    let version = if !definition.global_actions().is_empty() { 6 } else if definition.connections().iter().any(|edge| matches!(edge.kind(),
         worth_query_declaration::facade::application_program::ApplicationWorkflowConnectionKind::BackAction(_))) { 5 } else { 4 };
     output.u16(version);
     records::text(&mut output, Spec::IDENTITY.as_str())?;
@@ -59,6 +59,12 @@ where
     output.u32(count(definition.connections().len())?);
     for connection in definition.connections() {
         records::encode_connection(&mut output, connection)?;
+    }
+    if version >= 6 {
+        output.u32(count(definition.global_actions().len())?);
+        for action in definition.global_actions() {
+            super::global_actions::encode(&mut output, action)?;
+        }
     }
     let bytes = output.into_bytes();
     require_byte_budget(bytes.len(), limits)?;
@@ -123,6 +129,15 @@ pub fn decode_workflow_definition_draft(
     for _ in 0..connection_count {
         connections.push(records::decode_connection(&mut input, version)?);
     }
+    let mut global_actions = Vec::new();
+    if version >= 6 {
+        let declared = input.u32()?;
+        let count = bounded_count(&input, declared, definition_limits.maximum_effects(), 17)?;
+        global_actions.reserve(count);
+        for _ in 0..count {
+            global_actions.push(super::global_actions::decode(&mut input)?);
+        }
+    }
     if !input.is_finished() {
         return Err(Denial::new(Kind::TrailingBytes));
     }
@@ -133,6 +148,7 @@ pub fn decode_workflow_definition_draft(
         start,
         nodes: nodes.into_boxed_slice(),
         connections: connections.into_boxed_slice(),
+        global_actions: global_actions.into_boxed_slice(),
     })
 }
 

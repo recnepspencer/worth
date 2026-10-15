@@ -10,6 +10,7 @@ pub enum WorthQueryWorkflowAdvancePreparationDenialKind {
     Authentication,
     AwaitingActor,
     BackActionUnavailable,
+    TerminationActionUnavailable,
 }
 
 /// Why a workflow advance did not prepare. `RuntimeMismatch` means the workflow belongs to
@@ -18,6 +19,7 @@ pub enum WorthQueryWorkflowAdvancePreparationDenialKind {
 pub enum WorthQueryWorkflowAdvancePreparationDenial {
     /// No fresh business Back requirement was produced; preparation changed nothing.
     BackActionUnavailable,
+    TerminationActionUnavailable,
     RuntimeMismatch,
     RequestAdmission(WorthQueryApplicationRequestMutationDenial),
     TransitionPreparation(WorkflowTransitionPreparationDenial),
@@ -33,6 +35,9 @@ pub enum WorthQueryWorkflowAdvancePreparationDenial {
 impl WorthQueryWorkflowAdvancePreparationDenial {
     pub const fn kind(&self) -> WorthQueryWorkflowAdvancePreparationDenialKind {
         match self {
+            Self::TerminationActionUnavailable => {
+                WorthQueryWorkflowAdvancePreparationDenialKind::TerminationActionUnavailable
+            }
             Self::BackActionUnavailable => {
                 WorthQueryWorkflowAdvancePreparationDenialKind::BackActionUnavailable
             }

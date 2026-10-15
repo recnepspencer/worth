@@ -57,6 +57,7 @@ pub(super) fn project_replays(
             instance,
             settled,
             progress.back_edge_iterations(),
+            &transition.identity,
         )?;
         if selected.identity() != transition.identity {
             return Err(denial(

@@ -23,6 +23,7 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 
 mod cold;
 mod connection;
+mod global_actions;
 mod node;
 mod publication_header;
 use cold::reconstruct_cold_definition;
