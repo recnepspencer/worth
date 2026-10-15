@@ -1,52 +1,66 @@
 //! Explicit disclosure meaning. A declaration never grants a read.
 use super::ApplicationWorkflowSpec;
-use crate::application_capability::ApplicationCapabilityMarkerIdentity;
+use super::{ApplicationWorkflowReadBinding, ApplicationWorkflowReadBindingDeclaration};
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 /// Scope whose native facts a governed read capability must disclose.
 pub enum ApplicationWorkflowReadScope {
-    /// One workflow subject, instance or lineage.
+    /// One explicit workflow subject; no implicit lineage or successor expansion.
     Subject,
-    /// Definition-level metadata independent of an instance subject.
+    /// One explicitly selected definition under Spec and branch, across all subjects.
     Definition,
+    /// Metadata of one explicitly selected definition, without instance enumeration.
+    DefinitionMetadata,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 /// Typed read capability declaration; carries no permission or public read handle.
 pub struct ApplicationWorkflowReadRule {
     scope: ApplicationWorkflowReadScope,
-    capability: String,
-    capability_type: String,
+    binding: ApplicationWorkflowReadBindingDeclaration,
 }
 impl ApplicationWorkflowReadRule {
     /// Selects a capability for subject-scoped disclosure.
-    pub fn subject<Spec, Capability>() -> Self
+    pub fn subject<Spec, Binding>() -> Self
     where
         Spec: ApplicationWorkflowSpec,
-        Capability: ApplicationCapabilityMarkerIdentity<Schema = Spec::Schema>,
+        Binding: ApplicationWorkflowReadBinding<Spec::Schema>,
     {
-        Self::declared::<Capability>(ApplicationWorkflowReadScope::Subject)
+        Self::declared::<Spec::Schema, Binding>(ApplicationWorkflowReadScope::Subject)
     }
     /// Selects a capability for definition-scoped disclosure.
-    pub fn definition<Spec, Capability>() -> Self
+    pub fn definition<Spec, Binding>() -> Self
     where
         Spec: ApplicationWorkflowSpec,
-        Capability: ApplicationCapabilityMarkerIdentity<Schema = Spec::Schema>,
+        Binding: ApplicationWorkflowReadBinding<Spec::Schema>,
     {
-        Self::declared::<Capability>(ApplicationWorkflowReadScope::Definition)
+        Self::declared::<Spec::Schema, Binding>(ApplicationWorkflowReadScope::Definition)
     }
-    fn declared<C: ApplicationCapabilityMarkerIdentity>(
+    /// Explicit metadata-only disclosure; does not enumerate a definition's instances.
+    pub fn definition_metadata<Spec, Binding>() -> Self
+    where
+        Spec: ApplicationWorkflowSpec,
+        Binding: ApplicationWorkflowReadBinding<Spec::Schema>,
+    {
+        Self::declared::<Spec::Schema, Binding>(ApplicationWorkflowReadScope::DefinitionMetadata)
+    }
+    fn declared<
+        Schema: crate::application_schema::ApplicationSchema,
+        B: ApplicationWorkflowReadBinding<Schema>,
+    >(
         scope: ApplicationWorkflowReadScope,
     ) -> Self {
         Self {
             scope,
-            capability: C::IDENTIFIER.to_owned(),
-            capability_type: C::PORTABLE_TYPE_IDENTITY.as_str().to_owned(),
+            binding: ApplicationWorkflowReadBindingDeclaration::from_binding::<Schema, B>(),
         }
+    }
+    pub fn binding(&self) -> &ApplicationWorkflowReadBindingDeclaration {
+        &self.binding
     }
     /// Declared capability name and portable type identity.
     pub fn capability(&self) -> (&str, &str) {
-        (&self.capability, &self.capability_type)
+        self.binding.capability()
     }
     /// Native scope this declaration requires.
     pub const fn scope(&self) -> &ApplicationWorkflowReadScope {
@@ -54,14 +68,12 @@ impl ApplicationWorkflowReadRule {
     }
     /// Current canonical policy identity.
     pub fn persistence_identity(&self) -> String {
-        format!(
-            "1:{:?}:{}:{}:{}{}",
-            self.scope,
-            self.capability.len(),
-            self.capability_type.len(),
-            self.capability,
-            self.capability_type
-        )
+        let extent = match self.scope {
+            ApplicationWorkflowReadScope::Subject => "exact-subject",
+            ApplicationWorkflowReadScope::Definition => "exact-definition-across-subjects",
+            ApplicationWorkflowReadScope::DefinitionMetadata => "exact-definition-metadata",
+        };
+        format!("2:{extent}:{}", self.binding.persistence_identity())
     }
 }
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -81,8 +93,10 @@ pub enum ApplicationWorkflowObservationPolicy {
     Governed {
         /// Subject-scoped instance disclosure.
         instance: ApplicationWorkflowReadRule,
-        /// Definition-scoped metadata disclosure.
+        /// Instances of one explicitly selected definition across subjects.
         definition: ApplicationWorkflowReadRule,
+        /// Separate metadata-only route; absence closes this route.
+        definition_metadata: Option<ApplicationWorkflowReadRule>,
         /// Independently declared audit disclosure.
         audit: ApplicationWorkflowAuditPolicy,
     },
@@ -94,16 +108,19 @@ impl ApplicationWorkflowObservationPolicy {
     }
     /// Declares read capabilities; installation validates their scopes and identities.
     pub fn governed(
-        /// Subject-scoped instance disclosure.
+        // Subject-scoped instance disclosure.
         instance: ApplicationWorkflowReadRule,
-        /// Definition-scoped metadata disclosure.
+        // Instances of one explicitly selected definition across subjects.
         definition: ApplicationWorkflowReadRule,
-        /// Independently declared audit disclosure.
+        // Separate metadata-only route; absence closes this route.
+        definition_metadata: Option<ApplicationWorkflowReadRule>,
+        // Independently declared audit disclosure.
         audit: ApplicationWorkflowAuditPolicy,
     ) -> Self {
         Self::Governed {
             instance,
             definition,
+            definition_metadata,
             audit,
         }
     }
@@ -115,9 +132,11 @@ impl ApplicationWorkflowObservationPolicy {
                 instance,
                 definition,
                 audit,
+                definition_metadata,
             } => {
                 instance.scope == ApplicationWorkflowReadScope::Subject
                     && definition.scope == ApplicationWorkflowReadScope::Definition
+                    && !matches!(definition_metadata, Some(rule) if rule.scope != ApplicationWorkflowReadScope::DefinitionMetadata)
                     && !matches!(audit, ApplicationWorkflowAuditPolicy::Governed(rule) if rule.scope != ApplicationWorkflowReadScope::Subject)
             }
         }
@@ -130,6 +149,7 @@ impl ApplicationWorkflowObservationPolicy {
                 instance,
                 definition,
                 audit,
+                definition_metadata,
             } => {
                 let audit = match audit {
                     ApplicationWorkflowAuditPolicy::NotApplicable => "not-applicable".to_owned(),
@@ -138,12 +158,56 @@ impl ApplicationWorkflowObservationPolicy {
                 let parts = [
                     instance.persistence_identity(),
                     definition.persistence_identity(),
+                    definition_metadata
+                        .as_ref()
+                        .map(ApplicationWorkflowReadRule::persistence_identity)
+                        .unwrap_or_else(|| "not-applicable".to_owned()),
                     audit,
                 ];
-                parts.iter().fold("1:governed".to_owned(), |s, p| {
+                parts.iter().fold("2:governed".to_owned(), |s, p| {
                     format!("{s}:{}:{p}", p.len())
                 })
             }
+        }
+    }
+}
+
+/// Closed disclosure route. Definition scope never arises from a missing subject.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ApplicationWorkflowReadRoute {
+    Subject,
+    Definition,
+    DefinitionMetadata,
+    Audit,
+}
+impl ApplicationWorkflowObservationPolicy {
+    /// The exact installed declaration for a requested disclosure route.
+    pub fn rule(
+        &self,
+        route: ApplicationWorkflowReadRoute,
+    ) -> Option<&ApplicationWorkflowReadRule> {
+        match (self, route) {
+            (Self::Governed { instance, .. }, ApplicationWorkflowReadRoute::Subject) => {
+                Some(instance)
+            }
+            (Self::Governed { definition, .. }, ApplicationWorkflowReadRoute::Definition) => {
+                Some(definition)
+            }
+            (
+                Self::Governed {
+                    definition_metadata: Some(rule),
+                    ..
+                },
+                ApplicationWorkflowReadRoute::DefinitionMetadata,
+            ) => Some(rule),
+            (
+                Self::Governed {
+                    audit: ApplicationWorkflowAuditPolicy::Governed(rule),
+                    ..
+                },
+                ApplicationWorkflowReadRoute::Audit,
+            ) => Some(rule),
+            _ => None,
         }
     }
 }

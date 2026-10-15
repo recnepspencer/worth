@@ -1,50 +1,65 @@
-use super::super::facts;
-use super::{accepted_without_roles, assert_denied, checkpoint_body, checkpoint_from_body};
+//! Header refusal precedes current body/native interpretation and preserves backing.
+use super::{checkpoint_body, checkpoint_from_body};
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
+
+fn refusal(body: Vec<u8>, expected: Kind) {
+    let checkpoint = checkpoint_from_body(body);
+    let retained = checkpoint.clone();
+    let original = checkpoint.bytes().to_vec();
+    let backing = checkpoint.bytes().as_ptr();
+    let denial = checkpoint
+        .decode()
+        .err()
+        .expect("unsupported header refuses");
+    assert_eq!(denial.into_installation_denial().kind(), expected);
+    assert_eq!(retained.bytes(), original);
+    assert_eq!(retained.bytes().as_ptr(), backing);
+}
 
 #[test]
-fn current_facts_roundtrip_older_formats_are_refused_and_hostile_lengths_fail_before_allocation() {
-    let fact = crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact::SourceEntity {
-        entity_id: worth_relational::facade::identity::EntityId::new(
-            worth_relational::facade::identity::PartitionId(1), 3, 1,
-        ),
-    };
-    let bytes = facts::encode(std::slice::from_ref(&fact)).unwrap();
-    let mut accepted = accepted_without_roles(b"producer", 0);
-    accepted.truncate(accepted.len() - 10);
-    accepted.extend_from_slice(&facts::WIRE_VERSION.to_be_bytes());
-    accepted.extend_from_slice(&(bytes.len() as u64).to_be_bytes());
-    accepted.extend_from_slice(&bytes);
-    let decoded = checkpoint_from_body(checkpoint_body(1, accepted.clone()))
-        .decode()
-        .unwrap();
-    assert_eq!(
-        decoded.accepted_outputs[0].producer_facts.as_deref(),
-        Some(bytes.as_slice())
-    );
-    assert_eq!(
-        facts::decode(
-            &bytes,
-            None,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation
-        )
-        .unwrap()
-        .as_ref(),
-        &[fact]
-    );
-    for version in 3..=9_u16 {
-        let mut older = checkpoint_body(1, accepted.clone());
-        older[..2].copy_from_slice(&version.to_be_bytes());
-        assert_denied(
-            older,
-            &format!("Query application checkpoint format {version} is unsupported"),
+fn unsupported_checkpoint_header_refuses_before_malformed_current_body() {
+    // Deliberately hostile framing cases, not authentic predecessor fixtures.
+    for observed in [0, 9, super::super::FORMAT_VERSION + 1] {
+        let mut body = checkpoint_body(0, Vec::new());
+        body[..2].copy_from_slice(&observed.to_be_bytes());
+        body.truncate(2);
+        refusal(
+            body,
+            Kind::UnsupportedCheckpointFormat {
+                observed,
+                supported: super::super::FORMAT_VERSION,
+            },
         );
     }
+}
 
-    let length_start = accepted.len() - bytes.len() - 8;
-    accepted[length_start..length_start + 8]
-        .copy_from_slice(&((facts::MAXIMUM_FACT_BYTES + 1) as u64).to_be_bytes());
-    assert_denied(
-        checkpoint_body(1, accepted),
-        "producer fact payload length is invalid",
+#[test]
+fn unsupported_current_workflow_marker_refuses_before_native_bytes() {
+    for (facts, instances) in [(1u16, 3u16), (2, 2), (3, 3), (2, 4)] {
+        let mut body = checkpoint_body(0, Vec::new());
+        body[2..4].copy_from_slice(&facts.to_be_bytes());
+        body[4..6].copy_from_slice(&instances.to_be_bytes());
+        refusal(
+            body,
+            Kind::UnsupportedCheckpointWorkflowContract { facts, instances },
+        );
+    }
+}
+
+#[test]
+fn malformed_current_header_remains_corruption_not_unsupported() {
+    let mut body = checkpoint_body(0, Vec::new());
+    body.truncate(2);
+    refusal(body, Kind::CheckpointRecoveryRejected);
+    let checkpoint = checkpoint_from_body(checkpoint_body(0, Vec::new()));
+    let mut corrupt = checkpoint.bytes().to_vec();
+    *corrupt.last_mut().unwrap() ^= 1;
+    let denial = super::WorthQueryApplicationCheckpoint::from_untrusted_bytes(corrupt)
+        .decode()
+        .err()
+        .expect("checksum must refuse");
+    assert_eq!(
+        denial.into_installation_denial().kind(),
+        Kind::CheckpointRecoveryRejected
     );
 }

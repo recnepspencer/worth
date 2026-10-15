@@ -23,7 +23,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[test]
-fn checkpoint_one_buffer_matches_independent_v9_grammar_and_sections() {
+fn checkpoint_one_buffer_matches_independent_v10_grammar_and_sections() {
     let (world, receipt) = recoverable_application_world(141, "checkpoint-wire-proof");
     let scope = receipt.principal_scope().scope();
     let facts = super::super::facts::encode(&[WorthQueryApplicationObservedFact::SourceEntity {
@@ -32,7 +32,7 @@ fn checkpoint_one_buffer_matches_independent_v9_grammar_and_sections() {
     .unwrap();
     let rows = vec![
         WorthQueryAcceptedOutputCheckpointIdentity {
-            producer: "producer-a".to_owned(),
+            producer: ("producer-a".to_owned()).into(),
             posture: WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source: [1; 32],
             scope,
@@ -40,7 +40,7 @@ fn checkpoint_one_buffer_matches_independent_v9_grammar_and_sections() {
             producer_dependency: Some([3; 32]),
             idempotency_key: [4; 32],
             resources: Some(WorthQueryProducerDemandResources::new(4096, 8192)),
-            roles: vec![
+            roles: (vec![
                 role(
                     "a",
                     WorthQueryApplicationOutputPosture::Preserve,
@@ -49,12 +49,14 @@ fn checkpoint_one_buffer_matches_independent_v9_grammar_and_sections() {
                 ),
                 role("b", WorthQueryApplicationOutputPosture::Create, "beta", 6),
                 role("c", WorthQueryApplicationOutputPosture::Retire, "gamma", 7),
-            ],
-            producer_facts: Some(facts.clone()),
-            producer_fact_wire_version: 9,
+            ])
+            .into(),
+            producer_facts: (Some(facts.clone())).map(std::sync::Arc::new),
+            producer_fact_wire_version: super::super::facts::WIRE_VERSION,
+            metadata: None,
         },
         WorthQueryAcceptedOutputCheckpointIdentity {
-            producer: "producer-b".to_owned(),
+            producer: ("producer-b".to_owned()).into(),
             posture: WorthQueryAcceptedOutputCheckpointPosture::StableReused,
             source: [11; 32],
             scope,
@@ -62,9 +64,10 @@ fn checkpoint_one_buffer_matches_independent_v9_grammar_and_sections() {
             producer_dependency: None,
             idempotency_key: [14; 32],
             resources: None,
-            roles: Vec::new(),
+            roles: (Vec::new()).into(),
             producer_facts: None,
             producer_fact_wire_version: 0,
+            metadata: None,
         },
     ];
     let native = b"literal-native-formatter-payload";
@@ -72,7 +75,7 @@ fn checkpoint_one_buffer_matches_independent_v9_grammar_and_sections() {
     scope_wire.extend_from_slice(&scope.partition_id().to_be_bytes());
     scope_wire.extend_from_slice(&scope.local_slot().to_be_bytes());
     scope_wire.extend_from_slice(&scope.generation().to_be_bytes());
-    let expected = independent_v9(
+    let expected = independent_v10(
         world.application.publication().bootstrap_commit_id().0,
         &scope_wire,
         native,
@@ -86,14 +89,14 @@ fn checkpoint_one_buffer_matches_independent_v9_grammar_and_sections() {
     )
     .unwrap();
     assert_eq!(checkpoint.bytes(), expected);
-    assert_eq!(sections.framing_bytes(), 66);
+    assert_eq!(sections.framing_bytes(), 70);
     assert_eq!(sections.native_bytes(), native.len());
     assert_eq!(sections.accepted_output_count(), 2);
     // Two 189-byte fixed rows, literal text widths, three 33-byte role frames,
     // and the independently encoded fact payload. No production size helper.
     let expected_rows = 2 * 189 + 20 + 3 * 33 + 3 + 14 + facts.len();
     assert_eq!(sections.accepted_output_bytes(), expected_rows);
-    assert_eq!(sections.total_bytes(), 66 + native.len() + expected_rows);
+    assert_eq!(sections.total_bytes(), 70 + native.len() + expected_rows);
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
     assert_eq!(sections.native_sections(), None);
 
@@ -205,11 +208,13 @@ fn role(
     }
 }
 
-/// Independent current v9 grammar with literal fixture branch choices.
+/// Independent current v10 grammar with literal fixture branch choices.
 /// It does not call the production body writer, resource codec, or size helper.
-fn independent_v9(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> Vec<u8> {
+fn independent_v10(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> Vec<u8> {
     let mut body = Vec::new();
-    body.extend_from_slice(&9_u16.to_be_bytes());
+    body.extend_from_slice(&10_u16.to_be_bytes());
+    body.extend_from_slice(&2_u16.to_be_bytes());
+    body.extend_from_slice(&3_u16.to_be_bytes());
     body.extend_from_slice(&bootstrap.to_be_bytes());
     body.extend_from_slice(&(native.len() as u64).to_be_bytes());
     body.extend_from_slice(&2_u64.to_be_bytes());
@@ -238,7 +243,7 @@ fn independent_v9(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> 
         body.extend_from_slice(&slot.to_be_bytes());
         body.extend_from_slice(&3_u32.to_be_bytes());
     }
-    body.extend_from_slice(&9_u16.to_be_bytes());
+    body.extend_from_slice(&10_u16.to_be_bytes());
     body.extend_from_slice(&(facts.len() as u64).to_be_bytes());
     body.extend_from_slice(facts);
     text(&mut body, b"producer-b");

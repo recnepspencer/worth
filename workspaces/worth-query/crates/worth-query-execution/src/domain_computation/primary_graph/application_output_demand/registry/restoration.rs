@@ -23,9 +23,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredAccept
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) source_identity:
         crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
-    pub(in crate::domain_computation::primary_graph) observed_source_facts: std::sync::Arc<[
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact
-    ]>,
+    pub(in crate::domain_computation::primary_graph) observed_source_facts:
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     /// Only a reconstruction verified against the authentic recovered Native
     /// snapshot may populate this original-output witness.
     pub(in crate::domain_computation::primary_graph) native_output_witness: Option<

@@ -26,6 +26,8 @@ pub(super) enum HistoryBasis {
     Close,
     /// The instance has already ended; the read only reports its history.
     Ended,
+    /// Exact data reconstruction without progression, actor disclosure or mutation capacity.
+    ReadOnly,
 }
 
 /// Where a history read finds the nodes its transitions settled.
@@ -171,7 +173,12 @@ pub(super) fn observe(
             )?;
         }
         scratch.clear();
-        let settlement = settlement::observe_settled_transition(
+        let observe_transition = if matches!(basis, HistoryBasis::ReadOnly) {
+            settlement::observe_transition_state
+        } else {
+            settlement::observe_settled_transition
+        };
+        let settlement = observe_transition(
             execution,
             runtime,
             snapshot,
@@ -241,7 +248,7 @@ pub(super) fn observe(
                     maximum_transitions.saturating_sub(inherited_steps)
                 }
                 HistoryBasis::Close => transition_count.saturating_add(1),
-                HistoryBasis::Ended => transition_count,
+                HistoryBasis::Ended | HistoryBasis::ReadOnly => transition_count,
             },
             transition_count,
             snapshot: snapshot.clone(),

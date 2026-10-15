@@ -144,11 +144,7 @@ impl WorthQueryWorkflowActorContext {
                         layout.proposal.entity_kind,
                         &mut facts,
                     )
-                    .and_then(|actor| {
-                        actor
-                            .ok_or_else(|| affinity("current proposal has no proposer"))
-                            .map(Some)
-                    }),
+                    .and_then(|actor| crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, true)),
                 None => Ok(None),
             },
             Source::BoundTransition => match transition {
@@ -169,19 +165,9 @@ impl WorthQueryWorkflowActorContext {
                         layout.transition.entity_kind,
                         &mut facts,
                     )?;
-                    if requirement.role() == Role::Advancer && actor.is_none() {
-                        return Err(affinity("current transition has no advancer"));
-                    }
-                    if actor.is_some()
-                        != transition
-                            .settlement()
-                            .operation_receipt_identity()
-                            .is_some()
-                        && requirement.role() == Role::Executor
-                    {
-                        return Err(affinity("transition executor contradicts performed state"));
-                    }
-                    Ok(actor)
+                    let required = requirement.role() == Role::Advancer
+                        || transition.settlement().operation_receipt_identity().is_some();
+                    crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, required)
                 }
                 None => Ok(None),
             },

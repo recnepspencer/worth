@@ -52,14 +52,26 @@ fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
 }
 
 #[test]
-fn version_six_artifact_contract_frame_matches_the_frozen_vector() {
+fn version_seven_artifact_contract_frame_matches_the_frozen_vector() {
+    let original =
+        decode_hex(include_str!("artifact_contract_record/artifact_contract_v6.hex").trim());
+    let denial =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
+            .decode_frame(&original)
+            .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
+
     let source = artifact_package();
     let exported = source.export_typed_records().unwrap();
     let artifact = artifact_view(&exported);
     let bytes = encode_record_frame(artifact, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let golden = include_str!("artifact_contract_record/artifact_contract_v6.hex").trim();
+    let golden = include_str!("artifact_contract_record/artifact_contract_v7.hex").trim();
     assert_eq!(encode_hex(&bytes), golden);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 6);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 7);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 7);
     assert_eq!(
         u32::from_be_bytes(bytes[4..8].try_into().unwrap()),
@@ -226,4 +238,13 @@ fn artifact_view<'a>(
 
 fn encode_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn decode_hex(encoded: &str) -> Vec<u8> {
+    assert_eq!(encoded.len() % 2, 0);
+    encoded
+        .as_bytes()
+        .chunks_exact(2)
+        .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+        .collect()
 }

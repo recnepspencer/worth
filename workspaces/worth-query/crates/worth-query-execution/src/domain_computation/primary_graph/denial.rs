@@ -75,6 +75,12 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ExecutionDenied {
         kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
     },
+    /// Native checkpoint recovery's allocation owner refused the backing.
+    /// The checked quote is absent when layout could not be represented.
+    NativeAllocation {
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
     /// Commit or index preparation was canceled or exceeded its deadline before publication.
     ExecutionControlStopped {
         kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
@@ -132,6 +138,10 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     UnsupportedCheckpointWorkflowContract {
         facts: u16,
         instances: u16,
+    },
+    UnsupportedCheckpointProducerFactVersion {
+        observed: u16,
+        supported: u16,
     },
     UnsupportedRecoveredNativeAuthorityLayout,
     /// A declared output producer has no binding.

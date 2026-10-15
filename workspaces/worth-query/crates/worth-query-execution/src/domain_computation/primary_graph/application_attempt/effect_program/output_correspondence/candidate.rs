@@ -236,8 +236,10 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         WorthQueryApplicationOutputCorrespondence {
             binding_type: self.binding_type,
             contract_type: self.contract_type,
-            optional_roles,
-            roles,
+            storage: std::sync::Arc::new(super::CorrespondenceStorage::from_committed(
+                optional_roles,
+                roles,
+            )),
         }
     }
 }

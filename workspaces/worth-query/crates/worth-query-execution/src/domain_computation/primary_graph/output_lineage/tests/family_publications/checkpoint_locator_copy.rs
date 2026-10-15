@@ -47,9 +47,16 @@ fn court() -> Court {
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             TypeId::of::<Initial>(),
             TypeId::of::<()>(),
-            BTreeSet::new(),
-            expected_roles(),
+            std::iter::empty(),
+            &expected_roles(),
             |_| Some(TypeId::of::<()>()),
+            &worth_execution::ExecutionRequest::serial(
+                &worth_execution::SerialRequest::from_memory(
+                    worth_execution::SerialMemoryBudget::new(64 << 20),
+                    worth_execution::CancellationToken::new(),
+                    None,
+                ),
+            ),
         )
         .unwrap(),
     );
@@ -75,7 +82,7 @@ fn expected_roles() -> Vec<WorthQueryCheckpointOutputRole> {
 
 fn expected(court: &Court) -> Identity {
     Identity {
-        producer: "fixture-producer".into(),
+        producer: "fixture-producer".to_owned().into(),
         posture: Posture::Performed,
         source: [11; 32],
         scope: court.source.scope,
@@ -83,9 +90,10 @@ fn expected(court: &Court) -> Identity {
         producer_dependency: None,
         idempotency_key: [2; 32],
         resources: None,
-        roles: expected_roles(),
+        roles: expected_roles().into(),
         producer_facts: None,
         producer_fact_wire_version: 0,
+        metadata: None,
     }
 }
 

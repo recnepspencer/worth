@@ -184,6 +184,7 @@ pub use workflow_instance_program::{
     SupersededWorkflowDefinitionStart, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
     WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceAdapter,
+    WorthQueryWorkflowInstanceDiscoveryIntent,
 };
 pub use workflow_proposal_program::{
     PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,
@@ -204,3 +205,6 @@ pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQ
 
 #[cfg(test)]
 pub(in crate::domain_computation) use fact::consult_observation;
+
+mod workflow_observation;
+pub(in crate::domain_computation::primary_graph) use workflow_observation::observe_governed_instance_history;

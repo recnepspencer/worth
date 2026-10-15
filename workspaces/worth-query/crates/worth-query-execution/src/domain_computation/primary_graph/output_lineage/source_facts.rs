@@ -53,7 +53,7 @@ impl RetainedSourceFacts {
         stale: bool,
         facts: Arc<[Fact]>,
     ) -> Self {
-        Self::retain(ComputationSourceEvidence::for_test(stale), facts.into())
+        Self::retain(ComputationSourceEvidence::for_test(stale), facts)
     }
 }
 impl ComparableSourceFacts {

@@ -117,14 +117,19 @@ fn correspondence(entity: EntityId) -> WorthQueryApplicationOutputCorrespondence
     WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),
-        Default::default(),
-        vec![WorthQueryCheckpointOutputRole {
+        std::iter::empty(),
+        &[WorthQueryCheckpointOutputRole {
             role: "retired".into(),
             posture: WorthQueryApplicationOutputPosture::Retire,
             entity_name: "Account".into(),
             entity,
         }],
         |_| Some(TypeId::of::<()>()),
+        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::CancellationToken::new(),
+            None,
+        )),
     )
     .unwrap()
 }

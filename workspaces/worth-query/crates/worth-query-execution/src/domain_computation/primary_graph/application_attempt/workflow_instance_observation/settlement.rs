@@ -32,6 +32,11 @@ use value::{
     observed_bool, observed_optional_text, observed_text, observed_u64, optional_identity,
 };
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum TransitionReadPurpose {
+    Command,
+    ReadOnly,
+}
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_settled_transition(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -39,6 +44,43 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     layout: &WorthQueryWorkflowLayout,
     transition: EntityId,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    observe_transition(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        transition,
+        facts,
+        TransitionReadPurpose::Command,
+    )
+}
+pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_transition_state(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    observe_transition(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        transition,
+        facts,
+        TransitionReadPurpose::ReadOnly,
+    )
+}
+fn observe_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+    purpose: TransitionReadPurpose,
 ) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
     let kind = layout.transition.entity_kind;
     facts.push(WorthQueryApplicationObservedFact::Entity {
@@ -84,19 +126,21 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         &layout.transition.operation_receipt_identity,
         facts,
     )?;
-    let advancer = layout
-        .transition
-        .advancer
-        .observe(runtime, execution, snapshot, transition, kind, facts)?;
-    let executor = layout
-        .transition
-        .executor
-        .observe(runtime, execution, snapshot, transition, kind, facts)?;
-    let applicable = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability;
-    if applicable(advancer, true).is_err()
-        || applicable(executor, operation_receipt_identity.is_some()).is_err()
-    {
-        return Err(denial("current transition actor applicability is corrupt"));
+    if purpose == TransitionReadPurpose::Command {
+        let advancer = layout
+            .transition
+            .advancer
+            .observe(runtime, execution, snapshot, transition, kind, facts)?;
+        let executor = layout
+            .transition
+            .executor
+            .observe(runtime, execution, snapshot, transition, kind, facts)?;
+        let applicable = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability;
+        if applicable(advancer, true).is_err()
+            || applicable(executor, operation_receipt_identity.is_some()).is_err()
+        {
+            return Err(denial("current transition actor applicability is corrupt"));
+        }
     }
     let nodes = adjacency_with_kind(
         execution,

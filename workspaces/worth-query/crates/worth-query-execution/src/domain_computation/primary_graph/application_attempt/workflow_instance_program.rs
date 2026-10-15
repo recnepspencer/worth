@@ -22,6 +22,8 @@ use crate::domain_computation::primary_graph::workflow::{
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
 mod cancellation;
+mod discovery_intent;
+pub use discovery_intent::WorthQueryWorkflowInstanceDiscoveryIntent;
 mod intent_identity;
 mod migration;
 mod performed;
@@ -178,7 +180,7 @@ where
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )?;
         let subject = self.admission.scope_entity_id();
-        let (instance_identity, instance_intent_identity) =
+        let discovery_intent =
             intent_identity::instance_identity(&compiled, subject, start_key_identity).map_err(
                 |()| {
                     denial(
@@ -197,7 +199,7 @@ where
         visit_instance_start_facts(
             &layout,
             &compiled,
-            &instance_identity,
+            discovery_intent.lookup_identity(),
             branch_occurrence,
             subject,
             carry,
@@ -209,7 +211,7 @@ where
         visit_instance_start_facts(
             &layout,
             &compiled,
-            &instance_identity,
+            discovery_intent.lookup_identity(),
             branch_occurrence,
             subject,
             carry,
@@ -242,8 +244,7 @@ where
             program_revision,
             definition,
             definition_content_identity,
-            instance_identity,
-            instance_intent_identity,
+            discovery_intent,
             instance_identity_locator: layout.instance.identity.clone(),
             start_path,
             supersession,

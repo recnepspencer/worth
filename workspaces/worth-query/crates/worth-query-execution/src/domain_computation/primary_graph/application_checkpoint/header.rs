@@ -11,6 +11,81 @@ pub(in crate::domain_computation::primary_graph) struct CheckpointDecodeDenial {
     message: String,
 }
 impl CheckpointDecodeDenial {
+    pub(in crate::domain_computation::primary_graph) fn execution(
+        cause: worth_execution::WorkCeilingDenial,
+    ) -> Self {
+        let native =
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::from(cause);
+        Self::native_execution(
+            native,
+            format!("checkpoint reconstruction stopped: {cause:?}"),
+        )
+    }
+    fn native_execution(
+        native: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+        message: String,
+    ) -> Self {
+        let kind =
+            match super::super::provider::relational_execution_denial::relational_execution_kind(
+                native, None,
+            ) {
+                Ok(kind) => Kind::ExecutionDenied { kind },
+                Err(kind) => Kind::ExecutionControlStopped { kind },
+            };
+        Self { kind, message }
+    }
+    pub(in crate::domain_computation::primary_graph) fn allocator() -> Self {
+        Self {
+            kind: Kind::ExecutionDenied {
+                kind:
+                    crate::domain_computation::WorthQueryProviderSessionDenialKind::AllocationDenied,
+            },
+            message: "checkpoint metadata allocation refused".to_owned(),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn capacity() -> Self {
+        Self::execution(worth_execution::WorkCeilingDenial::Admission(
+            worth_execution::LeaseDenial::ChargedBytesOverflow,
+        ))
+    }
+    pub(in crate::domain_computation::primary_graph) fn from_fact(cause: FactDecodeDenial) -> Self {
+        use super::super::application_attempt::retained_decision_facts::StoreDenial;
+        use worth_execution::{ExecutionAllocationDenialClass, MapKernelStop, WorkCeilingDenial};
+        match cause {
+            FactDecodeDenial::Format(message) => message.into(),
+            FactDecodeDenial::Execution(cause) => Self::native_execution(cause,
+                "checkpoint fact reconstruction stopped".to_owned()),
+            FactDecodeDenial::Retention(StoreDenial::Allocation(cause)) => match cause.classify() {
+                ExecutionAllocationDenialClass::Request(stop) => Self::execution(stop),
+                ExecutionAllocationDenialClass::Physical(_) => Self {
+                    kind: Kind::ExecutionDenied { kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::AllocationDenied },
+                    message: cause.to_string(),
+                },
+            },
+            FactDecodeDenial::Retention(StoreDenial::RequestInterruption(cause)) => {
+                use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as I;
+                Self::execution(WorkCeilingDenial::Stopped(match cause {
+                    I::Cancelled => MapKernelStop::Cancelled,
+                    I::DeadlineExceeded => MapKernelStop::DeadlineElapsed,
+                }))
+            },
+            FactDecodeDenial::Retention(StoreDenial::Representability) => Self::capacity(),
+            FactDecodeDenial::Retention(StoreDenial::ConflictingBody) =>
+                "checkpoint facts contain conflicting bodies".to_owned().into(),
+            #[cfg(test)]
+            FactDecodeDenial::Retention(StoreDenial::InvalidOrdinal) =>
+                "checkpoint facts contain an invalid fixture ordinal".to_owned().into(),
+        }
+    }
+    pub(super) fn unsupported_producer_facts(observed: u16) -> Self {
+        Self {
+            kind: Kind::UnsupportedCheckpointProducerFactVersion {
+                observed,
+                supported: facts::WIRE_VERSION,
+            },
+            message: format!("checkpoint producer fact wire version {observed} is unsupported"),
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn into_installation_denial(self) -> Denial {
         Denial::new(self.kind, self.message)
     }

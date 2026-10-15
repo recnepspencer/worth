@@ -1,6 +1,7 @@
 //! Recovered output expectations survive a change outside the source field.
 use super::*;
 mod mixed_retirement;
+mod mutation;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryCheckpointOutputRole,
     output_reuse::{
@@ -14,6 +15,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use mutation::{change_label, snapshot};
 use std::collections::BTreeMap;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, InternedString, LocatorAuthority,
@@ -57,14 +59,19 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),
-        std::collections::BTreeSet::new(),
-        vec![WorthQueryCheckpointOutputRole {
+        std::iter::empty(),
+        &[WorthQueryCheckpointOutputRole {
             role: "account".to_owned(),
             posture: WorthQueryApplicationOutputPosture::Preserve,
             entity_name: "Account".to_owned(),
             entity,
         }],
         |_| Some(TypeId::of::<()>()),
+        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::CancellationToken::new(),
+            None,
+        )),
     )
     .unwrap();
     let status_ref = AccountStatus::reference();
@@ -346,55 +353,4 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         !changed_output_equal,
         "a changed consumed output must never be equal evidence"
     );
-}
-
-fn snapshot(runtime: &RelationalRuntime) -> SnapshotHandle {
-    let basis = runtime
-        .admit_branch_basis(&runtime.main_branch_identity())
-        .unwrap();
-    runtime
-        .snapshots()
-        .snapshot_for_observation(&basis.observation())
-        .unwrap()
-}
-
-fn change_label(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
-    entity: EntityId,
-    locator: worth_foundational::facade::AspectFieldLocator,
-) {
-    let batch =
-        WorkerIntentBatch::new("checkpoint-output-field-edit").push(MutationIntent::Entity(
-            EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                entity_id: entity,
-                fields: AspectFieldPatch::from(BTreeMap::from([(
-                    locator,
-                    AspectValue::String(InternedString::Raw("changed-output".to_owned())),
-                )])),
-            }),
-        ));
-    let basis = runtime
-        .admit_branch_basis(&runtime.main_branch_identity())
-        .unwrap();
-    let mut transaction = runtime
-        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-        .unwrap();
-    transaction
-        .push_batch(
-            batch,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let candidate = runtime
-        .prepare_branch_transaction(execution, transaction)
-        .unwrap();
-    let RelationalPublicationOutcome::Performed(performed) = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate)
-    else {
-        panic!("the real native edit must publish");
-    };
-    let committed = runtime.settle_performed_publication(performed).unwrap();
-    release_test_commit_snapshot(runtime, &committed);
 }

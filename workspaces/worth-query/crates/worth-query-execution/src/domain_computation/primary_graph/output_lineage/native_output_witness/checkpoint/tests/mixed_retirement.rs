@@ -311,8 +311,8 @@ fn mixed_correspondence(
     WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),
-        Default::default(),
-        [
+        std::iter::empty(),
+        &[
             ("live", WorthQueryApplicationOutputPosture::Preserve, live),
             (
                 "retired",
@@ -327,8 +327,13 @@ fn mixed_correspondence(
             entity_name: "Account".into(),
             entity,
         })
-        .collect(),
+        .collect::<Vec<_>>(),
         |_| Some(TypeId::of::<()>()),
+        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::CancellationToken::new(),
+            None,
+        )),
     )
     .unwrap()
 }

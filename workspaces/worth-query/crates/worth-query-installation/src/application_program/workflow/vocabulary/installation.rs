@@ -4,7 +4,6 @@ use std::marker::PhantomData;
 
 use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRef},
-    application_operation::ApplicationMutationBinding,
     application_program::{
         ApplicationExpressionOperandValue, ApplicationWorkflowApprovalRef, ApplicationWorkflowSpec,
     },

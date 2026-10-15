@@ -31,7 +31,9 @@ impl NativePriorCheckpointOutput<'_> {
         let retained_bytes = std::mem::size_of::<
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
         >()
-        .checked_add(locator.producer.len())
+        .checked_add(std::mem::size_of::<String>() + 2 * std::mem::size_of::<usize>())
+        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>() + 2 * std::mem::size_of::<usize>()))
+        .and_then(|bytes| bytes.checked_add(locator.producer.len()))
         .and_then(|bytes| bytes.checked_add(role_bytes))
         .and_then(|bytes| {
             bytes.checked_add(
@@ -84,7 +86,7 @@ impl NativePriorCheckpointOutput<'_> {
         }
         Ok(Some(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
-                producer,
+                producer: producer.into(),
                 posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
                 source: locator.source,
                 scope: self.scope,
@@ -92,9 +94,10 @@ impl NativePriorCheckpointOutput<'_> {
                 producer_dependency: recorded.producer_dependency_identity,
                 idempotency_key: recorded.idempotency_key_identity,
                 resources: recorded.resources(),
-                roles,
+                roles: roles.into(),
                 producer_facts: None,
                 producer_fact_wire_version: 0,
+                metadata: None,
             },
         ))
     }

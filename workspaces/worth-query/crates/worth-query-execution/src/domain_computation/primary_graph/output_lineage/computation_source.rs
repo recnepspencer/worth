@@ -90,6 +90,6 @@ impl ComputationSourceEvidence {
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         >,
     ) -> super::RetainedSourceFacts {
-        super::RetainedSourceFacts::retain(self, facts.into())
+        super::RetainedSourceFacts::retain(self, facts)
     }
 }

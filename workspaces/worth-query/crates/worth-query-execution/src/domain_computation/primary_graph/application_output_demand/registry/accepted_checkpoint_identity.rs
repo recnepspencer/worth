@@ -4,9 +4,9 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryAcceptedOutputCh
     StableReused,
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutputCheckpointIdentity {
-    pub(in crate::domain_computation::primary_graph) producer: String,
+    pub(in crate::domain_computation::primary_graph) producer: std::sync::Arc<String>,
     pub(in crate::domain_computation::primary_graph) posture:
         WorthQueryAcceptedOutputCheckpointPosture,
     pub(in crate::domain_computation::primary_graph) source: [u8; 32],
@@ -18,11 +18,14 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutput
     pub(in crate::domain_computation::primary_graph) resources:
         Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
     pub(in crate::domain_computation::primary_graph) roles:
-        Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>,
+        std::sync::Arc<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>,
     /// Authenticated encoding of the complete rebased producer fact set.
     /// Its source wire version travels with recovered bytes across later captures.
-    pub(in crate::domain_computation::primary_graph) producer_facts: Option<Vec<u8>>,
+    pub(in crate::domain_computation::primary_graph) producer_facts: Option<std::sync::Arc<Vec<u8>>>,
     pub(in crate::domain_computation::primary_graph) producer_fact_wire_version: u16,
+    // Last to drop; clones share the exact immutable heaps AND their original payer.
+    pub(in crate::domain_computation::primary_graph) metadata: Option<std::sync::Arc<
+        crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding>>,
 }
 
 impl WorthQueryAcceptedOutputCheckpointIdentity {
@@ -76,5 +79,28 @@ impl<'a> CheckpointOutputSlot<'a> {
             scope,
             partition,
         }
+    }
+}
+
+// Resource custody is not semantic checkpoint identity.
+impl PartialEq for WorthQueryAcceptedOutputCheckpointIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other).is_eq()
+    }
+}
+impl Eq for WorthQueryAcceptedOutputCheckpointIdentity {}
+impl PartialOrd for WorthQueryAcceptedOutputCheckpointIdentity {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for WorthQueryAcceptedOutputCheckpointIdentity {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.canonical_cmp(other)
+            .then_with(|| self.producer_facts.cmp(&other.producer_facts))
+            .then_with(|| {
+                self.producer_fact_wire_version
+                    .cmp(&other.producer_fact_wire_version)
+            })
     }
 }

@@ -134,12 +134,14 @@ where
         if let ApplicationWorkflowObservationPolicy::Governed {
             instance,
             definition,
+            definition_metadata,
             audit,
         } = reads
         {
             for rule in [
                 Some(instance),
                 Some(definition),
+                definition_metadata.as_ref(),
                 match audit {
                     ApplicationWorkflowAuditPolicy::NotApplicable => None,
                     ApplicationWorkflowAuditPolicy::Governed(rule) => Some(rule),
@@ -150,8 +152,17 @@ where
             {
                 let (name, identity) = rule.capability();
                 if !capabilities().any(|contract| {
-                    contract.name() == name && contract.capability_type() == identity
+                    contract.name() == name
+                        && contract.capability_type() == identity
+                        && contract.operation() == rule.binding().operation()
+                        && contract.input_type() == rule.binding().input()
                 }) {
+                    return Err(invalid());
+                }
+                if !members
+                    .iter()
+                    .any(|member| rule.binding().matches_principal_member(member))
+                {
                     return Err(invalid());
                 }
             }

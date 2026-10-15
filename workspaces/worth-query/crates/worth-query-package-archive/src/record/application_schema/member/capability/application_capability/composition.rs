@@ -26,6 +26,9 @@ use super::super::super::super::super::foundational_value;
 use super::super::super::super::super::sequence::{decode_sequence, write_sequence};
 use super::bindings;
 
+#[cfg(test)]
+mod tests;
+
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationCapabilityComposition,

@@ -59,7 +59,7 @@ pub mod workflow_instance {
         RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart,
         WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
         WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-        WorthQueryWorkflowInstanceAdapter,
+        WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
     };
 }
 

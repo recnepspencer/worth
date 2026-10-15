@@ -56,7 +56,7 @@ pub(in crate::domain_computation::primary_graph) fn merge(
                 continue;
             };
             let mut entity = None;
-            for role in &identity.roles {
+            for role in identity.roles.iter() {
                 admission.charge_external_work(1).map_err(|stop| {
                     SelectionDenial::Admission {
                         phase: "accepted output role visit",
@@ -81,7 +81,8 @@ pub(in crate::domain_computation::primary_graph) fn merge(
                 binding == Some(head.binding)
                     && identity.idempotency_key == head.idempotency_key
                     && head.identity.as_ref().is_none_or(|native| {
-                        identity.producer == native.producer && identity.source == native.source
+                        identity.producer.as_str() == native.producer
+                            && identity.source == native.source
                     })
             }) {
                 kept.push((identity, source));
