@@ -44,6 +44,12 @@ pub(super) struct RegionTotalsDemandBinding<Schema>(PhantomData<fn() -> Schema>)
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for RegionTotalsDemandBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = RegionTotalsDemand;
     type InputBinding = RegionTotalsDemandInputBinding;
     type Result = PlanarAdjustmentResult;

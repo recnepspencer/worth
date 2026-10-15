@@ -23,7 +23,11 @@ impl WorthQueryApplicationAttemptDenial {
                 Err(Control::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
                 Err(Control::TimedOut) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
             };
-        Self::new(kind, subject)
+        Self {
+            kind,
+            subject: subject.to_owned(),
+            cause: AttemptDenialCause::RelationalExecution(cause),
+        }
     }
 
     pub(in crate::domain_computation) fn principal_read_stopped(

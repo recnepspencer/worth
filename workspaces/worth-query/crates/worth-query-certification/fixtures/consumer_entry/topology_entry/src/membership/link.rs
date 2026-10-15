@@ -37,6 +37,12 @@ pub struct PlanarDiscoveryLinkBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: MembershipSchemaBinding> ApplicationMutationBinding<Schema>
     for PlanarDiscoveryLinkBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = PlanarDiscoveryLink;
     type InputBinding = PlanarDiscoveryLinkInputBinding;
     type Result = PlanarAdjustmentResult;

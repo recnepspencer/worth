@@ -102,6 +102,11 @@ where
         let identities = self
             .identities()
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
+        self.workflow_actor_context = WorthQueryWorkflowAdvanceAdapter::bind_approval_actor_context::<Schema,Spec,IntentBinding<Schema,Intent>>(
+            &worth_query_execution::publication_boundary::program_publication_access(),
+            &selected, workflow, &instance, required, proposal,
+        ).map_err(|cause| WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
+            worth_query_execution::publication_boundary::workflow_advance::WorkflowTransitionPreparationDenial::Attempt(cause)))?;
         let mutation = authorization::prepare_capability_selected(&phase, &self, &identities, staged, &selected)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
         let prepared = WorthQueryWorkflowAdvanceAdapter::prepare_approval::<

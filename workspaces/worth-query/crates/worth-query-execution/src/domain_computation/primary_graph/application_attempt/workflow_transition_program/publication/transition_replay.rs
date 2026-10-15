@@ -274,6 +274,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         else {
             return Ok(None);
         };
+        let receipt_identity = receipt_identity.identity();
         if replay.operation_receipt_identity != Some(receipt_identity) {
             return Ok(None);
         }

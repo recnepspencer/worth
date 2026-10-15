@@ -23,6 +23,7 @@ mod projection;
 mod validation;
 use materialization::materialize_decision;
 pub(super) use operation_inputs::observe_operation_approval_inputs;
+pub(super) use validation::validate_requirement_definition as actor_approval_node;
 use validation::*;
 
 impl<Schema, Operation, Input, Scope>

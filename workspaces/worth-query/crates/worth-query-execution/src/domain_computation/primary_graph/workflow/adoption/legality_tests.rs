@@ -34,7 +34,7 @@ fn approval_gated() -> WorkflowDefinitionDependencies {
                     input_type: "input".to_owned(),
                     binding: Some("ship-binding".to_owned()),
                     requires_authority: true,
-                    workflow_execution_requirements: None,
+                    workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
                 }],
             },
             WorkflowRetainedNode {

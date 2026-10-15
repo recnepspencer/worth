@@ -34,7 +34,10 @@ impl WorthQueryAuthorizationDecisionFact {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, super::super::admitted_currentness::AuthorizationCurrentnessStop> {
         admission.charge_external_work(2)?;
-        if self.delegation.is_some() || self.delegation_activation.is_some() {
+        if self.delegation.is_some()
+            || self.delegation_activation.is_some()
+            || self.recorded_actor.is_some()
+        {
             return Ok(false);
         }
         let bridge_current = bridge
@@ -52,7 +55,11 @@ impl WorthQueryAuthorizationDecisionFact {
             return Ok(false);
         }
         admission.charge_external_work(33)?;
-        if !bridge_matches(&self.relational, &self.bridge) {
+        if !bridge_matches(
+            &self.relational,
+            &self.bridge,
+            self.recorded_actor.as_deref(),
+        ) {
             return Ok(false);
         }
         let freshness = match runtime.compare_authorization_observation_budgeted(

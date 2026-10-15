@@ -57,6 +57,12 @@ type GrantScope = ApplicationMutationFieldScope<
 >;
 
 impl ApplicationMutationBinding<BankSchema> for ProgramDeploymentRevocationBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = ProgramDeploymentRevocationInput;
     type InputBinding = ProgramDeploymentRevocationInputBinding;
     type Result = ProgramDeploymentRevocationChanged;

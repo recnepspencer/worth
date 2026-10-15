@@ -103,6 +103,12 @@ type AssessmentScope = ApplicationMutationFieldScope<
 >;
 
 impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = ApprovedPaymentAssessmentInput;
     type InputBinding = ApprovedPaymentAssessmentInputBinding;
     type Result = ApprovedPaymentAssessmentPublished;

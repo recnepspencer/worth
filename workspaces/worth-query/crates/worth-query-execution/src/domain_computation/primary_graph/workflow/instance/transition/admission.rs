@@ -31,6 +31,8 @@ pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransiti
         Scope,
         WorthQueryProjectedApplicationMutation,
     >,
+    pub(super) advancer:
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     pub(super) instance: EntityId,
     pub(super) subject: EntityId,
     pub(super) node: EntityId,
@@ -48,6 +50,8 @@ pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransiti
 /// the admitted transition's observed facts still fence the joint candidate.
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowOperationSettlementBasis {
+    pub(super) advancer:
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     pub(super) instance: EntityId,
     pub(super) node: EntityId,
     pub(super) node_path: String,
@@ -94,6 +98,7 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
         &self,
     ) -> WorkflowOperationSettlementBasis {
         WorkflowOperationSettlementBasis {
+            advancer: self.advancer,
             instance: self.instance,
             node: self.node,
             node_path: self.node_path.clone(),
@@ -220,7 +225,9 @@ pub(in crate::domain_computation::primary_graph) fn admit_workflow_transition<
     allowance: WorkflowStepAllowance,
 ) -> AdmittedWorkflowTransition<Schema, Operation, Input, Scope> {
     allowance.spend();
+    let advancer = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&read_set.admission);
     AdmittedWorkflowTransition {
+        advancer,
         read_set,
         instance,
         subject,

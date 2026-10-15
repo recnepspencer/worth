@@ -26,5 +26,5 @@ pub use occurrence::{
 };
 pub(in crate::domain_computation::primary_graph) use staging::stage_workflow_dispositions;
 pub(in crate::domain_computation::primary_graph) use truth::{
-    WorkflowAdoptionReadDenial, WorkflowAdoptionTruth,
+    WorkflowAdoptionEntity, WorkflowAdoptionReadDenial, WorkflowAdoptionTruth,
 };

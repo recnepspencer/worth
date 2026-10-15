@@ -15,7 +15,8 @@ fn mutation_archive_preserves_explicit_empty_workflow_evidence_without_reinterpr
         unreachable!()
     };
     let mut parts = description.into_parts();
-    parts.workflow_execution_requirements = Some(ApplicationWorkflowExecutionRequirements::new());
+    parts.workflow_execution_requirements =
+        Some(ApplicationWorkflowExecutionRequirements::occurrence_only());
     let explicit = ApplicationSchemaMember::ApplicationMutation {
         description: ApplicationMutationDescription::from_untrusted_parts(parts),
     };
@@ -112,7 +113,7 @@ fn mutation_member(
     ApplicationSchemaMember::ApplicationMutation {
         description: ApplicationMutationDescription::from_untrusted_parts(
             ApplicationMutationDescriptionParts {
-                workflow_execution_requirements: None,
+                workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
                 binding_identity: identity("worth.archive.mutation.v1"),
                 operation: "Publish".to_owned(),
                 input_identity: identity("worth.archive.input.v1"),

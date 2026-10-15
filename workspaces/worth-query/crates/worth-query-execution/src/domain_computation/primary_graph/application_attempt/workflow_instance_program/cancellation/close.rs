@@ -135,11 +135,14 @@ where
                 kind: layout.instance.entity_kind,
                 locator: layout.instance.cancellation_identity.clone(),
             });
+            let mut actor_fields = BTreeMap::new();
+            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission)
+                .append_fields(&layout.instance.end_advancer, &mut actor_fields);
             let effects = vec![
                 WorthQueryApplicationRealizedEffect::UpdateEntity {
                     entity: "workflow-instance".to_owned(),
                     entity_id: entity,
-                    fields: BTreeMap::from([
+                    fields: actor_fields.into_iter().chain([
                         (
                             layout.instance.state.clone(),
                             AspectValue::UInt64(WorkflowInstanceState::Cancelled.persisted_tag()),
@@ -148,7 +151,7 @@ where
                             layout.instance.cancellation_identity.clone(),
                             AspectValue::String(InternedString::Raw(identity.to_owned())),
                         ),
-                    ]),
+                    ]).collect(),
                 },
                 WorthQueryApplicationRealizedEffect::DeleteRelation {
                     relation_id: live_membership,

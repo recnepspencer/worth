@@ -3,6 +3,7 @@
 //! This owner uses the primary Relational graph and World publication path. It
 //! is intentionally separate from managed provider-read workflows.
 
+pub(in crate::domain_computation) mod actor;
 pub(in crate::domain_computation::primary_graph) mod adoption;
 mod approval;
 mod assessment;

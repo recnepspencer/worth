@@ -35,6 +35,15 @@ pub(super) fn write(
     write_optional_graph(output, value.decision().conflict().graph())?;
     write_optional_graph(output, value.actors().separation_of_duty().graph())?;
     write_optional_graph(output, value.actors().distinct_actor().graph())?;
+    output.text(
+        value
+            .actors()
+            .recorded_actor()
+            .requirement()
+            .map_or("not-applicable", |requirement| {
+                requirement.persistence_identity()
+            }),
+    )?;
     write_delegation_rule(output, value.propagation().delegation())?;
     write_disclosure(output, value.propagation().disclosure())
 }
@@ -60,11 +69,21 @@ pub(super) fn decode(
         None => ApplicationCapabilityDistinctActorRule::NotApplicable,
         Some(value) => ApplicationCapabilityDistinctActorRule::When(value),
     };
+    use worth_query_declaration::facade::application_capability::{
+        ApplicationCapabilityRecordedActorRequirement, ApplicationCapabilityRecordedActorRule,
+    };
+    let recorded_actor = match input.text()? {
+        "not-applicable" => ApplicationCapabilityRecordedActorRule::not_applicable(),
+        identity => ApplicationCapabilityRecordedActorRule::Required(
+            ApplicationCapabilityRecordedActorRequirement::from_persistence_identity(identity)
+                .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))?,
+        ),
+    };
     let delegation = decode_delegation_rule(input)?;
     let disclosure = decode_disclosure(input, budget)?;
     Ok(ApplicationCapabilityComposition::new(
         ApplicationCapabilityDecisionComposition::new(allow, deny, conflict),
-        ApplicationCapabilityActorComposition::new(separation, distinct),
+        ApplicationCapabilityActorComposition::new(separation, distinct, recorded_actor),
         ApplicationCapabilityPropagationComposition::new(delegation, disclosure),
     ))
 }

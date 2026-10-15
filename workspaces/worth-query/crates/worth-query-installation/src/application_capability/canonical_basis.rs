@@ -16,7 +16,7 @@ use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-capability-installation");
-const RULE_VERSION: &str = "worth-query-application-capability-installation-v3";
+const RULE_VERSION: &str = "worth-query-application-capability-installation-v4";
 const MAXIMUM_ENTRY_COUNT: u32 = 512;
 const MAXIMUM_CANONICAL_BYTES: usize = 128 * 1_024;
 const CAPABILITY_BUDGET: CanonicalDigestWorkBudget =

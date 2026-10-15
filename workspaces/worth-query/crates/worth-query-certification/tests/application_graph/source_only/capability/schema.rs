@@ -66,6 +66,12 @@ type Scope = ApplicationMutationFieldScope<
     NoApplicationUnit,
 >;
 impl ApplicationMutationBinding<CapabilitySchema> for SetRetentionBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = SetRetentionInput;
     type InputBinding = SetRetentionInputBinding;
     type Result = DocumentRetentionWritten;

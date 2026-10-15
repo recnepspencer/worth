@@ -30,6 +30,7 @@ mod operation_scope_binding;
 pub(in crate::domain_computation) use operation_scope_binding::WorthQueryDecisionScopeWitness;
 mod retained_capability_request;
 pub(in crate::domain_computation) use retained_capability_request::{
+    WorkflowApprovalRequestDecodingDenial,
     WorkflowApprovalRequestEncodingDenial, WorthQueryRetainedCapabilityRequest,
     MAXIMUM_PORTABLE_BYTES,
 };

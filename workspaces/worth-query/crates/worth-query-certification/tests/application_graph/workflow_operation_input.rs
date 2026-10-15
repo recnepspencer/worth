@@ -84,15 +84,15 @@ fn ordinary_publication_refuses_zero_and_two_inputs_before_publication() {
                 .unwrap()
         })
         .unwrap();
-    assert!(matches!(
+    assert_eq!(
         selected
             .discover_workflow_definition::<ReviewedDocumentWorkflow>(
                 &execution,
                 &ApplicationWorkflowDefinitionIdentity::new("input-cardinality").unwrap()
             )
-            .unwrap(),
-        WorthQueryWorkflowDefinitionDiscovery::Unpublished
-    ));
+            ,
+        Err(worth_query_host::facade::application_discovery::WorthQueryWorkflowDefinitionDiscoveryDenial::ObservationDisabled)
+    );
     let published = runtime
         .with_host_advancement(|phase| {
             runtime
@@ -119,17 +119,9 @@ fn authentic_predecessor_draft_cannot_import_executable_meaning() {
     // guarded-input requirement was enforced. No bytes are converted on import.
     let bytes = include_bytes!("workflow_definition_readmission/missing_input.wqwd");
     let original = bytes.to_vec();
-    let decoded =
-        decode_workflow_definition_draft(bytes, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let authored = decoded.author(application.workflow_spec()).unwrap();
-    let denial = authored
-        .validate()
+    let denial = decode_workflow_definition_draft(bytes, WorthQueryPackageArchiveLimits::DEFAULT)
         .err()
-        .expect("imported predecessor must fail current validation");
-    assert_eq!(
-        denial.kind(),
-        ApplicationWorkflowValidationDenialKind::MissingOperationInput
-    );
-    assert_eq!(denial.subject(), "perform");
+        .expect("displaced authored format is refused before executable interpretation");
+    assert_eq!(denial.kind(), worth_query_package_archive::facade::WorthQueryWorkflowDefinitionDraftDenialKind::UnsupportedWorkflowDefinitionDraftVersion);
     assert_eq!(bytes.as_slice(), original);
 }

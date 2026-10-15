@@ -324,8 +324,7 @@ fn capability_composition() -> ApplicationCapabilityComposition {
         ),
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
-            ApplicationCapabilityDistinctActorRule::not_applicable(),
-        ),
+            ApplicationCapabilityDistinctActorRule::not_applicable(), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         capability_propagation(),
     )
 }
@@ -371,8 +370,7 @@ fn composed_capability_composition() -> ApplicationCapabilityComposition {
         ),
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::when(anchored_graph(request_actor)),
-            ApplicationCapabilityDistinctActorRule::when(anchored_graph(prior_actor)),
-        ),
+            ApplicationCapabilityDistinctActorRule::when(anchored_graph(prior_actor)), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         capability_propagation(),
     )
 }

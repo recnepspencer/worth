@@ -50,13 +50,19 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// The savepoint limit was reached.
-    SavepointCapacityExhausted { maximum_savepoints: usize },
+    SavepointCapacityExhausted {
+        maximum_savepoints: usize,
+    },
     /// The runtime ran out of savepoint identities.
     SavepointIdentityExhausted,
     /// The provider's candidate limit was reached.
-    CandidateCapacityExhausted { maximum_candidates: usize },
+    CandidateCapacityExhausted {
+        maximum_candidates: usize,
+    },
     /// The provider's published-snapshot limit was reached.
-    PublishedSnapshotCapacityExhausted { maximum_handles: usize },
+    PublishedSnapshotCapacityExhausted {
+        maximum_handles: usize,
+    },
     /// The runtime ran out of candidate identities.
     CandidateIdentityExhausted,
     /// The commit position was contended.
@@ -119,6 +125,15 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvariantInstallationReceiptMismatch,
     /// Recovery from a checkpoint was rejected.
     CheckpointRecoveryRejected,
+    UnsupportedCheckpointFormat {
+        observed: u16,
+        supported: u16,
+    },
+    UnsupportedCheckpointWorkflowContract {
+        facts: u16,
+        instances: u16,
+    },
+    UnsupportedRecoveredNativeAuthorityLayout,
     /// A declared output producer has no binding.
     MissingProducerBinding,
     /// A producer is bound more than once.

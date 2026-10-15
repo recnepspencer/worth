@@ -142,6 +142,12 @@ type AmendTemporalScope = ApplicationMutationFieldScope<
 >;
 
 impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = AmendTemporalInput;
     type InputBinding = AmendTemporalInputBinding;
     type Result = AmendTemporalResult;

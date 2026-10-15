@@ -187,6 +187,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                         &capability,
                         input,
                         self.scope,
+                        None,
                     )
                     .map_err(Denial::Authorization)?;
                 access.record_request_identity_work(&publication, workflow.key_work());

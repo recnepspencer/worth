@@ -126,21 +126,22 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
 }
 
 pub(in crate::domain_computation) fn decode_workflow_approval_support(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     encoded: &str,
-) -> Result<Option<WorthQueryWorkflowApprovalSupportBasis>, ()> {
+) -> Result<Option<WorthQueryWorkflowApprovalSupportBasis>, super::retained_capability_request::WorkflowApprovalRequestDecodingDenial> {
     if encoded.len() > MAXIMUM_PORTABLE_BYTES {
-        return Err(());
+        return Err(().into());
     }
     let portable: Option<PortableApprovalSupport> =
         serde_json::from_str(encoded).map_err(|_| ())?;
     portable
         .map(|support| {
             if support.capability_authority_identity.is_empty() {
-                return Err(());
+                return Err(().into());
             }
             Ok(WorthQueryWorkflowApprovalSupportBasis {
                 request: WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
-                    &support.request,
+                    execution, &support.request,
                 )?,
                 grant: support.grant,
                 capability_authority_identity: support.capability_authority_identity,
@@ -160,7 +161,7 @@ pub(in crate::domain_computation) fn decode_workflow_approval_support(
                 timeline: match support.timeline.as_str() {
                     "unix-epoch-seconds" => worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
                     "unix-epoch-milliseconds" => worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds,
-                    _ => return Err(()),
+                    _ => return Err(().into()),
                 },
                 expiry: support.expiry,
             })

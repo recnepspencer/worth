@@ -55,6 +55,12 @@ type WorkflowDefinitionAuthoringScope = ApplicationMutationFieldScope<
 >;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowDefinitionAuthoringBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = WorkflowDefinitionAuthoringInput;
     type InputBinding = WorkflowDefinitionAuthoringInputBinding;
     type Result = WorkflowDefinitionAuthoringAccepted;
@@ -164,6 +170,12 @@ worth_query_structured_value_binding!(pub WorkflowInstanceStartDenialBinding for
 pub struct WorkflowInstanceStartBinding;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowInstanceStartBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = WorkflowInstanceStartInput;
     type InputBinding = WorkflowInstanceStartInputBinding;
     type Result = WorkflowInstanceStartAccepted;
@@ -239,4 +251,12 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for WorkflowInstanceStar
             self.input.document_identity.clone(),
         )
     }
+}
+
+impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for WorkflowDefinitionAuthoringBinding {
+    type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<WorkflowDefinitionAuthoringCapability>;
+}
+
+impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for WorkflowInstanceStartBinding {
+    type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<WorkflowInstanceStartCapability>;
 }

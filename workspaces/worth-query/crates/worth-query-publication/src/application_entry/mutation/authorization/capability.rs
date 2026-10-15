@@ -70,6 +70,7 @@ where
                 None => identities.encoded_input(),
             },
             request.request.scope,
+            request.workflow_actor_context.as_ref(),
         )
         .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
 

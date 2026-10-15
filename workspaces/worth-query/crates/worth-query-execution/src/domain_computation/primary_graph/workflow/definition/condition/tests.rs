@@ -33,26 +33,15 @@ fn an_expression_record_round_trips_its_draft_and_operands() {
 }
 
 #[test]
-fn a_version_1_record_compiles_as_the_migrated_condition_with_its_original_identity() {
-    let condition = CompiledWorkflowCondition::from_record(
+fn displaced_condition_shape_refuses_without_identity_preservation() {
+    assert!(CompiledWorkflowCondition::from_record(
         "query.v1".to_owned(),
         Some("parameter.v1".to_owned()),
         Some("result.v1".to_owned()),
         Some("binding.v1".to_owned()),
-        None,
+        None
     )
-    .expect("the version-1 record reads");
-    assert_eq!(
-        condition.expression,
-        CompiledWorkflowConditionExpression::Migrated
-    );
-    assert_eq!(condition.operands[0].fields(), operand("condition"));
-    assert_eq!(
-        condition.identity_fields(),
-        ["query.v1", "parameter.v1", "result.v1", "binding.v1"]
-    );
-    let expression = expression(&["condition"]).expect("the record reads");
-    assert_ne!(expression.identity_fields(), condition.identity_fields());
+    .is_none());
 }
 
 #[test]
@@ -87,7 +76,7 @@ fn malformed_condition_records_do_not_read() {
     ] {
         assert!(read("0a", operands).is_none(), "operands {operands:?}");
     }
-    // A record carries either the version-1 fields or operands, never both.
+    // Current records never carry the displaced standalone binding fields.
     assert!(CompiledWorkflowCondition::from_record(
         "0a".to_owned(),
         Some("parameter.v1".to_owned()),

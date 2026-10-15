@@ -1,70 +1,87 @@
 use crate::application_capability::ApplicationCapabilityMarkerIdentity;
 
-/// Supplier-owned evidence required in addition to exact workflow occurrence
-/// binding and ordinary operation authorization. This is meaning, not a permit.
-#[derive(Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd)]
-pub struct ApplicationWorkflowExecutionRequirements {
-    approval: Option<(String, String)>,
+/// Explicit applicability and evidence for one mutation binding. Descriptive
+/// meaning only: native admission still supplies every execution right.
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationWorkflowExecutionRequirements {
+    /// This binding does not execute under a workflow occurrence.
+    NotApplicable,
+    /// Requires the exact native occurrence, with no additional approval minimum.
+    OccurrenceOnly,
+    /// Requires the named installed native approval capability.
+    Approval {
+        /// Capability declaration name.
+        capability: String,
+        /// Capability portable type identity.
+        identity: String,
+    },
 }
-
 impl ApplicationWorkflowExecutionRequirements {
-    /// Explicitly declares no additional workflow evidence. This does not make
-    /// a guarded operation callable outside its current workflow occurrence.
-    pub const fn new() -> Self {
-        Self { approval: None }
+    /// Explicit applicability for a non-workflow binding.
+    pub const fn not_applicable() -> Self {
+        Self::NotApplicable
     }
-
-    /// Requires the existing native approval contract for this capability.
-    pub fn requiring_approval<Capability>() -> Self
-    where
-        Capability: ApplicationCapabilityMarkerIdentity,
-    {
-        Self {
-            approval: Some((
-                Capability::IDENTIFIER.to_owned(),
-                Capability::PORTABLE_TYPE_IDENTITY.as_str().to_owned(),
-            )),
+    /// Exact occurrence execution without an additional approval minimum.
+    pub const fn occurrence_only() -> Self {
+        Self::OccurrenceOnly
+    }
+    /// Exact occurrence execution with this mandatory installed approval.
+    pub fn requiring_approval<C: ApplicationCapabilityMarkerIdentity>() -> Self {
+        Self::Approval {
+            capability: C::IDENTIFIER.to_owned(),
+            identity: C::PORTABLE_TYPE_IDENTITY.as_str().to_owned(),
         }
     }
-
-    pub fn approval(&self) -> Option<(&str, &str)> {
-        self.approval
-            .as_ref()
-            .map(|(identifier, identity)| (identifier.as_str(), identity.as_str()))
+    /// Whether this binding requires workflow occurrence authority.
+    pub const fn is_applicable(&self) -> bool {
+        !matches!(self, Self::NotApplicable)
     }
-
-    /// Canonical portable declaration encoding, never execution authority.
+    /// The mandatory approval name and portable type identity, when declared.
+    pub fn approval(&self) -> Option<(&str, &str)> {
+        match self {
+            Self::Approval {
+                capability,
+                identity,
+            } => Some((capability, identity)),
+            _ => None,
+        }
+    }
+    /// Current explicit applicability identity.
     pub fn persistence_identity(&self) -> String {
-        match self.approval() {
-            None => "1:none".to_owned(),
-            Some((name, identity)) => format!(
-                "1:approval:{}:{}:{name}{identity}",
-                name.len(),
+        match self {
+            Self::NotApplicable => "2:not-applicable".to_owned(),
+            Self::OccurrenceOnly => "2:occurrence".to_owned(),
+            Self::Approval {
+                capability,
+                identity,
+            } => format!(
+                "2:approval:{}:{}:{capability}{identity}",
+                capability.len(),
                 identity.len()
             ),
         }
     }
-
+    /// Parses only current explicit applicability identities.
     pub fn from_persistence_identity(value: &str) -> Option<Self> {
-        if value == "1:none" {
-            return Some(Self::new());
+        match value {
+            "2:not-applicable" => return Some(Self::NotApplicable),
+            "2:occurrence" => return Some(Self::OccurrenceOnly),
+            _ => {}
         }
-        let encoded = value.strip_prefix("1:approval:")?;
+        let encoded = value.strip_prefix("2:approval:")?;
         let (name_len, encoded) = encoded.split_once(':')?;
         let (identity_len, encoded) = encoded.split_once(':')?;
         let name_len = name_len.parse::<usize>().ok()?;
         let identity_len = identity_len.parse::<usize>().ok()?;
         let name = encoded.get(..name_len)?;
         let identity = encoded.get(name_len..name_len.checked_add(identity_len)?)?;
-        let requirements = Self {
-            approval: Some((name.to_owned(), identity.to_owned())),
+        let result = Self::Approval {
+            capability: name.to_owned(),
+            identity: identity.to_owned(),
         };
-        if name.trim().is_empty()
-            || identity.trim().is_empty()
-            || requirements.persistence_identity() != value
-        {
-            return None;
-        }
-        Some(requirements)
+        (!name.trim().is_empty()
+            && !identity.trim().is_empty()
+            && result.persistence_identity() == value)
+            .then_some(result)
     }
 }

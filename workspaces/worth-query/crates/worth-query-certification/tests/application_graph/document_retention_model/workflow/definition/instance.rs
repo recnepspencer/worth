@@ -65,7 +65,10 @@ pub fn approve_instance(
 ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowAdvancePreparationDenial> {
     let runtime = application.runtime();
     let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let principal = super::super::super::operator_identity::authenticate_reviewer(
+        runtime.installed_schema(),
+        &scope,
+    );
     let signing = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())

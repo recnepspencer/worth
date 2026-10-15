@@ -92,6 +92,11 @@ impl WorthQueryUntrustedWorkflowDefinitionDraft {
         Schema: ApplicationSchema,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        if self.observation_policy != installed.observation_policy().persistence_identity()
+            || self.actor_policy != installed.actor_policy().persistence_identity()
+        {
+            return Err(denial(Kind::ChangedMember, &self.spec));
+        }
         if self.spec != Spec::IDENTITY.as_str() {
             return Err(denial(Kind::ForeignSpec, &self.spec));
         }
@@ -152,8 +157,7 @@ where
                 .draft_operation(identifier, binding.as_deref())
                 .ok_or_else(unknown)?;
             if operation.input_type().as_str() != input_type
-                || operation.workflow_execution_requirements()
-                    != workflow_execution_requirements.as_ref()
+                || operation.workflow_execution_requirements() != workflow_execution_requirements
             {
                 return Err(changed());
             }

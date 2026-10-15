@@ -2450,13 +2450,13 @@ The installed requirement (`workflow_requirements` inside
 
 | Declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
-| `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| Guarded requirement omitted | Compile refusal; manual bindings must implement the requirement method explicitly. |
+| `ApplicationWorkflowExecutionRequirements::not_applicable()` | Explicit non-workflow applicability; refused for a guarded binding. |
+| `ApplicationWorkflowExecutionRequirements::occurrence_only()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 
-> **Warning.** Leaving `workflow_requirements` out does **not** mean "no
-> approval". It means "exactly one approval". To run a guarded operation
-> without a signature, declare `new()`.
+Guarded bindings require an explicit declaration. Omission does not select a
+legacy policy. Manual implementations return the direct requirement type.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -2466,7 +2466,7 @@ worth_query_decl::facade::worth_query_mutation_binding!(
     pub OccurrenceSetRetentionBinding for SetRetentionInput, schema DocumentRetentionSchema,
     // ... identity, input, operation, result, idempotency, decision, handler ...
     workflow_authority required,
-    workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
+    workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only(),
     // ... outputs, principal, scope, candidates, resources ...
 );
 ```
@@ -2674,11 +2674,10 @@ signing.sign(&event).map(|request| request.execute())
 `decision` is `WorkflowApprovalDecision::{Approve, Reject}`.
 
 **Run the guarded effect** when an advance returns `AwaitingOperation`. Bank's
-`ApprovePaymentMutationBinding` declares `workflow_authority required` and no
-`workflow_requirements`, so the legacy contract applies: exactly one approval,
-and authority is issued only after it is approved. A binding that declares
-`ApplicationWorkflowExecutionRequirements::new()` runs the same way with no
-approval ([§6.5](#65-who-may-run-a-guarded-operation)).
+`ApprovePaymentMutationBinding` explicitly requires its approval capability.
+Authority is issued only after that exact approval is satisfied. A binding that
+declares `ApplicationWorkflowExecutionRequirements::occurrence_only()` can run
+without an approval ([§6.5](#65-who-may-run-a-guarded-operation)).
 
 <!-- illustrative -->
 ```rust,ignore

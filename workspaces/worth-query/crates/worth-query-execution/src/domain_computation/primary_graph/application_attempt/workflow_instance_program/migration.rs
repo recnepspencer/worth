@@ -280,6 +280,7 @@ where
                     subject,
                     (source.entity_id(), live_membership, carry),
                     &performed,
+                    crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
                 )?
             }
         };
@@ -337,6 +338,7 @@ fn successor_effects(
     subject: EntityId,
     (source, live_membership, carry): (EntityId, RelationId, WorkflowLineageCarry),
     performed: &[WorkflowPerformedEffect],
+    advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
 ) -> Result<Vec<WorthQueryApplicationRealizedEffect>, WorthQueryApplicationAttemptDenial> {
     let mut effects = Vec::new();
     let successor = visit_instance_start_facts(
@@ -346,6 +348,7 @@ fn successor_effects(
         branch_occurrence,
         subject,
         carry,
+        advancer,
         |effect| {
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
@@ -365,13 +368,15 @@ fn successor_effects(
             to: EntityReference::Existing(effect.transition),
         });
     }
+    let mut end_fields = std::collections::BTreeMap::from([(
+        layout.instance.state.clone(),
+        AspectValue::UInt64(WorkflowInstanceState::Migrated.persisted_tag()),
+    )]);
+    advancer.append_fields(&layout.instance.end_advancer, &mut end_fields);
     effects.push(WorthQueryApplicationRealizedEffect::UpdateEntity {
         entity: "workflow-instance".to_owned(),
         entity_id: source,
-        fields: std::collections::BTreeMap::from([(
-            layout.instance.state.clone(),
-            AspectValue::UInt64(WorkflowInstanceState::Migrated.persisted_tag()),
-        )]),
+        fields: end_fields,
     });
     effects.push(WorthQueryApplicationRealizedEffect::DeleteRelation {
         relation_id: live_membership,

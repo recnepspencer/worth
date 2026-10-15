@@ -115,3 +115,7 @@ const fn posture(installed: bool) -> WorthQueryApplicationCallablePosture {
         WorthQueryApplicationCallablePosture::Declared
     }
 }
+
+pub(in crate::domain_computation::primary_graph) use workflow::{
+    admit_workflow_read, WorkflowReadAdmissionDenial,
+};

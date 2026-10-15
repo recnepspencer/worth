@@ -30,6 +30,8 @@ pub use compatibility::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryUntrustedWorkflowDefinitionDraft {
     spec: String,
+    observation_policy: String,
+    actor_policy: String,
     identity: String,
     limits: ApplicationWorkflowDefinitionLimits,
     start: String,
@@ -76,7 +78,7 @@ pub(crate) enum DraftMember {
         input_type: String,
         binding: Option<String>,
         requires_workflow_authority: bool,
-        workflow_execution_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
+        workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
     },
     Assessment {
         identifier: String,

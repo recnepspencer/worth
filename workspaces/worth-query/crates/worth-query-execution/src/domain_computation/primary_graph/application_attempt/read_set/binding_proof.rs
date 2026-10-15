@@ -9,7 +9,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
     pub(in crate::domain_computation::primary_graph::application_attempt) approval_authority:
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_execution_requirements:
-        Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
+        worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement_basis:
         crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:

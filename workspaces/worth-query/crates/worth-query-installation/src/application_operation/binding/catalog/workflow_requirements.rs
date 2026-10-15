@@ -9,11 +9,9 @@ use super::{denial, DenialKind, WorthQueryApplicationOperationInstallationDenial
 pub(super) fn validate(
     descriptor: &ApplicationMutationBindingDescriptor,
 ) -> Result<(), WorthQueryApplicationOperationInstallationDenial> {
-    let Some(requirements) = descriptor.workflow_execution_requirements() else {
-        return Ok(());
-    };
-    if !descriptor.requires_workflow_authority()
-        || descriptor.workflow_control()
+    let requirements = descriptor.workflow_execution_requirements();
+    if (descriptor.requires_workflow_authority() && !descriptor.workflow_control())
+        != requirements.is_applicable()
         || ApplicationWorkflowExecutionRequirements::from_persistence_identity(
             &requirements.persistence_identity(),
         )

@@ -45,10 +45,7 @@ where
     ) -> Result<WorkflowOperationEvidence, WorthQueryApplicationAttemptDenial> {
         let mut sources = compiled.approval_authority_sources(selected.node());
         let Some(approval) = sources.next() else {
-            return if operation
-                .workflow_execution_requirements
-                .as_ref()
-                .is_some_and(|requirements| requirements.approval().is_none())
+            return if matches!(operation.workflow_execution_requirements, worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::OccurrenceOnly)
             {
                 Ok(WorkflowOperationEvidence::Satisfied(None))
             } else {
@@ -66,9 +63,8 @@ where
         if sources.next().is_some()
             || operation
                 .workflow_execution_requirements
-                .as_ref()
-                .and_then(|requirements| requirements.approval())
-                .is_some_and(|(required_capability, required_type)| {
+                .approval()
+                .is_none_or(|(required_capability, required_type)| {
                     required_capability != capability || required_type != capability_type
                 })
         {

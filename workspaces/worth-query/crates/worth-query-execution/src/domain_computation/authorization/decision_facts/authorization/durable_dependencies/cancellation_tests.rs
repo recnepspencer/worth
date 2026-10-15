@@ -14,11 +14,13 @@ impl WorthQueryAuthorizationDecisionFact {
             .to_wire_string()
             .unwrap();
         let retained = WorthQueryDurableAuthorizationDependencies {
+            recorded_actor: super::DurableRecordedActor::NotApplicable,
             primary: encoded.clone(),
             delegation: None,
             activation: Some(encoded.clone()),
         };
         let observed = WorthQueryDurableAuthorizationDependencies {
+            recorded_actor: super::DurableRecordedActor::NotApplicable,
             primary: encoded,
             delegation: None,
             activation: None,

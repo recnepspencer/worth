@@ -29,6 +29,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     branch_occurrence: u64,
     subject: EntityId,
     carry: WorkflowLineageCarry,
+    advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     let partition = compiled.definition().partition_id;
@@ -74,6 +75,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
             AspectValue::UInt64(super::state::WorkflowInstanceState::Ready.persisted_tag()),
         ),
     ]);
+    advancer.append_fields(&layout.instance.start_advancer, &mut fields);
     if let Some(path) = compiled.resumed_path() {
         fields.insert(layout.instance.resume_node_path.clone(), text(path));
     }

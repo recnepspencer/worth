@@ -102,6 +102,12 @@ worth_query_structured_value_binding!(
 pub struct NotifyEstateDeathMutationBinding;
 
 impl ApplicationMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EstateAction;
     type InputBinding = super::EstateActionInputBinding;
     type Result = EstateMutationResult;
@@ -166,6 +172,12 @@ impl ApplicationMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding
 pub struct FreezeEstateAccountMutationBinding;
 
 impl ApplicationMutationBinding<BankSchema> for FreezeEstateAccountMutationBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EstateAction;
     type InputBinding = super::EstateActionInputBinding;
     type Result = EstateMutationResult;

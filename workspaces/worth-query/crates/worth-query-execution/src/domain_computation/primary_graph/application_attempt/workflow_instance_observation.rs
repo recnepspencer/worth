@@ -1,4 +1,12 @@
+mod recorded_actor;
+pub(in crate::domain_computation::primary_graph::application_attempt) use recorded_actor::{
+    original_parent, original_scope, original_transition, recorded_approval,
+};
+mod actors;
+mod read_only;
 mod retained_history;
+pub(in crate::domain_computation::primary_graph::application_attempt) use read_only::observe_read_only_history;
+pub(in crate::domain_computation::primary_graph) use read_only::ReadOnlyWorkflowHistory;
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::{EntityId, RelationId};
 
@@ -18,7 +26,7 @@ mod history;
 pub(super) use history::observe_ended_history;
 pub(in crate::domain_computation::primary_graph::application_attempt) mod instance_binding;
 mod progression;
-mod settlement;
+pub(in crate::domain_computation::primary_graph::application_attempt) mod settlement;
 mod step_budget;
 use instance_binding::{adjacency, adjacency_with_kind, exact, exact_u64, text};
 #[cfg(test)]
@@ -83,8 +91,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) output_content_identity:
         String,
     /// Absent on evidence recorded before revisions were bound; never current.
-    pub(in crate::domain_computation::primary_graph::application_attempt) program_revision:
-        Option<String>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) program_revision: String,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_workflow_instance(
@@ -102,6 +109,11 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
     purpose: WorkflowInstanceObservationPurpose,
 ) -> Result<ObservedWorkflowInstance, WorthQueryApplicationAttemptDenial> {
+    if purpose == WorkflowInstanceObservationPurpose::ReadOnly {
+        return Err(denial(
+            "read-only history must use its non-progressing owner",
+        ));
+    }
     let entity = instance.entity_id();
     let kind = layout.instance.entity_kind;
     let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
@@ -129,6 +141,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         AspectValue::UInt64(instance.started_occurrence()),
         &mut facts,
     )?;
+    actors::observe(execution, runtime, snapshot, layout, entity, &mut facts)?;
     instance_binding::deny_ended(execution, runtime, snapshot, layout, entity)?;
     exact(
         execution,

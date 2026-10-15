@@ -94,7 +94,7 @@ fn current_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
 #[test]
 fn facts_of_an_older_wire_version_are_never_read() {
     let bytes = facts::encode(&[source_entity()]).unwrap();
-    for version in 3..=8 {
+    for version in 3..=9 {
         assert_denied(
             body_with_facts(version, version, &bytes),
             &format!("Query application checkpoint format {version} is unsupported"),

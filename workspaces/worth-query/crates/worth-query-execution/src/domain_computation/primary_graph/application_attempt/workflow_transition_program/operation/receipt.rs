@@ -5,7 +5,40 @@ use worth_query_declaration::facade::application_schema::{
 
 use super::*;
 
+pub(in crate::domain_computation::primary_graph) struct ValidatedWorkflowOperationReceipt<'receipt>
+{
+    receipt: &'receipt WorthQueryApplicationCommitReceipt,
+    identity: [u8; 32],
+}
+impl ValidatedWorkflowOperationReceipt<'_> {
+    pub(in crate::domain_computation::primary_graph) fn principal(
+        &self,
+    ) -> worth_relational::facade::identity::EntityId {
+        let principal = self.receipt.principal_scope().principal();
+        worth_relational::facade::identity::EntityId::new(
+            worth_relational::facade::identity::PartitionId::new(principal.partition_id()),
+            principal.local_slot(),
+            principal.generation(),
+        )
+    }
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn identity(
+        &self,
+    ) -> [u8; 32] {
+        self.identity
+    }
+    pub(super) fn into_parts(
+        self,
+    ) -> (
+        [u8; 32],
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
+    ) {
+        let actor = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_performed_receipt(&self);
+        (self.identity, actor)
+    }
+}
+
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn validate_operation_receipt<
+    'receipt,
     Schema,
     Binding,
 >(
@@ -13,19 +46,18 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     required: &RequiredWorkflowOperation,
     subject: worth_relational::facade::identity::EntityId,
     branch: crate::basis::WorthQueryProductBranch,
-    receipt: &WorthQueryApplicationCommitReceipt,
+    receipt: &'receipt WorthQueryApplicationCommitReceipt,
     recovery: Option<
         &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
     >,
-) -> Result<[u8; 32], WorthQueryApplicationAttemptDenial>
+) -> Result<ValidatedWorkflowOperationReceipt<'receipt>, WorthQueryApplicationAttemptDenial>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
     if required.operation() != Binding::Operation::IDENTIFIER
         || required.binding() != Some(Binding::IDENTITY)
-        || required.workflow_execution_requirements()
-            != Binding::workflow_execution_requirements().as_ref()
+        || required.workflow_execution_requirements() != &Binding::workflow_execution_requirements()
         || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
     {
         return Err(mismatch(required.node_path()));
@@ -56,21 +88,22 @@ where
     {
         return Err(mismatch(required.node_path()));
     }
-    if receipt
+    let identity = if receipt
         .dispatch_outbox()
         .and_then(|record| record.inbound())
         .is_some()
     {
-        return if runtime
+        if !runtime
             .resolve_guarded_workflow_external_settlement(receipt)
             .unwrap_or(false)
         {
-            receipt_identity(receipt).ok_or_else(|| mismatch(required.node_path()))
-        } else {
-            Err(mismatch(required.node_path()))
-        };
-    }
-    validate_operation_receipt_custody(required.node_path(), receipt, recovery)
+            return Err(mismatch(required.node_path()));
+        }
+        receipt_identity(receipt).ok_or_else(|| mismatch(required.node_path()))?
+    } else {
+        validate_operation_receipt_custody(required.node_path(), receipt, recovery)?
+    };
+    Ok(ValidatedWorkflowOperationReceipt { receipt, identity })
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn operation_receipt_requires_recovery(

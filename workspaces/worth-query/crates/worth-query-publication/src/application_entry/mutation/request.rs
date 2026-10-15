@@ -87,6 +87,7 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     pub(in crate::application_entry) operation_input: Option<&'scope Result<ApplicationEncodedInput<<Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding>, worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial>>,
     pub(super) unstaged: Option<super::staged::UnstagedMutation>,
     pub(in crate::application_entry) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
+    pub(in crate::application_entry) workflow_actor_context: Option<worth_query_execution::publication_boundary::workflow_advance::WorthQueryWorkflowActorContext>,
     pub(in crate::application_entry) workflow_transition_identity: Option<[u8; 32]>,
     /// The input, encoded once when the request bound its workflow
     /// requirement, so the entry point encodes only the key beside it.
@@ -283,6 +284,7 @@ where
             workflow_transition_identity: None,
             workflow_input: None,
             workflow_authority: None,
+            workflow_actor_context: None,
         }
     }
 }

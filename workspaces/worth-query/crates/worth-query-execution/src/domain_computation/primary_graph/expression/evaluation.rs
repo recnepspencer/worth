@@ -2,9 +2,7 @@ use worth_foundational::expression_api::{
     expressions, ExpressionDenial, ExpressionFunctionCatalog, ExpressionInputs, ExpressionSchema,
     ExpressionType, ExpressionValue,
 };
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowCondition, MIGRATED_WORKFLOW_CONDITION_OPERAND,
-};
+use worth_query_declaration::facade::application_program::ApplicationWorkflowCondition;
 
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowConditionExpression;
 
@@ -19,9 +17,6 @@ pub(in crate::domain_computation::primary_graph) fn evaluate_condition<'operand>
     let profile = ApplicationWorkflowCondition::PROFILE;
     let reader = expressions().reading_within(profile);
     let draft = match expression {
-        CompiledWorkflowConditionExpression::Migrated => {
-            reader.parse(MIGRATED_WORKFLOW_CONDITION_OPERAND)?
-        }
         CompiledWorkflowConditionExpression::Draft(draft) => reader.decode(draft)?,
     };
     let schema = operands

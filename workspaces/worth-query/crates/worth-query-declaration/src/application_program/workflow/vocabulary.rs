@@ -20,6 +20,8 @@ mod draft;
 pub trait ApplicationWorkflowSpec: Sized + 'static {
     type Schema: ApplicationSchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity;
+    fn observation_policy() -> super::ApplicationWorkflowObservationPolicy;
+    fn actor_policy() -> super::ApplicationWorkflowActorPolicy;
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -29,7 +31,7 @@ pub struct ApplicationWorkflowOperationRef {
     operation_type: std::any::TypeId,
     binding: Option<(&'static str, std::any::TypeId, bool)>,
     workflow_execution_requirements:
-        Option<crate::application_operation::ApplicationWorkflowExecutionRequirements>,
+        crate::application_operation::ApplicationWorkflowExecutionRequirements,
 }
 
 impl ApplicationWorkflowOperationRef {
@@ -43,7 +45,7 @@ impl ApplicationWorkflowOperationRef {
             input_type: <Operation::InputBinding as crate::application_schema::ApplicationStructuredValueBinding>::IDENTITY,
             operation_type: std::any::TypeId::of::<Operation>(),
             binding: None,
-            workflow_execution_requirements: None,
+            workflow_execution_requirements: crate::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
         }
     }
 
@@ -84,8 +86,8 @@ impl ApplicationWorkflowOperationRef {
 
     pub fn workflow_execution_requirements(
         &self,
-    ) -> Option<&crate::application_operation::ApplicationWorkflowExecutionRequirements> {
-        self.workflow_execution_requirements.as_ref()
+    ) -> &crate::application_operation::ApplicationWorkflowExecutionRequirements {
+        &self.workflow_execution_requirements
     }
 }
 

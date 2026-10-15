@@ -16,11 +16,16 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 mod fact_decode_denial;
 pub(in crate::domain_computation::primary_graph) use fact_decode_denial::FactDecodeDenial;
 mod indexed_selection;
+mod record;
+mod stream;
+pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;
 
 /// Producer facts promise no consumed outputs and no known own-write staleness.
 /// Version 8 exports did not exclude own-write-stale computations; neither
 /// their checkpoint format nor their fact payload is admitted as version 9.
-pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 9;
+/// Version 10 additionally carries exact native Field/AbsentField evidence;
+/// these are not relabelled as query source revisions.
+pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 10;
 pub(super) const MAXIMUM_FACT_BYTES: usize = 16 * 1024 * 1024;
 // SourceEntity is the smallest current fact: one tag and a 16-byte EntityId.
 const MINIMUM_FACT_WIRE_BYTES: usize = 17;
@@ -117,6 +122,33 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
                 bytes.push(7);
                 indexed_selection::encode(&mut bytes, fact)?;
             }
+            Fact::Field {
+                entity_id,
+                kind,
+                locator,
+                value,
+            } => {
+                bytes.push(8);
+                put_entity(&mut bytes, *entity_id);
+                put_u32(&mut bytes, kind.as_u32());
+                put_locator(&mut bytes, locator)?;
+                let encoded = serde_json::to_vec(value).ok()?;
+                if encoded.is_empty() || encoded.len() > MAXIMUM_FACT_BYTES {
+                    return None;
+                }
+                put_u32(&mut bytes, u32::try_from(encoded.len()).ok()?);
+                bytes.extend_from_slice(&encoded);
+            }
+            Fact::AbsentField {
+                entity_id,
+                kind,
+                locator,
+            } => {
+                bytes.push(9);
+                put_entity(&mut bytes, *entity_id);
+                put_u32(&mut bytes, kind.as_u32());
+                put_locator(&mut bytes, locator)?;
+            }
             _ => return None,
         }
         if bytes.len() > MAXIMUM_FACT_BYTES {
@@ -145,131 +177,10 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
     >,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<Arc<[Fact]>, fact_decode_denial::FactDecodeDenial> {
-    if wire_version != WIRE_VERSION {
-        return Err("checkpoint producer fact wire version is unsupported"
-            .to_owned()
-            .into());
-    }
-    if bytes.len() < 5 || bytes.len() > MAXIMUM_FACT_BYTES {
-        return Err("checkpoint producer fact payload length is invalid"
-            .to_owned()
-            .into());
-    }
-    let mut cursor = CheckpointCursor::new(bytes);
-    let count = usize::try_from(cursor.next_u32()?)
-        .map_err(|_| "checkpoint producer fact count exceeds host".to_owned())?;
-    if count == 0 || count > cursor.remaining.len() / MINIMUM_FACT_WIRE_BYTES {
-        return Err("checkpoint producer fact count is invalid"
-            .to_owned()
-            .into());
-    }
-    let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, request);
-    control
-        .check_live()
-        .map_err(fact_decode_denial::FactDecodeDenial::Retention)?;
-    let mut facts = Vec::with_capacity(count);
-    for _ in 0..count {
-        control
-            .check_live()
-            .map_err(fact_decode_denial::FactDecodeDenial::Retention)?;
-        let fact = match cursor.next_byte()? {
-            6 => Fact::RetiredOutputEntity {
-                entity_id: cursor.next_entity()?,
-                kind: KindId(cursor.next_u32()?),
-                created_at: VersionId(cursor.next_u64()?),
-                deleted_at: VersionId(cursor.next_u64()?),
-                read_locator: cursor
-                    .next_bounded_text(MAXIMUM_TEXT, "checkpoint retirement read locator")?,
-            },
-            1 => Fact::SourceEntity {
-                entity_id: cursor.next_entity()?,
-            },
-            2 => {
-                let entity_id = cursor.next_entity()?;
-                let aspect = AspectKey::new(
-                    cursor.next_bounded_text(MAXIMUM_TEXT, "checkpoint fact aspect")?,
-                )
-                .ok_or_else(|| "checkpoint fact aspect is invalid".to_owned())?;
-                let native_revision = next_optional_version(&mut cursor)?.map(VersionId::as_u64);
-                Fact::SourceAspectRevision {
-                    entity_id,
-                    aspect,
-                    native_revision,
-                }
-            }
-            3 => {
-                let entity_id = cursor.next_entity()?;
-                let locator = next_locator(&mut cursor)?;
-                let version = VersionId(cursor.next_u64()?);
-                let presence = match cursor.next_byte()? {
-                    1 => RelationalFieldPresence::Present,
-                    2 => RelationalFieldPresence::Absent,
-                    _ => return Err("checkpoint field presence is invalid".to_owned().into()),
-                };
-                Fact::SourceFieldRevision {
-                    entity_id,
-                    locator,
-                    native_revision: Some(RelationalFieldRevision::new(version, presence)),
-                }
-            }
-            4 => {
-                let relation_kind = KindId(cursor.next_u32()?);
-                let anchor = cursor.next_entity()?;
-                let direction = match cursor.next_byte()? {
-                    1 => RelationalAdjacencyDirection::Outgoing,
-                    2 => RelationalAdjacencyDirection::Incoming,
-                    _ => {
-                        return Err("checkpoint adjacency direction is invalid"
-                            .to_owned()
-                            .into())
-                    }
-                };
-                let native_revision = next_optional_version(&mut cursor)?;
-                let comparison_work_limit = usize::try_from(cursor.next_u64()?)
-                    .map_err(|_| "checkpoint adjacency work limit exceeds host".to_owned())?;
-                let endpoint_count = usize::try_from(cursor.next_u32()?)
-                    .map_err(|_| "checkpoint endpoint count exceeds host".to_owned())?;
-                if endpoint_count > MAXIMUM_SET_ENTITIES
-                    || endpoint_count > cursor.remaining.len() / 16
-                {
-                    return Err("checkpoint endpoint count is invalid".to_owned().into());
-                }
-                let mut endpoints = Vec::with_capacity(endpoint_count);
-                for _ in 0..endpoint_count {
-                    control
-                        .check_live()
-                        .map_err(fact_decode_denial::FactDecodeDenial::Retention)?;
-                    endpoints.push(cursor.next_entity()?);
-                }
-                Fact::SourceAdjacencyRevision {
-                    relation_kind,
-                    anchor,
-                    direction,
-                    native_revision,
-                    comparison_work_limit,
-                    endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::preserve(
-                        &endpoints,
-                        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, request),
-                    ).map_err(fact_decode_denial::FactDecodeDenial::Retention)?,
-                }
-            }
-            5 => Fact::Entity {
-                entity_id: cursor.next_entity()?,
-                kind: KindId(cursor.next_u32()?),
-            },
-            7 => indexed_selection::decode(&mut cursor)?,
-            _ => {
-                return Err("checkpoint producer fact kind is unsupported"
-                    .to_owned()
-                    .into())
-            }
-        };
+    let mut decoder = FactDecoder::new(bytes, wire_version, request, allocation_policy)?;
+    let mut facts = Vec::with_capacity(decoder.count());
+    while let Some(fact) = decoder.next_fact()? {
         facts.push(fact);
-    }
-    if !cursor.is_empty() {
-        return Err("checkpoint producer fact payload length differs"
-            .to_owned()
-            .into());
     }
     Ok(facts.into())
 }

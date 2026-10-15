@@ -3,6 +3,13 @@
 //! a discovered definition grants no start, and every start re-checks it
 //! against its own branch's truth.
 
+mod admission;
+pub(in crate::domain_computation::primary_graph) use admission::{
+    admit as admit_workflow_read, WorkflowReadAdmissionDenial,
+};
+mod audit;
+mod original_intent;
+
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::{
     ApplicationWorkflowDefinitionContentIdentity, ApplicationWorkflowDefinitionIdentity,
@@ -12,16 +19,14 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
 use super::super::application_attempt::{
-    observe_adjacency, observe_field_value, observe_indexed_entity_selection,
-    PublishedWorkflowDefinitionRef, WorthQueryApplicationAdjacencyDirection,
-    WorthQueryApplicationObservedFact,
+    observe_adjacency, observe_field_value, PublishedWorkflowDefinitionRef,
+    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationObservedFact,
 };
 use super::super::product_operation::WorthQuerySelectedProductOperation;
 use super::super::workflow::schema::WorthQueryWorkflowLayout;
 
 /// A lineage is unique per definition identity, so a second candidate is
 /// already a corrupt branch.
-const LINEAGE_LOOKUP_LIMIT: usize = 2;
 /// A lineage holds at most one current definition.
 const CURRENT_DEFINITION_LIMIT: usize = 2;
 
@@ -56,6 +61,8 @@ pub enum WorthQueryWorkflowDefinitionDiscoveryDenial {
     /// The lineage index could not be made current for the selected
     /// occurrence within its reconstruction budget.
     IndexUnavailable,
+    ObservationDisabled,
+    ObservationNotImplemented,
 }
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
@@ -65,7 +72,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn discover_workflow_definition<Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        identity: &ApplicationWorkflowDefinitionIdentity,
+        _identity: &ApplicationWorkflowDefinitionIdentity,
     ) -> Result<WorthQueryWorkflowDefinitionDiscovery, WorthQueryWorkflowDefinitionDiscoveryDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
@@ -76,62 +83,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 None,
             ))
         })?;
-        let graph = &self.application().primary_provider.graph;
-        let layout = graph.layout.workflow();
-        let snapshot = self.application_basis().snapshot_handle();
-        let branch = self.product().product_branch();
-        graph.with_runtime_mut(execution, |runtime| {
-            // A fork that has not committed still needs its own generation of
-            // the lineage index before it can be read.
-            graph
-                .ensure_primary_indexes_for_basis(
-                    execution,
-                    runtime,
-                    self.product().relational_basis(),
-                )
-                .map_err(|denial| match denial {
-                    super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(cause) => {
-                        discovery_execution_denial(crate::facade::primary_graph::relational_execution_kind(cause, None))
-                    }
-                    super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(_)
-                    | super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(_) => WorthQueryWorkflowDefinitionDiscoveryDenial::IndexUnavailable,
-                })?;
-            let runtime = &*runtime;
-            let lineage = select_lineage(runtime, execution, snapshot, layout, identity.as_str())
-                .map_err(discovery_attempt_denial)?
-                .ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable)?;
-            let Some(lineage) = lineage else {
-                return Ok(WorthQueryWorkflowDefinitionDiscovery::Unpublished);
-            };
-            let spec = observe_field_value(
-                runtime,
-                execution,
-                snapshot,
-                lineage,
-                layout.lineage.entity_kind,
-                &layout.lineage.spec,
-            )
-            .map_err(|cause| {
-                discovery_execution_denial(crate::facade::primary_graph::relational_execution_kind(
-                    cause, None,
-                ))
-            })?
-            .ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable)?;
-            if spec != text(Spec::IDENTITY.as_str()) {
-                return Err(WorthQueryWorkflowDefinitionDiscoveryDenial::ForeignLineage);
-            }
-            match current_definition(runtime, execution, snapshot, layout, branch, lineage)
-                .map_err(discovery_attempt_denial)?
-            {
-                Some(WorkflowDefinitionCurrentness::Current(current)) => {
-                    Ok(WorthQueryWorkflowDefinitionDiscovery::Current(current))
-                }
-                Some(WorkflowDefinitionCurrentness::Retired) => {
-                    Ok(WorthQueryWorkflowDefinitionDiscovery::Retired)
-                }
-                None => Err(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable),
-            }
-        })
+        match Spec::observation_policy() {
+            worth_query_declaration::facade::application_program::ApplicationWorkflowObservationPolicy::Disabled =>
+                Err(WorthQueryWorkflowDefinitionDiscoveryDenial::ObservationDisabled),
+            worth_query_declaration::facade::application_program::ApplicationWorkflowObservationPolicy::Governed { .. } =>
+                Err(WorthQueryWorkflowDefinitionDiscoveryDenial::ObservationNotImplemented),
+        }
     }
 }
 
@@ -198,62 +155,6 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
 }
 
 /// The lineage published under `identity`, `Some(None)` when there is none.
-fn select_lineage(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    layout: &WorthQueryWorkflowLayout,
-    identity: &str,
-) -> Result<Option<Option<EntityId>>, super::super::WorthQueryApplicationAttemptDenial> {
-    #[cfg(test)]
-    let _scope = super::super::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(super::super::application_attempt::consult_observation::Door::Discovery);
-    let selection = observe_indexed_entity_selection(
-        runtime,
-        execution,
-        snapshot,
-        layout.lineage.identity_index_id,
-        layout.lineage.entity_kind,
-        layout.lineage.identity.clone(),
-        text(identity),
-        LINEAGE_LOOKUP_LIMIT,
-    )
-    .map_err(|refused| match refused {
-        super::super::application_attempt::WorthQueryIndexedSelectionRefusal::Execution(cause) => {
-            super::super::WorthQueryApplicationAttemptDenial::relational_read_stopped(
-                cause,
-                "workflow lineage",
-            )
-        }
-        _ => super::super::WorthQueryApplicationAttemptDenial::new(
-            super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
-            "workflow lineage",
-        ),
-    })?;
-    let WorthQueryApplicationObservedFact::IndexedEntitySelection { candidates, .. } = selection
-    else {
-        return Ok(None);
-    };
-    match candidates.as_slice() {
-        [] => Ok(Some(None)),
-        [lineage] => Ok(Some(Some(*lineage))),
-        _ => Ok(None),
-    }
-}
-
-fn discovery_attempt_denial(
-    denial: super::super::WorthQueryApplicationAttemptDenial,
-) -> WorthQueryWorkflowDefinitionDiscoveryDenial {
-    use super::super::WorthQueryApplicationAttemptDenialKind as Kind;
-    match denial.kind() {
-        Kind::ExecutionRequest(kind) => {
-            WorthQueryWorkflowDefinitionDiscoveryDenial::ExecutionRequest(kind)
-        }
-        Kind::Cancelled => WorthQueryWorkflowDefinitionDiscoveryDenial::Cancelled,
-        Kind::DeadlineExceeded => WorthQueryWorkflowDefinitionDiscoveryDenial::DeadlineExceeded,
-        _ => WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable,
-    }
-}
-
 fn discovery_execution_denial(
     cause: Result<
         crate::domain_computation::WorthQueryProviderSessionDenialKind,

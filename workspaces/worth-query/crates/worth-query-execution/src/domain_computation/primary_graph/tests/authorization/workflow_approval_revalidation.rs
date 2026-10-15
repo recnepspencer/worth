@@ -43,9 +43,11 @@ fn durable_approval_basis_with_dependency_snapshot(
     replacement_lineage: Option<&str>,
     replacement_dependencies: Option<&str>,
 ) -> WorthQueryWorkflowApprovalAuthorityBasis {
+    let policy = crate::test_request_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&policy);
     let authority = admission.workflow_approval_authority().unwrap();
     let request = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
-        &admission
+        &execution, &admission
             .workflow_approval_request_snapshot()
             .unwrap()
             .unwrap(),
@@ -69,7 +71,7 @@ fn durable_approval_basis_with_dependency_snapshot(
         .unwrap()
         .unwrap();
     let support =
-        decode_workflow_approval_support(replacement_support.unwrap_or(&original_support)).unwrap();
+        decode_workflow_approval_support(&execution, replacement_support.unwrap_or(&original_support)).unwrap();
     let original_dependencies = admission
         .workflow_approval_dependencies_snapshot()
         .unwrap()

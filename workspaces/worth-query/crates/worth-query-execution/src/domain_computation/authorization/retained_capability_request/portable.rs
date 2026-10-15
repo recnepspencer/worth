@@ -13,13 +13,14 @@ use worth_relational::facade::identity::EntityId;
 
 use super::{WorthQueryCapabilityContextKey, WorthQueryRetainedCapabilityRequest};
 
-const PORTABLE_VERSION: u8 = 1;
+const PORTABLE_VERSION: u8 = 2;
 pub(in crate::domain_computation) const MAXIMUM_PORTABLE_BYTES: usize = 64 * 1024;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PortableRequest {
     version: u8,
+    recorded_actor: RecordedActorRequest,
     capability_identity: [u8; 32],
     principal: EntityId,
     resource: EntityId,
@@ -38,6 +39,12 @@ struct PortableRequest {
 }
 
 #[derive(Serialize, Deserialize)]
+enum RecordedActorRequest {
+    NotApplicable,
+    Native(String),
+}
+
+#[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PortableRelation {
     relation: String,
@@ -50,6 +57,15 @@ pub(in crate::domain_computation) enum WorkflowApprovalRequestEncodingDenial {
     TooLarge,
     NonPortableValue,
     InvalidRequest,
+}
+
+#[derive(Debug)]
+pub(in crate::domain_computation) enum WorkflowApprovalRequestDecodingDenial {
+    InvalidRequest,
+    Actor(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
+}
+impl From<()> for WorkflowApprovalRequestDecodingDenial {
+    fn from(_: ()) -> Self { Self::InvalidRequest }
 }
 
 impl WorthQueryRetainedCapabilityRequest {
@@ -66,6 +82,11 @@ impl WorthQueryRetainedCapabilityRequest {
         });
         let portable = PortableRequest {
             version: PORTABLE_VERSION,
+            recorded_actor: match &self.recorded_actor {
+                None => RecordedActorRequest::NotApplicable,
+                Some(actor) => RecordedActorRequest::Native(actor.encode()
+                    .map_err(|_| WorkflowApprovalRequestEncodingDenial::InvalidRequest)?),
+            },
             capability_identity: self.capability_identity,
             principal: self.principal,
             resource: self.resource,
@@ -95,17 +116,18 @@ impl WorthQueryRetainedCapabilityRequest {
     }
 
     pub(in crate::domain_computation) fn decode_workflow_approval_request(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         encoded: &str,
-    ) -> Result<Self, ()> {
+    ) -> Result<Self, WorkflowApprovalRequestDecodingDenial> {
         if encoded.len() > MAXIMUM_PORTABLE_BYTES {
-            return Err(());
+            return Err(WorkflowApprovalRequestDecodingDenial::InvalidRequest);
         }
         let portable: PortableRequest = serde_json::from_str(encoded).map_err(|_| ())?;
         validate_portable(&portable).map_err(|_| ())?;
         let count = portable.context.len();
         let context = portable.context.into_iter().collect::<BTreeMap<_, _>>();
         if context.len() != count {
-            return Err(());
+            return Err(WorkflowApprovalRequestDecodingDenial::InvalidRequest);
         }
         let related_relation = portable.related_relation.map(|parts| {
             ApplicationCapabilityRelationBinding::from_untrusted_parts(
@@ -117,6 +139,13 @@ impl WorthQueryRetainedCapabilityRequest {
             )
         });
         Ok(Self {
+            recorded_actor: match portable.recorded_actor {
+                RecordedActorRequest::NotApplicable => None,
+                RecordedActorRequest::Native(encoded) if !encoded.is_empty() => Some(Arc::new(
+                    crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation::decode(execution, &encoded)
+                        .map_err(|cause| WorkflowApprovalRequestDecodingDenial::Actor(Box::new(cause)))?)),
+                RecordedActorRequest::Native(_) => return Err(WorkflowApprovalRequestDecodingDenial::InvalidRequest),
+            },
             capability_identity: portable.capability_identity,
             principal: portable.principal,
             resource: portable.resource,
@@ -189,7 +218,10 @@ mod tests {
 
     #[test]
     fn approval_request_round_trip_preserves_every_authorization_axis() {
+        let policy = crate::test_request_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&policy);
         let mut request = WorthQueryRetainedCapabilityRequest {
+            recorded_actor: None,
             capability_identity: [7; 32],
             principal: EntityId::new(
                 worth_relational::facade::identity::PartitionId::main(),
@@ -242,7 +274,7 @@ mod tests {
         );
         let encoded = request.encode_workflow_approval_request().unwrap();
         let restored =
-            WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(&encoded)
+            WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(&execution, &encoded)
                 .unwrap();
         assert!(request.matches_elevated_request(&restored, request.elevation.unwrap()));
         let mut inconsistent = request.clone();
@@ -256,7 +288,7 @@ mod tests {
         let first = context[0].clone();
         context.push(first);
         assert!(
-            WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
+            WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(&execution, 
                 &duplicated.to_string()
             )
             .is_err()
@@ -270,11 +302,13 @@ mod tests {
 
     #[test]
     fn approval_request_rejects_unknown_or_oversized_forms() {
+        let policy = crate::test_request_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&policy);
         assert!(
-            WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request("{}").is_err()
+            WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(&execution, "{}").is_err()
         );
         assert!(
-            WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
+            WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(&execution, 
                 &"x".repeat(MAXIMUM_PORTABLE_BYTES + 1)
             )
             .is_err()

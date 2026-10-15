@@ -246,7 +246,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     &capability,
                     input,
                     self.scope,
-                ) {
+
+            None,
+        ) {
                     Ok(access) => access,
                     Err(denial) => {
                         return Err(Failure::retained(Denial::Authorization(denial), approved))

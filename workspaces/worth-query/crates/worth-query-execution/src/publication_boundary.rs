@@ -65,6 +65,7 @@ pub mod workflow_instance {
 
 pub mod workflow_advance {
     pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody;
+    pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext;
     pub use crate::domain_computation::primary_graph::{
         PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
         PerformedWorkflowTransition, PreparedWorkflowAdvance, PreparedWorkflowAssessment,

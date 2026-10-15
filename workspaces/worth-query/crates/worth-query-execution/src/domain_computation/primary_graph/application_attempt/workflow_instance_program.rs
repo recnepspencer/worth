@@ -201,6 +201,7 @@ where
             branch_occurrence,
             subject,
             carry,
+            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
             |effect| demand.observe(&effect),
         )?;
         let reservation = admit_platform_effects(&self, demand)?;
@@ -212,6 +213,7 @@ where
             branch_occurrence,
             subject,
             carry,
+            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
             |effect| {
                 effects.push(effect);
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())

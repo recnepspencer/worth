@@ -78,7 +78,7 @@ mod root;
 mod schema_layout;
 mod settlement_repair;
 mod typed_bootstrap;
-mod workflow;
+pub(in crate::domain_computation) mod workflow;
 
 #[cfg(test)]
 pub(in crate::domain_computation) mod tests;
@@ -170,3 +170,5 @@ pub use crate::domain_computation::execution_runtime::product_world::installed_s
 pub(crate) use tests::fixture::AdvancementHost;
 
 pub use observations::principal_target_reads_on_this_thread_for_test;
+
+pub(in crate::domain_computation) mod selected_read_indexes;

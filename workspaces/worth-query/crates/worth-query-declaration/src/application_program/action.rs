@@ -129,14 +129,14 @@ pub struct ApplicationActionDeclaration {
     locality: Option<ApplicationLocalityDeclaration>,
     change_shape: Option<ApplicationChangeShapeDeclaration>,
     workflow_execution_requirements:
-        Option<crate::application_operation::ApplicationWorkflowExecutionRequirements>,
+        crate::application_operation::ApplicationWorkflowExecutionRequirements,
 }
 
 impl ApplicationActionDeclaration {
     pub fn workflow_execution_requirements(
         &self,
-    ) -> Option<&crate::application_operation::ApplicationWorkflowExecutionRequirements> {
-        self.workflow_execution_requirements.as_ref()
+    ) -> &crate::application_operation::ApplicationWorkflowExecutionRequirements {
+        &self.workflow_execution_requirements
     }
     pub const fn composition_instance(&self) -> &'static str {
         self.composition_instance
@@ -306,7 +306,7 @@ where
             binding: Operation::IDENTIFIER,
             action_type: TypeId::of::<Operation>(),
             mutation_binding_type: None,
-            workflow_execution_requirements: None,
+            workflow_execution_requirements: crate::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
             operation_type: TypeId::of::<Operation>(),
             operation_input_type: TypeId::of::<
                 <Operation::InputBinding as ApplicationStructuredValueBinding>::Value,

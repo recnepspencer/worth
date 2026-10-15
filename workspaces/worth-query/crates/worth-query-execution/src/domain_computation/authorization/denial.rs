@@ -3,6 +3,8 @@
 use crate::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod capacity;
+mod workflow_actor;
+use workflow_actor::WorkflowActorNativeDenial;
 mod relational_read;
 pub(super) use relational_read::denial as relational_read_denial;
 pub(super) use relational_read::kernel_stop_kind;
@@ -58,6 +60,11 @@ pub enum WorthQueryOperationAuthorizationRefusalKind {
     CapabilityGrantMissing,
     /// The action needs a capability authorization that was not presented.
     CapabilityAuthorizationMissing,
+    WorkflowActorContextRequired,
+    WorkflowActorAbsent,
+    WorkflowActorComparisonMismatch,
+    WorkflowActorSourceInvalid,
+    WorkflowActorEvidenceUnavailable,
     /// The declared purpose does not match the grant.
     PurposeMismatch,
     /// An installed deny rule matched.
@@ -119,7 +126,9 @@ pub enum WorthQueryOperationAuthorizationRefusalKind {
     /// The runtime ran out of admission identities.
     AdmissionIdentityExhausted,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain the authorization basis.
@@ -179,75 +188,8 @@ impl WorthQueryAdmissionLapse {
     }
 }
 
-/// Coarse, explainable cause of an authorization denial, fit to show a user.
-///
-/// Only policy-level denials have one; operational causes such as deadlines or
-/// capacity do not.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationAuthorizationExplanationCause {
-    /// The principal lacks a required capability.
-    MissingCapability,
-    /// An explicit deny rule applied.
-    ExplicitPolicyDenial,
-    /// The scope is outside what the grant covers.
-    ScopeMismatch,
-    /// The declared purpose does not match the grant.
-    PurposeMismatch,
-    /// A conflict rule applied.
-    Conflict,
-    /// A separation-of-duty or distinct-actor rule applied.
-    SeparationOfDuty,
-    /// The action requires an approved elevation.
-    ElevationRequired,
-    /// The elevation or its lifecycle step was refused.
-    ElevationDenied,
-    /// The capability or elevation has expired.
-    ElevationExpired,
-}
-
-impl WorthQueryApplicationAuthorizationExplanationCause {
-    const fn from_denial_kind(kind: WorthQueryOperationAuthorizationDenialKind) -> Option<Self> {
-        use WorthQueryOperationAuthorizationDenialKind as Denial;
-        match kind {
-            Denial::Refused(AuthorizationRefusal::CapabilityGrantMissing)
-            | Denial::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
-            | Denial::Refused(AuthorizationRefusal::CapabilityRequired) => {
-                Some(Self::MissingCapability)
-            }
-            Denial::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched) => {
-                Some(Self::ExplicitPolicyDenial)
-            }
-            Denial::Refused(AuthorizationRefusal::ScopeMismatch) => Some(Self::ScopeMismatch),
-            Denial::Refused(AuthorizationRefusal::PurposeMismatch) => Some(Self::PurposeMismatch),
-            Denial::Refused(AuthorizationRefusal::ConflictRuleMatched) => Some(Self::Conflict),
-            Denial::Refused(AuthorizationRefusal::SeparationOfDutyRuleMatched)
-            | Denial::Refused(AuthorizationRefusal::DistinctActorRuleMatched) => {
-                Some(Self::SeparationOfDuty)
-            }
-            Denial::Refused(AuthorizationRefusal::ElevationRequired) => {
-                Some(Self::ElevationRequired)
-            }
-            Denial::Refused(AuthorizationRefusal::CapabilityExpired)
-            | Denial::Refused(AuthorizationRefusal::ElevationExpired) => {
-                Some(Self::ElevationExpired)
-            }
-            Denial::Refused(AuthorizationRefusal::ElevationProjectionRejected)
-            | Denial::Refused(AuthorizationRefusal::ElevationInactive)
-            | Denial::Refused(AuthorizationRefusal::ElevationSelfApproval)
-            | Denial::Refused(AuthorizationRefusal::ElevationApproverConflict)
-            | Denial::Refused(AuthorizationRefusal::ElevationTransitionRequired)
-            | Denial::Refused(AuthorizationRefusal::ElevationLifecycleRoleMismatch)
-            | Denial::Refused(AuthorizationRefusal::ElevationRequestRejected)
-            | Denial::Refused(AuthorizationRefusal::ElevationApprovalRejected)
-            | Denial::Refused(AuthorizationRefusal::ElevationCloseRejected)
-            | Denial::Refused(AuthorizationRefusal::MandatoryReviewRejected)
-            | Denial::Refused(AuthorizationRefusal::ElevationDurationExceeded) => {
-                Some(Self::ElevationDenied)
-            }
-            Denial::Stopped(_) | Denial::Refused(_) => None,
-        }
-    }
-}
+mod explanation;
+pub use explanation::WorthQueryApplicationAuthorizationExplanationCause;
 
 /// Process-local identity of one authorization denial, for correlation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -278,6 +220,7 @@ pub struct WorthQueryOperationAuthorizationDenial {
     causes: Vec<WorthQueryOperationAuthorizationDenialKind>,
     explanation_cause: Option<WorthQueryApplicationAuthorizationExplanationCause>,
     subject: String,
+    workflow_actor_cause: Option<WorkflowActorNativeDenial>,
 }
 
 impl WorthQueryOperationAuthorizationDenial {
@@ -293,6 +236,7 @@ impl WorthQueryOperationAuthorizationDenial {
                 kind,
             ),
             subject: subject.into(),
+            workflow_actor_cause: None,
         }
     }
 
@@ -315,6 +259,7 @@ impl WorthQueryOperationAuthorizationDenial {
                 kind,
             ),
             subject: subject.into(),
+            workflow_actor_cause: None,
         }
     }
 
@@ -360,7 +305,12 @@ impl std::fmt::Display for WorthQueryOperationAuthorizationDenial {
     }
 }
 
-impl std::error::Error for WorthQueryOperationAuthorizationDenial {}
+impl std::error::Error for WorthQueryOperationAuthorizationDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.workflow_actor_source_denial()
+            .map(|cause| cause as &(dyn std::error::Error + 'static))
+    }
+}
 
 pub(super) fn product_security_basis_denial(
     denial: crate::basis::WorthQueryProductBranchAdmissionDenial,

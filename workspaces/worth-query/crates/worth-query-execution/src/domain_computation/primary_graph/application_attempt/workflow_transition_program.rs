@@ -23,6 +23,10 @@ use crate::domain_computation::primary_graph::workflow::{
     },
 };
 
+mod actor_context;
+mod actor_selection;
+pub use actor_context::WorthQueryWorkflowActorContext;
+pub(in crate::domain_computation) use actor_selection::WorkflowRecordedActorObservation;
 mod advance;
 mod approval;
 mod approval_decision;
@@ -36,6 +40,7 @@ mod condition_materialization;
 mod evidence_join;
 mod navigation;
 mod operation;
+pub(in crate::domain_computation::primary_graph) use operation::ValidatedWorkflowOperationReceipt;
 pub(super) use operation::{operation_receipt_requires_recovery, receipt_identity_from_outcome};
 mod preparation;
 mod publication;
