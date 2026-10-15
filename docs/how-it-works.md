@@ -870,9 +870,10 @@ completion cannot prove required outputs. Delivery and drop do not certify clean
 #### Advanced native mutation control
 
 Use the [ordinary owning entry](build-an-application.md#53-execute-through-the-program)
-for fixed, discovered and source-only actions. The native lanes below require
-`request.advanced().mutate(intent)` and their existing explicit allocation policy.
-Only the issued bound workflow funnel remains ordinary until its owning adapter lands.
+for fixed, discovered, source-only and guarded workflow actions. Ordinary guarded
+workflow actions retain the original issued requirement in their owning operation.
+The native lanes below require `request.advanced().mutate(intent)` and their
+existing explicit allocation policy.
 Native owners retain effect, custody and unresolved-publication authority.
 
 **Native substrate.** Every lane takes an `ExecutionAllocationPolicy`
@@ -1793,7 +1794,7 @@ permission to execute the business operations in it.
 
 | `workflow_requirements` declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
+| nothing (`workflow_execution_requirements()` returns `None`) | Default guarded requirement: exactly one approval edge is required. |
 | `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 

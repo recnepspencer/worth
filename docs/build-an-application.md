@@ -42,7 +42,7 @@ use worth_query_host::facade::{
 | `…decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
 | `…decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
 | `…host::facade::application_installation` | `in_memory_program`, `in_memory_rostered_program`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
-| `…host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
+| `…host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryOperationBuilder`, `WorthQueryOperationDescription`, `WorthQueryOperationAdvance`, `WorthQuerySettledFixedOperation`, `WorthQueryTerminalFixedOperation`, `WorthQueryWorkflowOperation`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
 | `…host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery` |
 | `…host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
 | `…host::facade::primary_graph` | `OperationHandler`, `DecisionReader`, `CandidateWriter`, `WorthQuerySelectedProgramInspection` |
@@ -1611,7 +1611,6 @@ Every ordinary application installs a program with `in_memory_program` or
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// Illustrative: not compiled.
 let operation = request.mutate(intent)
     .without_source()
     .preconditions(original_conditions)
@@ -1718,17 +1717,20 @@ The real result-set court calls this function with nondefault preconditions befo
 an actual post-effect append failure. It reads the resulting source and outputs
 independently after native recovery. No original intent clone is required per pump.
 
-#### Advanced native mutation control
-
-Use the [ordinary owning entry](#53-execute-through-the-program) for fixed and
-source-only actions. Deliberate native callers select `request.advanced().mutate(intent)`.
-Only that type exposes manual fixed/discovered/source-only execute, two-phase prepare,
-unpublished recovery, keyed resolution and fixed output start/recovery.
 The ordinary workflow binding retains `WorthQueryWorkflowOperation` through
 `for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
 Advance it with a fresh request; retain the returned owner on refusal or progress.
-The original slot, native recovery and cleanup remain owned by Query. Deliberate
-native workflow execution requires `.advanced().execute_in_program(..)`.
+The original slot, native recovery and cleanup remain owned by Query.
+
+#### Advanced native mutation control
+
+Use the [ordinary owning entry](#53-execute-through-the-program) for fixed,
+discovered, source-only and guarded workflow actions. Deliberate native callers
+select `request.advanced().mutate(intent)`. Only that type exposes manual
+fixed/discovered/source-only execute, two-phase prepare, unpublished recovery,
+keyed resolution and fixed output start/recovery. Borrowed native workflow
+execution binds the issued requirement before selecting
+`for_workflow_operation(..)?.advanced().execute_in_program(..)`.
 A runtime installed without a
 program (`application_installation::in_memory`) is advanced native control;
 its `execute` cannot be an ordinary application default. On a program runtime
@@ -2033,7 +2035,8 @@ retained commit additionally requires the explicit NonZeroUsize history-work
 bound on each advance. Replay/recovery select the exact original World observation.
 A bounded history refusal retains operation and evidence for a fresh funded retry.
 See the [retained delivery guide](../workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md).
-Ordinary consumer cutover remains separate work.
+Ordinary SourceOnly callers retain this owner rather than coordinating manual
+execution and recovery.
 
 `WorthQueryOperationCleanup` retains actual pending records and release failures.
 Its phase-taking close returns a cleanup receipt, not whole-operation completion.
@@ -2105,7 +2108,6 @@ the real compiled consumer counterpart is
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// Illustrative: not compiled.
 use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::WorthQueryOperationDeliveryPolicy;
 
@@ -2151,7 +2153,6 @@ selector or replace the batch at read time.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// Illustrative: not compiled.
 fn read_inputs(input: &SourceAdjustment) -> [OutputRead; 2] {
     [OutputRead { body_key: input.scope_key.clone() },
      OutputRead { body_key: format!("final:{}", input.scope_key) }]
@@ -2175,7 +2176,6 @@ releases staged results; the settled operation and cleanup remain yours.
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled.
 // Illustrative: not compiled.
 let policy = WorthQueryOperationDeliveryPolicy::currentness(currentness_work)
     .batch(narrower_batch_limits);
@@ -2716,7 +2716,7 @@ The installed requirement (`workflow_requirements` inside
 
 | Declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
+| nothing (`workflow_execution_requirements()` returns `None`) | Default guarded requirement: exactly one approval edge is required. |
 | `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 
@@ -3066,7 +3066,6 @@ deployment after that branch adopts another revision.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// Illustrative: not compiled.
 let grant = BankProgramDeploymentGrantSeed::for_program::<BankApplication>(
     "operator-p0-deployment", issuer, operator, valid_from, valid_through,
 )?;
@@ -3080,7 +3079,6 @@ authentication must still be current at publication.
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled.
 // Illustrative: not compiled.
 // workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/branch_adoption.rs
 use worth_query_host::facade::application_entry::{
@@ -3185,7 +3183,6 @@ candidate under the target program, then hand it to the adoption:
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// Illustrative: not compiled.
 // tests/application_graph/adoption/migration.rs (abridged)
 let migration = match host
     .runtime()
@@ -3222,7 +3219,6 @@ disposition. Ask for the inventory, decide each item, and pass the decisions:
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// Illustrative: not compiled.
 // tests/application_graph/adoption/workflow_custody.rs (abridged)
 let adoption = programs.adopt(&requirements)?;
 let inventory = adoption.workflow_inventory(1_024)?;
@@ -3245,7 +3241,6 @@ let prepared = adoption.workflow(decisions).prepare(1_024)?;
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled.
 // Illustrative: not compiled.
 let prepared = request
     .on_branches(coverage, &ordered_targets)?     // WorthQueryProgramAdoptionCoverageDenial
@@ -3308,8 +3303,10 @@ but did not publish is recovered with
   separate owning assessment demand for observation. Neither replaces evidence
   acceptance or approval. Fixed, discovered and source-only actions use their
   declared ordinary owners; do not add a consumer retry engine.
-- Match every outcome variant. Treat `NoEffect`, `ProductUnpublished`,
-  `Awaiting*`, and `Commit(..)` as states to handle, not errors to retry.
+- Match the owning lane's `Progress`, `Refused`, `Terminal`, `Settled` or `Completed`
+  variants, retaining each returned owner. `NoEffect`, `ProductUnpublished` and
+  `Commit(..)` are native advanced outcomes; workflow `Awaiting*` progress is
+  distinct from business-effect completion. Do not automatically retry a stop.
 - `compare` before `adopt`, and pass the requirements you got.
 - Name the expected predecessor when you publish a workflow definition.
 - Pump workflows yourself: one advance per request, until an advance returns

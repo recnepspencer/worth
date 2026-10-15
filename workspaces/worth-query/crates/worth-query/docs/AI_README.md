@@ -387,15 +387,18 @@ never participates in validation or installation.
 **Installation and ordinary actions.** `in_memory_program` installs canonical
 program/action/delivery meaning. `request.mutate` captures original meaning into
 an owned descriptor and `retain_operation::<Program, Action>` resolves the exact
-occurrence. Fixed and source-only owners accept fresh ordinary requests for each
-native advancement, current delivery and close. They retain no principal or grant.
+occurrence. Fixed, discovered, source-only and guarded workflow owners accept fresh
+ordinary requests for advancement, delivery where supported, and close. They retain
+no principal or grant.
 Capability admission follows the binding at every relevant native handoff.
+The [host contract fences](../../worth-query-host/src/ordinary_contract.rs) reject
+manual execution through ordinary receivers.
 
 #### Advanced native execution
 
 Use the [ordinary owning entry](foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
-for fixed and source-only actions. Deliberate manual execution, two-phase prepare
-and recovery select `request.advanced()`; native types are exported under
+for fixed, discovered, source-only and guarded workflow actions. Deliberate manual
+execution, two-phase prepare and recovery select `request.advanced()`; native types are exported under
 `application_entry::advanced`. Current native allocation/admission rules remain
 unchanged. The ordinary builder cannot prepare or execute a manual mutation.
 
@@ -677,7 +680,7 @@ prohibitions, and composition rules.
 See [Application Authorization And Emergency Elevation](./capabilities/application-authorization-and-emergency-elevation.md)
 and [Policy, Tenant, And Relationship-Proof Narrowing](./foundations/policy-tenant-and-relationship-proof-narrowing.md).
 
-#### Workflow-bound operations: three independent checks
+#### Workflow-bound operations
 
 Retain the original guarded no-output operation through
 `for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
@@ -685,7 +688,13 @@ Every `advance(&fresh_request)` rechecks current action/binding authority. Nativ
 unpublished and dispatch custody stay in the same owner, without retaining a
 principal or prepared admission. Completed effect cleanup is retained separately
 from workflow acceptance; an assessment owns its actual admitted demand.
-Explicit native workflow execution uses `.advanced().execute_in_program(..)`.
+
+##### Advanced native workflow execution
+
+Use the ordinary owner above for application operations. Deliberate native controls
+use the [borrowed native chain](foundations/workflows.md#advanced-native-workflow-execution).
+
+##### Three independent checks
 
 A workflow-bound business operation passes up to three checks. They answer
 different questions, are declared in different places, and none grants another.
@@ -714,7 +723,7 @@ The installed requirement (`workflow_requirements` inside
 
 | Declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
+| nothing (`workflow_execution_requirements()` returns `None`) | Default guarded requirement: exactly one approval edge is required. |
 | `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 

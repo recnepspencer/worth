@@ -747,7 +747,8 @@ Retain the original description with `for_workflow_operation(..)?.retain_operati
 `WorthQueryWorkflowOperation` owns the original slot, exact runtime and native source/recovery
 custody; every `advance(&fresh_request)` selects the original action and freshly admits its
 binding. It stores no principal, scope or prepared admission. Required-output actions cannot
-use this declared no-output lane. Native execution is explicit advanced control.
+use this declared no-output lane. See [Advanced native workflow execution](#advanced-native-workflow-execution)
+for deliberate native controls.
 
 ### Three independent checks
 
@@ -814,9 +815,8 @@ workflow_requirements ApplicationWorkflowExecutionRequirements::requiring_approv
 `ApplicationWorkflowExecutionRequirements` is exported through
 `worth_query_decl::facade::application_operation` and the host's declaration
 facade. Manual `ApplicationMutationBinding` implementations return `Some(...)`
-from `workflow_execution_requirements()`. The default `None` preserves the old
-guarded-binding contract: exactly one native approval is required. It is not the
-same as `Some(ApplicationWorkflowExecutionRequirements::new())`.
+from `workflow_execution_requirements()`. The default `None` requires exactly one
+native approval. It is not the same as `Some(ApplicationWorkflowExecutionRequirements::new())`.
 
 | Declared | Meaning |
 |---|---|
@@ -894,8 +894,16 @@ retains custody. Assessment evidence acceptance and approval remain separate fro
 operation confirmation. Effect completion, workflow terminality and physical
 cleanup remain different facts. Drop performs no settlement.
 
-Deliberate native controls use `for_workflow_operation(..)?.advanced().execute_in_program(..)`.
-Generic mutation recovery still refuses workflow operations. No consumer retry owner is needed.
+### Advanced native workflow execution
+
+Use the [ordinary workflow owner](#operations) for application operations. Deliberate
+native execution uses this borrowed-key request chain; the owned description
+returned by `idempotency_owned` has no `advanced()` method.
+
+`request.mutate(intent).without_source().idempotency(&key).for_workflow_operation(&workflow, &required)?.advanced().execute_in_program(program, allocation)`.
+
+Generic mutation recovery still refuses workflow operations. Native workflow
+recovery preserves the original workflow binding and dispatch custody.
 
 ## Navigate back
 

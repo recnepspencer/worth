@@ -1,10 +1,11 @@
-//! Borrowed-key native entrance reserved for issued workflow authority until its owning cutover.
+//! Borrowed-key workflow binding; ordinary execution retains an owner, native execution selects advanced.
 use crate::application_entry::mutation::request::WorthQueryMutationSourceUnprepared;
 use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
 use worth_query_declaration::facade::application_operation::ApplicationMutationIntent;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
-/// Borrowed-key construction for the still-native workflow entrance.
+/// Borrowed-key construction for binding issued workflow authority.
+/// Ordinary workflow execution retains its owner; deliberate native execution selects `advanced()`.
 /// It cannot execute or recover a fixed, discovered or source-only action. Those lanes require
 /// `idempotency_owned` and an exact declared action through the owning builder.
 ///
