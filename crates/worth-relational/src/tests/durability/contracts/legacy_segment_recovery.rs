@@ -48,6 +48,50 @@ fn native_current_recovery_refuses_old_segments_without_rewriting_evidence() {
     }
 }
 
+#[test]
+fn native_publication_refuses_old_segments_before_in_memory_movement() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = persisted_runtime_with_test_schema();
+    install_legacy_segment(
+        &runtime,
+        include_str!("../../../../tests/fixtures/worth_query_9_16_1_1_native_segment.hex"),
+    );
+    let path = runtime
+        .config()
+        .durability
+        .policy
+        .store_layout
+        .unwrap()
+        .root_path
+        .join("segments/segment-1.worth-segment");
+    let before = std::fs::read(&path).unwrap();
+    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    transaction
+        .push_batch(
+            batch_create("unsupported-store"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let error = transaction.commit(execution, &runtime).unwrap_err();
+    match error {
+        TransactionCommitError::Publication { error, .. } => {
+            assert_eq!(
+                error.stage,
+                crate::publication::bundle::PublicationStage::BundleAssembly
+            );
+            assert!(error.detail.contains("unsupported native segment format"));
+        }
+        other => panic!("old meaning must refuse before publication: {other:?}"),
+    }
+    assert_eq!(runtime.history().immutable_commit_count(), 0);
+    assert!(runtime
+        .history()
+        .branch_head(&BranchId("main".to_owned()))
+        .is_none());
+    assert!(runtime.publication().latest_bundle().is_none());
+    assert_eq!(std::fs::read(path).unwrap(), before);
+}
 fn install_legacy_segment(runtime: &crate::runtime::RelationalRuntime, fixture: &str) {
     let layout = runtime
         .config
