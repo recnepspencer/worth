@@ -80,6 +80,7 @@ pub(super) fn edit<const REUSE: bool, const WORK: usize, const RUNS: usize, cons
 ) {
     let made = format!("{edit:?}");
     let outcome = request
+        .advanced()
         .mutate(edit.commanded(command))
         .without_source()
         .idempotency(&command)
@@ -110,6 +111,7 @@ pub(super) fn adjust<const REUSE: bool, const WORK: usize, const RUNS: usize, co
         .execute()
         .expect("the scope's source is readable");
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: SCOPE.to_owned(),
             replacement_y: length(y),

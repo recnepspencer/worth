@@ -55,6 +55,7 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
         .execute()
         .expect("the recovered source is readable");
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(3),

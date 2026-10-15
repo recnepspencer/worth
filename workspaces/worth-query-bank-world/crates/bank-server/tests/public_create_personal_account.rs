@@ -63,6 +63,7 @@ fn assert_public_creation(display_name: &str) {
         display_name: AccountName::new(display_name).expect("the name should be valid"),
     };
     let omitted_program = request
+        .advanced()
         .mutate(input.clone())
         .idempotency(&key)
         .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)

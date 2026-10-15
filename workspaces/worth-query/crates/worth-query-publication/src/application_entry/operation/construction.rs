@@ -14,7 +14,7 @@ pub enum WorthQueryOperationConstructionDenial {
 }
 
 impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
-    WorthQueryApplicationMutationRequest<
+    crate::application_entry::WorthQueryOperationBuilder<
         '_,
         '_,
         '_,
@@ -30,17 +30,18 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
     where
         <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone,
     {
+        let self_native = self.native;
         let encoded_input =
             worth_query_declaration::facade::application_operation::ApplicationEncodedInput::encode(
-                self.intent.input().clone(),
+                self_native.intent.input().clone(),
             );
         WorthQueryOperationDescription {
-            intent: self.intent,
+            intent: self_native.intent,
             encoded_input,
             key,
-            preconditions: self.preconditions,
-            source: self.source,
-            branch: self.branch,
+            preconditions: self_native.preconditions,
+            source: self_native.source,
+            branch: self_native.branch,
         }
     }
 }
@@ -95,7 +96,7 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
         {
             Ok(action) => action,
             Err(denial) => {
-                return Err((self, WorthQueryOperationConstructionDenial::Action(denial)))
+                return Err((self, WorthQueryOperationConstructionDenial::Action(denial)));
             }
         };
         if let Err(denial) =

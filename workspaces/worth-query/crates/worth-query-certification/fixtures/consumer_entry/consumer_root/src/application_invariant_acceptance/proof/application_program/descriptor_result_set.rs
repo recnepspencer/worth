@@ -61,13 +61,15 @@ fn owning_result_set_original_conditions_survive_partial_publication() {
             })
             .execute()
             .unwrap();
-        request
-            .mutate(OriginalAdjustment(input.clone()))
-            .preconditions(conditions("anchor-a"))
-            .expect_result_set(observed.result_set_observation().unwrap().clone())
-            .idempotency_owned(10_076)
-            .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
-            .unwrap_or_else(|(_, denial)| panic!("installed original descriptor: {denial:?}"))
+        worth_query_topology_entry::capture_original(
+            &request,
+            OriginalAdjustment(input.clone()),
+            conditions("anchor-a"),
+            observed.result_set_observation().unwrap().clone(),
+            10_076,
+        )
+        .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
+        .unwrap_or_else(|(_, denial)| panic!("installed original descriptor: {denial:?}"))
     };
     // No initiating principal, scope or query observation remains live.
     world
@@ -147,7 +149,20 @@ fn owning_result_set_original_conditions_survive_partial_publication() {
         })
         .execute()
         .unwrap();
+    assert_eq!(source_truth.rows().len(), 1);
+    assert_eq!(source_truth.rows()[0].body_key, "anchor-a");
     assert_eq!(source_truth.rows()[0].y, length(7));
+    // Independent product observation: the authored selection did not mutate its sibling.
+    let sibling_truth = request
+        .query(PlanarRead {
+            body_key: "anchor-b".to_owned(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(sibling_truth.rows().len(), 1);
+    assert_eq!(sibling_truth.rows()[0].body_key, "anchor-b");
+    assert_eq!(sibling_truth.rows()[0].y, length(1));
+    drop(sibling_truth);
     drop(source_truth);
     let delivered = settled
         .read_current(&request)
@@ -192,15 +207,17 @@ fn owning_result_set_false_original_condition_refuses_before_candidate_effect() 
         })
         .execute()
         .unwrap();
-    let operation = request
-        .mutate(OriginalAdjustment(input.clone()))
-        .preconditions(conditions("anchor-b"))
-        .expect_result_set(original.result_set_observation().unwrap().clone())
-        .idempotency_owned(10_077)
-        .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
-        .unwrap_or_else(|(_, denial)| {
-            panic!("native precondition is checked after construction: {denial:?}")
-        });
+    let operation = worth_query_topology_entry::capture_original(
+        &request,
+        OriginalAdjustment(input.clone()),
+        conditions("anchor-b"),
+        original.result_set_observation().unwrap().clone(),
+        10_077,
+    )
+    .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
+    .unwrap_or_else(|(_, denial)| {
+        panic!("native precondition is checked after construction: {denial:?}")
+    });
     let mut operation = operation;
     for _ in 0..2 {
         operation = match operation.advance(&request) {

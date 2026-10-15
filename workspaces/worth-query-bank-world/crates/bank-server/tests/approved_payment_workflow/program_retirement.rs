@@ -45,6 +45,7 @@ fn p2_adoption_does_not_reopen_ordinary_payment_approval() {
     let ordinary = runtime
         .request(&approver, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(ApprovePayment {
             payment: fixture.payment,
             approver: principal_id(APPROVER),

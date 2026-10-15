@@ -106,6 +106,7 @@ fn run(workers: usize, defer: bool) -> History {
             .execute()
             .unwrap();
         request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: key.clone(),
                 replacement_y: length(5 + rank as u64),

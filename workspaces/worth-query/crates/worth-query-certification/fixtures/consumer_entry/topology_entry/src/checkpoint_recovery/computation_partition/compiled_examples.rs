@@ -153,6 +153,7 @@ fn first_run<E: Example>() -> Reduced {
         .execute()
         .expect("the mutation source is readable");
     let outcome = request
+        .advanced()
         .mutate(RegionTotalsDemand {
             scope_key: "anchor-a".to_owned(),
             entries: "example".to_owned(),

@@ -30,6 +30,7 @@ fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: length(7),

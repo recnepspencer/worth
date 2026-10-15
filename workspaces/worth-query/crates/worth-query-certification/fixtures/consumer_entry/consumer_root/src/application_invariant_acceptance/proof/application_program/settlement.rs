@@ -64,6 +64,7 @@ pub(super) fn performed_source_settles_required_output(
         NonZeroUsize::new(8_192).unwrap(),
     );
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),

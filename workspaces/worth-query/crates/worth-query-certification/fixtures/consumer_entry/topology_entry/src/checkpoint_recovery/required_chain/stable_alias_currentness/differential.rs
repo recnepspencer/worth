@@ -61,7 +61,7 @@ fn seeded_native_source_edits_agree_with_plain_model_and_full_output_verificatio
                     .execute()
                     .unwrap();
                 request
-                    .mutate(PlanarSourceAdjustment {
+                    .advanced().mutate(PlanarSourceAdjustment {
                         scope_key: body.to_owned(),
                         replacement_y: length(replacement),
                     })

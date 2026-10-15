@@ -201,3 +201,6 @@ where
             })
     }
 }
+
+#[path = "assessment_collection/entry.rs"]
+mod entry;

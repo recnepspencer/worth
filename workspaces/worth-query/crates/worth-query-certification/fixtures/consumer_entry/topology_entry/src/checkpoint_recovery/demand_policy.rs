@@ -47,6 +47,7 @@ fn installed_large_parent_allowance_composes_with_small_child_artifact() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut output = request
+        .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
             &application,
             PlanarOutputDemand::new("anchor-a"),
@@ -218,6 +219,7 @@ fn installed_child_excess_is_denied_without_publishing_the_child() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut output = request
+        .advanced()
         .start_program_outputs::<InsufficientChildProgram, CheckpointRoot>(
             &application,
             PlanarOutputDemand::new("anchor-a"),

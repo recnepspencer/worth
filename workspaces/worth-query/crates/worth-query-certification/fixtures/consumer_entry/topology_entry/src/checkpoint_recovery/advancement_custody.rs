@@ -272,6 +272,7 @@ fn mutation_commit_report(placement: Placement) -> (u64, u64) {
     let contacts = crate::handler::handler_contacts();
     reports();
     let outcome = request
+        .advanced()
         .mutate(crate::PlanarEdit(crate::PlanarMutation {
             scope_key: "anchor-a".into(),
             operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![

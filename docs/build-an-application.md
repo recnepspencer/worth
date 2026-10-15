@@ -19,7 +19,9 @@ An application imports exactly two crates, `worth-query-decl` and
 `worth-query-host`. Their facades are made of modules, so import from the
 module that owns each name:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // Declare meaning: features, program, workflow authoring.
 use worth_query_decl::facade::application_program::*;
 use worth_query_decl::facade::{application_operation, application_query, application_schema};
@@ -39,7 +41,7 @@ use worth_query_host::facade::{
 |---|---|
 | `…decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
 | `…decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
-| `…host::facade::application_installation` | `in_memory` (no program), `in_memory_program`, `in_memory_rostered_program`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
+| `…host::facade::application_installation` | `in_memory_program`, `in_memory_rostered_program`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
 | `…host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
 | `…host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery` |
 | `…host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
@@ -83,7 +85,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 | 2 | Declare features and the program | `impl ApplicationFeature`, `ApplicationFeatureSpec::root::<S, F>()…finish()`, `impl ApplicationProgramDefinition` | [§3](#3-declare-features-and-the-program) |
 | 3 | Validate the program | `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [§3.5](#35-validate) |
 | 4 | Install the application graph | `application_installation::in_memory_program(..)` or `in_memory_rostered_program(..)` | [§4](#4-install-the-application-graph) |
-| 5 | Run program-owned actions | `request(&principal, &scope).mutate(intent).without_source().idempotency(&key).execute_in_program(&runtime, allocation_policy)` | [§5](#5-run-the-program) |
+| 5 | Run program-owned actions | `request.mutate(intent)…idempotency_owned(key).retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)` | [§5](#5-run-the-program) |
 | 6 | Install the workflow vocabulary | `WorthQueryApplicationWorkflowSpecInstallation::begin(..)…finish()`, then `retain_workflow_spec(..)` | [§6.2](#62-install-the-workflow-vocabulary-once) |
 | 7 | Author and validate a workflow | `ApplicationWorkflowDefinitionBuilder::<Spec>::new(..)`, nodes, connections, `finish()?.validate()?` | [§6.3](#63-author-a-definition) |
 | 8 | Publish, start, and advance it | `bind_definition`, `prepare_workflow_publication`, `prepare_workflow_instance_start`, `prepare_workflow_advance` | [§6.6](#66-publish-discover-start-advance) |
@@ -133,7 +135,9 @@ Terms: [Glossary](glossary.md) — see **Program**, **Feature**,
 A schema is composed from contributions. Each contribution declares its own
 entities, fields, operations, queries, and invariants.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/schema.rs (abridged)
 worth_query_application! {
     pub TemporalHostSchema {
@@ -171,7 +175,9 @@ worth_query_application_contribution! {
 The host side of the same contribution registers what runs: handlers,
 invariants, and conditional nodes.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // .../product_workflow_support/conditional_contribution.rs
 impl WorthQueryApplicationContribution<TemporalHostSchema> for TemporalHostContribution {
     type Configuration = TemporalContributionConfiguration;
@@ -228,7 +234,9 @@ All names in this section are on
 
 A feature is a marker type with a stable identity and a list of input ports.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // workspaces/worth-query-bank-world/crates/bank-server/src/application_definition/composition.rs
 pub struct BankAccountsFeature;
 pub struct BankPaymentsFeature;
@@ -253,7 +261,9 @@ which you may override.
 per feature with `ApplicationFeatureSpec::root::<Schema, Feature>()`, add its
 actions, and call `finish()`.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // bank-server/src/application_definition/composition.rs (abridged)
 vec![
     ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
@@ -296,7 +306,9 @@ builder.**
 
 ### 3.3 Declare the program
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // bank-server/src/application_definition/composition.rs
 pub(crate) type BankRules = ApplicationRuleList<
     ApplicationRuleAt<
@@ -359,7 +371,9 @@ counterpart is the consumer fixture at
 `.../fixtures/consumer_entry/consumer_root/src/application_program/roots.rs`
 (the output graph). That fixture takes every Query name from the two facades.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // Shape. Illustrative names; see the fixture above for compiled code.
 pub struct DraftFeature;
 pub struct SummaryFeature;
@@ -420,7 +434,9 @@ pub type MyOutputRoot = ApplicationOutputGraph<DraftConnection, ApplicationOutpu
 
 ### 3.5 Validate
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // bank-server/src/application_definition/composition.rs
 pub(crate) fn validated_bank_application() -> Result<
     ValidatedApplicationProgram<BankSchema, BankApplication>,
@@ -1010,7 +1026,9 @@ facade and the declarations exported by `worth-query-decl`.
 **The handler contract.** Within `OperationHandler<Schema, Binding>`, the
 current signature and default implementation are:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
     fn prepare_decision(
         &self,
         input: &Binding::Input,
@@ -1138,7 +1156,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         }
     }
 }
-
 ```
 
 ---
@@ -1151,7 +1168,9 @@ contributions' configuration, and resource limits into a running runtime. The
 
 ### 4.1 One program
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/application.rs
 use worth_query_host::facade::{application_installation, primary_graph, runtime};
 
@@ -1172,7 +1191,9 @@ let runtime = application_installation::in_memory_program(
 .expect("the validated temporal program must install");
 ```
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // Same file: limits.
 application_installation::WorthQueryInMemoryApplicationLimits::new(
     product_world_resources(),
@@ -1191,7 +1212,9 @@ The result is a `WorthQueryProgramApplicationRuntime<Schema, Program>`.
 A host that must be able to adopt a successor program rosters it at install.
 Bank installs `BankApplication` and rosters `BankApplicationP1` beside it:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // bank-server/src/identity_runtime/installation.rs (abridged)
 let program = validated_bank_application()?;
 let successor = validated_bank_application_p1()?;
@@ -1287,7 +1310,9 @@ the installed schema. The adapter validates a credential and returns an
 external identity. Query maps that identity to an application principal
 through the schema's principal binding.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // .../examples/product_workflow_support/application.rs and read.rs (abridged)
 use worth_query_host::facade::admission::authenticated_principal::{
     admit_authentication_adapter, WorthQueryAuthenticationAdapterAdmission,
@@ -1312,7 +1337,9 @@ let principal = adapter.authenticate(credential, &scope).await?;
 identity must already be bound to a principal in the graph. The example does
 that while seeding, in the `initial_state` closure from §4.1:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // .../product_workflow_support/application.rs
 graph.bind_principal(
     principal_binding,        // installed.principal_binding(MyPrincipalBinding::reference())
@@ -1368,7 +1395,9 @@ there is no time limit; work and memory remain policy-bounded, and the request
 remains cancellable. It is
 not an entity and grants nothing:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // .../product_workflow_support/adapters.rs
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -1391,7 +1420,9 @@ A mutation has three parts:
 | Binding | `ApplicationMutationBinding<Schema>` | Declared once | Ties the operation to its input, result, denial, decision type, idempotency key, principal binding, scope field, and candidate ceilings |
 | Handler | `OperationHandler<Schema, Binding>` | Registered in the contribution's `configure` | Decides, then builds the candidate |
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // .../examples/product_workflow_support/application_entry.rs (abridged)
 impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     type Input = AmendTemporalInput;
@@ -1456,7 +1487,9 @@ Application values outside mutation requests can use the same canonical
 encoder through `application_value_identity`. Choose `DomainValue` and a
 namespace that names the value's meaning and semantic version:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_decl::facade::application_operation::{
     application_value_identity, ApplicationValueIdentityDomain,
 };
@@ -1471,7 +1504,9 @@ let label = application_value_identity(
 For example, a catalog group can derive its identity from every field that
 determines membership, including optional fields:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 #[derive(serde::Serialize)]
 struct CatalogGroup<'a> {
     product: &'a str,
@@ -1566,56 +1601,112 @@ ordered:
 
 ### 5.3 Execute through the program
 
-On a runtime installed with a program (`in_memory_program` or
-`in_memory_rostered_program`), **every** mutation runs through the program.
-The non-program `execute(allocation_policy)` refuses it with
-`WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired`.
-`execute(allocation_policy)` is only for a runtime installed without a program
-(`application_installation::in_memory`).
+Every ordinary application installs a program with `in_memory_program` or
+`in_memory_rostered_program`. Declare a no-output action with
+`operation_action::<Binding, Delivery>()`; its delivery mode is
+`ApplicationSourceCompletion` or `ApplicationRetainedCommit`. Select the complete
+`ApplicationActionReference`, rather than a first matching binding.
 
-The ordinary mutation execution entries (`execute`, `execute_in_program`,
-`execute_capability_in_program`, `execute_retained_in_program`,
-`execute_performed`, and `prepare_in_program`) each take an
-`ExecutionAllocationPolicy` (`worth_query_host::facade::runtime`). There is no
-default. `SystemAllocation` stays uncharged; `Execution(&lease)` admits payload
-backing against an execution resource lease.
-
-```rust
-// workspaces/worth-query/crates/worth-query-certification/examples/ordinary_product_workflow.rs (abridged)
-let request = application.runtime.request(&principal, &scope);
-let outcome = request
-    .mutate(AmendTemporalIntent {
-        identity: "intent-1".to_owned(),
-        amendment,
-    })
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Illustrative: not compiled.
+let operation = request.mutate(intent)
     .without_source()
-    .idempotency(&0x51_u64)
-    .execute_in_program(
-        &application.runtime,
-        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("the installed program must prepare the application mutation");
-let (receipt, result) = match outcome {
-    WorthQueryApplicationMutationOutcome::Committed { receipt, result } => (receipt, result),
-    other => panic!("the ordinary application mutation must commit: {other:?}"),
-};
+    .preconditions(original_conditions)
+    .idempotency_owned(key)
+    .retain_operation::<Program, Action>(&runtime)?;
+let next = operation.advance(&fresh_request);
+// Retain Progress/Refused custody for a later fresh-authorized attempt.
+// Completed owns evidence and lawful close; Terminal has no advance method.
 ```
 
-- **A mutation never names its program.** `execute_in_program` reads which
-  program the request's branch runs and commits under it. If an adoption lands
-  between selection and commit, the commit is denied before any effect.
-- Passing a runtime other than the one the request came from (a different
-  runtime instance, compared by identity) is `ApplicationProgramMismatch`.
-- `.on_branch(branch)` selects a branch other than the current world. A branch
-  token grants nothing; it is re-selected on every use.
-- Match every outcome variant. `Commit(..)` is never an error string: see
-  [How WORTH Works §11](how-it-works.md#11-outcomes-every-way-a-request-can-end).
+The owner performs native prepare/commit, unpublished recovery and keyed resolution.
+Capability authorization follows the binding, including recovery; an authenticated
+principal alone grants no permission. Native policy supplies each attempt's
+allocation and bounded work. Callers neither reset a failed attempt nor recreate
+its original descriptor. Source-only completion may be followed by a separate
+declared demand or assessment; it cannot replace required-output settlement.
 
-Run it:
+The runnable `ordinary_product_workflow` declares a real source-only action,
+advances its owner, observes native fresh receipt/result evidence, closes cleanup,
+and reads both current and retained product truth through the public facade.
 
-```bash
-cargo run --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --example ordinary_product_workflow
+#### Capture complete original meaning
+
+Install a program and declare the exact typed action occurrence and its delivery.
+`request.mutate(intent)` returns `WorthQueryOperationBuilder`; it exposes original
+source preparation, preconditions and `idempotency_owned(key)`, followed by
+`retain_operation::<Program, Action>(&runtime)`. Fixed and source-only callers
+cannot execute, prepare or recover through that builder or its borrowed-key view.
+The selected action carries composition instance, feature, binding and delivery;
+a binding label alone cannot select its contract.
+
+Capture the original meaning once. Supply a fresh authenticated ordinary request
+for every `advance`, delivery and close. Native admission checks current authority
+and the original runtime/branch/program affinity. The descriptor is not a grant.
+Recovery promotes the original native carrier; registered replay rejoins its
+original outputs without running the source handler. Recovered evidence does not
+manufacture the original handler result.
+
+A fixed settled owner borrows its complete settlement for `read_current` or a
+finite `read_current_with_policy`; the currentness check and declared query share
+one observation and one native phase. Read refusal retains the owner. Stale
+settlement supports `read_historical` and `close`, never output advancement.
+No-projection delivery uses `deliver_current` without a dummy query. Source-only
+completion is distinct from required-output settlement; retained delivery selects
+the action's authentic original commit observation.
+
+Completion and delivery retain independent cleanup. `close` returns the complete
+owner with a typed denial when cleanup refuses. Drop is abandonment, not external
+cleanup or crash durability. Only existing native checkpoint/recovery contracts
+survive process loss.
+
+<!-- compiled: owning_entry.rs -->
+```rust
+pub fn capture_original<S, I>(
+    request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    intent: I,
+    preconditions: TypedMutationPreconditions<S, <I::Binding as ApplicationMutationBinding<S>>::Operation,
+        <<I::Binding as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope>,
+    source: WorthQueryObservedResultSet<<<I::Binding as ApplicationMutationBinding<S>>::SourceExpectation as ApplicationMutationSourceExpectation<S>>::Query>,
+    key: <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey,
+) -> WorthQueryOperationDescription<S, I>
+where
+    S: ApplicationSchema,
+    I: ApplicationMutationIntent<S>,
+    <I::Binding as ApplicationMutationBinding<S>>::Input: Clone,
+{
+    request
+        .mutate(intent)
+        .preconditions(preconditions)
+        .expect_result_set(source)
+        .idempotency_owned(key)
+}
 ```
+
+The real result-set court calls this function with nondefault preconditions before
+an actual post-effect append failure. It reads the resulting source and outputs
+independently after native recovery. No original intent clone is required per pump.
+
+#### Advanced native mutation control
+
+Use the [ordinary owning entry](#53-execute-through-the-program) for fixed and
+source-only actions. Deliberate native callers select `request.advanced().mutate(intent)`.
+Only that type exposes manual fixed/source-only execute, two-phase prepare,
+unpublished recovery, keyed resolution and fixed output start/recovery.
+The interim ordinary workflow binding returns `WorthQueryBoundWorkflowOperation`:
+it permits the designated `execute_in_program` funnel and owner-derived workflow
+recovery, with no manual preparation, retained execution or generic recovery.
+Phase C replaces that funnel with the owning workflow adapter; callers must not
+introduce their own continuation or effect retry owner. A runtime installed without a
+program (`application_installation::in_memory`) is advanced native control;
+its `execute` cannot be an ordinary application default. On a program runtime
+non-program execution refuses with `ApplicationProgramRequired`.
+Native calls take an explicit `ExecutionAllocationPolicy`; the owning attempt
+uses its admitted native policy. Unsupported predecessors refuse before effects
+or executable readmission and preserve original bytes; no compatibility entrance
+is retained.
 
 ### 5.4 Mutations with required outputs
 
@@ -1695,7 +1786,9 @@ against the correct declaration. It retains no authenticated principal or grant.
 Shape, with illustrative names; the executable counterpart is
 [`required_unpublished.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/required_unpublished.rs):
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // Shape. Illustrative names.
 let description = request
     .mutate(AdjustDraft { /* ... */ })
@@ -1749,6 +1842,7 @@ the real compiled consumer counterpart is
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
+// Illustrative: not compiled.
 use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::WorthQueryOperationDeliveryPolicy;
 
@@ -1794,6 +1888,7 @@ selector or replace the batch at read time.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
+// Illustrative: not compiled.
 fn read_inputs(input: &SourceAdjustment) -> [OutputRead; 2] {
     [OutputRead { body_key: input.scope_key.clone() },
      OutputRead { body_key: format!("final:{}", input.scope_key) }]
@@ -1817,6 +1912,7 @@ releases staged results; the settled operation and cleanup remain yours.
 
 <!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 // Illustrative: not compiled.
 let policy = WorthQueryOperationDeliveryPolicy::currentness(currentness_work)
     .batch(narrower_batch_limits);
@@ -1897,6 +1993,12 @@ imported Query API comes from `worth-query-decl` and `worth-query-host`.
 `application`, `principal`, `scope`, and the dependent's demand `join` come from
 the setup above.
 
+#### Advanced native required-output control
+
+Use the [ordinary owning entry](#53-execute-through-the-program) for fixed actions.
+The following fixture deliberately coordinates native output custody through
+`advanced()`; it is not an ordinary lifecycle recipe.
+
 <!-- compiled: checkpoint_recovery/required_chain/concurrent_waves/application.rs -->
 ```rust
     use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
@@ -1913,6 +2015,7 @@ the setup above.
             .execute()
             .unwrap();
         let changed = request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: key.to_owned(),
                 replacement_y: length(y),
@@ -1948,6 +2051,12 @@ the setup above.
 
 ## 6. Author, publish, and run workflows
 
+Until Phase C supplies the workflow operation adapter, the bound
+`for_workflow_operation(..).execute_in_program(..)` funnel remains ordinary.
+Its issued transition slot, admission and approval rechecks remain native.
+Do not wrap it in a consumer continuation or retry owner.
+
+
 A workflow is a branch-local, versioned graph of governed steps. The host
 installs a **vocabulary** once: which operations, assessments, conditions,
 and approvals a workflow may use, and which capabilities control it. After
@@ -1967,7 +2076,9 @@ and [Waiting for an inbound completion](../workspaces/worth-query/crates/worth-q
 
 ### 6.1 The spec marker
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // workspaces/worth-query-bank-world/crates/bank-domain/src/schema/workflow.rs
 pub struct ApprovedBusinessPaymentWorkflow;
 
@@ -1987,7 +2098,9 @@ the program runtime. The result is a
 spec. `retain_workflow_spec` consumes the program runtime, and the workflow
 runtime dereferences back to it.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // bank-server/src/identity_runtime/installation.rs (error mapping removed; Bank names the result `runtime`)
 use worth_query_host::facade::domain::WorthQueryApplicationWorkflowSpecInstallation;
 
@@ -2042,7 +2155,9 @@ not set that constant, so a control binding is written by hand. Bank writes
 its four with one local macro. This is the part that differs from an ordinary
 binding:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // workspaces/worth-query-bank-world/crates/bank-domain/src/schema/workflow/control.rs (abridged)
 worth_query_operation!(pub $operation for BankSchema, input ApprovePaymentInputBinding);
 worth_query_operation_reads!($operation => [PaymentIdentityField]);
@@ -2083,7 +2198,9 @@ every node, connection, and limit of
 one line, adds the `//` annotations, and omits the function signature and the
 denial enum:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // workspaces/worth-query-bank-world/crates/bank-server/src/application_definition/workflows.rs (abridged)
 use bank_domain::queries::{PaymentAmountQuery, PaymentDetailQuery};
 use bank_domain::schema::{
@@ -2198,7 +2315,9 @@ There is **no** query, read, branch, or retry node. A read that feeds a
 decision is an assessment or a condition. Branching is routing different
 `ApplicationWorkflowControlOutcome`s. A retry is a connection:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // workspaces/worth-query/crates/worth-query-certification/examples/authored_workflow/main.rs
 let revise = ApplicationWorkflowRetry::new(
     ApplicationWorkflowControlOutcome::Rejected,
@@ -2325,7 +2444,9 @@ The installed requirement (`workflow_requirements` inside
 > approval". It means "exactly one approval". To run a guarded operation
 > without a signature, declare `new()`.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // workspaces/worth-query/crates/worth-query-certification/tests/application_graph/document_retention_model/retention_entry/occurrence_write.rs (abridged)
 worth_query_decl::facade::worth_query_mutation_binding!(
     pub OccurrenceSetRetentionBinding for SetRetentionInput, schema DocumentRetentionSchema,
@@ -2388,7 +2509,9 @@ principal type and then makes exactly this call.)
 **Bind and publish a definition** on a branch. Publication names the
 predecessor it expects to replace; there is no last-writer-wins overwrite.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // bank-server/src/approved_payment_workflow.rs
 let contract = workflow_runtime
     .workflow_spec()
@@ -2417,7 +2540,9 @@ the first revision, or `Published(previous_ref)` for a revision.
 
 **Discover** the current definition on a branch:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // examples/authored_workflow/main.rs (`discover`)
 // `request_execution` is the caller's `ExecutionRequest`
 // (`worth_query_host::facade::primary_graph::ExecutionRequest`; the example
@@ -2443,7 +2568,9 @@ a `WorthQueryWorkflowDefinitionDiscoveryDenial` (for example `ForeignLineage`,
 
 **Start** an instance, **propose**, and **advance**:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // bank-server/src/approved_payment_workflow.rs and approved_payment_workflow/progression.rs
 let started = workflow_runtime
     .request(&principal, &scope)
@@ -2511,7 +2638,9 @@ operand's published result:
 **Approve or reject.** An approval needs a fresh authentication event and a
 signature. Replaying a recorded key is the only exception.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // bank-server/src/approved_payment_workflow.rs
 let signing = workflow_runtime
     .request(&principal, &scope)
@@ -2537,7 +2666,9 @@ and authority is issued only after it is approved. A binding that declares
 `ApplicationWorkflowExecutionRequirements::new()` runs the same way with no
 approval ([§6.5](#65-who-may-run-a-guarded-operation)).
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // bank-server/src/approved_payment_workflow.rs (`perform_apply`, error mapping removed)
 workflow_runtime
     .request(&principal, &scope)
@@ -2622,6 +2753,7 @@ deployment after that branch adopts another revision.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
+// Illustrative: not compiled.
 let grant = BankProgramDeploymentGrantSeed::for_program::<BankApplication>(
     "operator-p0-deployment", issuer, operator, valid_from, valid_through,
 )?;
@@ -2635,6 +2767,7 @@ authentication must still be current at publication.
 
 <!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 // Illustrative: not compiled.
 // workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/branch_adoption.rs
 use worth_query_host::facade::application_entry::{
@@ -2727,6 +2860,11 @@ A writer still running under the old program after adoption lands gets a
 stale commit outcome, never a silent commit under the wrong law.
 
 ### 7.3 Migrations
+#### Advanced program migration preparation
+
+Use the [ordinary owning entry](#53-execute-through-the-program) for application actions.
+Migration candidates are deliberate native control selected with `advanced()`.
+
 
 When the target needs existing state repaired, prepare the migration as a
 candidate under the target program, then hand it to the adoption:
@@ -2734,12 +2872,13 @@ candidate under the target program, then hand it to the adoption:
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
+// Illustrative: not compiled.
 // tests/application_graph/adoption/migration.rs (abridged)
 let migration = match host
     .runtime()
     .request(&principal, &scope)
     .on_branch(branch)
-    .mutate(SetRetentionIntent { input })
+    .advanced().mutate(SetRetentionIntent { input })
     .without_source()
     .idempotency(&key)
     .prepare_program_migration(&target)?
@@ -2770,6 +2909,7 @@ disposition. Ask for the inventory, decide each item, and pass the decisions:
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
+// Illustrative: not compiled.
 // tests/application_graph/adoption/workflow_custody.rs (abridged)
 let adoption = programs.adopt(&requirements)?;
 let inventory = adoption.workflow_inventory(1_024)?;
@@ -2792,6 +2932,7 @@ let prepared = adoption.workflow(decisions).prepare(1_024)?;
 
 <!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 // Illustrative: not compiled.
 let prepared = request
     .on_branches(coverage, &ordered_targets)?     // WorthQueryProgramAdoptionCoverageDenial
@@ -2846,13 +2987,12 @@ but did not publish is recovered with
   `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` and
   install with `application_installation::in_memory_program` or
   `in_memory_rostered_program`.
-- On a runtime installed with a program, execute **every** mutation through
-  a program lane: `execute_in_program`, `execute_capability_in_program`,
-  `execute_retained_in_program`, or `execute_performed::<Program, Root>`.
-  Each takes the program runtime and an `ExecutionAllocationPolicy`. Pass the
-  program runtime the request came from (for a workflow runtime,
-  `workflow_runtime.program_runtime()`); another one is refused with
-  `ApplicationProgramMismatch`.
+- Run fixed and source-only actions through `idempotency_owned(key)` and
+  `retain_operation::<Program, Action>(&runtime)`, then supply fresh ordinary
+  requests for advancement, delivery and close. Native admission checks the
+  original runtime, branch and full action meaning on every attempt.
+- Keep the existing discovered and bound workflow entrances until their Phase B
+  and Phase C owners land; do not add a consumer retry engine around them.
 - Match every outcome variant. Treat `NoEffect`, `ProductUnpublished`,
   `Awaiting*`, and `Commit(..)` as states to handle, not errors to retry.
 - `compare` before `adopt`, and pass the requirements you got.
@@ -2868,11 +3008,10 @@ but did not publish is recovered with
   or `worth_query`. Their consumer names are re-exported through the two
   facades (for example `worth_query_host::facade::domain` and
   `worth_query_host::facade::admission`).
-- Do not call the non-program mutation `execute(allocation_policy)` on a
-  runtime installed with a program: every mutation there is refused with
-  `ApplicationProgramRequired`. It is only for a runtime installed with
-  `in_memory` (no program).
-- Do not name a program on a mutation. The branch decides.
+- Do not install a program-less runtime as an ordinary application or coordinate
+  fixed/source-only retries manually. Deliberate native control is described under
+  [Advanced](#advanced-native-mutation-control).
+- Do not substitute an action or program meaning on retry. Native admission compares the retained action with the branch's selected program.
 - Do not expect adoption to change sibling branches, or a branch set to adopt
   atomically.
 - Do not register a handler for a workflow control binding.

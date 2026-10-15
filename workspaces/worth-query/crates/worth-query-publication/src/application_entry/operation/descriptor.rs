@@ -75,12 +75,13 @@ pub(super) type SourceQuery<Schema, Intent> =
 /// ```
 /// Source preparation cannot be skipped when constructing an original description.
 /// ```compile_fail,E0599
-/// use worth_query_publication::facade::application_entry::WorthQueryApplicationMutationRequest;
+/// use worth_query_publication::facade::application_entry::WorthQueryOperationBuilder;
 /// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::ApplicationMutationIntent};
-/// fn skip_source<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(request: WorthQueryApplicationMutationRequest<'_, '_, '_, S, I>) {
+/// fn skip_source<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(request: WorthQueryOperationBuilder<'_, '_, '_, S, I>) {
 ///     let _ = request.idempotency_owned(todo!());
 /// }
 /// ```
+#[must_use = "retain the original descriptor as a declared operation before advancing"]
 pub struct WorthQueryOperationDescription<
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,

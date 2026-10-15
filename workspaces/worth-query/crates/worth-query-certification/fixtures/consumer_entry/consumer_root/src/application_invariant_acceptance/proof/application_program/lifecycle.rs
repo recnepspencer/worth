@@ -41,6 +41,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
         replacement_y: length(2),
     };
     let outcome = request
+        .advanced()
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&10_008)
@@ -56,6 +57,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
         .start_required_outputs(&world.application, &request, controls())
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
     let duplicate = request
+        .advanced()
         .mutate(intent)
         .expect_source(source)
         .idempotency(&10_008)
@@ -253,6 +255,7 @@ fn prepare<'a>(
     command: u64,
 ) -> Prepared {
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: key.to_owned(),
             replacement_y: length(y),

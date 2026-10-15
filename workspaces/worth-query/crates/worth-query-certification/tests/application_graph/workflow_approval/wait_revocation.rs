@@ -104,6 +104,7 @@ fn change_approval_grant(
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
+        .advanced()
         .mutate(WorkflowGrantStatusIntent {
             input: WorkflowGrantStatusInput {
                 grant_identity: "workflow-approval-grant".to_owned(),

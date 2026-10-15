@@ -81,6 +81,7 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
         };
         advancements(); // Discard completed setup/read requests, never mutation events.
         let outcome = request
+            .advanced()
             .mutate(input)
             .idempotency(&member.key)
             .execute_in_program::<Program>(

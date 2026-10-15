@@ -131,6 +131,7 @@ fn empty_installed_floor_does_not_ignore_an_authored_approval_or_its_revocation(
     let changed = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
+        .advanced()
         .mutate(WorkflowGrantStatusIntent {
             input: WorkflowGrantStatusInput {
                 grant_identity: "workflow-approval-grant".to_owned(),

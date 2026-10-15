@@ -161,7 +161,9 @@ fn run() {
         assert!(closed.is_complete());
     }
     assert!(application.runtime.branches().pending_cleanup().is_empty());
-    println!("created, advanced, inspected, and closed all product postures through the application entry");
+    println!(
+        "created, advanced, inspected, and closed all product postures through the application entry"
+    );
 }
 
 fn mutate(
@@ -179,6 +181,7 @@ fn mutate(
         .runtime
         .request(principal, scope)
         .on_branch(branch)
+        .advanced()
         .mutate(AmendTemporalIntent {
             identity: "intent-1".to_owned(),
             amendment: AmendTemporalInput {

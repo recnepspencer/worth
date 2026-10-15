@@ -139,6 +139,7 @@ pub(super) fn run_costs(
             .execute()
             .unwrap();
         let outcome = request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: key.to_owned(),
                 replacement_y: length(y),

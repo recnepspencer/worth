@@ -80,6 +80,7 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
     let key = court.next_idempotency();
     let write = || {
         request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: body.clone(),
                 replacement_y: length(2),
@@ -93,6 +94,7 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
     };
     let recover = |receipt| {
         request
+            .advanced()
             .recover_required_outputs::<program::ChainProgram, program::ChainRoot>(
                 &application,
                 receipt,

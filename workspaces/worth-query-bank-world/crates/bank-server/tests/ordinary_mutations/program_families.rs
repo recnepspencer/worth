@@ -174,6 +174,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         .world
         .runtime
         .request(&approver, &approval_scope)
+        .advanced()
         .mutate(ApprovePayment {
             payment: fixture.payment,
             approver: principal_id(APPROVER),

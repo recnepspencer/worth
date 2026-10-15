@@ -109,6 +109,7 @@ fn secondary_root_settles_independently(
         .observed_sources()[0]
         .clone();
     let primary_outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -145,6 +146,7 @@ fn secondary_root_settles_independently(
         .observed_sources()[0]
         .clone();
     let secondary_outcome = secondary_request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
             replacement_y: length(3),
@@ -287,6 +289,7 @@ pub(super) fn ordinary_source_publication_cannot_bypass_program(
         .expect("the source occurrence is readable");
     let source = before.observed_sources()[0].clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),

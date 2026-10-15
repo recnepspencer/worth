@@ -68,17 +68,36 @@ Application hosts should normally wrap the generic host surface in domain-named
 operations, as Bank does with `BankCommitReceipt::aftermath()` and its recovery
 methods.
 
-The executable
-[ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
-shows successful publication and exhaustively matches every typed commit
-terminal. Its `ProductUnpublished` arm performs bounded catalog inspection,
-continues owed owner settlement, and consumes the recovery carrier through
-public cleanup. Its `SettlementDeferred` arm invokes the exact public repair
-route, while cancellation and `NoEffect` remain explicit no-publication stops.
-The executable does not manufacture an owner failure to enter those arms.
+The executable [ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
+uses a declared source-only owning action, observes actual native fresh evidence,
+closes independent cleanup and reads current/retained product truth. Real partial
+publication/refusal are exercised by the public owning certification courts.
 
 The `provisional_aftermath` facade contains the current undo/redo experiment.
 It is not part of the stable feature described here.
+
+## Ordinary operation recovery
+
+The [owning action entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+retains original intent/key/preconditions/source and actual native custody. Keep
+Progress/Refused owners and supply a fresh ordinary request. Unpublished recovery
+and fixed retention promotion reuse original effects; registered replay rejoins
+outputs without fabricating a handler result. Missing registration and terminal
+native postures retain evidence/cleanup, without an advance method.
+
+Current delivery checks the actual required set and executes the installed
+projection at one observation in one phase. Refusal retains settlement; stale
+settlement permits history and close. Delivery does not discharge cleanup.
+Close returns custody with its typed refusal when native release cannot complete.
+Drop is abandonment, not completion or crash durability.
+
+### Advanced native recovery
+
+Use the [ordinary owning entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for covered actions. Exact native unpublished/keyed/fixed recovery remains under
+`request.advanced()` for deliberate control and hostile certification. A receipt
+cannot reconstruct unregistered custody. Workflow/discovered recovery retain
+their own native owners until their adapters land.
 
 ## Authenticated Inbound Completion
 
@@ -88,7 +107,9 @@ host installs a verifier for that exact operation. Incoming bytes cannot select
 a different verifier or completion target. The public host entry is
 `worth_query_host::facade::application_entry::WorthQueryApplicationInboundOccurrencesExt`:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let receipt = application.inbound_occurrences()
     .receive(&installed_source, bounded_envelope, &scope)
     .execute();
@@ -266,7 +287,9 @@ Define a stable external payload. The protocol family is application-owned,
 version-free, and not a Rust module path; its exact produced version is a
 separate typed value.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_foundational::facade::{
     BoundaryProtocolIdentity, BoundaryProtocolVersion,
 };
@@ -308,7 +331,9 @@ Assume `InvoiceReadyEffect` is the schema's typed effect reference and
 `declared_aftermath` is its installed declaration contract. The operation
 builder then makes both static choices before `finish()` becomes available:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let correlation_family =
     WorthQueryExternalEffectCorrelationFamily::new("billing-rail")
         .expect("the application-owned correlation family is an atomic identity");
@@ -322,7 +347,9 @@ let definition = operation
 
 An ordinary operation with neither feature states that just as explicitly:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let definition = operation
     .definition()
     .no_external_effect()
@@ -333,7 +360,9 @@ let definition = operation
 Hosts may inspect the exact installed contract through the read-only domain
 facade:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let contracts = installed_operation.contracts();
 let aftermath = contracts
     .aftermath()
@@ -367,14 +396,18 @@ authority.
 Bank's death-notification operation declares one emission, one stable protocol
 family with an exact version, and one rail:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 schema
     .operation_emit(operation, EstateDeathNotificationEffect::reference())
 ```
 
 The operation definition binds the escaping lane:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_decl::facade::application_schema::WorthQueryExternalEffectCorrelationFamily;
 
 operation
@@ -392,7 +425,9 @@ The payload encodes the exact estate, notice, and subject as three big-endian
 `u64` values under family `bank.estate.death-notification`, version `1`. After a
 real commit, an application consumer reads only the published posture:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::publication::application_aftermath::{
     WorthQueryPublishedExternalEffectPosture,
     WorthQueryPublishedExternalEffectFailure,
@@ -463,7 +498,9 @@ Split the application commit outcome with `landed()` before entering aftermath
 handling. A landed commit returns its receipt; every other terminal arrives as a
 `WorthQueryApplicationUncommitted` variant:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationSettlementNextAction,
     WorthQueryApplicationUncommitted,
@@ -508,7 +545,9 @@ the same operation under current truth and has obtained both
 `admitted_operation` and its disclosure-admitted `capability_access`. The public
 host sequence is:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::primary_graph::{
     inspect_recovery_handle, resolve_recovery_handle,
 };

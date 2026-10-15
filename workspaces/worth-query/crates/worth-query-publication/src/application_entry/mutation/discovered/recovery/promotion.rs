@@ -160,7 +160,7 @@ where
                         initial_cause,
                         program,
                     },
-                ))
+                ));
             }
         };
         let (prepared, retained) = match application.promote_program_output_source(
@@ -186,7 +186,7 @@ where
                         initial_cause,
                         program,
                     },
-                ))
+                ));
             }
         };
         // No further fallible preparation after registry transfer. The ordinary
@@ -252,3 +252,5 @@ fn binding_mismatch() -> WorthQueryApplicationRecoveryRequestDenial {
         WorthQueryManagedApplicationRecoveryDenial::BindingMismatch,
     )
 }
+
+mod ordinary;

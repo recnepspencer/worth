@@ -85,6 +85,7 @@ pub(super) fn adopt_p2_after_completed_payment(
     let ordinary = runtime
         .request(approver, scope)
         .on_branch(branch)
+        .advanced()
         .mutate(authority)
         .idempotency(&key("p2:ordinary-payment-after-completion"))
         .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);

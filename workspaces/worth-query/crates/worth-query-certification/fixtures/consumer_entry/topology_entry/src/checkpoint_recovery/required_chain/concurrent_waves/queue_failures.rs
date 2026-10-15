@@ -106,6 +106,7 @@ fn run(workers: usize, failure: Failure, caught: bool) -> History {
             .execute()
             .unwrap();
         request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: key.into(),
                 replacement_y: length(y),

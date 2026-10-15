@@ -59,6 +59,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(intent(RETENTION))
         .without_source()
         .idempotency(&key)
@@ -86,7 +87,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
         runtime
             .request(&principal, &stopped_scope)
             .on_branch(branch)
-            .mutate(intent(RETENTION))
+            .advanced().mutate(intent(RETENTION))
             .without_source()
             .idempotency(&key)
             .recover_unpublished_in_program(&recovery, &host),
@@ -100,6 +101,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
         runtime
             .request(&fresh_principal, &fresh_scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(RETENTION + 1))
             .without_source()
             .idempotency(&key)
@@ -115,6 +117,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
         runtime
             .request(&fresh_principal, &fresh_scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(RETENTION))
             .without_source()
             .idempotency(&wrong_key)
@@ -128,6 +131,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let recovered = runtime
         .request(&fresh_principal, &fresh_scope)
         .on_branch(branch)
+        .advanced()
         .mutate(intent(RETENTION))
         .without_source()
         .idempotency(&key)
@@ -153,6 +157,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let resolved = runtime
         .request(&fresh_principal, &fresh_scope)
         .on_branch(branch)
+        .advanced()
         .mutate(intent(RETENTION))
         .without_source()
         .idempotency(&key)
@@ -166,6 +171,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
         runtime
             .request(&fresh_principal, &fresh_scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(RETENTION + 1))
             .without_source()
             .idempotency(&key)
@@ -218,6 +224,7 @@ fn recovery_reads_require_the_current_program_and_refuse_workflow_bound_actions(
         runtime
             .request(&principal, &scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(9))
             .without_source()
             .idempotency(&key)
@@ -230,6 +237,7 @@ fn recovery_reads_require_the_current_program_and_refuse_workflow_bound_actions(
         runtime
             .request(&principal, &scope)
             .on_branch(branch)
+            .advanced()
             .mutate(ReviewedSetRetentionIntent {
                 input: intent(9).input
             })
@@ -243,6 +251,7 @@ fn recovery_reads_require_the_current_program_and_refuse_workflow_bound_actions(
         runtime
             .request(&principal, &scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(9))
             .without_source()
             .idempotency(&key)

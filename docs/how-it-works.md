@@ -634,7 +634,9 @@ The host composes contributions with a schema, compiles each operation
 contract, derives graph obligations, admits the package, and installs it into
 an execution runtime with bounded resources.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let runtime = in_memory_program(
     program,        // ValidatedApplicationProgram<Schema, Program>
     declaration,
@@ -669,7 +671,7 @@ let runtime = in_memory_program(
   `application_contribution`, `primary_graph`, and `domain`, in that order.
 - `in_memory_rostered_program` supports several program revisions against one
   installed schema.
-- `in_memory` installs schema meaning without a program.
+
 - `*_from_checkpoint` variants restore from a `WorthQueryApplicationCheckpoint`.
 - Worked installs with real limits and a roster:
   [Build an Application §4](build-an-application.md#4-install-the-application-graph).
@@ -692,9 +694,17 @@ invariants, producers, and conditional nodes.
 handle, publish the graph yourself, or construct a touch scope. Each of these
 has a compile-fail test.
 
+#### Advanced program-less installation
+
+Use the [ordinary program/owning entry](build-an-application.md#53-execute-through-the-program)
+for applications. `in_memory` installs schema meaning without a program and offers
+only deliberate native mutation control through `request.advanced()`.
+
 ### 9.3 Request entry
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let request = runtime
     .request(&principal, &scope)   // WorthQueryApplicationRequestExt
     .on_branch(branch);            // optional; defaults to current_world()
@@ -706,7 +716,7 @@ description of intent. From here, the request becomes one of:
 | Call | Purpose |
 |---|---|
 | `.query(intent)` | Read |
-| `.mutate(input)` | Change |
+| `.mutate(intent)` | Capture original action meaning; retain an owning operation before its effects |
 | `.demand(demand)` | Ask for a program output to be produced |
 | `.programs()` | Inspect or adopt program revisions ([section 12](#12-branches-programs-and-adoption)) |
 | `.at(&observation)`, `.at_commit(&receipt, max_work)` | Read at a historical basis |
@@ -735,12 +745,20 @@ only narrow: an attempt to widen them is a typed `Limit` denial.
 
 **Mutations** declare what they were based on, which is a typestate step:
 
+#### Advanced native source preparation
+
+Use the [ordinary owning entry](build-an-application.md#53-execute-through-the-program)
+for fixed and source-only actions; it retains this source meaning in its descriptor.
+The native example below deliberately selects `advanced()`.
+
 The planar geometry example uses the installed program `Program<E>` and its
 declared `RegionTotalsDemand`. The current call order is:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let outcome = request
-    .mutate(RegionTotalsDemand {
+    .advanced().mutate(RegionTotalsDemand {
         scope_key: "anchor-a".to_owned(),
         entries: "example".to_owned(),
         replacement_y: length(3),
@@ -757,6 +775,8 @@ Choose `expect_source`, `expect_result_set`, or `without_source` as the binding
 permits, and supply `idempotency` before execution. This example executes in
 its program. On a runtime without a program, use `execute(allocation_policy)`
 instead.
+
+#### Original source meaning
 
 - **Source expectation.** A `WorthQueryObservedSource<Query>` comes from a
   published query row. It records the branch, basis, query identity,
@@ -785,7 +805,9 @@ plan. A computing handler overrides preparation, as the
 [compiled build-guide handler](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
 does.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 pub trait OperationHandler<Schema, Binding>: Send + Sync + 'static
 where
     Schema: ApplicationSchema,
@@ -836,7 +858,24 @@ where
 `HandlerResult` distinguishes `Completed`, `DomainDenied`, `ExecutionDenied`,
 `Cancelled`, and `DeadlineExceeded`.
 
-**Ways to execute a mutation.** Every lane takes an `ExecutionAllocationPolicy`
+**Ordinary owning actions.** A declared action binds original typed input, key,
+preconditions, row/result-set source and branch once. `request.mutate` exposes
+construction, followed by `retain_operation::<Program, Action>`. Fresh ordinary
+requests supply authority at every advance, delivery and cleanup attempt; the
+descriptor carries no grant. Publication delegates existing source, retention,
+output and cleanup owners. Fixed settlement and declared projection share one
+currentness/read observation. Refusal retains the complete owner. Source-only
+completion cannot prove required outputs. Delivery and drop do not certify cleanup.
+
+#### Advanced native mutation control
+
+Use the [ordinary owning entry](build-an-application.md#53-execute-through-the-program)
+for fixed and source-only actions. The native lanes below require
+`request.advanced().mutate(intent)` and their existing explicit allocation policy.
+Discovered and bound workflow lanes remain ordinary until their adapters land.
+Native owners retain effect, custody and unresolved-publication authority.
+
+**Native substrate.** Every lane takes an `ExecutionAllocationPolicy`
 (`worth_query_host::facade::runtime`): `SystemAllocation` or
 `Execution(&lease)`. The caller chooses; there is no default. The program lanes
 take the installed program runtime first.
@@ -844,14 +883,13 @@ take the installed program runtime first.
 | Lane | Use it when |
 |---|---|
 | `execute(allocation_policy)` | The runtime was installed without a program (`in_memory`). On a runtime installed with a program, it refuses every mutation with `ApplicationProgramRequired`. |
-| `execute_in_program(&program_runtime, allocation_policy)` | The runtime was installed with a program (`in_memory_program` or `in_memory_rostered_program`). Every mutation on such a runtime uses this lane or one of the program lanes below. The runtime reads which program the branch runs; the caller never names it. |
+| `execute_in_program(&program_runtime, allocation_policy)` | The runtime was installed with a program (`in_memory_program` or `in_memory_rostered_program`). This deliberate native lane executes under the selected program. The runtime reads which program the branch runs; the caller never names it. |
 | `execute_capability_in_program` | As above, through a capability. |
 | `execute_retained` / `execute_retained_in_program` | You want to commit and keep a retained read of the result. `execute_retained` is for a runtime without a program, like `execute(..)`; on a program runtime use `execute_retained_in_program`. |
 | `execute_performed` / `execute_performed_discovered` | You need the program outputs the operation requires to be produced after commit. |
 
 `commit_for_program`, reached through `WorthQueryProductEntry::transaction()`,
-is an advanced product-transaction lane for hosts. Ordinary applications use
-the request lanes above.
+is an advanced product-transaction lane for hosts. Ordinary applications use the owning entrance above.
 
 ### 9.6 Candidate check
 
@@ -899,15 +937,13 @@ descriptive history.
   Within that call, Query prepares ready independent producers on the owner,
   computes their managed tasks together, then completes and publishes them in
   canonical order. The caller pumps progress; a worker does not publish.
-- **Required outputs.** After `execute_performed`, `start_required_outputs`
-  opens the outputs the operation requires. `recover_required_outputs` is
-  called on a fresh request with the commit receipt. It re-enters the required
-  outputs the runtime retained for that commit and returns a new handle; it
-  does not revive a handle the caller dropped. Those outputs join the required
-  set until their demand closes. The continuation owns its source custody independently of the starting
-  request. Starting and advancing it supply the original installed program runtime
-  and a fresh request explicitly. Unpublished source recovery retains the native
-  preparation and effects; it never repeats the original mutation handler.
+- **Fixed required outputs.** The ordinary operation delegates performed publication,
+  original-carrier retention, native output advancement and complete settlement.
+  Registered replay resumes without another source effect. Delivery checks the
+  actual required set and reads at one observation in one phase. Refusal retains
+  settlement; stale delivery exposes history/close without pumping closed outputs.
+  Manual publication, output start and registered recovery are
+  [advanced native controls](#advanced-native-mutation-control).
 - **Discovered outputs.** `execute_performed_discovered` returns owned source
   custody. `start_required_outputs(&program, &request, controls)` creates an
   owned continuation without querying or admitting its roots. Each
@@ -1653,7 +1689,9 @@ before any effect.
 Adoption moves one exact branch from its active revision to a target
 revision, in one product publication:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let programs     = request.on_branch(branch).programs();
 let requirements = programs.compare(&target)?;          // what adoption needs
 let adoption     = programs.adopt(&requirements);
@@ -1821,7 +1859,9 @@ The host `provisional_aftermath` module provides `admit_undo`,
 `SettlementDeferred` means the branch moved but durability or Query
 publication did not finish. Its `next_action()` is always the same:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 runtime.recover_deferred_application_settlement(&deferred)
 ```
 

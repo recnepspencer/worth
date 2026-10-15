@@ -729,6 +729,12 @@ Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalSta
 
 ## Operations
 
+The bound `for_workflow_operation(..).execute_in_program(..)` funnel remains
+ordinary until Phase C lands its operation adapter. The existing native owner
+retains the issued transition authority and performs admission/approval rechecks.
+Do not add a consumer continuation or request-rebuilding retry owner around it.
+
+
 ### Three independent checks
 
 A workflow-bound business operation passes up to three checks. They answer different

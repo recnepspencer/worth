@@ -1,10 +1,10 @@
 //! A fresh native request borrows the complete original operation meaning.
 use super::descriptor::WorthQueryOperationDescription;
 use crate::application_entry::mutation::request::WorthQueryMutationExpectedSource;
-use crate::application_entry::{
+use crate::application_entry::mutation::{
     WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
-    WorthQueryApplicationRequest, WorthQueryMutationSourcePrepared,
 };
+use crate::application_entry::{WorthQueryApplicationRequest, WorthQueryMutationSourcePrepared};
 use worth_query_declaration::facade::application_operation::ApplicationMutationIntent;
 use worth_query_installation::facade::ApplicationSchema;
 

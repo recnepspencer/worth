@@ -7,7 +7,7 @@ use product_workflow_support::{
     principal, AmendTemporalIntent, ExampleApplication, TemporalIntentRead,
 };
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
+    WorthQueryApplicationRequestExt, WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance,
 };
 
 fn main() {
@@ -41,7 +41,7 @@ fn run() {
         .expect("the application entry must read the initial row");
     assert_eq!(initial.rows()[0].input, "payload");
 
-    let outcome = request
+    let operation = request
         .mutate(AmendTemporalIntent {
             identity: "intent-1".to_owned(),
             amendment: AmendTemporalInput {
@@ -53,17 +53,36 @@ fn run() {
             },
         })
         .without_source()
-        .idempotency(&0x51_u64)
-        .execute_in_program(
-            &application.runtime,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the installed program must prepare the application mutation");
-    let (receipt, result) = match outcome {
-        WorthQueryApplicationMutationOutcome::Committed { receipt, result } => (receipt, result),
-        other => panic!("the ordinary application mutation must commit: {other:?}"),
+        .idempotency_owned(0x51_u64)
+        .retain_operation::<product_workflow_support::program::TemporalExampleProgram,
+            product_workflow_support::program::AmendTemporalAction>(&application.runtime)
+        .unwrap_or_else(|(_, denial)| panic!("declared temporal action: {denial:?}"));
+    let completed = match operation.advance(&request) {
+        WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
+        WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
+            panic!("fresh attempt refused: {denial:?}")
+        }
+        WorthQuerySourceOnlyAdvance::Progress(_) => {
+            panic!("this successful native attempt has no pending publication")
+        }
+        WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
+            panic!("native terminal: {:?}", terminal.native_outcome())
+        }
     };
-    assert_eq!(result.revision, 2);
+    let committed_version = match completed.evidence() {
+        WorthQuerySourceCompletion::Fresh {
+            receipt, result, ..
+        } => {
+            assert_eq!(result.revision, 2);
+            receipt.commit_reference().version_id.as_u64()
+        }
+        WorthQuerySourceCompletion::Recovered { .. } => {
+            panic!("a new key must produce the actual handler result")
+        }
+    };
+    completed
+        .close(&request)
+        .unwrap_or_else(|(_, denial)| panic!("native cleanup refused: {denial:?}"));
 
     let current = application
         .runtime
@@ -79,7 +98,7 @@ fn run() {
     );
     assert_eq!(
         current.receipt().inspect().basis().version(),
-        receipt.commit_reference().version_id.as_u64()
+        committed_version
     );
 
     let original = application

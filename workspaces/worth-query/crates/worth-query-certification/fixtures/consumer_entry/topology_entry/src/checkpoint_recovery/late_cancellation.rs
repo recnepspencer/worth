@@ -22,6 +22,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
             replacement_y: length(2),

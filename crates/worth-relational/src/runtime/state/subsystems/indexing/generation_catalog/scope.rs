@@ -17,6 +17,52 @@ pub(super) struct GenerationScope {
 }
 
 impl GenerationScope {
+    // Nine nested insertions, plus the outer scope binding: ids; status versions; version ids and
+    // schemas/member; status schemas/member; status commits/member.
+    pub(super) fn insertion_quote(entries: usize) -> Option<(u64, u64)> {
+        use super::insertion_quote::{add, insertion};
+        let mut total = (0, 0);
+        add(
+            &mut total,
+            insertion::<DerivedIndexGenerationId, ()>(entries, 1)?,
+        )?;
+        add(
+            &mut total,
+            insertion::<VersionId, GenerationVersion>(entries, 1)?,
+        )?;
+        add(
+            &mut total,
+            insertion::<DerivedIndexGenerationId, ()>(entries, 1)?,
+        )?;
+        add(
+            &mut total,
+            insertion::<SchemaVersionId, BTreeSet<DerivedIndexGenerationId>>(entries, 1)?,
+        )?;
+        add(
+            &mut total,
+            insertion::<DerivedIndexGenerationId, ()>(entries, 1)?,
+        )?;
+        add(
+            &mut total,
+            insertion::<SchemaVersionId, BTreeSet<(VersionId, DerivedIndexGenerationId)>>(
+                entries, 1,
+            )?,
+        )?;
+        add(
+            &mut total,
+            insertion::<(VersionId, DerivedIndexGenerationId), ()>(entries, 2)?,
+        )?;
+        add(
+            &mut total,
+            insertion::<(CommitId, VersionId), BTreeSet<DerivedIndexGenerationId>>(entries, 2)?,
+        )?;
+        add(
+            &mut total,
+            insertion::<DerivedIndexGenerationId, ()>(entries, 1)?,
+        )?;
+        Some(total)
+    }
+
     pub(super) fn insert(&mut self, generation: &DerivedIndexGeneration) {
         self.ids.insert(generation.generation_id);
         self.status_mut(is_published(generation)).insert(generation);

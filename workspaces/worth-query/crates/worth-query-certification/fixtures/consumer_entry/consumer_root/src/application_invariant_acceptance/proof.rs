@@ -133,7 +133,9 @@ pub(crate) fn run(foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>
         output_correspondence::observed_source(&foreign_request, "anchor-a"),
     );
     output_correspondence::run(&request, &world.application);
-    println!("Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, idempotency");
+    println!(
+        "Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, idempotency"
+    );
 }
 
 fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation::ConsumerWorld) {
@@ -213,6 +215,7 @@ fn actual_candidate_checks_untouched_neighbors(
     let valid = adjust("anchor-a", 2);
     let source = output_correspondence::observed_source(request, &valid.scope_key);
     let outcome = request
+        .advanced()
         .mutate(PlanarEdit(valid.clone()))
         .expect_source(source.clone())
         .idempotency(&10)
@@ -231,6 +234,7 @@ fn actual_candidate_checks_untouched_neighbors(
     assert_eq!(read_y(request, "anchor-c"), 10);
 
     let retry = request
+        .advanced()
         .mutate(PlanarEdit(valid))
         .expect_source(source)
         .idempotency(&10)
@@ -302,6 +306,7 @@ fn mutate(
 ) -> MutationOutcome {
     let source = output_correspondence::observed_source(request, &input.scope_key);
     request
+        .advanced()
         .mutate(PlanarEdit(input))
         .expect_source(source)
         .idempotency(&key)

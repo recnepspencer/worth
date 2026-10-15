@@ -247,6 +247,7 @@ fn direct_invocation_and_wrong_input_cannot_bypass_occurrence_binding() {
         runtime
             .request(&principal, &scope)
             .on_branch(instance.branch())
+            .advanced()
             .mutate(input(8))
             .without_source()
             .idempotency(&91007_u64)

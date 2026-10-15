@@ -160,7 +160,22 @@ let host = in_memory_rostered_program(
   usable after it adopts another program, install the same spec against that
   program with `support_workflow_spec`. See [Workflows](workflows.md).
 
+## Owning action affinity
+
+The [ordinary entry](ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+retains the exact action and original branch. Fresh admission compares its full
+meaning with the selected program; another occurrence with the same binding
+cannot substitute delivery. A foreign branch/runtime refuses with original
+custody intact. Unsupported predecessor contracts refuse before effects or
+readmission with original bytes preserved.
+
 ## How a mutation reads the branch's program
+
+### Advanced native program selection
+
+Use the [ordinary owning entry](ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for fixed and source-only actions. The example selects `request.advanced()`.
+
 
 A mutation request never names a program revision. On the program lane:
 
@@ -171,7 +186,7 @@ let outcome = host
     .runtime()
     .request(&principal, &scope)
     .on_branch(branch)
-    .mutate(PlaceOrderIntent { input })
+    .advanced().mutate(PlaceOrderIntent { input })
     .without_source()
     .idempotency(&key)
     .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)?;
@@ -283,6 +298,11 @@ Preparation refuses requirements the branch no longer matches, with
 
 ## Migration
 
+### Advanced migration preparation
+
+Use the [ordinary owning entry](ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for actions. Migration candidates are explicit native control through `advanced()`.
+
 A semantic change requires a migration assessment when it changes or removes
 a feature, port, connection, or output. Added items and rule changes do not;
 an added rule instead adds a validation scope, and existing state that
@@ -305,7 +325,7 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationProgramMig
 let migration = match runtime
     .request(&principal, &scope)
     .on_branch(branch)
-    .mutate(BackfillOrderStatusIntent { input })
+    .advanced().mutate(BackfillOrderStatusIntent { input })
     .without_source()
     .idempotency(&key)
     .prepare_program_migration(&revision_2)?
@@ -725,7 +745,7 @@ status on every existing order.
 let migration = match runtime
     .request(&principal, &scope)
     .on_branch(main)
-    .mutate(BackfillOrderStatusIntent { input })
+    .advanced().mutate(BackfillOrderStatusIntent { input })
     .without_source()
     .idempotency(&backfill_key)
     .prepare_program_migration(&revision_2)?

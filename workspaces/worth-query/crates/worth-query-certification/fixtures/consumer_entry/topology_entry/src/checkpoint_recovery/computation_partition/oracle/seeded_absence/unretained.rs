@@ -27,6 +27,7 @@ pub(super) fn unretained<
             .unwrap();
         *command += 1;
         let committed = request
+            .advanced()
             .mutate(super::super::super::demand::RegionTotalsDemand {
                 scope_key: SCOPE.to_owned(),
                 entries: if model.odd { "odd" } else { "even" }.to_owned(),

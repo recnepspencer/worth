@@ -101,6 +101,7 @@ fn initiation_recovers_one_continuation_and_a_fresh_approver_starts_its_workflow
         approver: principal_id(APPROVER),
     };
     let direct = approval_request
+        .advanced()
         .mutate(authority.clone())
         .idempotency(&BankIdempotencyKey::new("approve-directly").unwrap())
         .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);

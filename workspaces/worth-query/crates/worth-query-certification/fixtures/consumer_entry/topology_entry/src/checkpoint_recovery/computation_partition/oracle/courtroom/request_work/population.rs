@@ -74,6 +74,7 @@ fn author_population(vertices: usize) -> ScaleApplication {
             })
             .collect();
         let outcome = request
+            .advanced()
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: SCOPE.to_owned(),
                 operation: PlanarOperation::CreateCycle(vertices),
@@ -102,6 +103,7 @@ fn author_population(vertices: usize) -> ScaleApplication {
             .unwrap();
         let value = worth_query_consumer_values::PositiveLength::get(&source.rows()[0].y) + 1;
         let committed = request
+            .advanced()
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: name.clone(),
                 operation: worth_query_consumer_values::PlanarOperation::PublishDerivedOutput(

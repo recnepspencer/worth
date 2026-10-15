@@ -25,6 +25,7 @@ use super::*;
 ///     }
 /// }
 /// ```
+#[must_use = "delivery does not discharge cleanup; retain this settled owner until lawful close"]
 pub struct WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema,

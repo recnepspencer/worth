@@ -134,7 +134,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                 );
                 let dirty_root = source.observed_sources()[0].root_entity_for_test();
                 let edit = unrelated_request
-                    .mutate(PlanarSourceAdjustment {
+                    .advanced().mutate(PlanarSourceAdjustment {
                         scope_key: "unrelated-0".to_owned(),
                         replacement_y: replacement,
                     })

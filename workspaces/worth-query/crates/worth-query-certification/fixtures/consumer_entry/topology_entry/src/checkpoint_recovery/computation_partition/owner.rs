@@ -102,7 +102,7 @@ pub(super) fn total_region(
         checkpoint.advance(entry.work)?;
         match entry.fault {
             Some(RegionFault::Refuse) => {
-                return Err(WorthQueryManagedComputationDenial::Owner(region))
+                return Err(WorthQueryManagedComputationDenial::Owner(region));
             }
             Some(RegionFault::Panic) => panic!("the region kernel panics"),
             Some(RegionFault::Probe(_)) | None => total += entry.value,
@@ -229,6 +229,7 @@ pub(super) fn with_totals<Binding: RegionTotalsBinding>(
             .expect("the adjusted source is readable");
         // Every demand moves the source, so every decision is a new one.
         let outcome = request
+            .advanced()
             .mutate(RegionTotalsDemand {
                 scope_key: "anchor-a".to_owned(),
                 entries: set.to_owned(),

@@ -51,6 +51,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         .execute()
         .expect("the current source remains readable");
     let replacement = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-c".to_owned(),
             replacement_y: length(6),
@@ -69,6 +70,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
     drop(replacement);
 
     let denial = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &receipt,

@@ -384,16 +384,20 @@ derives a deterministic, sorted diagnostic description from validated meaning.
 It holds owned strings only, no type identity, handle, or authority, and it
 never participates in validation or installation.
 
-**Installation lanes.** `application_installation::in_memory_program` returns
-`WorthQueryProgramApplicationRuntime<Schema, Program>`. Program-owned actions
-execute through `.execute_in_program(&application, allocation_policy)`;
-capability-owned actions through
-`.execute_capability_in_program(&application, allocation_policy)`. Both take an
-`ExecutionAllocationPolicy` (`SystemAllocation` or `Execution(&lease)`); there
-is no default. A program-owned action on the weaker
-`.execute(allocation_policy)` path returns `ApplicationProgramRequired`, and a
-runtime from another host returns `ApplicationProgramMismatch`. The lane commits
-under the program that the request's branch runs.
+**Installation and ordinary actions.** `in_memory_program` installs canonical
+program/action/delivery meaning. `request.mutate` captures original meaning into
+an owned descriptor and `retain_operation::<Program, Action>` resolves the exact
+occurrence. Fixed and source-only owners accept fresh ordinary requests for each
+native advancement, current delivery and close. They retain no principal or grant.
+Capability admission follows the binding at every relevant native handoff.
+
+#### Advanced native execution
+
+Use the [ordinary owning entry](foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for fixed and source-only actions. Deliberate manual execution, two-phase prepare
+and recovery select `request.advanced()`; native types are exported under
+`application_entry::advanced`. Current native allocation/admission rules remain
+unchanged. The ordinary builder cannot prepare or execute a manual mutation.
 
 **Rosters and adoption.** One host may roster several validated revisions. The
 revision and its codec describe meaning; they do not select current meaning.
@@ -464,7 +468,9 @@ and How WORTH Works
 read and a write. The projection observes the exact value or lawful absence,
 and `write_optional_field` authors presence or absence:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let note = reader.decision_field(projected, DraftNote::reference())?;
 let quantity = reader.decision_field(projected, DraftQuantity::reference())?;
 
@@ -672,6 +678,12 @@ See [Application Authorization And Emergency Elevation](./capabilities/applicati
 and [Policy, Tenant, And Relationship-Proof Narrowing](./foundations/policy-tenant-and-relationship-proof-narrowing.md).
 
 #### Workflow-bound operations: three independent checks
+
+The bound `for_workflow_operation(..).execute_in_program(..)` funnel remains
+ordinary until Phase C lands its operation adapter. The existing native owner
+retains the issued transition authority and performs admission/approval rechecks.
+Do not add a consumer continuation or request-rebuilding retry owner around it.
+
 
 A workflow-bound business operation passes up to three checks. They answer
 different questions, are declared in different places, and none grants another.

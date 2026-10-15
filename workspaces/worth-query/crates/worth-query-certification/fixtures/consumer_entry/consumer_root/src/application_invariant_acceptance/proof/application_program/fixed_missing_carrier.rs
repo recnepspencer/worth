@@ -260,6 +260,7 @@ fn fixed_missing_carrier_direct_query_promotion_retains_real_refusal() {
             .clone();
         append_failure(&world);
         let outcome = request
+            .advanced()
             .mutate(intent.clone())
             .expect_source(original.clone())
             .idempotency(&10_173)
@@ -281,6 +282,7 @@ fn fixed_missing_carrier_direct_query_promotion_retains_real_refusal() {
                 .unwrap()
         });
         request
+            .advanced()
             .mutate(intent.clone())
             .expect_source(original.clone())
             .idempotency(&10_173)
@@ -293,6 +295,7 @@ fn fixed_missing_carrier_direct_query_promotion_retains_real_refusal() {
                 .has_original_delivery());
         }
         let promotion = request
+            .advanced()
             .mutate(intent.clone())
             .expect_source(original)
             .idempotency(&10_173)
