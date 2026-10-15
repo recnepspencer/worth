@@ -112,3 +112,5 @@ fn discovered_ordinary_registered_reply_loss_recovers_without_rerunning_handler(
         .close(&request)
         .unwrap_or_else(|(_, d)| panic!("receipt-only terminal close: {d:?}"));
 }
+
+mod historical;

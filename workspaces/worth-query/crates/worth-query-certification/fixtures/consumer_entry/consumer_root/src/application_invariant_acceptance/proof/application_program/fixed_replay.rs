@@ -341,3 +341,5 @@ fn fixed_unavailable_registration_returns_historical_evidence() {
 }
 
 mod supersession;
+
+mod historical;

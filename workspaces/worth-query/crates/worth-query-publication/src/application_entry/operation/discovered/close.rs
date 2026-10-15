@@ -169,22 +169,13 @@ where
         {
             return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
         }
-        let closable = matches!(
-            &self.operation.state,
-            State::Initial
-                | State::NotPerformed(
-                    WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-                        | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
-                        | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
-                        | WorthQueryApplicationMutationOutcome::DomainDenied(_)
-                        | WorthQueryApplicationMutationOutcome::Cancelled
-                        | WorthQueryApplicationMutationOutcome::DeadlineExceeded
-                        | WorthQueryApplicationMutationOutcome::Commit(
-                            WorthQueryApplicationUncommitted::ProductStale(_)
-                                | WorthQueryApplicationUncommitted::NoEffect(_)
-                        )
-                )
-        );
+        let closable = match &self.operation.state {
+            State::Initial => true,
+            State::NotPerformed(outcome) => {
+                super::super::close::terminal_outcome_can_close(outcome)
+            }
+            _ => false,
+        };
         let runtime = self.operation.runtime.runtime();
         let result = runtime.with_application_advancement(request.scope, |phase| {
             let terminal_carrier = match &mut self.operation.state {

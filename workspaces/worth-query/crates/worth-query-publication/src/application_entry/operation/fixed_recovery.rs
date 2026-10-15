@@ -79,7 +79,7 @@ where
                             recovered.into_parts();
                         self.state = FixedState::Preparation(preparation);
                         self.recovered = Some(performed);
-                        self.cleanup = WorthQueryOperationCleanup::from_failures(cleanup);
+                        self.cleanup.retain_original_failures(cleanup);
                         Progress::SourcePromoted
                     }
                     Err((denial, partial)) => {
