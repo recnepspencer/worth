@@ -163,7 +163,8 @@ fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
         operation.transition_identity()
     );
     let mismatched_recovery = workflow
-        .prepare_apply_recovery(
+        .advanced()
+        .prepare_native_effect_recovery(
             &still_required,
             authority.clone(),
             &key("approved-payment:operation:foreign-recovery"),
@@ -177,7 +178,8 @@ fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
             ))
     ));
     let prepared_recovery = workflow
-        .prepare_apply_recovery(
+        .advanced()
+        .prepare_native_effect_recovery(
             &still_required,
             authority.clone(),
             &key("approved-payment:operation:perform"),
@@ -190,7 +192,8 @@ fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
         .expect("fixture retry owns its host call")
         .expect("fresh recovery authority re-dispatches the committed outbox");
     let denied = workflow
-        .accept_recovered_applied(
+        .advanced()
+        .accept_native_recovered_effect(
             instance.clone(),
             &still_required,
             authority.clone(),

@@ -514,3 +514,18 @@ that observer may release actual failed producer cleanup; it does not accept
 assessment evidence, approve payment or complete the workflow. Deliberate native
 payment operation controls are available through `advanced()`, not an ordinary
 manual pump wrapper.
+
+### Explicit recovery disposal
+
+`dispose_commit_recovery(handle, &fresh_principal, action, &fresh_scope)` consumes
+one actual Bank recovery owner. Opening, current-authority and native disposal
+refusals return `BankRecoveryDisposalDenial`; `into_parts()` returns its cause and
+the same live handle when custody remains. Only native terminal consumption can
+return no handle. Keep the returned owner for a later fresh authorized attempt.
+
+Success returns the owning `BankRecoveryDisposalReceipt`. Its
+`native_disposal_receipt()` is the actual native terminal proof;
+`transition_receipt()` is only the Bank operation description. `into_parts()`
+transfers both without cloning. Disposal does not rerun business effects, settle
+a workflow or release an unrelated producer's physical cleanup. No HTTP disposal
+route is implied by this explicit runtime capability.
