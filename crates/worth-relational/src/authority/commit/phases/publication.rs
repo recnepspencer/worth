@@ -94,6 +94,16 @@ pub(crate) fn canonical_commit_envelope(
         schema_continuity.schema_reconciliation_descriptor.clone(),
         schema_continuity.descriptor_semantics_version,
     );
+    envelope.symbol_texts = runtime
+        .services
+        .symbols
+        .with_read(|symbols| symbols.commit_texts(merged_plan, &envelope.patch))
+        .map_err(|detail| {
+            TransactionCommitError::publication(PublicationError::new(
+                PublicationStage::BundleAssembly,
+                detail,
+            ))
+        })?;
     envelope.branch_cell_checkpoint = runtime
         .history
         .branch_cell(branch_id)
@@ -106,10 +116,13 @@ pub(crate) fn append_durable_commit(
     runtime: &(impl DiagnosticArtifactSink + DurabilityWrite),
     append_authority: crate::durability::authority::DurableAppendAuthority,
     positioned_commit: &crate::history::data::PositionedCanonicalCommit,
+    durable_bytes: Option<&worth_execution::ExecutionImmutableBytes>,
 ) -> Result<(), TransactionCommitError> {
     let commit_id = append_authority.commit_id();
     let branch_id = append_authority.branch_id().clone();
-    if let Err(error) = runtime.append_durable_envelope(append_authority, positioned_commit) {
+    if let Err(error) =
+        runtime.append_durable_envelope(append_authority, positioned_commit, durable_bytes)
+    {
         runtime.emit_failure_diagnostic(
             DiagnosticsScope::History,
             DiagnosticCode::DurableAppendFailed,

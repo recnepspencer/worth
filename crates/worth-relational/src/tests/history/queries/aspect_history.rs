@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::tests::support::*;
 
 #[test]
@@ -251,10 +252,14 @@ fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery
             relation_aspect_history_digest(&runtime, *relation, Some(&lifecycle_filter))
         })
         .collect::<Vec<_>>();
-    runtime.durability_authority().checkpoint().unwrap();
-    let recovery_plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
 
     let mut recovered =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);

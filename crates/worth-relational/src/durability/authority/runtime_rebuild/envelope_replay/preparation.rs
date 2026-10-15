@@ -4,7 +4,6 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 use crate::history::data::{CanonicalCommitEnvelope, HistoryDriftClass};
 use crate::runtime::RelationalRuntime;
 
-use super::super::branch_readmission::admit_legacy_branch_from_first_parent;
 use super::super::history_parity::validate_expected_recovery_parent_shape;
 use super::super::recovered_counter_capacity::prepare_recovery_lineage_sequence;
 use super::super::root_inventory::RecoveredRootInventory;
@@ -15,15 +14,11 @@ pub(super) fn prepare_replay_context(
     position: crate::publication::patch::data::PatchStreamPosition,
     available_commit_ids: &BTreeSet<crate::history::data::CommitId>,
     recovered_roots: &mut RecoveredRootInventory,
-    allows_legacy_branch_admission: bool,
 ) -> Result<bool, DurabilityError> {
     let had_checkpoint_artifact = restored
         .history
         .has_recorded_commit_envelope(envelope.commit.commit_id);
     validate_parent_closure(restored, envelope, available_commit_ids)?;
-    if allows_legacy_branch_admission && !restored.history.has_branch(&envelope.branch_context) {
-        admit_legacy_branch_from_first_parent(restored, envelope, recovered_roots)?;
-    }
     admit_carried_branch_checkpoint(restored, envelope, recovered_roots)?;
     restored
         .history

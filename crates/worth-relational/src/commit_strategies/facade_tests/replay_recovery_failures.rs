@@ -1,4 +1,5 @@
 use super::native_strategy_fixtures::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_lacks_executor() {
@@ -10,9 +11,10 @@ fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_la
     let entity = crate::tests::support::create_entity(execution, &runtime, "before");
     let commit = execute_persisted_intent_strategy_commit(execution, &mut runtime, entity);
     let branch_head_before = runtime.history().branch_head(&BranchId("main".to_string()));
-    let mut recovery_plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::AuditRecoveryVerification,
-    );
+    let mut recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::AuditRecoveryVerification)
+        .unwrap();
     recovery_plan.commit_strategy_executors = Default::default();
 
     let mut recovered = persisted_intent_runtime(root_path, false);
@@ -63,9 +65,10 @@ fn replay_commit_reports_strategy_execution_failure_when_recovered_executor_reje
     let mut runtime = persisted_intent_runtime(root_path.clone(), true);
     let entity = crate::tests::support::create_entity(execution, &runtime, "before");
     let commit = execute_persisted_intent_strategy_commit(execution, &mut runtime, entity);
-    let mut recovery_plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::AuditRecoveryVerification,
-    );
+    let mut recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::AuditRecoveryVerification)
+        .unwrap();
 
     let mut recovered = persisted_intent_runtime_with_failing_executor(root_path);
     recovery_plan.commit_strategy_executors = recovered.commit_strategy_executor_registry().clone();

@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::facade::mvcc::WorkerIntentBatch;
 use crate::facade::transactions::{BulkEntityCreateIntent, CreateIntent, MutationIntent};
 use crate::history::data::BranchId;
@@ -10,14 +11,17 @@ use crate::indexes::data::{
 use crate::tests::support::*;
 
 #[test]
-fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cache() {
+fn partition_alias_wire_requires_current_layout_and_omits_envelope_index_cache() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &runtime, "borrowed-checkpoint-wire");
     release_test_commit_snapshot(&runtime, &committed);
-    let mut checkpoint = runtime.durability_authority().checkpoint().unwrap();
+    let mut checkpoint = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let envelope = checkpoint.envelopes[0].envelope_mut_for_test();
     envelope.derived_index_artifacts = DerivedIndexArtifacts::new(vec![DerivedIndexGeneration {
         generation_id: DerivedIndexGenerationId(9_001),
@@ -33,7 +37,7 @@ fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cach
         entries: DerivedIndexEntries::EntityField(Default::default()),
     }]);
 
-    let old_wire = rmp_serde::to_vec_named(&PersistedDurableCheckpointFile::from_checkpoint(
+    let full_wire = rmp_serde::to_vec_named(&PersistedDurableCheckpointFile::from_checkpoint(
         checkpoint.clone(),
     ))
     .unwrap();
@@ -43,13 +47,13 @@ fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cach
         checkpoint.branch_roots[0].partition_images == checkpoint.partition_images,
         "a single main head has the same exact partition image as its storage mirror"
     );
-    assert!(borrowed_wire.len() < old_wire.len());
+    assert!(borrowed_wire.len() < full_wire.len());
     let root_partition_bytes =
         rmp_serde::to_vec_named(&checkpoint.branch_roots[0].partition_images)
             .unwrap()
             .len();
     assert!(
-        old_wire.len() - borrowed_wire.len() >= root_partition_bytes.saturating_sub(256),
+        full_wire.len() - borrowed_wire.len() >= root_partition_bytes.saturating_sub(256),
         "the wire must omit one complete equal root partition image"
     );
     assert!(
@@ -69,23 +73,12 @@ fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cach
         .partition_images
         .is_empty());
     let restored = stored.readmit().unwrap();
-    let legacy = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&old_wire)
+    let full_image = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&full_wire)
         .unwrap()
         .readmit()
         .unwrap();
-    assert_eq!(restored.checkpoint, legacy.checkpoint);
-    let mut old_alias = PersistedDurableCheckpointFile::from_checkpoint(checkpoint.clone());
-    old_alias.checkpoint.partition_alias_format = partition_aliases::PARTITION_ALIAS_FORMAT_VERSION;
-    old_alias.checkpoint.branch_root_partition_aliases = vec![checkpoint.branch_roots[0].commit_id];
-    old_alias.checkpoint.branch_roots[0]
-        .partition_images
-        .clear();
-    let v1_wire = rmp_serde::to_vec_named(&old_alias).unwrap();
-    let v1 = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&v1_wire)
-        .unwrap()
-        .readmit()
-        .unwrap();
-    assert_eq!(v1.checkpoint, restored.checkpoint);
+    assert_eq!(restored.checkpoint, full_image.checkpoint);
+    assert_retired_partition_layouts_refuse(execution, &checkpoint);
     assert!(restored.checkpoint.envelopes[0]
         .envelope()
         .derived_index_artifacts
@@ -128,7 +121,10 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
     let on_main = create_entity_outcome(execution, &runtime, "main-only");
     release_test_commit_snapshot(&runtime, &on_main);
 
-    let checkpoint = runtime.durability_authority().checkpoint().unwrap();
+    let checkpoint = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 2);
     let wire =
         rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
@@ -170,9 +166,10 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
         2
     );
 
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     plan.checkpoint = Some(restored.checkpoint);
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
@@ -201,7 +198,10 @@ fn partition_alias_wire_rejects_unknown_or_inconsistent_aliases() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity(execution, &runtime, "partition-alias-corruption");
-    let checkpoint = runtime.durability_authority().checkpoint().unwrap();
+    let checkpoint = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let wire =
         rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
     let stored = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&wire).unwrap();
@@ -270,14 +270,19 @@ fn native_capture_sections_count_exact_written_values_without_changing_wire() {
 
     let runtime = persisted_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "section-seed");
-    let checkpoint = runtime.durability_authority().checkpoint().unwrap();
+    let checkpoint = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let (bytes, sections) = super::super::native_file_codec::encode_checkpoint(
         &checkpoint,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    let expected =
-        rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
+    let mut expected = super::super::native_file_codec::CHECKPOINT_MAGIC.to_vec();
+    expected.extend(
+        rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap(),
+    );
     assert_eq!(bytes.bytes(), expected);
     assert_eq!(sections.total, bytes.len());
 
@@ -367,3 +372,7 @@ fn native_capture_sections_count_exact_written_values_without_changing_wire() {
         1
     );
 }
+
+#[path = "persisted_checkpoint_tests/retired_partition_layouts.rs"]
+mod retired_partition_layouts;
+use retired_partition_layouts::assert_retired_partition_layouts_refuse;

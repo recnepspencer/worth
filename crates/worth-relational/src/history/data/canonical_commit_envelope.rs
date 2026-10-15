@@ -47,6 +47,7 @@ pub struct CanonicalCommitEnvelope {
     pub schema_version: SchemaVersionId,
     pub schema_authority: SchemaAuthoritySnapshot,
     pub merged_plan: MergedCommitPlan,
+    pub(crate) symbol_texts: crate::symbols::data::SymbolTableSnapshot,
     #[serde(default)]
     pub(crate) record_allocations: Vec<crate::history::data::CanonicalRecordAllocation>,
     pub patch: CanonicalAuthoritativePatch,
@@ -112,6 +113,7 @@ impl CanonicalCommitEnvelope {
             schema_authority,
             merged_plan,
             record_allocations: Vec::new(),
+            symbol_texts: Default::default(),
             patch,
             descriptive_touches,
             diagnostics_summary,
@@ -130,13 +132,6 @@ impl CanonicalCommitEnvelope {
 
     pub fn descriptive_touches(&self) -> &RelationalDescriptiveTouchGraph {
         &self.descriptive_touches
-    }
-
-    pub(crate) fn set_descriptive_touches_for_readmission(
-        &mut self,
-        touches: RelationalDescriptiveTouchGraph,
-    ) {
-        self.descriptive_touches = touches;
     }
 
     pub(crate) fn install_record_allocations(
@@ -298,3 +293,7 @@ pub struct RelationalReplayRecord {
 #[cfg(test)]
 #[path = "canonical_commit_envelope/tests.rs"]
 mod tests;
+
+#[path = "canonical_commit_envelope/text_wire.rs"]
+mod text_wire;
+pub(crate) use text_wire::CanonicalEnvelopeWire;

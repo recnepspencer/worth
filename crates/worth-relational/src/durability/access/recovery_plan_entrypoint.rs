@@ -13,13 +13,20 @@ impl<'runtime> DurabilityAccess<'runtime> {
         Self { runtime }
     }
 
-    pub fn recovery_plan(&self, verification_mode: RecoveryVerificationMode) -> RecoveryPlan {
+    pub fn recovery_plan(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        verification_mode: RecoveryVerificationMode,
+    ) -> Result<RecoveryPlan, crate::durability::data::RelationalRecoveryStop> {
+        execution.check_live().map_err(|stop| {
+            crate::durability::data::RelationalRecoveryStop::Request(stop.into())
+        })?;
         match self.runtime.runtime_config().durability.policy.mode {
             DurabilityMode::InMemoryCanonical => {
-                in_memory_recovery_plan(self.runtime, verification_mode)
+                Ok(in_memory_recovery_plan(self.runtime, verification_mode))
             }
             DurabilityMode::PersistedSegmentedLocalFs => {
-                persisted_recovery_plan(self.runtime, verification_mode)
+                persisted_recovery_plan(execution, self.runtime, verification_mode)
             }
         }
     }

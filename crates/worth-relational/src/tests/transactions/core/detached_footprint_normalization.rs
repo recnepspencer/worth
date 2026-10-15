@@ -116,7 +116,7 @@ fn require_interned_normalizes_plan_and_created_footprint_to_identical_symbols()
             .identity
             .symbol_table
             .entries
-            .contains(&(symbol, expected.to_owned())));
+            .contains(&(symbol, expected.into())));
     }
 
     let expected_reads = std::collections::BTreeSet::from([

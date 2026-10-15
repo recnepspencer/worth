@@ -2,13 +2,13 @@ use im::{HashMap, OrdMap};
 
 use serde::{Deserialize, Serialize};
 
-use super::{InternedString, Symbol, SymbolTableSnapshot};
+use super::{InternedString, StoredSymbolText, Symbol, SymbolTableSnapshot};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StringInterner {
     next_symbol: u32,
-    by_value: HashMap<String, Symbol>,
-    by_symbol: OrdMap<Symbol, String>,
+    by_value: HashMap<StoredSymbolText, Symbol>,
+    by_symbol: OrdMap<Symbol, StoredSymbolText>,
 }
 
 impl Default for StringInterner {
@@ -36,15 +36,94 @@ impl StringInterner {
         }
         let symbol = Symbol(self.next_symbol);
         self.next_symbol += 1;
-        self.by_value.insert(value.to_string(), symbol);
-        self.by_symbol.insert(symbol, value.to_string());
+        self.by_value.insert(value.to_string().into(), symbol);
+        self.by_symbol.insert(symbol, value.to_string().into());
         symbol
     }
 
     pub fn resolve(&self, symbol: Symbol) -> Option<&str> {
-        self.by_symbol.get(&symbol).map(String::as_str)
+        self.by_symbol.get(&symbol).map(StoredSymbolText::as_str)
     }
 
+    pub(crate) fn check_text_capacity(
+        &self,
+        text: &str,
+    ) -> Result<(), super::RelationalFieldTextAdmissionDenial> {
+        if self.symbol(text).is_none() && self.next_symbol.checked_add(1).is_none() {
+            return Err(super::RelationalFieldTextAdmissionDenial::SymbolExhausted);
+        }
+        Ok(())
+    }
+    pub(crate) fn admit_text(
+        &mut self,
+        text: StoredSymbolText,
+    ) -> Result<Symbol, super::RelationalFieldTextAdmissionDenial> {
+        let symbol = match self.symbol(text.as_str()) {
+            Some(symbol) => symbol,
+            None => {
+                let next = self
+                    .next_symbol
+                    .checked_add(1)
+                    .ok_or(super::RelationalFieldTextAdmissionDenial::SymbolExhausted)?;
+                let symbol = Symbol(self.next_symbol);
+                self.next_symbol = next;
+                symbol
+            }
+        };
+        // Equal-key insert alone keeps the old System key in persistent maps.
+        self.by_value.remove(text.as_str());
+        self.by_value.insert(text.clone(), symbol);
+        self.by_symbol.insert(symbol, text);
+        Ok(symbol)
+    }
+    pub fn retained_text(&self, symbol: Symbol) -> Option<&StoredSymbolText> {
+        self.by_symbol.get(&symbol)
+    }
+
+    pub(crate) fn import_canonical_snapshot(
+        &mut self,
+        snapshot: &SymbolTableSnapshot,
+    ) -> Result<(), &'static str> {
+        let mut symbols = std::collections::BTreeMap::new();
+        let mut values = std::collections::BTreeMap::new();
+        for (symbol, text) in &snapshot.entries {
+            if self
+                .by_symbol
+                .get(symbol)
+                .is_some_and(|prior| prior != text)
+                || self
+                    .symbol(text.as_str())
+                    .is_some_and(|prior| prior != *symbol)
+            {
+                return Err("canonical tail dictionary aliases existing symbol meaning");
+            }
+            if symbol.0 == u32::MAX {
+                return Err("canonical tail symbol exhausted");
+            }
+            if symbols
+                .insert(*symbol, text.as_str())
+                .is_some_and(|prior| prior != text.as_str())
+                || values
+                    .insert(text.as_str(), *symbol)
+                    .is_some_and(|prior| prior != *symbol)
+            {
+                return Err("canonical tail dictionary contains conflicting meanings");
+            }
+        }
+        for (symbol, text) in &snapshot.entries {
+            let text = self
+                .by_symbol
+                .get(symbol)
+                .filter(|prior| prior.is_managed() && !text.is_managed())
+                .unwrap_or(text)
+                .clone();
+            self.by_value.remove(text.as_str());
+            self.by_value.insert(text.clone(), *symbol);
+            self.by_symbol.insert(*symbol, text);
+            self.next_symbol = self.next_symbol.max(symbol.0.saturating_add(1));
+        }
+        Ok(())
+    }
     pub fn normalize(&mut self, value: InternedString) -> InternedString {
         match value {
             InternedString::Raw(raw) => InternedString::Symbol(self.intern(&raw)),
@@ -69,7 +148,7 @@ impl StringInterner {
         for (symbol, value) in snapshot.entries {
             self.by_value.insert(value.clone(), symbol);
             self.by_symbol.insert(symbol, value);
-            self.next_symbol = self.next_symbol.max(symbol.0 + 1);
+            self.next_symbol = self.next_symbol.max(symbol.0.saturating_add(1));
         }
     }
 }

@@ -19,7 +19,7 @@ fn branch_roots_with_one_schema_deduplicate_the_durable_carrier() {
 
     let checkpoint = runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("production checkpoint succeeds");
 
     assert!(checkpoint.branch_roots.len() >= 2);
@@ -102,11 +102,15 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
         .expect("schema transition commits");
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("production checkpoint succeeds");
     let mut plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint exists");
     assert_eq!(checkpoint.branch_root_schema_images.len(), 2);
     let replacement = checkpoint.branch_roots[1].schema_carrier_digest;
@@ -156,11 +160,15 @@ fn checkpoint_plan_with_one_root(
     create_entity_outcome(execution, &runtime, label);
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("production checkpoint succeeds");
     runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap()
 }
 
 fn assert_corrupt_schema_recovery(

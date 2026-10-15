@@ -177,3 +177,5 @@ pub struct MergeInspection {
     pub conflicting_records: Vec<MergeConflictRecord>,
     pub can_merge: bool,
 }
+
+pub(crate) use canonical_commit_envelope::CanonicalEnvelopeWire;

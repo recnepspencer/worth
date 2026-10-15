@@ -1,16 +1,18 @@
+mod store_io;
+pub(crate) use store_io::{lock_store, lock_store_for_recovery, preflight_store};
+
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::capabilities::DurabilityRead;
 use crate::durability::data::{
     DurabilityError, DurableCheckpoint, DurableCheckpointId, DurableIntegrityStatus,
     DurableSegmentId, DurableSegmentManifest, DurableStore, DurableStoreLayout,
     RecoveryFailureClass,
 };
 use crate::durability::log::native_file_codec::{
-    read_segment_file, read_store_manifest_file, write_segment_file, write_store_manifest_file,
+    read_segment_file, read_segment_inventory, read_store_manifest_file, write_store_manifest_file,
 };
 use crate::durability::log::persisted_canonical_commit::PersistedCanonicalCommit;
 
@@ -30,11 +32,8 @@ pub(crate) struct DurableCheckpointFile {
 }
 
 pub(crate) fn ensure_loaded_store(
-    runtime: &(impl DurabilityRead + crate::capabilities::RuntimeConfigSource),
+    runtime: &impl crate::capabilities::RuntimeConfigSource,
 ) -> Result<DurableStore, DurabilityError> {
-    if let Some(store) = runtime.durable_store() {
-        return Ok(store.as_ref().clone());
-    }
     let Some(layout) = runtime
         .runtime_config()
         .durability
@@ -166,8 +165,8 @@ fn refresh_store_segments_from_disk(
             let (first_commit_id, last_commit_id, commit_count, integrity) =
                 match read_segment_inventory(&path) {
                     Ok(entries) => (
-                        entries.first().map(|entry| entry.commit_id),
-                        entries.last().map(|entry| entry.commit_id),
+                        entries.first().copied(),
+                        entries.last().copied(),
                         entries.len(),
                         DurableIntegrityStatus::Verified,
                     ),
@@ -210,102 +209,22 @@ fn refresh_store_segments_from_disk(
     Ok(store)
 }
 
-pub(crate) fn read_segment_entries_with_registry(
+pub(crate) fn read_segment_entries(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     path: &Path,
-    registry: &crate::schema::data::RelationalSchemaRegistry,
-) -> Result<Vec<crate::durability::migration::ReadmittedCanonicalCommit>, DurabilityError> {
-    match read_segment_file(path) {
-        Ok(file) => file
-            .entries
-            .into_iter()
-            .map(|entry| {
-                entry.readmit().map_err(|detail| {
-                    DurabilityError::new(RecoveryFailureClass::CorruptSegment, detail)
-                })
+) -> Result<
+    Vec<crate::durability::migration::ReadmittedCanonicalCommit>,
+    crate::durability::data::RelationalRecoveryStop,
+> {
+    read_segment_file(execution, path)?
+        .entries
+        .into_iter()
+        .map(|entry| {
+            entry.readmit().map_err(|detail| {
+                DurabilityError::new(RecoveryFailureClass::CorruptSegment, detail).into()
             })
-            .collect(),
-        Err(current_error) => {
-            let bytes = fs::read(path).map_err(io_error)?;
-            match crate::durability::migration::decode_worth_query_9_16_1_1_segment(
-                &bytes, registry,
-            ) {
-                Ok(entries) => Ok(entries),
-                Err(crate::durability::migration::LegacySegmentDecodeError::Schema(detail)) => Err(
-                    DurabilityError::new(RecoveryFailureClass::SchemaMismatch, detail),
-                ),
-                Err(
-                    crate::durability::migration::LegacySegmentDecodeError::UnsupportedLineage(
-                        detail,
-                    ),
-                ) => Err(DurabilityError::new(
-                    RecoveryFailureClass::UnsupportedLegacySemantics,
-                    detail,
-                )),
-                Err(crate::durability::migration::LegacySegmentDecodeError::Decode) => {
-                    Err(current_error)
-                }
-            }
-        }
-    }
-}
-
-pub(crate) fn segment_requires_recovery_readmission(path: &Path) -> Result<bool, DurabilityError> {
-    match read_segment_file(path) {
-        Ok(_) => Ok(false),
-        Err(current_error) => {
-            let bytes = fs::read(path).map_err(io_error)?;
-            crate::durability::migration::worth_query_9_16_1_1_segment_inventory(&bytes)
-                .map(|_| true)
-                .map_err(|_| current_error)
-        }
-    }
-}
-
-fn read_segment_inventory(
-    path: &Path,
-) -> Result<Vec<crate::history::data::RelationalCommitReceipt>, DurabilityError> {
-    match read_segment_file(path) {
-        Ok(file) => Ok(file
-            .entries
-            .into_iter()
-            .map(PersistedCanonicalCommit::into_receipt)
-            .collect()),
-        Err(current_error) => {
-            let bytes = fs::read(path).map_err(io_error)?;
-            crate::durability::migration::worth_query_9_16_1_1_segment_inventory(&bytes)
-                .map_err(|_| current_error)
-        }
-    }
-}
-
-pub(crate) fn append_segment_entry(
-    path: &Path,
-    commit: &crate::history::data::PositionedCanonicalCommit,
-    registry: &crate::schema::data::RelationalSchemaRegistry,
-) -> Result<(), DurabilityError> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(io_error)?;
-    }
-    let mut entries = if path.exists() {
-        read_segment_entries_with_registry(path, registry)?
-            .into_iter()
-            .map(|entry| {
-                entry
-                    .positioned()
-                    .map(PersistedCanonicalCommit::from_positioned)
-                    .ok_or_else(|| {
-                        DurabilityError::new(
-                            RecoveryFailureClass::DurableIoFailure,
-                            "current append cannot extend a migration-owned segment",
-                        )
-                    })
-            })
-            .collect::<Result<Vec<_>, _>>()?
-    } else {
-        Vec::new()
-    };
-    entries.push(PersistedCanonicalCommit::from_positioned(commit));
-    write_segment_file(path, &DurableSegmentFile { entries })
+        })
+        .collect()
 }
 
 pub(crate) fn io_error(error: std::io::Error) -> DurabilityError {
@@ -315,43 +234,26 @@ pub(crate) fn io_error(error: std::io::Error) -> DurabilityError {
 #[cfg(test)]
 mod legacy_segment_tests {
     use super::*;
-    use crate::capabilities::RuntimeConfigSource;
 
     #[test]
-    fn native_reader_readmits_a_real_9_16_1_1_segment() {
-        // Generated once by the production persisted runtime and native
-        // segment writer at the 9.16.1.1 close commit 7d198923e36e9df.
+    fn native_reader_refuses_old_segment_before_interpreting_text() {
         let bytes = decode_hex(include_str!(
             "../../../tests/fixtures/worth_query_9_16_1_1_native_segment.hex"
         ));
         let path = std::env::temp_dir().join(format!(
-            "worth-query-9-16-1-1-segment-{}.worth-segment",
+            "worth-old-segment-{}.worth-segment",
             std::process::id()
         ));
-        std::fs::write(&path, bytes).expect("legacy fixture is written to the native read seam");
-        let runtime = crate::tests::support::persisted_runtime_with_test_schema();
-        let entries =
-            read_segment_entries_with_registry(&path, &runtime.runtime_config().schema.registry)
-                .expect("9.16.1.1 schema authority readmits through the runtime registry");
-        std::fs::remove_file(&path).expect("legacy fixture scratch file is removed");
-
-        assert_eq!(entries.len(), 1);
-        assert!(entries[0].needs_replay_completion());
+        std::fs::write(&path, &bytes).unwrap();
+        let host = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host);
+        let error = read_segment_entries(execution, &path).unwrap_err();
         assert_eq!(
-            entries[0].position(),
-            crate::publication::patch::data::PatchStreamPosition(1)
+            crate::tests::support::expect_durability_failure(error).class,
+            RecoveryFailureClass::UnsupportedLegacySemantics
         );
-        assert_eq!(entries[0].envelope().commit.commit_id.0, 1);
-        assert_eq!(entries[0].envelope().commit.version_id.0, 1);
-        assert_eq!(entries[0].envelope().branch_context.0, "main");
-        assert_eq!(
-            entries[0]
-                .envelope()
-                .patch
-                .authoritative_record_patches
-                .len(),
-            1
-        );
+        assert_eq!(std::fs::read(&path).unwrap(), bytes);
+        std::fs::remove_file(path).unwrap();
     }
 
     fn decode_hex(encoded: &str) -> Vec<u8> {

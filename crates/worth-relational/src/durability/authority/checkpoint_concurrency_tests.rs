@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use std::sync::mpsc::sync_channel;
 use std::time::Duration;
 
@@ -25,7 +26,9 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
     let (captured_tx, captured_rx) = sync_channel(0);
     let (resume_tx, resume_rx) = sync_channel(0);
 
+    let checkpoint_request = std::sync::Arc::clone(&host_request);
     let checkpoint_thread = std::thread::spawn(move || {
+        let execution = &worth_execution::ExecutionRequest::serial(&checkpoint_request);
         let captured = runtime
             .durability_authority()
             .capture_checkpoint_basis()
@@ -38,7 +41,7 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
             .expect("test releases checkpoint reconstruction");
         let checkpoint = runtime
             .durability_authority()
-            .finalize_captured_checkpoint(captured);
+            .finalize_captured_checkpoint(execution, captured);
         (runtime, checkpoint)
     });
 
@@ -87,9 +90,10 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
     runtime
         .settle_performed_publication(performed)
         .expect("publication settles after checkpoint completes");
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     assert_eq!(plan.tail_log.len(), 1);
     assert_eq!(plan.tail_log[0].position(), performed_position);
     assert_eq!(

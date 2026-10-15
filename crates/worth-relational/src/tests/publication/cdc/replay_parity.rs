@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::tests::support::*;
 
 #[test]
@@ -31,7 +32,10 @@ fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
 
     let runtime = persisted_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let _second = create_entity_outcome(execution, &runtime, "b");
     let _third = create_entity_outcome(execution, &runtime, "c");
 
@@ -47,9 +51,10 @@ fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
         ))
         .unwrap();
 
-    let recovery_plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -73,7 +78,10 @@ fn subscriber_stream_keeps_patch_parity_when_later_retained_envelope_is_missing(
 
     let runtime = persisted_runtime_with_test_schema();
     let _first = create_entity_outcome(execution, &runtime, "a");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let second = create_entity_outcome(execution, &runtime, "b");
     let _third = create_entity_outcome(execution, &runtime, "c");
 

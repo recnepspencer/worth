@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
@@ -82,14 +83,15 @@ fn perf_replay_recovery_matrix() {
             create_entity_outcome(execution, &runtime, "source");
             runtime
                 .durability_authority()
-                .checkpoint()
+                .checkpoint(execution)
                 .expect("checkpoint");
             let second = create_entity_outcome(execution, &runtime, "target");
             let tail_commit_id = second.commit.commit_id;
 
-            let recovery_plan = runtime.durability().recovery_plan(
-                crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-            );
+            let recovery_plan = runtime
+                .durability()
+                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+                .unwrap();
             let mut recovered = persisted_runtime_with_test_schema();
 
             recovered.performance_access().reset_counters();

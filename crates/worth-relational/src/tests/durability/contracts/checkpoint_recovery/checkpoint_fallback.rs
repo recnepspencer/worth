@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn durability_contract_corrupt_latest_checkpoint_falls_back_to_prior_valid_checkpoint() {
@@ -7,22 +8,28 @@ fn durability_contract_corrupt_latest_checkpoint_falls_back_to_prior_valid_check
 
     let runtime = persisted_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "first");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let second = create_entity_outcome(execution, &runtime, "second");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let store = runtime
         .durability()
-        .recovery_plan(
-            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-        )
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap()
         .store
         .unwrap();
     let latest_checkpoint = store.checkpoints.last().unwrap();
     std::fs::write(&latest_checkpoint.path, b"{not-json").unwrap();
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     let outcome = recovered
         .durability_recovery()

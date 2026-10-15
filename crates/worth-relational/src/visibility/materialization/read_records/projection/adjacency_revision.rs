@@ -185,11 +185,15 @@ mod tests {
 
         runtime
             .durability_authority()
-            .checkpoint()
+            .checkpoint(execution)
             .expect("checkpoint captures the structural revision");
         let recovery = runtime
             .durability()
-            .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+            .recovery_plan(
+                execution,
+                RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .expect("native recovery input admitted");
         let mut recovered = runtime_with_test_schema();
         recovered
             .durability_recovery()
