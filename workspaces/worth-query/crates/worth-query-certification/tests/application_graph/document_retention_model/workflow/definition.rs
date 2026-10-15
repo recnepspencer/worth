@@ -39,6 +39,7 @@ use super::{
 #[path = "definition/authoring.rs"]
 mod authoring;
 pub use authoring::{authoring_intent, publish_definition, retire_definition};
+#[path = "definition/discovery.rs"]
 mod discovery;
 #[path = "definition/instance.rs"]
 mod instance;

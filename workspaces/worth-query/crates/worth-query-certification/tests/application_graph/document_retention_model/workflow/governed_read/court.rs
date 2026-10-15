@@ -19,12 +19,19 @@ use worth_query_host::facade::{
     application_discovery::*,
     application_entry::*,
 };
+#[path = "court/definition.rs"]
 mod definition;
+#[path = "court/enumeration.rs"]
 mod enumeration;
+#[path = "court/history.rs"]
 mod history;
+#[path = "court/history_stimuli.rs"]
 mod history_stimuli;
+#[path = "court/provenance.rs"]
 mod provenance;
+#[path = "court/publication.rs"]
 mod publication;
+#[path = "court/reacquisition.rs"]
 mod reacquisition;
 use publication::{prepare, publish, revoke};
 

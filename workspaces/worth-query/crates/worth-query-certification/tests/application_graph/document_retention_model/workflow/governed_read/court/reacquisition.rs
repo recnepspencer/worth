@@ -11,6 +11,7 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::application_installation::{
     WorthQueryApplicationProgramRoster, WorthQueryCheckpointCapturePolicy,
 };
+#[path = "reacquisition/successors.rs"]
 mod successors;
 
 #[test]
