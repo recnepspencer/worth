@@ -1,3 +1,4 @@
+mod approval_text;
 mod membership;
 pub(in crate::domain_computation::primary_graph) use membership::recover_settled_live_membership;
 use worth_foundational::facade::AspectValue;

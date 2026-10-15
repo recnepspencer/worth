@@ -1,5 +1,9 @@
+mod field_text;
 use super::actor::encoding::FundedActorText;
+use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
+pub(in crate::domain_computation::primary_graph) use field_text::WorkflowApprovalFieldText;
 use std::collections::BTreeMap;
+use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::identity::EntityId;
@@ -48,7 +52,12 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalMeaning 
 pub(in crate::domain_computation::primary_graph) fn workflow_approval_fields(
     layout: &WorthQueryWorkflowLayout,
     meaning: &WorkflowApprovalMeaning,
-) -> BTreeMap<worth_foundational::facade::AspectFieldLocator, AspectValue> {
+    basis: &AdmittedRelationalBranchBasis,
+    admitted_text: &WorkflowApprovalFieldText,
+) -> Result<
+    BTreeMap<worth_foundational::facade::AspectFieldLocator, AspectValue>,
+    WorthQueryApplicationAttemptDenial,
+> {
     let mut fields = BTreeMap::from([
         (
             layout.approval.identity.clone(),
@@ -95,11 +104,17 @@ pub(in crate::domain_computation::primary_graph) fn workflow_approval_fields(
         ),
         (
             layout.approval.authorization_request.clone(),
-            text(&meaning.authorization_request),
+            admitted_text
+                .request
+                .field_value_for(basis)
+                .map_err(field_text::denial)?,
         ),
         (
             layout.approval.authorization_principal.clone(),
-            text(&meaning.authorization_principal),
+            admitted_text
+                .principal
+                .field_value_for(basis)
+                .map_err(field_text::denial)?,
         ),
         (
             layout.approval.capability_authority_identity.clone(),
@@ -107,15 +122,24 @@ pub(in crate::domain_computation::primary_graph) fn workflow_approval_fields(
         ),
         (
             layout.approval.authorization_lineage.clone(),
-            text(&meaning.authorization_lineage),
+            admitted_text
+                .lineage
+                .field_value_for(basis)
+                .map_err(field_text::denial)?,
         ),
         (
             layout.approval.authorization_support.clone(),
-            text(&meaning.authorization_support),
+            admitted_text
+                .support
+                .field_value_for(basis)
+                .map_err(field_text::denial)?,
         ),
         (
             layout.approval.authorization_dependencies.clone(),
-            text(&meaning.authorization_dependencies),
+            admitted_text
+                .dependencies
+                .field_value_for(basis)
+                .map_err(field_text::denial)?,
         ),
         (layout.approval.action.clone(), text(&meaning.action)),
         (layout.approval.purpose.clone(), text(&meaning.purpose)),
@@ -159,7 +183,7 @@ pub(in crate::domain_computation::primary_graph) fn workflow_approval_fields(
             AspectValue::UInt64(u64::from(entity.generation_value())),
         );
     }
-    fields
+    Ok(fields)
 }
 
 pub(in crate::domain_computation::primary_graph) fn visit_workflow_approval_facts<
@@ -167,13 +191,16 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_approval_fact
     Operation,
     Input,
     Scope,
-    Error,
 >(
     layout: &WorthQueryWorkflowLayout,
     admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
     meaning: &WorkflowApprovalMeaning,
-    mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
-) -> Result<(CreatedEntityRef, CreatedEntityRef), Error> {
+    basis: &AdmittedRelationalBranchBasis,
+    admitted_text: &WorkflowApprovalFieldText,
+    mut emit: impl FnMut(
+        WorthQueryApplicationRealizedEffect,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>,
+) -> Result<(CreatedEntityRef, CreatedEntityRef), WorthQueryApplicationAttemptDenial> {
     let transition = visit_workflow_transition_facts(
         layout,
         admitted,
@@ -186,7 +213,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_approval_fact
         kind_id: layout.approval.entity_kind,
         client_key: ClientKey::raw("approval"),
     };
-    let fields = workflow_approval_fields(layout, meaning);
+    let fields = workflow_approval_fields(layout, meaning, basis, admitted_text)?;
     emit(WorthQueryApplicationRealizedEffect::CreateEntity {
         kind: approval.kind_id,
         key: "approval".to_owned(),

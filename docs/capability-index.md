@@ -148,7 +148,7 @@ Role booleans checked in a handler, UI, or transport; treating authentication as
 
 ### Prohibition: Require different people for different duties
 
-Comparing actor ids from input in a handler. See the known gap on workflow proposers
+Comparing actor ids from input in a handler. See [recorded workflow actors](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#recorded-workflow-actors)
 
 ### Prohibition: Run a multi step process
 
@@ -156,7 +156,7 @@ A host state machine or status column that decides the next step
 
 ### Prohibition: Run a workflow step that needs no signature
 
-A dummy approval or auto-approving principal. Omitting `workflow_requirements` means exactly one approval, not none
+A dummy approval or auto-approving principal. Guarded bindings must declare workflow requirements explicitly
 
 ### Prohibition: Run a workflow step that needs a signature
 

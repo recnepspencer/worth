@@ -394,3 +394,6 @@ fn approval_rejects_assessment_evidence_after_native_source_aba() {
 
 #[path = "workflow_approval/workflow_actor_contract.rs"]
 mod workflow_actor_contract;
+
+#[path = "workflow_approval/field_text_readmission.rs"]
+mod field_text_readmission;

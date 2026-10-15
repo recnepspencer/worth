@@ -23,6 +23,9 @@ mod native;
 #[path = "workflow_approval_revalidation/support.rs"]
 mod support;
 
+#[path = "workflow_approval_revalidation/field_text.rs"]
+mod field_text;
+
 mod durable_basis;
 use durable_basis::{
     durable_approval_basis, durable_approval_basis_with_dependency_snapshot,

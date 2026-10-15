@@ -138,7 +138,17 @@ where
             &self.admission,
             &inputs.evidence,
         )?;
-        let approval_projection = projection::prepare(&layout, &meaning)?;
+        let field_basis = self.lease.product().relational_basis().clone();
+        let admitted_text = self.lease.handle().with_runtime(execution, |runtime| {
+            crate::domain_computation::primary_graph::workflow::WorkflowApprovalFieldText::admit(
+                runtime,
+                execution,
+                &field_basis,
+                &meaning,
+            )
+        })?;
+        let approval_projection =
+            projection::prepare(&layout, &meaning, &field_basis, &admitted_text)?;
         let latest = observed
             .progress_basis
             .progress()
@@ -354,6 +364,8 @@ where
             *compiled.program_revision(),
             admitted,
             meaning,
+            &field_basis,
+            &admitted_text,
             evidence_currentness,
             approval_projection,
         )?;
