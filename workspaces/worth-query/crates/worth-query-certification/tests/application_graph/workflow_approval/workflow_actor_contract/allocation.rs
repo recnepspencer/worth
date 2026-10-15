@@ -43,11 +43,23 @@ fn workflow_actor_contract_retained_wire_refuses_unfunded_storage_and_preserves_
     let refusal = original
         .retain_workflow_actor_evidence_for_test(&execution, record)
         .unwrap_err();
-    use worth_relational::facade::transactions::RelationalExecutionDenialCause;
+    use worth_query_host::facade::{
+        application_contribution::{
+            WorthQueryManagedComputationResourceDenial as Resource,
+            WorthQueryMemoryLimitLevel as Level,
+        },
+        primary_graph::{
+            WorthQueryApplicationAttemptDenialKind as Attempt,
+            WorthQueryProviderSessionDenialKind as Session,
+        },
+    };
     assert!(
-        matches!(refusal.relational_execution_cause(),
-        Some(RelationalExecutionDenialCause::PolicyMemoryExhausted { requested, admitted: 0, ancestor: 0 })
-            if requested > 0),
+        matches!(refusal.kind(),
+        Attempt::ExecutionRequest(Session::ExecutionResource {
+            denial: Resource::MemoryLimit { requested, admitted: 0, level: Level::Policy },
+            partition_identity: None,
+            policy_ancestor: Some(0),
+        }) if requested > 0),
         "the original native outer-parser admission must refuse before constructing its DTO"
     );
     assert_eq!(refusal.subject(), "workflow actor JSON payload");
