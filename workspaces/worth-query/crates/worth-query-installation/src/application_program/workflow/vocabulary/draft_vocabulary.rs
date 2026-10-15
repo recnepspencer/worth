@@ -4,7 +4,6 @@
 //! validates and binds like any other.
 
 use worth_query_declaration::facade::{
-    application_operation::ApplicationMutationBinding,
     application_program::{
         ApplicationExpressionOperandValue, ApplicationWorkflowApprovalRef,
         ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionQuery,

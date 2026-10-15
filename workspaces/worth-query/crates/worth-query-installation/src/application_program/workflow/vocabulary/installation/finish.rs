@@ -45,7 +45,7 @@ where
                 Spec::IDENTITY.as_str(),
             ));
         }
-        let support_identity = super::support_identity::derive(
+        let support_identity = super::super::support_identity::derive(
             self.program.revision(),
             Spec::IDENTITY.as_str(),
             &actor_policy,
