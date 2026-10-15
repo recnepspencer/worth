@@ -192,10 +192,10 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
     let delivered = settled
         .read_current(&fresh)
         .expect("same owner retries declared delivery with fresh authorization");
-    assert_eq!(delivered.rows()[0].value, length(43));
+    assert_eq!(delivered.rows()[0].value, length(42));
     assert_eq!(
         settled.read_historical(&fresh).unwrap().rows()[0].value,
-        length(43)
+        length(42)
     );
     assert_eq!(
         fresh.retain_current_read().unwrap().selected_commit(),

@@ -92,7 +92,8 @@ impl<D: ApplicationActionDelivery<ConsumerSchema, Binding>>
         let mut specs = ConsumerProgram::feature_specs();
         specs.retain(|spec| {
             !(spec.feature().composition_instance() == DiscoveredPlanarRoot::PATH
-                && spec.feature().identity() == PlanarSourceFeature::IDENTITY)
+                && spec.feature().identity()
+                    == <PlanarSourceFeature as ApplicationFeature<ConsumerSchema>>::IDENTITY)
         });
         specs.push(ApplicationFeatureSpec::at::<ConsumerSchema, DiscoveredPlanarRoot, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>().operation_action::<Binding, D>().finish());

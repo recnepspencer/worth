@@ -59,12 +59,14 @@ impl ApplicationProgramDefinition<S> for Program {
         let mut specs = MembershipProgram::feature_specs();
         specs.retain(|spec| {
             !(spec.feature().composition_instance() == ApplicationRootComposition::PATH
-                && spec.feature().identity() == PlanarSourceFeature::IDENTITY)
+                && spec.feature().identity()
+                    == <PlanarSourceFeature as ApplicationFeature<S>>::IDENTITY)
         });
         specs.push(ApplicationFeatureSpec::root::<S,PlanarSourceFeature>().provides::<PlanarBodyOutput>().mutation::<B>().mutation::<worth_query_topology_entry::PlanarEditBinding<S>>().operation_action::<worth_query_topology_entry::PlanarDiscoveryLinkBinding<S>,MembershipDelivery>().finish());
         specs.retain(|spec| {
             !(spec.feature().composition_instance() == Fanout::PATH
-                && spec.feature().identity() == PlanarSourceFeature::IDENTITY)
+                && spec.feature().identity()
+                    == <PlanarSourceFeature as ApplicationFeature<S>>::IDENTITY)
         });
         specs.push(
             ApplicationFeatureSpec::at::<S, Fanout, PlanarSourceFeature>()

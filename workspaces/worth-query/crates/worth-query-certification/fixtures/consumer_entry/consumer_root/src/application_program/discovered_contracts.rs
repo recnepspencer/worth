@@ -26,6 +26,7 @@ impl ApplicationDiscoveredQueryDelivery<ConsumerSchema, Binding> for Counterfeit
         }
     }
 }
+
 /// Deliberately attaches the nested root to the wrong real source occurrence.
 pub(crate) struct WrongOccurrenceProgram;
 impl ApplicationProgramDefinition<ConsumerSchema> for WrongOccurrenceProgram {
