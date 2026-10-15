@@ -33,7 +33,7 @@ impl Observer<'_> {
             .as_principal(&actor)
             .controls(BankMutationControls::new(scope.clone(), key(input.command)))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("transfer construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("transfer construction: {cause:?}"));
         let result = result.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap());
         self.last = observations();
         let expected_width = match posture {

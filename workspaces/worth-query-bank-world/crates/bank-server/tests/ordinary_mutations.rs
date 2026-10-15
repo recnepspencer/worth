@@ -62,9 +62,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
     let send = send_for(&fixture);
     for cancelled in [true, false] {
         let cancellation = WorthQueryCancellationSource::new();
-        if cancelled {
-            cancellation.cancel();
-        }
+        let capture_scope = request_scope();
         let scope = WorthQueryRequestScope::new(
             Some(if cancelled {
                 Instant::now() + Duration::from_secs(60)
@@ -79,11 +77,14 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
             .mutate(mutations::send_money(send.clone()))
             .as_principal(&owner)
             .controls(BankMutationControls::new(
-                scope.clone(),
+                capture_scope,
                 key(if cancelled { "cancelled" } else { "expired" }),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("construction: {cause:?}"));
+        if cancelled {
+            cancellation.cancel();
+        }
         let request = fixture.world.runtime.request(&owner, &scope);
         let Advance::Refused {
             operation,
@@ -111,7 +112,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
         .as_principal(&stranger)
         .controls(BankMutationControls::new(scope.clone(), key("denied")))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("construction: {cause:?}"));
     let Advance::Refused {
         operation,
         denial: Denial::Mutation(denial),
@@ -130,7 +131,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
         .as_principal(&owner)
         .controls(BankMutationControls::new(scope.clone(), key("drift")))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("construction: {cause:?}"));
     let Advance::Completed(completed) =
         operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
     else {
@@ -151,7 +152,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
         .as_principal(&owner)
         .controls(BankMutationControls::new(scope.clone(), key("drift")))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("construction: {cause:?}"));
     let Advance::Terminal(terminal) =
         operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
     else {

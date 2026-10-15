@@ -9,8 +9,8 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(super) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
-    pub(super) evidence:
+    pub(in crate::application_entry) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
+    pub(in crate::application_entry::operation) evidence:
         WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
 }
 #[must_use = "retain terminal evidence and close its remaining cleanup"]
@@ -36,7 +36,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(super) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
+    pub(in crate::application_entry) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
 }
 impl<S, I, P, A, M> WorthQueryCompletedSourceOperation<S, I, P, A, M>
 where

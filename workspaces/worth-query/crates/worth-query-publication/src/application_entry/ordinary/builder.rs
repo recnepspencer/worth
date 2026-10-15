@@ -76,7 +76,7 @@ impl<'a, 'p, 's, S: ApplicationSchema, I: ApplicationMutationIntent<S>, SourcePr
             native: self.native.preconditions(preconditions),
         }
     }
-    /// The unlanded discovered and workflow lanes retain their native phase entrances.
+    /// Only the bound workflow lane retains its issued native phase entrance.
     /// Fixed and source-only execution/recovery are unavailable on this keyed view.
     pub fn idempotency<'key>(
         self,

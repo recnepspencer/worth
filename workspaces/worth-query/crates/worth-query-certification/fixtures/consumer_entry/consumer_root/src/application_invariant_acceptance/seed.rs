@@ -14,31 +14,7 @@ pub(super) fn seed_cycles<Schema: TopologySchemaBinding>(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
 ) {
     for (prefix, offset) in [("anchor", 0), ("sibling", 20), ("remote", 40)] {
-        for (name, x, y) in [("a", 1, 1), ("b", 10, 1), ("c", 1, 10)] {
-            let key = format!("{prefix}-{name}");
-            graph
-                .bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Body::reference::<Schema>(),
-                        entity_key(&key),
-                    )
-                    .field(BodyKey::reference::<Schema>(), key)
-                    .field(Length::reference::<Schema>(), length(1))
-                    .field(PositionX::reference::<Schema>(), length(x + offset))
-                    .field(PositionY::reference::<Schema>(), length(y + offset)),
-                )
-                .expect("the complete source vertex is valid");
-        }
-        for (from, to) in [("a", "b"), ("b", "c"), ("c", "a")] {
-            graph
-                .bind_relation(WorthQueryApplicationRelationSeed::new(
-                    PlanarSuccessor::reference::<Schema>(),
-                    format!("{prefix}-{from}-to-{to}"),
-                    entity_key(&format!("{prefix}-{from}")),
-                    entity_key(&format!("{prefix}-{to}")),
-                ))
-                .expect("the source ring has one successor per vertex");
-        }
+        seed_cycle(graph, prefix, offset);
     }
     for target in ["b", "c"] {
         graph
@@ -61,6 +37,45 @@ pub(super) fn seed_cycles<Schema: TopologySchemaBinding>(
     graph
         .commit_seed_batch(phase)
         .expect("the complete bounded seed batch commits before installation finishes");
+}
+
+pub(super) fn seed_isolated_cycle<Schema: TopologySchemaBinding>(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+) {
+    seed_cycle(graph, "isolated", 60);
+    graph
+        .commit_seed_batch(phase)
+        .expect("the isolated real cycle commits during bootstrap");
+}
+
+fn seed_cycle<Schema: TopologySchemaBinding>(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    prefix: &str,
+    offset: u64,
+) {
+    for (name, x, y) in [("a", 1, 1), ("b", 10, 1), ("c", 1, 10)] {
+        let key = format!("{prefix}-{name}");
+        graph
+            .bind_entity(
+                WorthQueryApplicationEntitySeed::new(Body::reference::<Schema>(), entity_key(&key))
+                    .field(BodyKey::reference::<Schema>(), key)
+                    .field(Length::reference::<Schema>(), length(1))
+                    .field(PositionX::reference::<Schema>(), length(x + offset))
+                    .field(PositionY::reference::<Schema>(), length(y + offset)),
+            )
+            .expect("the complete source vertex is valid");
+    }
+    for (from, to) in [("a", "b"), ("b", "c"), ("c", "a")] {
+        graph
+            .bind_relation(WorthQueryApplicationRelationSeed::new(
+                PlanarSuccessor::reference::<Schema>(),
+                format!("{prefix}-{from}-to-{to}"),
+                entity_key(&format!("{prefix}-{from}")),
+                entity_key(&format!("{prefix}-{to}")),
+            ))
+            .expect("the source ring has one successor per vertex");
+    }
 }
 
 fn entity_key<Schema: TopologySchemaBinding>(

@@ -149,7 +149,7 @@ fn release(
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         source_operation.advance(&source_request)
     }
 }
@@ -241,9 +241,7 @@ fn assert_release_witness_drift(
                     (*source_key).clone(),
                 ))
                 .retain_operation()
-                .unwrap_or_else(|(_, cause)| {
-                    panic!("exact declared estate construction: {cause:?}")
-                });
+                .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
             let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
                 source_terminal,
             ) = source_operation.advance(&source_request)

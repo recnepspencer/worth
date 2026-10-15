@@ -21,7 +21,7 @@ pub(super) fn fund_opening(
             key("opening-funding"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared retained money: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared retained money: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
         source.advance(&request, std::num::NonZeroUsize::new(128).unwrap())
     else {
@@ -62,7 +62,7 @@ pub(super) fn reverse_deposit(
         .as_principal(&teller)
         .controls(BankMutationControls::new(scope.clone(), key("reverse")))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared retained money: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared retained money: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
         source.advance(&request, std::num::NonZeroUsize::new(128).unwrap())
     else {

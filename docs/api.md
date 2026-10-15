@@ -155,11 +155,10 @@ The ordinary builder has no manual execution, preparation or recovery methods.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// Illustrative: not compiled.
 let operation = request.mutate(intent)
     .without_source() // only a declaration-authorized no-source binding
     .preconditions(original_conditions)
-    .idempotency_owned(key)
+    .idempotency_owned(key)?
     .retain_operation::<Program, Action>(&application)?;
 let next = operation.advance(&fresh_request);
 ```
@@ -174,12 +173,12 @@ Close can refuse and returns the complete remaining owner. See
 #### Advanced native entrances
 
 Use the [ordinary owning entry](build-an-application.md#53-execute-through-the-program)
-for fixed and source-only actions. `request.advanced().mutate(intent)` exposes
+for fixed, discovered, source-only and bound workflow actions. `request.advanced().mutate(intent)` exposes
 current native execute, prepare and recovery controls; `application_entry::advanced`
 contains their types. Fixed output start and registered recovery also require
 `request.advanced()`. Program-less runtime installation is advanced.
-Discovered and bound workflow native entrances remain ordinary until their Phase B
-and Phase C adapters land; no consumer retry engine should replace those owners.
+Discovered and bound workflow actions retain their original owning operation.
+Manual execute, prepare and recovery calls are explicit advanced native controls.
 
 ### 3.3 Runnable examples
 

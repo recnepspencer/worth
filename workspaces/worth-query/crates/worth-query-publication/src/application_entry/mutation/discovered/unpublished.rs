@@ -64,6 +64,41 @@ where
         }
     }
 
+    pub(in crate::application_entry) fn performed_mut(
+        &mut self,
+    ) -> Option<&mut WorthQueryManagedApplicationRecoveryPerformed> {
+        match &mut self.phase {
+            DiscoveredRecoveryPhase::Performed { outcome, .. } => Some(outcome),
+            DiscoveredRecoveryPhase::Unpublished(_) => None,
+        }
+    }
+    pub(in crate::application_entry) fn take_prior_cleanup(
+        &mut self,
+    ) -> Vec<WorthQueryProductUnpublishedRecoveryReleaseFailure> {
+        std::mem::take(&mut self.prior_cleanup)
+    }
+    /// The actual original carrier determines whether promotion remains possible.
+    pub fn recovery_posture(
+        &self,
+    ) -> crate::application_entry::WorthQueryRequiredOutputRecoveryPosture {
+        use crate::application_entry::WorthQueryRequiredOutputRecoveryPosture as Posture;
+        match &self.phase {
+            DiscoveredRecoveryPhase::Performed {
+                carrier: RecoveredCarrier::Unavailable,
+                ..
+            } => Posture::Terminal,
+            DiscoveredRecoveryPhase::Performed {
+                carrier: RecoveredCarrier::Retained(carrier),
+                ..
+            } if !carrier.has_original_delivery() => Posture::Terminal,
+            DiscoveredRecoveryPhase::Unpublished(_)
+            | DiscoveredRecoveryPhase::Performed {
+                carrier: RecoveredCarrier::Retained(_),
+                ..
+            } => Posture::Retryable,
+        }
+    }
+
     pub fn initial_cause(&self) -> ProductUnpublishedCause {
         self.initial_cause
     }

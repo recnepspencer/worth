@@ -26,7 +26,7 @@ pub(super) fn construct(
                     account,
                     MoneyCustody::Deposit(DepositCustody::Active(operation)),
                 ),
-                Err(_) => return Err(denial(BankHttpDenialKind::InternalDenied)),
+                Err(refusal) => return Err(super::construction_denial::construction(refusal)),
             }
         }
         AdmittedBankHttpMutation::Withdraw(input) => {
@@ -41,7 +41,7 @@ pub(super) fn construct(
                     account,
                     MoneyCustody::Withdraw(WithdrawalCustody::Active(operation)),
                 ),
-                Err(_) => return Err(denial(BankHttpDenialKind::InternalDenied)),
+                Err(refusal) => return Err(super::construction_denial::construction(refusal)),
             }
         }
         AdmittedBankHttpMutation::SendMoney(input, expected_revision, expected_status) => {
@@ -71,7 +71,7 @@ pub(super) fn construct(
                     account,
                     MoneyCustody::SendMoney(SendMoneyCustody::Active(operation)),
                 ),
-                Err(_) => return Err(denial(BankHttpDenialKind::InternalDenied)),
+                Err(refusal) => return Err(super::construction_denial::construction(refusal)),
             }
         }
     };

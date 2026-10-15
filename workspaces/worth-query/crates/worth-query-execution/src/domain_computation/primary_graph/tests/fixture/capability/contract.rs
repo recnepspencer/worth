@@ -22,7 +22,8 @@ use worth_query_declaration::facade::{
 };
 
 use super::super::{
-    Account, AccountLabel, AccountOwner, AccountStatus, IdentityExecutionSchema, Principal,
+    Account, AccountIdentity, AccountLabel, AccountOwner, AccountStatus, IdentityExecutionSchema,
+    Principal,
 };
 use super::declaration::*;
 
@@ -172,6 +173,10 @@ fn install_capability_operations(
                 .finish(),
         )
         .operation_projection_work_budget(CapabilityTouchOperation::reference(), 32)
+        .operation_read_field(
+            CapabilityTouchOperation::reference(),
+            AccountIdentity::reference(),
+        )
         .operation_read_field(
             CapabilityTouchOperation::reference(),
             AccountLabel::reference(),

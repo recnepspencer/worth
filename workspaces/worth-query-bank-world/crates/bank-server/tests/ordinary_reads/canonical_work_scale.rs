@@ -81,7 +81,7 @@ fn guarded_candidate_fanout_is_visible_only_as_closed_public_work() {
                 BankIdempotencyKey::new(format!("candidate-scale-{ordinal}")).unwrap(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared initiation: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("declared initiation: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request)

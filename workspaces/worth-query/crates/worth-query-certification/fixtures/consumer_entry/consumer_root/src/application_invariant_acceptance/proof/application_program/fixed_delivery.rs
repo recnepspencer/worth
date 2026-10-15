@@ -29,6 +29,7 @@ macro_rules! settle {
                 .mutate(input)
                 .expect_source(source)
                 .idempotency_owned($key)
+                .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
                 .retain_operation::<$program, $action>(&$world.application)
                 .unwrap_or_else(|(_, denial)| panic!("construction: {denial:?}")),
         );
@@ -79,7 +80,17 @@ fn fixed_delivery_finite_retry_unrelated_progress_and_consumed_fact_history() {
         .selected_commit()
         .clone();
     let one = NonZeroUsize::new(1).unwrap();
-    let policy = WorthQueryOperationDeliveryPolicy::currentness(NonZeroUsize::new(4096).unwrap());
+    let policy = WorthQueryOperationDeliveryPolicy::currentness(
+        NonZeroUsize::new(
+            world
+                .application
+                .runtime()
+                .output_demand_resource_profile()
+                .limits()
+                .source_currentness_work(),
+        )
+        .unwrap(),
+    );
     assert!(matches!(
         settled.read_current_with_policy(
             &request,
@@ -212,7 +223,17 @@ fn fixed_delivery_no_projection_settles_real_required_outputs() {
     let observation = settled
         .deliver_current(
             &request,
-            WorthQueryOperationDeliveryPolicy::currentness(NonZeroUsize::new(4096).unwrap()),
+            WorthQueryOperationDeliveryPolicy::currentness(
+                NonZeroUsize::new(
+                    world
+                        .application
+                        .runtime()
+                        .output_demand_resource_profile()
+                        .limits()
+                        .source_currentness_work(),
+                )
+                .unwrap(),
+            ),
         )
         .unwrap();
     assert_eq!(

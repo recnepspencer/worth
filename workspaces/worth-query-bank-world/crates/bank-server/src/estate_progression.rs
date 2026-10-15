@@ -42,9 +42,10 @@ pub use projection_denial::{
 };
 pub use recognize_executor::BankExecutorRecognitionProjectionDenial;
 pub use recovery_types::{
-    BankCommitRecoveryHandle, BankRecoveryClaimStatus, BankRecoveryDurability,
-    BankRecoveryExpiryDecision, BankRecoveryExpiryEvaluation, BankRecoveryIdempotencyResolution,
-    BankRecoveryInspection, BankRecoveryPosture, BankRecoverySafeRetryDenial,
-    BankRecoverySafeRetryReceipt, BankRecoverySupportTruth, BankRecoveryTransitionReceipt,
+    BankCommitRecoveryHandle, BankRecoveryClaimStatus, BankRecoveryDisposalDenial,
+    BankRecoveryDisposalReceipt, BankRecoveryDurability, BankRecoveryExpiryDecision,
+    BankRecoveryExpiryEvaluation, BankRecoveryIdempotencyResolution, BankRecoveryInspection,
+    BankRecoveryPosture, BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt,
+    BankRecoverySupportTruth, BankRecoveryTransitionReceipt,
 };
 pub use release_estate::BankEstateReleaseProjectionDenial;

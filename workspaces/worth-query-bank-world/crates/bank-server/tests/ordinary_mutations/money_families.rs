@@ -17,7 +17,7 @@ pub(super) fn exercise(fixture: &fixture::OrdinaryReadFixture) {
             .as_principal(&teller)
             .controls(BankMutationControls::new(scope.clone(), key("deposit")))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("money construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("money construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
@@ -53,7 +53,7 @@ pub(super) fn exercise(fixture: &fixture::OrdinaryReadFixture) {
             .as_principal(&teller)
             .controls(BankMutationControls::new(scope.clone(), key("withdraw")))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("money construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("money construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
@@ -89,7 +89,7 @@ pub(super) fn exercise(fixture: &fixture::OrdinaryReadFixture) {
             .as_principal(&owner)
             .controls(BankMutationControls::new(scope.clone(), key("send")))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("money construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("money construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
@@ -124,7 +124,7 @@ pub(super) fn exercise(fixture: &fixture::OrdinaryReadFixture) {
         .as_principal(&owner)
         .controls(BankMutationControls::new(scope.clone(), key("send")))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("retry construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("retry construction: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(retry) =
         retry.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
     else {

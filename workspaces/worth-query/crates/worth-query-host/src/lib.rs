@@ -330,3 +330,6 @@ mod workflow_owner_contract;
 mod discovered_currentness_contract;
 
 mod workflow_actor_contract;
+mod funded_input_contract;
+
+mod cutover_contract;

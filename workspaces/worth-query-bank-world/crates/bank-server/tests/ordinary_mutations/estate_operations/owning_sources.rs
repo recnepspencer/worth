@@ -30,7 +30,7 @@ fn owning_freeze_partial_fresh_permission_recovery_and_issuer_cleanup() {
             BankIdempotencyKey::new("owning-freeze-partial").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("exact native construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("exact native construction: {cause:?}"));
     fixture.world.runtime.fail_next_durable_append_for_test();
     let request = fixture.world.runtime.request(&specialist, &scope);
     let Advance::Progress(source) = source.advance(&request) else {
@@ -110,7 +110,7 @@ fn owning_freeze_partial_fresh_permission_recovery_and_issuer_cleanup() {
             BankIdempotencyKey::new("owning-freeze-partial").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("description is not permission: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("description is not permission: {cause:?}"));
     let Advance::Refused {
         operation: _retry_custody,
         denial:
@@ -140,7 +140,7 @@ fn completed_source_refused_close_preserves_original_performed_change_witness() 
             BankIdempotencyKey::new("owning-freeze-witness").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("exact construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("exact construction: {cause:?}"));
     let Advance::Completed(done) = source.advance(&request) else {
         panic!("fresh native completion")
     };

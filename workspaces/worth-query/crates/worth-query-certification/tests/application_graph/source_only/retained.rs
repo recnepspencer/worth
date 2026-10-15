@@ -60,6 +60,7 @@ pub(super) fn operation<'a>(
             ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
         ))
         .idempotency_owned(key)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<RetainedProgram, Action>(host)
         .unwrap_or_else(|(_, denial)| panic!("retained declaration: {denial:?}"))
 }

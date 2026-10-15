@@ -111,7 +111,7 @@ async fn owning_deposit_partial_lost_reply_fresh_recovery_history_and_close() {
             bank_domain::proposals::BankIdempotencyKey::new("later19").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, denial)| panic!("later declaration: {denial:?}"));
+        .unwrap_or_else(|denial| panic!("later declaration: {denial:?}"));
     let request = application.runtime.request(&principal, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         completed,

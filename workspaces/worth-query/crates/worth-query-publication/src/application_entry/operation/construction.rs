@@ -9,6 +9,7 @@ pub enum WorthQueryOperationConstructionDenial {
     Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     UndeclaredRoot,
     RequiredOutputSource,
+    OutputSource(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
     ForeignRuntime,
     Query(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
 }
@@ -23,26 +24,45 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
         WorthQueryMutationSourcePrepared,
     >
 {
+    /// Freezes one typed payload under this initiating request's native resources.
+    /// Refusal returns the entire original builder and owned key before any
+    /// business effect or workflow-slot transfer. Retry requires a fresh opening.
+    /// Shared encoded inputs keep this payload's charge through their last owner;
+    /// nested caller Clone heaps and Arc metadata are outside that native quote.
     pub fn idempotency_owned(
         self,
         key: <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
-    ) -> WorthQueryOperationDescription<Schema, Intent>
+    ) -> Result<
+        WorthQueryOperationDescription<Schema, Intent>,
+        (
+            Self,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
+            super::WorthQueryOperationInputCaptureDenial,
+        ),
+    >
     where
-        <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone,
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     {
+        use super::WorthQueryOperationInputCaptureDenial as Denial;
+        let runtime = self.native.application;
+        let captured = runtime.with_application_advancement(self.native.scope, |phase| {
+            runtime.capture_operation_input_in_advancement::<<Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding>(
+                &phase, &worth_query_execution::publication_boundary::program_publication_access(),
+                self.native.scope, self.native.intent.input())
+        }).map_err(Denial::Execution).and_then(|result| result);
+        let encoded_input = match captured {
+            Ok(input) => input,
+            Err(denial) => return Err((self, key, denial)),
+        };
         let self_native = self.native;
-        let encoded_input =
-            worth_query_declaration::facade::application_operation::ApplicationEncodedInput::encode(
-                self_native.intent.input().clone(),
-            );
-        WorthQueryOperationDescription {
+        Ok(WorthQueryOperationDescription {
             intent: self_native.intent,
-            encoded_input,
+            encoded_input: Ok(encoded_input),
             key,
             preconditions: self_native.preconditions,
             source: self_native.source,
             branch: self_native.branch,
-        }
+        })
     }
 }
 

@@ -37,6 +37,7 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency_owned(10_091)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
     let first = match first.advance(&request) {
@@ -72,6 +73,7 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency_owned(10_091)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("replay construction: {cause:?}"));
     let replay = match replay.advance(&request) {
@@ -191,6 +193,7 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         .mutate(input.clone())
         .expect_source(source)
         .idempotency_owned(10_091)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("historical construction: {cause:?}"));
     let historical = match historical.advance(&request) {
@@ -259,6 +262,7 @@ fn fixed_unavailable_registration_returns_historical_evidence() {
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency_owned(10_091)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
     let first = match first.advance(&request) {
@@ -280,6 +284,7 @@ fn fixed_unavailable_registration_returns_historical_evidence() {
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency_owned(10_091)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("replay construction: {cause:?}"));
     let replay = match replay.advance(&request) {
@@ -336,3 +341,5 @@ fn fixed_unavailable_registration_returns_historical_evidence() {
 }
 
 mod supersession;
+
+mod historical;

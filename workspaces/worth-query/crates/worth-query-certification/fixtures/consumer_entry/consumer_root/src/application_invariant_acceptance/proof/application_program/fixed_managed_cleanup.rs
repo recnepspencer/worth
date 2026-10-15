@@ -60,6 +60,7 @@ fn terminal_court(interference: Interference) {
         .mutate(input.clone())
         .expect_source(source.observed_sources()[0].clone())
         .idempotency_owned(10_641)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("descriptor: {cause:?}"));
     drop(source);
@@ -261,6 +262,7 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
         .mutate(input.clone())
         .expect_source(source.observed_sources()[0].clone())
         .idempotency_owned(10_649)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("descriptor: {cause:?}"));
     let operation = match operation.advance(&request) {

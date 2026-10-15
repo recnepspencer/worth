@@ -92,3 +92,6 @@ mod native_staging_allocation;
 
 #[path = "support/process_deadline.rs"]
 mod process_deadline;
+
+#[path = "application_graph/workflow_owning.rs"]
+mod workflow_owning;

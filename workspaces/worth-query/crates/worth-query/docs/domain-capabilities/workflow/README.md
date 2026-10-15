@@ -1,20 +1,10 @@
 # Workflow Guides
 
-Ordinary fixed and source-only actions use the [owning entry](../../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
-Each advance accepts fresh authority and delegates one admitted native phase.
-Provider managed runs remain the resource/execution owners; application ownership
-adds no polling, budgets or second scheduler. Delivery and cleanup remain separate;
-refusal retains custody. Bound workflow execution keeps its native funnel until
-Phase C; discovered ownership lands in Phase B.
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`.
 
+For ordinary workflow operation and assessment owners, start with [Operations](../../foundations/workflows.md#operations).
 
-> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
-
-These guides show how real Query tasks fit together across multiple public
-surfaces.
-
-Use this section when you already know the feature pages exist, but you want a
-short path for one job instead of reading each surface in isolation.
+These guides show how real Query tasks fit together across multiple public surfaces.
 
 ## Table Of Contents
 

@@ -1,11 +1,17 @@
 # Execution Resource Admission And Managed Runs
 
-Ordinary fixed and source-only actions use the [owning entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
+Ordinary fixed, discovered, source-only and guarded workflow actions use the [owning entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
 Each advance accepts fresh authority and delegates one admitted native phase.
 Provider managed runs remain the resource/execution owners; application ownership
 adds no polling, budgets or second scheduler. Delivery and cleanup remain separate;
-refusal retains custody. Bound workflow execution keeps its native funnel until
-Phase C; discovered ownership lands in Phase B.
+refusal retains custody. Guarded no-output workflows retain their original issued
+operation with `for_workflow_operation(..)?.retain_operation(..)` and advance
+under fresh authority. Assessment owns a separate admitted demand. Native workflow
+execution is explicit advanced control.
+
+`WorthQueryOperationDeliveryPolicy` only narrows installed host ceilings, including
+`source_currentness_work`; it cannot enlarge them or supply an unlimited fallback.
+Omitting a narrower policy still uses the installed finite ceiling.
 
 
 ## What This Feature Is

@@ -44,7 +44,10 @@ fn run() {
         application_contribution::WorthQueryAdvancementDenial as Denial,
         application_entry::WorthQueryApplicationOutputDemandDenial as OutputDenial,
     };
-    let ceiling = CALLER_WORK;
+    // Retry-only calibration: first publication and refresh fit; two actual
+    // million-unit producer checkpoints still cannot fit this finite caller.
+    let ceiling = 2 * ENTRY_WORK as u64 - 1;
+    assert!(ceiling < 2 * ENTRY_WORK as u64);
     bound(None);
     let application = application_fixture::application();
     let (scope, principal) = authenticate(&application);
@@ -73,6 +76,7 @@ fn run() {
     let requests = reports();
     let attempts = passes();
     let charged = requests[0].as_ref().unwrap().charged_work();
+    eprintln!("finite retry: ceiling={ceiling}; charged={charged}; passes={attempts:?}; openings={}; producer_runs={}", requests.len(), room().len());
     assert!(charged <= ceiling);
     let diagnostics = {
         let runs = room();

@@ -40,7 +40,7 @@ fn public_query_progression_opens_the_exact_verified_estate_case() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             source_completed,
         ) = source_operation.advance(&source_request)
@@ -97,7 +97,7 @@ fn assert_equivalent_retry(
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             source_completed,
         ) = source_operation.advance(&source_request)
@@ -141,7 +141,7 @@ fn assert_intent_drift(
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
             source_terminal,
         ) = source_operation.advance(&source_request)
@@ -181,7 +181,7 @@ fn foreign_verified_notice_reaches_projection_but_cannot_open_the_case() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: source_custody, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = source_operation.advance(&source_request) else { panic!("native pre-effect projection refusal") };
         let cause = cause
             .downcast::<bank_server::BankEstateCaseOpeningProjectionDenial>()
@@ -235,9 +235,7 @@ fn only_a_verified_notice_may_enter_case_opening() {
                     (*source_key).clone(),
                 ))
                 .retain_operation()
-                .unwrap_or_else(|(_, cause)| {
-                    panic!("exact declared estate construction: {cause:?}")
-                });
+                .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
             let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: source_custody, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = source_operation.advance(&source_request) else { panic!("native pre-effect projection refusal") };
             let cause = cause
                 .downcast::<bank_server::BankEstateCaseOpeningProjectionDenial>()
@@ -293,9 +291,7 @@ fn only_a_pending_case_may_enter_case_opening() {
                     (*source_key).clone(),
                 ))
                 .retain_operation()
-                .unwrap_or_else(|(_, cause)| {
-                    panic!("exact declared estate construction: {cause:?}")
-                });
+                .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
             let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: source_custody, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = source_operation.advance(&source_request) else { panic!("native pre-effect projection refusal") };
             let cause = cause
                 .downcast::<bank_server::BankEstateCaseOpeningProjectionDenial>()

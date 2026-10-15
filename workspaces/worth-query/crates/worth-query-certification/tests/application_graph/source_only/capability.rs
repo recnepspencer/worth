@@ -17,3 +17,6 @@ mod readback;
 mod recovery;
 #[path = "capability/schema.rs"]
 mod schema;
+
+#[path = "capability/workflow.rs"]
+mod workflow;

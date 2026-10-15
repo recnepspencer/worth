@@ -24,6 +24,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -68,6 +69,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         1
     );
     let mut recovered = request
+        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &receipt,
@@ -113,6 +115,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn n
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -154,6 +157,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn n
         )
         .expect("an ordinary edit advances the discovered source");
     let mut recovered = request
+        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &receipt,
@@ -213,6 +217,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn f
         .observed_sources()[0]
         .clone();
     let outcome = owner_request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -245,6 +250,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn f
         .observed_sources()[0]
         .clone();
     let other_outcome = other_request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -262,6 +268,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn f
     };
     drop(other_performed);
     let denial = other_request
+        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &other.application,
             &receipt,
@@ -306,6 +313,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -352,6 +360,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
         "interrupted output work keeps one recoverable source publication"
     );
     let mut recovered = request
+        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &receipt,

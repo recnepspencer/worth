@@ -115,7 +115,7 @@ fn permission_revocation_closes_before_another_payload_is_delivered() {
             BankIdempotencyKey::new("revoke-live-viewer").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared source action: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
     ) = operation.advance(&revoked_request)

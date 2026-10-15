@@ -7,30 +7,37 @@ use crate::domain_computation::authorization::{
 pub(in crate::domain_computation) enum WorthQueryOperationAuthorizationBasis<Input> {
     Conventional,
     Capability {
-        input: std::sync::Arc<Input>,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
     },
     DelegationActivation {
-        input: std::sync::Arc<Input>,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryDelegationActivationBinding,
     },
     CapabilityRevocation {
-        input: std::sync::Arc<Input>,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryCapabilityRevocationBinding,
     },
     ElevationRequest {
-        input: std::sync::Arc<Input>,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryElevationRequestBinding,
     },
     ElevationApproval {
-        input: std::sync::Arc<Input>,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryElevationApprovalBinding,
     },
     ElevationClose {
-        input: std::sync::Arc<Input>,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryElevationCloseBinding,
     },
     MandatoryReview {
-        input: std::sync::Arc<Input>,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryMandatoryReviewBinding,
     },
 }

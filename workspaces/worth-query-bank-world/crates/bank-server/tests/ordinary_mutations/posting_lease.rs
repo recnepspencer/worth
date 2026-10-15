@@ -47,6 +47,17 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
             .minor_units()
     };
     let balance_before = balance();
+    let outcome = fixture
+        .world
+        .runtime
+        .mutate(mutations::send_money(send_for(&fixture)))
+        .as_principal(&owner)
+        .controls(BankMutationControls::new(
+            scope.clone(),
+            key("posting-lease"),
+        ))
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("transfer construction: {cause:?}"));
     reports();
     place(if leased {
         Placement::Leased(NonZeroUsize::MIN)
@@ -59,17 +70,6 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     if cancel {
         source.cancel();
     }
-    let outcome = fixture
-        .world
-        .runtime
-        .mutate(mutations::send_money(send_for(&fixture)))
-        .as_principal(&owner)
-        .controls(BankMutationControls::new(
-            scope.clone(),
-            key("posting-lease"),
-        ))
-        .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("transfer construction: {cause:?}"));
     let request = fixture.world.runtime.request(&owner, &scope);
     let outcome = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap());
     let work = reports()

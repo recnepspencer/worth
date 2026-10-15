@@ -157,6 +157,7 @@ impl WorthUiStatusSourceOwner {
             .map_err(|error| WorthUiStatusOwnerError::LiveOpen(format!("{error:?}")))?;
         let result = (|| {
             let outcome = request
+                .advanced()
                 .mutate(record.clone())
                 .expect_source(source.clone())
                 .idempotency(&record.revision())

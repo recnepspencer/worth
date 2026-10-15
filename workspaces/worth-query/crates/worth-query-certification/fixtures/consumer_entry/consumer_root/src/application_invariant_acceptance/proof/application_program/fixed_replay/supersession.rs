@@ -28,6 +28,7 @@ fn fixed_superseded_registration_is_terminal_historical_evidence() {
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency_owned(10_091)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
     let first = match first.advance(&request) {
@@ -60,6 +61,7 @@ fn fixed_superseded_registration_is_terminal_historical_evidence() {
         })
         .expect_source(current)
         .idempotency_owned(10_092)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("successor construction: {cause:?}"));
     let newer = match newer.advance(&request) {
@@ -74,6 +76,7 @@ fn fixed_superseded_registration_is_terminal_historical_evidence() {
         .mutate(input.clone())
         .expect_source(source)
         .idempotency_owned(10_091)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("historical construction: {cause:?}"));
     let replay = match replay.advance(&request) {

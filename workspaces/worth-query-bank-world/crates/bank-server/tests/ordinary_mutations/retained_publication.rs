@@ -42,7 +42,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
             key("retained-deposit"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
     let Advance::Completed(performed) = performed.advance(&deposit_request, history) else {
         panic!("fresh retained deposit")
     };
@@ -100,7 +100,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
             key("later-deposit"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("later construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("later construction: {cause:?}"));
     let Advance::Completed(later) = later.advance(&deposit_request, history) else {
         panic!("later fresh deposit")
     };
@@ -142,7 +142,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
             key("retained-deposit"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("replay construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("replay construction: {cause:?}"));
     let Advance::Progress(replay) = replay.advance(&deposit_request, history) else {
         panic!("native retained replay pending")
     };
@@ -185,7 +185,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
             key("retained-revoke-viewer"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared revoke: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared revoke: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
         operation.advance(&request)
     else {

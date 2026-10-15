@@ -130,7 +130,7 @@ fn public_transfer_posts_thirty_once_from_one_hundred_to_zero() {
                 key("transfer-thirty"),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("transfer construction: {cause:?}"))
+            .unwrap_or_else(|cause| panic!("transfer construction: {cause:?}"))
     };
     let scope = request_scope();
     let request = world.runtime.request(&owner, &scope);

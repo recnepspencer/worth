@@ -1,13 +1,14 @@
 //! One operation input together with the identity encoded from it.
 
+use crate::native_input_capture::NativeImmutableInput;
 use serde::Serialize;
 
-use super::{input_identity, ApplicationCanonicalWork};
+use super::{input_identity, ApplicationCanonicalWork, ApplicationSharedInput};
 use crate::application_schema::{ApplicationStructuredValueBinding, ApplicationValueEncodeDenial};
 
 /// An operation input and its canonical identity, scoped to `InputBinding`.
 ///
-/// Only [`encode`](Self::encode) derives one, and
+/// [`encode`](Self::encode) and the sealed native integration derive one, and
 /// [`ApplicationMutationIdentities::encoded_input`](super::ApplicationMutationIdentities::encoded_input)
 /// copies one out of a request that already encoded its input, so the identity
 /// always describes the value it travels with and the input type in the scope
@@ -25,7 +26,7 @@ pub struct ApplicationEncodedInput<InputBinding>
 where
     InputBinding: ApplicationStructuredValueBinding,
 {
-    input: std::sync::Arc<InputBinding::Value>,
+    input: ApplicationSharedInput<InputBinding::Value>,
     identity: [u8; 32],
     work: ApplicationCanonicalWork,
 }
@@ -45,7 +46,22 @@ where
     pub fn encode(input: InputBinding::Value) -> Result<Self, ApplicationValueEncodeDenial> {
         let derived = input_identity::<InputBinding>(&input)?;
         Ok(Self {
-            input: std::sync::Arc::new(input),
+            input: ApplicationSharedInput::from_value(input),
+            identity: derived.identity(),
+            work: derived.work(),
+        })
+    }
+    /// Derives identity/work from this SAME immutable owner and retains it.
+    /// No identity, work or allocation policy is supplied by the caller.
+    pub(crate) fn from_native_owned<Owner>(
+        owner: Owner,
+    ) -> Result<Self, ApplicationValueEncodeDenial>
+    where
+        Owner: NativeImmutableInput<InputBinding::Value> + Send + Sync + 'static,
+    {
+        let derived = input_identity::<InputBinding>(owner.value())?;
+        Ok(Self {
+            input: ApplicationSharedInput::from_owned(owner),
             identity: derived.identity(),
             work: derived.work(),
         })
@@ -58,7 +74,7 @@ where
 {
     pub(super) fn reported_elsewhere(input: InputBinding::Value, identity: [u8; 32]) -> Self {
         Self {
-            input: std::sync::Arc::new(input),
+            input: ApplicationSharedInput::from_value(input),
             identity,
             work: ApplicationCanonicalWork::none(),
         }
@@ -80,7 +96,7 @@ where
     }
 
     /// Gives native admission shared immutable custody of the encoded input.
-    pub fn into_shared_input(self) -> std::sync::Arc<InputBinding::Value> {
+    pub fn into_shared_input(self) -> ApplicationSharedInput<InputBinding::Value> {
         self.input
     }
 }
@@ -91,7 +107,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            input: std::sync::Arc::clone(&self.input),
+            input: self.input.clone(),
             identity: self.identity,
             work: self.work,
         }

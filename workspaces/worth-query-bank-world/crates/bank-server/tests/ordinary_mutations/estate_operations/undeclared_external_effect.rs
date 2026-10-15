@@ -46,7 +46,7 @@ fn an_undeclared_external_effect_costs_no_outbox_and_no_dispatch() {
             BankIdempotencyKey::new("undeclared-effect-send").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
     let scope = request_scope();
     let request = fixture.world.runtime.request(&owner, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(

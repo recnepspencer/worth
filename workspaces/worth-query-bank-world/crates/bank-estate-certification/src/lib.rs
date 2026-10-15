@@ -21,3 +21,5 @@ pub use estate_commands::{
 pub use estate_queries::{
     exercise_emergency_estate_queries, exercise_ordinary_estate_queries, EmergencyEstateQueryInputs,
 };
+
+mod cutover_contract;

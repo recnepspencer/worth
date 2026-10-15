@@ -52,6 +52,7 @@ fn source_only_product_stale_terminal_preserves_original_meaning_and_close() {
                 ),
         )
         .idempotency_owned(0x9176_6019)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<SourceOnlyRetentionProgram, RetentionAction>(&host)
         .unwrap_or_else(|(_, cause)| panic!("original descriptor: {cause:?}"));
     drop(request);

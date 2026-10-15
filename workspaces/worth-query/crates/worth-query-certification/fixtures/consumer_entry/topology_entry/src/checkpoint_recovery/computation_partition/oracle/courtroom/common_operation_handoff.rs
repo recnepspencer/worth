@@ -54,6 +54,7 @@ fn common_operation_handoff_borrows_capability_preconditions_and_cleanup() {
         .without_source()
         .preconditions(conditions)
         .idempotency_owned(0x9176_4001)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<OracleProgram, CorrectEntryAction>(&application)
         .unwrap_or_else(|(_, denial)| panic!("exact source completion: {denial:?}"));
     let wrong = request
@@ -68,6 +69,7 @@ fn common_operation_handoff_borrows_capability_preconditions_and_cleanup() {
             ApplicationEncodedScalarValue::try_new("wrong-original-fact".to_owned()).unwrap(),
         ))
         .idempotency_owned(0x9176_4003)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<OracleProgram, CorrectEntryAction>(&application)
         .unwrap_or_else(|(_, denial)| {
             panic!("wrong fact is a native admission question: {denial:?}")
@@ -169,6 +171,7 @@ fn common_operation_handoff_retains_actual_commit_observation() {
         .mutate(edit)
         .without_source()
         .idempotency_owned(0x9176_4002)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<OracleProgram, super::super::source_delivery::RetainedEntryAction>(
             &application,
         )
@@ -221,6 +224,7 @@ fn common_operation_handoff_completes_source_without_retained_observation() {
             ApplicationEncodedScalarValue::try_new(SCOPE.to_owned()).unwrap(),
         ))
         .idempotency_owned(0x9176_4004)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<OracleProgram, CorrectEntryAction>(&application)
         .unwrap_or_else(|(_, denial)| panic!("source completion constructor: {denial:?}"));
     use worth_query_host::facade::primary_graph::{

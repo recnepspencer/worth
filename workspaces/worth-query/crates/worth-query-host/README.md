@@ -79,7 +79,7 @@ admission or a selected World between executions.
 
 Install a program and declare the exact typed action occurrence and its delivery.
 `request.mutate(intent)` returns `WorthQueryOperationBuilder`; it exposes original
-source preparation, preconditions and `idempotency_owned(key)`, followed by
+source preparation, preconditions and fallible `idempotency_owned(key)`, followed by
 `retain_operation::<Program, Action>(&runtime)`. Fixed and source-only callers
 cannot execute, prepare or recover through that builder or its borrowed-key view.
 The selected action carries composition instance, feature, binding and delivery;
@@ -112,21 +112,29 @@ The real result-set court calls the compiled capture with nondefault preconditio
 an actual post-effect append failure. It reads the resulting source and outputs
 independently after native recovery. No original intent clone is required per pump.
 
-### Discovered native entrance until Phase B
+### Owning discovered delivery and deliberate native control
 
-The discovered owner lands in Phase B. Its current typed native entrance remains
-ordinary for that lane; do not build a consumer continuation around it.
+Ordinary discovered actions use the same `retain_operation::<Program, Action>`
+entry with a declared discovered delivery. Keep the returned move-only operation
+on progress and refusal and supply fresh authority on each `advance`. Native
+partial recovery, committed-retention retry, registration and fanout stay inside
+that owner. A settled owner checks all original discovery facts and every output
+settlement at the same retained observation and phase as the declared scalar or
+batch read. Explicit no-projection delivery has no query selector.
 
-Discovered output sources have a separate move-only partial owner. A genuine
-`execute_performed_discovered` publication failure returns `ProductUnpublished`
-with its original preparation and typed discovery. Keep that owner and the exact
-original request, including its source observation when required. A fresh request
-can call `recover_unpublished_discovered_in_program`; after native performance,
-`promote_recovered_discovered_outputs` reads the exact original key and transfers
-the original performed carrier into an output handle once. Refused promotion
-returns the owner. Successful promotion also returns the raw performed recovery
-and all prior cleanup failures: starting outputs does not discharge those
-independent obligations. No original handler or candidate is executed again.
+Current delivery refusal preserves the settlement, original descriptor and
+cleanup. Historical reads use its original declared selector and retained basis
+with fresh authorization; they never claim Current. Fresh handler results remain
+distinct from recovered native evidence, and registered replay never reconstructs
+a result. Terminal custody has no advance entrance and cannot abandon unresolved
+native obligations through a successful close.
+
+For independent native custody tests, select `request.advanced().mutate(intent)`
+before `execute_performed_discovered`, unpublished recovery or promotion.
+Registered native recovery also starts at `request.advanced()`. These controls
+preserve actual partial/source owners and return them on refusal; they are not
+ordinary business retry helpers. See [owning discovered actions](../worth-query/docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
+
 ### Advanced fixed publication and recovery
 
 Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed actions.
@@ -155,8 +163,10 @@ Both output-source lanes retain unsupported `SettlementDeferred` and
 `Blocked` custody. They are not no-effect outcomes or evidence that recovery
 finished. Workflow recovery remains outside these entrances.
 
-> **Discovered Phase B handoff.** Fixed ownership is available now. Discovered
-> ownership lands in Phase B; keep its existing native custody until then.
+> **Ordinary owning actions.** Fixed, discovered, source-only and guarded workflow actions use
+> `retain_operation` and fresh-request advancement, delivery and close. Deliberate
+> native custody controls require `advanced()`. Guarded workflow actions retain
+> their original issued requirement in an ordinary owning operation.
 
 A native candidate-preparation refusal before product publication is a typed
 `Denied` outcome, with its original native error available through
@@ -733,3 +743,10 @@ admission, and currentness checks.
 - [Typed Stops And Remediation Guidance](../worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md)
 - [Installed Operation Lineage And Promotion](../worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
 - [Application Aftermath, External Effects, And Recovery](../worth-query/docs/execution/application-aftermath-and-recovery.md)
+
+Input capture uses the initiating request's native resources before moving any
+original fields. Its refusal returns `(original_builder, owned_key,
+WorthQueryOperationInputCaptureDenial)`; keep all three for retry. Success admits
+one typed payload and shares its backing/charge through native input consumers.
+Nested caller Clone heaps and allocator/Arc metadata retain their existing
+contracts; this payload quote does not describe total heap or grant permission.

@@ -20,6 +20,8 @@ mod discovered;
 #[cfg(test)]
 mod discovered_contracts;
 #[cfg(test)]
+mod discovered_owning;
+#[cfg(test)]
 mod fixed_action_instances;
 #[cfg(test)]
 mod fixed_batch;
@@ -340,3 +342,11 @@ mod fixed_replay;
 mod fixed_missing_carrier;
 
 mod fixed_managed_cleanup;
+
+#[cfg(test)]
+mod operation_cost;
+
+#[cfg(test)]
+mod fixed_cleanup;
+#[cfg(test)]
+mod fixed_readmission;

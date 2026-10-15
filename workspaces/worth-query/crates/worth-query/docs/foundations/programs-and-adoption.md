@@ -174,7 +174,7 @@ readmission with original bytes preserved.
 ### Advanced native program selection
 
 Use the [ordinary owning entry](ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
-for fixed and source-only actions. The example selects `request.advanced()`.
+for fixed, discovered, source-only and guarded workflow actions. The example selects `request.advanced()`.
 
 
 A mutation request never names a program revision. On the program lane:
@@ -208,7 +208,7 @@ let outcome = host
   before the replay is consulted.
 - `execute_capability_in_program` is the capability counterpart with the same
   rules.
-- A binding that needs a program and is sent through the ordinary `execute`
+- A binding that needs a program and is sent through the advanced program-less `execute`
   lane is refused before any effect with
   `WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired`. On
   the program lane that denial means neither the branch's program nor the

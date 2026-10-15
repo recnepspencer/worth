@@ -254,5 +254,3 @@ fn binding_mismatch() -> WorthQueryApplicationRecoveryRequestDenial {
         WorthQueryManagedApplicationRecoveryDenial::BindingMismatch,
     )
 }
-
-mod ordinary;

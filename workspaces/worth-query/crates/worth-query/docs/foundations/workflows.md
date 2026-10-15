@@ -301,7 +301,7 @@ The sequence:
 4. **Authorize.** An advance at a guarded Operation node returns `AwaitingOperation` carrying
    single-use authority for that occurrence. Nothing is committed. The authority lives in memory
    on the returned `RequiredWorkflowOperation`; if it is lost, advance again.
-5. **Execute and settle.** `for_workflow_operation(..)` then `execute_in_program(..)` runs ordinary
+5. **Execute and settle.** `for_workflow_operation(..)` then retaining and advancing the declared action runs ordinary
    admission (check 1 in [Three independent checks](#three-independent-checks)), requires the
    input to hash to the proposal's digest (`for_workflow_operation` refuses another input with
    `RequirementMismatch`), and commits the business write together with the node's settlement.
@@ -594,12 +594,25 @@ let mut handle = runtime
         NonZeroUsize::new(512).unwrap(),
         NonZeroUsize::new(1024).unwrap(),
     ))
-    .start()?;
+    .retain_operation(workflow.program_runtime())?;
 
-let settlement = match handle.settle(&runtime.request(&principal, &scope).on_branch(instance.branch()))? {
-    WorthQueryWorkflowAssessmentDemandProgress::Settled(settlement) => settlement,
-    WorthQueryWorkflowAssessmentDemandProgress::Pending => return Ok(()), // pump again later
+// This caller returns the actual owner on pending or refusal. Its caller must
+// retain that tuple and supply a newly authenticated request on the next attempt.
+let settlement = match handle.advance(&fresh_request) {
+    Ok(WorthQueryWorkflowAssessmentDemandProgress::Settled(settlement)) => settlement,
+    Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending) => {
+        return Err((handle, None, None));
+    }
+    Err(denial) => return Err((handle, None, Some(denial))),
 };
+
+// Closing the observer is separate from accepting the settlement as evidence.
+// A refused close returns both the actual owner and the genuine settlement.
+let closed_observer = match handle.close(&fresh_close_request) {
+    Ok(closed) => closed,
+    Err((handle, denial)) => return Err((handle, Some(settlement), Some(denial))),
+};
+// Keep closed_observer and its native cleanup receipt with the caller's evidence.
 
 let outcome = runtime
     .request(&principal, &scope)
@@ -612,7 +625,8 @@ let outcome = runtime
 ```
 
 - `into_assessment_demand` (and `into_assessment_demand_for`) refuses a demand whose contract does not match the installed assessment with `WorthQueryWorkflowAssessmentDemandPreparationDenial`.
-- `settle(&fresh_request)` runs bounded attempts and returns `Settled` or `Pending`. `Pending` means pump again.
+- `advance(&fresh_request)` runs the existing bounded native attempts and returns `Settled` or `Pending`; refusal retains the actual admitted demand.
+- `close(&fresh_request)` returns the closed observer and actual producer cleanup receipt, or the same owner on refusal. Observer close, physical release, evidence acceptance and approval remain separate.
 - `accept_assessment` returns `WorkflowProgressOutcome` or `WorthQueryWorkflowAssessmentAcceptanceDenial` (`NotAwaitingAssessment`, `RequirementMismatch`, `Replay(..)`, `Attempt(..)`).
 - `prepare_workflow_collect_assessment(&workflow, instance, node_path)` collects evidence for a declared assessment before the instance reaches it.
 
@@ -729,11 +743,12 @@ Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalSta
 
 ## Operations
 
-The bound `for_workflow_operation(..).execute_in_program(..)` funnel remains
-ordinary until Phase C lands its operation adapter. The existing native owner
-retains the issued transition authority and performs admission/approval rechecks.
-Do not add a consumer continuation or request-rebuilding retry owner around it.
-
+Retain the original description with `for_workflow_operation(..)?.retain_operation(..)`.
+`WorthQueryWorkflowOperation` owns the original slot, exact runtime and native source/recovery
+custody; every `advance(&fresh_request)` selects the original action and freshly admits its
+binding. It stores no principal, scope or prepared admission. Required-output actions cannot
+use this declared no-output lane. See [Advanced native workflow execution](#advanced-native-workflow-execution)
+for deliberate native controls.
 
 ### Three independent checks
 
@@ -832,31 +847,63 @@ Existing releases and old definition identities keep their approval behavior.
 Occurrence-only execution requires a newly installed contract/program release;
 it is not enabled by removing an approval from an old editable definition.
 
-### Execute through the same funnel
+### Retain and advance the original operation
 
-When advance returns `AwaitingOperation(required)`, run the guarded effect
-through an ordinary mutation request bound to that requirement:
+Construction is effect-free and retains the original input, conditions, key, branch and issued requirement.
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-let committed = runtime
-    .request(&principal, &scope)
-    .on_branch(instance.branch())
-    .mutate(PlaceOrderIntent { input })
-    .without_source()
-    .idempotency(&key)
+let owner = runtime.request(&principal, &scope).on_branch(instance.branch())
+    .mutate(PlaceOrderIntent { input }).without_source()
+    .preconditions(original_conditions).idempotency_owned(key)?
     .for_workflow_operation(&workflow, &required)?
-    .execute_in_program(workflow.program_runtime(), ExecutionAllocationPolicy::SystemAllocation)?;
+    .retain_operation::<PurchaseProgramV1, PlaceOrderAction>(workflow.program_runtime())?;
+let outcome = owner.advance(&runtime.request(&fresh_principal, &fresh_scope)
+    .on_branch(instance.branch()));
 ```
 
-- `for_workflow_operation` returns `WorthQueryWorkflowOperationBindingDenial`: `RuntimeMismatch` if the workflow belongs to another runtime; `RequirementMismatch` if the intent's binding, operation, workflow requirements, input type, or branch does not match the requirement, or its input does not hash to the proposal's input-identity digest; `AuthorityUnavailable` if the advance issued no authority (see [Three independent checks](#three-independent-checks)); `Identity(..)` if the input cannot be encoded.
-- The authority is single-use and lives only in the returned `RequiredWorkflowOperation`. Execution takes it after ordinary admission and idempotency resolution, before the handler runs; a new attempt with the same requirement that is not resolved as an idempotent replay is refused with `WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent`. If it is lost or spent without a commit, advance again for a fresh one. Nothing was committed when it was issued.
-- `execute_in_program` resolves the program from the request's branch and returns `WorthQueryApplicationMutationOutcome` (for example `Committed { .. }`).
-- A local effect and its native operation settlement publish in the same candidate. Advance again to follow `Completed` to the successor; do not execute the business effect again. External effects retain owner custody and settle only through their completion/recovery protocol.
-- Retrying the same logical request preserves its key and exact intent. It can recover `AlreadyCommitted` without repeating the handler's effects. A new request against a stale/spent occurrence is denied; reconcile rather than automatically retrying a lifecycle mutation.
-- For an external effect whose owner holds custody, pass the `WorthQueryBoundWorkflowOperation` returned by `for_workflow_operation_recovery` directly to the prepared advance. `accept_operation_from_owner` consumes that constrained view and accepts the owner-resolved receipt and returns `WorkflowProgressOutcome`, or `WorthQueryWorkflowOperationOwnerAcceptanceDenial`. `WorthQueryWorkflowOperationOwnerPosture` reports what the owner saw.
-- Recovery of an owner operation binds only the exact performed operation. It never issues authority for a new effect. First bind the request with `for_workflow_operation_recovery(&workflow, &required)`, which returns `WorthQueryWorkflowOperationBindingDenial` if the intent does not match. Without that binding, recovery preparation is refused with `NotWorkflowBound`. `prepare_workflow_operation_recovery_from_owner` returns a `WorthQueryPreparedWorkflowOperationRecovery` or `WorthQueryWorkflowOperationRecoveryPreparationDenial`. Its `safe_retry()` returns the safe-retry admission or `WorthQueryWorkflowOperationRecoveryDenial`, which hands the prepared recovery back through `into_recovery()` when it can be tried again. `accept_recovered_operation_from_owner` consumes a newly bound view for the same original operation and accepts the recovered receipt, with the same outcome and denial as `accept_operation_from_owner`.
+`Progress` and `Refused` return the same original owner. `Completed` retains actual Fresh
+result or Recovered native evidence plus cleanup; recovery does not invent a handler result.
+`Terminal` exposes native stopped evidence and cleanup without an advancement entrance.
+Ordinary authorization, keyed resolution and pending-source checks precede taking the slot.
+Approval/currentness follows taking it: revoked approval can spend it without a business effect.
+The owner never restores a spent slot. Original native abort evidence survives that stop.
+
+Unpublished recovery retains the real World/managed attempt and does not rerun its handler.
+Dispatch recovery retains its original handle, opening fresh selected binding admission before
+using it. Independent authenticated inbound settlement does not itself discharge that handle:
+the owner performs the actual native disposal transition and retains its receipt before
+completion. Unknown consumption cannot become completed from a descriptive custody read.
+
+A local guarded effect settles its operation atomically with the business commit.
+You may close its actual effect cleanup and freshly advance the workflow successor.
+Optional `prepare_workflow_advance(..)?.accept_owned_operation(completed)` confirms
+that ORIGINAL settlement under fresh exact action selection and binding admission.
+It returns native replayed progress for the original effect node and commit; it
+neither records the new confirmation key nor executes the prepared successor.
+
+External source completion alone does not settle the operation. Its actual native
+recovery or authenticated inbound evidence must satisfy guarded custody before
+fresh acceptance can commit the owed workflow settlement. Dispatch-handle disposal,
+workflow settlement and source cleanup remain separate obligations.
+
+Acceptance refusal returns the same completed owner; success retains both actual
+WorkflowProgressOutcome and that owner. Close it through fresh authority; refusal
+retains custody. Assessment evidence acceptance and approval remain separate from
+operation confirmation. Effect completion, workflow terminality and physical
+cleanup remain different facts. Drop performs no settlement.
+
+### Advanced native workflow execution
+
+Use the [ordinary workflow owner](#operations) for application operations. Deliberate
+native execution uses this borrowed-key request chain; the owned description
+returned by `idempotency_owned` has no `advanced()` method.
+
+`request.mutate(intent).without_source().idempotency(&key).for_workflow_operation(&workflow, &required)?.advanced().execute_in_program(program, allocation)`.
+
+Generic mutation recovery still refuses workflow operations. Native workflow
+recovery preserves the original workflow binding and dispatch custody.
 
 
 ## Recorded workflow actors
@@ -1122,7 +1169,7 @@ idempotency key.
 | Variant | Cause |
 |---|---|
 | `ProgramSelection(..)` | The branch's adopted program could not be inspected, so no installed owner could be chosen. |
-| `ApplicationProgramRequired` | The binding needs an application program: send it through `execute_in_program`. On that lane, it means neither the branch's program nor the initial installation supplies this action. |
+| `ApplicationProgramRequired` | Select an installed declared action through the ordinary owning entry. On the advanced native `execute_in_program` lane, this means neither the branch's program nor the initial installation supplies the action. |
 | `ApplicationProgramMismatch` | The program runtime passed is not the request's runtime. |
 | `RequiresWorkflowTransition` | The binding requires workflow authority and the request is not bound to a workflow step. |
 | `WorkflowAuthoritySpent` | The issued workflow authority was already consumed. |
@@ -1331,12 +1378,17 @@ let contract = installed.bind_definition(validated)?;
 | 9 | Propose a revised request and repeat steps 4 to 7 | `AwaitingApproval` |
 | 10 | Approve the same way | `Completed` at `approval` |
 | 11 | Advance | `AwaitingOperation(required)` |
-| 12 | `mutate(PlaceOrderIntent).for_workflow_operation(..).execute_in_program(..)` | `Committed { .. }` |
-| 13 | Advance | `Completed` at `ordered`; `terminal()` is true |
+| 12 | Original input/conditions/owned key, `for_workflow_operation(..).retain_operation(..)` | Uneffected owning operation |
+| 13 | `operation.advance(&fresh_request)` | Actual completed effect, original progress/refusal owner, or terminal stop |
+| 14 | Optional local `accept_owned_operation(completed)` under fresh prepared advance; external acceptance requires authentic recovery/inbound | Original local settlement replay, or owed external settlement; same completed owner retained on success/refusal |
+| 15 | Close the completed owner (or `accepted.operation`) with a fresh request, then freshly advance the successor | Lawful cleanup, then separate native successor progress |
 
-Every row is one caller request with its own key. Each step's exact
-intermediate outcomes depend on the graph; the caller reads each outcome and
-chooses the next request.
+New workflow commands use distinct command keys. Construction at step 12 retains
+one original operation key with its input and conditions; subsequent operation
+advance and close calls reuse that owner and accept no replacement key. Every
+advance, acceptance and close uses a fresh authenticated request. Each step's
+exact intermediate outcomes depend on the graph; the caller retains returned
+owners and chooses the next request.
 
 ### What the example shows
 
@@ -1344,7 +1396,7 @@ chooses the next request.
 - **Bounded retry.** A third rejection takes `RetryExhausted` to `declined`.
 - **Evidence budget.** Each accepted check charges the instance lineage's evidence budget.
 - **Owner custody.** If `PlaceOrder` is an external effect, the request cannot be canceled or migrated until its owner receipt is accepted.
-- **Cancellation.** Canceling after step 12 leaves the placed order recorded; the outcome names it.
+- **Cancellation.** Step 12 constructs an owner without placing an order. Cancellation after an actual performed effect at step 13 leaves that effect recorded; retain its owning evidence and complete lawful cleanup.
 - **Deadline.** After seven days of trusted time, no further step runs; cancellation still works.
 - **Revisions.** Publishing a successor with `Published(first)` makes new starts on the first revision return `Superseded`. Running instances stay pinned.
 - **Adoption.** If a new program revision changes `VendorApproved`, the definition becomes incompatible. See [programs-and-adoption.md](programs-and-adoption.md) for what each instance may do.
@@ -1363,7 +1415,7 @@ The same run first executes `information.rs`, an unsigned workflow: a
 `propose` slot, a guarded `record` operation whose binding declares
 `workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only()`, and a
 terminal. It proposes, advances to `AwaitingOperation`, executes the write
-through `for_workflow_operation(..).execute_in_program(..)`, and advances to
+through the retained `for_workflow_operation(..)` owner, and advances to
 `done` with no approval. Both parts propose with the authoring control intent
 (see [Propose and advance](#propose-and-advance)).
 

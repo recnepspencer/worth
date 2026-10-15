@@ -21,6 +21,7 @@ mod staged;
 
 pub use attempt::WorthQueryApplicationMutationAttemptReport;
 pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
+pub(in crate::application_entry) use discovered::AdmittedDiscoveredRecoveryDenial;
 pub use discovered::{
     WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputRetentionFailure,
     WorthQueryDiscoveredOutputStartFailure, WorthQueryDiscoveredProgramOutputHandle,

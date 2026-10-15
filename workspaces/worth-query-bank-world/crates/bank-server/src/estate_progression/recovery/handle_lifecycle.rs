@@ -12,8 +12,9 @@ use worth_query_host::facade::primary_graph::{
 
 use super::super::{
     recovery_types::map_expiry, BankCommitRecoveryHandle, BankEstateProgressionDenial,
-    BankRecoveryClaimStatus, BankRecoveryDenial, BankRecoveryExpiryDecision,
-    BankRecoveryExpiryEvaluation, BankRecoveryInspection, BankRecoveryTransitionReceipt,
+    BankRecoveryClaimStatus, BankRecoveryDenial, BankRecoveryDisposalDenial,
+    BankRecoveryDisposalReceipt, BankRecoveryExpiryDecision, BankRecoveryExpiryEvaluation,
+    BankRecoveryInspection, BankRecoveryTransitionReceipt,
 };
 use crate::{BankAuthenticatedPrincipal, BankCommitReceipt, BankIdentityRuntime};
 
@@ -129,24 +130,66 @@ impl BankIdentityRuntime {
             .map_err(BankEstateProgressionDenial::from_recovery)
     }
 
+    /// Disposes the actual recovery handle under fresh native authority.
+    /// Opening/admission refusal returns the whole original owner. Only native disposal
+    /// can report terminal consumption; success retains its real receipt, not settlement.
     pub fn dispose_commit_recovery(
         &self,
-
         handle: BankCommitRecoveryHandle,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
-    ) -> Result<BankRecoveryTransitionReceipt, BankEstateProgressionDenial> {
-        self.application_runtime().with_application_advancement(request, |phase| {
-
-        let operation = handle.installed_operation().to_owned();
-        let authority =
-            self.admit_commit_recovery_effect(&phase, handle.query(), principal, action, request)?;
-        dispose_recovery_handle(handle.query, &authority)
-            .map_err(BankEstateProgressionDenial::from_recovery)?;
-        Ok(BankRecoveryTransitionReceipt::new(operation))
-
-        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+    ) -> Result<BankRecoveryDisposalReceipt, BankRecoveryDisposalDenial> {
+        let mut owned = Some(handle);
+        let attempted = self
+            .application_runtime()
+            .with_application_advancement(request, |phase| {
+                let handle = owned
+                    .as_ref()
+                    .expect("original handle stays outside admission");
+                let authority = self.admit_commit_recovery_effect(
+                    &phase,
+                    handle.query(),
+                    principal,
+                    action,
+                    request,
+                )?;
+                let operation = handle.installed_operation().to_owned();
+                let handle = owned
+                    .take()
+                    .expect("fresh admission takes original owner once");
+                Ok::<_, BankEstateProgressionDenial>(
+                    match dispose_recovery_handle(handle.query, &authority) {
+                        Ok(disposal) => Ok(BankRecoveryDisposalReceipt::new(
+                            BankRecoveryTransitionReceipt::new(operation),
+                            disposal,
+                        )),
+                        Err(denial) => {
+                            let (denial, handle) = denial.into_parts();
+                            let denial = BankEstateProgressionDenial::from_recovery(denial);
+                            Err(match handle {
+                                Some(query) => BankRecoveryDisposalDenial::retained(
+                                    denial,
+                                    BankCommitRecoveryHandle { query },
+                                ),
+                                None => BankRecoveryDisposalDenial::Terminal(denial),
+                            })
+                        }
+                    },
+                )
+            });
+        match attempted {
+            Ok(Ok(outcome)) => outcome,
+            Ok(Err(denial)) => Err(BankRecoveryDisposalDenial::retained(
+                denial, owned.take().expect("admission refusal retains original handle"),
+            )),
+            Err(cause) => Err(BankRecoveryDisposalDenial::retained(
+                BankEstateProgressionDenial::ApplicationEntry(
+                    worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+                ),
+                owned.take().expect("opening refusal retains original handle"),
+            )),
+        }
     }
 
     pub fn reconcile_commit_recovery(

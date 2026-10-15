@@ -135,20 +135,24 @@ pub fn install_certification_authentication(
     install_certification_authentication_with_clock(schema).0
 }
 
-pub fn install_certification_authentication_with_clock(
-    schema: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
+pub fn install_certification_authentication_with_clock<
+    S: worth_query_host::facade::declaration::application_schema::ApplicationSchema,
+>(
+    schema: &WorthQueryInstalledApplicationSchema<S>,
 ) -> (
-    CertificationAuthenticationOwner,
+    Arc<
+        WorthQueryInstalledAuthenticationEventOwner<
+            S,
+            CertificationAuthenticationClock,
+            CertificationAuthenticationClockSource,
+            CertificationAuthenticationVerifier,
+        >,
+    >,
     CertificationAuthenticationClockSource,
 ) {
     let clock = CertificationAuthenticationClockSource::new();
     let owner = Arc::new(
-        install_authentication_event_owner::<
-            DocumentRetentionSchema,
-            CertificationAuthenticationClock,
-            _,
-            _,
-        >(
+        install_authentication_event_owner::<S, CertificationAuthenticationClock, _, _>(
             schema,
             clock.clone(),
             CertificationAuthenticationVerifier,

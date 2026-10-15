@@ -144,6 +144,7 @@ where
             runtime_authority,
         ),
         recovered_program_source_delivery: Default::default(),
+        required_set_comparison_observations: Default::default(),
         basis_leases: Default::default(),
         next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
         external_effect_transport: std::sync::OnceLock::new(),

@@ -99,7 +99,8 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
     let description = request
         .mutate(secondary_input.clone())
         .expect_source(source)
-        .idempotency_owned(10_192);
+        .idempotency_owned(10_192)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"));
     let before = world
         .application
         .with_host_advancement(|phase| request.retain_read(&phase).unwrap())
@@ -157,6 +158,7 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("secondary close: {cause:?}"));
 
+    // compiled-example: begin
     let primary_input = PlanarSourceAdjustment {
         scope_key: "anchor-a".to_owned(),
         replacement_y: length(2),
@@ -174,9 +176,22 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
         .mutate(primary_input.clone())
         .expect_source(source)
         .idempotency_owned(10_193)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<ActionInstanceProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, denial)| panic!("primary exact contract: {denial:?}"));
-    let primary = settle!(primary, &request);
+    let mut primary = Some(primary);
+    let primary = (0..32)
+        .find_map(|_| match primary.take().unwrap().advance(&request) {
+            Advance::Progress { operation, .. } => {
+                primary = Some(operation);
+                None
+            }
+            Advance::Settled(settled) => Some(settled),
+            Advance::Refused { denial, .. } | Advance::Terminal { denial, .. } => {
+                panic!("native fixed advancement: {denial:?}")
+            }
+        })
+        .expect("the declared fixed graph settles");
     assert_eq!(primary.declared_action(), &primary_declaration);
     assert_eq!(
         primary.declared_action().delivery().unwrap().identity(),
@@ -190,4 +205,5 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
     primary
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("primary close: {cause:?}"));
+    // compiled-example: end
 }

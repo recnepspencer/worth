@@ -52,12 +52,10 @@ pub(in crate::http::server) async fn execute_notification<A: BankHttpApplication
         .retain_operation()
     {
         Ok(operation) => operation,
-        Err(_cause) => {
+        Err(refusal) => {
             return notification_denied(
                 Some(request.request_id),
-                super::super::mutation_refusal::denial(
-                    super::super::super::protocol::BankHttpDenialKind::InternalDenied,
-                ),
+                super::super::construction_denial::construction(refusal),
             )
             .into()
         }

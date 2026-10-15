@@ -253,3 +253,12 @@ pub(super) fn install_members(
         )
         .application_mutation_binding::<WorkflowGrantStatusBinding>()
 }
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for WorkflowGrantStatusBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
+}

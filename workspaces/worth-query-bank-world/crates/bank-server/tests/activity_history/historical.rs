@@ -100,7 +100,7 @@ fn commit_deposit(
             BankIdempotencyKey::new(idempotency_key).unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
     let scope = request_scope();
     let request = fixture.world.runtime.request(teller, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
@@ -162,7 +162,7 @@ fn historical_read_rechecks_current_account_authorization() {
             BankIdempotencyKey::new("historical-revoke-viewer").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared source action: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
     ) = operation.advance(&revoked_request)
@@ -211,7 +211,7 @@ fn newly_granted_reader_can_read_an_earlier_commit() {
             BankIdempotencyKey::new("historical-grant-new-viewer").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared source action: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         granted,
     ) = operation.advance(&granted_request)

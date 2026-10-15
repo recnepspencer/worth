@@ -48,7 +48,8 @@ fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
     let denied = workflow
-        .accept_applied(
+        .advanced()
+        .accept_native_effect(
             ready.instance.clone(),
             &ready.operation,
             ready.authority.clone(),
@@ -90,7 +91,8 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
     let denied = workflow
-        .accept_applied(
+        .advanced()
+        .accept_native_effect(
             ready.instance.clone(),
             &ready.operation,
             ready.authority.clone(),
@@ -125,7 +127,8 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
         .rail
         .under(FaultScript::Succeed, Duration::from_millis(150));
     let prepared_recovery = workflow
-        .prepare_apply_recovery(
+        .advanced()
+        .prepare_native_effect_recovery(
             &required,
             ready.authority.clone(),
             &key("approved-payment:operation:perform"),
@@ -139,7 +142,8 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
         .expect("fixture retry owns its host call")
         .expect("recovery re-dispatches the retained outbox request");
     let denied = workflow
-        .accept_recovered_applied(
+        .advanced()
+        .accept_native_recovered_effect(
             ready.instance.clone(),
             &required,
             ready.authority.clone(),
@@ -200,7 +204,8 @@ fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
     let denied = workflow
-        .prepare_apply_recovery(
+        .advanced()
+        .prepare_native_effect_recovery(
             &ready.operation,
             ready.authority.clone(),
             &key("approved-payment:operation:perform"),

@@ -1,4 +1,4 @@
-//! Deliberate native control. Ordinary fixed and source-only callers retain an operation instead.
+//! Deliberate native control. Ordinary fixed, discovered and source-only callers retain an operation instead.
 use super::mutation::WorthQueryApplicationMutationRequest;
 use super::WorthQueryApplicationRequest;
 use worth_query_declaration::facade::application_operation::ApplicationMutationIntent;

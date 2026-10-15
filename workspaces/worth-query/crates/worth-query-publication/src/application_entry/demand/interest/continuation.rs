@@ -10,8 +10,9 @@ where
     Schema: ApplicationSchema,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
-    pub(super) admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
-    pub(super) controls: WorthQueryOutputDemandControls,
+    pub(in crate::application_entry) admitted:
+        WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
+    pub(in crate::application_entry) controls: WorthQueryOutputDemandControls,
     pub(super) selected_program: Option<(ApplicationProgramIdentity, ApplicationProgramRevision)>,
     pub(super) closed: bool,
 }
@@ -21,7 +22,7 @@ where
     Schema: ApplicationSchema,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
-    pub(super) fn new(
+    pub(in crate::application_entry) fn new(
         admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
         controls: WorthQueryOutputDemandControls,
     ) -> Self {

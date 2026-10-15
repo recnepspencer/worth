@@ -311,7 +311,7 @@ fn crowded_initiation(
             key("crowded-initiation"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared initiation: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared initiation: {cause:?}"));
     (world, identities, initiated)
 }
 

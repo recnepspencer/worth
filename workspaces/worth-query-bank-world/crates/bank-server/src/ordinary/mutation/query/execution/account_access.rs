@@ -3,10 +3,7 @@ use super::super::mutations;
 use crate::{BankApplication, BankReadyMutation};
 use bank_domain::schema::*;
 use worth_query_host::facade::{
-    application_entry::{
-        WorthQueryOperationConstructionDenial, WorthQueryOperationDescription,
-        WorthQuerySourceOnlyOperation,
-    },
+    application_entry::WorthQuerySourceOnlyOperation,
     declaration::application_program::ApplicationSourceCompletion,
 };
 /// The retired one-shot execution entrance is unavailable.
@@ -35,10 +32,7 @@ impl
             crate::AccountAccessGrantAction,
             ApplicationSourceCompletion,
         >,
-        (
-            WorthQueryOperationDescription<BankSchema, GrantAccountAuthorization>,
-            WorthQueryOperationConstructionDenial,
-        ),
+        crate::BankOperationConstructionRefusal<GrantAccountAuthorization>,
     > {
         let (scope, key) = self.controls.into_parts();
         self.runtime
@@ -47,8 +41,19 @@ impl
             .without_source()
             .preconditions(self.preconditions)
             .idempotency_owned(key)
+            .map_err(|(builder, key, denial)| {
+                crate::BankOperationConstructionRefusal::Capture(
+                    builder.into_capture_refusal(key, denial),
+                )
+            })?
             .retain_operation::<BankApplication, crate::AccountAccessGrantAction>(
                 self.runtime.application_program(),
+            )
+            .map_err(
+                |(description, denial)| crate::BankOperationConstructionRefusal::Declaration {
+                    description,
+                    denial,
+                },
             )
     }
 }
@@ -78,10 +83,7 @@ impl
             crate::AccountAccessRevocationAction,
             ApplicationSourceCompletion,
         >,
-        (
-            WorthQueryOperationDescription<BankSchema, RevokeAccountAuthorization>,
-            WorthQueryOperationConstructionDenial,
-        ),
+        crate::BankOperationConstructionRefusal<RevokeAccountAuthorization>,
     > {
         let (scope, key) = self.controls.into_parts();
         self.runtime
@@ -90,8 +92,19 @@ impl
             .without_source()
             .preconditions(self.preconditions)
             .idempotency_owned(key)
+            .map_err(|(builder, key, denial)| {
+                crate::BankOperationConstructionRefusal::Capture(
+                    builder.into_capture_refusal(key, denial),
+                )
+            })?
             .retain_operation::<BankApplication, crate::AccountAccessRevocationAction>(
                 self.runtime.application_program(),
+            )
+            .map_err(
+                |(description, denial)| crate::BankOperationConstructionRefusal::Declaration {
+                    description,
+                    denial,
+                },
             )
     }
 }

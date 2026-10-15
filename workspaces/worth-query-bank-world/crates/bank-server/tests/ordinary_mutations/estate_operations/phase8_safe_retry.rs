@@ -327,7 +327,7 @@ fn undeclared_external_effect_leaves_retry_path_nothing_to_find() {
             BankIdempotencyKey::new("safe-retry-r84-send").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
     let scope = request_scope();
     let request = fixture.world.runtime.request(&owner, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(

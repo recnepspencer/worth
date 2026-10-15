@@ -54,6 +54,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         })
         .expect("fixture control owns its host call");
     let outcome = request
+        .advanced()
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&key)
@@ -83,6 +84,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             world
                 .application
                 .request(&principal, $scope)
+                .advanced()
                 .mutate($input)
                 .expect_source(source.clone())
                 .idempotency($key)
@@ -116,6 +118,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         world
             .application
             .request(&principal, &fresh_scope)
+            .advanced()
             .mutate(intent.clone())
             .expect_result_set(
                 original
@@ -140,6 +143,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     assert!(other
         .application
         .request(&other_principal, &fresh_scope)
+        .advanced()
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&key)
@@ -190,6 +194,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     let (_, retained) = world
         .application
         .request(&principal, &fresh_scope)
+        .advanced()
         .mutate(intent.clone())
         .expect_source(changed.observed_sources()[0].clone())
         .idempotency(&key)

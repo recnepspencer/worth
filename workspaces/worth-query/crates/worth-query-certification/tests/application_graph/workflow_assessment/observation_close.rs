@@ -98,6 +98,7 @@ fn observe<'application>(
             )
             .settlement_attempts(std::num::NonZeroUsize::new(attempts).unwrap()),
         )
+        .advanced()
         .start()
         .expect("the assessment observation starts")
 }
@@ -113,7 +114,7 @@ fn progress(
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    observer.settle(
+    observer.advanced().settle(
         &runtime
             .request(&principal, &scope)
             .on_branch(instance.branch()),

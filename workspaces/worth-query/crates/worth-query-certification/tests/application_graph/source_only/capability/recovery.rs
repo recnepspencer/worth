@@ -21,6 +21,7 @@ fn capability_partial_requires_fresh_capability_admission_without_source_rerun()
         })
         .without_source()
         .idempotency_owned(0x91765008_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program, Action>(&host.application)
         .unwrap_or_else(|(_, cause)| panic!("warm source constructs: {cause:?}"));
     let warm = match warm.advance(&request) {
@@ -42,6 +43,7 @@ fn capability_partial_requires_fresh_capability_admission_without_source_rerun()
             ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
         ))
         .idempotency_owned(0x91765018_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program, Action>(&host.application)
         .unwrap_or_else(|(_, cause)| panic!("source constructs: {cause:?}"));
     let policy = crate::test_request_policy::serial_request();

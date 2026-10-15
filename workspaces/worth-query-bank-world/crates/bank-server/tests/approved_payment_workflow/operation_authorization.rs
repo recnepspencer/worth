@@ -28,6 +28,8 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
         .runtime
         .install_external_effect_transport(rail.clone())
         .expect("the real Bank settlement rail installs");
+    let _completion_route =
+        super::ready_payment::install_synchronous_completion(&fixture.world.runtime);
     let starter = fixture.authenticate(APPROVER);
     let actor = fixture.authenticate(STRANGER);
     let owner = fixture.authenticate(OWNER);
@@ -78,6 +80,13 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
         WorkflowProgressOutcome::AwaitingOperation(required) => required,
         other => panic!("expected an issued payment operation, got {other:?}"),
     };
+    let owning_operation = starter_workflow
+        .retain_apply(
+            &operation,
+            actor_input.clone(),
+            key("approved-payment:authorization:original-owner"),
+        )
+        .expect("construct the exact original owner before revocation without an effect");
     let grants = fixture
         .world
         .runtime
@@ -114,7 +123,7 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
             key("approved-payment:authorization:revoke"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared source action: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
     ) = source_operation.advance(&revoked_request)
@@ -129,22 +138,16 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
         .close(&revoked_request)
         .unwrap_or_else(|(_, cause)| panic!("lawful source close: {cause:?}"));
 
-    let denied = starter_workflow.perform_apply(
-        instance.clone(),
-        &operation,
-        actor_input.clone(),
-        &key("approved-payment:authorization:denied"),
-    );
+    let denied_scope = request_scope();
+    let (owning_operation,denial)=match owning_operation.advance(&fixture.world.runtime.request(&starter,&denied_scope).on_branch(instance.branch())) {
+        worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Refused{operation,denial}=>(operation,denial),
+        _=>panic!("ordinary authorization refusal preserves exact owning descriptor and slot"),
+    };
     assert!(
-        matches!(
-            &denied,
-            Err(bank_server::BankApprovedPaymentWorkflowError::OperationMutation(
-                WorthQueryApplicationRequestMutationDenial::Authorization(denial)
-            )) if denial.kind() == WorthQueryOperationAuthorizationDenialKind::Refused(
-                WorthQueryOperationAuthorizationRefusalKind::PermissionDenied
-            )
-        ),
-        "exact input must bind and fail ordinary operation authorization: {denied:?}"
+        matches!(denial,worth_query_host::facade::application_entry::WorthQueryWorkflowOperationDenial::Source(
+        worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(WorthQueryApplicationRequestMutationDenial::Authorization(ref denial)))
+        if denial.kind()==WorthQueryOperationAuthorizationDenialKind::Refused(WorthQueryOperationAuthorizationRefusalKind::PermissionDenied)),
+        "exact ordinary PermissionDenied must survive owning composition"
     );
     assert!(rail.attempts().is_empty());
     assert_eq!(rail.completed_effect_count(), 0);
@@ -180,17 +183,15 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
     assert_eq!(still_required.input_identity(), operation.input_identity());
     // The independently observed handle must not replace the original single-use slot.
     drop(still_required);
-    let performed = actor_workflow
-        .perform_apply(
-            instance.clone(),
-            &operation,
-            actor_input,
-            &key("approved-payment:authorization:perform"),
-        )
-        .expect("authorization denial preserved the original operation slot")
-        .into_performed()
-        .expect("the second approver commits the payment");
-    assert!(performed.newly_committed());
+    let fresh_scope = request_scope();
+    let completed=match owning_operation.advance(&fixture.world.runtime.request(&actor,&fresh_scope).on_branch(instance.branch())) {
+        worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
+        _=>panic!("lawful second approver advances SAME original owner after denial"),
+    };
+    assert!(matches!(
+        completed.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+    ));
     let committed = fixture
         .world
         .runtime
@@ -207,4 +208,13 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
     );
     assert_eq!(rail.attempts().len(), 1);
     assert_eq!(rail.completed_effect_count(), 1);
+    completed
+        .close(
+            &fixture
+                .world
+                .runtime
+                .request(&actor, &fresh_scope)
+                .on_branch(instance.branch()),
+        )
+        .unwrap_or_else(|_| panic!("real original payment owner cleanup"));
 }

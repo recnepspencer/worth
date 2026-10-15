@@ -221,7 +221,7 @@ fn collect_rust_files(directory: &Path, paths: &mut Vec<PathBuf>) -> Result<(), 
     Ok(())
 }
 
-fn parse_module_tree(
+pub(super) fn parse_module_tree(
     crate_root: &Path,
     source_path: &Path,
     module_dir: &Path,

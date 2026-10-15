@@ -165,6 +165,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         }))
     }
 
+    /// Projects exact prior operation settlement; an unseen confirmation key is sufficient
+    /// only for installed local effects whose original receipt created that transition.
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_operation_replay<
         Binding,
     >(
@@ -285,33 +287,57 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             .resolve_admitted_application_idempotencies(execution, admission, [binding])?
             .try_into()
             .expect("one operation replay binding returns one resolution");
+        let project_original = |receipt| {
+            runtime
+                .primary_provider
+                .graph
+                .with_runtime(execution, |relational| {
+                    super::project(
+                        execution,
+                        relational,
+                        receipt,
+                        replay.identity.clone(),
+                        locator.clone(),
+                        replay.node_path.clone(),
+                        replay.terminal,
+                        None,
+                        None,
+                        Some(receipt_identity),
+                        true,
+                    )
+                })
+        };
         Ok(match resolution.into_resolution() {
-            WorthQueryApplicationIdempotencyResolution::Unseen => None,
+            WorthQueryApplicationIdempotencyResolution::Unseen => {
+                // Local effects settle this original transition atomically. A fresh
+                // confirmation key observes that settlement without recording a command.
+                let local = runtime.installed_schema().installed_operation(
+                    worth_query_declaration::facade::application_schema::ApplicationOperationRef::<
+                        Schema, Binding::Operation, Binding::Input,
+                    >::from_declaration(),
+                ).is_ok_and(|installed| !installed.contracts().external_effect().is_declared());
+                let original_guarded_key = receipt
+                    .authority_binding()
+                    .idempotency_binding()
+                    .matches_guarded_workflow_effect(required.transition_identity_bytes());
+                if local
+                    && original_guarded_key
+                    && super::transition_entity_in_receipt(receipt, &replay.identity, locator)
+                        .is_some()
+                {
+                    Some(project_original(receipt.clone()))
+                } else {
+                    None
+                }
+            }
             WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
                 WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 )),
             ),
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
-                runtime
-                    .primary_provider
-                    .graph
-                    .with_runtime(execution, |relational| {
-                        super::project(
-                            execution,
-                            relational,
-                            receipt,
-                            replay.identity.clone(),
-                            locator.clone(),
-                            replay.node_path.clone(),
-                            replay.terminal,
-                            None,
-                            None,
-                            Some(receipt_identity),
-                            true,
-                        )
-                    }),
-            ),
+            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
+                Some(project_original(receipt))
+            }
         })
     }
 }

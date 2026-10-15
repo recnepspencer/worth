@@ -10,7 +10,7 @@ Use this delivery when a response must describe the original committed state eve
 
 ## Stable Entry Points
 
-Declare `operation_action::<Binding, Delivery>()` with `Delivery::Mode = ApplicationRetainedCommit`. Retain the original description with `idempotency_owned(key).retain_operation::<Program, Action>(&runtime)`.
+Declare `operation_action::<Binding, Delivery>()` with `Delivery::Mode = ApplicationRetainedCommit`. Retain the original description with `idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`.
 
 Retained mode requires `advance(&fresh_request, maximum_history_work)`, where the bound is `NonZeroUsize`. Source-completion mode uses `advance(&fresh_request)` and carries no historical-read argument. There is one advance entrance for each declared mode.
 
@@ -38,7 +38,7 @@ With your program and retained action declared:
 let owner = request.mutate(intent)
     .without_source()
     .preconditions(original_conditions)
-    .idempotency_owned(key)
+    .idempotency_owned(key)?
     .retain_operation::<Program, RetainedAction>(&runtime)?;
 let next = owner.advance(&fresh_request, maximum_history_work);
 ```

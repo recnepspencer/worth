@@ -102,6 +102,7 @@ pub fn operation_with_expected(
         .without_source()
         .preconditions(conditions)
         .idempotency_owned(key)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<SourceOnlyRetentionProgram, RetentionAction>(host)
         .unwrap_or_else(|(_, denial)| panic!("the exact no-output action constructs: {denial:?}"))
 }

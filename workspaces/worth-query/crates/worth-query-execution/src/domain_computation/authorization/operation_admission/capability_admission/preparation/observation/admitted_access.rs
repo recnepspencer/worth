@@ -163,7 +163,7 @@ where
     capability_type: Arc<str>,
     operation: Arc<str>,
     principal_entity_id: worth_relational::facade::identity::EntityId,
-    input: Arc<Input>,
+    input: worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
     governed_input_identity: Option<[u8; 32]>,
     projection: ApplicationCapabilityRequestProjection<
         Schema,

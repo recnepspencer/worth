@@ -29,7 +29,7 @@ pub(crate) fn commit_authorization_toggle(
             .as_principal(owner)
             .controls(mutation_controls(&format!("overflow-revoke-{ordinal}")))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared access: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("declared access: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request)
@@ -54,7 +54,7 @@ pub(crate) fn commit_authorization_toggle(
             .as_principal(owner)
             .controls(mutation_controls(&format!("overflow-grant-{ordinal}")))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared access: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("declared access: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request)
@@ -130,7 +130,7 @@ pub(crate) fn commit_deposit(
             BankIdempotencyKey::new(key).unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
     let scope = request_scope();
     let request = fixture.world.runtime.request(teller, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(

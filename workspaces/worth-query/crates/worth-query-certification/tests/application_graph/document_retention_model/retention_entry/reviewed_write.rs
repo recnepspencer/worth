@@ -182,6 +182,11 @@ where
     }
 }
 
-impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for ReviewedSetRetentionBinding {
-    type Admission = worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for ReviewedSetRetentionBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
 }

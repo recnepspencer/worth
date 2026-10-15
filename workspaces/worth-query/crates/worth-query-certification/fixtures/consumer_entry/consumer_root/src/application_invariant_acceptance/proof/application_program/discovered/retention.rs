@@ -35,6 +35,7 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
                 .observed_sources()[0]
                 .clone();
             request
+                .advanced()
                 .mutate($input)
                 .expect_source(source)
                 .idempotency(&$key)
@@ -79,6 +80,7 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         .refuse_next_discovered_retention_reservation_for_test()
         .is_err());
     let outcome = request
+        .advanced()
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency(&109_202)
@@ -125,10 +127,11 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         .selected_commit()
         .clone();
     assert!(
-        matches!(request.recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(&world.application, &receipt, controls), Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(ref denial)) if denial.kind()==WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)
+        matches!(request.advanced().recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(&world.application, &receipt, controls), Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(ref denial)) if denial.kind()==WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)
     );
     // Inspect prior registration, then release the acquired token before retry eligibility.
     let prior_registered = request
+        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &prior_receipt,
@@ -235,6 +238,7 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         &head
     );
     let prior_registered = request
+        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &prior_receipt,
@@ -265,6 +269,7 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         receipt.committed_product_publication().composite_commit()
     );
     let registered = request
+        .advanced()
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &receipt,

@@ -3,18 +3,25 @@ use worth_query_decl::facade::{application_operation::*, application_schema::*};
 use worth_query_host::facade::{application_entry::*, primary_graph::WorthQueryObservedResultSet};
 
 // compiled-example: begin
-pub fn capture_original<S, I>(
-    request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+pub fn capture_original<'a, 'p, 's, S, I>(
+    request: &WorthQueryApplicationRequest<'a, 'p, 's, S>,
     intent: I,
     preconditions: TypedMutationPreconditions<S, <I::Binding as ApplicationMutationBinding<S>>::Operation,
         <<I::Binding as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope>,
     source: WorthQueryObservedResultSet<<<I::Binding as ApplicationMutationBinding<S>>::SourceExpectation as ApplicationMutationSourceExpectation<S>>::Query>,
     key: <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey,
-) -> WorthQueryOperationDescription<S, I>
+) -> Result<
+    WorthQueryOperationDescription<S, I>,
+    (
+        WorthQueryOperationBuilder<'a, 'p, 's, S, I, WorthQueryMutationSourcePrepared>,
+        <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey,
+        WorthQueryOperationInputCaptureDenial,
+    ),
+>
 where
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
-    <I::Binding as ApplicationMutationBinding<S>>::Input: Clone,
+    <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
 {
     request
         .mutate(intent)

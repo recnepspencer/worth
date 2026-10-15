@@ -4,6 +4,7 @@ mod close;
 mod mode_construction;
 mod source_admission;
 mod source_only;
+mod workflow;
 pub use cleanup::{WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt};
 pub use mode_construction::WorthQueryOperationModeFactory;
 pub use source_admission::{WorthQuerySourceDeliveryMode, WorthQuerySourceOperationAdmission};
@@ -12,19 +13,35 @@ pub use source_only::{
     WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture,
     WorthQueryTerminalSourceOperation,
 };
+pub use workflow::{
+    WorthQueryCompletedWorkflowOperation, WorthQueryOwnedWorkflowBinding,
+    WorthQueryTerminalWorkflowOperation, WorthQueryWorkflowAcceptance,
+    WorthQueryWorkflowEffectRecoveryDenial, WorthQueryWorkflowOperation,
+    WorthQueryWorkflowOperationAdvance, WorthQueryWorkflowOperationDenial,
+};
+mod capture_refusal;
 mod construction;
+pub use capture_refusal::{
+    WorthQueryOperationInputCaptureRefusal, WorthQueryOperationInputCaptureRetryDenial,
+};
 mod projection_installation;
 pub use projection_installation::WorthQueryOutputProjectionInstallation;
 mod batch_delivery;
 mod current_delivery;
 mod delivery_policy;
 mod descriptor;
+mod discovered;
+pub use discovered::{
+    WorthQueryDiscoveredOperation, WorthQuerySettledDiscoveredOperation,
+    WorthQueryTerminalDiscoveredOperation,
+};
 #[cfg(test)]
 mod discovered_delivery_handoff_contract;
 #[cfg(test)]
 mod discovered_handoff_contract;
 mod fixed;
 mod fixed_advance;
+mod fixed_close;
 mod fixed_outputs;
 mod fixed_publication;
 mod fixed_recovery;
@@ -106,3 +123,5 @@ type FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> = WorthQueryO
     WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
     WorthQueryTerminalFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
 >;
+
+pub use worth_query_execution::publication_boundary::operation_input_capture::WorthQueryOperationInputCaptureDenial;

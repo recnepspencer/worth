@@ -133,6 +133,16 @@ def consumer_doctest_commands():
          ["cargo", "test", "--doc", "--no-fail-fast", "--jobs", "8",
           "--manifest-path", selection["manifest"], *packages(*selection["packages"])])
         for selection in configuration["doctests"]
+    ] + [
+        ("doc-owning-fixtures", ["cargo", "test", "--manifest-path", FIXTURE,
+         "-p", "worth-query-consumer-root", "-p", "worth-query-topology-entry",
+         "--bins", "--lib", "--jobs", "8", "--no-fail-fast", "--",
+         "compiled_examples_match_consumer_documents"]),
+        ("doc-owning-examples", ["cargo", "test", "--manifest-path", QUERY,
+         *packages("worth-query-declaration", "worth-query-execution", "worth-query-publication",
+                   "worth-query-host", "worth-query-certification"),
+         "--example", "authored_workflow", "--example", "ordinary_product_workflow",
+         "--jobs", "8", "--no-fail-fast"]),
     ]
 
 

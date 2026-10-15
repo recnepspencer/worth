@@ -28,11 +28,14 @@ pub(crate) mod action_instances;
 pub(crate) mod correspondence;
 #[cfg(test)]
 pub(crate) mod discovered_contracts;
+pub(crate) mod discovered_delivery;
 pub(crate) mod external_input;
 mod features;
 pub(crate) mod fixed_batch;
 mod fixed_delivery;
 pub(crate) mod fixed_successors;
+#[cfg(test)]
+pub(crate) mod historical;
 pub(crate) mod no_projection;
 #[cfg(test)]
 pub(crate) mod pinned_source;

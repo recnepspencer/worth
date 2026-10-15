@@ -67,13 +67,22 @@ pub(in super::super) fn supersession_retires_pending_predecessor(
         .execute()
         .expect("the successor output remains exactly readable");
     assert_eq!(exact.rows()[0].value, length(7));
+    let comparison_work = NonZeroUsize::new(
+        world
+            .application
+            .runtime()
+            .output_demand_resource_profile()
+            .limits()
+            .source_currentness_work(),
+    )
+    .expect("the installed profile admits positive source currentness work");
     let previous_basis = world
         .application
         .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
         .expect("installed host call opens");
     request
         .at(&previous_basis)
-        .require_current_program_output(&settled, NonZeroUsize::new(4_096).unwrap())
+        .require_current_program_output(&settled, comparison_work)
         .expect("settled output is current at its retained product basis");
     let _changed_source = perform(&request, &world.application, "anchor-a", 6, 10_111);
     let current_basis = world
@@ -83,13 +92,13 @@ pub(in super::super) fn supersession_retires_pending_predecessor(
     assert!(matches!(
         request.at(&current_basis).require_current_program_output(
             &settled,
-            NonZeroUsize::new(4_096).unwrap(),
+            comparison_work,
         ),
         Err(WorthQueryOutputCurrentnessDenial::Output(denial))
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
     request
         .at(&previous_basis)
-        .require_current_program_output(&settled, NonZeroUsize::new(4_096).unwrap())
+        .require_current_program_output(&settled, comparison_work)
         .expect("a later source edit cannot rewrite a retained prior basis");
 }

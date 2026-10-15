@@ -67,6 +67,7 @@ fn partial<'a>(
         .mutate(intent)
         .expect_source(source)
         .idempotency_owned(key)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("original description: {cause:?}"));
     append_failure(world);

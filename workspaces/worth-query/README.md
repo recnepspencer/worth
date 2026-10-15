@@ -1,11 +1,12 @@
 # WORTH Query Workspace
 
-Ordinary fixed and source-only actions use the [owning entry](crates/worth-query/docs/foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
+Ordinary fixed, discovered, source-only and bound workflow actions use the [owning entry](crates/worth-query/docs/foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
 Each advance accepts fresh authority and delegates one admitted native phase.
 Provider managed runs remain the resource/execution owners; application ownership
 adds no polling, budgets or second scheduler. Delivery and cleanup remain separate;
-refusal retains custody. Bound workflow execution keeps its native funnel until
-Phase C; discovered ownership lands in Phase B.
+refusal retains custody. Workflow ownership delegates the existing native guarded
+operation funnel; discovered ownership retains the original required-output graph.
+Manual native controls are explicit advanced entrances.
 
 
 This workspace owns the Query engine, its audience facades, and its explicit

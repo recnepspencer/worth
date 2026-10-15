@@ -170,3 +170,5 @@ pub use crate::domain_computation::execution_runtime::product_world::installed_s
 pub(crate) use tests::fixture::AdvancementHost;
 
 pub use observations::principal_target_reads_on_this_thread_for_test;
+
+pub use application_runtime::WorthQueryOperationInputCaptureDenial;

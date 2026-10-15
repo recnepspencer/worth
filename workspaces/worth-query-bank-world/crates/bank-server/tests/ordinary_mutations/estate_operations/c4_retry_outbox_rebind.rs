@@ -66,7 +66,7 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             source_completed,
         ) = source_operation.advance(&source_request)
@@ -143,7 +143,7 @@ fn equivalent_binding_does_not_bypass_fresh_authorization_currentness() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
             operation: source_custody,
             denial:

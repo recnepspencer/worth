@@ -93,3 +93,7 @@ pub mod discovery_currentness {
         WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
     };
 }
+
+pub mod operation_input_capture {
+    pub use crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial;
+}

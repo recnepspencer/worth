@@ -77,6 +77,7 @@ fn journey(result_set: bool, movement: u8) {
         };
         description
             .idempotency_owned(10_201)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<PinnedSourceProgram, PinnedAction>(&world.application)
             .unwrap_or_else(|(_, cause)| panic!("actual no-output action: {cause:?}"))
     };
@@ -102,6 +103,7 @@ fn journey(result_set: bool, movement: u8) {
             })
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency_owned(10_202)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<PinnedSourceProgram, PinnedAction>(&world.application)
             .unwrap_or_else(|(_, cause)| panic!("competing original owner: {cause:?}"));
         match competitor.advance(&request) {

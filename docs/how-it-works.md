@@ -870,9 +870,10 @@ completion cannot prove required outputs. Delivery and drop do not certify clean
 #### Advanced native mutation control
 
 Use the [ordinary owning entry](build-an-application.md#53-execute-through-the-program)
-for fixed and source-only actions. The native lanes below require
-`request.advanced().mutate(intent)` and their existing explicit allocation policy.
-Discovered and bound workflow lanes remain ordinary until their adapters land.
+for fixed, discovered, source-only and guarded workflow actions. Ordinary guarded
+workflow actions retain the original issued requirement in their owning operation.
+The native lanes below require `request.advanced().mutate(intent)` and their
+existing explicit allocation policy.
 Native owners retain effect, custody and unresolved-publication authority.
 
 **Native substrate.** Every lane takes an `ExecutionAllocationPolicy`
@@ -944,20 +945,17 @@ descriptive history.
   settlement; stale delivery exposes history/close without pumping closed outputs.
   Manual publication, output start and registered recovery are
   [advanced native controls](#advanced-native-mutation-control).
-- **Discovered outputs.** `execute_performed_discovered` returns owned source
-  custody. `start_required_outputs(&program, &request, controls)` creates an
-  owned continuation without querying or admitting its roots. Each
-  `advance(&program, &fresh_request)` checks the original runtime, program and
-  branch, then retains admitted roots and dependent progress before attempting
-  the next step. A refusal leaves that state available for retry; it does not
-  rerun the mutation. Discovery and binding remain fixed at the retained source
-  observation. Only an unadmitted root whose linear disclosure was consumed
-  reacquires that disclosure there. A continuation started by recovery also
-  reads each root's current source and validates the retained source against
-  it before admitting the root. Completion releases the prepared source;
-  a commit receipt alone does not prove output completion.
-  Open demands contribute membership to the required set; closing one demand
-  does not remove another demand's obligation.
+- **Discovered outputs.** A declared discovered action selects the ordinary
+  owning `retain_operation` entrance. Each fresh-request `advance` delegates one
+  native handoff, preserving original descriptor and genuine partial or
+  committed-retention failure. It does not rerun a committed handler. Registered
+  reply-loss recovery rejoins actual native custody; missing registration never
+  manufactures Fresh result or one-shot delivery. Current scalar/batch delivery
+  checks the complete original discovery and all settlements at the same
+  observation and phase as the declared read. No-projection delivery validates
+  that aggregate without a dummy query. Stale owners retain original history and
+  cleanup; closed handles cannot advance. Deliberate native source/start/recovery
+  controls require `advanced()`.
 - **Reuse.** An output whose settlement is unmarked on a continuous basis,
   with no recorded requirement for full verification, can
   be reused without contacting its producer or re-running its source query.
@@ -1814,13 +1812,15 @@ Assessments and conditions take their subject from the proposal
 (`proposal_for_assessment`, `condition_subject`) and read that subject's
 current state on the branch, never the proposed value. At a guarded node (`workflow_authority required`), an advance returns
 `AwaitingOperation` carrying single-use authority for that occurrence; nothing
-is committed. The caller then runs the business operation with
-`for_workflow_operation(..)` and `execute_in_program(..)`. That runs ordinary
-admission (check 1), requires the input to hash to the proposal's digest, and
-commits the business write together with the node's settlement. If the handler
-denies, nothing commits and the node still waits; the authority was spent at
-admission, so advance again for fresh authority before retrying. After a
-commit, advance again to move to the successor.
+is committed. The ordinary caller captures the original input fallibly with
+`idempotency_owned`, binds the description with `for_workflow_operation`, and
+retains the installed declared action. Each owning `advance` takes a fresh
+request and delegates the existing native admission, proposal-input matching
+and atomic business-write/node-settlement funnel. Refusal and pending results
+return the original owner; close releases its native cleanup separately.
+Manual `execute_in_program` uses the explicit advanced entrance. A subsequent
+workflow advance selects the successor; source completion alone is not that
+workflow advance.
 
 Full rules:
 [Workflows, Operations](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations).

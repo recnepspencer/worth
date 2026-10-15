@@ -44,6 +44,7 @@ pub(super) fn stale_owner(
         .without_source()
         .preconditions(conditions)
         .idempotency_owned(0x9176_5019)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<fixture::SourceOnlyRetentionProgram, fixture::RetentionAction>(host)
         .unwrap_or_else(|(_, cause)| panic!("original typed conditions construct: {cause:?}"));
     drop(request);

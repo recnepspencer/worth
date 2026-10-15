@@ -39,7 +39,7 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             key("typed-mismatch"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("typed construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("typed construction: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
         operation,
         denial:
@@ -81,7 +81,7 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             key("typed-send"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("typed construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("typed construction: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         committed,
     ) = committed.advance(&request, history)
@@ -121,7 +121,7 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             key("typed-send"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("typed construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("typed construction: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(retried) =
         retried.advance(&request, history)
     else {
@@ -167,7 +167,7 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             key("typed-send"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("typed construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("typed construction: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
         intent_drift,
     ) = intent_drift.advance(&request, history)

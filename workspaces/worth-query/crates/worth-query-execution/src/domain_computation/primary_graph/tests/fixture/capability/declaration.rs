@@ -190,7 +190,7 @@ impl ApplicationStructuredValueBinding for CapabilityTouchOperationInputBinding 
 worth_query_operation!(pub CapabilityTouchOperation for IdentityExecutionSchema, input CapabilityTouchOperationInputBinding);
 worth_query_declaration::worth_query_structured_value_binding!(pub ComposedCapabilityTouchOperationInputBinding for CapabilityTouchInput { identity: "worth.query.test.capability-touch-input.v1" });
 worth_query_operation!(pub ComposedCapabilityTouchOperation for IdentityExecutionSchema, input ComposedCapabilityTouchOperationInputBinding);
-worth_query_operation_reads!(CapabilityTouchOperation => [AccountLabel]);
+worth_query_operation_reads!(CapabilityTouchOperation => [AccountLabel, AccountIdentity]);
 worth_query_operation_writes!(CapabilityTouchOperation => [AccountLabel]);
 worth_query_operation_reads!(ComposedCapabilityTouchOperation => [AccountLabel]);
 worth_query_operation_writes!(ComposedCapabilityTouchOperation => [AccountLabel]);

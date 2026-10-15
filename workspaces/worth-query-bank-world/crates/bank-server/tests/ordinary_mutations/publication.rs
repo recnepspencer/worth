@@ -22,7 +22,7 @@ fn unrelated_graph_population_does_not_widen_commit_publication() {
             key("mutation-publication-baseline"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
     let scope = request_scope();
     let request = baseline.world.runtime.request(&baseline_owner, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
@@ -42,7 +42,7 @@ fn unrelated_graph_population_does_not_widen_commit_publication() {
             key("mutation-publication-expanded"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
     let scope = request_scope();
     let request = expanded.world.runtime.request(&expanded_owner, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(

@@ -68,6 +68,7 @@ fn owning_result_set_original_conditions_survive_partial_publication() {
             observed.result_set_observation().unwrap().clone(),
             10_076,
         )
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, denial)| panic!("installed original descriptor: {denial:?}"))
     };
@@ -214,6 +215,7 @@ fn owning_result_set_false_original_condition_refuses_before_candidate_effect() 
         original.result_set_observation().unwrap().clone(),
         10_077,
     )
+    .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
     .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
     .unwrap_or_else(|(_, denial)| {
         panic!("native precondition is checked after construction: {denial:?}")
