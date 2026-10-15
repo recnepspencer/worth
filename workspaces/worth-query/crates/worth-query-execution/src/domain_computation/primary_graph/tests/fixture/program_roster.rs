@@ -114,3 +114,44 @@ pub(in crate::domain_computation::primary_graph) fn installed_program_support(
         WorthQueryProgramActivationCell::unpublished(),
     )
 }
+
+struct ProvenanceSuccessorProgram;
+impl ApplicationProgramDefinition<IdentityExecutionSchema> for ProvenanceSuccessorProgram {
+    type Contributions = ();
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.query.test.provenance-successor.v1");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        ProgramRequiredProgram::feature_specs()
+    }
+}
+
+/// Data-only provenance fixture: both genuine revisions remain in admitted
+/// meaning while activation is deliberately unpublished (not a historical grant).
+pub(in crate::domain_computation::primary_graph) fn installed_provenance_support(
+    schema: &WorthQueryInstalledApplicationSchema<IdentityExecutionSchema>,
+) -> (
+    WorthQueryInstalledProgramSupport<IdentityExecutionSchema>,
+    ApplicationProgramRevision,
+    ApplicationProgramRevision,
+) {
+    let source = validated::<ProgramRequiredProgram>();
+    let successor = validated::<ProvenanceSuccessorProgram>();
+    let roster = WorthQueryProgramSupportAdmission::for_installed_schema(schema)
+        .support(&source)
+        .unwrap()
+        .support(&successor)
+        .unwrap()
+        .close()
+        .unwrap();
+    let revisions = (*source.revision(), *successor.revision());
+    (
+        WorthQueryInstalledProgramSupport::installed(
+            Arc::new(roster),
+            WorthQueryProgramActivationCell::unpublished(),
+        ),
+        revisions.0,
+        revisions.1,
+    )
+}

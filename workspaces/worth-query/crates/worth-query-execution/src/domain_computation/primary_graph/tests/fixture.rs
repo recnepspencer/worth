@@ -169,7 +169,8 @@ mod program_activation;
 mod program_roster;
 pub(in crate::domain_computation::primary_graph) use program_activation::seed_program_activation;
 pub(in crate::domain_computation::primary_graph) use program_roster::{
-    installed_program_support, rostered_program_revision, unadmitted_program_revision,
+    installed_program_support, installed_provenance_support, rostered_program_revision,
+    unadmitted_program_revision,
 };
 #[path = "fixture/schema_types.rs"]
 mod schema_types;

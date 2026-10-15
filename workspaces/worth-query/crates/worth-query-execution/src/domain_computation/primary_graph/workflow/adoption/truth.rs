@@ -226,6 +226,17 @@ impl WorkflowAdoptionEntity<'_> {
             .ok_or_else(|| self.unreadable())
     }
 
+    pub(in crate::domain_computation::primary_graph) fn required_symbol(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        locator: &AspectFieldLocator,
+    ) -> Result<(), WorkflowAdoptionReadDenial> {
+        match self.value(execution, locator)? {
+            Some(AspectValue::String(InternedString::Symbol(_))) => Ok(()),
+            _ => Err(self.unreadable()),
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn optional_u64(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

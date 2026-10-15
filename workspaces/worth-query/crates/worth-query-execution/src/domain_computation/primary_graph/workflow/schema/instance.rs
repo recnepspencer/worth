@@ -24,6 +24,8 @@ pub(super) fn lower_instance(
     let identity_field = planned_field_locator(INSTANCE_ASPECT, "identity")?;
     let protocol_version = planned_field_locator(INSTANCE_ASPECT, "protocol-version")?;
     let branch_occurrence = planned_field_locator(INSTANCE_ASPECT, "branch-occurrence")?;
+    let started_program_revision =
+        planned_field_locator(INSTANCE_ASPECT, "started-program-revision")?;
     let program_revision = planned_field_locator(INSTANCE_ASPECT, "program-revision")?;
     let definition_content_identity =
         planned_field_locator(INSTANCE_ASPECT, "definition-content-identity")?;
@@ -50,6 +52,7 @@ pub(super) fn lower_instance(
         .required("protocol-version", ScalarAspectType::UInt64)
         .required("branch-occurrence", ScalarAspectType::UInt64)
         .required("program-revision", ScalarAspectType::String)
+        .required("started-program-revision", ScalarAspectType::String)
         .required("definition-content-identity", ScalarAspectType::String)
         .required("subject-partition", ScalarAspectType::UInt64)
         .required("subject-slot", ScalarAspectType::UInt64)
@@ -90,6 +93,7 @@ pub(super) fn lower_instance(
             protocol_version,
             branch_occurrence,
             program_revision,
+            started_program_revision,
             definition_content_identity,
             subject_partition,
             subject_slot,

@@ -194,12 +194,21 @@ where
             inherited_evidence_bytes: 0,
             deadline: super::workflow_deadline::start_deadline(clock, None, declared_deadline)?,
         };
+        let start_revision = self.lease.handle().with_runtime(execution, |runtime| {
+            crate::domain_computation::primary_graph::workflow::instance::start_provenance::admit(
+                execution,
+                runtime,
+                self.lease.product().relational_basis(),
+                compiled.program_revision(),
+            )
+        })?;
         let mut demand = PlatformEffectDemand::default();
         let branch_occurrence = self.lease.product().product_branch().occurrence_ordinal();
         visit_instance_start_facts(
             &layout,
             &compiled,
             discovery_intent.lookup_identity(),
+            &start_revision,
             branch_occurrence,
             subject,
             carry,
@@ -212,6 +221,7 @@ where
             &layout,
             &compiled,
             discovery_intent.lookup_identity(),
+            &start_revision,
             branch_occurrence,
             subject,
             carry,

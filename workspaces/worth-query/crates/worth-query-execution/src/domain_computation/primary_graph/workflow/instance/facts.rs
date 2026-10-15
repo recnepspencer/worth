@@ -26,6 +26,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,
+    started_program_revision: &AspectValue,
     branch_occurrence: u64,
     subject: EntityId,
     carry: WorkflowLineageCarry,
@@ -40,6 +41,10 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     };
     let mut fields = BTreeMap::from([
         (layout.instance.identity.clone(), text(instance_identity)),
+        (
+            layout.instance.started_program_revision.clone(),
+            started_program_revision.clone(),
+        ),
         (
             layout.instance.protocol_version.clone(),
             AspectValue::UInt64(
