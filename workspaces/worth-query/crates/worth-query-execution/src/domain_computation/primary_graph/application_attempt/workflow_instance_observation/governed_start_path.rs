@@ -21,7 +21,7 @@ pub(super) fn observe(
         layout.instance.entity_kind,
         &layout.instance.resume_node_path,
     )
-    .map_err(Denial::Execution)?;
+    .map_err(Denial::Relational)?;
     let path = match resume {
         Some(AspectValue::String(InternedString::Raw(path))) => path,
         None => {
@@ -47,7 +47,7 @@ pub(super) fn observe(
                 layout.node.entity_kind,
                 &layout.node.path,
             )
-            .map_err(Denial::Execution)?
+            .map_err(Denial::Relational)?
             {
                 Some(AspectValue::String(InternedString::Raw(path))) => path,
                 _ => return Err(Denial::Corrupt),
@@ -81,7 +81,7 @@ pub(super) fn observe(
             layout.node.entity_kind,
             &layout.node.path,
         )
-        .map_err(Denial::Execution)?;
+        .map_err(Denial::Relational)?;
         match value {
             Some(AspectValue::String(InternedString::Raw(candidate))) => {
                 matches += usize::from(candidate == path);

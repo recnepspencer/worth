@@ -261,7 +261,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 Ok((rows.seal().map_err(Denial::Allocation)?, Some(native)))
             })?;
         Ok(WorthQueryWorkflowInstancePage {
-            basis: WorthQueryWorkflowReadBasis::retained(data.retain_application_read()),
+            basis: WorthQueryWorkflowReadBasis::retained(data),
             target,
             extent,
             subject,
