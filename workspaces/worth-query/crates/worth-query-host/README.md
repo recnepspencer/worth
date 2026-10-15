@@ -741,3 +741,13 @@ transfer native Fresh/Recovered receipt evidence after cleanup. Commands are
 not domain mutations and have no public execute/recover or clone escape.
 See [owning capability commands](../worth-query/docs/foundations/workflows.md#owning-capability-commands)
 for native replay and authority distinctions.
+
+## Mixed workflow consumer
+
+The [observable workflow journey](../../../../docs/build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
+uses this facade for ordinary owning operations, current retained reads,
+original-start reacquisition, independent history audit and native live marks.
+`retain_current_read()` and subscription `close()` take no phase/request argument.
+The first retains data; the second releases subscription custody. Neither grants
+execution permission or settles operation cleanup. The new example is
+source-prepared, with joined compilation/runtime and its registered CI run pending.
