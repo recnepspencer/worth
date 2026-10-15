@@ -22,6 +22,8 @@ use super::super::{
     InvalidationEditAdmission,
 };
 
+mod ordering;
+
 pub(super) struct PreparedPostingOrdinals {
     ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
     posting_payload_bytes: u64,
@@ -238,51 +240,40 @@ impl PreparedPostingOrdinals {
     }
 }
 
-/// Sort only fixed-width fingerprints. Full equality inside each fingerprint
-/// bucket is still mandatory: a hash never authorizes fact-key deduplication.
+/// Order by fingerprint and exact key, then group adjacent equal keys. Even
+/// colliding fingerprints take O(n log n) comparisons, not a bucket scan per
+/// occurrence. Hashes never authorize deduplication; every ordinal survives.
 fn group_projected(
     mut projected: Vec<ProjectedKey>,
     maximum: usize,
-    admission: &mut InvalidationEditAdmission,
+    admission: &mut impl IndexAdmission,
 ) -> Result<Vec<PostingGroup>, CompanionPreflightStop> {
-    for index in 1..projected.len() {
-        let mut cursor = index;
-        while cursor != 0 {
-            admission.work(1)?;
-            if projected[cursor - 1].hash <= projected[cursor].hash {
-                break;
-            }
-            admission.work(1)?;
-            projected.swap(cursor - 1, cursor);
-            cursor -= 1;
-        }
-    }
+    ordering::sort(&mut projected, admission)?;
     let mut groups: Vec<PostingGroup> = Vec::with_capacity(maximum);
-    let mut bucket_start = 0usize;
     let mut preceding_hash = None;
     admission.work(
         u64::try_from(projected.len()).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
     )?;
     for projection in projected {
-        if preceding_hash != Some(projection.hash) {
-            preceding_hash = Some(projection.hash);
-            bucket_start = groups.len();
-        }
-        let mut matching = None;
-        for (index, group) in groups.iter().enumerate().skip(bucket_start) {
+        let mut equal_key = false;
+        if preceding_hash == Some(projection.hash) {
+            admission.work(super::super::admission::key_traversal_work(&projection.key))?;
             admission.work(
                 projection
                     .key
                     .comparison_work_bound()
                     .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
             )?;
-            if projection.key.as_ref() == group.key.as_ref() {
-                matching = Some(index);
-                break;
-            }
+            equal_key = groups
+                .last()
+                .is_some_and(|group| group.key == projection.key);
         }
-        if let Some(index) = matching {
-            let ordinals = &mut groups[index].ordinals;
+        preceding_hash = Some(projection.hash);
+        if equal_key {
+            let ordinals = &mut groups
+                .last_mut()
+                .expect("an equal key has a group")
+                .ordinals;
             admission.ordered_edit::<usize, ()>(ordinals.len())?;
             ordinals.insert(projection.ordinal);
         } else {
