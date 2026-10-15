@@ -2063,6 +2063,18 @@ and approvals a workflow may use, and which capabilities control it. After
 that, definitions are *data*: authored, validated, published on a branch,
 discovered, started, and advanced at run time.
 
+For explicitly driven discovered programs, retain the completed aggregate and use
+`request.at(&observation).require_current_discovered_program_outputs(&settlement,
+maximum_work)` to validate that exact original required set. The check includes
+root and dependent discovery consumption and every retained output settlement.
+Changing membership refuses delivery even when every surviving root remains
+current. An originally empty set still carries its original negative facts;
+retiring a native root does not erase those facts or invent an output settlement.
+Refusal preserves the borrowed aggregate and its historical observation. This
+native guard does not run a projection or replace the forthcoming ordinary
+owning discovered adapter.
+
+
 Every workflow action is a governed mutation. There is no background
 scheduler, and no timer or callback advances an instance: **the caller pumps
 progress**, one request per step. An external effect completes through an

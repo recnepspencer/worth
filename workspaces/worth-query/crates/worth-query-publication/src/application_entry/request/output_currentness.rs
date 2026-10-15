@@ -16,6 +16,8 @@ pub enum WorthQueryOutputCurrentnessDenial {
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
     ),
     ForeignBranch,
+    /// Original discovery validation, materialization or storage refused.
+    Source(worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial),
     Output(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
 }
 
@@ -24,8 +26,9 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Requires every output in a program settlement to retain its Query-owned
-    /// source lineage at this request's one exact World observation.
+    /// Requires every retained output and any original dependent discovery
+    /// consumption at this request's one exact World observation. A fixed
+    /// root with no discovery retains the native output-only meaning.
     pub fn require_current_program_output<RootQuery>(
         &self,
         settlement: &crate::application_entry::WorthQueryApplicationProgramOutputSettlement<
@@ -33,7 +36,11 @@ where
         >,
         maximum_work: NonZeroUsize,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
-        self.require_current_output_settlements(settlement.retained_settlements(), maximum_work)
+        self.application
+            .with_application_advancement(self.scope, |phase| {
+                self.require_current_program_output_in_advancement(&phase, settlement, maximum_work)
+            })
+            .map_err(WorthQueryOutputCurrentnessDenial::ExecutionRequest)?
     }
 
     /// Requires a direct root or dependent demand's retained output lineage at

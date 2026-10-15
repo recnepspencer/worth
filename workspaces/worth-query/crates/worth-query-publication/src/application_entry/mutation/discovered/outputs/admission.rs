@@ -35,6 +35,8 @@ where
     RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
 {
     discovery: Discovery<Schema, Root>,
+    discovery_source: Option<WorthQueryApplicationOutputDemandSource<DiscoveryQuery<Schema, Root>, DiscoveryValue<Schema, Root>>>,
+    pub(super) dependencies: Option<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies>,
     kind: DiscoveredRootStartKind,
     demands: Option<Vec<Demand<Schema, Root>>>,
     sources: Vec<SourceInput<Schema, Root>>,
@@ -56,6 +58,8 @@ where
     pub(super) fn new(discovery: Discovery<Schema, Root>, kind: DiscoveredRootStartKind) -> Self {
         Self {
             discovery,
+            discovery_source: None,
+            dependencies: None,
             kind,
             demands: None,
             sources: Vec::new(),
@@ -113,12 +117,19 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        if self.demands.is_none() {
+        if self.discovery_source.is_none() && self.dependencies.is_none() {
             let discovered = request
                 .at(retained)
                 .query(self.discovery.clone())
                 .execute_in_advancement(phase)
                 .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?;
+            self.discovery_source = Some(discovered.into_output_demand_source());
+        }
+        if self.demands.is_none() {
+            let discovered = self
+                .discovery_source
+                .as_ref()
+                .expect("original discovery pairing remains owned");
             let row = discovered
                 .rows()
                 .first()
@@ -128,6 +139,16 @@ where
                 RootConnection::<Schema, Root>::demands_from_discovery(row)
                     .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?,
             );
+        }
+        if self.dependencies.is_none() {
+            let proof = request.at(retained).retain_query_dependencies(
+                phase,
+                self.discovery_source
+                    .as_ref()
+                    .expect("capture borrows original pairing"),
+            )?;
+            self.dependencies = Some(proof);
+            self.discovery_source = None;
         }
         let demands = self
             .demands
@@ -258,6 +279,7 @@ where
                     settlement: None,
                     pending_authority: None,
                     continuation: None,
+                    dependencies: None,
                     outputs: Vec::new(),
                     work: ProgramOutputTraversalWork::default(),
                 }),

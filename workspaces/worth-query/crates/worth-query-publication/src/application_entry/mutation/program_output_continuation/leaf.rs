@@ -21,6 +21,7 @@ where
         if std::mem::take(&mut self.open) {
             Ok(ProgramOutputContinuationProgress::Settled {
                 outputs: Vec::new(),
+                dependencies: None,
                 work: ProgramOutputTraversalWork::default(),
             })
         } else {
