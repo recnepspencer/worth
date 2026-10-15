@@ -71,7 +71,7 @@ pub(super) fn authorization(
         return snapshot_identity_reconstruction_denial();
     }
     match Reentry::authorization_kind(kind, |kind| {
-        crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure::Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(kind, detail))
+        crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure::Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(kind, detail.as_str()))
     }) {
         Reentry::ExecutionStopped(kind) => read_stopped(Ok(kind)),
         Reentry::ControlStopped(Control::Cancelled) => read_stopped(Err(
