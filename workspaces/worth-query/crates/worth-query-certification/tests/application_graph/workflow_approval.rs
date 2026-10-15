@@ -207,10 +207,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&814_u64)
         .for_workflow_operation(&application, &required);
     match wrong_input {
-        Err(denial) => assert_eq!(
+        Err(denial) => assert!(matches!(
             denial,
             worth_query_host::facade::application_entry::WorthQueryWorkflowOperationBindingDenial::RequirementMismatch
-        ),
+        )),
         Ok(_) => panic!("a different proposed input must not bind"),
     }
     let effect = runtime

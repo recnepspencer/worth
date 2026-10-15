@@ -21,6 +21,14 @@ impl ApplicationWorkflowSpec for Spec {
     type Schema = CapabilitySchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity =
         ApplicationWorkflowSpecIdentity::new("capability-workflow.spec.v1");
+    fn observation_policy() -> ApplicationWorkflowObservationPolicy {
+        // This completion-only fixture installs no governed workflow-read binding.
+        ApplicationWorkflowObservationPolicy::disabled()
+    }
+    fn actor_policy() -> ApplicationWorkflowActorPolicy {
+        // Its real retention/start/advance grants declare no recorded-actor rule.
+        ApplicationWorkflowActorPolicy::not_applicable()
+    }
 }
 fn input() -> SetRetentionInput {
     SetRetentionInput {

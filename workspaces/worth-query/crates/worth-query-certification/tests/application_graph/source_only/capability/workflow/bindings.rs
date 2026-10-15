@@ -6,8 +6,8 @@ use worth_query_host::facade::{
 pub struct GuardedBinding;
 impl ApplicationMutationBinding<CapabilitySchema> for GuardedBinding {
     const REQUIRES_WORKFLOW_AUTHORITY: bool = true;
-    fn workflow_execution_requirements() -> Option<ApplicationWorkflowExecutionRequirements> {
-        Some(ApplicationWorkflowExecutionRequirements::new())
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::occurrence_only()
     }
     type Input = SetRetentionInput;
     type InputBinding = SetRetentionInputBinding;
@@ -73,6 +73,9 @@ impl ApplicationMutationAdmissionBinding<CapabilitySchema> for GuardedBinding {
 }
 pub struct ControlBinding;
 impl ApplicationMutationBinding<CapabilitySchema> for ControlBinding {
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
     const WORKFLOW_CONTROL: bool = true;
     type Input = SetRetentionInput;
     type InputBinding = SetRetentionInputBinding;

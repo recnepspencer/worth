@@ -1,9 +1,11 @@
-use super::declaration::*;
 use super::super::schema::*;
+use super::declaration::*;
+use worth_query_decl::facade::worth_query_mutation_binding;
 use worth_query_decl::facade::{application_operation::*, application_schema::*};
-use worth_query_host::facade::worth_query_mutation_binding;
 
-fn resource(input: &ActorLifecycleInput) -> String { input.identity.clone() }
+fn resource(input: &ActorLifecycleInput) -> String {
+    input.identity.clone()
+}
 worth_query_mutation_binding!(
     pub ActorLifecycleBinding for ActorLifecycleInput, schema DocumentRetentionSchema,
     identity "worth.query.certification.actor-lifecycle-binding.v1", input ActorLifecycleInputBinding,
@@ -22,11 +24,21 @@ worth_query_mutation_binding!(
     resources retained_representation_bytes 8192
 );
 #[derive(Clone)]
-pub struct ActorLifecycleIntent { pub input: ActorLifecycleInput }
+pub struct ActorLifecycleIntent {
+    pub input: ActorLifecycleInput,
+}
 impl ApplicationMutationIntent<DocumentRetentionSchema> for ActorLifecycleIntent {
     type Binding = ActorLifecycleBinding;
-    fn input(&self) -> &ActorLifecycleInput { &self.input }
-    fn scope_binding(&self) -> <ActorLifecycleBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(DocumentIdentityField::reference(), self.input.identity.clone())
+    fn input(&self) -> &ActorLifecycleInput {
+        &self.input
+    }
+    fn scope_binding(
+        &self,
+    ) -> <ActorLifecycleBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::ScopeBinding
+    {
+        ApplicationMutationFieldScope::new(
+            DocumentIdentityField::reference(),
+            self.input.identity.clone(),
+        )
     }
 }
