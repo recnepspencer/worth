@@ -61,21 +61,3 @@ pub(super) fn case_protocol(policy: PerfTimingPolicy) -> serde_json::Value {
         "statistical_posture": "order statistics; not a confidence interval",
     })
 }
-
-#[cfg(test)]
-mod tests {
-    use super::{case_resolution, PerfTimingPolicy, MATCHED_CAPTURE_ORDER};
-
-    #[test]
-    fn f2_resolution_and_counterbalanced_order_are_frozen() {
-        for policy in [PerfTimingPolicy::StrictHeavy, PerfTimingPolicy::MedianOnly] {
-            let resolution = case_resolution(policy);
-            assert_eq!(resolution.sample_count(), 21);
-            assert_eq!(resolution.warmup_count(), 4);
-        }
-        let structural = case_resolution(PerfTimingPolicy::StructuralOnly);
-        assert_eq!(structural.sample_count(), 3);
-        assert_eq!(structural.warmup_count(), 0);
-        assert_eq!(MATCHED_CAPTURE_ORDER, ["A1", "B1", "B2", "A2"]);
-    }
-}

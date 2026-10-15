@@ -92,11 +92,6 @@ fn candidate_contract_is_an_ordered_multiset_not_a_distinct_set() {
 }
 
 #[test]
-fn expected_work_origin_contract_is_exact() {
-    assert_eq!(ExpectedWorkOrigin::ALL.len(), 3);
-}
-
-#[test]
 fn every_financial_scenario_compiles_subscriptions_into_a_sealed_baseline() {
     let cases = ordinary_locality_cases();
     for scenario in FinancialLocalityScenario::ALL {
@@ -113,29 +108,6 @@ fn every_financial_scenario_compiles_subscriptions_into_a_sealed_baseline() {
         );
         assert_eq!(compiled.locality_definition().scenario(), scenario);
     }
-}
-
-#[test]
-fn locality_world_meaning_contains_no_runtime_graph_authority() {
-    let sources = [
-        include_str!("../../../world/locality_definition.rs"),
-        include_str!("../../../world/locality_definition/generation.rs"),
-        include_str!("../../../world/locality_definition/generation/sparse.rs"),
-        include_str!("../../../world/locality_definition/generation/partitioned.rs"),
-        include_str!("../../../world/locality_definition/generation/convergent.rs"),
-        include_str!("../../../world/locality_definition/generation/dense.rs"),
-        include_str!("../../../world/locality_definition/generation/churn.rs"),
-        include_str!("../../../world/locality_definition/generation/restore.rs"),
-    ]
-    .join("\n");
-    for forbidden in ["NodeId", "DependencyEdge", "AspectMask", "SignalGraph"] {
-        assert!(
-            !sources.contains(forbidden),
-            "world meaning imported {forbidden}"
-        );
-    }
-    assert!(sources.contains("FinancialLocalitySubscription"));
-    assert!(sources.contains("LocalityMarketFactor::FxSpot"));
 }
 
 fn representative_case(

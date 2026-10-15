@@ -24,7 +24,7 @@ fn unarmed_operation_control_is_cost_neutral() {
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &controlled.child_basis,
             &mut (),
@@ -36,7 +36,7 @@ fn unarmed_operation_control_is_cost_neutral() {
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &ordinary.child_basis,
             &mut (),

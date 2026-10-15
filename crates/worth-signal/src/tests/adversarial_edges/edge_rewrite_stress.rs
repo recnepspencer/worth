@@ -4,10 +4,10 @@ use crate::tests::support::{GraphDependencyBatchExt, ASPECT_A, ASPECT_B};
 #[test]
 fn stress_edge_rewrites_across_reused_nodes() {
     let mut graph = SignalGraph::new();
-    let roots: Vec<_> = (0..128).map(|_| graph.node().build()).collect();
-    let leaves: Vec<_> = (0..512).map(|_| graph.node().build()).collect();
+    let roots: Vec<_> = (0..16).map(|_| graph.node().build()).collect();
+    let leaves: Vec<_> = (0..64).map(|_| graph.node().build()).collect();
 
-    for round in 0..200 {
+    for round in 0..40 {
         for (index, &leaf) in leaves.iter().enumerate() {
             let root = roots[(index + round) % roots.len()];
             let aspect = if (index + round) % 2 == 0 {

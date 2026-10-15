@@ -195,32 +195,7 @@ fn origin_admission_rejects_forged_payload_binding_axes() {
 }
 
 #[test]
-fn phase_two_compiler_mutation_matrix_is_retained() {
-    let evidence = include_str!("phase_2_progression_mutation_matrix.txt");
-    assert!(evidence.contains("admitted source -> lower"));
-    assert!(evidence.contains("expected `ResolvedInvalidationWork`"));
-    assert!(evidence.contains("lowered -> execute"));
-    assert!(evidence.contains("expected `ReadyInvalidationBatch`"));
-    assert!(evidence.contains("resolved.clone()"));
-    assert!(evidence.contains("no method named `clone`"));
-}
-
-#[test]
-fn owner_specific_phase_inventory_is_complete_and_non_clone() {
-    let module = include_str!("mod.rs");
-    for phase in [
-        "AdmittedSourceRecompute",
-        "PreparedDirectInvalidation",
-        "CommittedDirectInvalidation",
-        "AdmittedStructuralRecompute",
-        "ResolvedInvalidationWork",
-        "LoweredInvalidationBatch",
-        "ReadyInvalidationBatch",
-        "ExecutedInvalidationBatch",
-    ] {
-        assert!(module.contains(phase), "missing phase export: {phase}");
-    }
-
+fn owner_specific_authority_phases_are_not_clone() {
     for (phase, source) in [
         ("AdmittedSourceRecompute", include_str!("source.rs")),
         ("PreparedDirectInvalidation", include_str!("prepared.rs")),

@@ -23,7 +23,7 @@ fn pre_effect_advance_panic_unwinds_without_poisoning_the_owner() {
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = mutation.advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &basis,
             &mut (),
@@ -43,7 +43,7 @@ fn pre_effect_advance_panic_unwinds_without_poisoning_the_owner() {
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.child_basis,
             &mut (),
@@ -70,7 +70,7 @@ fn post_effect_advance_panic_preserves_performed_truth_and_sibling_progress() {
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.mutation.advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.root_basis,
             &mut (),
@@ -95,7 +95,7 @@ fn post_effect_advance_panic_preserves_performed_truth_and_sibling_progress() {
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.child_basis,
             &mut (),
@@ -148,7 +148,7 @@ fn fork_post_capture_fault_preserves_performed_child_and_source_health() {
             .mutation
             .advance_exact(
                 worth_execution::ExecutionRequest::serial(
-                    &crate::execution_custody::operational_serial_request(),
+                    &crate::signal_owner_services::execution_custody::operational_serial_request(),
                 ),
                 &world.root_basis,
                 &mut (),
@@ -198,7 +198,7 @@ fn fork_source_capture_fault_quarantines_only_source_and_releases_destination() 
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.child_basis,
             &mut (),
@@ -246,7 +246,7 @@ fn snapshot_and_restore_faults_do_not_poison_an_unrelated_branch() {
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &snapshot_world.root_basis,
             &mut (),
@@ -283,7 +283,7 @@ fn snapshot_and_restore_faults_do_not_poison_an_unrelated_branch() {
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &restore_world.root_basis,
             &mut (),
