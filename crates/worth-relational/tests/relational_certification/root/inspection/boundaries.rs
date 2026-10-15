@@ -8,7 +8,7 @@ use worth_relational::facade::inspection::RelationalMvccCostScope;
 
 #[test]
 fn phase5_inspection_rejects_foreign_and_rootless_identities() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -27,7 +27,7 @@ fn phase5_inspection_rejects_foreign_and_rootless_identities() {
 
 #[test]
 fn phase5_inspection_rejects_duplicate_branch_scope() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -43,7 +43,7 @@ fn phase5_inspection_rejects_duplicate_branch_scope() {
 
 #[test]
 fn phase5_region_locators_are_runtime_affine_even_when_storage_is_shared() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -69,7 +69,7 @@ fn phase5_region_locators_are_runtime_affine_even_when_storage_is_shared() {
 
 #[test]
 fn phase5_public_inspection_artifacts_are_read_only_complete_root_evidence() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());

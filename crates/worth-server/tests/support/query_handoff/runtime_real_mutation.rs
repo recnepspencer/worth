@@ -20,7 +20,7 @@ impl WorthServerQueryWorkspaceProvider for RealMutationWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        crate::test_bootstrap_policy::with_bootstrap(|request_execution| {
+        crate::shared_support_test_bootstrap_policy::with_bootstrap(|request_execution| {
             match request.target() {
                 WorthServerQueryWorkspaceBindingTarget::QueryHandoff { operation }
                     if matches!(

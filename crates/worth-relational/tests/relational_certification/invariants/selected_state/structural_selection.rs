@@ -29,7 +29,7 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let expectation = Arc::new(Mutex::new(None));

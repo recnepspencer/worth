@@ -68,7 +68,7 @@ fn foreign_owner_values_keep_exact_canonical_denials() {
 
 #[test]
 fn stale_unretained_descriptor_keeps_its_canonical_denial() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let second = empty_runtime();
@@ -105,7 +105,7 @@ fn stale_unretained_descriptor_keeps_its_canonical_denial() {
 
 #[test]
 fn archived_retained_basis_survives_until_explicit_release() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut runtime, services, archived_identity) = committed_fork(execution, "retained-archive");
@@ -161,7 +161,7 @@ fn archived_retained_basis_survives_until_explicit_release() {
 
 #[test]
 fn deleting_branch_reports_pending_then_deletes_after_active_operation_releases() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, services, identity) = committed_fork(execution, "pending-delete");

@@ -4,10 +4,10 @@ use worth_server::{
     WorthServerProductSessionCreationRequest, WorthServerProductSnapshotPrecondition,
 };
 
-#[path = "support/product_operation_phase_eleven/backend.rs"]
-pub mod backend;
-#[path = "support/product_session_phase_ten/fixture.rs"]
-pub mod fixture;
+#[allow(unused_imports)]
+pub use crate::shared_support_product_operation_phase_eleven_backend as backend;
+#[allow(unused_imports)]
+pub use crate::shared_support_product_session_phase_ten_fixture as fixture;
 
 use backend::{stateful_editor_registration, StatefulProductEditorBackend};
 use fixture::{

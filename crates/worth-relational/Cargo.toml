@@ -1,5 +1,6 @@
 [package]
 name = "worth-relational"
+autotests = false
 edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -43,3 +44,15 @@ workspace = true
 name = "branch_local_mvcc"
 test = true
 harness = false
+
+[[test]]
+name = "relational_contracts"
+path = "tests/relational_contracts.rs"
+
+[[test]]
+name = "keyed_kept_allocation"
+path = "tests/isolated/keyed_kept_allocation.rs"
+
+[[test]]
+name = "leased_preparation"
+path = "tests/isolated/leased_preparation.rs"

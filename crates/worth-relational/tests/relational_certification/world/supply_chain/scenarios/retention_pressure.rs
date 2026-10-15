@@ -1,6 +1,6 @@
 use super::{BaselineName, RetentionObligation, RetentionObligationKind, SupplyChainBaseline};
-use crate::world::supply_chain::scale::SupplyChainScale;
-use crate::world::supply_chain::semantic_key::BranchLabel;
+use crate::relational_certification::world::supply_chain::scale::SupplyChainScale;
+use crate::relational_certification::world::supply_chain::semantic_key::BranchLabel;
 
 pub(super) fn build(scale: SupplyChainScale) -> SupplyChainBaseline {
     let mut baseline = super::contested::build(scale);

@@ -13,19 +13,19 @@ use worth_server::{
     WorthServerResponseInput, WorthServerSuccessKind,
 };
 
-use crate::query_handoff_runtime::RealMutationWorkspaceProvider;
-use crate::worth_native_assertions::{
+use crate::shared_support_query_handoff_runtime::RealMutationWorkspaceProvider;
+use crate::shared_support_worth_native_assertions::{
     family_contract_digest, operator_evidence_record, response_provenance_digest,
     worth_native_session,
 };
-use crate::worth_native_runtime::{build_server, build_server_with_profiled_counting_workspace};
+use crate::shared_support_worth_native_runtime::{build_server, build_server_with_profiled_counting_workspace};
 
 #[path = "direct_mutation_denials.rs"]
 mod direct_mutation_denials;
 
 #[test]
 fn direct_single_mutation_returns_provenance_bearing_result_boundary() {
-    let server = crate::worth_native_runtime::build_server_with_workspace_provider(
+    let server = crate::shared_support_worth_native_runtime::build_server_with_workspace_provider(
         RealMutationWorkspaceProvider,
         true,
     );

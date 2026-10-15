@@ -5,12 +5,7 @@ use worth_query::facade::runtime::{
 use worth_server::{WorthServerQueryHandoffDenialCode, WorthServerQueryRequestedResume};
 
 use super::{direct_delivery_denied, direct_lease_success, direct_request};
-use crate::{
-    direct_delivery_runtime::DeclarationAdmitsButLiveDeliveryDeniesProvider,
-    query_handoff_runtime::TestWorkspaceProvider,
-    worth_native_assertions::{admitted_named_read, worth_native_session},
-    worth_native_runtime::{build_server, build_server_with_workspace_provider},
-};
+use {crate::worth_native_facade_entry::direct_delivery_runtime::DeclarationAdmitsButLiveDeliveryDeniesProvider, crate::shared_support_query_handoff_runtime::TestWorkspaceProvider, crate::shared_support_worth_native_assertions::{admitted_named_read, worth_native_session}, crate::shared_support_worth_native_runtime::{build_server, build_server_with_workspace_provider}};
 
 #[test]
 fn direct_delivery_denies_durable_resume_debt() {
@@ -97,7 +92,7 @@ fn direct_delivery_denies_cross_workspace_lease_reuse() {
     let declaration_a = admitted_named_read(&session_a, "users.profile");
     let lease = direct_lease_success(session_a.direct().declare_lease(&declaration_a));
     let session_b = match server_b.worth_native().session(
-        crate::worth_native_runtime::worth_native_session_input_builder()
+        crate::shared_support_worth_native_runtime::worth_native_session_input_builder()
             .with_workspace_id("workspace-84")
             .build()
             .expect("session input should validate"),
@@ -123,7 +118,7 @@ fn direct_delivery_denies_cross_branch_lease_reuse() {
     let declaration = admitted_named_read(&main_session, "users.profile");
     let lease = direct_lease_success(main_session.direct().declare_lease(&declaration));
     let branch_session = match server.worth_native().session(
-        crate::worth_native_runtime::worth_native_session_input_builder()
+        crate::shared_support_worth_native_runtime::worth_native_session_input_builder()
             .with_branch_id("branch-9")
             .build()
             .expect("branch session input should validate"),

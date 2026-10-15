@@ -9,7 +9,7 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn pinned_snapshot_observation_does_not_select_a_later_head() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world =

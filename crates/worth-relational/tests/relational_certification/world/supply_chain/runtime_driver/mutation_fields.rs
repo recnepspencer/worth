@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::world::supply_chain::{EntityKey, RelationKey, SupplyChainSemanticHandles};
+use crate::relational_certification::world::supply_chain::{EntityKey, RelationKey, SupplyChainSemanticHandles};
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, InternedString};
 use worth_relational::facade::transactions::{
     planned_single_field_locator, AspectFieldPatch, EntityMutationIntent, EntityReference,
@@ -43,7 +43,7 @@ pub(super) fn update_relation(
     MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
         UpdateRelationEndpointsIntent {
             relation_id: handles.relations[&relation].id,
-            kind_id: crate::world::supply_chain::relation_kind_id(relation.kind),
+            kind_id: crate::relational_certification::world::supply_chain::relation_kind_id(relation.kind),
             source: EntityReference::Existing(handles.entities[&source].id),
             target: EntityReference::Existing(handles.entities[&target].id),
         },

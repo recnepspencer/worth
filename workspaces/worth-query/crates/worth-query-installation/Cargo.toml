@@ -1,5 +1,6 @@
 [package]
 name = "worth-query-installation"
+autotests = false
 edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -22,3 +23,7 @@ serde = { version = "1", features = ["derive"] }
 
 [lints]
 workspace = true
+
+[[test]]
+name = "installation_contracts"
+path = "tests/installation_contracts.rs"

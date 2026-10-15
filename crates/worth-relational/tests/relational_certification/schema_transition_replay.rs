@@ -17,7 +17,7 @@ use worth_relational::facade::transactions::{RecordRef, WorkerIntentBatch};
 
 #[test]
 fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -67,7 +67,7 @@ fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
 
 #[test]
 fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -125,7 +125,7 @@ fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
 
 #[test]
 fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());

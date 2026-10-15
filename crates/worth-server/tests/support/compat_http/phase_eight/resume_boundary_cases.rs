@@ -5,12 +5,12 @@ use worth_server::{
     WorthServerCompatibilityRequestInput, WorthServerQueryHandoffDenialCode,
 };
 
-use crate::compat_http_phase_eight_assertions::assert_download_denial;
-use crate::compat_http_phase_eight_runtime::{
+use crate::shared_support_compat_http_phase_eight_assertions::assert_download_denial;
+use crate::shared_support_compat_http_phase_eight_runtime::{
     build_phase_eight_server_with_workspace_provider, compat_download_denied,
     compat_download_success, compat_resume_success, download_input, prepared_request,
 };
-use crate::query_handoff_runtime::ProfiledTestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::ProfiledTestWorkspaceProvider;
 
 #[test]
 fn compat_http_resume_denies_content_type_and_authorization_story_drift() {

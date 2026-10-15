@@ -2,7 +2,7 @@ use super::lowering::{
     observed_entity, observed_relation_source, SupplyChainProductionDeltaLoweringError,
 };
 use super::mutation_fields::{number, text, update_fields, update_relation, SupplyChainField};
-use crate::world::supply_chain::{
+use crate::relational_certification::world::supply_chain::{
     Anchor, EntityKey, EntityKind, EntityRecord, ObservedSupplyChainState, RelationKey,
     RelationKind, SupplyChainSemanticHandles,
 };

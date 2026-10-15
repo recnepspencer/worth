@@ -11,8 +11,8 @@ use worth_server::{
     WorthServerSharedReadBasisKind, WorthServerSurfaceFamily,
 };
 
-#[path = "support/operation_request/runtime.rs"]
-mod operation_request_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_operation_request_runtime as operation_request_runtime;
 
 use operation_request_runtime::{
     operation_request_test_server, operation_request_test_server_with_operations,

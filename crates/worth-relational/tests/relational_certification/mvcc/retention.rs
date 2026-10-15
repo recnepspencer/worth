@@ -1,5 +1,5 @@
 use super::world::supply_chain::{certified_supply_chain_world, SupplyChainScale};
-use crate::mvcc_branch_fork_fixture::fork_branch;
+use crate::relational_certification::mvcc_branch_fork_fixture::fork_branch;
 use worth_relational::facade::branch::{
     RelationalBranchBasisDenial, RelationalBranchRetentionTerminalOutcome,
 };
@@ -12,7 +12,7 @@ use worth_relational::facade::mvcc::{
 
 #[test]
 fn deletion_closes_admission_then_waits_for_transaction_and_candidate_operations() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -76,7 +76,7 @@ fn deletion_closes_admission_then_waits_for_transaction_and_candidate_operations
 
 #[test]
 fn performed_publication_retains_the_branch_operation_until_settlement() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -152,7 +152,7 @@ fn performed_publication_retains_the_branch_operation_until_settlement() {
 
 #[test]
 fn deleted_shared_root_survives_while_the_main_head_still_owns_it() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -191,7 +191,7 @@ fn deleted_shared_root_survives_while_the_main_head_still_owns_it() {
 
 #[test]
 fn maintenance_reclaims_a_deleted_unique_root_only_after_last_pin_release() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -246,7 +246,7 @@ fn maintenance_reclaims_a_deleted_unique_root_only_after_last_pin_release() {
 
 #[test]
 fn exact_snapshot_carries_its_observation_obligation_until_release() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -310,7 +310,7 @@ fn exact_snapshot_carries_its_observation_obligation_until_release() {
 
 #[test]
 fn external_release_distinguishes_foreign_owner_and_owner_loss() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (first, _) = certified_supply_chain_world(execution, SupplyChainScale::court());

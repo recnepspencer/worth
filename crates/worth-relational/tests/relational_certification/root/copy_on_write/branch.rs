@@ -17,7 +17,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 
 #[test]
 fn phase5_forked_topology_write_copies_only_touched_regions() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());

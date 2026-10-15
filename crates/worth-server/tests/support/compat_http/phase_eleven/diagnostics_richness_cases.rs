@@ -6,11 +6,11 @@ use worth_server::{
     WorthServerQueryHandoffConfig, WorthServerRequestContextConfig,
 };
 
-use crate::compat_http_phase_ten_runtime::{
+use crate::shared_support_compat_http_phase_ten_runtime::{
     build_phase_ten_server_with_workspace_provider, compat_read_execution_input,
     compat_read_success,
 };
-use crate::query_handoff_runtime::ProfiledTestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::ProfiledTestWorkspaceProvider;
 
 #[test]
 fn compat_http_phase_eleven_reduced_diagnostics_trim_detail_without_changing_counter_or_policy_truth(

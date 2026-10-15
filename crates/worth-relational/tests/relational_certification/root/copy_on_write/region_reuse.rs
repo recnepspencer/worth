@@ -11,7 +11,7 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn phase5_region_reuse_is_sensitive_to_empty_and_touched_deltas() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());

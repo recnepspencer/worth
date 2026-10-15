@@ -1,5 +1,6 @@
 [package]
 name = "bank-domain"
+autotests = false
 edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -18,3 +19,7 @@ worth-query-host.workspace = true
 
 [lints]
 workspace = true
+
+[[test]]
+name = "domain_contracts"
+path = "tests/domain_contracts.rs"

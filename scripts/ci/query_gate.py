@@ -68,7 +68,7 @@ FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
 ROOT_TESTS = [
     *packages("worth-relational", "worth-signal", "worth-execution",
               "worth-signal-wasm", "worth-server"),
-    "--lib", "--test", "operation_scheduler_phase_eight",
+    "--lib", "--test", "server_contracts",
 ]
 GROUPS = {
     "root": ROOT_TESTS,

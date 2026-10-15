@@ -1,5 +1,6 @@
 [package]
 name = "worth-runtime-bridge"
+autotests = false
 edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -25,3 +26,7 @@ trybuild.workspace = true
 
 [lints]
 workspace = true
+
+[[test]]
+name = "bridge_contracts"
+path = "tests/bridge_contracts.rs"

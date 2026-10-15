@@ -17,7 +17,7 @@ use worth_relational::facade::mvcc::{
 
 #[test]
 fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -110,7 +110,7 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
 
 #[test]
 fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());

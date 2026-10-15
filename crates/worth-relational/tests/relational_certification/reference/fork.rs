@@ -10,7 +10,7 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 #[test]
 fn supply_chain_fork_shares_one_source_artifact_and_starts_a_new_reference_line() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -135,7 +135,7 @@ fn supply_chain_fork_shares_one_source_artifact_and_starts_a_new_reference_line(
 
 #[test]
 fn source_observation_is_foreign_after_runtime_clone() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -184,7 +184,7 @@ fn source_observation_is_foreign_after_runtime_clone() {
 
 #[test]
 fn malformed_fork_target_denies_before_reference_installation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -221,7 +221,7 @@ fn malformed_fork_target_denies_before_reference_installation() {
 
 #[test]
 fn empty_and_duplicate_fork_denials_preserve_catalog_and_existing_reference() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let empty_runtime = canonical_empty_supply_chain_runtime(SupplyChainScale::court());
@@ -313,7 +313,7 @@ fn empty_and_duplicate_fork_denials_preserve_catalog_and_existing_reference() {
 
 #[test]
 fn stale_fork_source_denial_does_not_install_a_target_reference() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());

@@ -5,8 +5,8 @@ use worth_server::{
     WorthServerResponseTransform, WorthServerSurfaceFamily, WorthServerTransportClass,
 };
 
-use crate::query_handoff_runtime::TestWorkspaceProvider;
-use crate::response_fixture::{
+use crate::shared_support_query_handoff_runtime::TestWorkspaceProvider;
+use crate::shared_support_response_fixture::{
     operator_evidence_record, query_handoff_success, shape_success, test_server,
     test_server_with_request_context_and_operator_evidence_config,
     test_server_with_response_config,

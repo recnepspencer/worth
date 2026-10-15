@@ -12,7 +12,7 @@ use worth_relational::facade::publication::PatchStreamRequest;
 
 #[test]
 fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(request_execution, SupplyChainScale::court());

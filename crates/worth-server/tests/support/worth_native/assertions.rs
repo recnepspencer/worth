@@ -6,7 +6,7 @@ use worth_server::{
     WorthServerQuerySupportPosture, WorthServerResponseEnvelope, WorthServerWorthNativeSession,
 };
 
-use crate::worth_native_runtime::worth_native_session_input_builder;
+use crate::shared_support_worth_native_runtime::worth_native_session_input_builder;
 
 pub(crate) fn worth_native_session(server: &WorthServer) -> WorthServerWorthNativeSession {
     match server.worth_native().session(

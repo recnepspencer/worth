@@ -4,7 +4,7 @@ use worth_server::{
     WorthServerQueryWorkspaceBindingTarget, WorthServerQueryWorkspaceProvider,
 };
 
-use crate::query_handoff_runtime::{ProfiledTestWorkspaceProvider, TestWorkspaceProvider};
+use crate::shared_support_query_handoff_runtime::{ProfiledTestWorkspaceProvider, TestWorkspaceProvider};
 
 #[derive(Clone, Debug)]
 pub(crate) struct DeclarationAdmitsButLiveDeliveryDeniesProvider {

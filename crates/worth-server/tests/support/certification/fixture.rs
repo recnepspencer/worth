@@ -9,8 +9,8 @@ use worth_server::{
     WorthServerTransportClass,
 };
 
-use crate::query_handoff_runtime::TestWorkspaceProvider;
-use crate::response_fixture::{
+use crate::shared_support_query_handoff_runtime::TestWorkspaceProvider;
+use crate::shared_support_response_fixture::{
     operator_evidence_record, query_handoff_durable_denial, resolve_blank_principal_denial,
     resolve_preview_denial, test_server_with_request_context_and_operator_evidence_config,
 };

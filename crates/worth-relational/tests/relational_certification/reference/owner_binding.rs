@@ -14,7 +14,7 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn owner_issues_transaction_context_from_exact_main_identity() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -59,7 +59,7 @@ fn owner_issues_transaction_context_from_exact_main_identity() {
 
 #[test]
 fn copied_identity_cannot_issue_context_in_a_forked_runtime() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -75,7 +75,7 @@ fn copied_identity_cannot_issue_context_in_a_forked_runtime() {
 
 #[test]
 fn owner_issued_transaction_basis_is_denied_before_foreign_transaction_creation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -114,7 +114,7 @@ fn owner_issued_transaction_basis_is_denied_before_foreign_transaction_creation(
 
 #[test]
 fn public_owner_binding_path_prepares_merge_without_test_adapter() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -145,7 +145,7 @@ fn public_owner_binding_path_prepares_merge_without_test_adapter() {
 
 #[test]
 fn unrelated_branch_progress_is_not_staled_by_main_branch_movement() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -212,7 +212,7 @@ fn unrelated_branch_progress_is_not_staled_by_main_branch_movement() {
 
 #[test]
 fn source_movement_cannot_mutate_a_forked_target_reference() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -285,7 +285,7 @@ fn source_movement_cannot_mutate_a_forked_target_reference() {
 
 #[test]
 fn unknown_branch_cannot_issue_an_owner_binding() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());

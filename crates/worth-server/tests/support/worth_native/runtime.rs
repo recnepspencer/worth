@@ -15,7 +15,7 @@ use worth_server::{
     WorthServerWorthNativeSessionInput,
 };
 
-use crate::query_handoff_runtime::{
+use crate::shared_support_query_handoff_runtime::{
     ProfiledCountingTestWorkspaceProvider, ProfiledTestWorkspaceProvider, TestWorkspaceProvider,
 };
 

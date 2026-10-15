@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use worth_proof::TransitionOutcome;
 use worth_server::{
@@ -9,14 +9,14 @@ use worth_server::{
     WorthServerQueryHandoffOperation,
 };
 
-#[path = "support/compat_http/phase_three_runtime.rs"]
-mod compat_http_phase_three_runtime;
-#[path = "support/operation_request/runtime.rs"]
-mod operation_request_runtime;
-#[path = "support/query_handoff/fixture.rs"]
-mod query_handoff_fixture;
-#[path = "support/query_handoff/runtime.rs"]
-mod query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_compat_http_phase_three_runtime as compat_http_phase_three_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_operation_request_runtime as operation_request_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_fixture as query_handoff_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
 
 use compat_http_phase_three_runtime::{
     build_phase_three_server, compat_mutation_denied, mutation_input, prepared_mutation_request,

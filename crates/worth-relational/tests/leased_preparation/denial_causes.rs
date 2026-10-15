@@ -76,7 +76,7 @@ fn assert_request_cause(
 
 #[test]
 fn cancelled_lease_preserves_both_request_causes() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let _serial = serial();
@@ -91,7 +91,7 @@ fn cancelled_lease_preserves_both_request_causes() {
 
 #[test]
 fn expired_lease_preserves_both_request_causes() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let _serial = serial();
@@ -102,7 +102,7 @@ fn expired_lease_preserves_both_request_causes() {
 
 #[test]
 fn exhausted_work_lease_preserves_both_request_causes() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let _serial = serial();
@@ -115,7 +115,7 @@ fn exhausted_work_lease_preserves_both_request_causes() {
 
 #[test]
 fn exhausted_policy_memory_preserves_both_request_causes() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let _serial = serial();
@@ -137,7 +137,7 @@ fn exhausted_policy_memory_preserves_both_request_causes() {
 
 #[test]
 fn exhausted_process_memory_preserves_both_request_causes() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let _serial = serial();

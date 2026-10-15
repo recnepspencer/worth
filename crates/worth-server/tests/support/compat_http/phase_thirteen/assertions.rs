@@ -6,7 +6,7 @@ use worth_server::{
     WorthServerQueryHandoffDenial,
 };
 
-use crate::compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle;
+use crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle;
 
 pub(crate) fn assert_bundle_digests_equal(
     left: &WorthServerPhaseThirteenBundle,

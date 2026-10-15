@@ -10,8 +10,8 @@ use worth_server::{
     WorthServerProductResultContract, WorthServerProductResultValue,
 };
 
-#[path = "support/product_result/schema_bound_json.rs"]
-mod schema_bound_json;
+#[allow(unused_imports)]
+use crate::shared_support_product_result_schema_bound_json as schema_bound_json;
 
 use schema_bound_json::SchemaBoundJsonResult;
 

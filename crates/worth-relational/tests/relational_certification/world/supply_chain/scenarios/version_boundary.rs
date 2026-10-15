@@ -1,7 +1,7 @@
 use super::{BaselineName, SupplyChainBaseline};
-use crate::world::supply_chain::scale::SupplyChainScale;
-use crate::world::supply_chain::schema::SchemaVersion;
-use crate::world::supply_chain::{entity_kind_id, EntityKind};
+use crate::relational_certification::world::supply_chain::scale::SupplyChainScale;
+use crate::relational_certification::world::supply_chain::schema::SchemaVersion;
+use crate::relational_certification::world::supply_chain::{entity_kind_id, EntityKind};
 use worth_foundational::facade::FieldKey;
 use worth_relational::facade::schema::{
     HistoricalInterpretationSensitivity, ProposedSchemaTransition, SchemaDiffAtom,
