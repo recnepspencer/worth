@@ -64,7 +64,8 @@ worth_query_operation_writes!(OpenEstateCaseOperation => [EstateCaseStatusField]
 worth_query_operation_reads!(RecognizeEstateExecutorOperation => [EstateCaseIdentityField, LegalAuthorityIdentityField, LegalAuthorityRecognizedField, PrincipalIdentityField, LegalAuthorityEstate, LegalAuthorityHolder, EstateExecutor]);
 worth_query_operation_links!(RecognizeEstateExecutorOperation => [EstateExecutor]);
 worth_query_operation_reads!(DelegateEstateCapabilityOperation => [EstateCaseIdentityField, AccountIdentity, InstitutionIdentityField, BranchIdentityField, CapabilityGrantIdentityField, EstateBranch, BranchInstitution, EstateAccount]);
-worth_query_operation_reads!(RevokeEstateCapabilityOperation => [EstateCaseIdentityField, CapabilityGrantIdentityField, CapabilityGrantStatusField, CapabilityEstate]);
+// These typed read bounds mirror native-derived revocation meaning; no schema read is authored.
+worth_query_operation_reads!(RevokeEstateCapabilityOperation => [CapabilityGrantIdentityField, CapabilityGrantStatusField, CapabilityEstate]);
 worth_query_operation_writes!(RevokeEstateCapabilityOperation => [CapabilityGrantStatusField]);
 worth_query_operation_reads!(RequestEstateEmergencyAccessOperation => [EstateCaseIdentityField]);
 worth_query_operation_creates!(RequestEstateEmergencyAccessOperation => [EmergencyAccess, MandatoryReview]);
