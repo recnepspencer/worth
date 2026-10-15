@@ -30,18 +30,18 @@ pub(super) fn decision_denial_causes(
         ));
     }
     append_prohibition_causes(bindings, &matched, &mut causes)?;
-    if let Some(index) = bindings.recorded_actor {
-        if !matched(index)? {
-            causes.push(WorthQueryOperationAuthorizationDenialKind::Refused(
-                match recorded {
-                    None => AuthorizationRefusal::WorkflowActorContextRequired,
-                    Some(recorded) if !recorded.is_present() => {
-                        AuthorizationRefusal::WorkflowActorAbsent
-                    }
-                    Some(_) => AuthorizationRefusal::WorkflowActorComparisonMismatch,
-                },
-            ));
-        }
+    if let Some(index) = bindings.recorded_actor
+        && !matched(index)?
+    {
+        causes.push(WorthQueryOperationAuthorizationDenialKind::Refused(
+            match recorded {
+                None => AuthorizationRefusal::WorkflowActorContextRequired,
+                Some(recorded) if !recorded.is_present() => {
+                    AuthorizationRefusal::WorkflowActorAbsent
+                }
+                Some(_) => AuthorizationRefusal::WorkflowActorComparisonMismatch,
+            },
+        ));
     }
     if let Some(elevation) = elevation {
         causes.push(elevation);

@@ -40,11 +40,6 @@ impl RetainedContext {
     ) -> bool {
         self.get(key).is_some()
     }
-    pub(in crate::domain_computation::authorization) fn keys(
-        &self,
-    ) -> impl Iterator<Item = &WorthQueryCapabilityContextKey> {
-        self.iter().map(|entry| entry.0)
-    }
 }
 impl PartialEq for RetainedContext {
     fn eq(&self, other: &Self) -> bool {

@@ -36,38 +36,38 @@ pub(super) fn durable_approval_basis_with_dependency_snapshot(
 ) -> WorthQueryWorkflowApprovalAuthorityBasis {
     let authority = admission.workflow_approval_authority().unwrap();
     let request = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
-        &execution,
+        execution,
         &admission
-            .workflow_approval_request_snapshot(&execution)
+            .workflow_approval_request_snapshot(execution)
             .unwrap()
             .unwrap(),
     )
     .unwrap();
     let principal = decode_principal(
-        &execution,
+        execution,
         &admission
-            .workflow_approval_principal_snapshot(&execution)
+            .workflow_approval_principal_snapshot(execution)
             .unwrap()
             .unwrap(),
     )
     .unwrap();
     let original_lineage = admission
-        .workflow_approval_lineage_snapshot(&execution)
+        .workflow_approval_lineage_snapshot(execution)
         .unwrap()
         .unwrap();
     let lineage =
-        decode_lineage(&execution, replacement_lineage.unwrap_or(&original_lineage)).unwrap();
+        decode_lineage(execution, replacement_lineage.unwrap_or(&original_lineage)).unwrap();
     let original_support = admission
-        .workflow_approval_support_snapshot(&execution)
+        .workflow_approval_support_snapshot(execution)
         .unwrap()
         .unwrap();
     let support = decode_workflow_approval_support(
-        &execution,
+        execution,
         replacement_support.unwrap_or(&original_support),
     )
     .unwrap();
     let original_dependencies = admission
-        .workflow_approval_dependencies_snapshot(&execution)
+        .workflow_approval_dependencies_snapshot(execution)
         .unwrap()
         .unwrap();
     let mut dependency_snapshot: serde_json::Value =
@@ -77,7 +77,7 @@ pub(super) fn durable_approval_basis_with_dependency_snapshot(
     }
     let dependencies =
         crate::domain_computation::authorization::WorthQueryWorkflowApprovalDependencies::decode(
-            &execution,
+            execution,
             &dependency_snapshot.to_string(),
         )
         .unwrap();

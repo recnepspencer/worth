@@ -105,18 +105,14 @@ impl WorkflowActorDependencies {
             | Fact::AbsentField {
                 entity_id, locator, ..
             } = fact
+                && entity_id == entity
+                && locator.aspect().aspect_key().as_str() == aspect
+                && locator.field_path().fields().len() == 1
+                && let Some(index) = names
+                    .iter()
+                    .position(|name| name == locator.field_path().fields()[0].as_str())
             {
-                if entity_id == entity
-                    && locator.aspect().aspect_key().as_str() == aspect
-                    && locator.field_path().fields().len() == 1
-                {
-                    if let Some(index) = names
-                        .iter()
-                        .position(|name| name == locator.field_path().fields()[0].as_str())
-                    {
-                        locators[index] = Some(locator);
-                    }
-                }
+                locators[index] = Some(locator);
             }
         }
         let [Some(partition), Some(slot), Some(generation)] = locators else {
@@ -166,7 +162,7 @@ impl WorkflowActorDependencies {
                     endpoints,
                     comparison_work_limit: 1,
                     ..
-                } if endpoints.len() == 0 => counts[1] += 1,
+                } if endpoints.is_empty() => counts[1] += 1,
                 Fact::SourceFieldRevision { .. }
                 | Fact::SourceAspectRevision { .. }
                 | Fact::Field { .. }

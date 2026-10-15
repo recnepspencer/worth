@@ -32,15 +32,6 @@ pub(in crate::domain_computation) struct WorthQueryAuthorizationDecisionFact {
 }
 
 impl WorthQueryAuthorizationDecisionFact {
-    pub(in crate::domain_computation) fn durable_lineage(
-        &self,
-    ) -> WorthQueryDurableCapabilityLineage {
-        self.delegation
-            .as_ref()
-            .map_or(WorthQueryDurableCapabilityLineage::Unbound, |delegation| {
-                delegation.durable_lineage()
-            })
-    }
     pub(in crate::domain_computation::authorization) fn from_capability_observation(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         _permit: crate::domain_computation::authorization::capability_observation::WorthQueryAuthorizationDecisionPermit,
