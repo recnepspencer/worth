@@ -13,8 +13,15 @@ use super::WorthQueryAuthorizationDecisionFact;
 #[serde(deny_unknown_fields)]
 pub(in crate::domain_computation) struct WorthQueryDurableAuthorizationDependencies {
     primary: String,
+    recorded_actor: DurableRecordedActor,
     delegation: Option<WorthQueryDurableDelegationDependencies>,
     activation: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+enum DurableRecordedActor {
+    NotApplicable,
+    Native(String),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -36,6 +43,10 @@ impl WorthQueryAuthorizationDecisionFact {
     ) -> Result<WorthQueryDurableAuthorizationDependencies, ()> {
         Ok(WorthQueryDurableAuthorizationDependencies {
             primary: self.native_dependencies.clone().ok_or(())?,
+            recorded_actor: match &self.recorded_actor {
+                None => DurableRecordedActor::NotApplicable,
+                Some(actor) => DurableRecordedActor::Native(actor.encode()?),
+            },
             delegation: self
                 .delegation
                 .as_ref()
@@ -53,6 +64,9 @@ impl WorthQueryAuthorizationDecisionFact {
 impl WorthQueryDurableAuthorizationDependencies {
     pub(in crate::domain_computation) fn validate(&self) -> Result<(), ()> {
         validate(&self.primary)?;
+        if let DurableRecordedActor::Native(encoded) = &self.recorded_actor {
+            crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation::validate_encoding(encoded)?;
+        }
         if let Some(delegation) = &self.delegation {
             delegation.validate()?;
         }
@@ -77,7 +91,8 @@ impl WorthQueryDurableAuthorizationDependencies {
         execution
             .check_live()
             .map_err(crate::domain_computation::authorization::denial::kernel_stop_kind)?;
-        if self.primary != observed.primary
+        if self.recorded_actor != observed.recorded_actor
+            || self.primary != observed.primary
             || self.delegation != observed.delegation
             || observed.activation.is_some()
         {

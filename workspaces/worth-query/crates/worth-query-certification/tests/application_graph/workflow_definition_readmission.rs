@@ -13,14 +13,11 @@ use super::document_retention_model::{
         retain_workflow, start_instance, ReviewedDocumentWorkflow,
     },
 };
-use worth_query_decl::facade::application_program::ApplicationWorkflowDefinitionIdentity;
 use worth_query_host::facade::{
-    application_discovery::WorthQueryWorkflowDefinitionDiscovery,
     application_entry::{
-        PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
-        WorkflowDefinitionPublicationOutcome, WorkflowInstancePreparationDenial,
-        WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
-        WorthQueryWorkflowInstancePreparationDenial,
+        WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
+        WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
+        WorkflowProposalOutcome, WorthQueryWorkflowInstancePreparationDenial,
     },
     application_installation::{
         WorthQueryApplicationCheckpoint, WorthQueryApplicationProgramRoster,
@@ -55,77 +52,52 @@ fn restore(bytes: Vec<u8>) -> DocumentWorkflowRuntime {
     )
 }
 
-fn discover(
-    application: &DocumentWorkflowRuntime,
-    identity: &str,
-) -> PublishedWorkflowDefinitionRef {
-    let policy = crate::test_request_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&policy);
-    let selected = application
-        .with_host_advancement(|phase| {
-            application
-                .runtime()
-                .on_branch(application.runtime().current_world())
-                .select(&phase)
-                .unwrap()
-        })
-        .unwrap();
-    match selected
-        .discover_workflow_definition::<ReviewedDocumentWorkflow>(
-            &execution,
-            &ApplicationWorkflowDefinitionIdentity::new(identity).unwrap(),
-        )
-        .unwrap()
-    {
-        WorthQueryWorkflowDefinitionDiscovery::Current(definition) => definition,
-        other => panic!("the native stored publication must be discoverable: {other:?}"),
+#[test]
+fn workflow_actor_contract_authentic_predecessor_refuses_before_native_restore() {
+    let bytes = include_bytes!("workflow_definition_readmission/missing_input.checkpoint");
+    let original = bytes.to_vec();
+    let denial = restore_on_first_program(
+        WorthQueryApplicationCheckpoint::from_untrusted_bytes(original.clone()),
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+    )
+    .err()
+    .expect("displaced checkpoint must refuse before native restoration");
+    match denial {
+        worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial::Graph(cause) => {
+            assert!(matches!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedCheckpointFormat { observed: 9, supported: 10 }));
+        }
+        other => panic!("expected typed intact format refusal: {other:?}"),
     }
+    assert_eq!(bytes.as_slice(), original);
 }
 
 #[test]
-fn authentic_predecessor_is_refused_at_native_input_readmission_without_rewriting_facts() {
-    // Captured in this worktree before adding the guarded-input validator:
-    // the production builder validated an occurrence-only operation without an
-    // input edge, installed binding published it, and native capture wrote these
-    // bytes. This is an original writer artifact, not mutated current facts.
-    let bytes = include_bytes!("workflow_definition_readmission/missing_input.checkpoint");
-    let original = bytes.to_vec();
-    let application = restore(original.clone());
-    let published = discover(&application, "unsupported-input-predecessor");
-    let identity = published.content_identity().clone();
-    let before = capture(&application);
-    match start_instance(&application, published, 94002) {
-        Err(WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(
-            WorkflowInstancePreparationDenial::Attempt(denial),
-        )) => {
-            assert_eq!(
-                denial.kind(),
-                WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionMissingOperationInput
-            );
-            assert_eq!(denial.subject(), "perform");
+fn workflow_actor_contract_reheadered_predecessor_refuses_native_authority_layout() {
+    use sha2::{Digest, Sha256};
+    let original = include_bytes!("workflow_definition_readmission/missing_input.checkpoint");
+    // Reframe only Query's envelope. The authentic old native authority layout
+    // is left intact and must not acquire the new workflow interpretation.
+    let mut body = Vec::from(10u16.to_be_bytes());
+    body.extend_from_slice(&2u16.to_be_bytes());
+    body.extend_from_slice(&3u16.to_be_bytes());
+    body.extend_from_slice(&original[42..]);
+    let mut bytes = original[..8].to_vec();
+    bytes.extend_from_slice(&Sha256::digest(&body));
+    bytes.extend_from_slice(&body);
+    let retained = bytes.clone();
+    let denial = restore_on_first_program(
+        WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+    )
+    .err()
+    .expect("old native authority layout must refuse under a current envelope");
+    match denial {
+        worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial::Graph(cause) => {
+            assert_eq!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedRecoveredNativeAuthorityLayout);
         }
-        other => {
-            panic!("native input admission must refuse before instance publication: {other:?}")
-        }
+        other => panic!("expected native authority layout refusal: {other:?}"),
     }
-    assert_eq!(
-        capture(&application),
-        before,
-        "refusal changes no durable facts"
-    );
-    assert_eq!(
-        discover(&application, "unsupported-input-predecessor").content_identity(),
-        &identity
-    );
-    assert_eq!(
-        read_retention(application.runtime(), application.runtime().current_world()),
-        SEED_RETENTION
-    );
-    assert_eq!(
-        bytes.as_slice(),
-        original,
-        "unsupported original bytes remain intact"
-    );
+    assert_eq!(&retained[46..], &original[42..]);
 }
 
 #[test]
@@ -149,7 +121,7 @@ fn current_contract_restores_original_identity_and_issues_fresh_operation_author
     };
     assert_eq!(published.content_identity(), &identity);
     let restored = restore(capture(&application));
-    let rebuilt = discover(&restored, "information-recording");
+    let rebuilt = published.held_on(restored.runtime().current_world());
     assert_eq!(rebuilt.content_identity(), &identity);
     let instance = match start_instance(&restored, rebuilt, 94012).unwrap() {
         WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),

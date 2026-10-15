@@ -84,8 +84,11 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         &layout.approval.authorization_request,
         facts,
     )?;
-    let request = crate::domain_computation::authorization::WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(&request)
-        .map_err(|()| denial("workflow approval authorization request is invalid"))?;
+    let request = crate::domain_computation::authorization::WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(execution, &request)
+        .map_err(|cause| match cause {
+            crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::InvalidRequest => denial("workflow approval authorization request is invalid"),
+            crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::Actor(cause) => *cause,
+        })?;
     let principal = observed_text(
         execution,
         runtime,
@@ -258,8 +261,11 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         facts,
     )?;
     let support =
-        crate::domain_computation::authorization::decode_workflow_approval_support(&support)
-            .map_err(|()| denial("workflow approval capability support is invalid"))?;
+        crate::domain_computation::authorization::decode_workflow_approval_support(execution, &support)
+            .map_err(|cause| match cause {
+                crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::InvalidRequest => denial("workflow approval capability support is invalid"),
+                crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::Actor(cause) => *cause,
+            })?;
     let dependencies = observed_text(
         execution,
         runtime,

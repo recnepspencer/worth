@@ -93,7 +93,7 @@ where
     /// The input is encoded here, once, and compared with the requirement; the
     /// request keeps it, so executing the request encodes only its key.
     pub fn for_workflow_operation<'workflow, Spec>(
-        self,
+        mut self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
@@ -106,6 +106,25 @@ where
             .encode_input()
             .map_err(WorthQueryWorkflowOperationBindingDenial::Identity)?;
         self.validate_workflow_operation_binding(workflow, required, input.identity())?;
+        self.workflow_actor_context = self.application_runtime().with_application_advancement(
+            self.request_scope(),
+            |phase| {
+                let installed = workflow
+                    .workflow_spec_on(&phase, self.product_branch())
+                    .map_err(|_| WorthQueryWorkflowOperationBindingDenial::RequirementMismatch)?;
+                WorthQueryWorkflowAdvanceAdapter::bind_operation_actor_context::<
+                    Schema,
+                    Spec,
+                    Intent::Binding,
+                >(
+                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    installed,
+                    required,
+                )
+                .map_err(|_| WorthQueryWorkflowOperationBindingDenial::RequirementMismatch)
+            },
+        )?;
+
         if !required.authority_slot().was_issued() {
             return Err(WorthQueryWorkflowOperationBindingDenial::AuthorityUnavailable);
         }
@@ -120,7 +139,7 @@ where
     /// not issue authority to run a new guarded mutation. Like
     /// `for_workflow_operation`, it encodes the input once and keeps it.
     pub fn for_workflow_operation_recovery<'workflow, Spec>(
-        self,
+        mut self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
@@ -133,6 +152,25 @@ where
             .encode_input()
             .map_err(WorthQueryWorkflowOperationBindingDenial::Identity)?;
         self.validate_workflow_operation_binding(workflow, required, input.identity())?;
+        self.workflow_actor_context = self.application_runtime().with_application_advancement(
+            self.request_scope(),
+            |phase| {
+                let installed = workflow
+                    .workflow_spec_on(&phase, self.product_branch())
+                    .map_err(|_| WorthQueryWorkflowOperationBindingDenial::RequirementMismatch)?;
+                WorthQueryWorkflowAdvanceAdapter::bind_operation_actor_context::<
+                    Schema,
+                    Spec,
+                    Intent::Binding,
+                >(
+                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    installed,
+                    required,
+                )
+                .map_err(|_| WorthQueryWorkflowOperationBindingDenial::RequirementMismatch)
+            },
+        )?;
+
         Ok(self.bind_workflow_recovery_transition(*required.transition_identity_bytes(), input))
     }
 
@@ -153,7 +191,7 @@ where
             || required.binding()
                 != Some(<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::IDENTITY)
             || required.workflow_execution_requirements()
-                != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::workflow_execution_requirements().as_ref()
+                != &<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::workflow_execution_requirements()
             || !<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
             || required.input_type()
                 != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::InputBinding::IDENTITY.as_str()

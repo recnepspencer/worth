@@ -31,6 +31,7 @@ mod receipt;
 pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::operation_receipt_requires_recovery;
 pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::receipt_identity_from_outcome;
 pub(super) use receipt::validate_operation_receipt;
+pub(in crate::domain_computation::primary_graph) use receipt::ValidatedWorkflowOperationReceipt;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -103,22 +104,22 @@ where
         }
         check_request_live(self.admission.publication_request(), selected.node_path())?;
         let input_request = self.admission.publication_request();
-        let (input_identity, mut input_facts) =
-            self.lease.handle().with_runtime(execution, |runtime| {
-                observe_workflow_operation_input(
-                    execution,
-                    runtime,
-                    self.lease.snapshot(),
-                    layout,
-                    source_transition.entity(),
-                    source_identity,
-                    source_operation,
-                    source_input_type,
-                    source.path(),
-                    input_request,
-                )
-            })?;
-        facts.append(&mut input_facts);
+        let mut input_observation = self.lease.handle().with_runtime(execution, |runtime| {
+            observe_workflow_operation_input(
+                execution,
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                source_transition.entity(),
+                source_identity,
+                source_operation,
+                source_input_type,
+                source.path(),
+                input_request,
+            )
+        })?;
+        let input_identity = input_observation.input_identity;
+        facts.append(&mut input_observation.facts);
         // An external operation records its custody on the instance; the
         // reading it replaces travels with the operation's authority. This
         // advance cannot see the operation's own external posture, so the
@@ -145,6 +146,16 @@ where
             self.admission.publication_request(),
             self.admission.operation(),
         )?;
+        let original_sources = super::actor_context::OriginalActorSources {
+            proposal: input_observation.proposal,
+            proposal_identity: input_observation.proposal_identity,
+            transition: source_transition,
+            transition_identity: source_identity.to_owned(),
+            approval: compiled
+                .approval_authority_sources(selected.node())
+                .next()
+                .and_then(|source| progress.latest_transition(source.entity())),
+        };
         authority_facts.extend_from_slice(&facts[handoff_start..]);
         self.append_completed_facts(
             facts,
@@ -198,7 +209,9 @@ where
         };
         let required = RequiredWorkflowOperation::from_selected(
             branch,
-            admitted.instance(),
+            runtime_authority,
+            instance.clone(),
+            original_sources,
             admitted.node_path().to_owned(),
             admitted.identity().to_owned(),
             *admitted.identity_bytes(),
@@ -235,7 +248,7 @@ where
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let receipt_identity = validate_operation_receipt::<Schema, Binding>(
+        let performed = validate_operation_receipt::<Schema, Binding>(
             runtime,
             &self.required,
             self.admitted.subject(),
@@ -243,7 +256,8 @@ where
             receipt,
             None,
         )?;
-        self.settle_validated(receipt_identity)
+        let (receipt_identity, executor) = performed.into_parts();
+        self.settle_validated(receipt_identity, executor)
     }
 
     pub(super) fn settle_recovered<Binding>(
@@ -258,7 +272,7 @@ where
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let receipt_identity = validate_operation_receipt::<Schema, Binding>(
+        let performed = validate_operation_receipt::<Schema, Binding>(
             runtime,
             &self.required,
             self.admitted.subject(),
@@ -266,12 +280,14 @@ where
             receipt,
             Some(recovery),
         )?;
-        self.settle_validated(receipt_identity)
+        let (receipt_identity, executor) = performed.into_parts();
+        self.settle_validated(receipt_identity, executor)
     }
 
     fn settle_validated(
         self,
         receipt_identity: [u8; 32],
+        executor: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -281,6 +297,7 @@ where
             &self.layout,
             &self.admitted,
             &receipt_identity,
+            executor,
             |effect| demand.observe(&effect),
         )?;
         let reservation = super::admit_platform_effects(self.admitted.read_set(), demand)?;
@@ -289,6 +306,7 @@ where
             &self.layout,
             &self.admitted,
             &receipt_identity,
+            executor,
             |effect| {
                 effects.push(effect);
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())

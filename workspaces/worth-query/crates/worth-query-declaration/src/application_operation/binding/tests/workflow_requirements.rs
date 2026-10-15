@@ -40,10 +40,9 @@ macro_rules! guarded_binding {
     };
 }
 
-guarded_binding!(LegacyGuardedBinding);
 guarded_binding!(
     OccurrenceBinding,
-    ApplicationWorkflowExecutionRequirements::new()
+    ApplicationWorkflowExecutionRequirements::occurrence_only()
 );
 guarded_binding!(
     ApprovalBinding,
@@ -88,13 +87,13 @@ fn evidence_floor_changes_canonical_program_revision_and_operation_comparison() 
             program.semantic_description().clone(),
         )
     }
-    let legacy = meaning::<LegacyGuardedBinding>();
+    let ordinary = meaning::<RenameBinding>();
     let empty = meaning::<OccurrenceBinding>();
     let reviewed = meaning::<ApprovalBinding>();
-    assert_ne!(legacy.0, empty.0);
+    assert_ne!(ordinary.0, empty.0);
     assert_ne!(empty.0, reviewed.0);
-    assert_ne!(legacy.0, reviewed.0);
-    for (source, target) in [(&legacy.1, &empty.1), (&empty.1, &reviewed.1)] {
+    assert_ne!(ordinary.0, reviewed.0);
+    for (source, target) in [(&ordinary.1, &empty.1), (&empty.1, &reviewed.1)] {
         let diff = ApplicationSemanticDiff::compare(source, target, 1024).unwrap();
         assert!(diff.changes().iter().any(|change| change.family()
             == ApplicationSemanticFamily::Operations
@@ -103,6 +102,13 @@ fn evidence_floor_changes_canonical_program_revision_and_operation_comparison() 
 }
 
 impl ApplicationWorkflowSpec for Workflow {
+    fn observation_policy() -> crate::application_program::ApplicationWorkflowObservationPolicy {
+        crate::application_program::ApplicationWorkflowObservationPolicy::disabled()
+    }
+    fn actor_policy() -> crate::application_program::ApplicationWorkflowActorPolicy {
+        crate::application_program::ApplicationWorkflowActorPolicy::not_applicable()
+    }
+
     type Schema = MutationSchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity =
         ApplicationWorkflowSpecIdentity::new("test.workflow.v1");
@@ -142,12 +148,9 @@ fn authored<Binding: ApplicationMutationBinding<MutationSchema>>(
 }
 
 #[test]
-fn explicit_empty_contract_allows_workflow_binding_without_approval() {
+fn workflow_actor_contract_explicit_occurrence_allows_binding_without_approval() {
     assert!(authored::<OccurrenceBinding>().validate().is_ok());
-    for denial in [
-        authored::<LegacyGuardedBinding>().validate().err(),
-        authored::<ApprovalBinding>().validate().err(),
-    ] {
+    for denial in [authored::<ApprovalBinding>().validate().err()] {
         assert_eq!(
             denial.unwrap().kind(),
             ApplicationWorkflowValidationDenialKind::MissingWorkflowAuthority
@@ -156,19 +159,22 @@ fn explicit_empty_contract_allows_workflow_binding_without_approval() {
 }
 
 #[test]
-fn binding_description_distinguishes_absent_empty_and_required_evidence() {
-    let legacy = LegacyGuardedBinding::descriptor();
+fn binding_description_distinguishes_inapplicable_occurrence_and_approval_evidence() {
+    let ordinary = RenameBinding::descriptor();
     let empty = OccurrenceBinding::descriptor();
     let reviewed = ApprovalBinding::descriptor();
-    assert!(legacy.workflow_execution_requirements().is_none());
-    assert_ne!(legacy.description(), empty.description());
+    assert_eq!(
+        ordinary.workflow_execution_requirements(),
+        &ApplicationWorkflowExecutionRequirements::not_applicable()
+    );
+    assert_ne!(ordinary.description(), empty.description());
     assert_ne!(empty.description(), reviewed.description());
 }
 
 #[test]
 fn requirement_encoding_is_canonical_and_rejects_unknown_or_truncated_records() {
     for requirements in [
-        ApplicationWorkflowExecutionRequirements::new(),
+        ApplicationWorkflowExecutionRequirements::occurrence_only(),
         ApplicationWorkflowExecutionRequirements::requiring_approval::<ReviewCapability>(),
     ] {
         let encoded = requirements.persistence_identity();

@@ -62,6 +62,13 @@ impl ApplicationSchema for TestSchema {
 }
 
 impl ApplicationWorkflowSpec for ReviewedChange {
+    fn observation_policy() -> crate::application_program::ApplicationWorkflowObservationPolicy {
+        crate::application_program::ApplicationWorkflowObservationPolicy::disabled()
+    }
+    fn actor_policy() -> crate::application_program::ApplicationWorkflowActorPolicy {
+        crate::application_program::ApplicationWorkflowActorPolicy::not_applicable()
+    }
+
     type Schema = TestSchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity =
         ApplicationWorkflowSpecIdentity::new("worth.query.tests.reviewed-change.v1");

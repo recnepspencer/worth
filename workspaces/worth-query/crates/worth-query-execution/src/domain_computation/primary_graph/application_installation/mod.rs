@@ -209,12 +209,7 @@ where
     let decoded_checkpoint = checkpoint
         .map(super::WorthQueryApplicationCheckpoint::decode)
         .transpose()
-        .map_err(|detail| {
-            Denial::Graph(WorthQueryPrimaryGraphInstallationDenial::new(
-                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                detail,
-            ))
-        })?;
+        .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
     if checkpoint_transition.is_some()
         && decoded_checkpoint
             .as_ref()

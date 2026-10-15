@@ -150,7 +150,8 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     let workflow_intents = match workflow_inventory.as_ref() {
         Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref())?
             .map(|choices| {
-                stage_workflow_dispositions(graph.layout.workflow(), inventory, choices, target)
+                stage_workflow_dispositions(graph.layout.workflow(), inventory, choices, target,
+                    crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission))
             })
             .unwrap_or_default(),
         None => Vec::new(),

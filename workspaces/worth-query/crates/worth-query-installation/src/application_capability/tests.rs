@@ -279,8 +279,7 @@ fn composition(axis: Option<Axis>) -> ApplicationCapabilityComposition {
         ),
         ApplicationCapabilityActorComposition::new(
             optional_separation_rule(changed(3)),
-            optional_distinct_actor_rule(changed(4)),
-        ),
+            optional_distinct_actor_rule(changed(4)), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         ApplicationCapabilityPropagationComposition::new(
             if changed(5) {
                 ApplicationCapabilityDelegationRule::forbidden()

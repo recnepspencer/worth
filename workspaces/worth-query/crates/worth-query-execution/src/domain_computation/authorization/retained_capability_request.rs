@@ -11,11 +11,12 @@ use super::operation_progression::{
 };
 
 mod portable;
-pub(in crate::domain_computation) use portable::WorkflowApprovalRequestEncodingDenial;
+pub(in crate::domain_computation) use portable::{WorkflowApprovalRequestEncodingDenial, WorkflowApprovalRequestDecodingDenial};
 pub(in crate::domain_computation) use portable::MAXIMUM_PORTABLE_BYTES;
 
 #[derive(Clone)]
 pub(in crate::domain_computation) struct WorthQueryRetainedCapabilityRequest {
+    pub(super) recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
     capability_identity: [u8; 32],
     principal: worth_relational::facade::identity::EntityId,
     resource: worth_relational::facade::identity::EntityId,
@@ -34,6 +35,9 @@ pub(in crate::domain_computation) struct WorthQueryRetainedCapabilityRequest {
 }
 
 impl WorthQueryRetainedCapabilityRequest {
+    pub(in crate::domain_computation::authorization) fn recorded_actor(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>> {
+        self.recorded_actor.as_ref()
+    }
     pub(super) fn for_delegation_parent(
         &self,
         transition: &super::delegation_admission::observation::ObservedDelegationTransition,
@@ -124,7 +128,11 @@ impl WorthQueryRetainedCapabilityRequest {
         candidate: &Self,
         elevation: worth_relational::facade::identity::EntityId,
     ) -> bool {
-        candidate.capability_identity == self.capability_identity
+        (match (&self.recorded_actor, &candidate.recorded_actor) {
+            (None, None) => true,
+            (Some(original), Some(candidate)) => original.same_original_source(candidate),
+            _ => false,
+        }) && candidate.capability_identity == self.capability_identity
             && candidate.principal == self.principal
             && candidate.resource == self.resource
             && candidate.resource_entity == self.resource_entity
@@ -148,6 +156,7 @@ impl WorthQueryRetainedCapabilityRequest {
         resolved: &WorthQueryResolvedCapabilityRequest<Schema, Scope>,
     ) -> Self {
         Self {
+            recorded_actor: None,
             capability_identity,
             principal,
             resource: resolved.resource_entity_id(),

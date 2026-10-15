@@ -170,8 +170,7 @@ fn contract() -> ApplicationCapabilityContract<
         ),
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
-            ApplicationCapabilityDistinctActorRule::not_applicable(),
-        ),
+            ApplicationCapabilityDistinctActorRule::not_applicable(), worth_query_decl::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         ApplicationCapabilityPropagationComposition::new(
             ApplicationCapabilityDelegationRule::forbidden(),
             ApplicationCapabilityDisclosureRule::not_applicable(),

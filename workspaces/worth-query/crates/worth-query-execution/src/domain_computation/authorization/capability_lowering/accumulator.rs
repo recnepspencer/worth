@@ -74,6 +74,19 @@ impl WorthQueryCapabilityRuleLoweringAccumulator {
         }
     }
 
+    pub(super) fn add_recorded_actor(
+        &mut self,
+        requirement: worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRequirement,
+        identity: [u8; 32],
+    ) -> usize {
+        let index = self.rules.len();
+        self.rules
+            .push(WorthQueryCapabilityRuleBinding::required_recorded_actor(
+                requirement,
+                identity,
+            ));
+        index
+    }
     pub(super) fn add_elevation(
         &mut self,
         effect: BridgeAuthorizationRuleEffect,

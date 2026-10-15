@@ -150,7 +150,9 @@ impl WorthQueryExecutionInstallationAuthority {
                     .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
                     .map_err(|error| {
                         primary_graph_denial(
-                            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                            if error.kind() == worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenialKind::RecoveredAuthorityMismatch {
+                                WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedRecoveredNativeAuthorityLayout
+                            } else { WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected },
                             format!("recovered schema authority denied: {error}"),
                         )
                     })?;

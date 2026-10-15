@@ -23,7 +23,7 @@ fn current_operation_drafts_distinguish_absent_and_empty_evidence() {
         (
             4,
             Some("1:none"),
-            Some(ApplicationWorkflowExecutionRequirements::new()),
+            Some(ApplicationWorkflowExecutionRequirements::occurrence_only()),
         ),
     ] {
         let draft = decode_workflow_definition_draft(

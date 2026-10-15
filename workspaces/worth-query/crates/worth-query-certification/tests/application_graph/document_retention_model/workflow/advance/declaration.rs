@@ -244,6 +244,27 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetention
             entity_key::<WorkflowAuthoringGrant>("workflow-approval-grant"),
         ))
         .expect("workflow approval grantee must seed");
+    graph
+        .bind_relation(WorthQueryApplicationRelationSeed::new(
+            WorkflowGrantGrantee::reference(),
+            "workflow-reviewer-grantee",
+            entity_key::<Principal>("document-retention-reviewer"),
+            entity_key::<WorkflowAuthoringGrant>("workflow-approval-grant"),
+        ))
+        .expect("the separate reviewer receives the real approval grant");
+    graph
+        .bind_relation(WorthQueryApplicationRelationSeed::new(
+            super::super::declaration::WorkflowDocumentOwner::reference(),
+            "workflow-reviewer-subject",
+            entity_key::<Principal>("document-retention-reviewer"),
+            entity_key::<Document>("document-row-1"),
+        ))
+        .expect("reviewer has the capability's declared subject path");
+    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+        WorkflowGrantGrantee::reference(), "workflow-reviewer-authoring-grantee",
+        entity_key::<Principal>("document-retention-reviewer"),
+        entity_key::<WorkflowAuthoringGrant>("workflow-authoring-grant")))
+        .expect("reviewer can independently author a proposal; its identity still cannot replace another actor's intent");
 }
 
 fn encoded(value: String) -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {

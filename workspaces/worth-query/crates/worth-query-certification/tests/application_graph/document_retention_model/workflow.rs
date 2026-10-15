@@ -103,3 +103,6 @@ pub fn declare(
 }
 #[path = "workflow/advance.rs"]
 mod advance;
+
+pub(super) use declaration::{WorkflowAuthoringGrant, WorkflowGrantIdentityField,
+    WorkflowDocumentOwner, WorkflowGrantGrantor, WorkflowGrantGrantee};

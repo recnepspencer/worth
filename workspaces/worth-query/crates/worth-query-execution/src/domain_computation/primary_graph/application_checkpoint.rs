@@ -2,9 +2,11 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 mod capture;
+mod header;
+use header::CheckpointDecodeDenial;
 mod denial;
 mod encode;
-mod facts;
+pub(in crate::domain_computation::primary_graph) mod facts;
 mod producer_computation;
 pub(in crate::domain_computation::primary_graph) use facts::FactDecodeDenial;
 pub(in crate::domain_computation::primary_graph) use producer_computation::{
@@ -29,9 +31,11 @@ pub use section_bytes::{
 pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCapturePolicy;
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 9;
+const FORMAT_VERSION: u16 = 10;
+const WORKFLOW_FACTS: u16 = 2;
+const WORKFLOW_INSTANCES: u16 = 3;
 const CHECKSUM_BYTES: usize = 32;
-const BODY_PREFIX_BYTES: usize = 2 + 8 + 8 + 8;
+const BODY_PREFIX_BYTES: usize = 2 + 2 + 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
 // Version 9 preserves the row layout and certifies the exporter exclusion.
 const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8 + 17 + 8 + 1 + 2;
@@ -89,24 +93,14 @@ impl WorthQueryApplicationCheckpoint {
         Self::from_untrusted_bytes(bytes.into_boxed_slice())
     }
 
-    pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, String> {
-        if self.bytes.len() < HEADER_BYTES || &self.bytes[..MAGIC.len()] != MAGIC {
-            return Err("Query application checkpoint header is invalid".to_owned());
-        }
-        let checksum_start = MAGIC.len();
-        let body_start = checksum_start + CHECKSUM_BYTES;
-        let expected_checksum = &self.bytes[checksum_start..body_start];
+    pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
+        header::admit(self.bytes.bytes())?;
+        self.decode_current_body().map_err(Into::into)
+    }
+    fn decode_current_body(self) -> Result<DecodedApplicationCheckpoint, String> {
+        let body_start = MAGIC.len() + CHECKSUM_BYTES;
         let body = &self.bytes[body_start..];
-        if Sha256::digest(body).as_slice() != expected_checksum {
-            return Err("Query application checkpoint checksum differs".to_owned());
-        }
-        let version = u16::from_be_bytes([body[0], body[1]]);
-        if version != FORMAT_VERSION {
-            return Err(format!(
-                "Query application checkpoint format {version} is unsupported"
-            ));
-        }
-        let mut cursor = CheckpointCursor::new(&body[2..]);
+        let mut cursor = CheckpointCursor::new(&body[6..]);
         let bootstrap_commit_id = worth_relational::facade::history::CommitId(cursor.next_u64()?);
         let native_len = usize::try_from(cursor.next_u64()?)
             .map_err(|_| "checkpoint payload length exceeds this host".to_owned())?;

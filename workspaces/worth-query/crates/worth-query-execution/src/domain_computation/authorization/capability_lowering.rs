@@ -121,6 +121,26 @@ fn compile_composition_rules(
     let conflict = compile_optional(composition.decision().conflict().graph())?;
     let separation_of_duty = compile_optional(composition.actors().separation_of_duty().graph())?;
     let distinct_actor = compile_optional(composition.actors().distinct_actor().graph())?;
+    let recorded_actor = composition
+        .actors()
+        .recorded_actor()
+        .requirement()
+        .map(|requirement| {
+            if !requirement.is_valid() {
+                return Err(authorization_denial(
+                    contract.name(),
+                    "invalid native recorded-role requirement",
+                ));
+            }
+            // Native clause identity occupies its own namespace, not a path index.
+            use sha2::{Digest, Sha256};
+            let mut hash = Sha256::new();
+            hash.update(b"worth.query.required-recorded-role.v1");
+            hash.update(capability);
+            hash.update(requirement.persistence_identity().as_bytes());
+            Ok(lowering.add_recorded_actor(requirement, hash.finalize().into()))
+        })
+        .transpose()?;
     Ok(WorthQueryCapabilityDecisionRuleBindings {
         grant: 0,
         allow,
@@ -128,6 +148,7 @@ fn compile_composition_rules(
         conflict,
         separation_of_duty,
         distinct_actor,
+        recorded_actor,
     })
 }
 

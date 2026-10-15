@@ -53,6 +53,12 @@ impl RetransmitEstateDeathNotice {
 pub struct RetransmitEstateDeathNoticeMutationBinding;
 
 impl ApplicationMutationBinding<BankSchema> for RetransmitEstateDeathNoticeMutationBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EstateAction;
     type InputBinding = super::super::EstateActionInputBinding;
     type Result = EstateMutationResult;

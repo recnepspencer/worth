@@ -18,6 +18,8 @@ pub(super) fn write(
 ) -> Result<(), WorthQueryCheckpointCaptureDenial> {
     let mut writer = ReservedFrameWriter::new(bytes, size.total())?;
     writer.bytes(&FORMAT_VERSION.to_be_bytes())?;
+    writer.bytes(&super::super::WORKFLOW_FACTS.to_be_bytes())?;
+    writer.bytes(&super::super::WORKFLOW_INSTANCES.to_be_bytes())?;
     writer.bytes(&publication.bootstrap_commit_id().0.to_be_bytes())?;
     writer.length(native.len())?;
     writer.length(accepted_outputs.len())?;

@@ -47,6 +47,9 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operatio
 pub struct RequiredWorkflowOperation {
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) instance: worth_relational::facade::identity::EntityId,
+    original_instance: super::super::super::PublishedWorkflowInstanceRef,
+    original_runtime: u64,
+    original_sources: super::super::actor_context::OriginalActorSources,
     pub(super) node_path: String,
     pub(super) transition_identity: String,
     pub(super) transition_identity_bytes: [u8; 32],
@@ -55,7 +58,7 @@ pub struct RequiredWorkflowOperation {
     pub(super) input_type: String,
     pub(super) binding: Option<String>,
     pub(super) input_identity: [u8; 32],
-    pub(super) workflow_execution_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
+    pub(super) workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
     pub(super) authority: Arc<WorkflowOperationAuthoritySlot>,
 }
 
@@ -90,7 +93,7 @@ pub struct WorkflowOperationAuthority {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) approval_authority:
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) workflow_execution_requirements:
-        Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
+        worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
     pub(super) handle: WorthQueryPrimaryGraphIntegrationHandle,
     pub(super) layout:
         Arc<crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout>,
@@ -122,12 +125,31 @@ impl WorkflowOperationAuthoritySlot {
 }
 
 impl RequiredWorkflowOperation {
-    pub fn workflow_execution_requirements(&self) -> Option<&worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>{
-        self.workflow_execution_requirements.as_ref()
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn original_sources(
+        &self,
+    ) -> &super::super::actor_context::OriginalActorSources {
+        &self.original_sources
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn original_runtime(
+        &self,
+    ) -> u64 {
+        self.original_runtime
+    }
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn original_instance(
+        &self,
+    ) -> &super::super::super::PublishedWorkflowInstanceRef {
+        &self.original_instance
+    }
+
+    pub fn workflow_execution_requirements(&self) -> &worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements{
+        &self.workflow_execution_requirements
     }
     pub(in crate::domain_computation::primary_graph) fn from_selected(
         branch: crate::basis::WorthQueryProductBranch,
-        instance: worth_relational::facade::identity::EntityId,
+        original_runtime: u64,
+        original_instance: super::super::super::PublishedWorkflowInstanceRef,
+        original_sources: super::super::actor_context::OriginalActorSources,
         node_path: String,
         transition_identity: String,
         transition_identity_bytes: [u8; 32],
@@ -138,7 +160,10 @@ impl RequiredWorkflowOperation {
     ) -> Self {
         Self {
             branch,
-            instance,
+            instance: original_instance.entity_id(),
+            original_instance,
+            original_runtime,
+            original_sources,
             node_path,
             transition_identity,
             transition_identity_bytes,
@@ -222,7 +247,7 @@ impl WorkflowOperationAuthority {
             crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
         >,
         workflow_execution_requirements:
-            Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
+            worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
         layout: Arc<
             crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,

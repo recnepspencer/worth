@@ -204,6 +204,8 @@ fn trailing_and_truncated_payloads_are_rejected() {
 fn checkpoint_body(accepted_count: u64, accepted: Vec<u8>) -> Vec<u8> {
     let mut body = Vec::with_capacity(BODY_PREFIX_BYTES + accepted.len());
     body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
+    body.extend_from_slice(&super::WORKFLOW_FACTS.to_be_bytes());
+    body.extend_from_slice(&super::WORKFLOW_INSTANCES.to_be_bytes());
     body.extend_from_slice(&1_u64.to_be_bytes());
     body.extend_from_slice(&0_u64.to_be_bytes());
     body.extend_from_slice(&accepted_count.to_be_bytes());

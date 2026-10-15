@@ -189,7 +189,7 @@ fn validate_flow(
                 ApplicationWorkflowNodeKind::Operation { operation, .. },
             ) => operation
                 .workflow_execution_requirements()
-                .and_then(|requirements| requirements.approval())
+                .approval()
                 .is_none_or(|(identifier, identity)| {
                     approval.identifier() == identifier
                         && approval.capability_type().as_str() == identity
@@ -229,18 +229,21 @@ fn validate_flow(
 fn validate_authority(
     identity: &ApplicationWorkflowNodeIdentity,
     required: bool,
-    requirements: Option<&crate::application_operation::ApplicationWorkflowExecutionRequirements>,
+    requirements: &crate::application_operation::ApplicationWorkflowExecutionRequirements,
     authorities: usize,
 ) -> Result<(), ApplicationWorkflowValidationDenial> {
-    let approval_required =
-        requirements.is_none_or(|requirements| requirements.approval().is_some());
-    if required && (authorities > 1 || (approval_required && authorities != 1)) {
+    let approval_required = requirements.approval().is_some();
+    if required
+        && (!requirements.is_applicable()
+            || authorities > 1
+            || (approval_required && authorities != 1))
+    {
         return Err(denial(
             ApplicationWorkflowValidationDenialKind::MissingWorkflowAuthority,
             identity.as_str(),
         ));
     }
-    if !required && (authorities != 0 || requirements.is_some()) {
+    if !required && (authorities != 0 || requirements.is_applicable()) {
         return Err(denial(
             ApplicationWorkflowValidationDenialKind::UnexpectedWorkflowAuthority,
             identity.as_str(),

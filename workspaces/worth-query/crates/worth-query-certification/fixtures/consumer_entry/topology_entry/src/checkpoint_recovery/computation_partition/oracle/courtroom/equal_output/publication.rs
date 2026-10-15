@@ -20,6 +20,12 @@ worth_query_operation_writes!(PublishRoot => [Length]);
 
 pub(super) struct Binding;
 impl ApplicationMutationBinding<Schema> for Binding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = Input;
     type InputBinding = InputBinding;
     type Result = PlanarAdjustmentResult;

@@ -11,6 +11,12 @@ pub struct VertexReplacementBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for VertexReplacementBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = VertexReplacement;
     type InputBinding = VertexReplacementInputBinding;
     type Result = PlanarVertexReplacementResult;

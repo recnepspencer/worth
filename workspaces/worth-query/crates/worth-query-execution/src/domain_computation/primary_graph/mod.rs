@@ -78,7 +78,7 @@ mod root;
 mod schema_layout;
 mod settlement_repair;
 mod typed_bootstrap;
-mod workflow;
+pub(in crate::domain_computation) mod workflow;
 
 #[cfg(test)]
 pub(in crate::domain_computation) mod tests;

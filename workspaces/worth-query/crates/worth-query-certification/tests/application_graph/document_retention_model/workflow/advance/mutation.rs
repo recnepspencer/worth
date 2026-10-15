@@ -60,6 +60,12 @@ type WorkflowAdvanceScope = ApplicationMutationFieldScope<
 >;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowAdvanceBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = WorkflowAdvanceInput;
     type InputBinding = WorkflowAdvanceInputBinding;
     type Result = WorkflowAdvanceAccepted;
@@ -119,6 +125,12 @@ impl ApplicationCapabilityMutationBinding<DocumentRetentionSchema> for WorkflowA
 }
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowApprovalBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = WorkflowAdvanceInput;
     type InputBinding = WorkflowAdvanceInputBinding;
     type Result = WorkflowAdvanceAccepted;
@@ -209,4 +221,12 @@ pub(super) fn install_binding(
     schema
         .application_mutation_binding::<WorkflowAdvanceBinding>()
         .application_mutation_binding::<WorkflowApprovalBinding>()
+}
+
+impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for WorkflowAdvanceBinding {
+    type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<WorkflowAdvanceCapability>;
+}
+
+impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for WorkflowApprovalBinding {
+    type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<WorkflowApprovalCapability>;
 }

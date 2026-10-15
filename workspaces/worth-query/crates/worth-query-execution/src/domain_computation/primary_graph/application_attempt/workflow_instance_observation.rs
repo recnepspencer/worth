@@ -1,3 +1,4 @@
+mod actors;
 mod retained_history;
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::{EntityId, RelationId};
@@ -83,8 +84,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) output_content_identity:
         String,
     /// Absent on evidence recorded before revisions were bound; never current.
-    pub(in crate::domain_computation::primary_graph::application_attempt) program_revision:
-        Option<String>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) program_revision: String,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_workflow_instance(
@@ -129,6 +129,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         AspectValue::UInt64(instance.started_occurrence()),
         &mut facts,
     )?;
+    actors::observe(execution, runtime, snapshot, layout, entity, &mut facts)?;
     instance_binding::deny_ended(execution, runtime, snapshot, layout, entity)?;
     exact(
         execution,

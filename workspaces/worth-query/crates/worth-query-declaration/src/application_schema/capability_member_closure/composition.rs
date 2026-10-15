@@ -17,6 +17,14 @@ pub(super) fn composition_is_closed(
     contract: &ErasedApplicationCapabilityContract,
 ) -> bool {
     let composition = contract.composition();
+    if composition
+        .actors()
+        .recorded_actor()
+        .requirement()
+        .is_some_and(|requirement| !requirement.is_valid())
+    {
+        return false;
+    }
     graph_rule_is_closed(
         closure,
         dimensions,

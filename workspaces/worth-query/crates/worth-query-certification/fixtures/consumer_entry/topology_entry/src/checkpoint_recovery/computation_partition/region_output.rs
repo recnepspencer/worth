@@ -76,6 +76,12 @@ pub(super) struct RegionOutputDecision<Schema> {
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for RegionOutputBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = RegionOutputInput;
     type InputBinding = RegionOutputInputBinding;
     type Result = PlanarAdjustmentResult;

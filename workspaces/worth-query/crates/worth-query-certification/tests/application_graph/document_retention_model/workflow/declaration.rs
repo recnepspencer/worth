@@ -34,6 +34,17 @@ use super::super::{
 pub struct ReviewedDocumentWorkflow;
 
 impl ApplicationWorkflowSpec for ReviewedDocumentWorkflow {
+    fn observation_policy(
+    ) -> worth_query_decl::facade::application_program::ApplicationWorkflowObservationPolicy {
+        worth_query_decl::facade::application_program::ApplicationWorkflowObservationPolicy::disabled()
+    }
+    fn actor_policy(
+    ) -> worth_query_decl::facade::application_program::ApplicationWorkflowActorPolicy {
+        worth_query_decl::facade::application_program::ApplicationWorkflowActorPolicy::for_approval::<
+            Self, super::WorkflowApprovalBinding>(
+                worth_query_decl::facade::application_capability::ApplicationWorkflowRecordedActorSource::BoundProposal)
+    }
+
     type Schema = DocumentRetentionSchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity = ApplicationWorkflowSpecIdentity::new(
         "worth.query.certification.reviewed-document-workflow.v1",

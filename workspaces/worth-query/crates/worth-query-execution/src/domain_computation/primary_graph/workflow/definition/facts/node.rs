@@ -111,7 +111,8 @@ pub(super) fn create_node(
         );
     }
     if let ApplicationWorkflowNodeKind::Operation { operation, .. } = node.kind() {
-        if let Some(requirements) = operation.workflow_execution_requirements() {
+        {
+            let requirements = operation.workflow_execution_requirements();
             fields.insert(
                 layout.node.workflow_execution_requirements.clone(),
                 text(requirements.persistence_identity()),

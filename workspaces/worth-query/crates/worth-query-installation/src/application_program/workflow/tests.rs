@@ -28,6 +28,16 @@ impl ApplicationCapabilityMarkerIdentity for WorkflowCapability {
 }
 
 impl ApplicationWorkflowSpec for SupportWorkflow {
+    fn observation_policy(
+    ) -> worth_query_declaration::facade::application_program::ApplicationWorkflowObservationPolicy
+    {
+        worth_query_declaration::facade::application_program::ApplicationWorkflowObservationPolicy::disabled()
+    }
+    fn actor_policy(
+    ) -> worth_query_declaration::facade::application_program::ApplicationWorkflowActorPolicy {
+        worth_query_declaration::facade::application_program::ApplicationWorkflowActorPolicy::not_applicable()
+    }
+
     type Schema = SupportSchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity =
         ApplicationWorkflowSpecIdentity::new("worth.query.tests.support-workflow.v1");

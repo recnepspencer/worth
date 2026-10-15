@@ -84,6 +84,17 @@ pub(super) fn observe_settled_transition(
         &layout.transition.operation_receipt_identity,
         facts,
     )?;
+    let advancer = layout
+        .transition
+        .advancer
+        .observe(runtime, execution, snapshot, transition, kind, facts)?;
+    let executor = layout
+        .transition
+        .executor
+        .observe(runtime, execution, snapshot, transition, kind, facts)?;
+    if advancer.is_none() || executor.is_some() != operation_receipt_identity.is_some() {
+        return Err(denial("current transition actor applicability is corrupt"));
+    }
     let nodes = adjacency_with_kind(
         execution,
         runtime,
@@ -211,7 +222,7 @@ pub(super) fn observe_assessment_evidence(
         &layout.assessment_evidence.output_content_identity,
         facts,
     )?;
-    let program_revision = observed_optional_text(
+    let program_revision = observed_text(
         execution,
         runtime,
         snapshot,

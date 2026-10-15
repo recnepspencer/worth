@@ -151,23 +151,17 @@ fn run() {
     let first = reviewed_document(&review, "applied");
     let identity = first.identity().clone();
     assert_eq!(first.component_expansions().len(), 1);
-    assert_eq!(
-        discover(request_execution, &application, &identity),
-        WorthQueryWorkflowDefinitionDiscovery::Unpublished
-    );
+    assert_discovery_disabled(request_execution, &application, &identity);
     let first = publish(
         &application,
         first,
         WorkflowDefinitionExpectedPredecessor::Absent,
         1,
     );
-    assert_eq!(
-        discover(request_execution, &application, &identity),
-        WorthQueryWorkflowDefinitionDiscovery::Current(first.clone())
-    );
+    assert_discovery_disabled(request_execution, &application, &identity);
 
     let instance = match start_instance(&application, first.clone(), 2)
-        .expect("the discovered definition starts")
+        .expect("the original published definition starts")
     {
         WorkflowInstanceStartOutcome::Started(started) => started.instance().clone(),
         other => panic!("the instance must start, got {other:?}"),
@@ -228,16 +222,13 @@ fn run() {
         WorkflowDefinitionExpectedPredecessor::Published(first.clone()),
         500,
     );
-    assert_eq!(
-        discover(request_execution, &application, &identity),
-        WorthQueryWorkflowDefinitionDiscovery::Current(second.clone())
-    );
+    assert_discovery_disabled(request_execution, &application, &identity);
     let current = expect_superseded_start(start_instance(&application, first, 501));
     assert_eq!(
         current, second,
-        "a refused start names what discovery names"
+        "the native refusal names the replacement publication"
     );
-    println!("authored, reused, rejected, revised, approved, completed and discovered");
+    println!("authored, reused, rejected, revised, approved, completed; standalone discovery is disabled until its governed owner lands");
 }
 
 fn publish(
@@ -256,12 +247,12 @@ fn publish(
     }
 }
 
-fn discover(
+fn assert_discovery_disabled(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &DocumentWorkflowRuntime,
     identity: &ApplicationWorkflowDefinitionIdentity,
-) -> WorthQueryWorkflowDefinitionDiscovery {
-    application
+) {
+    let result = application
         .with_host_advancement(|host_phase| {
             application
                 .runtime()
@@ -270,8 +261,8 @@ fn discover(
                 .expect("the main branch selects its exact occurrence")
         })
         .expect("installed host call opens")
-        .discover_workflow_definition::<ReviewedDocumentWorkflow>(request_execution, identity)
-        .expect("the workflow lineage reads within its bound")
+        .discover_workflow_definition::<ReviewedDocumentWorkflow>(request_execution, identity);
+    assert_eq!(result, Err(worth_query_host::facade::application_discovery::WorthQueryWorkflowDefinitionDiscoveryDenial::ObservationDisabled))
 }
 
 /// A proposed retention reviewed up to its approval.

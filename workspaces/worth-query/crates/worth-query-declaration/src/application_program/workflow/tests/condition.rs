@@ -163,33 +163,6 @@ fn condition_admission_denies_before_the_graph_accepts_it() {
 }
 
 #[test]
-fn migrated_condition_reads_its_query_as_the_decision() -> Result<(), Box<dyn std::error::Error>> {
-    let migrated =
-        ApplicationWorkflowCondition::migrated(ApplicationWorkflowConditionQuery::declared::<
-            ReviewedChange,
-            ConsistencyCondition,
-        >())?;
-    let authored = condition_definition(
-        MIGRATED_WORKFLOW_CONDITION_OPERAND,
-        Operands::new().query::<ConsistencyCondition>(MIGRATED_WORKFLOW_CONDITION_OPERAND),
-    )?;
-    assert!(authored.nodes().iter().any(
-        |node| matches!(node.kind(), ApplicationWorkflowNodeKind::Condition(condition) if *condition == migrated)
-    ));
-    let non_bool =
-        ApplicationWorkflowCondition::migrated(ApplicationWorkflowConditionQuery::declared::<
-            ReviewedChange,
-            ReviewCount,
-        >())
-        .expect_err("an Option<Int64> query is not a decision");
-    assert_eq!(
-        expression_family(non_bool),
-        ExpressionDenialFamily::TypeMismatch
-    );
-    Ok(())
-}
-
-#[test]
 fn command_condition_is_canonical_with_builder_authoring() -> Result<(), Box<dyn std::error::Error>>
 {
     use ApplicationWorkflowAuthoringCommand as Command;

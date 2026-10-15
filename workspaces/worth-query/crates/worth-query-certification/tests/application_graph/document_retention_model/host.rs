@@ -92,6 +92,7 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
         (): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, DocumentRetentionSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(super::actor_generation::ActorLifecycleHandler)?;
         setup.invariant(
             DocumentRetentionV1::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -312,6 +313,28 @@ fn seed_operator(
             declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
         )
         .expect("the operator must seed");
+    for (key, identity, external) in [
+        (
+            "document-retention-reviewer",
+            2_u64,
+            super::operator_identity::reviewer_identity(),
+        ),
+        (
+            "document-retention-ungranted-reviewer",
+            3_u64,
+            super::operator_identity::ungranted_reviewer_identity(),
+        ),
+    ] {
+        graph
+            .bind_principal(
+                principal_binding,
+                primary_graph::WorthQueryApplicationPrincipalKey::new(key).unwrap(),
+                identity,
+                external,
+                declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
+            )
+            .expect("review principals seed through the native principal binding");
+    }
 }
 
 fn seed_document(

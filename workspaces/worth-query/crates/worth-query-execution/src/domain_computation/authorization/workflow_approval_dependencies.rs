@@ -8,7 +8,7 @@ use super::{
     WorthQueryRetainedCapabilityAuthorization,
 };
 
-const VERSION: u8 = 1;
+const VERSION: u8 = 2;
 // Each nested Relational stamp may use its full bounded wire budget; this
 // envelope has its own aggregate limit rather than the request-text limit.
 const MAXIMUM_APPROVAL_DEPENDENCY_BYTES: usize = 1024 * 1024;

@@ -355,7 +355,7 @@ Connection methods return `&mut Self` and chain:
 - Each assessment has exactly one subject (`MissingAssessmentSubject`); each condition has exactly one subject (`MissingConditionSubject`).
 - Each evidence join receives at least two `assessment_evidence` inputs (`IncompleteEvidenceJoin`).
 - Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). So every approval needs an evidence join over at least two assessments.
-- A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `workflow_requirements` omitted, or `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and declares no `workflow_requirements` (`UnexpectedWorkflowAuthority`).
+- A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and explicitly declares `not_applicable()` (`UnexpectedWorkflowAuthority`).
 - After the authority check, each guarded operation has exactly one `operation_input` source (`MissingOperationInput` for zero or multiple sources). Publication and imported drafts use this validation. Native reconstruction refuses unsupported stored definitions before executable readmission without rewriting their original bytes.
 
 `finish()` returns `Result<AuthoredWorkflowDefinition<Spec>,
@@ -784,7 +784,7 @@ declare no additional workflow evidence:
 // Illustrative: not compiled.
 // Inside worth_query_mutation_binding!(...), alongside its other contracts:
 workflow_authority required,
-workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
+workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only(),
 ```
 
 For an operation requiring a particular native approval capability, use the
@@ -799,22 +799,21 @@ workflow_requirements ApplicationWorkflowExecutionRequirements::requiring_approv
 
 `ApplicationWorkflowExecutionRequirements` is exported through
 `worth_query_decl::facade::application_operation` and the host's declaration
-facade. Manual `ApplicationMutationBinding` implementations return `Some(...)`
-from `workflow_execution_requirements()`. The default `None` preserves the old
-guarded-binding contract: exactly one native approval is required. It is not the
-same as `Some(ApplicationWorkflowExecutionRequirements::new())`.
+facade. Manual `ApplicationMutationBinding` implementations return the direct
+requirement from `workflow_execution_requirements()`. Guarded bindings explicitly
+choose `occurrence_only()` or `requiring_approval::<Cap>()`. Non-workflow bindings
+explicitly return `not_applicable()`. Omission has no current interpretation.
 
 | Declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
-| `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| Guarded requirement omitted | Compile refusal; manual bindings must implement the requirement method explicitly. |
+| `ApplicationWorkflowExecutionRequirements::not_applicable()` | Explicit non-workflow applicability; refused for a guarded binding. |
+| `ApplicationWorkflowExecutionRequirements::occurrence_only()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 
-**Warning:** leaving `workflow_requirements` out does not mean "no approval". It
-means "exactly one approval". To run a guarded operation without a signature,
-declare `new()`. The runnable
-[`information.rs`](../../../worth-query-certification/examples/authored_workflow/information.rs)
-example does this.
+A guarded macro binding that omits `workflow_requirements` is a compile error.
+The runnable [`information.rs`](../../../worth-query-certification/examples/authored_workflow/information.rs)
+example declares occurrence-only execution explicitly.
 
 The installed binding establishes a minimum evidence requirement. Definition
 authoring cannot remove or substitute it. Wire a required approval with the
@@ -858,6 +857,68 @@ let committed = runtime
 - Retrying the same logical request preserves its key and exact intent. It can recover `AlreadyCommitted` without repeating the handler's effects. A new request against a stale/spent occurrence is denied; reconcile rather than automatically retrying a lifecycle mutation.
 - For an external effect whose owner holds custody, pass the `WorthQueryBoundWorkflowOperation` returned by `for_workflow_operation_recovery` directly to the prepared advance. `accept_operation_from_owner` consumes that constrained view and accepts the owner-resolved receipt and returns `WorkflowProgressOutcome`, or `WorthQueryWorkflowOperationOwnerAcceptanceDenial`. `WorthQueryWorkflowOperationOwnerPosture` reports what the owner saw.
 - Recovery of an owner operation binds only the exact performed operation. It never issues authority for a new effect. First bind the request with `for_workflow_operation_recovery(&workflow, &required)`, which returns `WorthQueryWorkflowOperationBindingDenial` if the intent does not match. Without that binding, recovery preparation is refused with `NotWorkflowBound`. `prepare_workflow_operation_recovery_from_owner` returns a `WorthQueryPreparedWorkflowOperationRecovery` or `WorthQueryWorkflowOperationRecoveryPreparationDenial`. Its `safe_retry()` returns the safe-retry admission or `WorthQueryWorkflowOperationRecoveryDenial`, which hands the prepared recovery back through `into_recovery()` when it can be tried again. `accept_recovered_operation_from_owner` consumes a newly bound view for the same original operation and accepts the recovered receipt, with the same outcome and denial as `accept_operation_from_owner`.
+
+
+## Recorded workflow actors
+
+A capability can require that the original workflow actor exists and compare
+that actor with the principal making the current request. The comparison uses
+partition, slot and generation. Both same-principal and different-principal
+rules require positive presence: an operation that has not performed has no
+executor and cannot satisfy a different-executor requirement.
+
+The spec binds each participating mutation binding to its native source with
+`ApplicationWorkflowActorPolicy::for_approval::<Spec, Binding>(source)` or
+`for_operation`. The capability's `ApplicationCapabilityActorComposition`
+explicitly carries a third argument, `ApplicationCapabilityRecordedActorRule`.
+Use `not_applicable()` when no recorded role is required.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: these are declaration expressions inside a real spec and capability.
+let source = ApplicationWorkflowRecordedActorSource::BoundProposal;
+let actors = ApplicationWorkflowActorPolicy::for_approval::<ReviewWorkflow, ApproveBinding>(source);
+let requirement = ApplicationCapabilityRecordedActorRule::required(
+    ApplicationCapabilityRecordedActorRequirement::new(
+        source,
+        ApplicationWorkflowRecordedRole::Proposer,
+        ApplicationRecordedActorComparison::DifferentPrincipal,
+    ),
+);
+```
+
+For a review, the author publishes the original proposal through admitted native
+execution. A second principal prepares approval using that exact instance,
+requirement and proposal, then supplies its own fresh authentication event.
+The original proposal selects the proposer. The approver still needs the normal
+current grant, scope, purpose and signing evidence. Distinctness supplies none
+of those permissions. A different proposal about the same subject cannot replace
+the consumed proposal, even when its data coverage is reusable.
+
+`BoundTransition` selects the original input transition's advancer or performed
+executor. `BoundApproval` selects the consumed approval's approver. Historical
+actors are recorded identities, not current grants. A later settler, adopter or
+recovery caller does not become the original executor. Native receipt validation
+preserves the principal that actually performed the effect.
+
+The native owner captures these facts at the capability observation's selected
+basis. The positive requirement participates in the existing Required decision
+before access is issued. Retained decisions carry the native source revisions
+and exact recorded identity; stale original facts cannot become fresh through
+an unchanged subject or a caller-supplied actor field.
+
+Every workflow spec explicitly declares `observation_policy()` and
+`actor_policy()`. `ApplicationWorkflowObservationPolicy::disabled()` closes the
+public discovery route. A governed read declaration currently receives
+`ObservationNotImplemented`; read/disclosure owners must be implemented before
+that declaration can grant an observable route. Actor capability enforcement is
+independent of this read gap. Public workflow views never serve as permission.
+
+Current workflow layouts and portable definitions admit only their current
+actor and policy contracts. Unsupported predecessors are refused intact before
+old native authority is interpreted; callers cannot supply actor backfill or
+select an old condition decoder.
+
 
 ## Navigate back
 
@@ -1300,7 +1361,7 @@ cargo run -p worth-query-certification --example authored_workflow
 
 The same run first executes `information.rs`, an unsigned workflow: a
 `propose` slot, a guarded `record` operation whose binding declares
-`workflow_requirements ApplicationWorkflowExecutionRequirements::new()`, and a
+`workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only()`, and a
 terminal. It proposes, advances to `AwaitingOperation`, executes the write
 through `for_workflow_operation(..).execute_in_program(..)`, and advances to
 `done` with no approval. Both parts propose with the authoring control intent

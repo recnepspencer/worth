@@ -66,7 +66,7 @@ pub(in crate::domain_computation::primary_graph) use workflow_instance_observati
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;
 mod workflow_instance_program;
 mod workflow_proposal_program;
-mod workflow_transition_program;
+pub(in crate::domain_computation) mod workflow_transition_program;
 pub(in crate::domain_computation) use snapshot_lease::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
     WorthQueryApplicationSnapshotRelease,
@@ -197,7 +197,7 @@ pub use workflow_transition_program::{
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
     WorkflowApprovalDecision, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
     WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
-    WorthQueryWorkflowAdvanceAdapter,
+    WorthQueryWorkflowActorContext, WorthQueryWorkflowAdvanceAdapter,
 };
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;

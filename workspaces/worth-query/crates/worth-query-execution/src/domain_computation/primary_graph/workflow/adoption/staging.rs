@@ -35,6 +35,7 @@ pub(in crate::domain_computation::primary_graph) fn stage_workflow_dispositions(
     inventory: &WorthQueryWorkflowAdoptionInventory,
     choices: &WorthQueryWorkflowDispositions,
     target: &ApplicationProgramRevision,
+    advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
 ) -> Vec<MutationIntent> {
     let revision = program_revision_rendering(target);
     let mut intents = Vec::new();
@@ -68,6 +69,14 @@ pub(in crate::domain_computation::primary_graph) fn stage_workflow_dispositions(
                     &layout.instance.state,
                     AspectValue::UInt64(WorkflowInstanceState::Cancelled.persisted_tag()),
                 ));
+                let mut actor_fields = BTreeMap::new();
+                advancer.append_fields(&layout.instance.end_advancer, &mut actor_fields);
+                intents.push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+                    UpdateEntityFieldsIntent {
+                        entity_id: occurrence.entity_id(),
+                        fields: AspectFieldPatch::from(actor_fields),
+                    },
+                )));
                 intents.push(delete_relation(occurrence.live_membership));
             }
             None => {}

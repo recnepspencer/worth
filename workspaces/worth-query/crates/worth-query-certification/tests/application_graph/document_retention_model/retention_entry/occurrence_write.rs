@@ -28,7 +28,7 @@ worth_query_decl::facade::worth_query_mutation_binding!(
     decision WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>, denial SetRetentionDenialBinding,
     handler identity "worth.query.certification.document-retention.occurrence-handler.v1",
     workflow_authority required,
-    workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
+    workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only(),
     outputs NoApplicationMutationOutputs,
     principal DocumentPrincipalBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding U64ApplicationValueBinding,

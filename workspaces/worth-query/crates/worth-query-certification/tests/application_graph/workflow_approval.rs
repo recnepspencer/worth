@@ -389,3 +389,6 @@ fn approval_rejects_assessment_evidence_after_native_source_aba() {
             == WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
     ));
 }
+
+#[path = "workflow_approval/workflow_actor_contract.rs"]
+mod workflow_actor_contract;

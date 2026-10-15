@@ -38,6 +38,12 @@ pub(super) fn lower_instance(
     let deadline = planned_field_locator(INSTANCE_ASPECT, "deadline")?;
     let inherited_evidence_bytes =
         planned_field_locator(INSTANCE_ASPECT, "inherited-evidence-bytes")?;
+    let start_advancer = super::super::actor::record::WorkflowActorFields::planned(
+        INSTANCE_ASPECT,
+        "start-advancer",
+    )?;
+    let end_advancer =
+        super::super::actor::record::WorkflowActorFields::planned(INSTANCE_ASPECT, "end-advancer")?;
     let shape = aspects()
         .struct_fields()
         .required("identity", ScalarAspectType::String)
@@ -55,6 +61,12 @@ pub(super) fn lower_instance(
         .optional("inherited-steps", ScalarAspectType::UInt64)
         .optional("deadline", ScalarAspectType::UInt64)
         .optional("inherited-evidence-bytes", ScalarAspectType::UInt64)
+        .required("start-advancer-partition", ScalarAspectType::UInt64)
+        .required("start-advancer-slot", ScalarAspectType::UInt64)
+        .required("start-advancer-generation", ScalarAspectType::UInt64)
+        .optional("end-advancer-partition", ScalarAspectType::UInt64)
+        .optional("end-advancer-slot", ScalarAspectType::UInt64)
+        .optional("end-advancer-generation", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(INSTANCE_ASPECT))?;
     let registry = register_platform_entity(
@@ -70,6 +82,9 @@ pub(super) fn lower_instance(
     Ok((
         registry,
         WorkflowInstanceLayout {
+            start_advancer,
+            end_advancer,
+
             entity_kind: kind,
             identity: identity_field,
             protocol_version,

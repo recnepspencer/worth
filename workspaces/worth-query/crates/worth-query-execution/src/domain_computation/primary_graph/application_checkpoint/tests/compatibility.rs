@@ -31,7 +31,7 @@ fn current_facts_roundtrip_older_formats_are_refused_and_hostile_lengths_fail_be
         .as_ref(),
         &[fact]
     );
-    for version in 3..=8_u16 {
+    for version in 3..=9_u16 {
         let mut older = checkpoint_body(1, accepted.clone());
         older[..2].copy_from_slice(&version.to_be_bytes());
         assert_denied(

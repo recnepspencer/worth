@@ -4,7 +4,11 @@
 //! execution state. Downstream owners may bind and publish only a validated
 //! definition produced here.
 
+mod actor_policy;
 mod authoring;
+mod observation_policy;
+pub use actor_policy::*;
+pub use observation_policy::*;
 mod canonical;
 mod expression;
 mod identity;
@@ -35,7 +39,6 @@ pub use expression::{
     ApplicationExpressionOperandValue, ApplicationWorkflowCondition,
     ApplicationWorkflowConditionDenial, ApplicationWorkflowConditionOperand,
     ApplicationWorkflowConditionOperands, ApplicationWorkflowConditionQuery,
-    MIGRATED_WORKFLOW_CONDITION_OPERAND,
 };
 pub use identity::{
     ApplicationWorkflowComponentIdentity, ApplicationWorkflowDefinitionContentIdentity,

@@ -346,8 +346,9 @@ explained). Rust names are given where a type embodies the term.
   authority already consumed is `WorkflowAuthoritySpent`. It still needs
   ordinary operation authorization,
   and needs an *approval* only as its `workflow_requirements` or the
-  definition demand. Leaving `workflow_requirements` out means exactly one
-  approval; `ApplicationWorkflowExecutionRequirements::new()` means none.
+  definition demand. Guarded bindings must explicitly declare the installed
+  requirement; `ApplicationWorkflowExecutionRequirements::occurrence_only()`
+  adds no approval minimum. Omission is a compile refusal.
   **See** [How WORTH Works §13.1](how-it-works.md#131-who-may-run-a-guarded-operation).
 
 ## H

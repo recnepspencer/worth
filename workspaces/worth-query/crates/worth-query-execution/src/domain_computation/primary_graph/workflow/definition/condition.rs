@@ -1,19 +1,10 @@
-//! A condition node's persisted meaning.
-//!
-//! An expression condition records its encoded draft, in hex, as the node
-//! member and its operands, name-ordered, in one framed field. A record with
-//! no operands field is a version-1 condition: its member names the one Bool
-//! query it reads. It compiles as the migrated expression over that query
-//! and keeps its original node identity, so live instances published before
-//! expressions still settle under the identities they were admitted with.
+//! Current expression-only persisted condition meaning. Older shapes refuse.
 
 /// The fields one operand record frames, in order.
 const OPERAND_FIELDS: usize = 5;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConditionExpression {
-    /// A version-1 record: the one operand's result is the whole decision.
-    Migrated,
     /// The encoded expression draft, readmitted at every evaluation.
     Draft(Box<[u8]>),
 }
@@ -67,9 +58,7 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConditio
 }
 
 impl CompiledWorkflowCondition {
-    /// Reads a persisted condition. `operands` is absent exactly for a
-    /// version-1 record, which alone carries the query's types and binding in
-    /// their own fields.
+    /// Requires an encoded expression and its complete operand declaration.
     pub(in crate::domain_computation::primary_graph) fn from_record(
         member: String,
         parameter_type: Option<String>,
@@ -78,16 +67,6 @@ impl CompiledWorkflowCondition {
         operands: Option<String>,
     ) -> Option<Self> {
         match (parameter_type, result_type, binding, operands) {
-            (Some(parameter_type), Some(result_type), Some(binding), None) => Some(Self {
-                expression: CompiledWorkflowConditionExpression::Migrated,
-                operands: Box::new([WorkflowConditionOperand {
-                    name: worth_query_declaration::facade::application_program::MIGRATED_WORKFLOW_CONDITION_OPERAND.to_owned(),
-                    query: member,
-                    parameter_type,
-                    result_type,
-                    binding,
-                }]),
-            }),
             (None, None, None, Some(operands)) => Some(Self {
                 expression: CompiledWorkflowConditionExpression::Draft(decode_draft(&member)?),
                 operands: decode_operands(&operands)?,
@@ -96,15 +75,9 @@ impl CompiledWorkflowCondition {
         }
     }
 
-    /// Node identity fields after the node tag. A migrated condition keeps
-    /// the version-1 fields exactly; an expression condition always has more
-    /// fields, so the two cannot share a material.
+    /// Current expression and operand identity material.
     pub(in crate::domain_computation::primary_graph) fn identity_fields(&self) -> Vec<String> {
         match &self.expression {
-            CompiledWorkflowConditionExpression::Migrated => self.operands[0].fields()[1..]
-                .iter()
-                .map(|field| (*field).to_owned())
-                .collect(),
             CompiledWorkflowConditionExpression::Draft(draft) => {
                 ["expression".to_owned(), encode_draft(draft)]
                     .into_iter()
@@ -120,7 +93,6 @@ impl CompiledWorkflowCondition {
 
     pub(in crate::domain_computation::primary_graph) fn retained_string_bytes(&self) -> usize {
         let draft = match &self.expression {
-            CompiledWorkflowConditionExpression::Migrated => 0,
             CompiledWorkflowConditionExpression::Draft(draft) => draft.len(),
         };
         self.operands

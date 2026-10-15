@@ -44,6 +44,12 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for EntryC
 impl<Schema: TopologySchemaBinding, const WORKFLOW: bool> ApplicationMutationBinding<Schema>
     for EntryCorrectionBinding<Schema, WORKFLOW>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EntryCorrection;
     type InputBinding = EntryCorrectionInput;
     type Result = PlanarAdjustmentResult;

@@ -132,6 +132,14 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
+    if installed.actor_policy() != &Spec::actor_policy()
+        || installed.observation_policy() != &Spec::observation_policy()
+    {
+        return Err(denial(
+            WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy,
+            Spec::IDENTITY.as_str(),
+        ));
+    }
     let limits = definition.limits();
     let resources = installed.resources;
     if limits.maximum_nodes() > resources.maximum_definition_nodes()

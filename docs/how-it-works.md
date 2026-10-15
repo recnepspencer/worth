@@ -1796,13 +1796,13 @@ permission to execute the business operations in it.
 
 | `workflow_requirements` declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
-| `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| Guarded requirement omitted | Compile refusal; manual bindings must implement the requirement method explicitly. |
+| `ApplicationWorkflowExecutionRequirements::not_applicable()` | Explicit non-workflow applicability; refused for a guarded binding. |
+| `ApplicationWorkflowExecutionRequirements::occurrence_only()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 
-**Leaving `workflow_requirements` out does not mean "no approval". It means
-"exactly one approval".** To run a guarded operation without a signature,
-declare `new()`.
+Guarded bindings explicitly choose `occurrence_only()` or a mandatory approval
+capability. Omission is a compile refusal; it has no legacy interpretation.
 
 ### 13.2 Propose, authorize, execute
 

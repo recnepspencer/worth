@@ -68,8 +68,8 @@ macro_rules! worth_query_mutation_binding {
                 $crate::worth_query_mutation_binding!(@program_requirement $($program_requirement)?);
             const REQUIRES_WORKFLOW_AUTHORITY: bool =
                 $crate::worth_query_mutation_binding!(@workflow_authority $($workflow_authority)?);
-            fn workflow_execution_requirements() -> Option<$crate::facade::application_operation::ApplicationWorkflowExecutionRequirements> {
-                $crate::worth_query_mutation_binding!(@workflow_requirements $($workflow_requirements)?)
+            fn workflow_execution_requirements() -> $crate::facade::application_operation::ApplicationWorkflowExecutionRequirements {
+                $crate::worth_query_mutation_binding!(@workflow_requirements [$($workflow_authority)?] [$($workflow_requirements)?])
             }
             const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateRequirements =
                 $crate::facade::application_operation::ApplicationCandidateRequirements::fixed_shape(
@@ -294,8 +294,8 @@ macro_rules! worth_query_mutation_binding {
                 $crate::worth_query_mutation_binding!(@program_requirement $($program_requirement)?);
             const REQUIRES_WORKFLOW_AUTHORITY: bool =
                 $crate::worth_query_mutation_binding!(@workflow_authority $($workflow_authority)?);
-            fn workflow_execution_requirements() -> Option<$crate::facade::application_operation::ApplicationWorkflowExecutionRequirements> {
-                $crate::worth_query_mutation_binding!(@workflow_requirements $($workflow_requirements)?)
+            fn workflow_execution_requirements() -> $crate::facade::application_operation::ApplicationWorkflowExecutionRequirements {
+                $crate::worth_query_mutation_binding!(@workflow_requirements [$($workflow_authority)?] [$($workflow_requirements)?])
             }
             const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateRequirements =
                 $crate::facade::application_operation::ApplicationCandidateRequirements::fixed_shape(
@@ -329,8 +329,13 @@ macro_rules! worth_query_mutation_binding {
     };
     (@admission $Admission:ty) => { $Admission };
     (@admission) => { $crate::facade::application_operation::ApplicationConventionalAdmission };
-    (@workflow_requirements $requirements:expr) => { Some($requirements) };
-    (@workflow_requirements) => { None };
+    (@workflow_requirements [required] []) => {
+        compile_error!("guarded mutations must declare workflow_requirements explicitly")
+    };
+    (@workflow_requirements [$($authority:ident)?] [$requirements:expr]) => { $requirements };
+    (@workflow_requirements [] []) => {
+        $crate::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    };
     (@program_requirement required) => { true };
     (@program_requirement) => { false };
     (@workflow_authority required) => { true };

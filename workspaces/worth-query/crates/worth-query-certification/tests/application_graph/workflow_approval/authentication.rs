@@ -7,7 +7,7 @@ use worth_query_host::facade::application_entry::{
 };
 
 use super::super::document_retention_model::{
-    operator_identity::{authenticate_operator, block_on, request_scope},
+    operator_identity::{authenticate_reviewer, block_on, request_scope},
     retention_entry::DOCUMENT_IDENTITY,
     workflow::{
         install_certification_authentication, WorkflowAdvanceInput, WorkflowApprovalIntent,
@@ -21,7 +21,7 @@ fn approval_rejects_foreign_owner_wrong_purpose_and_intent_but_replays_without_r
         approval_journey("authenticated", 24_000);
     let runtime = application.runtime();
     let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let principal = authenticate_reviewer(runtime.installed_schema(), &scope);
     macro_rules! prepare {
         ($instance:expr, $key:expr) => {{
             runtime
@@ -122,7 +122,7 @@ fn approval_rejects_expired_signing_event_from_the_installed_named_clock() {
         approval_journey("expired-signing-event", 24_100);
     let runtime = application.runtime();
     let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let principal = authenticate_reviewer(runtime.installed_schema(), &scope);
     let prepare = |key: u64| {
         runtime
             .request(&principal, &scope)

@@ -168,6 +168,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 #[derive(Debug)]
 enum AttemptDenialCause {
     None,
+    RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
     Expression(Box<worth_foundational::expression_api::ExpressionDenial>),
@@ -178,6 +179,15 @@ enum AttemptDenialCause {
 }
 
 impl WorthQueryApplicationAttemptDenial {
+    pub(in crate::domain_computation) fn relational_execution_cause(
+        &self,
+    ) -> Option<worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        match self.cause {
+            AttemptDenialCause::RelationalExecution(cause) => Some(cause),
+            _ => None,
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn new(
         kind: WorthQueryApplicationAttemptDenialKind,
         subject: impl Into<String>,
@@ -252,6 +262,7 @@ impl WorthQueryApplicationAttemptDenial {
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         match &self.cause {
             AttemptDenialCause::Allocation(denial) => Some(denial.as_ref()),
+            AttemptDenialCause::RelationalExecution(_) => None,
             AttemptDenialCause::RetainedSource(denial) => match denial.as_ref() {
                 super::retained_decision_facts::StoreDenial::Allocation(denial) => Some(denial),
                 _ => None,
@@ -326,6 +337,7 @@ impl std::error::Error for WorthQueryApplicationAttemptDenial {
             AttemptDenialCause::NativeQueryRead(stop) => Some(stop.as_ref()),
             AttemptDenialCause::RetainedSource(denial) => Some(denial.as_ref()),
             AttemptDenialCause::Allocation(denial) => Some(denial.as_ref()),
+            AttemptDenialCause::RelationalExecution(_) => None,
             _ => None,
         }
     }
