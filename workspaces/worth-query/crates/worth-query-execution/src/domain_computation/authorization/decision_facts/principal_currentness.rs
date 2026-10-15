@@ -12,6 +12,8 @@ pub(in crate::domain_computation) struct WorthQueryPrincipalCurrentnessDependenc
     binding: Arc<str>,
     layout: WorthQueryPrimaryPrincipalBindingLayout,
     freshness: WorthQueryPrincipalFreshnessEvidence,
+    external_identity:
+        Arc<worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity>,
 }
 
 impl WorthQueryPrincipalCurrentnessDependency {
@@ -30,6 +32,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
             binding: Arc::from(principal.binding()),
             layout: layout.clone(),
             freshness: principal.freshness().clone(),
+            external_identity: Arc::new(principal.external_identity().clone()),
         }
     }
 
@@ -37,6 +40,14 @@ impl WorthQueryPrincipalCurrentnessDependency {
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
         self.session_identity
+    }
+
+    /// Typed identity resolved by native admission, not a decoded durable snapshot.
+    pub(in crate::domain_computation) fn external_identity(
+        &self,
+    ) -> &Arc<worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity>
+    {
+        &self.external_identity
     }
 
     pub(in crate::domain_computation) fn retained_for_session(
@@ -48,6 +59,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
             binding: Arc::clone(&self.binding),
             layout: self.layout.clone(),
             freshness: self.freshness.clone(),
+            external_identity: Arc::clone(&self.external_identity),
         }
     }
 

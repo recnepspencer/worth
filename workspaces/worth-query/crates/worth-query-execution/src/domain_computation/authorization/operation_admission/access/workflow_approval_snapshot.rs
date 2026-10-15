@@ -8,6 +8,20 @@ use crate::domain_computation::authorization::{
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
+    /// Live admission provenance is distinct from the serializable snapshots below.
+    pub(in crate::domain_computation) fn workflow_approval_signing_principal(
+        &self,
+    ) -> Option<
+        &std::sync::Arc<
+            worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity,
+        >,
+    > {
+        self.authorization
+            .as_ref()
+            .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
+            .map(|authorization| authorization.principal().external_identity())
+    }
+
     pub(in crate::domain_computation) fn workflow_approval_request_snapshot(
         &self,
     ) -> Result<Option<String>, WorkflowApprovalRequestEncodingDenial> {

@@ -64,6 +64,11 @@ pub fn operator_identity() -> WorthQueryExternalPrincipalIdentity {
         .expect("the operator external identity is valid")
 }
 
+/// Authenticates at the provider, but has no seeded application mapping or grant.
+pub fn secondary_signer_identity() -> WorthQueryExternalPrincipalIdentity {
+    WorthQueryExternalPrincipalIdentity::new(OPERATOR_ISSUER, "secondary-signer").unwrap()
+}
+
 pub fn admit_operator_adapter(
     schema: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
 ) -> WorthQueryAdmittedAuthenticationAdapter<DocumentRetentionSchema, OperatorAdapter> {

@@ -610,6 +610,16 @@ let outcome = signing.sign(&event).map(|request| request.execute())?;
 - `prepare_workflow_approval` returns `WorthQueryWorkflowApprovalSigningRequest`. When the key already recorded a decision, `authentication_intent()` is `None` and `execute_replay()` returns the recorded outcome without a new event.
 - On `Approved`, the approval's authority flows to the operation connected by `approval_authority`. On `Rejected`, a retry route (if authored) sends the instance back.
 
+The expected signer is retained from native principal admission. Both the
+ordinary signing request and the advanced prepared-approval path require the
+authentication event to belong to that exact external identity (issuer and
+subject), not merely a user who can authenticate. Supplying another principal
+to advanced `sign_approval` returns `PrincipalMismatch` before consuming the
+event. Publication checks the consumed proof against the same retained signer.
+Do not infer this correspondence from an application actor number, a display
+name, or a decoded durable approval snapshot. Committed replay still recovers
+the original decision without its historical authentication event.
+
 Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalStale`,
 `WorkflowApprovalGrantUnavailable`, `WorkflowApprovalExpired`,
 `WorkflowApprovalDelegationChanged`, and `WorkflowApprovalAuthorityDenied`.
