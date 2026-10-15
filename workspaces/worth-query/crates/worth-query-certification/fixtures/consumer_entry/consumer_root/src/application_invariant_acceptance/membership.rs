@@ -1,6 +1,6 @@
 //! Separate schema and installed program for currentness membership-edit courts.
 //! Baseline ConsumerSchema and ConsumerProgram do not opt into this capability.
-use worth_query_decl::facade::{application_schema::*, worth_query_application};
+use worth_query_decl::facade::worth_query_application;
 use worth_query_parameter_entry::{ParameterContribution, ParameterSchemaBinding};
 use worth_query_topology_entry::{
     MembershipContribution, MembershipSchemaBinding, TopologyContribution, TopologySchemaBinding,

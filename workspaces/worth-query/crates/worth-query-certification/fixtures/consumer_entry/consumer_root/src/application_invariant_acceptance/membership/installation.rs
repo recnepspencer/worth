@@ -6,7 +6,6 @@ use std::sync::{
     Arc,
 };
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
-use worth_query_decl::facade::application_schema::ApplicationSchema;
 use worth_query_host::facade::{
     application_installation::{in_memory_program, WorthQueryProgramApplicationRuntime},
     declaration::authentication::WorthQueryPrincipalMappingStatus,

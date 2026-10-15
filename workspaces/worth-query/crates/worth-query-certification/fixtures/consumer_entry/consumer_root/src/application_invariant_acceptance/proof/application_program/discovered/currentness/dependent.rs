@@ -43,7 +43,10 @@ fn discovered_currentness_dependent_membership_empty_and_deep() {
             .start_required_outputs(
                 &world.application,
                 &request,
-                WorthQueryOutputDemandControls::new(NonZeroUsize::new(4096).unwrap(), work()),
+                WorthQueryOutputDemandControls::new(
+                    NonZeroUsize::new(4096).unwrap(),
+                    retained_bytes(),
+                ),
             )
             .unwrap_or_else(|failure| panic!("native source: {:?}", failure.denial()));
         let aggregate = settled!(world, request, started);
@@ -81,7 +84,10 @@ fn discovered_currentness_dependent_membership_empty_and_deep() {
         }
         request
             .at(aggregate.observation())
-            .require_current_discovered_program_outputs(&aggregate, work())
+            .require_current_discovered_program_outputs(
+                &aggregate,
+                comparison_work(&world.application),
+            )
             .unwrap();
         let original_members = request
             .query(PlanarDiscoveryRead {
@@ -118,17 +124,23 @@ fn discovered_currentness_dependent_membership_empty_and_deep() {
         for (_, root) in aggregate.root_outputs() {
             request
                 .at(&current)
-                .require_current_output_demand(root, work())
+                .require_current_output_demand(root, comparison_work(&world.application))
                 .unwrap();
         }
         stale(
             request
                 .at(&current)
-                .require_current_discovered_program_outputs(&aggregate, work()),
+                .require_current_discovered_program_outputs(
+                    &aggregate,
+                    comparison_work(&world.application),
+                ),
         );
         request
             .at(aggregate.observation())
-            .require_current_discovered_program_outputs(&aggregate, work())
+            .require_current_discovered_program_outputs(
+                &aggregate,
+                comparison_work(&world.application),
+            )
             .unwrap();
         assert_eq!(
             world.application.retained_source_custody_count_for_test(),
