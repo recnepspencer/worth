@@ -3,8 +3,9 @@ use super::*;
 use std::error::Error;
 #[test]
 fn binding_denial_retains_advancement_and_original_actor_causes() {
-    use worth_query_execution::facade::primary_graph::{
-        WorthQueryAdvancementDenial, WorthQueryApplicationAttemptDenial,
+    use worth_query_execution::facade::{
+        application_contribution::WorthQueryAdvancementDenial,
+        primary_graph::WorthQueryApplicationAttemptDenial,
     };
     let opening = WorthQueryAdvancementDenial::NestedOpening;
     let denial = WorthQueryWorkflowOperationBindingDenial::ExecutionRequest(opening);

@@ -36,7 +36,9 @@ pub enum WorthQueryWorkflowOperationBindingDenial {
     RequirementMismatch,
     AuthorityUnavailable,
     /// The original request could not open its native advancement.
-    ExecutionRequest(worth_query_execution::facade::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     /// Selecting the original workflow's installed meaning was refused.
     ProductSelection(
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
