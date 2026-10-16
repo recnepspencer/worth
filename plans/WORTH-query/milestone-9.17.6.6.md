@@ -24,7 +24,7 @@ cutovers demonstrate adoption separately and cannot stand in for public proof.
 
 The baseline blocker was declaration composition. Feature authoring methods
 constructed independent actions for locality/change, correspondence,
-requirements, external inputs or delivery. Their capabilities cannot all be
+requirements, external inputs or delivery. Their capabilities could not all be
 attached to the same occurrence through the supported audience API. The complete
 action builder now supplies that supported composition.
 
@@ -513,7 +513,9 @@ completes the same Intent request once, checks actual Query commit increments,
 publishes the mounted consequence and closes with empty resource counts. It does
 not establish native OS window/file-chooser or pixel-appearance qualification,
 runtime before-effect Intent cancellation, or an executed `CloseIncomplete.retry`.
-The latter paths retain their explicitly scoped source and CPU/binding evidence.
+Those runtime paths were source-reviewed. CPU/binding evidence covers the
+corresponding operation ownership and close contracts, rather than those entire
+native journeys.
 
 Query, Bank and binding owner Clippy checks passed. Whole-app scoped Clippy still
 exits nonzero solely for the unchanged `native_application/theme.rs` collapsible-if

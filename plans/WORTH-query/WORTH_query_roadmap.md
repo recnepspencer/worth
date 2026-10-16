@@ -470,7 +470,7 @@ for the 9.17.6.4 public proof and consume its certified revision.
 implemented owning API: complete action metadata plus delivery, and authentic
 runtime retention across commands. Its public API, covered caller cutover and
 scoped qualification are complete. Downstream adoption consumes that certified
-contract as a separate successor. Neither sibling absorbs 9.17.6.5's workflow
+contract as a separate successor. This does not close 9.17.6.5's workflow
 acceptance portfolio. Existing predecessor qualification is retained only where
 the affected contract remains unchanged.
 
