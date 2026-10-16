@@ -1,5 +1,6 @@
 use worth_query_decl::facade::{
     application_operation::{
+        ApplicationMutationAdmissionBinding, ApplicationConventionalAdmission,
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
         ApplicationCandidateResourceCeiling, ApplicationMutationBinding, ApplicationMutationIntent,
         ApplicationQueryMutationSource, NoApplicationMutationOutputs,
@@ -39,6 +40,10 @@ worth_query_operation_writes!(WorthUiApplyStatusAction => [QueryTextStatusField]
 worth_query_operation_emits!(WorthUiApplyStatusAction => [WorthUiStatusChangedEffect]);
 
 pub struct WorthUiStatusActionBinding;
+
+impl ApplicationMutationAdmissionBinding<WorthUiApplicationSchema> for WorthUiStatusActionBinding {
+    type Admission = ApplicationConventionalAdmission;
+}
 
 impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusActionBinding {
     type Input = WorthUiStatusActionRequest;

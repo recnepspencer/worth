@@ -200,6 +200,8 @@ pub use product_projection::{
 pub use product_projection::{
     WorthUiStatusActionExecution, WorthUiStatusActionIdentity, WorthUiStatusActionMutationOutcome,
     WorthUiStatusActionOutcome, WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop,
+    WorthUiStatusMutation, WorthUiStatusMutationClose, WorthUiStatusMutationResult,
+    WorthUiStatusMutationStop, WorthUiStatusTerminalOutcome,
     WorthUiStatusMutationOutcome, WorthUiStatusOwnerCloseReceipt, WorthUiStatusOwnerError,
     WorthUiStatusPublication, WorthUiStatusSourceOwner,
 };

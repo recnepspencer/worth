@@ -109,6 +109,7 @@ impl Fixture {
             .publish_source(
                 WorthUiScalarProjectionSourceRecord::new(status, revision)
                     .expect("accepted source record"),
+            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
             )
             .expect("source edit commits and publishes")
             .into_projection_observation()

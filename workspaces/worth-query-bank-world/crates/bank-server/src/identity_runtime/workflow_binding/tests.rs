@@ -77,7 +77,11 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
         Err(refused) => refused,
         Ok(_) => panic!("cancelled close must preserve the real operation"),
     };
-    assert!(matches!(denial, WorthQueryOperationCloseDenial::Execution(_)));
+    assert!(matches!(denial, WorthQueryOperationCloseDenial::Execution(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(
+            worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled
+        )
+    )));
     let pending = expect_binding_refusal(pending.bind(), WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained);
     let fresh_scope = request_scope();
     let fresh_principal = block_on(authentication.authenticate(CausalCredential::for_identity(&identity), &fresh_scope))

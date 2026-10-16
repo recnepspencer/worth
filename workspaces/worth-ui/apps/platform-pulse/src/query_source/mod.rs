@@ -15,4 +15,5 @@ pub(crate) use installation::{
 pub(crate) use lifecycle_application::{
     PlatformPulseQueryActionOutcome, PlatformPulseQueryLifecycle,
     PlatformPulseQueryLifecycleDenial, PlatformPulseQueryShutdownReceipt,
+    PlatformPulseQueryContinuation, PlatformPulseQueryMutation, PlatformPulseQueryMutationPurpose,
 };

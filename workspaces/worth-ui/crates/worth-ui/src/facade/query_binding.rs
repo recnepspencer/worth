@@ -36,5 +36,7 @@ pub use worth_ui_runtime::facade::query_binding::{
     WorthUiScalarProjectionActionPreconditionDenial, WorthUiScalarProjectionSourceRecord,
     WorthUiStatusActionExecution, WorthUiStatusActionMutationOutcome, WorthUiStatusActionOutcome,
     WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop, WorthUiStatusMutationOutcome,
+    WorthUiStatusMutation, WorthUiStatusMutationClose, WorthUiStatusMutationResult,
+    WorthUiStatusMutationStop, WorthUiStatusTerminalOutcome,
     WorthUiStatusOwnerError, WorthUiStatusSourceOwner,
 };

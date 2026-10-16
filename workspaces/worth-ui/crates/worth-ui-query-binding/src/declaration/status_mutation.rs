@@ -1,5 +1,6 @@
 use worth_query_decl::facade::{
     application_operation::{
+        ApplicationMutationAdmissionBinding, ApplicationConventionalAdmission,
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
         ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
         ApplicationMutationFieldScope, ApplicationMutationIntent, ApplicationQueryMutationSource,
@@ -57,6 +58,10 @@ pub(super) type StatusMutationScope = ApplicationMutationFieldScope<
     ReadOnly,
     NoApplicationUnit,
 >;
+
+impl ApplicationMutationAdmissionBinding<WorthUiApplicationSchema> for WorthUiStatusUpdateBinding {
+    type Admission = ApplicationConventionalAdmission;
+}
 
 impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusUpdateBinding {
     type Input = WorthUiScalarProjectionSourceRecord;
