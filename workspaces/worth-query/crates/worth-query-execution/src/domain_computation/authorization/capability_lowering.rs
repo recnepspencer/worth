@@ -34,6 +34,8 @@ use accumulator::WorthQueryCapabilityRuleLoweringAccumulator;
 pub(super) use accumulator::WorthQueryCapabilityRuleSet;
 pub(super) use installed_plan::{compile_capability_plan, WorthQueryInstalledCapabilityPlan};
 
+const RECORDED_ACTOR_CLAUSE_NAMESPACE: u8 = 0xc8;
+
 fn compile_grant_path(
     capability: &[u8; 32],
     contract: &ErasedApplicationCapabilityContract,
@@ -132,13 +134,12 @@ fn compile_composition_rules(
                     "invalid native recorded-role requirement",
                 ));
             }
-            // Native clause identity occupies its own namespace, not a path index.
-            use sha2::{Digest, Sha256};
-            let mut hash = Sha256::new();
-            hash.update(b"worth.query.required-recorded-role.v1");
-            hash.update(capability);
-            hash.update(requirement.persistence_identity().as_bytes());
-            Ok(lowering.add_recorded_actor(requirement, hash.finalize().into()))
+            // Installed capability meaning already binds this exact requirement.
+            // Preserve all its identity bits in a namespace distinct from graph
+            // paths (0xc7), without deriving a second semantic digest.
+            let mut identity = *capability;
+            identity[0] ^= RECORDED_ACTOR_CLAUSE_NAMESPACE;
+            Ok(lowering.add_recorded_actor(requirement, identity))
         })
         .transpose()?;
     Ok(WorthQueryCapabilityDecisionRuleBindings {
