@@ -56,16 +56,6 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
-        if !std::ptr::eq(self.runtime.runtime(), request.application)
-            || self.description.branch != request.branch
-        {
-            return Err(WorthQueryOperationDeliveryDenial::FreshRequestMismatch);
-        }
-        request
-            .application
-            .with_application_advancement(request.scope, |phase| {
-                self.current_observation(request, &phase, policy)
-            })
-            .map_err(WorthQueryOperationDeliveryDenial::Execution)?
+        self.delivery.deliver_current(request, policy)
     }
 }

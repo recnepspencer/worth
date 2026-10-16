@@ -94,15 +94,17 @@ where
                 }
                 Ok(WorthQueryApplicationProgramOutputProgress::Settled(settlement)) => {
                     return Advance::Settled(WorthQuerySettledFixedOperation {
-                        installed_action: self.installed_action,
-                        runtime: self.runtime,
-                        description: self.description,
-                        settlement,
+                        delivery: FixedDeliveryCore {
+                            installed_action: self.installed_action,
+                            description: self.description,
+                            settlement,
+                            _action: self.action,
+                            runtime: self.runtime,
+                        },
                         initial_cause: self.initial_cause,
                         recovered: self.recovered,
                         result: self.result,
                         cleanup: self.cleanup,
-                        action: self.action,
                     });
                 }
                 Err(mut denial) => {

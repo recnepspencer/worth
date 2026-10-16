@@ -1,8 +1,9 @@
 mod program_tree;
 pub use program_tree::{
-    WorthQueryClosedProgramOutputRequest, WorthQueryProgramOutputAdvanceDenial,
-    WorthQueryProgramOutputCloseDenial, WorthQueryProgramOutputCloseRefusal,
-    WorthQueryProgramOutputConstructionDenial, WorthQueryProgramOutputConstructionRefusal,
+    WorthQueryClosedProgramOutputDelivery, WorthQueryClosedProgramOutputRequest,
+    WorthQueryProgramOutputAdvanceDenial, WorthQueryProgramOutputCloseDenial,
+    WorthQueryProgramOutputCloseRefusal, WorthQueryProgramOutputConstructionDenial,
+    WorthQueryProgramOutputConstructionRefusal, WorthQueryProgramOutputDeliveryCloseRefusal,
     WorthQueryProgramOutputOperation, WorthQueryProgramOutputOperationAdvance,
     WorthQuerySettledProgramOutputOperation, WorthQueryTerminalProgramOutputOperation,
 };

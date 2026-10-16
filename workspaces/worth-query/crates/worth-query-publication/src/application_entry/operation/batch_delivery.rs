@@ -26,19 +26,7 @@ where
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     <<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Query>,
     {
-        self.read_batch_current_with_policy::<N>(
-            request,
-            WorthQueryOperationDeliveryPolicy::currentness(
-                std::num::NonZeroUsize::new(
-                    self.runtime
-                        .runtime()
-                        .output_demand_resource_profile()
-                        .limits()
-                        .source_currentness_work(),
-                )
-                .expect("installed finite positive currentness policy"),
-            ),
-        )
+        self.delivery.read_batch_current::<N>(request)
     }
     /// Narrows native batch ceilings for a fresh delivery attempt.
     pub fn read_batch_current_with_policy<const N: usize>(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, policy: WorthQueryOperationDeliveryPolicy) -> Result<DeliveredProjectionBatch<Schema, BatchRead<Schema, Intent, Action, N>>, WorthQueryOperationDeliveryDenial>
@@ -48,28 +36,8 @@ where
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     <<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Query>,
     {
-        use WorthQueryOperationDeliveryDenial as Denial;
-        if !std::ptr::eq(self.runtime.runtime(), request.application)
-            || self.description.branch != request.branch
-        {
-            return Err(Denial::FreshRequestMismatch);
-        }
-        request
-            .application
-            .with_application_advancement(request.scope, |phase| {
-                let observation = self.current_observation(request, &phase, policy)?;
-                let inputs = <Delivery<Schema, Intent, Action> as ApplicationFixedBatchDelivery<
-                    Schema,
-                    Binding<Schema, Intent>,
-                    N,
-                >>::read_inputs(self.description.intent.input());
-                request
-                    .at(&observation)
-                    .query_batch(inputs.into_iter().collect())
-                    .execute_installed(policy.batch_limits, policy.query_limits, &phase)
-                    .map_err(Denial::Batch)
-            })
-            .map_err(Denial::Execution)?
+        self.delivery
+            .read_batch_current_with_policy::<N>(request, policy)
     }
     /// Reads original declared selectors at the retained settlement basis with
     /// fresh authority, without claiming currentness or advancing outputs.
@@ -80,26 +48,6 @@ where
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     <<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Query>,
     {
-        use WorthQueryOperationDeliveryDenial as Denial;
-        if !std::ptr::eq(self.runtime.runtime(), request.application)
-            || self.description.branch != request.branch
-        {
-            return Err(Denial::FreshRequestMismatch);
-        }
-        request
-            .application
-            .with_application_advancement(request.scope, |phase| {
-                let inputs = <Delivery<Schema, Intent, Action> as ApplicationFixedBatchDelivery<
-                    Schema,
-                    Binding<Schema, Intent>,
-                    N,
-                >>::read_inputs(self.description.intent.input());
-                request
-                    .at(self.settlement.observation())
-                    .query_batch(inputs.into_iter().collect())
-                    .execute_installed(None, None, &phase)
-                    .map_err(Denial::Batch)
-            })
-            .map_err(Denial::Execution)?
+        self.delivery.read_batch_historical::<N>(request)
     }
 }

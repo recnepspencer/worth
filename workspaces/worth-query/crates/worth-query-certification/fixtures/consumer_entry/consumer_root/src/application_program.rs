@@ -33,6 +33,8 @@ pub(crate) mod discovered_delivery;
 pub(crate) mod external_input;
 mod features;
 #[cfg(test)]
+pub(crate) mod fixed_artifact_source;
+#[cfg(test)]
 pub(crate) mod fixed_batch;
 mod fixed_delivery;
 pub(crate) mod fixed_successors;

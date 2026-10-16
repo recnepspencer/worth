@@ -2140,6 +2140,14 @@ Workflow: the runnable authored example obtains the actual awaited slot, capture
 
 ### 5.4 Mutations with required outputs
 
+Fixed owning construction validates the installed governed root artifact's
+actual source locality, change/succession and dependencies before minting an
+effect-capable owner. Refusal returns the original operation description and
+`WorthQueryOperationConstructionDenial::OutputSource`; the borrowed authentic
+runtime remains with the caller, and no source effect has run. This uses the
+same native artifact-source guard as later required-output preparation.
+
+
 For a fixed required-output action, declare its exact composition occurrence,
 output root and projection. `ApplicationFixedActionDelivery<Schema, Binding>`
 names `Root` and `Projection`. For a query, choose `ApplicationQueryProjection<Read>`
@@ -2533,6 +2541,41 @@ Physical release never erases unresolved producer recovery. Dropping an owner is
 abandonment, not a successful close. Performed-source required and
 discovered aggregate completion rules, including fixed-leaf unavailable
 completion, are unchanged.
+
+#### Delivery after native close
+
+When final publication must follow cleanup, call the settled parent's
+`close_for_delivery(&fresh_cleanup_request)`. A Fixed parent returns
+`WorthQueryClosedFixedDelivery`; a complete no-source parent returns
+`WorthQueryClosedProgramOutputDelivery`. Each sealed carrier owns the original
+complete settlement, original installed meaning and authentic runtime, beside
+actual native close evidence. Its immutable `settlement()` includes the genuine
+root correspondence even for `StableReused` with `root_receipt() == None`.
+No original demand, controls or extra source-basis lease survives no-source close.
+
+Close validates original allocation/branch and fresh cleanup authority; stale
+sources or changed selected programs do not prevent disposal. Fixed refusal
+returns the same settled parent and typed cause. No-source refusal owns the
+positive settlement and all remaining native custody, including any discharged
+prefix; `WorthQueryProgramOutputDeliveryCloseRefusal::retry_close` is close-only.
+It cannot deliver, advance, or convert back into a live tree.
+
+Only after actual native close succeeds, use the carrier's fresh `deliver_current`
+or `read_current`. Fixed declared query/batch shapes retain their original
+selectors and authorization; no-query delivery requires `ApplicationNoProjection`.
+These calls reuse the live owner's exact complete output/discovery and installed
+context validation, then read at that native observation in the same phase.
+Any refusal borrows and preserves the already-closed carrier. It cannot rerun
+source/producer work, create another demand or reopen cleanup. Plain `close`
+remains available for cleanup-only intent.
+
+Complete-tree currentness is as of that fresh native observation. Additional
+application projection facts must be read again at the delivered observation;
+old frozen views and descriptive commit equality provide no substitute.
+Closed carriers and returned observations pin readonly lineage/history and the
+runtime; they do not certify whole-application shutdown or own uncleared cleanup.
+Drop them promptly after final publication, before whole-runtime close or OS join.
+The neutral `application_program::closed_delivery` fixture exercises both owners.
 
 #### Original root output evidence
 

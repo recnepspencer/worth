@@ -14,6 +14,13 @@ pub struct WorthQueryClosedProgramOutputRequest {
     construction: Option<WorthQueryProgramOutputConstructionDenial>,
 }
 impl WorthQueryClosedProgramOutputRequest {
+    pub(super) fn from_cleanup(cleanup: Option<WorthQueryOutputReadCleanup>) -> Self {
+        Self {
+            cleanup,
+            terminal: None,
+            construction: None,
+        }
+    }
     pub fn retired_component_count(&mut self) -> usize {
         self.cleanup
             .as_mut()
@@ -48,8 +55,9 @@ where
     settlement: Option<WorthQueryApplicationProgramOutputSettlement<Query<S, R>>>,
     terminal: Option<WorthQueryProgramOutputAdvanceDenial>,
     construction: Option<WorthQueryProgramOutputConstructionDenial>,
-    core: Core<S, P, R>,
     denial: WorthQueryProgramOutputCloseDenial,
+    // Runtime follows every original native field, including the denial.
+    core: Core<S, P, R>,
 }
 impl<S, P, R> WorthQueryProgramOutputCloseRefusal<S, P, R>
 where
@@ -69,6 +77,7 @@ where
     ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>
     {
         self.core
+            .custody
             .cleanup
             .as_mut()
             .and_then(WorthQueryOutputReadCleanup::producer_outcome)
@@ -113,36 +122,15 @@ where
     R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
 {
-    use WorthQueryProgramOutputCloseDenial as Denial;
-    let result = if !core.matches(request) {
-        Err(Denial::FreshRequestMismatch)
-    } else {
-        request
-            .application
-            .with_application_advancement(request.scope, |phase| {
-                phase
-                    .checked_execution_request_for(request.application.product_runtime())
-                    .map_err(Denial::Execution)?;
-                if let Some(cleanup) = core.cleanup.as_mut() {
-                    cleanup
-                        .close_in_advancement(&phase, request.application)
-                        .map_err(Denial::Native)?;
-                }
-                if let Some(tree) = core.tree.as_mut() {
-                    tree.close_read_request(&phase, &core.runtime, core.branch)
-                        .map_err(Denial::Native)?;
-                }
-                Ok(())
-            })
-            .map_err(Denial::Execution)
-            .and_then(|result| result)
-    };
+    let result = core
+        .custody
+        .close_native(&core.runtime, core.branch, request);
     match result {
-        Ok(()) => Ok(WorthQueryClosedProgramOutputRequest {
-            cleanup: core.cleanup.take(),
-            terminal,
-            construction,
-        }),
+        Ok(mut closed) => {
+            closed.terminal = terminal;
+            closed.construction = construction;
+            Ok(closed)
+        }
         Err(denial) => Err(WorthQueryProgramOutputCloseRefusal {
             core,
             settlement,
@@ -179,7 +167,22 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedProgramOutputRequest, WorthQueryProgramOutputCloseRefusal<S, P, R>>
     {
-        close(self.core, Some(self.settlement), None, None, request)
+        let ProgramOutputDeliveryCore {
+            settlement,
+            branch,
+            runtime,
+        } = self.delivery;
+        close(
+            Core {
+                custody: self.custody,
+                branch,
+                runtime,
+            },
+            Some(settlement),
+            None,
+            None,
+            request,
+        )
     }
 }
 impl<S, P, R> WorthQueryTerminalProgramOutputOperation<S, P, R>

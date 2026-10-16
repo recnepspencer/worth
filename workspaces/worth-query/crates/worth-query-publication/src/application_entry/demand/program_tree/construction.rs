@@ -20,8 +20,8 @@ where
     R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
 {
-    pub(super) core: Core<S, P, R>,
     pub(super) denial: WorthQueryProgramOutputConstructionDenial,
+    pub(super) core: Core<S, P, R>,
 }
 impl<S, P, R> WorthQueryProgramOutputConstructionRefusal<S, P, R>
 where
@@ -35,7 +35,7 @@ where
     }
     /// The original issued basis, if native observation admission succeeded.
     pub fn source_observation(&self) -> Option<&WorthQueryApplicationReadObservation> {
-        self.core.basis.as_ref()
+        self.core.custody.basis.as_ref()
     }
     /// Recovers the actual original inputs. No request authority is retained.
     pub fn into_parts(
@@ -48,10 +48,10 @@ where
         WorthQueryProgramApplicationRuntime<S, P>,
     ) {
         (
-            self.core.demand,
-            self.core.controls,
+            self.core.custody.demand,
+            self.core.custody.controls,
             self.core.branch,
-            self.core.basis,
+            self.core.custody.basis,
             self.core.runtime,
         )
     }
@@ -105,14 +105,16 @@ where
                 phase
                     .checked_execution_request_for(request.application.product_runtime())
                     .map_err(Denial::Execution)?;
-                if core.basis.is_none() {
-                    core.basis = Some(request.retain_read(&phase).map_err(Denial::Observation)?);
+                if core.custody.basis.is_none() {
+                    core.custody.basis =
+                        Some(request.retain_read(&phase).map_err(Denial::Observation)?);
                 }
                 core.runtime
                     .validate_selected_output_root::<R>(
                         &phase,
                         &worth_query_execution::publication_boundary::program_publication_access(),
                         &core
+                            .custody
                             .basis
                             .as_ref()
                             .expect("issued basis remains owned")
@@ -158,13 +160,15 @@ where
             branch: self.branch,
         };
         let core = Core {
-            cleanup: None,
-            tree: None,
-            basis: self
-                .observation
-                .map(WorthQueryApplicationReadObservation::new),
-            demand: self.demand,
-            controls: self.controls.unwrap_or_default(),
+            custody: ReadCustody {
+                cleanup: None,
+                tree: None,
+                basis: self
+                    .observation
+                    .map(WorthQueryApplicationReadObservation::new),
+                demand: self.demand,
+                controls: self.controls.unwrap_or_default(),
+            },
             branch: self.branch,
             runtime: program.clone(),
         };

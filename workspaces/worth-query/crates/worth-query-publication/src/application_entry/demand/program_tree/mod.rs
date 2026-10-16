@@ -33,20 +33,30 @@ type Value<S,R> = <<Source<S,R> as ApplicationQueryBinding<S>>::ResultBinding as
 type SourceIntent<S, R> = <Source<S, R> as ApplicationQueryBinding<S>>::Input;
 type SourceScope<S, R> = <Source<S, R> as ApplicationQueryBinding<S>>::ScopeBinding;
 type SourcePrincipal<S, R> = <Source<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity;
+type ReadBinding<S, I> = <I as ApplicationQueryIntent<S>>::Binding;
+type ReadQuery<S, I> = <ReadBinding<S, I> as ApplicationQueryBinding<S>>::Query;
+type ReadValue<S,I> = <<ReadBinding<S,I> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 mod advance;
 mod close;
+mod closed_delivery;
 mod construction;
 mod delivery;
+mod delivery_close;
+mod delivery_core;
+mod native_close;
 pub use advance::{WorthQueryProgramOutputAdvanceDenial, WorthQueryProgramOutputOperationAdvance};
 pub use close::{
     WorthQueryClosedProgramOutputRequest, WorthQueryProgramOutputCloseDenial,
     WorthQueryProgramOutputCloseRefusal,
 };
+pub use closed_delivery::WorthQueryClosedProgramOutputDelivery;
 pub use construction::{
     WorthQueryProgramOutputConstructionDenial, WorthQueryProgramOutputConstructionRefusal,
 };
+pub use delivery_close::WorthQueryProgramOutputDeliveryCloseRefusal;
+use delivery_core::ProgramOutputDeliveryCore;
 
-struct Core<S, P, R>
+struct ReadCustody<S, P, R>
 where
     S: ApplicationSchema,
     P: ApplicationProgramDefinition<S>,
@@ -58,8 +68,17 @@ where
     basis: Option<WorthQueryApplicationReadObservation>,
     demand: Demand<S, R>,
     controls: WorthQueryOutputDemandControls,
+}
+struct Core<S, P, R>
+where
+    S: ApplicationSchema,
+    P: ApplicationProgramDefinition<S>,
+    R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
+    Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
+{
+    custody: ReadCustody<S, P, R>,
     branch: WorthQueryProductBranch,
-    // Native carriers and their original evidence are destroyed before keepalive.
+    // All native custody is destroyed before the authentic runtime.
     runtime: WorthQueryProgramApplicationRuntime<S, P>,
 }
 /// One original complete-tree read request. No initiating scope borrow escapes.
@@ -82,8 +101,9 @@ where
     R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
 {
-    settlement: WorthQueryApplicationProgramOutputSettlement<Query<S, R>>,
-    core: Core<S, P, R>,
+    custody: ReadCustody<S, P, R>,
+    // The delivery core retains the runtime until native custody is destroyed.
+    delivery: ProgramOutputDeliveryCore<S, P, R>,
 }
 /// A genuine terminal read request, retaining its original tree and cleanup.
 #[must_use]
@@ -120,6 +140,7 @@ where
     ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>
     {
         self.core
+            .custody
             .cleanup
             .as_mut()
             .and_then(WorthQueryOutputReadCleanup::producer_outcome)
@@ -138,6 +159,7 @@ where
 {
     pub fn source_observation(&self) -> &WorthQueryApplicationReadObservation {
         self.core
+            .custody
             .basis
             .as_ref()
             .expect("successful construction retains its issued basis")

@@ -93,24 +93,49 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
-        if !std::ptr::eq(self.runtime.runtime(), request.application)
-            || self.description.branch != request.branch
+        match self.close_native(request) {
+            Ok(closed) => Ok(closed),
+            Err(denial) => Err((self, denial)),
+        }
+    }
+
+    /// Discharges original native cleanup while preserving readonly delivery meaning.
+    /// Supersession does not block close. Fresh current delivery is a separate check.
+    pub fn close_for_delivery(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        WorthQueryClosedFixedDelivery<Schema, Intent, Program, Root, Action>,
+        (Self, WorthQueryOperationCloseDenial),
+    > {
+        match self.close_native(request) {
+            Ok(closed) => Ok(WorthQueryClosedFixedDelivery {
+                closed,
+                delivery: self.delivery,
+            }),
+            Err(denial) => Err((self, denial)),
+        }
+    }
+
+    fn close_native(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
+        if !std::ptr::eq(self.delivery.runtime.runtime(), request.application)
+            || self.delivery.description.branch != request.branch
         {
-            return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
+            return Err(WorthQueryOperationCloseDenial::FreshRequestMismatch);
         }
         let runtime = request.application;
-        let outcome = runtime.with_application_advancement(request.scope, |phase| {
-            if let Some(performed) = self.recovered.as_mut() {
-                self.cleanup.absorb_recovered(performed)?;
-            }
-            self.cleanup
-                .close_in_advancement(&phase, runtime)
-                .map(WorthQueryClosedOperation::from_cleanup)
-        });
-        match outcome {
-            Ok(Ok(closed)) => Ok(closed),
-            Ok(Err(denial)) => Err((self, denial)),
-            Err(denial) => Err((self, WorthQueryOperationCloseDenial::Execution(denial))),
-        }
+        runtime
+            .with_application_advancement(request.scope, |phase| {
+                if let Some(performed) = self.recovered.as_mut() {
+                    self.cleanup.absorb_recovered(performed)?;
+                }
+                self.cleanup
+                    .close_in_advancement(&phase, runtime)
+                    .map(WorthQueryClosedOperation::from_cleanup)
+            })
+            .map_err(WorthQueryOperationCloseDenial::Execution)?
     }
 }

@@ -9,6 +9,8 @@ use worth_query_topology_entry::{PlanarRead, PlanarSourceAdjustment};
 use super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
+#[cfg(test)]
+mod closed_delivery;
 mod continuation_basis;
 mod custody;
 #[cfg(test)]

@@ -56,31 +56,35 @@ where
                 let current = request.retain_read(&phase).map_err(|stop| Denial::Outputs(WorthQueryRequiredOutputPreparationDenial::ReadObservation(stop)))?;
                 self.core.runtime.validate_selected_output_root::<R>(&phase, &worth_query_execution::publication_boundary::program_publication_access(), &current.retained).map_err(Denial::Program)?;
             }
-            if self.core.tree.is_none() {
-                let basis = self.core.basis.as_ref().expect("construction owns its issued basis");
-                self.core.tree = Some(request.start_program_outputs_at_in_advancement::<P,R>(&phase, &self.core.runtime, self.core.demand.clone(), self.core.controls, basis).map_err(Denial::Outputs)?);
+            if self.core.custody.tree.is_none() {
+                let basis = self.core.custody.basis.as_ref().expect("construction owns its issued basis");
+                self.core.custody.tree = Some(request.start_program_outputs_at_in_advancement::<P,R>(&phase, &self.core.runtime, self.core.custody.demand.clone(), self.core.custody.controls, basis).map_err(Denial::Outputs)?);
             }
-            self.core.tree.as_mut().expect("initial admission retains its native tree")
+            self.core.custody.tree.as_mut().expect("initial admission retains its native tree")
                 .advance_in_advancement(&phase, &self.core.runtime, request).map_err(Denial::Outputs)
         }).map_err(Denial::Execution).and_then(|result| result);
         match result {
             Ok(WorthQueryApplicationProgramOutputProgress::Pending) => Advance::Pending(self),
             Ok(WorthQueryApplicationProgramOutputProgress::Settled(settlement)) => {
                 Advance::Settled(WorthQuerySettledProgramOutputOperation {
-                    settlement,
-                    core: self.core,
+                    custody: self.core.custody,
+                    delivery: ProgramOutputDeliveryCore {
+                        settlement,
+                        branch: self.core.branch,
+                        runtime: self.core.runtime,
+                    },
                 })
             }
             Err(mut denial) => {
                 let terminal = if let Denial::Outputs(output) = &mut denial {
                     if let Some(cleanup) = output.take_read_cleanup() {
                         debug_assert!(
-                            self.core.cleanup.is_none(),
+                            self.core.custody.cleanup.is_none(),
                             "a terminal native producer transfers cleanup once"
                         );
-                        self.core.cleanup = Some(cleanup);
+                        self.core.custody.cleanup = Some(cleanup);
                     }
-                    self.core.cleanup.is_some()
+                    self.core.custody.cleanup.is_some()
                         || output.recovery_posture()
                             == WorthQueryRequiredOutputRecoveryPosture::Terminal
                 } else {

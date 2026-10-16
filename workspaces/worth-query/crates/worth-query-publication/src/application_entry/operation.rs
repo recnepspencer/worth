@@ -36,6 +36,7 @@ pub use discovered::{
     WorthQueryDiscoveredOperation, WorthQuerySettledDiscoveredOperation,
     WorthQueryTerminalDiscoveredOperation,
 };
+mod delivery_core;
 #[cfg(test)]
 #[expect(
     dead_code,
@@ -62,6 +63,9 @@ mod request_view;
     reason = "Compiler bodies prove retained construction without cloning native custody"
 )]
 mod retained_runtime_contract;
+use delivery_core::FixedDeliveryCore;
+mod closed_delivery;
+pub use closed_delivery::WorthQueryClosedFixedDelivery;
 mod settled;
 pub use delivery_policy::WorthQueryOperationDeliveryPolicy;
 mod terminal;

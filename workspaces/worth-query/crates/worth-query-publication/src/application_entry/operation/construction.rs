@@ -139,6 +139,11 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
         if !program.contains_output_root::<FixedRoot<Schema, Intent, Action>>() {
             return Err((self, WorthQueryOperationConstructionDenial::UndeclaredRoot));
         }
+        if let Err(denial) = program.validate_program_root_artifact_source::<
+            FixedRoot<Schema, Intent, Action>, Binding<Schema, Intent>,
+        >(&worth_query_execution::publication_boundary::program_publication_access()) {
+            return Err((self, WorthQueryOperationConstructionDenial::OutputSource(denial)));
+        }
         Ok(WorthQueryFixedOperation {
             installed_action: installed_action.clone(),
             runtime: program.clone(),

@@ -28,7 +28,7 @@ mod ordinary;
 pub use ordinary::{WorthQueryOperationBuilder, WorthQueryPendingApplicationLane};
 mod operation;
 pub use operation::{
-    WorthQueryClosedOperation, WorthQueryCompletedSourceOperation,
+    WorthQueryClosedFixedDelivery, WorthQueryClosedOperation, WorthQueryCompletedSourceOperation,
     WorthQueryCompletedWorkflowOperation, WorthQueryDiscoveredOperation, WorthQueryFixedOperation,
     WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
     WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
@@ -60,10 +60,11 @@ pub use demand::{
     WorthQueryApplicationOutputDemandContinuation, WorthQueryApplicationOutputDemandDenial,
     WorthQueryApplicationOutputDemandHandle, WorthQueryApplicationOutputDemandProgress,
     WorthQueryApplicationOutputDemandRequest, WorthQueryApplicationOutputDemandSettlement,
-    WorthQueryClosedProgramOutputRequest, WorthQueryOutputDemandControls,
-    WorthQueryOutputSettlementPosture, WorthQueryProgramOutputAdvanceDenial,
-    WorthQueryProgramOutputCloseDenial, WorthQueryProgramOutputCloseRefusal,
-    WorthQueryProgramOutputConstructionDenial, WorthQueryProgramOutputConstructionRefusal,
+    WorthQueryClosedProgramOutputDelivery, WorthQueryClosedProgramOutputRequest,
+    WorthQueryOutputDemandControls, WorthQueryOutputSettlementPosture,
+    WorthQueryProgramOutputAdvanceDenial, WorthQueryProgramOutputCloseDenial,
+    WorthQueryProgramOutputCloseRefusal, WorthQueryProgramOutputConstructionDenial,
+    WorthQueryProgramOutputConstructionRefusal, WorthQueryProgramOutputDeliveryCloseRefusal,
     WorthQueryProgramOutputOperation, WorthQueryProgramOutputOperationAdvance,
     WorthQuerySettledProgramOutputOperation, WorthQueryTerminalProgramOutputOperation,
 };
