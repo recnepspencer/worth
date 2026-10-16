@@ -24,10 +24,8 @@ fn compiled_examples_match_consumer_documents() {
             &fs::read_to_string(root.join(document)).expect("consumer document is readable"),
         );
         for (name, block) in compiled_blocks(&text) {
-            assert!(
-                examples.insert(name.clone()),
-                "duplicate compiled marker: {name}"
-            );
+            // Track unique coverage; compare every occurrence, including repeated excerpts.
+            examples.insert(name.clone());
             let source_path = configuration
                 .get("compiled_sources")
                 .and_then(toml::Value::as_array)
@@ -53,6 +51,7 @@ fn compiled_examples_match_consumer_documents() {
     assert_eq!(
         examples,
         BTreeSet::from([
+            "composed_action.rs".to_owned(),
             "warehouse_inventory.rs".to_owned(),
             "owning_entry.rs".to_owned(),
             "owning_fixed.rs".to_owned(),

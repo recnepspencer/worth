@@ -22,10 +22,8 @@ mod stops;
 use declaration::{Action, Program};
 type Runtime = WorthQueryProgramApplicationRuntime<Schema, Program>;
 type Request<'a> = WorthQueryApplicationRequest<'a, 'a, 'a, Schema>;
-type Operation<'a> =
-    WorthQueryDiscoveredOperation<'a, Schema, Original, Program, FanoutRoot, Action>;
-type Settled<'a> =
-    WorthQuerySettledDiscoveredOperation<'a, Schema, Original, Program, FanoutRoot, Action>;
+type Operation = WorthQueryDiscoveredOperation<Schema, Original, Program, FanoutRoot, Action>;
+type Settled = WorthQuerySettledDiscoveredOperation<Schema, Original, Program, FanoutRoot, Action>;
 
 // Deliberately not Clone: retention and each pump must borrow the actual original.
 struct Original(PlanarSourceAdjustment);
@@ -44,12 +42,7 @@ fn input(key: &str) -> PlanarSourceAdjustment {
         replacement_y: length(2),
     }
 }
-fn retain<'a>(
-    application: &'a Runtime,
-    request: &Request<'_>,
-    body: &str,
-    key: u64,
-) -> Operation<'a> {
+fn retain(application: &Runtime, request: &Request<'_>, body: &str, key: u64) -> Operation {
     let source = request
         .query(PlanarRead {
             body_key: body.to_owned(),
@@ -70,7 +63,7 @@ fn retain<'a>(
         .retain_operation::<Program, Action>(application)
         .unwrap_or_else(|(_, denial)| panic!("exact cost descriptor: {denial:?}"))
 }
-fn settle<'a>(mut operation: Operation<'a>, request: &Request<'_>) -> Settled<'a> {
+fn settle(mut operation: Operation, request: &Request<'_>) -> Settled {
     // A test bound diagnoses a stuck pending owner; it never renews native policy.
     for _ in 0..256 {
         match operation.advance(request) {

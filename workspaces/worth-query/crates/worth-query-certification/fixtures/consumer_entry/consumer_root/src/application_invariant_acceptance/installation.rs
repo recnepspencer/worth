@@ -10,8 +10,8 @@ mod external_input;
 use super::{authentication, resources, seed};
 use crate::{ConsumerProgram, ConsumerSchema};
 use std::sync::{
-    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
+    atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 use worth_query_host::facade::{
     application_installation::{self as installation, WorthQueryInMemoryApplicationLimits},
@@ -201,10 +201,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     let correspondence = world
         .application
         .installed_program()
-        .repeated_optional_member::<
-            PlanarEditBinding<ConsumerSchema>,
-            OptionalAdjustmentCorrespondence,
-        >()
+        .repeated_optional_member::<PlanarEditBinding<ConsumerSchema>, OptionalAdjustmentCorrespondence>()
         .expect("the program installs its declared row correspondence");
     let first = correspondence.initialize(
         &OptionalAdjustmentRow {
@@ -215,9 +212,11 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     );
     assert_eq!(first.target(), "row-a");
     assert_eq!(first.initial_member().map(PositiveLength::get), Some(2));
-    assert!(first
-        .apply(ApplicationOptionalMemberEdit::Unchanged)
-        .is_none());
+    assert!(
+        first
+            .apply(ApplicationOptionalMemberEdit::Unchanged)
+            .is_none()
+    );
 
     let set = first
         .apply(ApplicationOptionalMemberEdit::Set(

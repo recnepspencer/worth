@@ -100,7 +100,7 @@ impl<D: ApplicationActionDelivery<ConsumerSchema, Binding>>
                     == <PlanarSourceFeature as ApplicationFeature<ConsumerSchema>>::IDENTITY)
         });
         specs.push(ApplicationFeatureSpec::at::<ConsumerSchema, DiscoveredPlanarRoot, PlanarSourceFeature>()
-            .provides::<PlanarBodyOutput>().operation_action::<Binding, D>().finish());
+            .provides::<PlanarBodyOutput>().action::<Binding, D>().finish_action().finish());
         specs
     }
 }

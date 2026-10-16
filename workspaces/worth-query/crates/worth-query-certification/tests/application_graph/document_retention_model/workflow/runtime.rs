@@ -17,12 +17,12 @@ use super::super::{
     schema::DocumentRetentionSchema,
 };
 use super::{
-    install_certification_authentication_with_clock, ReviewedDocumentWorkflow,
-    WorkflowAdvanceCapability, WorkflowAdvanceInput, WorkflowAdvanceOperation,
-    WorkflowApprovalCapability, WorkflowDefinitionAuthoringBinding,
+    ReviewedDocumentWorkflow, WorkflowAdvanceCapability, WorkflowAdvanceInput,
+    WorkflowAdvanceOperation, WorkflowApprovalCapability, WorkflowDefinitionAuthoringBinding,
     WorkflowDefinitionAuthoringCapability, WorkflowDefinitionAuthoringInput,
     WorkflowDefinitionAuthoringOperation, WorkflowInstanceStartCapability,
     WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
+    install_certification_authentication_with_clock,
 };
 
 pub fn retain_workflow<Program: ApplicationProgramDefinition<DocumentRetentionSchema>>(
@@ -139,7 +139,9 @@ where
     application
         .workflow
         .support_workflow_spec(workflow)
-        .expect("the vocabulary belongs to a rostered program");
+        .unwrap_or_else(|(_, denial)| {
+            panic!("the vocabulary belongs to a rostered program: {denial:?}")
+        });
 }
 
 pub fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {

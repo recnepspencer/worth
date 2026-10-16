@@ -1,7 +1,7 @@
 //! One retained observation binds current installed meaning, complete native guard and delivery.
 use super::*;
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQuerySettledDiscoveredOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQuerySettledDiscoveredOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -9,7 +9,7 @@ where
     Root: ApplicationOutputGraphShape<Schema> + ApplicationDiscoveredOutputRoot,
     Connection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
-    Action: ApplicationDiscoveredAction<Schema, Intent::Binding>,
+    Action: ApplicationAction<Schema, Intent::Binding>,
     ActionDelivery<Schema, Intent, Action>:
         ApplicationDiscoveredActionDelivery<Schema, Intent::Binding, Root = Root>,
 {
@@ -34,7 +34,7 @@ where
             .selected_program_owner(&selected)
             .map_err(Denial::Program)?;
         owner
-            .resolve_declared_action::<Binding<Schema, Intent>>(self.installed_action)
+            .resolve_declared_action::<Binding<Schema, Intent>>(&self.installed_action)
             .map_err(Denial::Action)?;
         let installed = self
             .runtime

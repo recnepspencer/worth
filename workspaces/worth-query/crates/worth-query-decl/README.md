@@ -43,32 +43,51 @@ predicted. These declarations grant no runtime capacity or authority.
 sections 3 and 6 show features, the program, and workflow authoring with real
 code.
 
-A program is built from features. Each `ApplicationFeature` owns actions,
-declared with an `ApplicationFeatureSpec`:
+A program is built from features. Begin each ordinary feature action with
+`.action::<Binding, Delivery>()` on `ApplicationFeatureSpec::root` or `at`.
+Compose the paired `.locality_and_change::<Scope, Shape>()`, binding-scoped
+`.correspondence::<C>()`, operation-scoped `.evaluated_requirement::<Rule>()`
+and `.external_input::<Provider>()` as applicable. Each clause can be attached
+only once. `.finish_action()` appends one complete declaration and returns the
+feature parent; only that parent can add members or `.finish()` the feature.
+Delivery is mandatory for ordinary actions and derives required-output meaning.
 
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-use worth_query_decl::facade::application_program::*;
+The macro's `action(Binding, Delivery) { ... };` block delegates to the same
+progression, including empty blocks and clause-order-independent meaning.
+Deliberately specialized native actions use `.native_action::<Binding>()` or
+`native_action(Binding) { ... };` with the same optional clauses. They have no
+delivery or output-source toggle; actual roots derive native membership.
+Ordinary mutations and retries require their real delivery.
 
-impl ApplicationProgramDefinition<MySchema> for MyProgram {
-    type Contributions = (MyContribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = ApplicationRuleLeaf;
-    const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("example.program.v1");
+`ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>`
+implements sealed `ApplicationAction`. Its `selector()` returns only
+`ApplicationActionSelector`; Installation resolves the complete actual action.
+No public selector conversion manufactures full declaration meaning. The
+existing validator refuses duplicate native binding types and portable
+occurrence/feature/binding identity keys, while allowing distinct legal instances.
 
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![ApplicationFeatureSpec::root::<MySchema, MyFeature>()
-            .mutation::<MyMutationBinding>()
-            .operation::<MyOperation>()
-            .finish()]
-    }
+Correspondence capabilities remain binding-scoped; evaluated rules and providers
+remain operation-plus-rule/provider scoped across declared actions. Installing
+metadata neither evaluates a rule nor admits an external revision. The installed
+evaluator supplies guidance and submission enforcement, not a new authorization
+engine. Use admitted external values in the source intent. Validate complete
+feature specs with `ApplicationProgramAuthoring::<Schema, Program>::begin()`
+followed by `.validated_program()`.
+
+This [real consumer declaration](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_program/composed_action.rs)
+uses the source module's surrounding typed imports and feature members:
+
+<!-- compiled: composed_action.rs -->
+```rust
+pub(crate) fn source_feature_spec() -> ApplicationFeatureSpec {
+    features::source_builder()
+        .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, ConsumerFixedDelivery>()
+        .locality_and_change::<SourceLocality, SourceChange>()
+        .evaluated_requirement::<CatalogInputRequirement>()
+        .external_input::<external_input::NeutralExternalProvider>()
+        .finish_action()
+        .finish()
 }
-
-let validated = ApplicationProgramAuthoring::<MySchema, MyProgram>::begin()
-    .validated_program()?;          // ValidatedApplicationProgram<MySchema, MyProgram>
-let revision = validated.revision(); // ApplicationProgramRevision
 ```
 
 `ApplicationProgramDefinition<Schema>` owns canonical authored program meaning.
@@ -87,12 +106,12 @@ to the required-output publication roster. The latter records a declaration-owne
 `demand-only` root posture in canonical meaning; existing required graphs keep
 their canonical records. Explicit required-source action declarations still apply.
 
-Both implement the sealed `ApplicationFixedOutputRoot` used by ordinary
-`start_program_outputs` and `demand(...).start_in_program` progression. Only
+Both implement the sealed `ApplicationFixedOutputRoot` used by native
+`start_program_outputs` and explicit `demand(...).start_in_program` progression. Only
 `ApplicationRequiredOutputRoot` may enter performed/prepared-source, required
-recovery, or required-unavailable completion APIs. A demand-only source saves
-through ordinary `execute_in_program`; later demand retains native output owners
-and checks the installed artifact's actual source locality, change, dependency,
+recovery, or required-unavailable completion APIs. A demand-only assessment does not make its source a required-output action.
+Ordinary source mutation uses its declared source-only owning delivery; a
+separate explicit assessment demand retains native output owners and checks the installed artifact's actual source locality, change, dependency,
 request authority and currentness. A receipt cannot substitute for those owners.
 For an optional assessment, declare its artifact `REQUIRED = false`; retained
 storage and the artifact's other lifecycle meanings are separate choices.

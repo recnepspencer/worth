@@ -1,3 +1,5 @@
+mod authoring;
+pub use authoring::ApplicationActionSpecBuilder;
 mod output_delivery;
 pub use output_delivery::ApplicationOutputActionDeliveryDeclaration;
 mod discovered_delivery;
@@ -19,10 +21,7 @@ mod delivery_contract;
 mod reference;
 pub use delivery::{ApplicationFixedActionDelivery, ApplicationFixedQueryDelivery};
 pub use delivery_contract::*;
-pub use reference::{
-    ApplicationAction, ApplicationActionReference, ApplicationDiscoveredAction,
-    ApplicationFixedAction,
-};
+pub use reference::{ApplicationAction, ApplicationActionReference, ApplicationActionSelector};
 use std::any::TypeId;
 use std::marker::PhantomData;
 

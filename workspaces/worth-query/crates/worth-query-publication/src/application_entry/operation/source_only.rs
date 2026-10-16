@@ -38,14 +38,15 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(in crate::application_entry) admission:
-        WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
     cleanup: WorthQueryOperationCleanup,
     state: SourceState<S, I>,
     guarded_abort: Option<WorthQueryApplicationUncommitted>,
     keyed_terminal: Option<
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution,
     >,
+    // Keep the authentic runtime alive while every bounded native carrier drops.
+    pub(in crate::application_entry) admission:
+        WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
 }
 
 type SourceState<S, I> = super::native_publication::NativePublicationState<
@@ -106,12 +107,12 @@ pub enum WorthQuerySourceOnlyPosture {
     Terminal,
 }
 impl<
-        S: ApplicationSchema,
-        I: ApplicationMutationIntent<S>,
-        P: ApplicationProgramDefinition<S>,
-        A,
-        M,
-    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
+    S: ApplicationSchema,
+    I: ApplicationMutationIntent<S>,
+    P: ApplicationProgramDefinition<S>,
+    A,
+    M,
+> WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
     /// Abandons ordinary retry meaning while keeping the exact native cleanup authority alive.
     ///
@@ -198,12 +199,12 @@ where
 }
 
 impl<
-        S: ApplicationSchema,
-        I: ApplicationMutationIntent<S>,
-        P: ApplicationProgramDefinition<S>,
-        A,
-        M,
-    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
+    S: ApplicationSchema,
+    I: ApplicationMutationIntent<S>,
+    P: ApplicationProgramDefinition<S>,
+    A,
+    M,
+> WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
     // The native state's completion slot remains the sole evidence owner through
     // delivery and completed wrappers; phase tags never duplicate its payload.

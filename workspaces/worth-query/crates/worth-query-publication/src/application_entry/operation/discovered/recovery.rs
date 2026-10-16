@@ -3,14 +3,14 @@ use super::*;
 use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
 use WorthQueryOperationProgress as Progress;
-impl<'r, S, I, P, R, A> WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQueryDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
     I::Binding: ApplicationMutationAdmissionBinding<S>,
     Admission<S, I>: WorthQueryBindingAdmission<S, I::Binding>,
@@ -28,7 +28,7 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+    ) -> DiscoveredAdvance<S, I, P, R, A> {
         let State::Unpublished(partial) = self.state else {
             unreachable!("dispatch owns an unpublished source")
         };
@@ -40,11 +40,11 @@ where
         if borrowed.performed().is_none() {
             let progress = self
                 .description
-                .request_view(request, self.installed_action)
+                .request_view(request, &self.installed_action)
                 .recover_unpublished_discovered_in_program_in_advancement::<P, R>(
                     phase,
                     &mut borrowed,
-                    self.runtime,
+                    &self.runtime,
                 );
             self.state = State::Unpublished(borrowed.into_same_binding_intent::<I>());
             return match progress {
@@ -60,11 +60,11 @@ where
         }
         let promoted = self
             .description
-            .request_view(request, self.installed_action)
+            .request_view(request, &self.installed_action)
             .promote_recovered_discovered_outputs_in_advancement::<P, R>(
                 phase,
                 borrowed,
-                self.runtime,
+                &self.runtime,
                 WorthQueryOutputDemandControls::host_policy(),
             );
         match promoted {
@@ -97,7 +97,7 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+    ) -> DiscoveredAdvance<S, I, P, R, A> {
         let State::Retention(failure) = self.state else {
             unreachable!("dispatch owns the unregistered original source")
         };
@@ -112,11 +112,11 @@ where
         };
         let retry = self
             .description
-            .request_view(request, self.installed_action)
+            .request_view(request, &self.installed_action)
             .retry_discovered_output_retention_in_advancement::<P, R>(
                 phase,
                 failure.into_same_binding_intent::<&I>(),
-                self.runtime,
+                &self.runtime,
             );
         match retry {
             Ok(performed) => {

@@ -1,5 +1,11 @@
 //! Host-audience view over the production Query authority graph.
 //!
+//! Ordinary action owners retain the authentic installed runtime and complete
+//! installed action beyond construction. Applications keep their own genuine
+//! runtime handle for fresh requests; operation keepalive grants no admission
+//! or cleanup. Bind initial workflow vocabulary before retaining handles, and
+//! preserve runtime/spec/signing custody when configuration refuses.
+//!
 //! Program-output publication custody is deliberately absent from this facade;
 //! the workspace boundary checker reserves its issuer to the publication owner.
 
@@ -212,9 +218,9 @@ pub use worth_query_execution::facade::provisional_aftermath;
 pub use worth_query_execution::facade::runtime;
 pub use worth_query_installation::facade as domain;
 pub use worth_query_installation::facade::{
-    inspect_installed_graph_obligations, WorthQueryGraphObligationAdoptionDenial,
-    WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof,
-    WorthQueryGraphObligationAdoptionRow,
+    WorthQueryGraphObligationAdoptionDenial, WorthQueryGraphObligationAdoptionDenialKind,
+    WorthQueryGraphObligationAdoptionProof, WorthQueryGraphObligationAdoptionRow,
+    inspect_installed_graph_obligations,
 };
 pub use worth_query_installation::worth_query_conditional_node;
 pub use worth_query_publication::facade as publication;

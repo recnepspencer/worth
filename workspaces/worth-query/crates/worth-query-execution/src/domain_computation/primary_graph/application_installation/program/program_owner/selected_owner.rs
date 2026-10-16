@@ -69,7 +69,7 @@ where
 }
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProgramOwner<'_, Schema> {
-    pub fn resolve_fixed_action<Binding, Action>(
+    pub fn resolve_action<Binding, Action>(
         &self,
     ) -> Result<
         &worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
@@ -77,13 +77,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProgramOwner<'_, Schema> {
     >
     where
         Binding: ApplicationMutationBinding<Schema>,
-        Action: worth_query_declaration::facade::application_program::ApplicationFixedAction<
-            Schema,
-            Binding,
-        >,
+        Action: worth_query_declaration::facade::application_program::ApplicationAction<Schema, Binding>,
     {
         self.action_inventory
-            .resolve_fixed_action::<Schema, Binding, Action>()
+            .resolve_action::<Schema, Binding, Action>()
     }
 }
 

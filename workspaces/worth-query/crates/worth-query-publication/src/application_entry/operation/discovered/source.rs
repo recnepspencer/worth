@@ -3,14 +3,14 @@ use super::*;
 use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
 use WorthQueryOperationProgress as Progress;
-impl<'r, S, I, P, R, A> WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQueryDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
     I::Binding: ApplicationMutationAdmissionBinding<S>,
     Admission<S, I>: WorthQueryBindingAdmission<S, I::Binding>,
@@ -28,7 +28,7 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+    ) -> DiscoveredAdvance<S, I, P, R, A> {
         let execution =
             match phase.checked_execution_request_for(self.runtime.runtime().product_runtime()) {
                 Ok(execution) => execution,
@@ -36,28 +36,28 @@ where
                     return Advance::Refused {
                         operation: self,
                         denial: Denial::Execution(cause),
-                    }
+                    };
                 }
             };
         let outcome = self
             .description
-            .request_view(request, self.installed_action)
+            .request_view(request, &self.installed_action)
             .execute_performed_discovered_in_advancement::<P, R>(
                 phase,
-                self.runtime,
+                &self.runtime,
                 execution.allocation_policy(),
             )
             .map(|outcome| outcome.into_same_binding_intent::<I>());
         let mut outcome = match outcome {
             Ok(outcome) => outcome,
             Err(denial @ WorthQueryPerformedMutationExecutionDenial::Action(_)) => {
-                return self.terminal(Denial::Mutation(denial))
+                return self.terminal(Denial::Mutation(denial));
             }
             Err(denial) => {
                 return Advance::Refused {
                     operation: self,
                     denial: Denial::Mutation(denial),
-                }
+                };
             }
         };
         // The native classifier owns cleanup independently of business/source classification.
@@ -66,7 +66,7 @@ where
             outcome: inner,
         } = outcome
         {
-            self.cleanup.absorb_managed(self.runtime, cleanup);
+            self.cleanup.absorb_managed(&self.runtime, cleanup);
             outcome = *inner;
         }
         let progress = match outcome {
@@ -95,7 +95,7 @@ where
             }
             WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(outcome) => {
                 self.state =
-                    State::NotPerformed(self.cleanup.absorb_native_outcome(self.runtime, outcome));
+                    State::NotPerformed(self.cleanup.absorb_native_outcome(&self.runtime, outcome));
                 return self.terminal(Denial::NativeTerminal);
             }
             WorthQueryApplicationDiscoveredMutationOutcome::CleanupRequired { .. } => {

@@ -18,7 +18,7 @@ macro_rules! resource_program {
                     DocumentRetentionSchema,
                     DocumentRetentionFeature,
                 >()
-                .mutation::<SetRetentionBinding>()
+                .action::<SetRetentionBinding, RetentionCompletion>().finish_action()
                 .conditional_operation::<PublishRetentionAssessment>()
                 .derived_artifact::<$artifact>()
                 .finish()]

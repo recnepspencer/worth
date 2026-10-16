@@ -28,7 +28,8 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for ActorProgram {
         let mut features = RetentionProgramP0::feature_specs();
         features.push(
             ApplicationFeatureSpec::root::<DocumentRetentionSchema, ActorLifecycleFeature>()
-                .mutation::<ActorLifecycleBinding>()
+                .native_action::<ActorLifecycleBinding>()
+                .finish_action()
                 .finish(),
         );
         features

@@ -8,6 +8,9 @@ documents = [
   "docs/capability-index.md",
   "workspaces/worth-query/README.md",
   "workspaces/worth-query/crates/worth-query-host/README.md",
+  "workspaces/worth-query/crates/worth-query-decl/README.md",
+  "workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md",
+  "workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md",
   "workspaces/worth-query/crates/worth-query/docs/AI_README.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md",
   "workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md",
@@ -19,7 +22,7 @@ documents = [
 
 [[doctests]]
 manifest = "workspaces/worth-query/Cargo.toml"
-packages = ["worth-query-host", "worth-query-decl", "worth-query", "worth-query-publication", "worth-query-execution", "worth-query-installation"]
+packages = ["worth-query-host", "worth-query-decl", "worth-query-declaration", "worth-query", "worth-query-publication", "worth-query-execution", "worth-query-installation"]
 
 [[doctests]]
 manifest = "workspaces/worth-query-bank-world/Cargo.toml"
@@ -65,6 +68,12 @@ name = "observable_history.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification"
 target = "examples/observable_workflow.rs"
 source = "examples/observable_workflow/history.rs"
+
+[[compiled_sources]]
+name = "composed_action.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_program/composed_action.rs"
 
 [[facts]]
 id = "workflow-node-kinds"

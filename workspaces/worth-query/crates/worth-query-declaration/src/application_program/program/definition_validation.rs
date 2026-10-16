@@ -1,8 +1,9 @@
 use std::collections::BTreeSet;
 
 use super::{
-    denial, require_identity, ApplicationActionDeclaration, ApplicationFeatureDeclaration,
-    ApplicationProgramValidationDenial, ApplicationProgramValidationDenialKind,
+    ApplicationActionDeclaration, ApplicationFeatureDeclaration,
+    ApplicationProgramValidationDenial, ApplicationProgramValidationDenialKind, denial,
+    require_identity,
 };
 
 pub(super) type FeatureIdentity = (&'static str, &'static str);
@@ -16,6 +17,7 @@ pub(super) fn validate_features_and_actions(
         validate_feature(feature, &mut feature_ids)?;
     }
     let mut action_ids = BTreeSet::new();
+    let mut portable_action_ids = BTreeSet::new();
     for action in actions {
         require_identity(action.composition_instance())?;
         require_identity(action.feature())?;
@@ -42,6 +44,10 @@ pub(super) fn validate_features_and_actions(
             action.composition_instance(),
             action.feature(),
             action.action_type(),
+        )) || !portable_action_ids.insert((
+            action.composition_instance(),
+            action.feature(),
+            action.binding(),
         )) {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DuplicateAction,

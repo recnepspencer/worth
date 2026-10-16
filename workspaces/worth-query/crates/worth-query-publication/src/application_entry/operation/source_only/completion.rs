@@ -9,6 +9,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
+    // The operation's one evidence slot releases before its retained runtime.
     pub(in crate::application_entry) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
 }
 #[must_use = "retain terminal evidence and close its remaining cleanup"]
@@ -149,16 +150,18 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        self.close_in_place(request)
+            .map_err(|denial| (self, denial))
+    }
+
+    pub(in crate::application_entry::operation) fn close_in_place(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
         if !native_posture::can_close::<S, I>(&self.operation.state) {
-            return Err((
-                self,
-                WorthQueryOperationCloseDenial::NativeObligationRetained,
-            ));
+            return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
         }
-        match self.operation.close_cleanup(request) {
-            Ok(closed) => Ok(closed),
-            Err(denial) => Err((self, denial)),
-        }
+        self.operation.close_cleanup(request)
     }
 }
 impl<S, I, P, A, M> WorthQuerySourceOnlyOperation<S, I, P, A, M>
@@ -172,23 +175,25 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        self.close_in_place(request)
+            .map_err(|denial| (self, denial))
+    }
+
+    pub(in crate::application_entry::operation) fn close_in_place(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
         if !matches!(
             self.state,
             SourceState::<S, I>::Initial | SourceState::<S, I>::RetryableNoEffect(_)
         ) || !native_posture::can_close::<S, I>(&self.state)
         {
-            return Err((
-                self,
-                WorthQueryOperationCloseDenial::NativeObligationRetained,
-            ));
+            return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
         }
-        match self.close_cleanup(request) {
-            Ok(closed) => Ok(closed),
-            Err(denial) => Err((self, denial)),
-        }
+        self.close_cleanup(request)
     }
 
-    fn close_cleanup(
+    pub(in crate::application_entry::operation) fn close_cleanup(
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {

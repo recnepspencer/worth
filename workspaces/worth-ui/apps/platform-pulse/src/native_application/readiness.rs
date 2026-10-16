@@ -1,8 +1,9 @@
 use super::{
-    intent, PlatformPulseApplicationRuntime, PlatformPulsePendingManagedRebind,
-    PlatformPulseProjectionRebindDenial, PlatformPulseTerminalError,
+    PlatformPulseApplicationRuntime, PlatformPulsePendingManagedRebind,
+    PlatformPulseProjectionRebindDenial, PlatformPulseTerminalError, intent,
 };
 
+mod installation;
 mod observation_queue;
 mod physical_work_progress;
 #[cfg(test)]
@@ -11,43 +12,8 @@ mod tests;
 const MAX_PENDING_NATIVE_OBSERVATIONS: usize = 256;
 
 impl PlatformPulseApplicationRuntime {
-    fn install_native_readiness(
-        &mut self,
-        readiness: Box<[worth_ui_native_platform::UiNativeApplicationReadinessPort]>,
-    ) -> Result<worth_ui_native_platform::UiNativeApplicationReadinessPort, ()> {
-        let readiness: [worth_ui_native_platform::UiNativeApplicationReadinessPort; 5] =
-            readiness.into_vec().try_into().map_err(|_| ())?;
-        let [startup, source, query, product_input, visual] = readiness;
-        self.source_watch.as_ref().ok_or(())?.install_readiness(
-            worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal::from_native(source),
-        );
-        self.query_watch.as_ref().ok_or(())?.install_readiness(
-            worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal::from_native(query),
-        );
-        // Both application-owned inputs are drained on the same product turn.
-        // Coalescing their wake carries no Intent or theme publication authority.
-        let product_input =
-            worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal::from_native(
-                product_input,
-            );
-        self.intent_watch
-            .as_ref()
-            .ok_or(())?
-            .install_readiness(product_input.clone());
-        self.theme_watch
-            .as_ref()
-            .ok_or(())?
-            .install_readiness(product_input);
-        self.visual_identity.install_readiness(
-            worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal::from_native(visual),
-        );
-        Ok(startup)
-    }
-
-    fn advance_native_product_turn(&mut self) {
+    pub(super) fn advance_native_product_turn(&mut self) {
         if !self.startup_ready
-            || self.external_close_requested
-            || self.visual_identity.retains_rebind_receipt()
             || self.pending_managed_rebind.is_some()
             || self.pending_frame_presentation.is_some()
             || self
@@ -55,6 +21,13 @@ impl PlatformPulseApplicationRuntime {
                 .as_ref()
                 .is_some_and(|shell| !shell.native_frame_boundary_available())
         {
+            return;
+        }
+        if self.external_close_requested {
+            self.advance_closing_query_turn();
+            return;
+        }
+        if self.visual_identity.retains_rebind_receipt() {
             return;
         }
         if self
@@ -92,6 +65,24 @@ impl PlatformPulseApplicationRuntime {
             return;
         }
         self.poll_query();
+        if self.terminal.is_stopped()
+            || self.pending_managed_rebind.is_some()
+            || self.pending_frame_presentation.is_some()
+        {
+            return;
+        }
+        if self.external_close_requested {
+            self.advance_closing_query_turn();
+            return;
+        }
+        #[cfg(test)]
+        self.dispatch_query_action_for_test();
+        if self.terminal.is_stopped()
+            || self.pending_managed_rebind.is_some()
+            || self.pending_frame_presentation.is_some()
+        {
+            return;
+        }
         self.poll_intent_input();
         match self.drain_intent_product_cycle() {
             intent::PlatformPulseIntentProductCycleOutcome::Quiescent { .. }
@@ -102,6 +93,9 @@ impl PlatformPulseApplicationRuntime {
             || self.pending_managed_rebind.is_some()
             || self.pending_frame_presentation.is_some()
         {
+            return;
+        }
+        if self.external_close_requested {
             return;
         }
         self.poll_theme_preference();
@@ -132,6 +126,8 @@ impl PlatformPulseApplicationRuntime {
         if self.terminal.is_stopped() {
             self.report_terminal_error();
             worth_ui_native_platform::UiNativeApplicationRuntimeDirective::Close
+        } else if self.external_close_requested && self.query_close_ready() {
+            worth_ui_native_platform::UiNativeApplicationRuntimeDirective::Close
         } else {
             worth_ui_native_platform::UiNativeApplicationRuntimeDirective::Continue
         }
@@ -148,11 +144,11 @@ impl PlatformPulseApplicationRuntime {
 
 impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseApplicationRuntime {
     fn external_close_requested(&mut self) {
-        self.external_close_requested = true;
+        self.request_query_close();
     }
 
     fn external_close_ready(&self) -> bool {
-        self.pending_frame_presentation.is_none()
+        self.query_close_ready()
     }
 
     fn readiness_owner_count(
@@ -299,6 +295,7 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
         if self.startup_ready {
             self.present();
             self.advance_visual_identity();
+            self.advance_query_after_native_tick();
         }
         let directive = self.native_runtime_directive();
         Ok((self.take_runtime_shell(), directive))
@@ -337,6 +334,7 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
         if self.startup_ready {
             self.present_for_surface(surface_succession);
             self.advance_visual_identity();
+            self.advance_query_after_native_tick();
         }
         let directive = self.native_runtime_directive();
         Ok((self.take_runtime_shell(), directive))
@@ -358,21 +356,13 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
     }
 
     fn close(
-        mut self: Box<Self>,
+        self: Box<Self>,
         application: worth_ui::facade::app::WorthUiNativeApplicationShell,
     ) -> Result<
         worth_ui_native_platform::UiNativeApplicationRuntimeClosed,
         worth_ui_native_platform::UiNativeApplicationRuntimeCloseIncomplete,
     > {
-        self.shell = Some(application);
-        let shutdown = self
-            .shutdown_product()
-            .expect("native Pulse close starts with the retained application shell");
-        Ok(
-            worth_ui_native_platform::UiNativeApplicationRuntimeClosed::from_application_shutdown(
-                shutdown,
-            ),
-        )
+        self.close_native_runtime(application)
     }
 }
 

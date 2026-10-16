@@ -29,7 +29,7 @@ impl WorthQuerySourceDeliveryMode for ApplicationRetainedCommit {
 /// use worth_query_publication::facade::application_entry::WorthQuerySourceOperationAdmission;
 /// use worth_query_declaration::facade::{application_operation::*, application_program::*, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::{application_installation::WorthQueryProgramApplicationRuntime, primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource}};
-/// fn cannot_erase_required_output<'r, S, I, P, R, A>(fixed: worth_query_publication::facade::application_entry::WorthQueryFixedOperation<'r, S, I, P, R, A>) -> WorthQuerySourceOperationAdmission<S, I, P, A, worth_query_declaration::facade::application_program::ApplicationSourceCompletion>
+/// fn cannot_erase_required_output<S, I, P, R, A>(fixed: worth_query_publication::facade::application_entry::WorthQueryFixedOperation<S, I, P, R, A>) -> WorthQuerySourceOperationAdmission<S, I, P, A, worth_query_declaration::facade::application_program::ApplicationSourceCompletion>
 /// where
 ///     S: ApplicationSchema,
 ///     I: ApplicationMutationIntent<S>,
@@ -37,7 +37,7 @@ impl WorthQuerySourceDeliveryMode for ApplicationRetainedCommit {
 ///     R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
 ///     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S>,
 ///     I::Binding: WorthQueryApplicationRequiredOutputSource<S, <R::RootConnection as ApplicationConnectionShape<S>>::Binding>,
-///     A: ApplicationFixedAction<S, I::Binding>,
+///     A: ApplicationAction<S, I::Binding>,
 ///     A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R>,
 /// {
 ///     fixed
@@ -48,7 +48,7 @@ impl WorthQuerySourceDeliveryMode for ApplicationRetainedCommit {
 /// use worth_query_publication::facade::application_entry::WorthQuerySourceOperationAdmission;
 /// use worth_query_declaration::facade::{application_operation::*, application_program::*, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::{application_installation::WorthQueryProgramApplicationRuntime, primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource}};
-/// fn preserve_fixed_custody<'r, S, I, P, R, A>(fixed: worth_query_publication::facade::application_entry::WorthQueryFixedOperation<'r, S, I, P, R, A>) -> worth_query_publication::facade::application_entry::WorthQueryFixedOperation<'r, S, I, P, R, A>
+/// fn preserve_fixed_custody<S, I, P, R, A>(fixed: worth_query_publication::facade::application_entry::WorthQueryFixedOperation<S, I, P, R, A>) -> worth_query_publication::facade::application_entry::WorthQueryFixedOperation<S, I, P, R, A>
 /// where
 ///     S: ApplicationSchema,
 ///     I: ApplicationMutationIntent<S>,
@@ -56,7 +56,7 @@ impl WorthQuerySourceDeliveryMode for ApplicationRetainedCommit {
 ///     R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
 ///     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S>,
 ///     I::Binding: WorthQueryApplicationRequiredOutputSource<S, <R::RootConnection as ApplicationConnectionShape<S>>::Binding>,
-///     A: ApplicationFixedAction<S, I::Binding>,
+///     A: ApplicationAction<S, I::Binding>,
 ///     A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R>,
 /// {
 ///     fixed
@@ -68,7 +68,6 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(in crate::application_entry) runtime: WorthQueryProgramApplicationRuntime<S, P>,
     pub(in crate::application_entry) description: WorthQueryOperationDescription<S, I>,
     pub(in crate::application_entry) installed_action:
         worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
@@ -76,6 +75,8 @@ where
         worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowOperation,
     >,
     marker: std::marker::PhantomData<fn() -> (A, Mode)>,
+    // Retention outlives captured intent and native workflow custody on abandonment.
+    pub(in crate::application_entry) runtime: WorthQueryProgramApplicationRuntime<S, P>,
 }
 impl<S, I, P, A, Mode> WorthQuerySourceOperationAdmission<S, I, P, A, Mode>
 where
@@ -114,7 +115,7 @@ where
                 return Err((
                     description,
                     WorthQueryOperationConstructionDenial::Action(denial),
-                ))
+                ));
             }
         };
         if installed_action.required_output_source()

@@ -13,13 +13,13 @@ use worth_query_host::facade::product::WorthQueryProductBranch;
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
 use crate::document_retention_model::{
-    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
+    host::{DocumentWorkflowRuntime, publish_workflow_on_first_program},
     operator_identity::{authenticate_operator, request_scope},
     programs::RetentionProgramP1,
     schema::DocumentRetentionSchema,
     workflow::{
-        advance_instance, authoring_intent, install_workflow_spec, start_instance,
-        support_workflow_program, terminal_definition, ReviewedDocumentWorkflow,
+        ReviewedDocumentWorkflow, advance_instance, authoring_intent, install_workflow_spec,
+        start_instance, support_workflow_program, terminal_definition,
     },
 };
 
@@ -168,68 +168,8 @@ fn sibling_workflow_lineages_stay_on_their_own_branch() {
     expect_published(replace(main, "settled", 84_203, on_main));
 }
 
-#[test]
-fn a_supported_vocabulary_names_one_rostered_program_once() {
-    let mut application = publish_workflow_on_first_program();
-    support_workflow_program::<RetentionProgramP1>(&mut application);
-
-    let duplicate = install_workflow_spec(
-        application.installed_schema(),
-        application
-            .supported_program::<RetentionProgramP1>()
-            .expect("P1 is rostered")
-            .installed_program(),
-        application.workflow_spec().resources(),
-    );
-    assert_eq!(
-        application.workflow_mut().support_workflow_spec(duplicate),
-        Err(WorthQueryWorkflowRuntimeBindingDenial::AlreadySupported),
-    );
-
-    let initial = install_workflow_spec(
-        application.installed_schema(),
-        application.installed_program(),
-        application.workflow_spec().resources(),
-    );
-    assert_eq!(
-        application.workflow_mut().support_workflow_spec(initial),
-        Err(WorthQueryWorkflowRuntimeBindingDenial::AlreadySupported),
-    );
-
-    let other = publish_workflow_on_first_program();
-    let foreign_schema = install_workflow_spec(
-        other.installed_schema(),
-        other.installed_program(),
-        application.workflow_spec().resources(),
-    );
-    assert_eq!(
-        application
-            .workflow_mut()
-            .support_workflow_spec(foreign_schema),
-        Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema),
-    );
-}
-
-#[test]
-fn a_retired_program_accepts_no_workflow_vocabulary() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut application = publish_workflow_on_first_program();
-    let late = install_workflow_spec(
-        application.installed_schema(),
-        application
-            .supported_program::<RetentionProgramP1>()
-            .expect("P1 is rostered")
-            .installed_program(),
-        application.workflow_spec().resources(),
-    );
-    retire_second_program(request_execution, &application);
-    assert_eq!(
-        application.workflow_mut().support_workflow_spec(late),
-        Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram),
-    );
-}
+#[path = "workflow_vocabulary/support.rs"]
+mod support;
 
 fn second_revision(
     application: &DocumentWorkflowRuntime,

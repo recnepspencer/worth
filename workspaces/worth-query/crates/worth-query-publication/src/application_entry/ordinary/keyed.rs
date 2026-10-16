@@ -1,6 +1,6 @@
 //! Borrowed-key workflow binding; ordinary execution retains an owner, native execution selects advanced.
-use crate::application_entry::mutation::request::WorthQueryMutationSourceUnprepared;
 use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
+use crate::application_entry::mutation::request::WorthQueryMutationSourceUnprepared;
 use worth_query_declaration::facade::application_operation::ApplicationMutationIntent;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
@@ -51,7 +51,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 /// fn retain<S,I,P,R,A>(description:WorthQueryOperationDescription<S,I>,runtime:&WorthQueryProgramApplicationRuntime<S,P>)
 /// where S:ApplicationSchema+'static,I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
 /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding>,
-/// A:ApplicationDiscoveredAction<S,I::Binding>,A::Delivery:ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R>,
+/// A:ApplicationAction<S,I::Binding>,A::Delivery:ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R>,
 /// <A::Delivery as ApplicationDiscoveredActionDelivery<S,I::Binding>>::Projection:WorthQueryOutputProjectionInstallation<S> {
 ///     let _ = description.retain_operation::<P,A>(runtime);
 /// }

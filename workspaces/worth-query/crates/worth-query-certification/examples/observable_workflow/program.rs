@@ -22,7 +22,8 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for MixedProgram {
         features.push(
             ApplicationFeatureSpec::root::<DocumentRetentionSchema, crate::effect::ArchiveFeature>(
             )
-            .operation_action::<crate::effect::ArchiveBinding, crate::effect::ArchiveDelivery>()
+            .action::<crate::effect::ArchiveBinding, crate::effect::ArchiveDelivery>()
+            .finish_action()
             .finish(),
         );
         features

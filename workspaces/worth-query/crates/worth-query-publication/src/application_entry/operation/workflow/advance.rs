@@ -123,9 +123,17 @@ where
         &self.required
     }
     pub fn close(
-        self,
+        mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        self.close_in_place(request)
+            .map_err(|denial| (self, denial))
+    }
+
+    pub(super) fn close_in_place(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
         // An inbound-waiting owner cannot close away its original evidence before
         // a fresh advance observes native settlement. Other close postures stay native.
         if matches!(
@@ -144,46 +152,12 @@ where
                 }
             })
         {
-            return Err((
-                self,
-                WorthQueryOperationCloseDenial::NativeObligationRetained,
-            ));
+            return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
         }
-        let Self {
-            source,
-            required,
-            source_completed,
-            recovery,
-            recovery_result,
-        } = self;
-        if !source_completed {
-            source.close(request).map_err(|(source, cause)| {
-                (
-                    Self {
-                        source,
-                        required,
-                        source_completed: false,
-                        recovery,
-                        recovery_result,
-                    },
-                    cause,
-                )
-            })
+        if self.source_completed {
+            self.source.close_cleanup(request)
         } else {
-            WorthQueryCompletedSourceOperation { operation: source }
-                .close(request)
-                .map_err(|(done, cause)| {
-                    (
-                        Self {
-                            source: done.operation,
-                            required,
-                            source_completed: true,
-                            recovery,
-                            recovery_result,
-                        },
-                        cause,
-                    )
-                })
+            self.source.close_in_place(request)
         }
     }
 }

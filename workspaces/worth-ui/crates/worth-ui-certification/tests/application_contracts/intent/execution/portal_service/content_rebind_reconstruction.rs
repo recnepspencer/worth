@@ -15,7 +15,7 @@ use worth_ui_runtime::{
 
 use super::super::{execution_deadline, execution_reading};
 use crate::intent::operability::{
-    build_open_portal_projection_application_with_host, PrimaryIntent,
+    PrimaryIntent, build_open_portal_projection_application_with_host,
 };
 
 #[test]
@@ -68,6 +68,7 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
         .publish_source(
             worth_ui::facade::query_binding::WorthUiScalarProjectionSourceRecord::new("ONLINE", 1)
                 .expect("the successor source record is valid"),
+            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
         )
         .expect("the Query owner advances to a real successor fact")
         .into_projection_observation()
@@ -215,9 +216,11 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
     assert!(registration.admits(returned.fact()));
     let source_close = owner.close();
     assert!(source_close.owner_terminal());
-    assert!(shell
-        .inspect_service_proposals_for_certification()
-        .is_zero());
+    assert!(
+        shell
+            .inspect_service_proposals_for_certification()
+            .is_zero()
+    );
     let shutdown = shell.shutdown();
     assert!(shutdown.intent_resources_empty());
     assert_eq!(shutdown.portal_final_active_records(), 0);

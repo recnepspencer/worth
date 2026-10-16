@@ -116,21 +116,27 @@ fn explicit_absolute_installation_reaches_real_application_preparation() {
     let application = builder.freeze().expect("prepared application freezes");
     let definitions = application.capabilities().intent_definitions();
     assert_eq!(definitions.len(), 3);
-    assert!(definitions
-        .get(&worth_ui::facade::intent::UiIntentId::stable(
-            worth_ui_platform_pulse::intent::PLATFORM_PULSE_ACTION_DEFINITION,
-        ))
-        .is_some());
-    assert!(definitions
-        .get(&worth_ui::facade::intent::UiIntentId::stable(
-            worth_ui_platform_pulse::intent::PLATFORM_PULSE_OPEN_PORTAL_DEFINITION,
-        ))
-        .is_some());
-    assert!(definitions
-        .get(&worth_ui::facade::intent::UiIntentId::stable(
-            worth_ui_platform_pulse::intent::PLATFORM_PULSE_CLOSE_PORTAL_DEFINITION,
-        ))
-        .is_some());
+    assert!(
+        definitions
+            .get(&worth_ui::facade::intent::UiIntentId::stable(
+                worth_ui_platform_pulse::intent::PLATFORM_PULSE_ACTION_DEFINITION,
+            ))
+            .is_some()
+    );
+    assert!(
+        definitions
+            .get(&worth_ui::facade::intent::UiIntentId::stable(
+                worth_ui_platform_pulse::intent::PLATFORM_PULSE_OPEN_PORTAL_DEFINITION,
+            ))
+            .is_some()
+    );
+    assert!(
+        definitions
+            .get(&worth_ui::facade::intent::UiIntentId::stable(
+                worth_ui_platform_pulse::intent::PLATFORM_PULSE_CLOSE_PORTAL_DEFINITION,
+            ))
+            .is_some()
+    );
     let action_view = worth_ui::facade::query_binding::WorthUiQueryViewIdentity::new(
         worth_ui_platform_pulse::intent::PLATFORM_PULSE_ACTION_QUERY_VIEW,
     )
@@ -151,7 +157,10 @@ fn explicit_absolute_installation_reaches_real_application_preparation() {
     drop(application);
     assert!(matches!(
         query_lifecycle.close(),
-        Err(crate::query_source::PlatformPulseQueryLifecycleDenial::OwnerNotLive)
+        Err((
+            _,
+            crate::query_source::PlatformPulseQueryLifecycleDenial::OwnerNotLive
+        ))
     ));
     query_watcher
         .shutdown()

@@ -22,6 +22,7 @@ mod product_copy;
 mod product_story;
 mod projection;
 mod query;
+mod query_continuation;
 mod readiness;
 mod rebind;
 mod source_rebind;
@@ -51,11 +52,17 @@ pub(crate) struct PlatformPulseApplicationRuntime {
     shell: Option<WorthUiNativeApplicationShell>,
     source_watch: Option<PlatformPulseSourceWatch>,
     query_watch: Option<crate::query_source::PlatformPulseExternalValueWatch>,
+    query_readiness: Option<worth_ui_native_platform::UiNativeApplicationReadinessPort>,
     query_lifecycle: Option<crate::query_source::PlatformPulseQueryLifecycle>,
     intent_watch: Option<worth_ui_platform_pulse::intent::PlatformPulseIntentInputWatch>,
     intent_gate: Option<worth_ui_platform_pulse::intent::PlatformPulseExecutorGate>,
     intent_action_owner: Option<worth_ui_platform_pulse::intent::PlatformPulseActionPortOwner>,
     pending_query_actions: Vec<PlatformPulsePendingQueryAction>,
+    pending_query_request: Option<intent::PlatformPulsePendingQueryRequest>,
+    pending_query_cancellation:
+        Option<worth_ui_platform_pulse::intent::PlatformPulseActionAttemptReference>,
+    #[cfg(test)]
+    query_probe: Option<std::rc::Rc<std::cell::RefCell<QueryContinuationForTest>>>,
     pending_query_denial_story: Option<
         worth_ui_platform_pulse::observation_contract::PlatformPulseQueryActionPreconditionDenial,
     >,
@@ -161,12 +168,6 @@ impl PlatformPulseApplicationRuntime {
     }
 }
 
-impl Drop for PlatformPulseApplicationRuntime {
-    fn drop(&mut self) {
-        let _ = self.shutdown_product();
-    }
-}
-
 pub(crate) fn publish_preparation_failure(
     publisher: &PlatformPulseObservationPublisher,
     denial: &PlatformPulsePreparationDenial,
@@ -197,4 +198,25 @@ pub(crate) fn publish_preparation_failure(
         }
         PlatformPulsePreparationDenial::Appearance(_) => publisher.appearance_preparation_failure(),
     }
+}
+
+#[cfg(test)]
+#[derive(Default)]
+struct QueryContinuationForTest {
+    attempts: usize,
+    cancelled_stops: usize,
+    issued:
+        Vec<worth_ui_platform_pulse::observation_contract::PlatformPulseQueryProjectionEvidence>,
+    presented:
+        Vec<worth_ui_platform_pulse::observation_contract::PlatformPulseQueryProjectionEvidence>,
+    basis_versions: Vec<u64>,
+    revisions: Vec<u64>,
+    close_refused_before_presentation: bool,
+    close_waited_for_presentation: bool,
+    action_dispatched: bool,
+    stopped_request: Option<worth_ui_platform_pulse::intent::PlatformPulseActionAttemptReference>,
+    completed_request: Option<worth_ui_platform_pulse::intent::PlatformPulseActionAttemptReference>,
+    pending_census: Option<worth_ui_platform_pulse::intent::PlatformPulseActionPortCensus>,
+    completed_census: Option<worth_ui_platform_pulse::intent::PlatformPulseActionPortCensus>,
+    intent_outcomes: usize,
 }

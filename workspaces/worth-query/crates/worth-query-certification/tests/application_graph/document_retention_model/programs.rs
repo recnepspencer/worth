@@ -33,7 +33,7 @@ use super::workflow::{
 #[path = "programs/removed_assessment_supplier.rs"]
 mod removed_assessment_supplier;
 pub use removed_assessment_supplier::{
-    validated_removed_assessment_supplier_program, RemovedAssessmentSupplierProgram,
+    RemovedAssessmentSupplierProgram, validated_removed_assessment_supplier_program,
 };
 
 /// The one feature both programs govern.
@@ -174,97 +174,6 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for RetentionProgramP
     }
 }
 
-impl ApplicationProgramDefinition<DocumentRetentionSchema> for ChangedFeatureRetentionProgram {
-    type Contributions = (DocumentRetentionContribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = CommitBoundaryRule<DocumentRetentionV1>;
-
-    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
-        "worth.query.certification.document-retention.changed-feature.v1",
-    );
-
-    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
-        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
-    }
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeatureV2>()
-                .mutation::<SetRetentionBinding>()
-                .conditional_operation::<PublishRetentionAssessment>()
-                .mutation::<WorkflowDefinitionAuthoringBinding>()
-                .mutation::<WorkflowInstanceStartBinding>()
-                .mutation::<WorkflowAdvanceBinding>()
-                .mutation::<WorkflowApprovalBinding>()
-                .mutation::<WorkflowGrantStatusBinding>()
-                .finish(),
-        ]
-    }
-}
-
-impl ApplicationProgramDefinition<DocumentRetentionSchema> for RemovedOperationRetentionProgram {
-    type Contributions = (DocumentRetentionContribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = CommitBoundaryRule<DocumentRetentionV1>;
-
-    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
-        "worth.query.certification.document-retention.removed-operation.v1",
-    );
-
-    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
-        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
-    }
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
-                .mutation::<ReviewRequirementBinding>()
-                .mutation::<UnlinkReviewRequirementBinding>()
-                .conditional_operation::<PublishRetentionAssessment>()
-                .mutation::<WorkflowDefinitionAuthoringBinding>()
-                .mutation::<WorkflowInstanceStartBinding>()
-                .mutation::<WorkflowAdvanceBinding>()
-                .mutation::<WorkflowApprovalBinding>()
-                .mutation::<WorkflowGrantStatusBinding>()
-                .finish(),
-        ]
-    }
-}
-
-impl ApplicationProgramDefinition<DocumentRetentionSchema> for ChangedOperationRetentionProgram {
-    type Contributions = (DocumentRetentionContribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = CommitBoundaryRule<DocumentRetentionV1>;
-
-    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
-        "worth.query.certification.document-retention.changed-operation.v1",
-    );
-
-    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
-        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
-    }
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
-                .mutation_with_locality_and_change::<
-                    SetRetentionBinding,
-                    ChangedOperationLocality,
-                    ChangedOperationShape,
-                >()
-                .mutation::<ReviewRequirementBinding>()
-                .mutation::<UnlinkReviewRequirementBinding>()
-                .conditional_operation::<PublishRetentionAssessment>()
-                .mutation::<WorkflowDefinitionAuthoringBinding>()
-                .mutation::<WorkflowInstanceStartBinding>()
-                .mutation::<WorkflowAdvanceBinding>()
-                .mutation::<WorkflowApprovalBinding>()
-                .mutation::<WorkflowGrantStatusBinding>()
-                .finish(),
-        ]
-    }
-}
-
 impl ApplicationProgramDefinition<DocumentRetentionSchema> for UnrosteredRetentionProgram {
     type Contributions = (DocumentRetentionContribution,);
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
@@ -304,43 +213,43 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for ForeignRuleRetent
 #[path = "programs/resource.rs"]
 mod resource;
 
-pub fn validated_first_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP0> {
+pub fn validated_first_program()
+-> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP0> {
     validate::<RetentionProgramP0>()
 }
 
-pub fn validated_second_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP1> {
+pub fn validated_second_program()
+-> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP1> {
     validate::<RetentionProgramP1>()
 }
 
-pub fn validated_changed_feature_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedFeatureRetentionProgram> {
+pub fn validated_changed_feature_program()
+-> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedFeatureRetentionProgram> {
     validate::<ChangedFeatureRetentionProgram>()
 }
 
-pub fn validated_removed_operation_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, RemovedOperationRetentionProgram> {
+pub fn validated_removed_operation_program()
+-> ValidatedApplicationProgram<DocumentRetentionSchema, RemovedOperationRetentionProgram> {
     validate::<RemovedOperationRetentionProgram>()
 }
 
-pub fn validated_changed_operation_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedOperationRetentionProgram> {
+pub fn validated_changed_operation_program()
+-> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedOperationRetentionProgram> {
     validate::<ChangedOperationRetentionProgram>()
 }
 
-pub fn validated_first_resource_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP0> {
+pub fn validated_first_resource_program()
+-> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP0> {
     validate::<ResourceRetentionProgramP0>()
 }
 
-pub fn validated_second_resource_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP1> {
+pub fn validated_second_resource_program()
+-> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP1> {
     validate::<ResourceRetentionProgramP1>()
 }
 
-pub fn validated_foreign_rule_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, ForeignRuleRetentionProgram> {
+pub fn validated_foreign_rule_program()
+-> ValidatedApplicationProgram<DocumentRetentionSchema, ForeignRuleRetentionProgram> {
     validate::<ForeignRuleRetentionProgram>()
 }
 
@@ -357,27 +266,16 @@ where
         .expect("the authored document-retention program must validate")
 }
 
-fn retention_feature_specs() -> Vec<ApplicationFeatureSpec> {
-    vec![
-        ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
-            .mutation::<SetRetentionBinding>()
-            .mutation::<ReviewedSetRetentionBinding>()
-            .mutation::<OccurrenceSetRetentionBinding>()
-            .mutation::<ExplicitReviewedSetRetentionBinding>()
-            .mutation::<ReviewRequirementBinding>()
-            .mutation::<UnlinkReviewRequirementBinding>()
-            .conditional_operation::<PublishRetentionAssessment>()
-            .mutation::<WorkflowDefinitionAuthoringBinding>()
-            .mutation::<WorkflowInstanceStartBinding>()
-            .mutation::<WorkflowAdvanceBinding>()
-            .mutation::<WorkflowApprovalBinding>()
-            .mutation::<WorkflowGrantStatusBinding>()
-            .finish(),
-    ]
-}
-
+#[path = "programs/completion.rs"]
+mod completion;
 #[path = "programs/workflow_owner.rs"]
 mod workflow_owner;
+pub use completion::RetentionCompletion;
+#[path = "programs/features.rs"]
+mod features;
+#[path = "programs/successors.rs"]
+mod successors;
+use features::retention_feature_specs;
 pub use workflow_owner::{
     GrantStatusAction, OccurrenceAction, ReviewedAction, SavedSourceAction, WorkflowOwnerProgram,
 };

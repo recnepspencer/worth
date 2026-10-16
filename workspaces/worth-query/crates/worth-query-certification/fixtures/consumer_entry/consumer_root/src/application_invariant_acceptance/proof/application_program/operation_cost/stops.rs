@@ -152,7 +152,7 @@ fn discovered_ordinary_stopped_source_and_output_handoffs_keep_original_owner() 
         .unwrap_or_else(|(_, d)| panic!("fresh lawful close: {d:?}"));
     assert_eq!(planar_source_adjustment_contacts(&original), (1, 1));
 }
-fn refuse<'a>(owner: Operation<'a>, request: &Request<'_>) -> Operation<'a> {
+fn refuse(owner: Operation, request: &Request<'_>) -> Operation {
     match owner.advance(request) {
         WorthQueryOperationAdvance::Refused {
             operation,

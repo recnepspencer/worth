@@ -1,21 +1,18 @@
-use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationLiveLimits, WorthQueryApplicationRequestExt,
-    WorthQueryApplicationRetainedMutationOutcome,
-};
+use std::num::NonZeroUsize;
+use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveCloseOutcome;
-use worth_query_host::facade::publication::domain_computation::{
-    publish_application_result, WorthQueryApplicationQueryPublicationReceipt,
-};
+use worth_query_host::facade::publication::domain_computation::WorthQueryApplicationQueryPublicationReceipt;
 
 use crate::{
     UiApplicationScalarProjectionRegistration, UiProjectionObservation,
     WorthUiScalarProjectionSourceRecord, WorthUiStatusQueryRequest, WorthUiStatusQueryResult,
 };
 
-use super::application_authentication::{authenticate, request_scope};
-use super::application_runtime::{install_status_application, WorthUiStatusApplication};
-use super::status_owner_error::classify_live_delivery;
 use super::WorthUiStatusOwnerError;
+use super::application_authentication::{authenticate, request_scope};
+use super::application_runtime::{WorthUiStatusApplication, install_status_application};
+use super::status_mutation::{WorthUiStatusMutation, WorthUiStatusMutationResult};
 
 pub struct WorthUiStatusSourceOwner {
     pub(super) application: WorthUiStatusApplication,
@@ -137,68 +134,29 @@ impl WorthUiStatusSourceOwner {
         Ok((registration, observation))
     }
 
+    /// Captures one original source command without performing its business effect.
+    pub fn prepare_source(
+        &self,
+        record: WorthUiScalarProjectionSourceRecord,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<WorthUiStatusMutation, WorthUiStatusMutation> {
+        WorthUiStatusMutation::source(&self.application, record).prepare(scope)
+    }
+
+    /// Attempts one owning retained-commit step, disclosed delivery and native close.
+    /// Every stop returns the original continuation for fresh-authorized advancement.
     pub fn publish_source(
         &self,
         record: WorthUiScalarProjectionSourceRecord,
-    ) -> Result<WorthUiStatusPublication, WorthUiStatusOwnerError> {
+        maximum_history_work: NonZeroUsize,
+    ) -> Result<WorthUiStatusPublication, WorthUiStatusMutation> {
         let scope = request_scope();
-        let principal = authenticate(self.application.installed_schema(), &scope)?;
-        let request = self.application.request(&principal, &scope);
-        let before = request
-            .query(WorthUiStatusQueryRequest::new("platform.pulse.status"))
-            .execute()
-            .map_err(|error| WorthUiStatusOwnerError::Query(format!("{error:?}")))?;
-        let [source] = before.observed_sources() else {
-            return Err(WorthUiStatusOwnerError::MissingUniqueSource);
-        };
-        let mut live = request
-            .query(WorthUiStatusQueryRequest::new("platform.pulse.status"))
-            .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, 64))
-            .map_err(|error| WorthUiStatusOwnerError::LiveOpen(format!("{error:?}")))?;
-        let result = (|| {
-            let outcome = request
-                .advanced()
-                .mutate(record.clone())
-                .expect_source(source.clone())
-                .idempotency(&record.revision())
-                .execute_retained_in_program(
-                    &self.application,
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .map_err(|error| WorthUiStatusOwnerError::MutationRequest(format!("{error:?}")))?;
-            let retained = match outcome {
-                WorthQueryApplicationRetainedMutationOutcome::Committed { retained, .. } => {
-                    retained
-                }
-                WorthQueryApplicationRetainedMutationOutcome::Other(outcome) => {
-                    return Err(WorthUiStatusOwnerError::SourceMutationOutcome(Box::new(
-                        outcome,
-                    )))
-                }
-            };
-            let outcome = live
-                .next(&request)
-                .map_err(|error| WorthUiStatusOwnerError::Query(format!("{error:?}")))?;
-            let update = classify_live_delivery(outcome)?;
-            if update.product_publication().composite_commit() != retained.selected_commit() {
-                return Err(WorthUiStatusOwnerError::PublicationMismatch);
+        let operation = self.prepare_source(record, &scope)?;
+        match operation.advance(&scope, maximum_history_work)? {
+            WorthUiStatusMutationResult::Source(publication) => Ok(publication),
+            WorthUiStatusMutationResult::Action(_) => {
+                unreachable!("source construction retains source custody")
             }
-            let (_, admitted) = update.into_admitted_disclosed();
-            let published = publish_application_result(admitted);
-            let [row] = published.rows() else {
-                return Err(WorthUiStatusOwnerError::MissingUniqueRecord);
-            };
-            Ok(WorthUiStatusPublication {
-                value: row.clone(),
-                query_receipt: published.receipt().clone(),
-                live_close: None,
-            })
-        })();
-        let close = live.close();
-        match (result, close) {
-            (Ok(publication), close) => Ok(publication.with_live_close(close)),
-            (Err(error), WorthQueryApplicationLiveCloseOutcome::Completed(_)) => Err(error),
-            (Err(error), close) => Err(error.with_live_close(close)),
         }
     }
 }

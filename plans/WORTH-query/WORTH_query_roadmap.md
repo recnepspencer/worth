@@ -400,6 +400,11 @@ cross-feature proof gates before final certification:
   canonical actor roles with occurrence-bound capability requirements, owning
   capability commands and consumer guidance hardening, with one current contract
   and no legacy fallback; it adds no status store, registry or second authority
+- [Milestone 9.17.6.6](./milestone-9.17.6.6.md) replaces action-authoring
+  permutations with one complete typed action and makes fixed/discovered operation
+  owners retain the authentic installed runtime. It consumes implemented 9.17.6.4
+  lifecycle capabilities beside 9.17.6.5, requires public consumer/API deletion,
+  and supplies the clean downstream adoption contract without backward compatibility.
 - `Milestone 9.17.7` adds authenticated bounded inbound occurrences and exact
   external-effect completion before workflow eligibility
 - `Milestone 9.18` accepts tree-based semantic undo and redo as freshly
@@ -460,6 +465,14 @@ consumer certification consume the completed 9.17.6.4 contract.
 This does not reopen completed milestones or retroactively gate 9.17.7 or the
 9.17 umbrella. New adopters claiming framework-owned operation lifecycle wait
 for the 9.17.6.4 public proof and consume its certified revision.
+
+[9.17.6.6](./milestone-9.17.6.6.md) addresses concrete adoption seams in the
+implemented owning API: complete action metadata plus delivery, and authentic
+runtime retention across commands. Its public API, covered caller cutover and
+scoped qualification are complete. Downstream adoption consumes that certified
+contract as a separate successor. This does not close 9.17.6.5's workflow
+acceptance portfolio. Existing predecessor qualification is retained only where
+the affected contract remains unchanged.
 
 Store handoffs are explicit:
 

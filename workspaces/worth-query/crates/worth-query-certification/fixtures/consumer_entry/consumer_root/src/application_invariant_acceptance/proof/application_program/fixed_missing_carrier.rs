@@ -13,16 +13,14 @@ use worth_query_topology_entry::{
 };
 
 mod guard_lifecycle;
-type Fixed<'a> = WorthQueryFixedOperation<
-    'a,
+type Fixed = WorthQueryFixedOperation<
     ConsumerSchema,
     PlanarSourceAdjustment,
     crate::ConsumerProgram,
     crate::ConsumerProgramRoot,
     ConsumerFixedAction,
 >;
-type Settled<'a> = WorthQuerySettledFixedOperation<
-    'a,
+type Settled = WorthQuerySettledFixedOperation<
     ConsumerSchema,
     PlanarSourceAdjustment,
     crate::ConsumerProgram,
@@ -49,12 +47,12 @@ fn append_failure(world: &World) {
         })
         .unwrap();
 }
-fn partial<'a>(
-    world: &'a World,
+fn partial(
+    world: &World,
     request: &WorthQueryApplicationRequest<'_, '_, '_, ConsumerSchema>,
     intent: PlanarSourceAdjustment,
     key: u64,
-) -> Fixed<'a> {
+) -> Fixed {
     let source = request
         .query(PlanarRead {
             body_key: intent.scope_key.clone(),
@@ -79,10 +77,10 @@ fn partial<'a>(
         _ => panic!("genuine append refusal retains original native partial"),
     }
 }
-fn recover<'a>(
-    operation: Fixed<'a>,
+fn recover(
+    operation: Fixed,
     request: &WorthQueryApplicationRequest<'_, '_, '_, ConsumerSchema>,
-) -> Fixed<'a> {
+) -> Fixed {
     match operation.advance(request) {
         Advance::Progress {
             operation,
@@ -94,10 +92,10 @@ fn recover<'a>(
         _ => panic!("actual native recovery performs once"),
     }
 }
-fn settle<'a>(
-    operation: Fixed<'a>,
+fn settle(
+    operation: Fixed,
     request: &WorthQueryApplicationRequest<'_, '_, '_, ConsumerSchema>,
-) -> Settled<'a> {
+) -> Settled {
     let mut operation = Some(operation);
     (0..32)
         .find_map(|_| match operation.take().unwrap().advance(request) {
@@ -166,10 +164,12 @@ fn fixed_missing_carrier_consumed_native_delivery_is_terminal_with_cleanup() {
         .consume_next_recovered_program_source_delivery_for_test()
         .unwrap();
     let operation = recover(operation, &request);
-    assert!(guard
-        .captured_delivery_for_test()
-        .unwrap()
-        .has_original_delivery());
+    assert!(
+        guard
+            .captured_delivery_for_test()
+            .unwrap()
+            .has_original_delivery()
+    );
     let page = world
         .application
         .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
@@ -222,12 +222,14 @@ fn fixed_missing_carrier_consumed_native_delivery_is_terminal_with_cleanup() {
     terminal
         .close(&world.application.request(&fresh_principal, &fresh_scope))
         .unwrap_or_else(|(_, cause)| panic!("fresh native cleanup: {cause:?}"));
-    assert!(world
-        .application
-        .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
-        .unwrap()
-        .rows()
-        .is_empty());
+    assert!(
+        world
+            .application
+            .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+            .unwrap()
+            .rows()
+            .is_empty()
+    );
     assert_eq!(planar_source_adjustment_contacts(&intent), (1, 1));
 }
 
@@ -290,10 +292,12 @@ fn fixed_missing_carrier_direct_query_promotion_retains_real_refusal() {
             .recover_unpublished_required_in_program(&mut recovery, &world.application)
             .unwrap();
         if let Some(guard) = &guard {
-            assert!(guard
-                .captured_delivery_for_test()
-                .unwrap()
-                .has_original_delivery());
+            assert!(
+                guard
+                    .captured_delivery_for_test()
+                    .unwrap()
+                    .has_original_delivery()
+            );
         }
         let promotion = request
             .advanced()

@@ -78,7 +78,8 @@ impl ApplicationProgramDefinition<NoReuseSchema> for NoReuseProgram {
         vec![
             ApplicationFeatureSpec::root::<NoReuseSchema, PlanarSourceFeature>()
                 .provides::<PlanarBodyOutput>()
-                .mutation::<PlanarEditBinding<NoReuseSchema>>()
+                .native_action::<PlanarEditBinding<NoReuseSchema>>()
+                .finish_action()
                 .finish(),
             super::super::required_chain::output_feature_spec_for::<NoReuseSchema>(),
             ApplicationFeatureSpec::root::<NoReuseSchema, PlanarFinalOutputFeature>()

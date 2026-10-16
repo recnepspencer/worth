@@ -1,6 +1,7 @@
 //! Move-only ordinary custody; discriminants select existing native owners, never model traversal.
 use super::*;
 /// Retains the immutable description and its genuine discovered-source/output custody.
+/// Construction retains the authentic runtime allocation and complete installed action.
 /// Every advancement borrows fresh authority and returns all custody on refusal.
 ///
 /// Retrying cannot substitute original conditions, key, input or selected delivery.
@@ -8,11 +9,11 @@ use super::*;
 /// use worth_query_publication::facade::application_entry::*;
 /// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationIntent, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
-/// fn original<S,I,P,R,A>(owner: &WorthQueryDiscoveredOperation<'_,S,I,P,R,A>)
+/// fn original<S,I,P,R,A>(owner: &WorthQueryDiscoveredOperation<S,I,P,R,A>)
 /// where S:ApplicationSchema+'static, I:ApplicationMutationIntent<S>, P:ApplicationProgramDefinition<S>,
 /// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
 /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding>,
-/// A:ApplicationDiscoveredAction<S,I::Binding>, A::Delivery:ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R> {
+/// A:ApplicationAction<S,I::Binding>, A::Delivery:ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R> {
 ///     let _ = &owner.description;
 /// }
 /// ```
@@ -21,27 +22,26 @@ use super::*;
 /// use worth_query_publication::facade::application_entry::*;
 /// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationIntent, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
-/// fn original<S,I,P,R,A>(owner: &WorthQueryDiscoveredOperation<'_,S,I,P,R,A>)
+/// fn original<S,I,P,R,A>(owner: &WorthQueryDiscoveredOperation<S,I,P,R,A>)
 /// where S:ApplicationSchema+'static, I:ApplicationMutationIntent<S>, P:ApplicationProgramDefinition<S>,
 /// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
 /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding>,
-/// A:ApplicationDiscoveredAction<S,I::Binding>, A::Delivery:ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R> {
+/// A:ApplicationAction<S,I::Binding>, A::Delivery:ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R> {
 ///     let _ = owner.branch();
 /// }
 /// ```
 #[must_use = "retain discovered source, output and cleanup custody until lawful close"]
-pub struct WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
+pub struct WorthQueryDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
-    pub(super) runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
-    pub(super) installed_action: &'r ApplicationActionDeclaration,
+    pub(super) installed_action: ApplicationActionDeclaration,
     pub(super) description: WorthQueryOperationDescription<S, I>,
     pub(super) initial_cause:
         Option<worth_query_execution::facade::runtime::ProductUnpublishedCause>,
@@ -51,21 +51,22 @@ where
     pub(super) cleanup: WorthQueryOperationCleanup,
     pub(super) action: std::marker::PhantomData<A>,
     pub(super) state: DiscoveredState<S, I, P, R>,
+    // Native carriers above release while the authentic allocation remains retained.
+    pub(super) runtime: WorthQueryProgramApplicationRuntime<S, P>,
 }
 /// Native completed aggregate and original description; delivery does not discharge cleanup.
 #[must_use = "retain the complete settlement and cleanup until lawful close"]
-pub struct WorthQuerySettledDiscoveredOperation<'r, S, I, P, R, A>
+pub struct WorthQuerySettledDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
-    pub(super) runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
-    pub(super) installed_action: &'r ApplicationActionDeclaration,
+    pub(super) installed_action: ApplicationActionDeclaration,
     pub(super) description: WorthQueryOperationDescription<S, I>,
     pub(super) initial_cause:
         Option<worth_query_execution::facade::runtime::ProductUnpublishedCause>,
@@ -76,6 +77,8 @@ where
     pub(super) action: std::marker::PhantomData<A>,
     pub(super) settlement:
         WorthQueryDiscoveredProgramOutputSettlement<RootQuery<S, R>, RootDemand<S, R>>,
+    // Native carriers above release while the authentic allocation remains retained.
+    pub(super) runtime: WorthQueryProgramApplicationRuntime<S, P>,
 }
 /// Terminal native custody has observations and lawful cleanup, but no advance entrance.
 ///
@@ -83,13 +86,13 @@ where
 /// use worth_query_publication::facade::application_entry::{WorthQueryTerminalDiscoveredOperation, WorthQueryApplicationRequest};
 /// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationIntent, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
-/// fn terminal_cannot_advance<'r,S,I,P,R,A>(owner:WorthQueryTerminalDiscoveredOperation<'r,S,I,P,R,A>,request:&WorthQueryApplicationRequest<'_, '_, '_, S>)
+/// fn terminal_cannot_advance<S,I,P,R,A>(owner:WorthQueryTerminalDiscoveredOperation<S,I,P,R,A>,request:&WorthQueryApplicationRequest<'_, '_, '_, S>)
 /// where
 /// S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>,
 /// P: ApplicationProgramDefinition<S>,
 /// R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
 /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding>,
-/// A: ApplicationDiscoveredAction<S,I::Binding>,
+/// A: ApplicationAction<S,I::Binding>,
 /// A::Delivery: ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R>,
 /// { let _ = owner.native_outcome(); let _ = owner.advance(request); }
 /// ```
@@ -97,28 +100,28 @@ where
 /// use worth_query_publication::facade::application_entry::{WorthQueryTerminalDiscoveredOperation, WorthQueryApplicationRequest};
 /// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationIntent, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
-/// fn terminal_observes_native_custody<'r,S,I,P,R,A>(owner:&WorthQueryTerminalDiscoveredOperation<'r,S,I,P,R,A>)
+/// fn terminal_observes_native_custody<S,I,P,R,A>(owner:&WorthQueryTerminalDiscoveredOperation<S,I,P,R,A>)
 /// where
 /// S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>,
 /// P: ApplicationProgramDefinition<S>,
 /// R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
 /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding>,
-/// A: ApplicationDiscoveredAction<S,I::Binding>,
+/// A: ApplicationAction<S,I::Binding>,
 /// A::Delivery: ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R>,
 /// { let _ = owner.native_outcome(); }
 /// ```
 #[must_use = "terminal evidence can retain independent native obligations"]
-pub struct WorthQueryTerminalDiscoveredOperation<'r, S, I, P, R, A>
+pub struct WorthQueryTerminalDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
-    pub(super) operation: WorthQueryDiscoveredOperation<'r, S, I, P, R, A>,
+    pub(super) operation: WorthQueryDiscoveredOperation<S, I, P, R, A>,
 }
 pub(super) enum DiscoveredState<S, I, P, R>
 where
@@ -143,14 +146,14 @@ where
     ),
     NotPerformed(NativeOutcome<S, I>),
 }
-impl<'r, S, I, P, R, A> WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQueryDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
     /// Original owner-issued selector, never permission for another branch.
@@ -158,7 +161,7 @@ where
         self.description.branch
     }
     pub fn declared_action(&self) -> &ApplicationActionDeclaration {
-        self.installed_action
+        &self.installed_action
     }
     /// Genuine Fresh result where the native handoff makes it directly available.
     /// A partial recovery never manufactures the original handler result.
@@ -183,7 +186,7 @@ where
     pub(super) fn terminal(
         mut self,
         denial: WorthQueryOperationAdvanceDenial,
-    ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+    ) -> DiscoveredAdvance<S, I, P, R, A> {
         if let State::Unpublished(partial) = &mut self.state {
             self.prior_cleanup = partial.take_prior_cleanup();
         }

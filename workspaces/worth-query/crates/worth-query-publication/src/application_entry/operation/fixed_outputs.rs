@@ -5,8 +5,8 @@ use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
 use WorthQueryOperationProgress as Progress;
 
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -15,7 +15,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
     Program::Outputs: ApplicationProgramOutputsShape<Schema>,
@@ -39,14 +39,14 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-    ) -> FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> {
+    ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         let FixedState::Preparation(preparation) = self.state else {
             unreachable!("output dispatch owns its preparation")
         };
         let progress = {
             match preparation.start_required_outputs_in_advancement(
                 phase,
-                self.runtime,
+                &self.runtime,
                 request,
                 WorthQueryOutputDemandControls::host_policy(),
             ) {
@@ -82,12 +82,12 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-    ) -> FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> {
+    ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         let FixedState::Outputs(mut outputs) = self.state else {
             unreachable!("output dispatch owns native output custody")
         };
         let progress = {
-            match outputs.advance_in_advancement(phase, self.runtime, request) {
+            match outputs.advance_in_advancement(phase, &self.runtime, request) {
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending) => {
                     self.state = FixedState::Outputs(outputs);
                     Progress::OutputsPending
@@ -107,14 +107,16 @@ where
                 }
                 Err(mut denial) => {
                     if let Some(required) = denial.take_managed_cleanup() {
-                        self.cleanup.absorb_producer(self.runtime, required);
+                        self.cleanup.absorb_producer(&self.runtime, required);
                     }
                     let terminal = denial.recovery_posture()
                         == WorthQueryRequiredOutputRecoveryPosture::Terminal;
                     self.state = FixedState::Outputs(outputs);
                     return if terminal {
                         Advance::Terminal {
-                            operation: WorthQueryTerminalFixedOperation::new(self),
+                            operation: WorthQueryTerminalFixedOperation::new(self).with_output_completion(
+                                <Root::Dependents as super::super::mutation::program_output_continuation::ProgramOutputContinuationFactory<Schema, Program, Demand<Schema, Root>>>::unavailable_completion::<Root>(),
+                            ),
                             denial: Denial::Outputs(denial),
                         }
                     } else {

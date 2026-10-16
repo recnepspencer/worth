@@ -91,6 +91,39 @@ proves refusal and fresh original-branch continuation. The
 uses one binding at two canonical instances with distinct installed delivery
 contracts; a caller cannot substitute one instance's delivery at the other.
 
+## Complete action meaning
+
+Begin one ordinary action with `.action::<Binding, Delivery>()` on its feature
+parent. Compose `.locality_and_change::<Scope, Shape>()`,
+`.correspondence::<Correspondence>()`, `.evaluated_requirement::<Rule>()` and
+`.external_input::<Provider>()` as applicable. Each optional clause can be
+attached only once; `.finish_action()` appends the complete declaration and
+returns the feature parent. The macro's `action(Binding, Delivery) { ... };`
+block delegates to those same typed transitions. Empty blocks are valid, and
+clause order does not alter canonical meaning.
+
+Delivery/locality/change belong to the exact occurrence. Correspondence lookup
+is binding-scoped; installed rule/provider lookup is scoped to operation plus
+rule/provider type across declared actions. These clauses are not a new
+occurrence-isolated policy engine. The installed evaluator supplies guidance and
+submission enforcement; it is not an unbypassable native authorization gate.
+An external revision must still be resolved and admitted, and its accepted
+values must enter the actual source action.
+
+`ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>`
+implements the sealed `ApplicationAction` selection contract. `selector()`
+contains occurrence/binding/delivery facts and cannot manufacture a complete
+`ApplicationActionDeclaration`. Installation returns the complete actual
+action, and fresh progression compares every retained contract against current
+installed meaning. Duplicate TypeIds and portable occurrence/feature/binding
+keys are validation refusals; separate legal instances remain distinct.
+
+Deliberately specialized native work uses `.native_action::<Binding>()`, the
+same applicable clauses and `.finish_action()`. It has neither delivery nor
+an output-source toggle: native required-output membership comes from actual
+roots. An ordinary mutation or retry needs genuine delivery even if it was
+previously composed manually. See [Feature Capsule Authoring](../authoring/feature-capsule-authoring.md).
+
 ## Declared output delivery shapes
 
 `ApplicationOutputProjection` is the closed vocabulary for an installed output
@@ -102,7 +135,7 @@ Fixed delivery keeps its existing canonical encoding.
 A discovered declaration uses `ApplicationDiscoveredActionDelivery` and
 `ApplicationDiscoveredDeliveryMode<Root, Projection>`, with a genuine
 `ApplicationDiscoveredOutputRoot` from the program's actual output inventory.
-Attach it using `operation_action::<Binding, Delivery>()` at the same composition
+Attach it using `.action::<Binding, Delivery>() ... .finish_action()` at the same composition
 instance and source feature as that root. `ApplicationDiscoveredQueryDelivery`
 and `ApplicationDiscoveredBatchDelivery` bind selectors that borrow the original
 mutation input. Installation resolves the exact action occurrence and concrete
@@ -159,6 +192,48 @@ supplied preconditions would permit an effect and fail the twin's native refusal
 and unchanged-product assertions. Advanced recovery courts separately refuse
 omitted conditions and substituted row/result-set identity while preserving the
 actual unpublished owner; they do not manufacture recovered handler results.
+
+## Retained runtime and configuration custody
+
+Fixed, discovered and source-only operations retain the authentic installed
+runtime allocation and complete installed action. Fixed/discovered pending,
+refused, settled and terminal types have no construction-runtime lifetime.
+You can store the returned owner after the construction borrow ends and drop
+the constructing handle. This shares the same runtime allocation; it does not
+copy the graph, clone a native obligation or create a new admission grant.
+
+Keep a separate genuine runtime handle to construct each fresh request. The
+operation exposes neither a runtime accessor nor `Deref` as an admission door.
+Use `request.on_branch(owner.branch())` for the original branch. Runtime affinity
+compares the underlying allocation, so a clone of the original handle is valid;
+a newly installed runtime or a different branch is refused with custody intact.
+Every call still needs a fresh request. Advance and current delivery retain
+branch-selected program-support and complete-action checks. Close follows its
+native cleanup eligibility and fresh request/resource checks; stale current
+delivery does not erase historical custody or lawful cleanup.
+
+The [compiled fixed consumer](../../../../../../docs/build-an-application.md#compiled-owning-call-bodies)
+retains the operation, drops its constructing runtime handle and continues on
+an independently retained handle for the same allocation. Its declaration also
+composes locality/change, evaluated requirement and actual external-input use;
+metadata presence alone is not its source/output observation.
+
+Install initial workflow vocabulary and other unique-runtime configuration
+before cloning handles or retaining operations. If `retain_workflow_spec`
+refuses, `WorthQueryWorkflowRuntimeBindingRefusal::denial()` describes why;
+`into_parts()` restores the original runtime, installed spec, signing owner and
+denial. `support_workflow_spec(&mut self, spec)` returns the original spec with
+its denial on failure. Release the real keepalives before retrying a
+`RuntimeKeepaliveRetained` refusal; do not substitute another runtime or signing
+owner or discard refused configuration inputs.
+
+Runtime close also refuses `RuntimeKeepaliveRetained` while an operation keeps
+its allocation alive. Successful operation close releases that keepalive;
+refused close returns the complete usable owner. Releasing independent cleanup
+does not settle uncertain source/output work. Drop is abandonment, and retention
+promises neither serialization, cross-thread progression nor crash-durable
+continuation. Original native source/output obligations keep their distinct
+recovery and cleanup rules.
 
 ## Owning discovered actions
 
@@ -244,7 +319,9 @@ Workflow and assessment owners retain their distinct native authority boundaries
 ### Advanced native preparation
 
 Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed, discovered and source-only actions.
-Select `request.advanced()` before deliberate native mutation preparation.
+Select `request.advanced()` only for a present specialized native staging or
+authority/phase responsibility. Ordinary create/edit/retry stays on the owning
+entry; moving its manual preparation loop here is not a native specialization.
 
 
 A keyed mutation request may call `prepare_in_program(&runtime, allocation)` when its
@@ -823,7 +900,7 @@ operation. See the conditional-operation guide for the complete contract.
 
 A conventional unguarded fixed source action declares its root and read through
 `ApplicationFixedActionDelivery` and
-`fixed_output_action::<Binding, Delivery>()`. An exact typed
+`.action::<Binding, Delivery>() ... .finish_action()`. An exact typed
 `ApplicationActionReference` includes the composition instance and feature;
 matching only a mutation binding does not select an occurrence.
 

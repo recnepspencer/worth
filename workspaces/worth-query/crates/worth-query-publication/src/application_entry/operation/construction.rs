@@ -69,12 +69,11 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
 impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Schema>>
     WorthQueryOperationDescription<Schema, Intent>
 {
-    pub(super) fn retain_fixed_native<'runtime, Program, Action>(
+    pub(super) fn retain_fixed_native<Program, Action>(
         self,
-        program: &'runtime WorthQueryProgramApplicationRuntime<Schema, Program>,
+        program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         WorthQueryFixedOperation<
-            'runtime,
             Schema,
             Intent,
             Program,
@@ -92,10 +91,10 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
         Connection<Schema, FixedRoot<Schema, Intent, Action>>:
             WorthQueryApplicationRequiredOutputConnection<Schema>,
         Binding<Schema, Intent>: WorthQueryApplicationRequiredOutputSource<
-            Schema,
-            Connection<Schema, FixedRoot<Schema, Intent, Action>>,
-        >,
-        Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+                Schema,
+                Connection<Schema, FixedRoot<Schema, Intent, Action>>,
+            >,
+        Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
         Delivery<Schema, Intent, Action>:
             ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>>,
         <Delivery<Schema, Intent, Action> as ApplicationFixedActionDelivery<
@@ -112,13 +111,23 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
         }
         let installed_action = match program
             .installed_program()
-            .resolve_fixed_action::<Intent::Binding, Action>()
+            .resolve_action::<Intent::Binding, Action>()
         {
             Ok(action) => action,
             Err(denial) => {
                 return Err((self, WorthQueryOperationConstructionDenial::Action(denial)));
             }
         };
+        if !installed_action.required_output_source()
+            || installed_action
+                .delivery()
+                .and_then(|delivery| delivery.fixed_output())
+                .is_none()
+        {
+            return Err((self, WorthQueryOperationConstructionDenial::Action(
+                worth_query_installation::facade::WorthQueryActionResolutionDenial::DeliveryMismatch,
+            )));
+        }
         if let Err(denial) =
             <Delivery<Schema, Intent, Action> as ApplicationFixedActionDelivery<
                 Schema,
@@ -131,8 +140,8 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
             return Err((self, WorthQueryOperationConstructionDenial::UndeclaredRoot));
         }
         Ok(WorthQueryFixedOperation {
-            installed_action,
-            runtime: program,
+            installed_action: installed_action.clone(),
+            runtime: program.clone(),
             description: self,
             state: FixedState::Initial,
             initial_cause: None,

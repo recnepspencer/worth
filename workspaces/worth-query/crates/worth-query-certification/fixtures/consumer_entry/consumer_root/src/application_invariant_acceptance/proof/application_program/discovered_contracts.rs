@@ -31,9 +31,12 @@ fn discovered_installed_concrete_delivery_and_occurrence_are_exact() {
     .unwrap();
     let installed = world.application.installed_program();
     let actual = installed
-        .resolve_discovered_action::<Binding, Action<QueryDelivery>>()
+        .resolve_action::<Binding, Action<QueryDelivery>>()
         .unwrap();
-    assert_eq!(actual, &Action::<QueryDelivery>::declaration());
+    assert_eq!(
+        actual.delivery().unwrap(),
+        Action::<QueryDelivery>::selector().delivery()
+    );
     assert!(actual.required_output_source());
     let counterfeit = ApplicationActionDeliveryDeclaration::discovered::<
         ConsumerSchema,
@@ -51,7 +54,7 @@ fn discovered_installed_concrete_delivery_and_occurrence_are_exact() {
     );
     assert_eq!(
         installed
-            .resolve_discovered_action::<Binding, Action<CounterfeitDelivery>>()
+            .resolve_action::<Binding, Action<CounterfeitDelivery>>()
             .unwrap_err(),
         worth_query_host::facade::domain::WorthQueryActionResolutionDenial::DeliveryMismatch
     );
@@ -62,9 +65,11 @@ fn discovered_installed_concrete_delivery_and_occurrence_are_exact() {
         Binding,
         QueryDelivery,
     >;
-    assert!(installed
-        .resolve_discovered_action::<Binding, WrongInstance>()
-        .is_err());
+    assert!(
+        installed
+            .resolve_action::<Binding, WrongInstance>()
+            .is_err()
+    );
 }
 
 #[test]

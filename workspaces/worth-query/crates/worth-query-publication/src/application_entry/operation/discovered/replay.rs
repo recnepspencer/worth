@@ -3,14 +3,14 @@ use super::*;
 use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
 use WorthQueryOperationProgress as Progress;
-impl<'r, S, I, P, R, A> WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQueryDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
     I::Binding: ApplicationMutationAdmissionBinding<S>,
     Admission<S, I>: WorthQueryBindingAdmission<S, I::Binding>,
@@ -28,7 +28,7 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+    ) -> DiscoveredAdvance<S, I, P, R, A> {
         use worth_query_execution::facade::primary_graph::{
             WorthQueryApplicationIdempotencyResolution as Resolution,
             WorthQueryManagedApplicationRecoveryDenial as Recovery,
@@ -39,8 +39,9 @@ where
         let admitted = (|| {
             let mut native = self
                 .description
-                .request_view(request, self.installed_action);
-            let prepared = native.authorize_discovered_source::<P, R>(phase, self.runtime, None)?;
+                .request_view(request, &self.installed_action);
+            let prepared =
+                native.authorize_discovered_source::<P, R>(phase, &self.runtime, None)?;
             let read = native.read_recovery_idempotency(phase, &prepared)?;
             let Resolution::AlreadyCommitted(receipt) = read.into_resolution() else {
                 return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
@@ -60,12 +61,12 @@ where
                 return Advance::Refused {
                     operation: self,
                     denial: Denial::Recovery(denial),
-                }
+                };
             }
         };
         match request.recover_admitted_discovered_outputs_in_advancement::<P, R, _, _, _>(
             phase,
-            self.runtime,
+            &self.runtime,
             &receipt,
             WorthQueryOutputDemandControls::host_policy(),
             &prepared.admission,

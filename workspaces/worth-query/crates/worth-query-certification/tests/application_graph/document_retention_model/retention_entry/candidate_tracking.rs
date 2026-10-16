@@ -4,6 +4,8 @@ enum Stage {
     Candidate,
     OrdinaryDecision,
     OrdinaryCandidate,
+    AssessmentDecision,
+    AssessmentCandidate,
 }
 
 pub(crate) fn record_ordinary_decision(retention_days: u64) {
@@ -79,4 +81,17 @@ fn count(retention_days: u64, stage: Stage) -> usize {
         .get(&(retention_days, stage))
         .copied()
         .unwrap_or(0)
+}
+
+pub(crate) fn record_assessment_decision(retention_days: u64) {
+    record(retention_days, Stage::AssessmentDecision);
+}
+pub(crate) fn record_assessment_candidate(retention_days: u64) {
+    record(retention_days, Stage::AssessmentCandidate);
+}
+pub fn assessment_counts(retention_days: u64) -> (usize, usize) {
+    (
+        count(retention_days, Stage::AssessmentDecision),
+        count(retention_days, Stage::AssessmentCandidate),
+    )
 }

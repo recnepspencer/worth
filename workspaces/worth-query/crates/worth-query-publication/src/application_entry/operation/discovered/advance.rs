@@ -2,14 +2,14 @@
 use super::*;
 use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
-impl<'r, S, I, P, R, A> WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQueryDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
     I::Binding: ApplicationMutationAdmissionBinding<S>,
     Admission<S, I>: WorthQueryBindingAdmission<S, I::Binding>,
@@ -26,7 +26,7 @@ where
     pub fn advance(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+    ) -> DiscoveredAdvance<S, I, P, R, A> {
         if !std::ptr::eq(self.runtime.runtime(), request.application)
             || self.description.branch != request.branch
         {
@@ -35,7 +35,7 @@ where
                 denial: Denial::FreshRequestMismatch,
             };
         }
-        let runtime = self.runtime.runtime();
+        let runtime = request.application;
         let mut retained = Some(self);
         match runtime.with_application_advancement(request.scope, |phase| {
             retained
@@ -54,7 +54,7 @@ where
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+    ) -> DiscoveredAdvance<S, I, P, R, A> {
         if !matches!(
             &self.state,
             State::Initial | State::NotPerformed(_) | State::Blocked(_)
@@ -70,7 +70,7 @@ where
                     .selected_program_owner(&selected)
                     .map_err(Denial::Program)?;
                 owner
-                    .resolve_declared_action::<I::Binding>(self.installed_action)
+                    .resolve_declared_action::<I::Binding>(&self.installed_action)
                     .map_err(Denial::Action)?;
                 Ok::<_, Denial>(())
             })();

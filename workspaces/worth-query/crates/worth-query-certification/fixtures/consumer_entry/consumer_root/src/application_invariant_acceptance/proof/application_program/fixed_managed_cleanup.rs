@@ -14,7 +14,7 @@ use worth_query_host::facade::{
     },
 };
 use worth_query_topology_entry::{
-    planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts, BodyKey, PositionY,
+    BodyKey, PositionY, planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts,
 };
 #[derive(Clone, Copy)]
 enum Interference {
@@ -187,12 +187,14 @@ fn terminal_court(interference: Interference) {
             .world_active_publication_attempts_for_test(),
         0
     );
-    assert!(world
-        .application
-        .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
-        .unwrap()
-        .rows()
-        .is_empty());
+    assert!(
+        world
+            .application
+            .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+            .unwrap()
+            .rows()
+            .is_empty()
+    );
     let stop = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     stop.cancel();
     let stopped =
@@ -221,11 +223,13 @@ fn terminal_court(interference: Interference) {
     let closed = terminal
         .close(&world.application.request(&fresh_principal, &fresh_scope))
         .unwrap_or_else(|(_, cause)| panic!("fresh no-effect close: {cause:?}"));
-    assert!(closed
-        .managed_cleanup_receipt()
-        .unwrap()
-        .inspection()
-        .resources_released());
+    assert!(
+        closed
+            .managed_cleanup_receipt()
+            .unwrap()
+            .inspection()
+            .resources_released()
+    );
 
     assert_eq!(
         planar_source_adjustment_contacts(&input),
@@ -237,7 +241,9 @@ fn terminal_court(interference: Interference) {
 #[test]
 fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
     use worth_query_host::facade::application_entry::WorthQueryOperationProgress as Progress;
-    let world = installation::install(&crate::installed_schema());
+    let mut world = installation::install(&crate::installed_schema());
+    let request_runtime = world.application.clone();
+    let constructing = std::mem::replace(&mut world.application, request_runtime);
     let adapter = authentication::admit(world.application.installed_schema());
     let scope = authentication::request_scope();
     let principal = authentication::block_on(adapter.authenticate(
@@ -257,13 +263,24 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
         })
         .execute()
         .unwrap();
-    let operation = request
-        .mutate(input.clone())
-        .expect_source(source.observed_sources()[0].clone())
-        .idempotency_owned(10_649)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
-        .unwrap_or_else(|(_, cause)| panic!("descriptor: {cause:?}"));
+    let operation = {
+        let construction_scope = authentication::request_scope();
+        let construction_principal = authentication::block_on(adapter.authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &construction_scope,
+        ))
+        .unwrap();
+        let construction_request =
+            constructing.request(&construction_principal, &construction_scope);
+        construction_request
+            .mutate(input.clone())
+            .expect_source(source.observed_sources()[0].clone())
+            .idempotency_owned(10_649)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&constructing)
+            .unwrap_or_else(|(_, cause)| panic!("descriptor: {cause:?}"))
+    };
+    drop(constructing);
     let operation = match operation.advance(&request) {
         Advance::Progress {
             operation,
@@ -352,11 +369,13 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
             .run_identity(),
         original_run
     );
-    assert!(receipt
-        .managed_cleanup_receipt()
-        .unwrap()
-        .inspection()
-        .resources_released());
+    assert!(
+        receipt
+            .managed_cleanup_receipt()
+            .unwrap()
+            .inspection()
+            .resources_released()
+    );
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
         &head

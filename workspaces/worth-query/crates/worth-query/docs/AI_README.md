@@ -317,16 +317,39 @@ these relationships. `worth_query_feature_spec!` removes builder plumbing but
 still produces the canonical `ApplicationFeatureSpec` and creates no registry;
 see [Feature Capsule Authoring](./authoring/feature-capsule-authoring.md).
 
-**Action attachments.** An authored action may attach one repeated-row
-correspondence, one evaluated requirement, one external-input provider, and a
-required-output-source posture. These are parts of the installed action
-contract, not parallel registries. `repeated_optional_member` preserves
-`Unchanged`, `Set`, and `Clear` and carries the required source observation.
-`evaluated_requirement` returns the same rule evaluation used for input guidance
-and submission enforcement, so a consumer never keeps a second callability
-predicate. `external_input_provider` resolves a typed selection into values,
-revision, and provenance, and requires revision validation before the captured
-input is admitted. Capture never grants mutation authority.
+**Action attachments.** `.action::<Binding, Delivery>()` begins one complete
+ordinary action. Consuming `.locality_and_change`, `.correspondence`,
+`.evaluated_requirement` and `.external_input` attach each optional contract
+once; `.finish_action()` returns its feature parent. The feature macro's
+`action(Binding, Delivery) { ... };` block delegates to that same progression.
+Delivery derives required-output-source meaning. Specialized native declarations
+use `.native_action::<Binding>()` without delivery or an output-source toggle;
+ordinary products do not move manual execution/retry under that spelling.
+
+Delivery/locality/change belong to the exact action occurrence. Correspondence
+lookup is binding-scoped and preserves `Unchanged`, `Set` and `Clear`.
+Rule/provider capabilities remain operation-plus-rule/provider scoped across
+actions. The installed evaluator's result supplies guidance and submission
+enforcement; declaring a rule creates no unbypassable authorization gate.
+External input resolves values, revision and provenance; explicit admission
+checks that revision before the captured values enter the mutation. No clause
+creates permission or a second capability registry.
+
+The sealed five-part `ApplicationActionReference` returns an
+`ApplicationActionSelector`, not a full declaration. Installation resolves the
+complete actual action, including metadata, and fresh progression compares that
+meaning. Duplicate native type or portable occurrence/feature/binding keys are
+rejected by the existing definition validator.
+
+**Retained operations.** Fixed/discovered owners retain the authentic runtime
+allocation and actual installed action through pending, refused, settled and
+terminal states; the construction borrow ends at return. Applications retain
+an independent genuine runtime handle for fresh requests and configure initial
+workflow vocabulary before cloning handles or retaining operations. Consuming
+vocabulary refusal preserves runtime, installed spec and signing owner;
+borrowed support refusal returns the original spec with its denial. Keepalive
+is custody, not permission, cleanup or durable continuation. Close and every
+business handoff retain their native fresh-authority and refusal contracts.
 
 **Derived artifacts.** `ApplicationProgramDefinition::DERIVED_ARTIFACT_GOVERNANCE`
 selects the posture. `Compatible` admits a program with no artifact meaning.

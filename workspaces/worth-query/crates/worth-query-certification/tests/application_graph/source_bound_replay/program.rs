@@ -1,4 +1,5 @@
 //! Actual ordinary action ownership for the source-bound replay proof.
+use crate::document_retention_model::programs::RetentionCompletion;
 use crate::document_retention_model::{
     assessment_output::{OrdinaryRetentionAssessmentBinding, PublishRetentionAssessment},
     programs::{DocumentRetentionFeature, RetentionProgramP0},
@@ -26,16 +27,18 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for SourceBoundReplay
         // The separate ordinary operation leaves the installed conditional supplier intact.
         vec![
             ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
-                .mutation::<SetRetentionBinding>()
-                .mutation::<OrdinaryRetentionAssessmentBinding>()
+                .action::<SetRetentionBinding, RetentionCompletion>()
+                .finish_action()
+                .action::<OrdinaryRetentionAssessmentBinding, RetentionCompletion>()
+                .finish_action()
                 .conditional_operation::<PublishRetentionAssessment>()
                 .finish(),
         ]
     }
 }
 
-pub(super) fn validated_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, SourceBoundReplayProgram> {
+pub(super) fn validated_program()
+-> ValidatedApplicationProgram<DocumentRetentionSchema, SourceBoundReplayProgram> {
     ApplicationProgramAuthoring::<DocumentRetentionSchema, SourceBoundReplayProgram>::begin()
         .validated_program()
         .expect("the real source-bound action program must validate")

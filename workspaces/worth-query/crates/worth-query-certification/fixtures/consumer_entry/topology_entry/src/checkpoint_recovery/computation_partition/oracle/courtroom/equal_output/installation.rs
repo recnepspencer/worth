@@ -101,12 +101,14 @@ impl ApplicationProgramDefinition<Schema> for Program {
         vec![
             ApplicationFeatureSpec::root::<Schema, PlanarSourceFeature>()
                 .provides::<PlanarBodyOutput>()
-                .mutation::<PlanarSourceAdjustmentBinding<Schema>>()
+                .native_action::<PlanarSourceAdjustmentBinding<Schema>>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, PlanarOutputFeature>()
                 .provides::<PlanarDerivedBodyOutput>()
                 .conditional_operation::<publication::PublishRoot>()
-                .mutation::<PlanarEditBinding<Schema>>()
+                .native_action::<PlanarEditBinding<Schema>>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, graph::DependentFeature>()
                 .provides::<graph::DependentOutput>()
@@ -115,8 +117,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ]
     }
 }
-pub(super) fn install(
-) -> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
+pub(super) fn install()
+-> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
     install_with_witnesses(0)
 }
 pub(super) fn install_with_witnesses(
@@ -125,8 +127,8 @@ pub(super) fn install_with_witnesses(
     install_configured(witnesses, false)
 }
 
-pub(super) fn install_with_indexed_decision(
-) -> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
+pub(super) fn install_with_indexed_decision()
+-> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
     install_configured(0, true)
 }
 

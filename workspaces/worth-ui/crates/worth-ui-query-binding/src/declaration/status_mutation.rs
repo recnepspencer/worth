@@ -1,7 +1,8 @@
 use worth_query_decl::facade::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
+        ApplicationCandidateResourceCeiling, ApplicationConventionalAdmission,
+        ApplicationMutationAdmissionBinding, ApplicationMutationBinding,
         ApplicationMutationFieldScope, ApplicationMutationIntent, ApplicationQueryMutationSource,
         ApplicationWorkflowExecutionRequirements, NoApplicationMutationOutputs,
     },
@@ -57,6 +58,10 @@ pub(super) type StatusMutationScope = ApplicationMutationFieldScope<
     ReadOnly,
     NoApplicationUnit,
 >;
+
+impl ApplicationMutationAdmissionBinding<WorthUiApplicationSchema> for WorthUiStatusUpdateBinding {
+    type Admission = ApplicationConventionalAdmission;
+}
 
 impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusUpdateBinding {
     type Input = WorthUiScalarProjectionSourceRecord;
@@ -168,7 +173,7 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusUpdateBinding>
         let current = match reader.field(&entity, QueryRevisionValueField::reference()) {
             Ok(Some(current)) => current,
             Ok(None) => {
-                return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::StaleRevision)
+                return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::StaleRevision);
             }
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
@@ -193,7 +198,7 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusUpdateBinding>
         let entity = match writer.projected_entity(&target) {
             Ok(entity) => entity,
             Err(error) => {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
             }
         };
         if let Err(error) = writer.write_field(

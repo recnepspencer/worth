@@ -44,15 +44,6 @@ impl PlatformPulseObservationPublisher {
         })
     }
 
-    pub(crate) fn query_shutdown_failure(
-        &self,
-    ) -> Result<(), PlatformPulseObservationPublicationDenial> {
-        self.with_publication(|publisher| {
-            publisher
-                .project(PlatformPulseLifecycleObservationStream::project_query_shutdown_failure)
-        })
-    }
-
     pub(crate) fn shutdown(
         &self,
         watcher: &WorthUiFilesystemWatcherShutdownReceipt,
