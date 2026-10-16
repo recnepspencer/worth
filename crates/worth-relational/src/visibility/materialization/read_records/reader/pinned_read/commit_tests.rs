@@ -284,19 +284,14 @@ fn exact_view_pin_keeps_original_root_after_commit_snapshot_release_and_rejects_
         .authoritative_aspect_state
         .as_ref()
         .expect("original payload");
-    // This fixture binds an EntityField to a scalar string aspect contract.
-    let ContractValidatedAspectValueView::Scalar(AspectValue::String(InternedString::Symbol(
-        symbol,
-    ))) = state
-        .get(&aspect_key("name"))
-        .expect("original name aspect")
-        .view()
+    // The generic create fixture supplies a Raw string to its scalar EntityField contract.
+    let ContractValidatedAspectValueView::Scalar(AspectValue::String(InternedString::Raw(text))) =
+        state
+            .get(&aspect_key("name"))
+            .expect("original name aspect")
+            .view()
     else {
-        panic!("the actual original scalar payload must carry a present native Symbol");
+        panic!("the actual original scalar payload must carry a present plain string");
     };
-    assert_eq!(
-        pin.symbols()
-            .resolve(crate::symbols::data::Symbol(symbol.0)),
-        Some("original-view")
-    );
+    assert_eq!(text, "original-view");
 }
