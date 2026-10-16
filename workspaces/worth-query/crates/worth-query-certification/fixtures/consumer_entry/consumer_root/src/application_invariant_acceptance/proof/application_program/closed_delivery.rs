@@ -1,12 +1,12 @@
 //! Native cleanup precedes fresh original full-tree delivery, including no-receipt roots.
 use super::*;
-use crate::application_program::{fixed_artifact_source::OriginalEditAction, ConsumerFixedAction};
+use crate::application_program::ConsumerFixedAction;
 use crate::{ConsumerProgram, ConsumerProgramRoot};
 use worth_query_host::facade::application_entry::{
     WorthQueryClosedFixedDelivery, WorthQueryOperationAdvance as FixedAdvance,
     WorthQueryOperationDeliveryDenial, WorthQueryOutputSettlementPosture,
     WorthQueryProgramOutputOperationAdvance as TreeAdvance, WorthQuerySettledFixedOperation,
-    WorthQuerySettledProgramOutputOperation, WorthQuerySourceOnlyAdvance,
+    WorthQuerySettledProgramOutputOperation,
 };
 use worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind;
 use worth_query_topology_entry::{
@@ -322,18 +322,19 @@ fn edit_source(world: &World, request: &Request<'_, '_, '_>, body_key: &str, y: 
             },
         ]),
     });
-    let operation = request
+    // Deliberate native court setup: PlanarEdit is the existing standalone
+    // program action, not an admitted SourceOnly.advance binding. Use its
+    // actual program-gated native commit path with the same source/input/key.
+    let outcome = request
+        .advanced()
         .mutate(intent)
         .expect_source(source)
-        .idempotency_owned(key)
-        .unwrap_or_else(|(_, _, stop)| panic!("source capture: {stop:?}"))
-        .retain_operation::<ConsumerProgram, OriginalEditAction>(&world.application)
-        .unwrap_or_else(|(_, stop)| panic!("original source action: {stop:?}"));
-    match operation.advance(request) {
-        WorthQuerySourceOnlyAdvance::Completed(done) => {
-            done.close(request)
-                .unwrap_or_else(|(_, stop)| panic!("source close: {stop:?}"));
-        }
-        _ => panic!("genuine ordinary source edit completes once"),
-    }
+        .idempotency(&key)
+        .execute_in_program::<ConsumerProgram>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    assert!(matches!(outcome, worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }),
+        "the actual native source edit commits once; refusal is invalid test setup");
 }

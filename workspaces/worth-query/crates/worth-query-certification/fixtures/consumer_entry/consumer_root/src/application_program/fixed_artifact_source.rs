@@ -1,19 +1,11 @@
 //! A real governed root whose ordinary source deliberately omits required locality.
 use super::*;
 use worth_query_decl::facade::application_program::{
-    ApplicationActionReference, ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
+    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
     ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
 };
 use worth_query_host::facade::application_contribution::WorthQueryProducerOutputFamily;
-use worth_query_topology_entry::{PlanarEditBinding, PlanarOutputFamily};
-
-pub(crate) type OriginalEditAction = ApplicationActionReference<
-    ConsumerSchema,
-    ApplicationRootComposition,
-    PlanarSourceFeature,
-    PlanarEditBinding<ConsumerSchema>,
-    super::source_completion::ConsumerSourceCompletion,
->;
+use worth_query_topology_entry::PlanarOutputFamily;
 
 pub(crate) struct MissingLocalityProgram;
 struct GovernedPlanarArtifact;
