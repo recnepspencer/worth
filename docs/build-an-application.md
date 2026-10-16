@@ -1713,6 +1713,19 @@ runtime close refuses with `RuntimeKeepaliveRetained`. Successful operation
 close releases that operation's keepalive; refusal returns the complete owner.
 Dropping an owner abandons custody and does not perform successful cleanup.
 
+For an eligible Required fixed leaf, a producer's terminal domain refusal can
+close through the same ordinary terminal owner. `terminal.close(&fresh_request)`
+delegates native negative completion before cleanup; a refusal returns the same
+owner. If native finish succeeds but cleanup refuses, inspect
+`terminal.output_unavailable()` and retry close with fresh authority. Successful
+close carries that actual evidence in `closed.output_unavailable()`: the original
+source was saved and no current output was produced. This is neither successful
+required-output settlement nor permission to publish a positive result. Native
+eligibility still refuses unresolved preparation, partial work, already settled
+roots, dependent trees and discovered aggregates. No source or producer is
+reexecuted to close. The executable ordinary fixed-leaf court is
+[`terminal_unavailable.rs`](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs).
+
 Capture the original meaning once. Supply a fresh authenticated ordinary request
 for every `advance`, delivery and close. Native admission checks current authority
 and the original runtime/branch/program affinity. The descriptor is not a grant.

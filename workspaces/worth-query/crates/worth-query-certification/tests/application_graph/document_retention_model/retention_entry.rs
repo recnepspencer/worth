@@ -40,10 +40,13 @@ use super::schema::{
 #[path = "retention_entry/candidate_tracking.rs"]
 mod candidate_tracking;
 pub use candidate_tracking::{
-    candidate_count, decision_count, ordinary_counts, reset_candidate_count, reset_decision_count,
-    reset_ordinary_counts,
+    assessment_counts, candidate_count, decision_count, ordinary_counts, reset_candidate_count,
+    reset_decision_count, reset_ordinary_counts,
 };
-pub(super) use candidate_tracking::{record_ordinary_candidate, record_ordinary_decision};
+pub(super) use candidate_tracking::{
+    record_assessment_candidate, record_assessment_decision, record_ordinary_candidate,
+    record_ordinary_decision,
+};
 #[path = "retention_entry/occurrence_write.rs"]
 mod occurrence_write;
 #[path = "retention_entry/reviewed_write.rs"]

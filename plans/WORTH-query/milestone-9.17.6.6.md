@@ -223,6 +223,25 @@ cleanup does not settle uncertain source/output work. Drop remains abandonment,
 not successful external cleanup or crash durability. No new serialization,
 cross-thread progression or durable restart claim is introduced.
 
+Ordinary fixed terminal `close` also bridges the existing native negative
+completion of a Required fixed leaf. The sealed output factory carries actual
+leaf eligibility when an output refusal becomes terminal; applications do not
+reconstruct root kind or choose per-tool disposal policy. Native
+`finish_unavailable` remains the sole authority: original source validation,
+terminal producer domain refusal, and absence of settlement, pending authority,
+dependents and unresolved native cleanup are required. Close opens one phase
+through the fresh verified request and preserves the same native output handle
+on refusal. Once native negative completion succeeds, its actual unavailable
+evidence is retained across any later cleanup refusal and returned on successful
+close, without repeating native finish or source/producer execution. This means
+source saved with no current output; it is never positive required-output
+settlement. Preparation, partial, settled and nonleaf/discovered states gain no
+negative-completion permission. The neutral ordinary assessment court covers
+real producer rejection, fresh authority refusals, recovery-inspector cleanup
+refusal/retry, no result publication/replay and lawful runtime close. Its new
+execution and subsequent private adoption/Claude qualification are separate
+from the previously accepted public evidence.
+
 ### Clean Replacement And Canonical Meaning
 
 Consuming keepalive-sensitive configuration must also preserve all inputs on

@@ -37,6 +37,25 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
 {
+    fn unavailable_completion<Root>() -> Option<ProgramOutputUnavailableCompletion<Schema, Program, Root>>
+    where
+        Schema: 'static,
+        Self: Sized,
+        Root: ApplicationOutputGraphShape<Schema, Dependents = Self> + ApplicationRequiredOutputRoot,
+        Binding<Schema, Root::RootConnection>: WorthQueryApplicationRequiredOutputConnection<Schema, Demand = ParentDemand>,
+        SourceValue<Schema, ParentDemand>: WorthQueryApplicationProjection<Schema, SourceQuery<Schema, ParentDemand>> + Clone,
+        <Source<Schema, ParentDemand> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = Source<Schema, ParentDemand>>,
+        <Source<Schema, ParentDemand> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Source<Schema, ParentDemand> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
+    {
+        Some(
+            super::super::performed_outputs::WorthQueryApplicationProgramOutputHandle::<
+                Schema,
+                Program,
+                Root,
+            >::finish_unavailable_in_advancement,
+        )
+    }
+
     fn start(
         _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         _: &ParentDemand,

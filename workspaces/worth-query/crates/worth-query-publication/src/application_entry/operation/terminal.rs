@@ -1,6 +1,8 @@
 //! Terminal native custody has no execution or delivery entrance.
 use super::fixed::FixedState;
+mod unavailable;
 use super::*;
+use unavailable::TerminalOutputCompletion;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationUncommitted, WorthQueryManagedApplicationRecoveryPerformed,
 };
@@ -58,6 +60,7 @@ where
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
+    output_completion: Option<TerminalOutputCompletion<Schema, Program, Root>>,
     pub(super) operation: WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>,
 }
 impl<Schema, Intent, Program, Root, Action>
@@ -83,7 +86,10 @@ where
                 .cleanup
                 .retain_original_failures(partial.take_prior_cleanup());
         }
-        Self { operation }
+        Self {
+            operation,
+            output_completion: None,
+        }
     }
 
     /// Original output-producer evidence is not replaced by its cleanup receipt.
@@ -141,7 +147,8 @@ where
             _ => self.operation.recovered.as_ref(),
         }
     }
-    /// A native unresolved obligation is retained, never declared discharged.
+    /// Eligible fixed-leaf domain refusal completes as unavailable through its original
+    /// native owner before cleanup. All other unresolved output custody still refuses.
     pub fn close(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
@@ -172,8 +179,12 @@ where
                     }
                     _ => false,
                 };
-                if !closable && !terminal_carrier {
+                let unavailable = self.complete_unavailable_in_phase(&phase, request)?;
+                if !closable && !terminal_carrier && !unavailable {
                     return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
+                }
+                if let Some(performed) = self.operation.recovered.as_mut() {
+                    self.operation.cleanup.absorb_recovered(performed)?;
                 }
                 let receipt = self
                     .operation
@@ -182,7 +193,7 @@ where
                 Ok(WorthQueryClosedOperation::from_cleanup(receipt))
             });
         match result {
-            Ok(Ok(closed)) => Ok(closed),
+            Ok(Ok(closed)) => Ok(closed.with_output_unavailable(self.take_output_unavailable())),
             Ok(Err(denial)) => Err((self, denial)),
             Err(denial) => Err((self, WorthQueryOperationCloseDenial::Execution(denial))),
         }

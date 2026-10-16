@@ -75,6 +75,7 @@ pub struct RetentionAssessmentPublished {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RetentionAssessmentDenial {
     SourceChanged,
+    NoRetentionPeriod,
 }
 
 worth_query_structured_value_binding!(pub RetentionAssessmentInputBinding for RetentionAssessmentInput {
@@ -206,6 +207,7 @@ impl OperationHandler<DocumentRetentionSchema, RetentionAssessmentBinding>
         WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
         RetentionAssessmentDenial,
     > {
+        super::retention_entry::record_assessment_decision(input.retention_days);
         let document = match reader
             .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
         {
@@ -213,6 +215,10 @@ impl OperationHandler<DocumentRetentionSchema, RetentionAssessmentBinding>
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
         match reader.field(&document, DocumentRetentionField::reference()) {
+            // A zero-day source is lawful to save but has no assessable retention period.
+            Ok(Some(0)) if input.retention_days == 0 => {
+                return HandlerResult::DomainDenied(RetentionAssessmentDenial::NoRetentionPeriod);
+            }
             Ok(Some(retention_days)) if retention_days == input.retention_days => {}
             Ok(_) => return HandlerResult::DomainDenied(RetentionAssessmentDenial::SourceChanged),
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -237,6 +243,7 @@ impl OperationHandler<DocumentRetentionSchema, RetentionAssessmentBinding>
         target: WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
         writer: &mut CandidateWriter<'_, DocumentRetentionSchema, RetentionAssessmentBinding>,
     ) -> HandlerResult<RetentionAssessmentPublished, RetentionAssessmentDenial> {
+        super::retention_entry::record_assessment_candidate(input.retention_days);
         let document = match writer.projected_entity(&target) {
             Ok(document) => document,
             Err(error) => {
