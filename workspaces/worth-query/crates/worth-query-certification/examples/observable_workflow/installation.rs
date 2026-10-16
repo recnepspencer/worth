@@ -7,7 +7,8 @@ use crate::document_retention_model::{
 };
 use worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase;
 use worth_query_host::facade::application_installation::{
-    in_memory_rostered_program, WorthQueryApplicationProgramRoster,
+    in_memory_rostered_program, in_memory_rostered_program_from_checkpoint,
+    WorthQueryApplicationCheckpoint, WorthQueryApplicationProgramRoster,
 };
 use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{declaration, primary_graph};
@@ -15,7 +16,7 @@ use worth_query_host::facade::{declaration, primary_graph};
 pub fn publish() -> crate::document_retention_model::MixedApplication {
     let application = in_memory_rostered_program(
         crate::program::validated_program(),
-        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+        roster(),
         DocumentRetentionSchema::declaration().expect("the neutral schema validates"),
         ((), ()),
         host_limits(),
@@ -23,6 +24,30 @@ pub fn publish() -> crate::document_retention_model::MixedApplication {
     )
     .expect("the neutral mixed program installs through the real bootstrap");
     crate::document_retention_model::retain_mixed_workflow(application)
+}
+
+/// Reconstructs current native truth with the same composition, never reseeding.
+pub fn restore(
+    checkpoint: WorthQueryApplicationCheckpoint,
+) -> crate::document_retention_model::MixedApplication {
+    let application = in_memory_rostered_program_from_checkpoint(
+        crate::program::validated_program(),
+        roster(),
+        DocumentRetentionSchema::declaration().expect("the same neutral schema validates"),
+        ((), ()),
+        host_limits(),
+        checkpoint,
+    )
+    .expect("the current neutral checkpoint restores without a seed callback");
+    crate::document_retention_model::retain_mixed_workflow(application)
+}
+
+fn roster() -> WorthQueryApplicationProgramRoster<'static, DocumentRetentionSchema> {
+    // The reused contribution installs this binding; its original owner must
+    // be rostered exactly as in the document model's normal host.
+    WorthQueryApplicationProgramRoster::new()
+        .support(validated_second_program())
+        .support(crate::document_retention_model::actor_generation::validated_actor_program())
 }
 
 fn seed_host(

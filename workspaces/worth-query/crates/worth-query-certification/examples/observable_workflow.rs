@@ -24,6 +24,8 @@ mod journey;
 mod operations;
 #[path = "observable_workflow/program.rs"]
 mod program;
+#[path = "observable_workflow/restoration.rs"]
+mod restoration;
 
 fn main() {
     match archive::handle_worker() {

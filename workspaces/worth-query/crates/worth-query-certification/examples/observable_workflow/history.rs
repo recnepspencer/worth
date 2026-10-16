@@ -26,7 +26,7 @@ pub fn observe_approval(
     proposal: &PublishedWorkflowProposalRef,
     expected_proposer: [u64; 3],
     approve: impl FnOnce() -> [u64; 3],
-) {
+) -> [u64; 3] {
     let runtime = application.runtime();
     let scope = request_scope();
     let operator = authenticate_operator(runtime.installed_schema(), &scope);
@@ -208,9 +208,10 @@ pub fn observe_approval(
     // Releases native subscription custody only; never operation cleanup proof.
     subscription.close();
     // compiled-example: end
+    expected_approver
 }
 
-fn page(
+pub(crate) fn page(
     application: &MixedApplication,
     principal: &WorthQueryAuthenticatedExternalPrincipal<DocumentRetentionSchema>,
     scope: &WorthQueryRequestScope,

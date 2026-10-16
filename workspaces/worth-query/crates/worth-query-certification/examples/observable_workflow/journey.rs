@@ -10,7 +10,16 @@ use std::{
 use worth_query_host::facade::application_entry::*;
 
 pub fn run() {
+    // Bootstrap runs before any workflow request/progress frame is active.
     let application = crate::document_retention_model::installation::publish();
+    // All original native owners and references die when execute returns.
+    let captured = execute(application);
+    crate::restoration::inspect(captured);
+}
+
+// Keep the workflow request frame separate from bootstrap and restoration.
+#[inline(never)]
+fn execute(application: MixedApplication) -> crate::restoration::CapturedJourney {
     let runtime = application.runtime();
     let directory = std::env::temp_dir().join(format!(
         "worth-observable-{}-{}",
@@ -64,8 +73,19 @@ pub fn run() {
         .prepare_workflow_instance_start(&application, definition.clone())
         .unwrap();
     let original_start = prepared.discovery_intent();
-    let instance = match prepared.execute() {
-        WorkflowInstanceStartOutcome::Started(started) => started.instance().clone(),
+    crate::discovery::inspect_missing(&application, &original_start);
+    let (instance, expected_start) = match prepared.execute() {
+        WorkflowInstanceStartOutcome::Started(started) => {
+            let principal = started.receipt().principal_scope().principal();
+            (
+                started.instance().clone(),
+                [
+                    u64::from(principal.partition_id()),
+                    principal.local_slot(),
+                    u64::from(principal.generation()),
+                ],
+            )
+        }
         other => panic!("original native start: {other:?}"),
     };
     // compiled-example: begin
@@ -128,7 +148,7 @@ pub fn run() {
     else {
         panic!("a true native condition must expose the authored approval: {progress:?}");
     };
-    crate::history::observe_approval(
+    let expected_approver = crate::history::observe_approval(
         &application,
         &instance,
         &original_start,
@@ -149,17 +169,22 @@ pub fn run() {
         .transitions()
         .iter()
         .any(|transition| transition.node_path() == "archive-completion"));
-    let mut artifacts = std::fs::read_dir(&directory).expect("read the actual archive directory");
-    let artifact = artifacts.next().expect("one archive artifact").unwrap();
-    assert!(artifacts.next().is_none(), "one original archival effect");
-    assert_eq!(
-        std::fs::read(artifact.path()).unwrap(),
-        format!("{DOCUMENT_IDENTITY}\n9\n").into_bytes()
-    );
-    println!(
-        "captured, condition-checked, separately approved, archived and natively settled: {}",
-        directory.display()
-    );
+    crate::restoration::assert_archive(&directory);
+    let checkpoint = runtime.with_host_advancement(|phase| {
+        runtime.capture_application_checkpoint(
+            &phase,
+            worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
+        ).expect("capture current native terminal truth after original operation cleanup")
+    }).expect("installed host capture opens");
+    crate::restoration::CapturedJourney {
+        checkpoint,
+        original_start,
+        expected_start,
+        expected_proposer,
+        expected_approver,
+        proposal_identity: proposal.identity().to_owned(),
+        directory,
+    }
 }
 
 pub fn input() -> SetRetentionInput {

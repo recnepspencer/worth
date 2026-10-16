@@ -74,12 +74,49 @@ pub fn inspect(
             assert_eq!(&found, instance);
             assert_eq!(observation.selected_commit(), basis.selected_commit());
         }
-        _ => panic!("the original start must resolve to the same live instance"),
+        WorthQueryWorkflowInstanceRead::Historical { .. } => {
+            panic!("the active original instance cannot already be historical")
+        }
+        WorthQueryWorkflowInstanceRead::Missing { .. } => {
+            panic!("the performed original start cannot be missing")
+        }
     }
 }
 
 fn input() -> WorkflowReadInput {
     WorkflowReadInput {
         document_identity: DOCUMENT_IDENTITY.to_owned(),
+    }
+}
+
+/// A genuine admitted but unperformed start is missing at its exact pre-start basis.
+pub fn inspect_missing(
+    application: &MixedApplication,
+    original_start: &WorthQueryWorkflowInstanceDiscoveryIntent<DocumentRetentionSchema>,
+) {
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let request = runtime.request(&principal, &scope);
+    let basis = request
+        .retain_current_read()
+        .expect("retain actual pre-start data");
+    match request
+        .at(&basis)
+        .read_original_workflow::<MixedWorkflow, SubjectRead, AuditRead>(
+            application.vocabulary(),
+            original_start,
+            input(),
+            input(),
+        )
+        .expect("missing lookup still requires fresh admitted disclosure")
+    {
+        WorthQueryWorkflowInstanceRead::Missing { basis: missing } => {
+            assert_eq!(missing.selected_commit(), basis.selected_commit())
+        }
+        WorthQueryWorkflowInstanceRead::Live { .. } => panic!("unperformed start cannot be live"),
+        WorthQueryWorkflowInstanceRead::Historical { .. } => {
+            panic!("unperformed start cannot have history")
+        }
     }
 }
