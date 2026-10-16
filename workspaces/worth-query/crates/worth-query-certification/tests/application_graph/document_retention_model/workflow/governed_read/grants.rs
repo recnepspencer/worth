@@ -40,6 +40,16 @@ pub(in super::super::super) fn seed(
             grantees,
         );
     }
+    // The installed start capability also requires this principal-to-resource allow path.
+    // Its exact start grant below remains separate from Subject/Definition/Audit grants.
+    graph
+        .bind_relation(WorthQueryApplicationRelationSeed::new(
+            WorkflowDocumentOwner::reference(),
+            "workflow-second-document-owner",
+            key::<Principal>("document-retention-operator"),
+            key::<Document>("document-row-2"),
+        ))
+        .expect("second-subject start has its genuine owner path");
     // Genuine second-subject start authority; it does not grant second-subject Subject read.
     seed_grant(
         graph,

@@ -226,3 +226,83 @@ fn input() -> WorkflowReadInput {
         document_identity: DOCUMENT_IDENTITY.to_owned(),
     }
 }
+
+#[test]
+fn borrowed_phase_revocation_refuses_foreign_custody_before_contacts_and_key_claim() {
+    use worth_query_host::facade::{
+        application_contribution::{
+            WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
+        },
+        primary_graph::{
+            installed_source_reads_on_this_thread_for_test as reads,
+            WorthQueryExecutionObservation, WorthQueryMutationHandlerWork,
+        },
+    };
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let application = install();
+    let foreign = install();
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let before = runtime
+        .request(&principal, &scope)
+        .retain_current_read()
+        .unwrap();
+    let key = 91_900_u64;
+    let report = foreign
+        .runtime()
+        .with_application_advancement(&scope, |phase| {
+            let contacts = reads();
+            let report = runtime
+                .request(&principal, &scope)
+                .advanced()
+                .mutate(WorkflowGrantStatusIntent {
+                    input: WorkflowGrantStatusInput {
+                        grant_identity: "workflow-metadata-read-grant".to_owned(),
+                        status: "revoked".to_owned(),
+                    },
+                })
+                .without_source()
+                .idempotency(&key)
+                .execute_in_program_report_in_advancement(&phase, application.program_runtime());
+            assert_eq!(
+                reads(),
+                contacts,
+                "foreign custody refuses before installed-source or branch contact"
+            );
+            report
+        })
+        .unwrap();
+    assert!(matches!(
+        report.decision_work(),
+        WorthQueryMutationHandlerWork::NotStarted
+    ));
+    assert!(matches!(
+        report.outcome(),
+        Err(
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
+                WorthQueryAdvancementDenial::Resource(
+                    WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase
+                )
+            )
+        )
+    ));
+    assert_eq!(
+        runtime
+            .request(&principal, &scope)
+            .retain_current_read()
+            .unwrap()
+            .selected_commit(),
+        before.selected_commit()
+    );
+    // Same intent and key must freshly commit on the real phase, never replay a foreign claim.
+    revoke(&application, "workflow-metadata-read-grant", key);
+    assert_ne!(
+        runtime
+            .request(&principal, &scope)
+            .retain_current_read()
+            .unwrap()
+            .selected_commit(),
+        before.selected_commit()
+    );
+}

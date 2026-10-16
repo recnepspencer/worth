@@ -5,7 +5,6 @@ use worth_query_host::facade::application_entry::{
     WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
     WorkflowProposalOutcome, WorthQueryApplicationRequestExt, WorthQueryOrdinaryWorkflowRunStop,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
 use super::document_retention_model::{
     host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
@@ -262,25 +261,29 @@ fn ordinary_and_advanced_retry_share_typed_denials_and_exhaustion() {
             run_instance(&application, ordinary.clone(), &[919_130 + index as u64]);
         assert_eq!(ordinary_outcome.attempted_steps(), 1);
         assert!(ordinary_outcome.transitions().is_empty());
-        let WorkflowProgressOutcome::PreparationDenied(advanced_denial) = advanced_outcome else {
-            panic!("advanced retry advance did not deny its proposal: {advanced_outcome:?}");
+        let WorkflowProgressOutcome::AwaitingProposal(advanced_need) = advanced_outcome else {
+            panic!("advanced retry must identify its proposal: {advanced_outcome:?}");
         };
-        let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::PreparationDenied(
-            ordinary_denial,
+        let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingProposal(
+            ordinary_need,
         )) = ordinary_outcome.stop()
         else {
             panic!(
-                "ordinary retry advance did not deny its proposal: {:?}",
+                "ordinary retry must identify its proposal: {:?}",
                 ordinary_outcome.stop()
             );
         };
-        assert_eq!(
-            advanced_denial.kind(),
-            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported
-        );
-        assert_eq!(ordinary_denial.kind(), advanced_denial.kind());
-        assert_eq!(ordinary_denial.subject(), advanced_denial.subject());
-        assert_eq!(ordinary_denial.subject(), *expected);
+        assert_eq!(advanced_need.instance(), advanced.entity_id());
+        assert_eq!(ordinary_need.instance(), ordinary.entity_id());
+        for need in [&advanced_need, ordinary_need] {
+            assert_eq!(need.node_path(), *expected);
+            assert_eq!(need.operation(), "WorkflowDefinitionAuthoringOperation");
+            assert_eq!(
+                need.input_type(),
+                "worth.query.certification.document-retention.set-input.v1"
+            );
+            assert_eq!(need.occurrence(), index as u64);
+        }
         for (instance, key) in [
             (advanced.clone(), 919_140 + index as u64),
             (ordinary.clone(), 919_150 + index as u64),
