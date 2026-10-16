@@ -1,5 +1,6 @@
 //! Close is original-affine cleanup; selected roots and current sources are irrelevant.
 use super::*;
+/// Why native disposal refused; the accompanying owner retains remaining custody.
 #[derive(Debug)]
 pub enum WorthQueryProgramOutputCloseDenial {
     FreshRequestMismatch,

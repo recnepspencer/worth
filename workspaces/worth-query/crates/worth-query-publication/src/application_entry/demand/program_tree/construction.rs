@@ -1,5 +1,6 @@
 //! Scope-escaping original construction custody, including an already issued basis.
 use super::*;
+/// Why construction could not admit the original complete output-tree request.
 #[derive(Debug)]
 pub enum WorthQueryProgramOutputConstructionDenial {
     FreshRequestMismatch,
@@ -10,6 +11,7 @@ pub enum WorthQueryProgramOutputConstructionDenial {
     ),
     Program(worth_query_execution::facade::application_installation::WorthQuerySelectedProgramOwnerDenial),
 }
+/// Owns refused construction inputs and any original issued basis for retry or close.
 #[must_use]
 pub struct WorthQueryProgramOutputConstructionRefusal<S, P, R>
 where

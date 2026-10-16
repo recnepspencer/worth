@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+/// Why a read request's native cleanup or recovery custody remains undisposed.
 #[derive(Debug)]
 pub enum WorthQueryOutputReadCloseDenial {
     Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),

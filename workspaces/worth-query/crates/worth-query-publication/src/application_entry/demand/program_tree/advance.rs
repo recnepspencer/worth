@@ -1,5 +1,6 @@
 //! Native original-tree progress under one freshly authenticated phase.
 use super::*;
+/// Why fresh advancement of the original complete output tree was refused.
 #[derive(Debug)]
 pub enum WorthQueryProgramOutputAdvanceDenial {
     FreshRequestMismatch,
@@ -7,6 +8,7 @@ pub enum WorthQueryProgramOutputAdvanceDenial {
     Program(worth_query_execution::facade::application_installation::WorthQuerySelectedProgramOwnerDenial),
     Outputs(WorthQueryRequiredOutputPreparationDenial),
 }
+/// The native next phase, retaining the original tree on progress or refusal.
 #[must_use = "retain the returned original tree custody on every progression"]
 pub enum WorthQueryProgramOutputOperationAdvance<S, P, R>
 where
