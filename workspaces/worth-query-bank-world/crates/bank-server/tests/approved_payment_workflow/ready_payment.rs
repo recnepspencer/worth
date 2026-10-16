@@ -14,8 +14,7 @@ use worth_query_host::facade::application_entry::{
 use super::assertions::key;
 use super::authentication::approval_configuration;
 use super::fixture::{
-    ordinary_read_world_with_approval_authentication, ordinary_read_world_with_two_approvers,
-    principal_id, OrdinaryReadFixture, APPROVER,
+    ordinary_read_world_with_approval_authentication, principal_id, OrdinaryReadFixture, APPROVER,
 };
 use super::journey::prepare_approved_payment_operation;
 use super::rail_transport::{spawn_rail, BankEstateRailTransport};
@@ -39,14 +38,7 @@ impl ReadyPaymentWorld {
         Self::from_fixture(fixture, script)
     }
 
-    pub(super) fn with_two_approvers(scenario: &str, script: FaultScript) -> Self {
-        Self::from_fixture(
-            ordinary_read_world_with_two_approvers(scenario, approval_configuration()),
-            script,
-        )
-    }
-
-    fn from_fixture(fixture: OrdinaryReadFixture, script: FaultScript) -> Self {
+    pub(super) fn from_fixture(fixture: OrdinaryReadFixture, script: FaultScript) -> Self {
         let rail_process = spawn_rail();
         let rail = Arc::new(BankEstateRailTransport::connected_to(
             rail_process.local_addr(),

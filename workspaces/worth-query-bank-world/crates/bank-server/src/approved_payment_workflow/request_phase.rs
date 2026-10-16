@@ -201,8 +201,11 @@ fn committed_owner_custody_is_accepted_in_one_request() {
     let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
-        let ready = ReadyPaymentWorld::with_two_approvers(
-            "workflow-committed-custody",
+        let ready = ReadyPaymentWorld::from_fixture(
+            fixture::ordinary_read_world_with_two_approvers(
+                "workflow-committed-custody",
+                authentication::approval_configuration(),
+            ),
             FaultScript::Succeed,
         );
         let route = ready.install_synchronous_completion();

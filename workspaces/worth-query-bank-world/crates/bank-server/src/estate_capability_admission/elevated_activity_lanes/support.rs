@@ -127,7 +127,7 @@ pub(super) fn revoke_exact_support(world: &ActivityWorld, seed: u8) {
             .spawn(move || {
                 let outcome =
                     crate::estate_progression::delegation::command_courts::complete_revocation(
-                        &runtime,
+                        runtime,
                         principal,
                         EstateAction::RevokeCapability {
                             estate: ESTATE,

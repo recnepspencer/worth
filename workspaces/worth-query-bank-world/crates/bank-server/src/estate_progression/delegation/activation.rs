@@ -52,6 +52,10 @@ pub use projection_denial::BankCapabilityDelegationProjectionDenial;
 
 impl BankIdentityRuntime {
     /// Retains one exact delegation command. Fresh requests advance its native owner.
+    #[allow(
+        clippy::result_large_err,
+        reason = "Capture refusal returns the original action, key, preparation owner and typed denial without another allocation"
+    )]
     pub fn retain_estate_capability_delegation<'runtime>(
         &'runtime self,
         principal: &BankAuthenticatedPrincipal,
@@ -109,6 +113,10 @@ impl BankIdentityRuntime {
         authorize_target(phase, self, access, &operation, child)
     }
 
+    #[allow(
+        clippy::result_large_err,
+        reason = "Capture refusal returns the original action, key, preparation owner and typed denial without another allocation"
+    )]
     fn retain_delegation_target<'runtime>(
         &'runtime self,
         principal: &BankAuthenticatedPrincipal,
@@ -140,7 +148,7 @@ impl BankIdentityRuntime {
                     )
             }};
         }
-        let outcome = match (child.scope.operation, child.scope.purpose) {
+        match (child.scope.operation, child.scope.purpose) {
             (
                 EstateCapabilityOperation::NotifyDeath,
                 EstateCapabilityPurpose::EstateAdministration,
@@ -244,8 +252,7 @@ impl BankIdentityRuntime {
                     ),
                 ))
             }
-        };
-        outcome
+        }
     }
 
     fn materialize_delegation(
