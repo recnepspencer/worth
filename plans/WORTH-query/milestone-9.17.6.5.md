@@ -1,9 +1,10 @@
 # Milestone 9.17.6.5: Observable Workflow Truth
 
-> **Status:** Planned. Follows [9.17.6.4](./milestone-9.17.6.4.md) and consumes
-> the existing workflow kernel, completed 9.17.7 inbound contract and 9.17.6.3
-> envelope subscription. One current contract replaces the displaced surfaces
-> and formats. Implementation and certification remain outstanding.
+> **Status:** Complete — public implementation and certification (2026-10-16).
+> Certified source checkpoint: `50d2da02f91455326757b17b66d01577c91f0f31`.
+> Follows [9.17.6.4](./milestone-9.17.6.4.md) and consumes the existing workflow
+> kernel, completed 9.17.7 inbound contract and 9.17.6.3 envelope subscription.
+> One current contract replaces the displaced surfaces and formats.
 
 ## Goal And Governing Decision
 
