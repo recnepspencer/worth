@@ -101,14 +101,13 @@ fn ordinary_publication_refuses_zero_and_two_inputs_before_publication() {
 
 #[test]
 fn authentic_predecessor_draft_cannot_import_executable_meaning() {
-    let application = publish_workflow_on_first_program();
+    let _application = publish_workflow_on_first_program();
     // Captured with the original production validator and writer, before the
     // guarded-input requirement was enforced. No bytes are converted on import.
     let bytes = include_bytes!("workflow_definition_readmission/missing_input.wqwd");
     let original = bytes.to_vec();
     let denial = decode_workflow_definition_draft(bytes, WorthQueryPackageArchiveLimits::DEFAULT)
-        .err()
-        .expect("displaced authored format is refused before executable interpretation");
+        .expect_err("displaced authored format is refused before executable interpretation");
     assert_eq!(denial.kind(), worth_query_package_archive::facade::WorthQueryPackageArchiveDenialKind::UnsupportedWorkflowDefinitionDraftVersion);
     assert_eq!(bytes.as_slice(), original);
 }

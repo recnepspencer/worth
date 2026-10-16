@@ -11,7 +11,6 @@ use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::primary_graph::{
     WorthQueryBranchAdoptionPreparationDenial,
     WorthQueryWorkflowDefinitionDisposition as DefinitionDisposition,
-    WorthQueryWorkflowInstanceDisposition as InstanceDisposition,
 };
 
 use crate::document_retention_model::{
