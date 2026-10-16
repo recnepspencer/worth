@@ -86,7 +86,8 @@ fn workflow_actor_contract_authentic_predecessor_refuses_before_native_restore()
 }
 
 #[test]
-fn workflow_actor_contract_reheadered_predecessor_refuses_native_authority_layout() {
+fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_authority_readmission(
+) {
     use sha2::{Digest, Sha256};
     let original = include_bytes!("workflow_definition_readmission/missing_input.checkpoint");
     assert_eq!(&original[40..42], &9u16.to_be_bytes());
@@ -97,6 +98,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_authority_layou
         usize::try_from(u64::from_be_bytes(original[50..58].try_into().unwrap())).unwrap();
     // Reframe only Query's envelope. The authentic old native authority layout
     // is left intact and must not acquire the new workflow interpretation.
+    assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK4\n"));
     let mut body = Vec::from(10u16.to_be_bytes());
     body.extend_from_slice(&2u16.to_be_bytes());
     body.extend_from_slice(&4u16.to_be_bytes());
@@ -114,12 +116,16 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_authority_layou
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
     )
     .err()
-    .expect("old native authority layout must refuse under a current envelope");
+    .expect("the old native frame must refuse before authority readmission");
     match denial {
         worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial::Graph(cause) => {
-            assert_eq!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedRecoveredNativeAuthorityLayout);
+            // The native frame owner refuses first; schema-authority readmission
+            // (which can report UnsupportedRecoveredNativeAuthorityLayout) is unreachable.
+            assert_eq!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
+            assert!(cause.subject().contains("UnsupportedLegacySemantics"), "{cause:?}");
+            assert!(cause.subject().contains("unsupported native checkpoint frame; CHK4 required"), "{cause:?}");
         }
-        other => panic!("expected native authority layout refusal: {other:?}"),
+        other => panic!("expected native frame refusal: {other:?}"),
     }
     assert_eq!(retained.bytes(), intact);
     assert_eq!(retained.bytes().as_ptr(), backing);
