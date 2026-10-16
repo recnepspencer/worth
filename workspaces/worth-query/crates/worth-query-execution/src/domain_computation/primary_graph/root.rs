@@ -162,7 +162,8 @@ impl WorthQueryPrimaryGraph {
             .chain(
                 self.layout
                     .workflow_reads()
-                    .map(|indexes| indexes.instances),
+                    .into_iter()
+                    .flat_map(|indexes| [indexes.instances, indexes.transitions]),
             )
             .chain(std::iter::once(
                 self.layout.provider_idempotency().key_index_id,

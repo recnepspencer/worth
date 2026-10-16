@@ -11,7 +11,8 @@ pub(super) fn permission_withheld(cause: &Denial) -> bool {
             matches!(
                 kind,
                 Kind::Refused(
-                    Refusal::PermissionDenied
+                    Refusal::CapabilityAuthorizationMissing
+                        | Refusal::PermissionDenied
                         | Refusal::CapabilityGrantMissing
                         | Refusal::CapabilityExpired
                         | Refusal::PurposeMismatch

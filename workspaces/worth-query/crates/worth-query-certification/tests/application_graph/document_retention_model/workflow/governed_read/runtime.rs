@@ -8,7 +8,20 @@ pub type GovernedRuntime = WorthQueryWorkflowApplicationRuntime<
     RetentionProgramP0,
 >;
 pub fn install() -> GovernedRuntime {
-    retain(host::publish_on_first_program())
+    // Exact fork reads may seed one native index generation, including its catalog
+    // backing. This fixture declares a finite preparation envelope for that shape;
+    // it does not change the native request payer or admit cold population work.
+    let queries =
+        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::bounded(
+            64 * 1024,
+            2_048,
+            usize::MAX,
+            128,
+        )
+        .expect("finite governed read preparation and unchanged result limits");
+    retain(host::publish_on_first_program_with_limits(
+        host::with_query_resources(queries),
+    ))
 }
 pub(super) fn retain(
     application: super::super::super::host::DocumentRetentionRuntime<RetentionProgramP0>,
