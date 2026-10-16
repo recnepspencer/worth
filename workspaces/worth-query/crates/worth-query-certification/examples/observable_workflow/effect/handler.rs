@@ -1,5 +1,14 @@
 //! Business admission and typed emission for the actual archive request.
 use super::*;
+use std::sync::atomic::{AtomicUsize, Ordering};
+static DECISIONS: AtomicUsize = AtomicUsize::new(0);
+static CANDIDATES: AtomicUsize = AtomicUsize::new(0);
+pub(super) fn invocation_counts() -> [usize; 2] {
+    [
+        DECISIONS.load(Ordering::Relaxed),
+        CANDIDATES.load(Ordering::Relaxed),
+    ]
+}
 pub(super) struct ArchiveHandler;
 impl OperationHandler<DocumentRetentionSchema, ArchiveBinding> for ArchiveHandler {
     fn decide(
@@ -10,6 +19,7 @@ impl OperationHandler<DocumentRetentionSchema, ArchiveBinding> for ArchiveHandle
         <ArchiveBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::Decision,
         SetRetentionDenial,
     > {
+        DECISIONS.fetch_add(1, Ordering::Relaxed);
         let target = (|| {
             let document = reader
                 .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())?;
@@ -33,6 +43,7 @@ impl OperationHandler<DocumentRetentionSchema, ArchiveBinding> for ArchiveHandle
         _: <ArchiveBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::Decision,
         writer: &mut CandidateWriter<'_, DocumentRetentionSchema, ArchiveBinding>,
     ) -> HandlerResult<ArchiveRequested, SetRetentionDenial> {
+        CANDIDATES.fetch_add(1, Ordering::Relaxed);
         match writer.emit_external(ArchiveEffect::reference(), input.clone()) {
             Ok(()) => HandlerResult::Completed(ArchiveRequested {
                 retention_days: input.retention_days,

@@ -3184,6 +3184,12 @@ Receiving the declared inbound completion is distinct from corrective recovery
 or permission to retry the external effect. The archive declares no corrective
 aftermath; the caller supplies genuine ingress and leaves settlement to native
 inspection of the original dispatch.
+At this example's real pending seam, `exercise_pending_custody` is an
+example-local assertion phase: close refuses while retaining the owner, a
+cancelled fresh advance returns typed cancellation with that owner, and a legal
+fresh advance still waits before ingress. It checks the committed head and
+actual handler/transport entry counts to reject repeated work. It returns the
+original owner; it is not a framework recovery or authority API.
 Both completion paths accept the original performed operation under fresh admission
 and independently close cleanup:
 
@@ -3227,6 +3233,7 @@ and independently close cleanup:
                         "inspect actual child completion without retrying a failed dispatch",
                     )
                 {
+                    operation = exercise_pending_custody(operation, application, archive);
                     receive(&envelope);
                     ingress_received = true;
                 }
@@ -3255,6 +3262,12 @@ and independently close cleanup:
             }
         }
     };
+    assert_eq!(archive.dispatch_calls(), 1, "one original child dispatch");
+    assert_eq!(
+        crate::effect::handler_invocations(),
+        [1, 1],
+        "one original handler execution"
+    );
     let accepted = request
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
