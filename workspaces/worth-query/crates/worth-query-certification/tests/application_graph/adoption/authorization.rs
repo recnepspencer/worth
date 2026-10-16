@@ -244,6 +244,3 @@ mod lifecycle;
 
 #[path = "authorization/progression_expiry.rs"]
 mod progression_expiry;
-
-#[path = "authorization/checkpoint_affinity.rs"]
-mod checkpoint_affinity;
