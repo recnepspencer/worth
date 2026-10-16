@@ -27,7 +27,7 @@ const MAXIMUM_ENVELOPE: usize = 40 + MAXIMUM_PAYLOAD;
 pub struct ArchiveTransport {
     directory: PathBuf,
     protocol: BoundaryProtocolIdentity,
-    authenticated: Mutex<Option<Vec<u8>>>,
+    authenticated: Mutex<Option<Result<Vec<u8>, String>>>,
 }
 
 impl ArchiveTransport {
@@ -39,12 +39,12 @@ impl ArchiveTransport {
         }
     }
 
-    pub fn envelope(&self) -> Result<Vec<u8>, String> {
+    pub fn envelope(&self) -> Result<Option<Vec<u8>>, String> {
         self.authenticated
             .lock()
             .map_err(|_| "archive lock poisoned")?
             .clone()
-            .ok_or_else(|| "archive has not completed".to_owned())
+            .transpose()
     }
 
     fn dispatch_archive(
@@ -91,7 +91,7 @@ impl ArchiveTransport {
         *self
             .authenticated
             .lock()
-            .map_err(|_| "archive lock poisoned")? = Some(response);
+            .map_err(|_| "archive lock poisoned")? = Some(Ok(response));
         Ok(())
     }
 }
@@ -105,6 +105,10 @@ impl WorthQueryExternalEffectTransport for ArchiveTransport {
             Ok(()) => WorthQueryExternalTransportOutcome::Acknowledged,
             // A failed child response cannot prove that no external write occurred.
             Err(error) => {
+                // A dispatched failure must not look like pre-dispatch absence.
+                if let Ok(mut completion) = self.authenticated.lock() {
+                    *completion = Some(Err(error.clone()));
+                }
                 eprintln!("archive response unavailable: {error}");
                 WorthQueryExternalTransportOutcome::LostResponse
             }
@@ -144,7 +148,8 @@ impl WorthQueryInboundOccurrenceVerifier for ArchiveTransport {
             .authenticated
             .lock()
             .map_err(|_| Denial::SourceUnavailable)?;
-        if stored.as_deref() != Some(envelope) {
+        let authenticated = stored.as_ref().and_then(|response| response.as_ref().ok());
+        if authenticated.map(Vec::as_slice) != Some(envelope) {
             return Err(Denial::AuthenticationFailed);
         }
         let issued = u64::from_be_bytes(

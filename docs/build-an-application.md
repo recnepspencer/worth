@@ -3175,13 +3175,17 @@ The archive transport launches this same executable as a local OS child and
 writes the original payload through owned pipes to an actual file. Its installed
 verifier authenticates that bounded local channel. This is a local producer,
 not a remote cryptographic service or durable crash-recovery demonstration.
-Acknowledgement leaves the dispatch pending. The caller keeps the returned
-owner, receives genuine ingress, advances the same owner, accepts its original
-performed operation, and independently closes cleanup:
+An advance can return a continuing owner before dispatch or synchronous completion.
+The caller drives the same original owner while the transport has no child result.
+As soon as authenticated child output exists, it admits genuine ingress through
+the installed verifier before any further recovery advance. Transport failure is
+an error, not an instruction to retry a possibly performed external effect.
+Both completion paths accept the original performed operation under fresh admission
+and independently close cleanup:
 
 <!-- compiled: observable_operation.rs -->
 ```rust
-    let operation = request
+    let mut operation = request
         .mutate(crate::effect::ArchiveIntent {
             input: crate::journey::input(),
         })
@@ -3194,31 +3198,15 @@ performed operation, and independently closes cleanup:
             application.program_runtime(),
         )
         .unwrap_or_else(|_| panic!("installed archive action"));
-    let operation = match operation.advance(&request) {
-        WorthQueryWorkflowOperationAdvance::Progress(operation) => operation,
-        _ => panic!("acknowledgement cannot settle the original dispatch"),
+    let receive = |envelope: &[u8]| {
+        application
+            .runtime()
+            .inbound_occurrences()
+            .receive(verifier, envelope, &scope)
+            .execute()
+            .expect("native provenance admission of the real completion");
     };
-    let (mut operation, cause) = operation
-        .close(&request)
-        .err()
-        .expect("DispatchPending retains original native owner");
-    assert!(matches!(
-        cause,
-        WorthQueryOperationCloseDenial::NativeObligationRetained
-    ));
-    let waiting = crate::journey::advance(application, instance, &[81, 82]);
-    assert!(
-        matches!(waiting.stop(), WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingOperation(need)) if need.node_path() == "archive")
-    );
-    let envelope = archive
-        .envelope()
-        .expect("actual child file write and authenticated pipe completion");
-    application
-        .runtime()
-        .inbound_occurrences()
-        .receive(verifier, &envelope, &scope)
-        .execute()
-        .expect("native provenance admission of the real completion");
+    let mut ingress_received = false;
     let completed = loop {
         match operation.advance(
             &application
@@ -3226,15 +3214,40 @@ performed operation, and independently closes cleanup:
                 .request(&actor, &scope)
                 .on_branch(instance.branch()),
         ) {
-            WorthQueryWorkflowOperationAdvance::Progress(next) => operation = next,
-            WorthQueryWorkflowOperationAdvance::Completed(done) => break done,
+            WorthQueryWorkflowOperationAdvance::Progress(next) => {
+                operation = next;
+                // Progress can precede dispatch. Actual child output, not this
+                // variant, determines when ingress must precede further recovery.
+                if !ingress_received {
+                    if let Some(envelope) = archive.envelope().expect(
+                        "inspect actual child completion without retrying a failed dispatch",
+                    ) {
+                        receive(&envelope);
+                        ingress_received = true;
+                    }
+                }
+            }
+            WorthQueryWorkflowOperationAdvance::Completed(done) => {
+                if !ingress_received {
+                    let envelope = archive
+                        .envelope()
+                        .expect("inspect actual synchronous child completion")
+                        .expect("native completion must retain genuine authenticated child output");
+                    receive(&envelope);
+                }
+                break done;
+            }
             WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
                 let _original_owner = operation;
-                panic!("native settlement refused with original custody: {denial:?}");
+                panic!("archive advance refused with original custody: {denial:?}");
             }
             WorthQueryWorkflowOperationAdvance::Terminal(terminal) => {
-                let _original_custody = terminal;
-                panic!("native settlement stopped terminally");
+                panic!(
+                    "archive terminal: source={:?}, recovery={:?}, abort={:?}",
+                    terminal.denial(),
+                    terminal.recovery_denial(),
+                    terminal.original_abort()
+                );
             }
         }
     };
@@ -3261,7 +3274,9 @@ performed operation, and independently closes cleanup:
 
 A refused advance returns its original owner; retain it before deciding whether
 to retry with a fresh request. `Completed` is not permission to abandon native
-cleanup. In this example close refuses `NativeObligationRetained` before ingress.
+cleanup. Close can refuse `NativeObligationRetained` while dispatch custody is
+still retained; synchronous completion does not promise that pending posture.
+This example waits until native ingress and acceptance before closing either path.
 After settlement the caller advances through `AwaitInbound` to the terminal and
 checks that exactly one file contains the original identity and retention.
 [Operations and ownership](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations)
