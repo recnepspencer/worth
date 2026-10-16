@@ -47,9 +47,10 @@ impl PlatformPulseApplicationRuntime {
             UiHostProtocolNegotiation::Compatible(agreement) => agreement,
             UiHostProtocolNegotiation::Incompatible(_) => panic!("current protocol must negotiate"),
         };
-        let first = UiHostObservationSequence::new(10_001);
-        let pressed = UiHostObservationSequence::new(10_002);
-        let released = UiHostObservationSequence::new(10_003);
+        // This fixture's first input drain begins at the protocol's first sequence.
+        let first = UiHostObservationSequence::new(1);
+        let pressed = UiHostObservationSequence::new(2);
+        let released = UiHostObservationSequence::new(3);
         let key = |sequence: UiHostObservationSequence, transition: UiHostKeyTransition| {
             UiHostObservationReport::new(
                 sequence,
