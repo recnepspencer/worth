@@ -9,6 +9,8 @@ where
 {
     demand: Demand,
     handle: Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>>,
+    _retained_handle: Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>>,
+    continuation_complete: bool,
     settled: Option<(
         WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>,
         Arc<WorthQuerySettledProgramOutput<Schema, Program, Demand>>,
@@ -198,7 +200,8 @@ where
                 .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
             self.work = ProgramOutputTraversalWork::discovered(result.rows().len(), demands.len());
             self.nodes = Some(demands.into_iter().map(|demand| EdgeNode {
-                demand, handle: None, settled: None, continuation: None, dependencies: None,
+                demand, handle: None, _retained_handle: None, continuation_complete: false,
+                settled: None, continuation: None, dependencies: None,
             }).collect());
         }
         if self.dependencies.is_none() {
@@ -223,7 +226,9 @@ where
                     WorthQueryApplicationProgramDemandProgress::Pending => continue,
                     WorthQueryApplicationProgramDemandProgress::Settled { settlement, authority } => {
                         node.settled = Some((settlement, Arc::new(authority)));
-                        node.handle = None;
+                        // Descendants and later siblings can still consume this
+                        // exact posting. Retain its real admitted interest.
+                        node._retained_handle = node.handle.take();
                     }
                 }
             }
@@ -234,19 +239,20 @@ where
             if let Some((settlement, _)) = node.settled.take() {
                 self.outputs.push(ProgramOutputRecord::new::<Schema, Connection>(node.demand.clone(), settlement));
             }
-            if let Some(continuation) = &mut node.continuation {
+            if !node.continuation_complete {
+                let Some(continuation) = &mut node.continuation else { continue; };
                 match continuation.advance(phase, application, request)? {
                     ProgramOutputContinuationProgress::Pending => {},
                     ProgramOutputContinuationProgress::Settled { outputs, work, dependencies } => {
                         node.dependencies = dependencies;
                         self.outputs.extend(outputs);
                         self.work.include(work);
-                        node.continuation = None;
+                        node.continuation_complete = true;
                     }
                 }
             }
         }
-        if nodes.iter().any(|node| node.handle.is_some() || node.settled.is_some() || node.continuation.is_some()) {
+        if nodes.iter().any(|node| node.handle.is_some() || node.settled.is_some() || !node.continuation_complete) {
             return Ok(ProgramOutputContinuationProgress::Pending);
         }
         let dependencies = request.at(&self.basis).combine_query_dependencies(phase,

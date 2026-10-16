@@ -261,7 +261,8 @@ where
             if denial.kind() == worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded {
                 crate::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded
             } else { crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial) }))?;
-        if let Some(root) = &mut self.root {
+        if self.root_settlement.is_none() {
+            let root = self.root.as_mut().expect("an unsettled root retains its admitted demand");
             match root
                 .advance(phase, application, request)
                 .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?
@@ -275,7 +276,9 @@ where
                 } => {
                     self.root_settlement = Some(settlement);
                     self.pending_root_authority = Some(std::sync::Arc::new(authority));
-                    self.root = None;
+                    // Keep the actual required interest until every descendant
+                    // has sealed its consumed-output claims. A native receipt
+                    // alone does not keep its registry settlement posting live.
                 }
             }
         }
@@ -315,6 +318,7 @@ where
                 self.complete = true;
                 self.source_preparation = None;
                 self.continuation = None;
+                self.root = None;
                 let root = self
                     .root_settlement
                     .take()

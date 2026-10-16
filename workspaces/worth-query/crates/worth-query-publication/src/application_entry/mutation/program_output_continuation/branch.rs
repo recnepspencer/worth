@@ -5,8 +5,9 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    left: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
-    right: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
+    left: Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>,
+    right: Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>,
+    complete: [bool; 2],
     outputs: Vec<ProgramOutputRecord>,
     dependencies: [Option<WorthQueryRetainedQueryDependencies>; 2],
     basis: crate::application_entry::WorthQueryApplicationReadObservation,
@@ -50,7 +51,7 @@ where
         WorthQueryRequiredOutputPreparationDenial,
     > {
         Ok(Box::new(BranchContinuation {
-            left: Some(Left::start(
+            left: Left::start(
                 application,
                 parent_demand,
                 parent_settlement,
@@ -58,8 +59,8 @@ where
                 minimum_observation,
                 request,
                 controls,
-            )?),
-            right: Some(Right::start(
+            )?,
+            right: Right::start(
                 application,
                 parent_demand,
                 parent_settlement,
@@ -67,7 +68,8 @@ where
                 minimum_observation,
                 request,
                 controls,
-            )?),
+            )?,
+            complete: [false, false],
             outputs: Vec::new(),
             dependencies: [None, None],
             basis: minimum_observation.retained_clone(),
@@ -91,22 +93,24 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         for (index, branch) in [&mut self.left, &mut self.right].into_iter().enumerate() {
-            let Some(active) = branch else {
+            if self.complete[index] {
                 continue;
-            };
+            }
             if let ProgramOutputContinuationProgress::Settled {
                 outputs,
                 work,
                 dependencies,
-            } = active.advance(phase, application, request)?
+            } = branch.advance(phase, application, request)?
             {
                 self.dependencies[index] = dependencies;
                 self.outputs.extend(outputs);
                 self.work.include(work);
-                *branch = None;
+                // A finished sibling can still supply an exact consumed
+                // predecessor to the unfinished branch. Keep its owners.
+                self.complete[index] = true;
             }
         }
-        if self.left.is_some() || self.right.is_some() {
+        if !self.complete.iter().all(|complete| *complete) {
             return Ok(ProgramOutputContinuationProgress::Pending);
         }
         let dependencies = if self.dependencies.iter().all(Option::is_none) {

@@ -17,6 +17,7 @@ mod readiness;
 mod reopened_consumer;
 mod required_queue;
 mod restored_currentness;
+mod retained_predecessors;
 mod ring_world;
 mod source_world;
 mod stable_alias_currentness;
