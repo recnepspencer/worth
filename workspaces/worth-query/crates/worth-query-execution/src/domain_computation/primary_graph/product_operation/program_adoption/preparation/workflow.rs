@@ -35,6 +35,14 @@ pub(super) fn workflow_read_denial(
     denial: WorkflowAdoptionReadDenial,
 ) -> WorthQueryBranchAdoptionPreparationDenial {
     match denial {
+        WorkflowAdoptionReadDenial::Preparation(cause) => match cause {
+            worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) =>
+                workflow_read_denial(WorkflowAdoptionReadDenial::ReadExecution(cause)),
+            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+            | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } =>
+                WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryWorkLimit,
+            cause => WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryPreparation(cause),
+        },
         WorkflowAdoptionReadDenial::ReadExecution(cause) => {
             WorthQueryBranchAdoptionPreparationDenial::ReadExecution(
                 crate::facade::primary_graph::relational_execution_kind(cause, None),
@@ -43,7 +51,8 @@ pub(super) fn workflow_read_denial(
         WorkflowAdoptionReadDenial::WorkLimitExceeded { .. } => {
             WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryWorkLimit
         }
-        WorkflowAdoptionReadDenial::UnreadableEntity { .. }
+        WorkflowAdoptionReadDenial::SelectedIndexUnavailable
+        | WorkflowAdoptionReadDenial::UnreadableEntity { .. }
         | WorkflowAdoptionReadDenial::UnreadableRelationSlot { .. } => {
             WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryUnavailable
         }

@@ -14,6 +14,7 @@ mod staging;
 mod truth;
 
 mod request;
+mod selected_population;
 pub(in crate::domain_computation::primary_graph) use choices::AdmittedWorkflowDispositions;
 pub(in crate::domain_computation::primary_graph) use coverage::WorkflowVocabularyCoverageRegistry;
 pub(in crate::domain_computation::primary_graph) use inventory::{

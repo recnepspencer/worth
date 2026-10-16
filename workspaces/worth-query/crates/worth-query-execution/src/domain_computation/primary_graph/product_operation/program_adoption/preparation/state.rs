@@ -164,8 +164,13 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             source: &source,
             target,
             maximum_work_units: maximum_selection_work.saturating_sub(selection.work_units),
+            maximum_preparation_bytes: application
+                .runtime
+                .application_query_resource_profile()
+                .maximum_inline_index_bytes()
+                .get() as u64,
         };
-        let inventory = inventory_workflows(execution, view, &workflow_request)
+        let inventory = inventory_workflows(execution, runtime, basis, view, &workflow_request)
             .map_err(workflow_read_denial)?;
         Ok((selection, Some(inventory)))
     })?;

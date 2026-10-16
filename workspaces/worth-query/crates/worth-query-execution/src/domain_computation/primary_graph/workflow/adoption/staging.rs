@@ -64,12 +64,12 @@ pub(in crate::domain_computation::primary_graph) fn stage_workflow_dispositions(
                 ));
             }
             Some(WorthQueryWorkflowInstanceDisposition::Cancel) => {
-                intents.push(update_field(
-                    occurrence.entity_id(),
-                    &layout.instance.state,
+                // Native merging admits one intent per existing record. State
+                // and the admitted end actor are one atomic instance update.
+                let mut actor_fields = BTreeMap::from([(
+                    layout.instance.state.clone(),
                     AspectValue::UInt64(WorkflowInstanceState::Cancelled.persisted_tag()),
-                ));
-                let mut actor_fields = BTreeMap::new();
+                )]);
                 advancer.append_fields(&layout.instance.end_advancer, &mut actor_fields);
                 intents.push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
                     UpdateEntityFieldsIntent {

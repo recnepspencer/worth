@@ -56,6 +56,22 @@ impl std::fmt::Debug for PreparedEntityFieldLookup {
 }
 
 impl PreparedEntityFieldLookup {
+    /// Tests the whole pinned field population without copying keys or rows.
+    /// The caller admits both fixed metadata reads on its existing allowance.
+    pub fn population_is_empty_with_admission<E>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        mut admission: impl FnMut() -> Result<(), E>,
+    ) -> Result<bool, Stop<E>> {
+        super::prepared_lookup_admission::admit(execution, self.index_id(), &mut admission)?;
+        let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
+            unreachable!("prepared generation is an entity field index")
+        };
+        let empty = entries.is_empty();
+        super::prepared_lookup_admission::admit(execution, self.index_id(), &mut admission)?;
+        Ok(empty)
+    }
+
     fn performance_access(&self) -> crate::performance::PerformanceAccess<'_> {
         crate::performance::PerformanceAccess::from_instrumentation(&self.instrumentation)
     }
