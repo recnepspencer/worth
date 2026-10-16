@@ -133,3 +133,18 @@ fn completed_source(owner: &WorthUiStatusSourceOwner, input: WorthUiScalarProjec
     assert!(matches!(result, Ok(Step::Ready)), "actual native source completes with retained commit evidence");
     (original, live)
 }
+
+#[test]
+fn shutdown_close_cannot_discard_actual_completed_delivery_custody() {
+    let owner = WorthUiStatusSourceOwner::install().unwrap();
+    let (original, live) = completed_source(&owner, record("SAVED", 1));
+    let original = match original.close_without_commit(&request_scope()) {
+        Err(original) => original,
+        Ok(_) => panic!("actual completed native custody still owes delivery"),
+    };
+    assert!(matches!(original.stop(), Some(WorthUiStatusMutationStop::PublicationPending)));
+    assert_eq!(owner.read_status().unwrap().value().status, "SAVED");
+    let _close = live.close();
+    let published = require_source(original.advance(&request_scope(), history()).expect("ordinary continuation discloses the same retained commit and closes real custody"));
+    assert_eq!(published.value().status, "SAVED");
+}

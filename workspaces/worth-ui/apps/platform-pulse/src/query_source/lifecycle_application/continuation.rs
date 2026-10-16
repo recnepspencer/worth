@@ -19,6 +19,7 @@ pub(crate) struct PlatformPulseQueryMutation {
 }
 impl PlatformPulseQueryMutation {
     pub(super) fn new(operation: WorthUiStatusMutation, purpose: PlatformPulseQueryMutationPurpose) -> Self { Self { operation, purpose } }
+    pub(crate) fn purpose(&self) -> &PlatformPulseQueryMutationPurpose { &self.purpose }
     pub(crate) fn stop(&self) -> Option<&WorthUiStatusMutationStop> { self.operation.stop() }
     pub(crate) fn advance(self, scope: &WorthQueryRequestScope, history: NonZeroUsize) -> Result<(PlatformPulseQueryMutationPurpose, WorthUiStatusMutationResult), Self> {
         match self.operation.advance(scope, history) {
@@ -26,8 +27,8 @@ impl PlatformPulseQueryMutation {
             Err(operation) => Err(Self { operation, purpose: self.purpose }),
         }
     }
-    pub(crate) fn close(self, scope: &WorthQueryRequestScope) -> Result<WorthUiStatusMutationClose, Self> {
-        match self.operation.close(scope) {
+    pub(super) fn close_without_commit(self, scope: &WorthQueryRequestScope) -> Result<WorthUiStatusMutationClose, Self> {
+        match self.operation.close_without_commit(scope) {
             Ok(closed) => Ok(closed),
             Err(operation) => Err(Self { operation, purpose: self.purpose }),
         }

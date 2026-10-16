@@ -151,7 +151,7 @@ fn explicit_absolute_installation_reaches_real_application_preparation() {
     drop(application);
     assert!(matches!(
         query_lifecycle.close(),
-        Err(crate::query_source::PlatformPulseQueryLifecycleDenial::OwnerNotLive)
+        Err((_, crate::query_source::PlatformPulseQueryLifecycleDenial::OwnerNotLive))
     ));
     query_watcher
         .shutdown()
