@@ -177,11 +177,15 @@ fn a_performed_effect_carries_as_history_the_successor_never_repeats() {
             worth_query_host::facade::primary_graph::WorthQueryWorkflowDefinitionDisposition::Carry,
         )
         .instance(&successor, WorthQueryWorkflowInstanceDisposition::Cancel);
-    assert!(matches!(crate::document_retention_model::workflow::prepare_second_program_adoption(
-        &application, instance.branch(), Some(cancel)),
+    let cancellation = crate::document_retention_model::workflow::prepare_second_program_adoption(
+        &application,
+        instance.branch(),
+        Some(cancel),
+    );
+    assert!(matches!(&cancellation,
         Err(worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
             worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))),
-        "actual inherited performed effect forbids cancellation at the native safety owner");
+        "actual inherited performed effect forbids cancellation at the native safety owner; actual native refusal: {:?}", cancellation.as_ref().err());
 
     match advance_instance(&application, successor.clone(), 87_124) {
         Ok(WorkflowProgressOutcome::Completed(performed)) => {
