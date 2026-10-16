@@ -32,38 +32,37 @@ impl PlatformPulseApplicationRuntime {
     }
 
     pub(super) fn poll_query(&mut self) {
-        while self.terminal.is_running() {
-            let Some(event) = self
-                .query_watch
-                .as_ref()
-                .and_then(crate::query_source::PlatformPulseExternalValueWatch::try_next)
-            else {
-                return;
-            };
-            match event {
-                crate::query_source::PlatformPulseExternalValueEvent::Record(record) => {
-                    let observation = match self
-                        .query_lifecycle
-                        .as_mut()
-                        .expect("prepared Pulse retains its Query lifecycle")
-                        .advance(record)
-                    {
-                        Ok(observation) => observation,
-                        Err(denial) => {
-                            self.fail(PlatformPulseTerminalError::QueryLifecycle(denial), Ok(()));
-                            return;
-                        }
-                    };
-                    self.publish_query_observation(observation, false);
-                }
-                crate::query_source::PlatformPulseExternalValueEvent::Failed(denial) => {
-                    self.fail(PlatformPulseTerminalError::QueryWatch(denial), Ok(()));
-                }
-            }
+        if self.query_lifecycle.as_ref().is_some_and(|query| query.has_pending_mutation()) {
+            if !self.resume_query_mutation() { return; }
+        }
+        if self.pending_query_cancellation.is_some() || !self.query_lifecycle.as_ref().is_some_and(|query| query.accepts_command()) { return; }
+        let Some(event) = self.query_watch.as_ref().and_then(crate::query_source::PlatformPulseExternalValueWatch::try_next) else { return; };
+        match event {
+            crate::query_source::PlatformPulseExternalValueEvent::Record(record) => {
+                self.accept_query_record(record);
+            },
+            crate::query_source::PlatformPulseExternalValueEvent::Failed(denial) => self.fail(PlatformPulseTerminalError::QueryWatch(denial), Ok(())),
         }
     }
 
-    fn publish_query_observation(
+    pub(super) fn accept_query_record(&mut self, record: worth_ui::facade::query_binding::WorthUiScalarProjectionSourceRecord) {
+        #[cfg(test)]
+        if let Some(probe) = &self.query_probe { probe.borrow_mut().attempts += 1; }
+        match self.query_lifecycle.as_mut().expect("prepared Pulse retains its Query lifecycle").advance(record) {
+            Ok(observation) => self.publish_query_observation(observation, false),
+            Err(crate::query_source::PlatformPulseQueryLifecycleDenial::MutationPending) => {
+                #[cfg(test)]
+                if let Some(probe) = &self.query_probe
+                    && self.query_lifecycle.as_ref().is_some_and(|query| query.authentication_cancelled_for_test())
+                {
+                    probe.borrow_mut().cancelled_stops += 1;
+                }
+            },
+            Err(denial) => self.fail(PlatformPulseTerminalError::QueryLifecycle(denial), Ok(())),
+        }
+    }
+
+    pub(super) fn publish_query_observation(
         &mut self,
         observation: worth_ui::facade::query_binding::UiProjectionObservation,
         first: bool,
@@ -78,6 +77,15 @@ impl PlatformPulseApplicationRuntime {
                 return;
             }
         };
+        #[cfg(test)]
+        if let Some(probe) = self.query_probe.clone() {
+            let worth_ui::facade::query_binding::UiProjectionObservation::ApplicationScalar(scalar) = &observation else { panic!("real scalar observation expected"); };
+            let mut recording = probe.borrow_mut();
+            recording.issued.push(evidence.clone());
+            recording.basis_versions.push(scalar.fact().query_receipt().inspect().basis().version());
+            recording.revisions.push(scalar.fact().value().revision);
+            drop(recording);
+        }
         let Some(mut shell) = self.shell.take() else {
             return;
         };
@@ -173,7 +181,11 @@ impl PlatformPulseApplicationRuntime {
         mounted: &UiMountedFramePublicationReceipt,
     ) -> bool {
         match self.publisher.query_projection_published(evidence, mounted) {
-            Ok(()) => true,
+            Ok(()) => {
+                #[cfg(test)]
+                if let Some(probe) = &self.query_probe { probe.borrow_mut().presented.push(evidence.clone()); }
+                true
+            },
             Err(error) => {
                 self.fail(
                     PlatformPulseTerminalError::ObservationPublication,
@@ -189,7 +201,7 @@ impl PlatformPulseApplicationRuntime {
         shell: &mut WorthUiNativeApplicationShell,
         evidence: &PlatformPulseQueryProjectionEvidence,
     ) -> Result<(), crate::visual_identity_execution::PlatformPulseVisualExecutionDenial> {
-        if evidence.posture() != PlatformPulseQueryProjectionPosture::Current {
+        if self.external_close_requested || evidence.posture() != PlatformPulseQueryProjectionPosture::Current {
             return Ok(());
         }
         self.visual_identity

@@ -129,6 +129,8 @@ impl PlatformPulseApplicationRuntime {
             );
             return false;
         }
+        #[cfg(test)]
+        if let Some(probe) = &self.query_probe { probe.borrow_mut().intent_outcomes += 1; }
         true
     }
 

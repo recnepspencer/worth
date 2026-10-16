@@ -12,6 +12,7 @@ pub(crate) enum PlatformPulseQueryActionOutcome {
         active_query_source_revision: u64,
         submitted_query_source_revision: u64,
     },
+    Pending,
     Indeterminate(PlatformPulseQueryActionIndeterminate),
 }
 
@@ -19,7 +20,6 @@ pub(crate) enum PlatformPulseQueryActionOutcome {
 pub(crate) enum PlatformPulseQueryActionIndeterminate {
     CurrentRevisionLost,
     DeniedActionCommitted,
-    MutationPending,
 }
 
 impl std::fmt::Display for PlatformPulseQueryActionIndeterminate {
@@ -31,7 +31,6 @@ impl std::fmt::Display for PlatformPulseQueryActionIndeterminate {
             Self::DeniedActionCommitted => {
                 formatter.write_str("the revision-mismatched action unexpectedly committed")
             }
-            Self::MutationPending => formatter.write_str("original Query operation is retained for fresh-request continuation"),
         }
     }
 }

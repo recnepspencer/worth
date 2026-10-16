@@ -4,6 +4,17 @@ use super::super::{
     PlatformPulseApplicationRuntime, PlatformPulsePendingQueryAction, PlatformPulseTerminalError,
 };
 
+pub(in crate::native_application) struct PlatformPulsePendingQueryRequest {
+    request: worth_ui_platform_pulse::intent::PlatformPulseActionPortRequest,
+    evidence_reference: worth_ui::facade::inspection::UiIntentEvidenceReference,
+}
+impl PlatformPulsePendingQueryRequest {
+    pub(in crate::native_application) fn before_effect(&self) -> bool { self.request.query_denial_requested() }
+    pub(in crate::native_application) fn cancellation_requested(&self) -> bool { self.request.cancellation_requested() }
+}
+
+mod settlement;
+
 impl PlatformPulseApplicationRuntime {
     pub(in crate::native_application) fn poll_intent_action_port(&mut self) -> usize {
         let received_before = self
@@ -18,6 +29,9 @@ impl PlatformPulseApplicationRuntime {
 
     fn poll_intent_action_port_requests(&mut self) {
         loop {
+            if self.pending_query_request.is_some() || self.pending_query_cancellation.is_some() || !self.query_lifecycle.as_ref().is_some_and(|query| query.accepts_command()) {
+                return;
+            }
             let request = self
                 .intent_action_owner
                 .as_ref()
@@ -51,6 +65,8 @@ impl PlatformPulseApplicationRuntime {
                 }
                 continue;
             }
+            #[cfg(test)]
+            if let Some(probe) = &self.query_probe { probe.borrow_mut().attempts += 1; }
             let query = self
                 .query_lifecycle
                 .as_mut()
@@ -76,77 +92,8 @@ impl PlatformPulseApplicationRuntime {
                     reference.idempotency_lineage(),
                 )
             };
-            match action {
-                Ok(crate::query_source::PlatformPulseQueryActionOutcome::Executed {
-                    evidence,
-                    observation,
-                }) => self.complete_query_action(
-                    request,
-                    reference,
-                    evidence_reference,
-                    action_input_revision,
-                    evidence,
-                    observation,
-                ),
-                Ok(crate::query_source::PlatformPulseQueryActionOutcome::Denied {
-                    denial,
-                    active_query_source_revision,
-                    submitted_query_source_revision,
-                }) => {
-                    let audience_denial = worth_ui_platform_pulse::observation_contract::
-                        PlatformPulseQueryActionPreconditionDenial::from_projection(denial);
-                    if self
-                        .pending_query_denial_story
-                        .replace(audience_denial)
-                        .is_some()
-                    {
-                        let _ = request.fail_before_effect();
-                        self.fail_intent_settlement(
-                            "query-denial story already awaited its terminal posture",
-                        );
-                        return;
-                    }
-                    let report = PlatformPulseQueryActionObservation::denied(
-                        reference,
-                        action_input_revision,
-                        denial,
-                        active_query_source_revision,
-                        submitted_query_source_revision,
-                    );
-                    if !request.reject_before_effect() {
-                        self.pending_query_denial_story = None;
-                        self.fail_intent_settlement("denied product request lost its receiver");
-                        return;
-                    }
-                    if !self.publish_query_action(report) {
-                        return;
-                    }
-                }
-                Ok(crate::query_source::PlatformPulseQueryActionOutcome::Indeterminate(cause)) => {
-                    let report = PlatformPulseQueryActionObservation::indeterminate(
-                        reference,
-                        action_input_revision,
-                        cause.to_string(),
-                    );
-                    if !request.settle_indeterminate() {
-                        self.fail_intent_settlement(
-                            "indeterminate product request lost its receiver",
-                        );
-                        return;
-                    }
-                    if !self.publish_query_action(report) {
-                        return;
-                    }
-                }
-                Err(denial) => {
-                    let _ = request.fail_before_effect();
-                    let observation = self.publisher.intent_preparation_failure();
-                    self.fail(
-                        PlatformPulseTerminalError::QueryLifecycle(denial),
-                        observation,
-                    );
-                    return;
-                }
+            if !self.settle_query_action(PlatformPulsePendingQueryRequest { request, evidence_reference }, action) {
+                return;
             }
             if self.terminal.is_stopped() {
                 return;
@@ -154,54 +101,4 @@ impl PlatformPulseApplicationRuntime {
         }
     }
 
-    fn complete_query_action(
-        &mut self,
-        request: worth_ui_platform_pulse::intent::PlatformPulseActionPortRequest,
-        reference: worth_ui_platform_pulse::intent::PlatformPulseActionAttemptReference,
-        evidence_reference: worth_ui::facade::inspection::UiIntentEvidenceReference,
-        action_input_revision: worth_ui_platform_pulse::intent::PlatformPulseActionInputRevision,
-        evidence: worth_ui::facade::query_binding::WorthUiScalarProjectionActionEvidence,
-        observation: worth_ui::facade::query_binding::UiProjectionObservation,
-    ) {
-        let report = PlatformPulseQueryActionObservation::executed(
-            reference,
-            action_input_revision,
-            &evidence,
-        );
-        let projection = self.publisher.query_projection_issued(&observation);
-        if !request.complete(observation) {
-            self.fail_intent_settlement("completed product request lost its receiver");
-            return;
-        }
-        let projection = match projection {
-            Ok(projection) => projection,
-            Err(error) => {
-                self.fail(
-                    PlatformPulseTerminalError::ObservationPublication,
-                    Err(error),
-                );
-                return;
-            }
-        };
-        self.pending_query_actions
-            .push(PlatformPulsePendingQueryAction {
-                reference,
-                evidence_reference,
-                projection,
-            });
-        self.publish_query_action(report);
-    }
-
-    fn publish_query_action(&mut self, observation: PlatformPulseQueryActionObservation) -> bool {
-        match self.publisher.query_action(observation) {
-            Ok(()) => true,
-            Err(error) => {
-                self.fail(
-                    PlatformPulseTerminalError::ObservationPublication,
-                    Err(error),
-                );
-                false
-            }
-        }
-    }
 }

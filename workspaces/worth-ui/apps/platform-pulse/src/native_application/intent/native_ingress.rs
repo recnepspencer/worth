@@ -10,6 +10,8 @@ use super::super::PlatformPulseApplicationRuntime;
 const MAX_PENDING_NATIVE_PUBLICATIONS: usize = 64;
 
 mod publication_queue;
+#[cfg(test)]
+mod query_continuation_fixture;
 pub(in crate::native_application) use publication_queue::PlatformPulsePendingNativePublication;
 
 pub(in crate::native_application) struct PlatformPulsePreparedIntentPosture {
@@ -161,8 +163,7 @@ impl PlatformPulseApplicationRuntime {
             }
             WorthUiNativeIntentTransition::Stopped(stopped) => {
                 let (stop, posture) = stopped.into_parts();
-                if posture.is_none() {
-                    if let Some(observation) = unrouted_observation(&stop) {
+                if posture.is_none() && let Some(observation) = unrouted_observation(&stop) {
                         if let Err(error) = self.publisher.intent_routing_stopped(observation) {
                             self.fail(
                                 super::super::PlatformPulseTerminalError::ObservationPublication,
@@ -170,7 +171,6 @@ impl PlatformPulseApplicationRuntime {
                             );
                         }
                         return None;
-                    }
                 }
                 let Some(posture) = posture else {
                     self.fail_intent_settlement(format!(
@@ -264,7 +264,8 @@ impl PlatformPulseApplicationRuntime {
             );
             return false;
         }
-        if let Err(denial) = self.visual_identity.refresh_after_presentation_replacement(
+        if !self.external_close_requested
+            && let Err(denial) = self.visual_identity.refresh_after_presentation_replacement(
             shell,
             self.presentation_tick,
             std::time::Instant::now(),
@@ -287,13 +288,15 @@ impl PlatformPulseApplicationRuntime {
                 );
                 return false;
             }
-        }
-        if refresh_product_story {
-            if let Some(denial) = self.pending_query_denial_story.take() {
-                if !self.publish_query_denial_story(shell, denial) {
-                    return false;
-                }
+            if self.pending_query_cancellation.is_some_and(|reference| reference.matches_execution(attempt, idempotency)) {
+                self.pending_query_cancellation = None;
             }
+        }
+        if refresh_product_story
+            && let Some(denial) = self.pending_query_denial_story.take()
+            && !self.publish_query_denial_story(shell, denial)
+        {
+            return false;
         }
         true
     }

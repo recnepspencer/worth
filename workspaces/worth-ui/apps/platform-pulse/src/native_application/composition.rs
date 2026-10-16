@@ -9,6 +9,8 @@ pub(crate) struct PlatformPulseApplication {
     launch: crate::launch_configuration::AdmittedPlatformPulseLaunchConfiguration,
     publisher: crate::lifecycle_observation_publication::PlatformPulseObservationPublisher,
     visual_identity_journey: bool,
+    #[cfg(test)]
+    query_probe: Option<std::rc::Rc<std::cell::RefCell<super::QueryContinuationForTest>>>,
 }
 
 impl PlatformPulseApplication {
@@ -22,6 +24,8 @@ impl PlatformPulseApplication {
             launch,
             publisher,
             visual_identity_journey: PlatformPulseVisualIdentityExecution::requested_by_process(),
+            #[cfg(test)]
+            query_probe: None,
         }
     }
 
@@ -35,6 +39,8 @@ impl PlatformPulseApplication {
             launch,
             publisher,
             visual_identity_journey: false,
+            #[cfg(test)]
+            query_probe: None,
         }
     }
 }
@@ -59,6 +65,15 @@ impl worth_ui_native_platform::UiNativeApplicationDefinition for PlatformPulseAp
             self.publisher,
             PlatformPulseVisualIdentityExecution::new(self.visual_identity_journey),
         );
+        #[cfg(test)]
+        let runtime = {
+            let mut runtime = runtime;
+            if self.query_probe.is_some() {
+                runtime.query_lifecycle.as_mut().expect("prepared Query owner").cancel_next_attempt_for_test();
+            }
+            runtime.query_probe = self.query_probe;
+            runtime
+        };
         let Some(presentation_async) = crate::query_source::install_native_presentation_async()
         else {
             let _ = runtime.publisher.query_preparation_failure();
@@ -116,11 +131,16 @@ impl super::PlatformPulseApplicationRuntime {
             shell: None,
             source_watch: Some(PlatformPulseSourceWatch::spawn(watcher)),
             query_watch: Some(query_watcher),
+            query_readiness: None,
             query_lifecycle: Some(query_lifecycle),
             intent_watch: Some(intent_watcher),
             intent_gate: Some(intent_gate),
             intent_action_owner: Some(intent_action_owner),
             pending_query_actions: Vec::new(),
+            pending_query_request: None,
+            pending_query_cancellation: None,
+            #[cfg(test)]
+            query_probe: None,
             pending_query_denial_story: None,
             pending_frame_presentation: None,
             presentation_retry: None,
@@ -154,3 +174,6 @@ fn publish_preparation_failure(
         );
     }
 }
+
+#[cfg(test)]
+mod query_continuation_tests;

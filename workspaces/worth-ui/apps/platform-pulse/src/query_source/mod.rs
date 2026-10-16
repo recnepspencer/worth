@@ -13,8 +13,7 @@ pub(crate) use installation::{
     PlatformPulseQueryInstallationDenial,
 };
 pub(crate) use lifecycle_application::{
-    fresh_close_scope,
     PlatformPulseQueryActionOutcome, PlatformPulseQueryLifecycle,
     PlatformPulseQueryLifecycleDenial, PlatformPulseQueryShutdownReceipt,
-    PlatformPulseQueryContinuation, PlatformPulseQueryMutation, PlatformPulseQueryMutationPurpose,
+    PlatformPulseQueryContinuation,
 };

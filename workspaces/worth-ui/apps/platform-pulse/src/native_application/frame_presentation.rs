@@ -47,8 +47,7 @@ impl PlatformPulseApplicationRuntime {
     /// the host kept the retained presentation on only needs a frame; a
     /// reconstruction the host owes is presented as one directly.
     pub(super) fn present_for_surface(&mut self, surface: Option<UiNativeSurfaceSuccession>) {
-        if self.external_close_requested
-            || self.pending_frame_presentation.is_some()
+        if self.pending_frame_presentation.is_some()
             || self.pending_managed_rebind.is_some()
         {
             return;
