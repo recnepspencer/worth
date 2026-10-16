@@ -88,7 +88,9 @@ where
         .primary_graph()
         .ok_or(Denial::BasisUnavailable)?;
     let snapshot = data.application_basis().snapshot_handle();
-    graph.integration_handle().with_runtime(&execution,|runtime| {
+    // Capability custody owns a native snapshot whose release reacquires this runtime.
+    // Keep it outside the locked callback on missing, foreign-Spec and refusal paths.
+    let candidate = graph.integration_handle().with_runtime(&execution,|runtime| {
         let layout=graph.layout().workflow();
         ensure_selected_field_indexes_admitted(&execution,runtime,data.product().relational_basis(),
             [Some(layout.instance.identity_index_id),None],admission).map_err(|stop| match stop {
@@ -130,6 +132,7 @@ where
             Some(false)=>return Ok(None),
             None=>return Err(Denial::Corrupt),
         }
-        Ok(Some((OriginalWorkflowCandidate { data,instance,lineage:lineage.to,subject:original.subject_entity_id() },access)))
-    })
+        Ok(Some(OriginalWorkflowCandidate { data,instance,lineage:lineage.to,subject:original.subject_entity_id() }))
+    })?;
+    Ok(candidate.map(|candidate| (candidate, access)))
 }

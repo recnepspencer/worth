@@ -77,9 +77,6 @@ pub(super) fn revoke(application: &GovernedRuntime, grant: &str, key: u64) {
     // Independent native grant publication is the stimulus, not an alternative workflow read or command adapter.
     let outcome = runtime
         .with_application_advancement(&scope, |phase| {
-            let execution = phase
-                .checked_execution_request_for(runtime.product_runtime())
-                .unwrap();
             runtime
                 .request(&principal, &scope)
                 .advanced()
@@ -91,7 +88,7 @@ pub(super) fn revoke(application: &GovernedRuntime, grant: &str, key: u64) {
                 })
                 .without_source()
                 .idempotency(&key)
-                .execute_in_program(application.program_runtime(), execution.allocation_policy())
+                .execute_in_program_in_advancement(&phase, application.program_runtime())
         })
         .unwrap()
         .unwrap();
