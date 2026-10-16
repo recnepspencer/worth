@@ -468,11 +468,11 @@ for the 9.17.6.4 public proof and consume its certified revision.
 
 [9.17.6.6](./milestone-9.17.6.6.md) addresses concrete adoption seams in the
 implemented owning API: complete action metadata plus delivery, and authentic
-runtime retention across commands. It may proceed beside 9.17.6.5 after their
-shared owning contracts are fixed; neither sibling absorbs the other's workflow
-acceptance portfolio. Its public proof and clean caller cutover precede downstream
-adoption of its changed signatures. Existing predecessor qualification is retained
-only where the affected contract remains unchanged.
+runtime retention across commands. Its public API, covered caller cutover and
+scoped qualification are complete. Downstream adoption consumes that certified
+contract as a separate successor. Neither sibling absorbs 9.17.6.5's workflow
+acceptance portfolio. Existing predecessor qualification is retained only where
+the affected contract remains unchanged.
 
 Store handoffs are explicit:
 

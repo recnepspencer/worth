@@ -1,11 +1,14 @@
 # Milestone 9.17.6.6: Composable Actions And Retained Operation Ownership
 
-> **Status:** Planned. Grounded at public master
-> `0e2aae4233e0803ad8f86a630bff79f94662c03a`. Consumes the implemented owning
+> **Status:** Complete — public API, covered consumer cutover and scoped qualification.
+> Qualified source checkpoint: `4a93d8b3c59edf7dda3d6d0dd2963120ed1cde72`.
+> Grounded at public master `0e2aae4233e0803ad8f86a630bff79f94662c03a`.
+> Consumes the implemented owning
 > operation capabilities of [9.17.6.4](./milestone-9.17.6.4.md), without claiming
 > that predecessor's entire acceptance portfolio is complete. May proceed beside
 > [9.17.6.5](./milestone-9.17.6.5.md); workflow attribution, disclosure and command
-> extensions remain there. No implementation or certification is claimed here.
+> extensions remain there. Proprietary adoption remains the separate successor
+> gate below; this qualification does not close that work.
 
 ## Goal And Roadmap Placement
 
@@ -19,26 +22,26 @@ is a clean replacement API, not a compatibility patch for a private application.
 The public neutral consumer proves the capability; downstream application
 cutovers demonstrate adoption separately and cannot stand in for public proof.
 
-The immediate blocker is declaration composition. Existing feature authoring
-methods construct independent actions for locality/change, correspondence,
+The baseline blocker was declaration composition. Feature authoring methods
+constructed independent actions for locality/change, correspondence,
 requirements, external inputs or delivery. Their capabilities cannot all be
-attached to the same occurrence through the supported audience API.
+attached to the same occurrence through the supported audience API. The complete
+action builder now supplies that supported composition.
 
-The second change is retained runtime ownership. Source-only operations already
-retain the authentic installed runtime; fixed and discovered operations instead
-borrow it. Unify that ownership contract while retaining the distinct operation
-semantics and native failure topology of each lane.
+The second change completes retained runtime ownership. Fixed and discovered
+operations now share SourceOnly's authentic installed-runtime retention while
+preserving each lane's distinct operation semantics and native failure topology.
 
 This milestone does not add a second execution, recovery, workflow, permission,
 currentness or topology owner. It does not close unfinished CAD geometry, native
 UI or other predecessor portfolios. It does not wait for 9.17.6.5's unrelated
 workflow features, reopen completed milestones, or retroactively gate 9.17.7.
 
-## Current Boundary
+## Baseline Boundary
 
 Paths below are relative to `workspaces/worth-query/crates/`.
 
-| Owner | Present fact | Destination |
+| Owner | Baseline fact | Destination |
 | --- | --- | --- |
 | Declaration `application_program/feature/authoring/capsule.rs` | `mutation_with_*`, `repeated_optional_member_*`, `fixed_output_action` and `operation_action` each create a fresh action. Feature fields are private and actions are read-only. | One typed action-authoring progression configures and appends the complete declaration once. |
 | Declaration `application_program/action.rs`, `action/delivery_attachment.rs` | Canonical action meaning already includes delivery, correspondence, evaluated requirement, external input, locality/change and binding-derived workflow requirements. | Reuse this meaning and its private attachment owners; no second descriptor or registry. |
@@ -266,8 +269,10 @@ never reinterpret, erase or automatically convert the displaced bytes.
 
 ## Intended Caller Experience
 
-The following target is illustrative until replaced by marker-checked compiled
-examples. `CreateGeometryDelivery` supplies real fixed-root/projection meaning.
+The [application guide](../../docs/build-an-application.md) now binds compiled
+examples for composed actions and retained fixed, discovered, SourceOnly and
+workflow owners. The sketches below remain illustrative architectural examples;
+`CreateGeometryDelivery` stands for real fixed-root/projection meaning.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -492,3 +497,27 @@ Closure requires the joined public API, covered public callers, deletions,
 documentation and scoped independent review with adequate executed evidence.
 The downstream application consumes that result; future 9.17.6.5 workflow work
 extends the same declarations and owners without reintroducing a second authority.
+
+## Public Qualification
+
+The joined public API and covered Query, Bank, fixture, example, facade and
+PlatformPulse consumers are qualified through focused compiler and installed
+lifecycle courts, compiled documentation and real workflow/consumer execution.
+Evidence retains its original source scope; this does not claim a freshly rerun
+whole-workspace campaign. The final source passed constitution and agent-context
+checks, formatting and the file cap, documentation debt and lockfile alignment.
+Independent Claude CLI Opus 5.5 QA found no material defects at the checkpoint above.
+
+The real WGPU offscreen Pulse journey resumes interrupted source and action work,
+completes the same Intent request once, checks actual Query commit increments,
+publishes the mounted consequence and closes with empty resource counts. It does
+not establish native OS window/file-chooser or pixel-appearance qualification,
+runtime before-effect Intent cancellation, or an executed `CloseIncomplete.retry`.
+The latter paths retain their explicitly scoped source and CPU/binding evidence.
+
+Query, Bank and binding owner Clippy checks passed. Whole-app scoped Clippy still
+exits nonzero solely for the unchanged `native_application/theme.rs` collapsible-if
+warning; broader UI dependency lint also retains untouched DSL debt. Neither is
+reported as a passing command or absorbed into this milestone. Normal public
+publication verifies the applicable repository CI. Private CAD/UI adoption and
+the sibling or predecessor acceptance portfolios remain separate.
