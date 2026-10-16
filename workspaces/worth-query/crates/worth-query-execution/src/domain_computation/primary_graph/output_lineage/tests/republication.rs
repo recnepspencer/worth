@@ -131,7 +131,7 @@ std::iter::empty(),
                 entity: output,
             }],
 |_| Some(TypeId::of::<()>()),
-request_execution,
+&phase_custody.borrowed_request_for_test(),
 )
         .unwrap(),
     );

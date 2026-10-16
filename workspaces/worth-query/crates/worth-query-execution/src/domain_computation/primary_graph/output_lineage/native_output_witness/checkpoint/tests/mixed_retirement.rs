@@ -36,7 +36,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     let layout = graph.layout();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let correspondence = mixed_correspondence(live, retired);
+    let correspondence = mixed_correspondence(request_execution, live, retired);
     let foreign = installed_authorization_world(true);
     let foreign_selected = foreign
         .application
@@ -216,6 +216,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
             Err(CompanionPreflightStop::WorkExhausted { .. })
         ));
         let wrong_generation = mixed_correspondence(
+            &host_custody.borrowed_request_for_test(),
             live,
             EntityId::new(
                 retired.partition_id,
@@ -305,6 +306,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
 }
 
 fn mixed_correspondence(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     live: EntityId,
     retired: EntityId,
 ) -> WorthQueryApplicationOutputCorrespondence {
@@ -329,11 +331,7 @@ fn mixed_correspondence(
         })
         .collect::<Vec<_>>(),
         |_| Some(TypeId::of::<()>()),
-        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
-            worth_execution::CancellationToken::new(),
-            None,
-        )),
+        execution,
     )
     .unwrap()
 }
