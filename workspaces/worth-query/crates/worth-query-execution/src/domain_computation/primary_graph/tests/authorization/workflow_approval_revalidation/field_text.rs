@@ -179,12 +179,8 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
         .primary_graph()
         .unwrap()
         .integration_handle();
-    let prepared = prepare_relational_mutation_on_application(
-        &execution,
-        &world.application,
-        batch,
-        &request,
-    );
+    let prepared =
+        prepare_relational_mutation_on_application(&execution, &world.application, batch, &request);
     let Ok(Publication::Performed(performed)) = prepared.execute(execution) else {
         panic!("the real native/World transport publication must perform");
     };
@@ -207,8 +203,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
             let actual = changes
                 .committed_field_values(entity, &[&label_locator])
                 .expect("actual immutable committed AccountLabel");
-            let [AspectValue::String(InternedString::Symbol(symbol))] = actual.as_slice()
-            else {
+            let [AspectValue::String(InternedString::Symbol(symbol))] = actual.as_slice() else {
                 panic!("actual committed label must be exactly one Symbol: {actual:?}");
             };
             Symbol(symbol.0)
