@@ -287,6 +287,10 @@ fn preview_liveness_observer_tracks_handle_disposal_without_retaining_session() 
     let (handle, denial) = handle
         .discard(vec![BridgePreviewResidueClass::AuthoritativeRoutingResidue])
         .unwrap_err();
+    let refusal = crate::harness::adapter::BridgeHarnessError::preview_refused(handle, denial);
+    let (handle, denial) = refusal
+        .into_preview()
+        .expect("certification refusal must return the same active preview");
     assert_eq!(
         denial.kind(),
         crate::error::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch
