@@ -143,55 +143,56 @@ fn plain_actions_install_exact_completion_meaning_and_scoped_deployment_authorit
         let program = ApplicationProgramAuthoring::<BankSchema, P>::begin()
             .validated_program()
             .unwrap();
-        let actions = [
+        let expected_selectors = [
             <bank_server::PersonalAccountCreationAction as ApplicationAction<
                 BankSchema,
                 CreatePersonalAccountMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::BusinessAccountCreationAction as ApplicationAction<
                 BankSchema,
                 CreateBusinessAccountMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::AccountAccessGrantAction as ApplicationAction<
                 BankSchema,
                 GrantAccountAccessMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::AccountAccessRevocationAction as ApplicationAction<
                 BankSchema,
                 RevokeAccountAccessMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::PaymentInitiationAction as ApplicationAction<
                 BankSchema,
                 InitiateBusinessPaymentMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::PaymentRejectionAction as ApplicationAction<
                 BankSchema,
                 RejectPaymentMutationBinding,
-            >>::declaration(),
+            >>::selector(),
         ];
         let mut identities = std::collections::BTreeSet::new();
-        for action in actions {
+        for selector in expected_selectors {
             let installed = program
                 .actions()
                 .iter()
-                .filter(|item| item.binding() == action.binding())
+                .filter(|item| item.binding() == selector.binding())
                 .collect::<Vec<_>>();
             assert_eq!(installed.len(), 1);
             assert_eq!(
                 installed[0].composition_instance(),
-                action.composition_instance()
+                selector.composition_instance()
             );
-            assert_eq!(installed[0].feature(), action.feature());
+            assert_eq!(installed[0].feature(), selector.feature());
+            assert_eq!(
+                installed[0].mutation_binding_type(),
+                Some(selector.mutation_binding_type())
+            );
             assert!(!installed[0].required_output_source());
             let delivery = installed[0].delivery().unwrap();
             assert!(matches!(
                 delivery,
                 ApplicationActionDeliveryDeclaration::SourceCompletion { .. }
             ));
-            assert_eq!(
-                delivery.canonical_meaning(),
-                action.delivery().unwrap().canonical_meaning()
-            );
+            assert_eq!(delivery, selector.delivery());
             assert!(identities.insert(delivery.identity()));
         }
         assert_eq!(
