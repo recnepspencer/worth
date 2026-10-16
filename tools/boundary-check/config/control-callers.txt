@@ -21,6 +21,7 @@ crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/recovery_terminals.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/support_retirement.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/producer_predicate_checkpoint/ordinary_source/unpublished.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_bound_replay/recovery.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/unpublished_recovery.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/cost/retained_partials.rs
@@ -168,6 +169,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/support_retirement_races.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/workflow_participant.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/producer_predicate_checkpoint/ordinary_source/unpublished.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_bound_replay/recovery.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/unpublished_recovery.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/workflow_approval.rs
