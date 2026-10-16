@@ -273,7 +273,8 @@ class Gate:
         started = time.time()
         with open(log, "w", encoding="utf-8", errors="replace") as sink:
             code = subprocess.run(
-                [binary["exe"], "--exact", *names, *extra], cwd=binary["cwd"], env=env,
+                [binary["exe"], *(("--exact", *names, *extra) if binary["harness"] else ())],
+                cwd=binary["cwd"], env=env,
                 stdout=sink, stderr=subprocess.STDOUT,
             ).returncode
         text = log.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -297,6 +298,10 @@ class Gate:
             return {"suite": suite, "build": "FAILED", "log": build_log, "ok": False}
         shared, alone, whole, exclusive, listing, total = [], [], [], [], [], 0
         for binary in filter(want, binaries):
+            if not binary["harness"]:
+                listing.append((binary["package"], binary["target"], 0))
+                whole.append(binary)
+                continue
             env = dict(self.env, CARGO_MANIFEST_DIR=binary["cwd"])
             listed = subprocess.run(
                 [binary["exe"], "--list", "--format", "terse"], cwd=binary["cwd"],
@@ -306,11 +311,6 @@ class Gate:
             names = sorted(line[: -len(": test")] for line in listed.splitlines()
                            if line.endswith(": test"))
             listing.append((binary["package"], binary["target"], len(names)))
-            if not names:
-                # A target with its own `main` (harness = false) lists nothing:
-                # it runs whole and its exit code is the result.
-                whole.append(binary)
-                continue
             total += len(names)
             if suite == "fixture" and binary["package"] == "worth-query-topology-entry":
                 # Every case can touch process-global providers, counters or ledgers.
