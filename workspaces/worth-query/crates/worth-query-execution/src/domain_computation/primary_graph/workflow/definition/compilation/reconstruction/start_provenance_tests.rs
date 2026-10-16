@@ -112,8 +112,18 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
     let after = selected(&world, &execution);
     assert_eq!(before.0.descriptor(), after.0.descriptor());
     // This is a native mutability counterpart, NOT a program adoption admission.
-    publish_relational_mutation(&execution, &world, update(instance, &layout.instance.program_revision,
-        crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering(&successor)));
+    let current_revision = handle.with_runtime(&execution, |runtime| {
+        start_provenance::admit(&execution, runtime, &after.0, &successor).unwrap()
+    });
+    publish_relational_mutation(
+        &execution,
+        &world,
+        update(
+            instance,
+            &layout.instance.program_revision,
+            current_revision,
+        ),
+    );
     let current = selected(&world, &execution);
     handle.with_runtime(&execution, |runtime| {
         assert_eq!(
@@ -153,16 +163,14 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
             successor.to_string()
         );
         assert_eq!(
-            text_at(
-                runtime,
-                &execution,
-                before.1.snapshot_handle(),
-                instance,
-                layout.instance.entity_kind,
-                &layout.instance.program_revision,
-                false
-            ),
-            original.to_string()
+            // The current revision's original producer emits canonical scalar text;
+            // only started_program_revision promises managed Symbol custody.
+            crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed(
+                runtime, &execution, before.1.snapshot_handle(), instance,
+                layout.instance.entity_kind, &layout.instance.program_revision,
+                |value| value == Some(&AspectValue::String(InternedString::Raw(original.to_string()))),
+            ).unwrap(),
+            Some(true)
         );
     });
     let next = publish_instance(&world, &execution, &layout, successor, "successor", actor);

@@ -44,7 +44,12 @@ pub(super) fn approval_journey(
 /// Proposes, collects both assessments and joins them, leaving `instance`
 /// awaiting its approval on its own branch. Uses keys `key + 2..=key + 8`.
 pub(super) fn approval_requirement(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        crate::document_retention_model::programs::RetentionProgramP0,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: PublishedWorkflowInstanceRef,
     key: u64,
 ) -> (
