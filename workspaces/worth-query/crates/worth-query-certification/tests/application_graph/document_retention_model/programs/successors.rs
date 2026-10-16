@@ -1,4 +1,5 @@
 //! Rostered successors change the declared feature or action contract.
+use super::super::program_adoption::ProgramAdoptionBinding;
 use super::*;
 
 impl ApplicationProgramDefinition<DocumentRetentionSchema> for ChangedFeatureRetentionProgram {
@@ -11,7 +12,7 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for ChangedFeatureRet
     );
 
     fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
-        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+        visitor.capability::<ProgramAdoptionBinding>()
     }
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
@@ -45,7 +46,7 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for RemovedOperationR
     );
 
     fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
-        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+        visitor.capability::<ProgramAdoptionBinding>()
     }
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
@@ -81,7 +82,7 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for ChangedOperationR
     );
 
     fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
-        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+        visitor.capability::<ProgramAdoptionBinding>()
     }
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
