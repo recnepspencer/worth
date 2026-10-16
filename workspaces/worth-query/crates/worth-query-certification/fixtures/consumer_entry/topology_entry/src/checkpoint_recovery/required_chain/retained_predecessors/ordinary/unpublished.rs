@@ -10,6 +10,7 @@ fn ordinary_unpublished_producer_close_retries_original_native_recovery() {
     let _guard = checkpoint_recovery_test_guard();
     let mut application = support::install(None);
     crate::producer::reset_provider_contacts();
+    let decisions_before = crate::handler::handler_contacts();
     {
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
@@ -43,7 +44,10 @@ fn ordinary_unpublished_producer_close_retries_original_native_recovery() {
             terminal.producer_outcome(),
             Some(WorthQueryApplicationUncommitted::ProductUnpublished(_))
         ));
-        assert_eq!(crate::producer::provider_contacts(), 1);
+        let contacts = crate::producer::provider_contacts();
+        let producer_decisions = crate::handler::handler_contacts();
+        assert_eq!(producer_decisions, decisions_before + 1);
+        assert!(contacts > 0);
         assert_eq!(
             before.selected_commit(),
             request.retain_current_read().unwrap().selected_commit(),
@@ -102,8 +106,13 @@ fn ordinary_unpublished_producer_close_retries_original_native_recovery() {
         );
         assert_eq!(
             crate::producer::provider_contacts(),
-            1,
-            "close never reexecutes the producer"
+            contacts,
+            "close never reenters provider callbacks"
+        );
+        assert_eq!(
+            crate::handler::handler_contacts(),
+            producer_decisions,
+            "retiring the original unpublished record never reexecutes its handler"
         );
         assert_eq!(
             before.selected_commit(),

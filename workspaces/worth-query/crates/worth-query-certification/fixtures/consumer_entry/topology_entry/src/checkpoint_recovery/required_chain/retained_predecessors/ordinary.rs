@@ -97,7 +97,14 @@ fn ordinary_complete_tree_escapes_scope_resumes_reads_current_and_closes() {
                     retained = Some(next);
                     break;
                 }
-                _ => panic!("the real B decision must cancel before full settlement"),
+                WorthQueryProgramOutputOperationAdvance::Terminal(value) => panic!(
+                    "B cancellation must return retryable custody; terminal: {:?}; decisions: {:?}; interruption: {:?}",
+                    value.denial(), binding::decisions_snapshot(), stopped_scope.interruption()
+                ),
+                WorthQueryProgramOutputOperationAdvance::Settled(value) => panic!(
+                    "B cancellation must precede full settlement; outputs: {}; decisions: {:?}; interruption: {:?}",
+                    value.settlement().output_count(), binding::decisions_snapshot(), stopped_scope.interruption()
+                ),
             };
         }
         let settled = finish(
@@ -170,6 +177,7 @@ fn ordinary_terminal_tree_close_preserves_custody_then_releases_after_supersessi
     let _guard = checkpoint_recovery_test_guard();
     let mut application = support::install_with_domain_denial(Arc::new(AtomicBool::new(true)));
     crate::producer::reset_provider_contacts();
+    let decisions_before = crate::handler::handler_contacts();
     {
         let terminal = {
             let (scope, principal) = authenticate(&application);
@@ -203,8 +211,12 @@ fn ordinary_terminal_tree_close_preserves_custody_then_releases_after_supersessi
             WorthQueryRequiredOutputPreparationDenial::Demand(WorthQueryApplicationOutputDemandDenial::Demand(cause)))
             if cause.kind() == WorthQueryOutputDemandDenialKind::ProducerDomainDenied)
         );
+        // Provider contacts include input/key/resource callbacks. The actual
+        // handler decision, not that callback census, counts execution.
         let contacts = crate::producer::provider_contacts();
-        assert_eq!(contacts, 1);
+        let producer_decisions = crate::handler::handler_contacts();
+        assert_eq!(producer_decisions, decisions_before + 1);
+        assert!(contacts > 0);
         let foreign = support::install(None);
         let (foreign_scope, foreign_principal) = authenticate(&foreign);
         let refused = match terminal.close(&foreign.request(&foreign_principal, &foreign_scope)) {
@@ -232,6 +244,8 @@ fn ordinary_terminal_tree_close_preserves_custody_then_releases_after_supersessi
             )
         ));
         assert!(refused.terminal_denial().is_some());
+        assert_eq!(crate::handler::handler_contacts(), producer_decisions);
+        assert_eq!(crate::producer::provider_contacts(), contacts);
         let request = application.request(&principal, &scope);
         // Deliberate native court edit supersedes the original source. It is an
         // actual PlanarEdit action, not a fabricated no-op source/tree entrance.
@@ -272,6 +286,8 @@ fn ordinary_terminal_tree_close_preserves_custody_then_releases_after_supersessi
             .unwrap();
         assert_eq!(source.rows()[0].y, length(2));
         drop(source);
+        let decisions_after_edit = crate::handler::handler_contacts();
+        assert_eq!(decisions_after_edit, producer_decisions + 1);
         let closed = refused
             .retry_close(&request)
             .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
@@ -284,6 +300,11 @@ fn ordinary_terminal_tree_close_preserves_custody_then_releases_after_supersessi
             crate::producer::provider_contacts(),
             contacts,
             "close does not rerun a producer or create a settlement"
+        );
+        assert_eq!(
+            crate::handler::handler_contacts(),
+            decisions_after_edit,
+            "read close must not execute the producer or authored edit again"
         );
     }
     application
