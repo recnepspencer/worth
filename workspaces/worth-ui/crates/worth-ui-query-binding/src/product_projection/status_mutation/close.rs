@@ -1,7 +1,9 @@
 //! Explicit authenticated close preserves the actual native owner on every refusal.
 use super::super::application_authentication::authenticate;
 use super::*;
-use worth_query_host::facade::application_entry::WorthQueryApplicationRequest;
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
+};
 
 impl WorthUiStatusMutation {
     /// Shutdown may abandon an unexecuted command only after authentic native close.

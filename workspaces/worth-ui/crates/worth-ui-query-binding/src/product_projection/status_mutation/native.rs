@@ -5,7 +5,7 @@ use super::super::application_program::{
 use super::*;
 use worth_query_host::facade::{
     application_entry::{
-        WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
+        WorthQueryApplicationRequest,
         WorthQueryCompletedSourceOperation, WorthQueryOperationDescription,
         WorthQueryOperationInputCaptureRefusal, WorthQuerySourceCompletion,
         WorthQuerySourceOnlyAdvance, WorthQuerySourceOnlyOperation,
