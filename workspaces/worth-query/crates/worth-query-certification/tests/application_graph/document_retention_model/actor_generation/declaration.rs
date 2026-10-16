@@ -32,7 +32,7 @@ worth_query_structured_value_binding!(pub ActorLifecycleDenialBinding for ActorL
 });
 worth_query_operation!(pub ActorLifecycle for DocumentRetentionSchema, input ActorLifecycleInputBinding);
 worth_query_operation_reads!(ActorLifecycle => [Document, Principal, ExternalMapping, WorkflowAuthoringGrant,
-    DocumentIdentityField, PrincipalIdentityField, ExternalIdentityField, WorkflowGrantIdentityField,
+    DocumentIdentityField, PrincipalIdentityField, ExternalIdentityField, MappingStatusField, WorkflowGrantIdentityField,
     MappingTarget, WorkflowDocumentOwner, WorkflowGrantGrantor, WorkflowGrantGrantee]);
 worth_query_operation_writes!(ActorLifecycle => [PrincipalIdentityField, MappingStatusField]);
 worth_query_operation_creates!(ActorLifecycle => [Principal]);
@@ -54,6 +54,7 @@ pub fn declare(
         .operation_read_field(op, DocumentIdentityField::reference())
         .operation_read_field(op, PrincipalIdentityField::reference())
         .operation_read_field(op, ExternalIdentityField::reference())
+        .operation_read_field(op, MappingStatusField::reference())
         .operation_read_field(op, WorkflowGrantIdentityField::reference())
         .operation_read_relation(op, MappingTarget::reference())
         .operation_read_relation(op, WorkflowDocumentOwner::reference())

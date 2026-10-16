@@ -61,27 +61,24 @@ impl WorthQueryApplicationCommittedChanges {
             WorthQueryApplicationAttemptDenial as Denial,
             WorthQueryApplicationAttemptDenialKind as Kind,
         };
-        let invalid = || {
-            Denial::new(
-                Kind::InvalidAuthoritativeValue,
-                "committed approval request is invalid",
-            )
-        };
+        let invalid = |subject: &str| Denial::new(Kind::InvalidAuthoritativeValue, subject);
         let locator =
             crate::domain_computation::primary_graph::schema_layout::planned_field_locator(
                 "workflow-approval",
                 "authorization-request",
             )
-            .map_err(|_| invalid())?;
+            .map_err(|_| invalid("committed approval request locator is invalid"))?;
         // The receipt must own this exact artifact; its native runtime identity
         // and canonical commit select the retained snapshot, never current head.
         if !Arc::ptr_eq(&self.envelope, &receipt.committed_changes().envelope) {
-            return Err(invalid());
+            return Err(invalid("committed approval receipt envelope differs"));
         }
         let Some(AspectValue::String(worth_foundational::facade::InternedString::Symbol(symbol))) =
             self.committed_field_value(approval, &locator)
         else {
-            return Err(invalid());
+            return Err(invalid(
+                "committed approval request field is missing or not a Symbol",
+            ));
         };
         runtime
             .primary_provider
@@ -101,7 +98,7 @@ impl WorthQueryApplicationCommittedChanges {
                         SnapshotStop::Execution(cause) => {
                             Denial::relational_read_stopped(cause, "committed approval snapshot")
                         }
-                        _ => invalid(),
+                        _ => invalid(cause.detail()),
                     })?;
                 let pin = native
                     .read_truth()
@@ -110,13 +107,26 @@ impl WorthQueryApplicationCommittedChanges {
                         PinStop::Request(cause) => {
                             Denial::request_read_stopped(cause, "committed approval symbols")
                         }
-                        _ => invalid(),
+                        PinStop::SnapshotUnavailable => {
+                            invalid("committed approval symbol snapshot is unavailable")
+                        }
+                        PinStop::IndexNotInstalled(_) => {
+                            invalid("committed approval symbol index is unavailable")
+                        }
                     })?;
                 let encoded = pin
                     .symbols()
                     .retained_text(worth_relational::facade::symbols::Symbol(symbol.0))
-                    .filter(|text| text.is_managed())
-                    .ok_or_else(invalid)?;
+                    .ok_or_else(|| {
+                        invalid(
+                            "committed approval request Symbol is absent from pinned dictionary",
+                        )
+                    })?;
+                if !encoded.is_managed() {
+                    return Err(invalid(
+                        "committed approval request Symbol lacks native managed custody",
+                    ));
+                }
                 // Borrow the native admitted backing for the entire decode. Only
                 // the decoder's real retained wire/DTO asks the original payer.
                 let _retained =
@@ -125,7 +135,9 @@ impl WorthQueryApplicationCommittedChanges {
                         encoded.as_str(),
                     )
                     .map_err(|cause| match cause {
-                        Decode::InvalidRequest => invalid(),
+                        Decode::InvalidRequest => {
+                            invalid("committed approval request JSON is invalid")
+                        }
                         Decode::Actor(cause) => *cause,
                     })?;
                 Ok(())
