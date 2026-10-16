@@ -5,13 +5,17 @@
 //! check the installed contract and the actual original command.
 //!
 //! ```
-//! use worth_query_host::facade::declaration::{
+//! use worth_query_decl::facade::{
 //!     application_capability::*, application_operation::*, application_program::*,
 //! };
 //! fn workflow_actor_contract_approval<Spec, Binding>() -> (
 //!     ApplicationWorkflowActorPolicy, ApplicationCapabilityRecordedActorRule,
 //! ) where Spec: ApplicationWorkflowSpec,
 //!     Binding: ApplicationCapabilityMutationBinding<Spec::Schema>,
+//!     <Binding as ApplicationMutationBinding<Spec::Schema>>::Input: ApplicationCapabilityRequest<
+//!         Spec::Schema, Binding::Capability,
+//!         Scope = <Binding::ScopeBinding as ApplicationMutationScopeBinding<Spec::Schema>>::Scope,
+//!     >,
 //! {
 //!     let source = ApplicationWorkflowRecordedActorSource::BoundProposal;
 //!     (ApplicationWorkflowActorPolicy::for_approval::<Spec, Binding>(source),
@@ -74,13 +78,13 @@
 //! branch behind an unrelated type error.
 //!
 //! ```
-//! use worth_query_host::facade::{worth_query_mutation_binding,
-//!     declaration::application_operation::ApplicationWorkflowExecutionRequirements};
+//! use worth_query_decl::facade::{worth_query_mutation_binding,
+//!     application_operation::ApplicationWorkflowExecutionRequirements};
 //! let _ = worth_query_mutation_binding!(@workflow_requirements [required]
 //!     [ApplicationWorkflowExecutionRequirements::occurrence_only()]);
 //! ```
 //!
 //! ```compile_fail
-//! use worth_query_host::facade::worth_query_mutation_binding;
+//! use worth_query_decl::facade::worth_query_mutation_binding;
 //! let _ = worth_query_mutation_binding!(@workflow_requirements [required] []);
 //! ```
