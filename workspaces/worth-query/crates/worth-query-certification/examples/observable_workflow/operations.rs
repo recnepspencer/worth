@@ -95,13 +95,13 @@ pub fn archive(
                 operation = next;
                 // Progress can precede dispatch. Actual child output, not this
                 // variant, determines when ingress must precede further recovery.
-                if !ingress_received {
-                    if let Some(envelope) = archive.envelope().expect(
+                if !ingress_received
+                    && let Some(envelope) = archive.envelope().expect(
                         "inspect actual child completion without retrying a failed dispatch",
-                    ) {
-                        receive(&envelope);
-                        ingress_received = true;
-                    }
+                    )
+                {
+                    receive(&envelope);
+                    ingress_received = true;
                 }
             }
             WorthQueryWorkflowOperationAdvance::Completed(done) => {
