@@ -136,7 +136,7 @@ where
             preconditions,
             WorthQueryCapabilityOperationProgression::ElevationLifecycle,
         )?
-        .bind_elevation_request(binding)
+        .bind_elevation_request(execution, binding)
     }
 }
 

@@ -169,7 +169,7 @@ where
             preconditions,
             WorthQueryCapabilityOperationProgression::DelegationActivation,
         )?;
-        prepared.finish(admitted)
+        prepared.finish(execution, admitted)
     }
 }
 

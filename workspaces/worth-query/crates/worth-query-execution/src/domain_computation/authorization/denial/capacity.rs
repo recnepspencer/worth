@@ -11,6 +11,7 @@ impl ChargedBytes for WorthQueryOperationAuthorizationDenial {
             explanation_cause: _explanation_cause,
             subject,
             workflow_actor_cause,
+            lifecycle_storage_cause,
         } = self;
         (std::mem::size_of_val(kind.as_ref()) as u64)
             .saturating_add(
@@ -19,6 +20,9 @@ impl ChargedBytes for WorthQueryOperationAuthorizationDenial {
                 >() as u64),
             )
             .saturating_add(subject.capacity() as u64)
+            .saturating_add(lifecycle_storage_cause.as_ref().map_or(0, |cause| {
+                (std::mem::size_of_val(cause.as_ref()) + 2 * std::mem::size_of::<usize>()) as u64
+            }))
             .saturating_add(
                 workflow_actor_cause
                     .as_ref()
