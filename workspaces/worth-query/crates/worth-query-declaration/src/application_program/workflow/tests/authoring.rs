@@ -39,7 +39,7 @@ fn primitive_component_macro_and_command_authoring_are_canonical_equivalents(
         build: |builder| {
             let propose = builder.operation::<ProposeChange>("propose", false)?;
             let approval = builder.approval::<ChangeApprover>("approval")?;
-            let apply = builder.operation::<ApplyChange>("apply", true)?;
+            let apply = builder.operation_binding::<ApplyBinding>("apply")?;
             let completed = builder.terminal("completed")?;
             let rejected = builder.terminal("rejected")?;
             let checks = builder.expand_component("checks", &macro_component)?;
@@ -290,7 +290,7 @@ fn command_definition(
             ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
         )?,
         Command::approval::<ReviewedChange, ChangeApprover>("approval")?,
-        Command::operation::<ReviewedChange, ApplyChange>("apply", true)?,
+        Command::operation_binding::<ReviewedChange, ApplyBinding>("apply")?,
         Command::terminal("completed")?,
         Command::terminal("rejected")?,
         Command::start("propose")?,

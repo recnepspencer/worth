@@ -12,6 +12,8 @@ use crate::{
 use super::*;
 
 mod authoring;
+mod guarded_binding;
+use guarded_binding::{ApplyBinding, ProposalInput};
 mod condition;
 mod content_identity;
 mod inbound;
@@ -26,7 +28,6 @@ mod validation;
 
 struct TestSchema;
 struct ReviewedChange;
-struct ProposalInput;
 struct ProposalInputBinding;
 struct AssessmentInput;
 struct AssessmentInputBinding;
@@ -241,7 +242,7 @@ fn primitive_definition_with_limits(
     let compliance = builder.assessment::<ComplianceAssessment>("checks/compliance")?;
     let evidence = builder.evidence_join("checks/evidence", policy)?;
     let approval = builder.approval::<ChangeApprover>("approval")?;
-    let apply = builder.operation::<ApplyChange>("apply", true)?;
+    let apply = builder.operation_binding::<ApplyBinding>("apply")?;
     let completed = builder.terminal("completed")?;
     let rejected = builder.terminal("rejected")?;
     connect_definition(
@@ -289,7 +290,7 @@ fn component_definition(
         ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("reviewed-change", limits())?;
     let propose = builder.operation::<ProposeChange>("propose", false)?;
     let approval = builder.approval::<ChangeApprover>("approval")?;
-    let apply = builder.operation::<ApplyChange>("apply", true)?;
+    let apply = builder.operation_binding::<ApplyBinding>("apply")?;
     let completed = builder.terminal("completed")?;
     let rejected = builder.terminal("rejected")?;
     let checks = builder.expand_component("checks", &component)?;

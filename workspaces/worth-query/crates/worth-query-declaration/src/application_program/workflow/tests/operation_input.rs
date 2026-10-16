@@ -47,7 +47,11 @@ fn definition(
         )
         .unwrap();
     let approval = builder.approval::<ChangeApprover>("approval").unwrap();
-    let apply = builder.operation::<ApplyChange>("apply", guarded).unwrap();
+    let apply = if guarded {
+        builder.operation_binding::<ApplyBinding>("apply").unwrap()
+    } else {
+        builder.operation::<ApplyChange>("apply", false).unwrap()
+    };
     let done = builder.terminal("done").unwrap();
     let rejected = builder.terminal("rejected").unwrap();
     use ApplicationWorkflowControlOutcome::*;

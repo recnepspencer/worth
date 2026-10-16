@@ -18,10 +18,10 @@ macro_rules! guarded_binding {
     ($binding:ident $(, $requirements:expr)?) => {
         crate::worth_query_mutation_binding!(@binding
             $binding for RenameInput, schema MutationSchema,
-            identity "test.guarded-rename.v1", input RenameInputBinding, operation RenameOperation,
+            identity "worth.query.test.rename-binding.v1", input RenameInputBinding, operation RenameOperation,
             result RenameResultBinding,
-            idempotency u64, identity "test.guarded-rename-key.v1",
-            decision RenameDecision, denial RenameDenialBinding, handler identity "test.guarded-rename-handler.v1",
+            idempotency u64, identity "worth.query.test.rename-idempotency.v1",
+            decision RenameDecision, denial RenameDenialBinding, handler identity "worth.query.test.rename-handler.v1",
             program , workflow_authority required,
             workflow_requirements $($requirements)?,
             outputs RenameOutputs,
@@ -91,10 +91,24 @@ fn evidence_floor_changes_canonical_program_revision_and_operation_comparison() 
     assert_ne!(empty.0, reviewed.0);
     assert_ne!(ordinary.0, reviewed.0);
     for (source, target) in [(&ordinary.1, &empty.1), (&empty.1, &reviewed.1)] {
+        let operation_subjects = |meaning: &ApplicationSemanticDescription| {
+            meaning
+                .facts()
+                .iter()
+                .filter(|fact| fact.family() == ApplicationSemanticFamily::Operations)
+                .map(|fact| fact.subject().to_owned())
+                .collect::<Vec<_>>()
+        };
+        let subjects = operation_subjects(source);
+        assert_eq!(subjects.len(), 1);
+        assert_eq!(subjects, operation_subjects(target));
         let diff = ApplicationSemanticDiff::compare(source, target, 1024).unwrap();
-        assert!(diff.changes().iter().any(|change| change.family()
-            == ApplicationSemanticFamily::Operations
-            && change.kind() == ApplicationSemanticChangeKind::Changed));
+        assert!(diff
+            .changes()
+            .iter()
+            .any(|change| change.subject() == subjects[0]
+                && change.family() == ApplicationSemanticFamily::Operations
+                && change.kind() == ApplicationSemanticChangeKind::Changed));
     }
 }
 
