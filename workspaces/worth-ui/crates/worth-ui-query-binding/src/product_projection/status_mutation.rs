@@ -76,7 +76,8 @@ pub(super) enum MutationContext {
 /// value abandons its native custody; it does not discharge cleanup.
 #[must_use = "retain this continuation until an authenticated advance or lawful close succeeds"]
 pub struct WorthUiStatusMutation {
-    state: MutationState,
+    // Retained evidence moves with this allocation, before the runtime keepalive drops.
+    state: Box<MutationState>,
     application: WorthUiStatusApplication,
 }
 
@@ -117,7 +118,7 @@ impl WorthUiStatusMutation {
         context: MutationContext,
     ) -> Self {
         Self {
-            state: MutationState {
+            state: Box::new(MutationState {
                 native: Some(native),
                 source: None,
                 active_revision: None,
@@ -125,7 +126,7 @@ impl WorthUiStatusMutation {
                 publication: None,
                 live_close: None,
                 stop: None,
-            },
+            }),
             application: application.clone(),
         }
     }

@@ -7,18 +7,27 @@ impl<I: ApplicationMutationIntent<WorthUiApplicationSchema> + 'static, A> State<
     ) -> Result<Option<WorthQueryClosedOperation>, (Self, WorthQueryOperationCloseDenial)> {
         match self {
             Self::Original(_) | Self::Capture(_) | Self::Description(_) => Ok(None),
-            Self::Pending(operation) => operation
-                .close(request)
-                .map(Some)
-                .map_err(|(operation, denial)| (Self::Pending(operation), denial)),
-            Self::Completed(operation) => operation
-                .close(request)
-                .map(Some)
-                .map_err(|(operation, denial)| (Self::Completed(operation), denial)),
-            Self::Terminal(operation) => operation
-                .close(request)
-                .map(Some)
-                .map_err(|(operation, denial)| (Self::Terminal(operation), denial)),
+            Self::Pending(mut operation) => match (*operation).close(request) {
+                Ok(closed) => Ok(Some(closed)),
+                Err((returned, denial)) => {
+                    *operation = returned;
+                    Err((Self::Pending(operation), denial))
+                }
+            },
+            Self::Completed(mut operation) => match (*operation).close(request) {
+                Ok(closed) => Ok(Some(closed)),
+                Err((returned, denial)) => {
+                    *operation = returned;
+                    Err((Self::Completed(operation), denial))
+                }
+            },
+            Self::Terminal(mut operation) => match (*operation).close(request) {
+                Ok(closed) => Ok(Some(closed)),
+                Err((returned, denial)) => {
+                    *operation = returned;
+                    Err((Self::Terminal(operation), denial))
+                }
+            },
         }
     }
 }
