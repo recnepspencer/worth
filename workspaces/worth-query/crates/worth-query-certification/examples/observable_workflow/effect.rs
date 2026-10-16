@@ -74,7 +74,9 @@ pub fn inbound() -> ApplicationInboundOccurrenceBinding<ArchiveEffect> {
 worth_query_application_contribution! {
     pub contribution ArchiveContribution in DocumentRetentionSchema {
         identity: "neutral.observable.archive.v1",
-        members: |schema| { schema.operation(ArchiveOperation::reference().definition()
+        members: |schema| { schema
+            .effect(ArchiveEffect::reference())
+            .operation(ArchiveOperation::reference().definition()
             .external_effect_with_inbound(ArchiveEffect::reference(), WorthQueryExternalEffectCorrelationFamily::new(crate::archive::FAMILY).unwrap(), inbound())
             .no_aftermath().finish())
             .operation_projection_work_budget(ArchiveOperation::reference(), 8)
