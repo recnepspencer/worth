@@ -165,7 +165,8 @@ where
                                 AcceptedCheckpointFactSource::Stable(stable) => stable
                                     .checkpoint_source_facts()
                                     .and_then(|facts| facts::encode(&facts)),
-                            };
+                            }
+                            .map(std::sync::Arc::new);
                             identity.producer_fact_wire_version =
                                 if identity.producer_facts.is_some() {
                                     facts::WIRE_VERSION

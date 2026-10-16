@@ -276,10 +276,9 @@ impl super::WorthQueryAcceptedOutputAuthority {
                     && left.observation == right.observation
                     && left.source_scope == right.source_scope
                     && left.source_identity == right.source_identity
-                    && std::sync::Arc::ptr_eq(
-                        &left.observed_source_facts,
-                        &right.observed_source_facts,
-                    )
+                    && left
+                        .observed_source_facts
+                        .same_backing(&right.observed_source_facts)
             }
             _ => false,
         }

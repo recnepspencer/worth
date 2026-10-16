@@ -32,6 +32,12 @@ impl
         crate::document_retention_model::schema::DocumentRetentionSchema,
     > for UnownedMigrationBinding
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = SetRetentionInput;
     type InputBinding = crate::document_retention_model::schema::SetRetentionInputBinding;
     type Result = DocumentRetentionWritten;

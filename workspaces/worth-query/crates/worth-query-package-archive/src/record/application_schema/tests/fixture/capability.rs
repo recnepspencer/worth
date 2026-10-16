@@ -132,6 +132,13 @@ fn capability_composition() -> ApplicationCapabilityComposition {
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::NotApplicable,
             ApplicationCapabilityDistinctActorRule::NotApplicable,
+            ApplicationCapabilityRecordedActorRule::required(
+                ApplicationCapabilityRecordedActorRequirement::new(
+                    ApplicationWorkflowRecordedActorSource::BoundProposal,
+                    ApplicationWorkflowRecordedRole::Proposer,
+                    ApplicationRecordedActorComparison::DifferentPrincipal,
+                ),
+            ),
         ),
         ApplicationCapabilityPropagationComposition::new(
             ApplicationCapabilityDelegationRule::narrow_all_dimensions(

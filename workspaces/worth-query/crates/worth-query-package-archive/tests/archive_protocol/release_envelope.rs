@@ -4,14 +4,29 @@ use worth_query_package_archive::facade::*;
 use super::archive_stream::fixture;
 use super::release_envelope_fixture::*;
 
-const VERSION_ONE_RELEASE_ENVELOPE_HEX: &str =
+const RETAINED_VERSION_ONE_RELEASE_ENVELOPE_HEX: &str =
     include_str!("release_envelope/release_envelope_v1.hex");
+const VERSION_ONE_RELEASE_ENVELOPE_HEX: &str =
+    include_str!("release_envelope/release_envelope_v1_record_v7.hex");
 const ENVELOPE_HEADER_BYTES: usize = 18;
 const EXPECTED_IDENTITY_BYTES: usize = 32;
 const CHECKSUM_BYTES: usize = 32;
 
 #[test]
 fn version_one_release_envelope_is_deterministic_frozen_and_decodable() {
+    let original = decode_hex(RETAINED_VERSION_ONE_RELEASE_ENVELOPE_HEX.trim());
+    let untrusted =
+        decode_package_release_envelope(&original, WorthQueryPackageEnvelopeLimits::DEFAULT)
+            .unwrap();
+    let denial =
+        decode_package_archive(untrusted.archive(), WorthQueryPackageArchiveLimits::DEFAULT)
+            .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
+
     // worth-query-installation/src/package/identity.rs:81 fixes identity v4;
     // encode the fixture archive and descriptor, then checksum the v1 envelope.
     let records = fixture::minimal_package().export_typed_records().unwrap();

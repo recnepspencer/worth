@@ -14,7 +14,7 @@ use worth_query_host::facade::{
     },
 };
 use worth_query_topology_entry::{
-    BodyKey, PositionY, planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts,
+    planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts, BodyKey, PositionY,
 };
 #[derive(Clone, Copy)]
 enum Interference {
@@ -187,14 +187,12 @@ fn terminal_court(interference: Interference) {
             .world_active_publication_attempts_for_test(),
         0
     );
-    assert!(
-        world
-            .application
-            .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
-            .unwrap()
-            .rows()
-            .is_empty()
-    );
+    assert!(world
+        .application
+        .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+        .unwrap()
+        .rows()
+        .is_empty());
     let stop = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     stop.cancel();
     let stopped =
@@ -223,13 +221,11 @@ fn terminal_court(interference: Interference) {
     let closed = terminal
         .close(&world.application.request(&fresh_principal, &fresh_scope))
         .unwrap_or_else(|(_, cause)| panic!("fresh no-effect close: {cause:?}"));
-    assert!(
-        closed
-            .managed_cleanup_receipt()
-            .unwrap()
-            .inspection()
-            .resources_released()
-    );
+    assert!(closed
+        .managed_cleanup_receipt()
+        .unwrap()
+        .inspection()
+        .resources_released());
 
     assert_eq!(
         planar_source_adjustment_contacts(&input),
@@ -369,13 +365,11 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
             .run_identity(),
         original_run
     );
-    assert!(
-        receipt
-            .managed_cleanup_receipt()
-            .unwrap()
-            .inspection()
-            .resources_released()
-    );
+    assert!(receipt
+        .managed_cleanup_receipt()
+        .unwrap()
+        .inspection()
+        .resources_released());
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
         &head

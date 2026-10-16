@@ -30,11 +30,23 @@ pub use recovery::{
 /// Why a request could not bind to the operation a workflow awaits: the workflow belongs to
 /// another runtime, the request does not match the requirement, or no authority was issued
 /// for it.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub enum WorthQueryWorkflowOperationBindingDenial {
     RuntimeMismatch,
     RequirementMismatch,
     AuthorityUnavailable,
+    /// The original request could not open its native advancement.
+    ExecutionRequest(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
+    /// Selecting the original workflow's installed meaning was refused.
+    ProductSelection(
+        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
+    ),
+    /// Native occurrence/actor context construction refused before admission.
+    ActorContext(
+        Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial>,
+    ),
     /// The request key or input could not be encoded into its canonical
     /// identity, so it cannot be compared with the requirement.
     Identity(ApplicationMutationIdentityDenial),
@@ -46,7 +58,19 @@ impl std::fmt::Display for WorthQueryWorkflowOperationBindingDenial {
     }
 }
 
-impl std::error::Error for WorthQueryWorkflowOperationBindingDenial {}
+impl std::error::Error for WorthQueryWorkflowOperationBindingDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::ExecutionRequest(cause) => Some(cause),
+            Self::ProductSelection(cause) => Some(cause),
+            Self::ActorContext(cause) => Some(cause.as_ref()),
+            Self::RuntimeMismatch
+            | Self::RequirementMismatch
+            | Self::AuthorityUnavailable
+            | Self::Identity(_) => None,
+        }
+    }
+}
 
 /// Why a performed operation was not accepted as the effect the instance awaits.
 #[derive(Debug)]
@@ -93,7 +117,7 @@ where
     /// The input is encoded here, once, and compared with the requirement; the
     /// request keeps it, so executing the request encodes only its key.
     pub fn for_workflow_operation<'workflow, Spec>(
-        self,
+        mut self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
@@ -106,6 +130,27 @@ where
             .encode_input()
             .map_err(WorthQueryWorkflowOperationBindingDenial::Identity)?;
         self.validate_workflow_operation_binding(workflow, required, input.identity())?;
+        self.workflow_actor_context = self
+            .application_runtime()
+            .with_application_advancement(self.request_scope(), |phase| {
+                let installed = workflow
+                    .workflow_spec_on(&phase, self.product_branch())
+                    .map_err(WorthQueryWorkflowOperationBindingDenial::ProductSelection)?;
+                WorthQueryWorkflowAdvanceAdapter::bind_operation_actor_context::<
+                    Schema,
+                    Spec,
+                    Intent::Binding,
+                >(
+                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    installed,
+                    required,
+                )
+                .map_err(|cause| {
+                    WorthQueryWorkflowOperationBindingDenial::ActorContext(Box::new(cause))
+                })
+            })
+            .map_err(WorthQueryWorkflowOperationBindingDenial::ExecutionRequest)??;
+
         if !required.authority_slot().was_issued() {
             return Err(WorthQueryWorkflowOperationBindingDenial::AuthorityUnavailable);
         }
@@ -120,7 +165,7 @@ where
     /// not issue authority to run a new guarded mutation. Like
     /// `for_workflow_operation`, it encodes the input once and keeps it.
     pub fn for_workflow_operation_recovery<'workflow, Spec>(
-        self,
+        mut self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
@@ -133,6 +178,27 @@ where
             .encode_input()
             .map_err(WorthQueryWorkflowOperationBindingDenial::Identity)?;
         self.validate_workflow_operation_binding(workflow, required, input.identity())?;
+        self.workflow_actor_context = self
+            .application_runtime()
+            .with_application_advancement(self.request_scope(), |phase| {
+                let installed = workflow
+                    .workflow_spec_on(&phase, self.product_branch())
+                    .map_err(WorthQueryWorkflowOperationBindingDenial::ProductSelection)?;
+                WorthQueryWorkflowAdvanceAdapter::bind_operation_actor_context::<
+                    Schema,
+                    Spec,
+                    Intent::Binding,
+                >(
+                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    installed,
+                    required,
+                )
+                .map_err(|cause| {
+                    WorthQueryWorkflowOperationBindingDenial::ActorContext(Box::new(cause))
+                })
+            })
+            .map_err(WorthQueryWorkflowOperationBindingDenial::ExecutionRequest)??;
+
         Ok(self.bind_workflow_recovery_transition(*required.transition_identity_bytes(), input))
     }
 
@@ -153,7 +219,7 @@ where
             || required.binding()
                 != Some(<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::IDENTITY)
             || required.workflow_execution_requirements()
-                != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::workflow_execution_requirements().as_ref()
+                != &<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::workflow_execution_requirements()
             || !<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
             || required.input_type()
                 != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::InputBinding::IDENTITY.as_str()
@@ -233,6 +299,7 @@ where
             PreparedWorkflowAdvance::Transition { .. }
             | PreparedWorkflowAdvance::AwaitingAssessment(_)
             | PreparedWorkflowAdvance::AwaitingCondition(_)
+            | PreparedWorkflowAdvance::AwaitingProposal { .. }
             | PreparedWorkflowAdvance::AwaitingEvidence { .. }
             | PreparedWorkflowAdvance::AwaitingApproval { .. }
             | PreparedWorkflowAdvance::ReplayOnly { .. } => {
@@ -257,6 +324,7 @@ where
             prepared,
             effect_admission,
             effect_idempotency,
+            receipt,
             required,
             recovery,
             self.idempotency,
@@ -281,3 +349,6 @@ mod ordinary;
 
 mod bound;
 pub use bound::{WorthQueryAdvancedWorkflowOperation, WorthQueryBoundWorkflowOperation};
+
+#[cfg(test)]
+mod binding_denial_tests;

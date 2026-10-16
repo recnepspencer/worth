@@ -24,12 +24,13 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(in crate::application_entry) source:
-        WorthQueryCompletedSourceOperation<S, I, P, A, ApplicationSourceCompletion>,
     pub(in crate::application_entry) required: RequiredWorkflowOperation,
     pub(super) recovery: WorkflowDispatchRecovery,
     pub(in crate::application_entry) recovery_result:
         Option<worth_query_execution::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission>,
+    // Native recovery/result carriers drop before the source's runtime keepalive.
+    pub(in crate::application_entry) source:
+        WorthQueryCompletedSourceOperation<S, I, P, A, ApplicationSourceCompletion>,
 }
 /// Retains a terminal workflow operation's native denial and remaining custody.
 ///
@@ -52,16 +53,15 @@ where
     P: ApplicationProgramDefinition<S>,
 {
     Recovery {
-        operation: WorthQueryWorkflowOperation<S, I, P, A>,
         denial: worth_query_execution::facade::primary_graph::WorthQueryRecoveryHandleDenial,
+        operation: WorthQueryWorkflowOperation<S, I, P, A>,
     },
     Native {
         source: WorthQueryTerminalSourceOperation<S, I, P, A, ApplicationSourceCompletion>,
-        required: RequiredWorkflowOperation,
     },
     Spent {
-        operation: WorthQueryWorkflowOperation<S, I, P, A>,
         denial: WorthQuerySourceOnlyDenial,
+        operation: WorthQueryWorkflowOperation<S, I, P, A>,
     },
 }
 /// Returns native workflow progress together with the continuing effect owner.
@@ -97,7 +97,7 @@ where
         self.source.evidence()
     }
     pub fn close(
-        self,
+        mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
         if !matches!(
@@ -111,23 +111,10 @@ where
                 WorthQueryOperationCloseDenial::NativeObligationRetained,
             ));
         }
-        let Self {
-            source,
-            required,
-            recovery,
-            recovery_result,
-        } = self;
-        source.close(request).map_err(|(source, cause)| {
-            (
-                Self {
-                    source,
-                    required,
-                    recovery,
-                    recovery_result,
-                },
-                cause,
-            )
-        })
+        self.source
+            .operation
+            .close_cleanup(request)
+            .map_err(|denial| (self, denial))
     }
 }
 impl<S, I, P, A> WorthQueryTerminalWorkflowOperation<S, I, P, A>
@@ -137,41 +124,15 @@ where
     P: ApplicationProgramDefinition<S>,
 {
     pub fn close(
-        self,
+        mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
-        match self.state {
-            TerminalWorkflowState::Recovery { operation, denial } => {
-                operation.close(request).map_err(|(operation, cause)| {
-                    (
-                        Self {
-                            state: TerminalWorkflowState::Recovery { operation, denial },
-                        },
-                        cause,
-                    )
-                })
-            }
-            TerminalWorkflowState::Native { source, required } => {
-                source.close(request).map_err(|(source, cause)| {
-                    (
-                        Self {
-                            state: TerminalWorkflowState::Native { source, required },
-                        },
-                        cause,
-                    )
-                })
-            }
-            TerminalWorkflowState::Spent { operation, denial } => {
-                operation.close(request).map_err(|(operation, cause)| {
-                    (
-                        Self {
-                            state: TerminalWorkflowState::Spent { operation, denial },
-                        },
-                        cause,
-                    )
-                })
-            }
-        }
+        let outcome = match &mut self.state {
+            TerminalWorkflowState::Recovery { operation, .. }
+            | TerminalWorkflowState::Spent { operation, .. } => operation.close_in_place(request),
+            TerminalWorkflowState::Native { source, .. } => source.close_in_place(request),
+        };
+        outcome.map_err(|denial| (self, denial))
     }
     pub fn original_abort(
         &self,
@@ -194,7 +155,9 @@ where
     ) -> Option<&WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>>
     {
         match &self.state {
-            TerminalWorkflowState::Recovery { operation, .. } => operation.completion.as_ref(),
+            TerminalWorkflowState::Recovery { operation, .. } => operation
+                .source_completed
+                .then(|| operation.source.completion()),
             _ => None,
         }
     }

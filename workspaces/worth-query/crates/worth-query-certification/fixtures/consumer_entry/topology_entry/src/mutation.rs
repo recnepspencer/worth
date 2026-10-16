@@ -37,6 +37,12 @@ pub type PlanarMutationScope<Schema> = ApplicationMutationFieldScope<
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for PlanarMutationBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = PlanarMutation;
     type InputBinding = PlanarMutationInputBinding;
     type Result = PlanarAdjustmentResult;

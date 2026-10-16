@@ -1,9 +1,9 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
+use crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes;
 use crate::domain_computation::primary_graph::{
     application_query::{
-        resource_lifecycle::WorthQueryApplicationBasisLease, PreparedSelectedReadIndexes,
-        WorthQueryApplicationQueryBasisCustody,
+        resource_lifecycle::WorthQueryApplicationBasisLease, WorthQueryApplicationQueryBasisCustody,
     },
     WorthQueryPrimaryGraphApplicationRuntime,
 };
@@ -204,6 +204,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             execution,
             product,
             Some(query_basis),
+            SecurityIndexCurrency::PreparedSelectedGraphRead(prepared),
+        )
+    }
+
+    /// Fresh security selection consumes exact currency from the actual admitted access.
+    /// If the branch moved since that preparation, matches_basis refuses before any read.
+    pub(in crate::domain_computation) fn admit_capability_read_security_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: &impl WorthQueryProductObservationSource,
+        prepared: &PreparedSelectedReadIndexes,
+    ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
+    {
+        self.admit_product_security_basis_with_query_basis(
+            execution,
+            product,
+            None,
             SecurityIndexCurrency::PreparedSelectedGraphRead(prepared),
         )
     }

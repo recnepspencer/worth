@@ -1,8 +1,8 @@
 //! Fresh operation admission observes the current action before output work.
 use super::*;
 use crate::application_program::{
-    ConsumerFixedAction,
     fixed_successors::{ChangedFixed, RemovedFixed},
+    ConsumerFixedAction,
 };
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_host::facade::{

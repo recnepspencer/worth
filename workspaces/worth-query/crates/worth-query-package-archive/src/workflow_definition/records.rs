@@ -68,9 +68,7 @@ pub(super) fn encode_node(
                 output,
                 &operation
                     .workflow_execution_requirements()
-                    .map_or_else(String::new, |requirements| {
-                        requirements.persistence_identity()
-                    }),
+                    .persistence_identity(),
             )?;
         }
         ApplicationWorkflowNodeKind::Assessment(assessment) => {
@@ -111,12 +109,8 @@ pub(super) fn decode_node(input: &mut BinaryInput<'_>) -> Result<DraftNode, Deni
                 requires_workflow_authority: boolean(input)?,
                 workflow_execution_requirements: {
                     let encoded = owned_text(input)?;
-                    if encoded.is_empty() {
-                        None
-                    } else {
-                        Some(worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(&encoded)
-                            .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?)
-                    }
+                    worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(&encoded)
+                        .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?
                 },
             }
         }

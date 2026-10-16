@@ -17,12 +17,12 @@ use super::super::{
     schema::DocumentRetentionSchema,
 };
 use super::{
-    ReviewedDocumentWorkflow, WorkflowAdvanceCapability, WorkflowAdvanceInput,
-    WorkflowAdvanceOperation, WorkflowApprovalCapability, WorkflowDefinitionAuthoringBinding,
+    install_certification_authentication_with_clock, ReviewedDocumentWorkflow,
+    WorkflowAdvanceCapability, WorkflowAdvanceInput, WorkflowAdvanceOperation,
+    WorkflowApprovalCapability, WorkflowDefinitionAuthoringBinding,
     WorkflowDefinitionAuthoringCapability, WorkflowDefinitionAuthoringInput,
     WorkflowDefinitionAuthoringOperation, WorkflowInstanceStartCapability,
     WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
-    install_certification_authentication_with_clock,
 };
 
 pub fn retain_workflow<Program: ApplicationProgramDefinition<DocumentRetentionSchema>>(
@@ -37,7 +37,20 @@ pub fn retain_workflow_with_resources<
     application: DocumentRetentionRuntime<Program>,
     resources: WorthQueryApplicationWorkflowResourceCeiling,
 ) -> DocumentWorkflowRuntime<Program> {
-    let workflow = install_workflow_spec(
+    retain_workflow_for::<Program, ReviewedDocumentWorkflow>(application, resources)
+}
+
+pub fn retain_workflow_for<Program, Spec>(
+    application: DocumentRetentionRuntime<Program>,
+    resources: WorthQueryApplicationWorkflowResourceCeiling,
+) -> DocumentWorkflowRuntime<Program, Spec>
+where
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
+    Spec: worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+        Schema = DocumentRetentionSchema,
+    >,
+{
+    let workflow = install_workflow_spec_for::<Program, Spec>(
         application.runtime().installed_schema(),
         application.installed_program(),
         resources,
@@ -64,9 +77,23 @@ pub fn install_workflow_spec<Program>(
 where
     Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
 {
+    install_workflow_spec_for::<Program, ReviewedDocumentWorkflow>(schema, program, resources)
+}
+
+pub(super) fn install_workflow_spec_for<Program, Spec>(
+    schema: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
+    program: &WorthQueryInstalledApplicationProgram<DocumentRetentionSchema, Program>,
+    resources: WorthQueryApplicationWorkflowResourceCeiling,
+) -> WorthQueryInstalledApplicationWorkflowSpec<DocumentRetentionSchema, Spec>
+where
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
+    Spec: worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+        Schema = DocumentRetentionSchema,
+    >,
+{
     WorthQueryApplicationWorkflowSpecInstallation::<
         DocumentRetentionSchema,
-        ReviewedDocumentWorkflow,
+        Spec,
         Program,
     >::begin(schema, program, resources)
     .operation::<WorkflowDefinitionAuthoringBinding>()

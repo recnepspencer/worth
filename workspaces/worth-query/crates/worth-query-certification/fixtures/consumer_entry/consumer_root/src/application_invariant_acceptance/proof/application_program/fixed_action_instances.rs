@@ -1,7 +1,7 @@
 //! Public owning construction and delivery use the exact canonical action instance.
 use super::*;
 use crate::application_program::{
-    ConsumerFixedAction, ConsumerFixedDelivery, SecondaryPlanarRoot, action_instances::*,
+    action_instances::*, ConsumerFixedAction, ConsumerFixedDelivery, SecondaryPlanarRoot,
 };
 use worth_query_decl::facade::application_program::{
     ApplicationActionDelivery, ApplicationCompositionInstance, ApplicationProgramAuthoring,
@@ -11,8 +11,8 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::domain::WorthQueryActionResolutionDenial;
 use worth_query_topology_entry::{
-    PlanarSourceAdjustmentBinding, planar_source_adjustment_contacts,
-    reset_planar_source_adjustment_contacts,
+    planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts,
+    PlanarSourceAdjustmentBinding,
 };
 
 macro_rules! settle {

@@ -104,7 +104,7 @@ read a workflow instance.
 | Author | Application code | `ApplicationWorkflowDefinitionBuilder` | `AuthoredWorkflowDefinition`, then `ValidatedWorkflowDefinition` |
 | Bind | Application code | `bind_definition` | `WorthQueryInstalledWorkflowDefinitionContract` |
 | Publish | Caller request | `prepare_workflow_publication` | `WorkflowDefinitionPublicationOutcome` |
-| Discover | Caller | `discover_workflow_definition` | `WorthQueryWorkflowDefinitionDiscovery` |
+| Discover metadata | Caller with explicit metadata read | retained `discover_workflow_definition` | `WorthQueryWorkflowDefinitionRead` |
 | Start | Caller request | `prepare_workflow_instance_start` | `WorkflowInstanceStartOutcome` |
 | Propose | Caller request | `prepare_workflow_proposal` | `WorkflowProposalOutcome` |
 | Advance | Caller request | `prepare_workflow_advance` | `WorkflowProgressOutcome` |
@@ -262,7 +262,9 @@ A branch whose program has no installed vocabulary is refused before any effect.
 
 ## Node kinds
 
-`ApplicationWorkflowNodeKind` has seven kinds:
+`ApplicationWorkflowNodeKind` supplies the current variants listed in
+[Source-derived vocabulary](#source-derived-vocabulary). The builder table below
+explains their authored use:
 
 | Kind | Builder method | What it does | Outgoing control outcomes |
 |---|---|---|---|
@@ -326,10 +328,10 @@ The sequence:
 6. **External effects** settle through [owner custody](#owner-custody) and an `AwaitInbound` node.
 7. **Advance again** to move to the successor or terminal.
 
-Advancing at a proposal slot returns `PreparationDenied` whose kind is
-`WorkflowTransitionNodeUnsupported` and whose subject is the node path. It means "this node
-needs a proposal", not a fault. There is no `AwaitingProposal` outcome (see
-[Known gaps](#known-gaps)).
+Advancing at a proposal slot returns `AwaitingProposal(required)`. Inspect
+`required.node_path()`, `operation()` and `input_type()` to prepare the actual
+proposal input, then call `prepare_workflow_proposal` under fresh admission.
+The need grants no authority and waiting records no transition.
 
 ## Author a definition
 
@@ -371,7 +373,7 @@ Connection methods return `&mut Self` and chain:
 - Each assessment has exactly one subject (`MissingAssessmentSubject`); each condition has exactly one subject (`MissingConditionSubject`).
 - Each evidence join receives at least two `assessment_evidence` inputs (`IncompleteEvidenceJoin`).
 - Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). So every approval needs an evidence join over at least two assessments.
-- A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `workflow_requirements` omitted, or `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and declares no `workflow_requirements` (`UnexpectedWorkflowAuthority`).
+- A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and explicitly declares `not_applicable()` (`UnexpectedWorkflowAuthority`).
 - After the authority check, each guarded operation has exactly one `operation_input` source (`MissingOperationInput` for zero or multiple sources). Publication and imported drafts use this validation. Native reconstruction refuses unsupported stored definitions before executable readmission without rewriting their original bytes.
 
 `finish()` returns `Result<AuthoredWorkflowDefinition<Spec>,
@@ -458,20 +460,24 @@ Preparation refusals are `WorthQueryWorkflowDefinitionPublicationPreparationDeni
 
 ## Discover and retire definitions
 
-Discovery asks one selected branch occurrence which revision is current for an identity:
+The metadata route requires an explicit `definition_metadata` read rule,
+its concrete installed read binding, and independently supplied domain read input.
+It authorizes the current principal before looking up the name at the retained
+basis. It grants neither subject access nor definition-wide enumeration.
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// `execution` is the host's `ExecutionRequest`
-// (`worth_query_host::facade::primary_graph::ExecutionRequest`).
-let selected = runtime
-    .with_host_advancement(|phase| runtime.on_branch(branch).select(&phase))??;
-let found = selected.discover_workflow_definition::<PurchaseWorkflowSpec>(execution, &identity)?;
+let target = ApplicationWorkflowDefinitionReadTarget::<PurchaseWorkflowSpec>::new(identity);
+let found = request.at(&basis).discover_workflow_definition::<PurchaseWorkflowSpec, DefinitionMetadataRead>(
+    workflow, &target, independently_supplied_read_input,
+)?;
 ```
 
-The runnable example builds its `ExecutionRequest` with `ExecutionRequest::serial(..)`
-(`worth-query-certification/examples/authored_workflow/main.rs`).
+`WorthQueryWorkflowDefinitionRead` retains the exact data basis. Inspect its
+`definition()` for the result below. A well-formed foreign Spec is undisclosed as
+`Unpublished`; malformed native facts remain typed corruption. The disabled
+reviewed-document example demonstrates refusal through the same request route.
 
 `WorthQueryWorkflowDefinitionDiscovery`:
 
@@ -481,16 +487,11 @@ The runnable example builds its `ExecutionRequest` with `ExecutionRequest::seria
 | `Retired` | The lineage was retired. It admits no new starts. |
 | `Unpublished` | Nothing was published under this identity on this occurrence. |
 
-`WorthQueryWorkflowDefinitionDiscoveryDenial`:
-
-| Variant | Meaning |
-|---|---|
-| `ExecutionRequest(..)` | The native request stopped while reading the selected occurrence. |
-| `Cancelled` | The caller cancelled this discovery. |
-| `DeadlineExceeded` | The caller's deadline elapsed during discovery. |
-| `ForeignLineage` | Another spec published this identity. Discover it through that spec. |
-| `LineageUnreadable` | The lineage records cannot be read within their fixed bounds. Retrying the same discovery cannot succeed. |
-| `IndexUnavailable` | The lineage index could not be made current within its reconstruction budget. |
+`WorthQueryWorkflowObservationDenial` preserves request/selection failures and
+native read denials. Disabled or incompatible policy refuses at installation;
+unauthorized names refuse at fresh capability admission, equally for present and
+absent names. Native read, preparation, index and corruption failures remain typed;
+they are never converted into an empty discovery result.
 
 The answer is exact for that occurrence only. A later start that finds the
 definition superseded or retired says so with a typed outcome. A discovered
@@ -570,6 +571,7 @@ authoring control intent:
 | Variant | What the instance needs next |
 |---|---|
 | `Completed(PerformedWorkflowTransition)` | Nothing; a step was recorded. `node_path()` names it; `terminal()` says whether the instance ended. |
+| `AwaitingProposal(RequiredWorkflowProposal)` | A proposal of the named operation/input; fresh `prepare_workflow_proposal` admission owns publication. |
 | `AwaitingActor(RequiredWorkflowActor)` | The pumping principal is not authorized for this step. `instance()` names the instance; `denial()` says why. A principal authorized for the step pumps the same instance again. |
 | `AwaitingAssessment(RequiredWorkflowAssessment)` | Evidence from an assessment. `node_path()` names it. |
 | `AwaitingCondition(RequiredWorkflowCondition)` | A condition result. |
@@ -582,9 +584,10 @@ authoring control intent:
 | `AuthenticationDenied(..)` | The authentication event was refused. |
 | `IdempotencyDenied(..)` | The key conflicts with a different recorded request. |
 
-At a proposal slot, `execute()` returns `PreparationDenied` whose kind is
-`WorkflowTransitionNodeUnsupported` and whose subject is the node path: the
-node needs a proposal, not another advance.
+At a proposal slot, `execute()` returns `AwaitingProposal(required)` with the
+actual node, operation, input type and occurrence. `run_workflow` stops with
+`Outcome(WorkflowProgressOutcome::AwaitingProposal(required))`; supply a real
+proposal through fresh admission before advancing again.
 
 `WorthQueryWorkflowAdvancePreparationDenial` has `RuntimeMismatch`,
 `RequestAdmission(..)`, `TransitionPreparation(..)`, `Authentication(..)`, and
@@ -815,7 +818,7 @@ declare no additional workflow evidence:
 // Illustrative: not compiled.
 // Inside worth_query_mutation_binding!(...), alongside its other contracts:
 workflow_authority required,
-workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
+workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only(),
 ```
 
 For an operation requiring a particular native approval capability, use the
@@ -830,21 +833,21 @@ workflow_requirements ApplicationWorkflowExecutionRequirements::requiring_approv
 
 `ApplicationWorkflowExecutionRequirements` is exported through
 `worth_query_decl::facade::application_operation` and the host's declaration
-facade. Manual `ApplicationMutationBinding` implementations return `Some(...)`
-from `workflow_execution_requirements()`. The default `None` requires exactly one
-native approval. It is not the same as `Some(ApplicationWorkflowExecutionRequirements::new())`.
+facade. Manual `ApplicationMutationBinding` implementations return the direct
+requirement from `workflow_execution_requirements()`. Guarded bindings explicitly
+choose `occurrence_only()` or `requiring_approval::<Cap>()`. Non-workflow bindings
+explicitly return `not_applicable()`. Omission has no current interpretation.
 
 | Declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Default guarded requirement: exactly one approval edge is required. |
-| `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| Guarded requirement omitted | Compile refusal; manual bindings must implement the requirement method explicitly. |
+| `ApplicationWorkflowExecutionRequirements::not_applicable()` | Explicit non-workflow applicability; refused for a guarded binding. |
+| `ApplicationWorkflowExecutionRequirements::occurrence_only()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 
-**Warning:** leaving `workflow_requirements` out does not mean "no approval". It
-means "exactly one approval". To run a guarded operation without a signature,
-declare `new()`. The runnable
-[`information.rs`](../../../worth-query-certification/examples/authored_workflow/information.rs)
-example does this.
+A guarded macro binding that omits `workflow_requirements` is a compile error.
+The runnable [`information.rs`](../../../worth-query-certification/examples/authored_workflow/information.rs)
+example declares occurrence-only execution explicitly.
 
 The installed binding establishes a minimum evidence requirement. Definition
 authoring cannot remove or substitute it. Wire a required approval with the
@@ -903,6 +906,12 @@ External source completion alone does not settle the operation. Its actual nativ
 recovery or authenticated inbound evidence must satisfy guarded custody before
 fresh acceptance can commit the owed workflow settlement. Dispatch-handle disposal,
 workflow settlement and source cleanup remain separate obligations.
+For originally declared inbound work without admissible corrective recovery,
+`Progress` retains the original source evidence while waiting for authenticated
+ingress; it mints no recovery handle and grants no retry authority. Each advance
+rechecks fresh admission and exact native custody. Close refuses
+`NativeObligationRetained` with the same owner until a fresh advance observes
+settlement and returns the completed owner.
 
 Acceptance refusal returns the same completed owner; success retains both actual
 WorkflowProgressOutcome and that owner. Close it through fresh authority; refusal
@@ -920,6 +929,115 @@ returned by `idempotency_owned` has no `advanced()` method.
 
 Generic mutation recovery still refuses workflow operations. Native workflow
 recovery preserves the original workflow binding and dispatch custody.
+
+
+## Recorded workflow actors
+
+A capability can require that the original workflow actor exists and compare
+that actor with the principal making the current request. The comparison uses
+partition, slot and generation. Both same-principal and different-principal
+rules require positive presence: an operation that has not performed has no
+executor and cannot satisfy a different-executor requirement.
+
+The spec binds each participating mutation binding to its native source with
+`ApplicationWorkflowActorPolicy::for_approval::<Spec, Binding>(source)` or
+`for_operation`. The capability's `ApplicationCapabilityActorComposition`
+explicitly carries a third argument, `ApplicationCapabilityRecordedActorRule`.
+Use `not_applicable()` when no recorded role is required.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Declaration expressions inside a real spec and capability.
+let source = ApplicationWorkflowRecordedActorSource::BoundProposal;
+let actors = ApplicationWorkflowActorPolicy::for_approval::<ReviewWorkflow, ApproveBinding>(source);
+let requirement = ApplicationCapabilityRecordedActorRule::required(
+    ApplicationCapabilityRecordedActorRequirement::new(
+        source,
+        ApplicationWorkflowRecordedRole::Proposer,
+        ApplicationRecordedActorComparison::DifferentPrincipal,
+    ),
+);
+```
+
+For a review, the author publishes the original proposal through admitted native
+execution. A second principal prepares approval using that exact instance,
+requirement and proposal, then supplies its own fresh authentication event.
+The original proposal selects the proposer. The approver still needs the normal
+current grant, scope, purpose and signing evidence. Distinctness supplies none
+of those permissions. A different proposal about the same subject cannot replace
+the consumed proposal, even when its data coverage is reusable.
+
+`BoundTransition` selects the original input transition's advancer or performed
+executor. `BoundApproval` selects the consumed approval's approver. Historical
+actors are recorded identities, not current grants. A later settler, adopter or
+recovery caller does not become the original executor. Native receipt validation
+preserves the principal that actually performed the effect.
+
+The native owner captures these facts at the capability observation's selected
+basis. The positive requirement participates in the existing Required decision
+before access is issued. Retained decisions carry the native source revisions
+and exact recorded identity; stale original facts cannot become fresh through
+an unchanged subject or a caller-supplied actor field.
+
+Every workflow spec explicitly declares `observation_policy()` and
+`actor_policy()`. `ApplicationWorkflowObservationPolicy::disabled()` closes the
+public discovery route. Governed original-intent reads enter through the
+principal-bearing retained request described below. Exact definition metadata
+requires its separate concrete `DefinitionMetadata` read slot; the former
+execution-only entrance is removed. Actor capability enforcement is independent of read disclosure.
+Public workflow views never serve as permission.
+
+Current workflow layouts and portable definitions admit only their current
+actor and policy contracts. Unsupported predecessors are refused intact before
+old native authority is interpreted; callers cannot supply actor backfill or
+select an old condition decoder.
+
+
+## Governed original-intent reads
+
+The original-intent read surface owns one exact data observation while
+using fresh current read authority.
+
+Retain `prepared.discovery_intent()` before executing an authentic workflow start.
+The opaque value is original creation intent, so keeping it across requests does
+not retain an actor, credential or read grant. Choose the data explicitly with
+`request.at(&observation)`; supply actual domain inputs to the installed subject
+and audit bindings.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let original = prepared.discovery_intent();
+let started = prepared.execute();
+let data = runtime.request(&principal, &scope).retain_current_read()?;
+let found = runtime.request(&fresh_principal, &fresh_scope).at(&data)
+    .read_original_workflow::<ReviewWorkflow, SubjectRead, AuditRead>(
+        workflow.vocabulary(), &original, subject_input, audit_input,
+    )?;
+```
+
+`Live` carries a freshly located `PublishedWorkflowInstanceRef` and a view.
+`Historical` carries the recorded state and a historical posture, without a live
+command locator. Authorized `Missing` still owns its exact read basis. None of
+these outcomes authorizes an advance or approval. Those commands admit afresh.
+
+For a reviewer reopening an older observation after an audit grant is revoked,
+the base subject read can still report the old state and recorded paths. Audit
+returns `Withheld` under a genuine permission refusal. Revoking the subject grant
+refuses the entire read, even though the application still owns the old data
+observation. Cancellation, unavailable bases and resource failures remain typed
+errors; they are not converted to missing records or audit withholding.
+
+The isolated Document Retention governed-read court exercises the real original
+start, separate subject/audit grants and native grant revocation. It also asserts
+that read-only history does not change the workflow progress cache or branch
+head, and that an unrelated cold equality index stays unpublished.
+
+Actor values are historical identities with full generations, disclosed only
+after the separate audit gate. No authorization snapshot or external identity
+credential is returned. Keep discovery intent rather than rebuilding private
+start digests or treating an application status table as native workflow truth.
 
 ## Navigate back
 
@@ -966,21 +1084,75 @@ operation still needs its own lane and its own key.
 - Each outcome is typed, so a caller (or an AI agent) can read the `Awaiting*` variant and choose the next request.
 - Each request carries its own idempotency key. Retrying a key replays the recorded outcome.
 
-### Known gaps
+### Retained proposal and approval history
 
-These limits are current, consumer-visible, and verified in source. Before
-concluding something else is missing, follow the procedure in the
-[capability index](../../../../../../docs/capability-index.md). Closing them is
-scheduled platform work, owned by
-[Milestone 9.17.6.5](../../../../../../plans/WORTH-query/milestone-9.17.6.5.md);
-until a row is removed, its "Do not" rule stands and no substitute may be built.
+Use `found.target()` from an original-intent read or an indexed instance page to
+read its recorded transitions. The opaque target owns exact data custody and no
+grant. Each history page freshly admits the subject rule and independently admits
+audit. Actor `Withheld` does not erase a proposal or approval decision. A row's
+`approval()` is the recorded decision on that row, not current command permission.
+No credentials, authorization envelopes or grant snapshots appear in the view.
 
-| Gap | What exists today | Do not |
-|---|---|---|
-| No facade read of a workflow instance's state or history (current node, transitions, proposals, approvals) | Only the typed outcomes your own requests return: `PerformedWorkflowTransition`, `PerformedWorkflowApproval` (`approver()`), `Awaiting*`; idempotent replay of the same key returns the recorded outcome | Do not mirror kernel state into your schema as truth or use a status table to decide whether to advance. Advance and match the typed outcome. |
-| Instance and proposal references cannot be rebuilt in another process (`PublishedWorkflowInstanceRef` / `PublishedWorkflowProposalRef` have no public constructor or serialization; no instance discovery) | Keep the references in the process that owns the instance | Do not serialize, forge, or re-derive references; do not build an instance registry and treat it as authority. |
-| Proposal and transition records do not retain the acting principal (approvals do retain the approver) | Capability separation-of-duty / distinct-actor rules exist but cannot see the proposer | Do not treat a caller-supplied "actor" field in input as admitted identity. |
-| No outcome names "awaiting a proposal" | `PreparationDenied(WorkflowTransitionNodeUnsupported)` with the node path | Do not treat it as a fault to retry blindly. |
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let target = found.target().expect("authorized instance exists");
+let page = request.at(&data).read_workflow_history::<ReviewWorkflow, SubjectRead, AuditRead>(
+    workflow.vocabulary(), target, subject_input(), audit_input(), 16,
+    WorthQueryWorkflowIndexRead::PublishedOnly, None,
+)?;
+for row in page.entries() {
+    println!("{}: {:?}", row.node_path(), row.outcome());
+    if let Some(proposal) = row.proposal() {
+        // A genuine native locator reacquired without serializing the original reference.
+        // Fresh prepare_workflow_approval still checks its actual pendingness and authority.
+        inspect_proposal(proposal);
+    }
+}
+let next = request.at(&data).read_workflow_history::<ReviewWorkflow, SubjectRead, AuditRead>(
+    workflow.vocabulary(), target, subject_input(), audit_input(), 16,
+    WorthQueryWorkflowIndexRead::PublishedOnly, page.continuation(),
+)?;
+```
+
+Only request another page when `continuation()` is present. Tokens bind the
+retained runtime/branch/basis, workflow, subject/scope, ordering and width. Each
+page spends normal read resources on the native selected transition index. Hot
+`PublishedOnly` refuses a missing generation; explicit `Reconstruct` permits only
+the selected index's bounded native cold work. Reading does not spend workflow
+steps, renew its deadline or install/evict command progress.
+
+For a screen showing pending work, retain the page's proposal locator, obtain the
+actual current `AwaitingApproval` through the owning workflow adapter, and submit
+that locator under a distinct approver's fresh request. After publication, reading
+the old data still shows the old pending record; select new data explicitly to
+observe the recorded decision. Neither the page nor its audit can be converted to
+an approval authority or a performed-operation witness.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let mut interest = request.at(&data).subscribe_workflow_history::<ReviewWorkflow, SubjectRead>(
+    workflow.vocabulary(), target, subject_input(),
+)?;
+let mark = fresh_request.at(&data).poll_workflow_history::<ReviewWorkflow, SubjectRead>(
+    workflow.vocabulary(), &mut interest, subject_input(),
+)?;
+match mark {
+    WorthQueryWorkflowHistoryMark::Changed => show_refresh_available(),
+    WorthQueryWorkflowHistoryMark::Overflow => show_discontinuity(),
+    WorthQueryWorkflowHistoryMark::Closed => show_subscription_closed(),
+    WorthQueryWorkflowHistoryMark::Pending => {}
+}
+interest.close();
+```
+
+The subscription reuses the native envelope's cursor, bounded retention,
+overflow and close custody. Dependency marks include anchors of currently absent
+workflow edges. They do not refresh immutable data or advance the workflow.
+Every poll freshly authorizes before revealing even a discontinuity; refusal
+retains the subscription and its unacknowledged positions. There is no automatic
+poller or second observation stream. Closing releases only subscription custody.
 
 ## Cancellation
 
@@ -1163,7 +1335,7 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | `ApplicationWorkflowValidationDenial` | `validate()` |
 | `WorthQueryApplicationWorkflowInstallationDenial` | Installation and `bind_definition` |
 | `WorthQueryWorkflowRuntimeBindingDenial` | `retain_workflow_spec`, `support_workflow_spec` |
-| `WorthQueryWorkflowDefinitionDiscoveryDenial` | Discovery |
+| `WorthQueryWorkflowReadDenial` | Discovery |
 | `WorthQueryWorkflowProposalPreparationDenial` | `prepare_workflow_proposal`. Variants: `RuntimeMismatch`, `RequestAdmission(..)`, `ProposalPreparation(..)`, `IdempotencyResolution(..)`, `InstanceBranchMismatch` |
 | `WorthQueryWorkflowAdvancePreparationDenial` | `prepare_workflow_advance` |
 | `WorthQueryWorkflowAssessmentAcceptanceDenial`, `WorthQueryWorkflowConditionAcceptanceDenial` | Accepting assessment evidence and condition results |
@@ -1367,7 +1539,7 @@ cargo run -p worth-query-certification --example authored_workflow
 
 The same run first executes `information.rs`, an unsigned workflow: a
 `propose` slot, a guarded `record` operation whose binding declares
-`workflow_requirements ApplicationWorkflowExecutionRequirements::new()`, and a
+`workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only()`, and a
 terminal. It proposes, advances to `AwaitingOperation`, executes the write
 through the retained `for_workflow_operation(..)` owner, and advances to
 `done` with no approval. Both parts propose with the authoring control intent
@@ -1384,3 +1556,126 @@ payment approval as a workflow. Its control bindings declare `WORKFLOW_CONTROL`.
 - [programs-and-adoption.md](programs-and-adoption.md): programs per branch and adoption, including the workflow inventory.
 - [how-it-works.md](../../../../../../docs/how-it-works.md): platform machinery, including the workflow kernel.
 - [glossary.md](../../../../../../docs/glossary.md): platform terms.
+
+## Source-derived vocabulary
+
+These regions list the current declared variants and their Rust form. They do
+not grant authority or replace the lifecycle explanations above.
+
+### Workflow node kinds
+
+<!-- source-facts: workflow-node-kinds begin -->
+<!-- Derived from `facade::application_program::ApplicationWorkflowNodeKind`; edit its source, then --write-guidance. -->
+
+| Variant | Shape |
+| --- | --- |
+| `Operation` | named { operation: ApplicationWorkflowOperationRef, requires_workflow_authority: bool } |
+| `Assessment` | tuple (ApplicationWorkflowAssessmentRef) |
+| `AwaitInbound` | tuple (ApplicationWorkflowAwaitInbound) |
+| `Condition` | tuple (ApplicationWorkflowCondition) |
+| `Approval` | tuple (ApplicationWorkflowApprovalRef) |
+| `EvidenceJoin` | tuple (ApplicationWorkflowEvidenceJoinPolicy) |
+| `Terminal` | unit |
+<!-- source-facts: workflow-node-kinds end -->
+
+### Workflow progress
+
+<!-- source-facts: workflow-progress begin -->
+<!-- Derived from `facade::application_entry::WorkflowProgressOutcome`; edit its source, then --write-guidance. -->
+
+| Variant | Shape |
+| --- | --- |
+| `AwaitingProposal` | tuple (RequiredWorkflowProposal) |
+| `AwaitingActor` | tuple (RequiredWorkflowActor) |
+| `AwaitingAssessment` | tuple (RequiredWorkflowAssessment) |
+| `AwaitingCondition` | tuple (RequiredWorkflowCondition) |
+| `AwaitingOperation` | tuple (RequiredWorkflowOperation) |
+| `AwaitingEvidence` | tuple (RequiredWorkflowEvidence) |
+| `AwaitingApproval` | tuple (RequiredWorkflowApproval) |
+| `Completed` | tuple (PerformedWorkflowTransition) |
+| `Application` | tuple (WorthQueryApplicationUncommitted) |
+| `ProjectionDenied` | tuple (WorthQueryApplicationCommitReceipt) |
+| `ProjectionReadStopped` | named { receipt: WorthQueryApplicationCommitReceipt, cause: RelationalExecutionDenialCause } |
+| `PreparationDenied` | tuple (WorthQueryApplicationAttemptDenial) |
+| `AuthenticationDenied` | tuple (worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial) |
+| `IdempotencyDenied` | tuple (WorthQueryApplicationIdempotencyResolutionDenial) |
+<!-- source-facts: workflow-progress end -->
+
+### Workflow validation denials
+
+<!-- source-facts: workflow-validation-denials begin -->
+<!-- Derived from `facade::application_program::ApplicationWorkflowValidationDenialKind`; edit its source, then --write-guidance. -->
+
+| Variant | Shape |
+| --- | --- |
+| `MissingStart` | unit |
+| `UnknownStart` | unit |
+| `NodeLimitExceeded` | unit |
+| `ConnectionLimitExceeded` | unit |
+| `EffectLimitExceeded` | unit |
+| `ComponentOccurrenceLimitExceeded` | unit |
+| `ComponentDepthExceeded` | unit |
+| `NodeProvenanceLimitExceeded` | unit |
+| `ConnectionProvenanceLimitExceeded` | unit |
+| `PortProvenanceLimitExceeded` | unit |
+| `UnknownConnectionEndpoint` | unit |
+| `DuplicateConnection` | unit |
+| `InvalidDataFlow` | unit |
+| `IncompatibleOperationInput` | unit |
+| `UnavailableDataFlow` | unit |
+| `MissingInboundOrigin` | unit |
+| `UnavailableInboundOrigin` | unit |
+| `MissingInboundDeadline` | unit |
+| `MissingAssessmentSubject` | unit |
+| `MissingConditionSubject` | unit |
+| `IncompleteEvidenceJoin` | unit |
+| `IncompleteApproval` | unit |
+| `MissingWorkflowAuthority` | unit |
+| `MissingOperationInput` | unit |
+| `UnexpectedWorkflowAuthority` | unit |
+| `MissingControlOutcome` | unit |
+| `AmbiguousControlOutcome` | unit |
+| `UnexpectedControlOutcome` | unit |
+| `TerminalHasSuccessor` | unit |
+| `UnreachableNode` | unit |
+| `ControlCycle` | unit |
+| `MissingTerminal` | unit |
+| `CanonicalBudgetExceeded` | unit |
+<!-- source-facts: workflow-validation-denials end -->
+
+## Owning capability commands
+
+Delegation and revocation are kernel commands, separate from domain mutation
+handlers and workflow operation slots. The application request exposes
+`retain_capability_delegation_in_program` and
+`retain_capability_revocation_in_program`. Each captures the original input,
+owned idempotency key, conditions, program/branch and admitted principal
+association. Capture refusal returns the original input, key and preparation
+closure alongside its typed denial. No command retains a request or grant.
+
+The preparation closure is repeatable projection/materialization under the
+fresh native admission; it must not execute an effect. Native command commit
+and the same private publication progression used by SourceOnly own execution,
+ambiguous recovery, settlement and cleanup. Supply a fresh request for every
+`advance` and retain `Progress(command)` or `Refused { command, denial }`.
+`Completed(done)` distinguishes `Fresh` from `Recovered` evidence. Borrowing
+`done.evidence().receipt()` neither releases cleanup nor transfers performed
+custody. `done.close_with_evidence(&fresh_request)` returns the original evidence
+only after lawful native cleanup, and returns the same owner on refusal.
+`Terminal(owner)` retains its native posture and may still refuse close.
+Dropping any owner is not evidence of cleanup or settlement.
+
+Fresh command authority is required even for completed replay. Delegation's
+native exact completed replay can remain lawful after its parent expires or is
+revoked; that does not authorize a fresh child. Revocation's poststate can be
+recovered without re-materializing an Active-to-Revoked effect. Separate
+principals scope the same client key separately, but a retained owner cannot be
+retargeted to another principal, runtime or branch. Workflow/audit views grant
+no command authority. Use a new, freshly admitted command for different intent;
+never implement an ordinary flat reissue or manual recovery loop.
+
+The owning command compiler examples live in the Host audience's
+`src/capability_command_contract.rs`; the genuine Bank command
+courts and Query SourceOnly revocation interleaving use native receipts and
+readbacks. These sources await the grouped receiving build and runtime proof;
+they do not establish the complete mixed-workflow or hardening portfolio.

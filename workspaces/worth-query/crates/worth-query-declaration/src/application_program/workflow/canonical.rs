@@ -12,7 +12,7 @@ use super::{
     ApplicationWorkflowNode, ApplicationWorkflowNodeKind, ApplicationWorkflowSpec,
 };
 
-const RULE_VERSION: &str = "worth-query-authored-workflow-definition-v1";
+const RULE_VERSION: &str = "worth-query-authored-workflow-definition-v2";
 const BASIS_DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.authored-workflow-definition");
 
@@ -35,6 +35,14 @@ where
     nodes.sort_by(|left, right| left.identity().cmp(right.identity()));
     connections.sort_by_key(connection_record);
     let mut entries = Vec::with_capacity(nodes.len() + connections.len() + 5);
+    entries.push(text_entry(
+        "observation-policy",
+        &Spec::observation_policy().persistence_identity(),
+    ));
+    entries.push(text_entry(
+        "actor-policy",
+        &Spec::actor_policy().persistence_identity(),
+    ));
     entries.push(text_entry("spec", Spec::IDENTITY.as_str()));
     entries.push(text_entry("start", start));
     entries.push(text_entry("limits", &limits_record(limits)));
@@ -120,14 +128,11 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                     "0"
                 },
             ];
-            match operation.workflow_execution_requirements() {
-                Some(requirements) => {
-                    let requirements = requirements.persistence_identity();
-                    fields.push(&requirements);
-                    framed_record("operation-requirements-v1", &fields)
-                }
-                None => framed_record("operation", &fields),
-            }
+            let requirements = operation
+                .workflow_execution_requirements()
+                .persistence_identity();
+            fields.push(&requirements);
+            framed_record("operation-requirements-v2", &fields)
         }
         ApplicationWorkflowNodeKind::Assessment(assessment) => framed_record(
             "assessment",

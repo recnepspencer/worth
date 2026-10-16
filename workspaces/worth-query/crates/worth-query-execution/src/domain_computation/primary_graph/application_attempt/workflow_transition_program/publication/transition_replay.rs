@@ -75,6 +75,12 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 replays,
                 ..
             }
+            | Self::AwaitingProposal {
+                read_set,
+                transition_identity_locator,
+                replays,
+                ..
+            }
             | Self::AwaitingApproval {
                 read_set,
                 transition_identity_locator,
@@ -239,6 +245,12 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 replays,
                 ..
             }
+            | Self::AwaitingProposal {
+                read_set,
+                transition_identity_locator,
+                replays,
+                ..
+            }
             | Self::AwaitingApproval {
                 read_set,
                 transition_identity_locator,
@@ -276,6 +288,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         else {
             return Ok(None);
         };
+        let receipt_identity = receipt_identity.identity();
         if replay.operation_receipt_identity != Some(receipt_identity) {
             return Ok(None);
         }

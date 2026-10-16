@@ -27,13 +27,14 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    source: WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationSourceCompletion>,
     required: RequiredWorkflowOperation,
-    completion:
-        Option<WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>>,
+    // Set only by the genuine completed source step, never by pending delivery.
+    source_completed: bool,
     recovery: completion::WorkflowDispatchRecovery,
     recovery_result:
         Option<worth_query_execution::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission>,
+    // Release all outer native custody before the source's authentic runtime.
+    source: WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationSourceCompletion>,
 }
 /// A stopped advance returns original custody; effect completion is not workflow terminality.
 pub enum WorthQueryWorkflowOperationAdvance<O, C, T> {

@@ -122,6 +122,12 @@ type RetentionAssessmentScope = ApplicationMutationFieldScope<
 >;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for RetentionAssessmentBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = RetentionAssessmentInput;
     type InputBinding = RetentionAssessmentInputBinding;
     type Result = RetentionAssessmentPublished;

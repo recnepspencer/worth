@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::tests::support::*;
 use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
@@ -10,7 +11,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     create_entity(execution, &runtime, "settlement-anchor");
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("checkpoint seals the baseline before the direct parent");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -92,9 +93,10 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     let child_position = tail[1].position();
     release_test_commit_snapshot(&runtime, &child);
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -137,7 +139,7 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
     create_entity(execution, &runtime, "repair-anchor");
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("repair baseline checkpoint");
 
     let published_before = runtime.visibility.published_snapshot_handle_count();
@@ -173,11 +175,14 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
     assert_eq!(settlement.commit().commit_id, commit_id);
     assert_eq!(settlement.patch_position(), position);
     assert_eq!(
-        runtime
+        match runtime
             .durability_authority()
-            .checkpoint()
+            .checkpoint(execution)
             .expect_err("unsettled performed publication blocks checkpoint")
-            .class,
+        {
+            crate::durability::data::RelationalRecoveryStop::Durability(error) => error.class,
+            other => panic!("unexpected checkpoint stop: {other:?}"),
+        },
         crate::durability::data::RecoveryFailureClass::PerformedPublicationRequiresSettlement
     );
 
@@ -242,14 +247,15 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
     );
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("checkpoint succeeds after repair");
     let child = create_entity_outcome(execution, &runtime, "child-after-repair");
     assert_eq!(child.commit.parents, vec![commit_id]);
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()

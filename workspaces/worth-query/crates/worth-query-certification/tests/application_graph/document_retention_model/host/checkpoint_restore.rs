@@ -40,7 +40,7 @@ where
 {
     in_memory_rostered_program_from_checkpoint(
         initial,
-        roster,
+        roster.support(super::super::actor_generation::validated_actor_program()),
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         host_limits(),

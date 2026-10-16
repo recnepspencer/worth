@@ -12,12 +12,13 @@ pub(in crate::domain_computation::authorization) struct WorthQueryDelegationActi
     session_identity:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     narrowing: Arc<RelationalAuthorizationObservationEvidence>,
-    native_dependencies: String,
+    native_dependencies:
+        worth_relational::facade::authorization::RelationalAuthorizationDependencyWire,
 }
 
 impl WorthQueryDelegationActivationDecisionFact {
-    pub(super) fn retained_durable_dependencies(&self) -> Result<String, ()> {
-        Ok(self.native_dependencies.clone())
+    pub(super) fn retained_durable_dependencies(&self) -> &str {
+        &self.native_dependencies
     }
 
     pub(in crate::domain_computation::authorization) fn new(
@@ -25,7 +26,10 @@ impl WorthQueryDelegationActivationDecisionFact {
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         narrowing: RelationalAuthorizationObservationEvidence,
-    ) -> Result<Self, ()> {
+    ) -> Result<
+        Self,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    > {
         let native_dependencies =
             super::durable_dependencies::capture(execution, runtime, &narrowing)?;
         Ok(Self {

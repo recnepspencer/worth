@@ -449,3 +449,66 @@ Use `--document-private-items` only when you are maintaining the platform.
 - [How WORTH Works](how-it-works.md): what happens behind these facades.
 - [Glossary](glossary.md): exact meanings of every term used here.
 - [Documentation index](README.md).
+
+## Source-derived mutation outcomes
+
+These are the current public mutation outcome variants. Their lifecycle meaning
+remains with the mutation owner and the linked application guide.
+
+### Mutation outcomes
+
+<!-- source-facts: mutation-outcomes begin -->
+<!-- Derived from `facade::application_entry::WorthQueryApplicationMutationOutcome`; edit its source, then --write-guidance. -->
+
+| Variant | Shape |
+| --- | --- |
+| `Committed` | named { receipt: WorthQueryApplicationCommitReceipt, result: Result } |
+| `AlreadyCommitted` | tuple (WorthQueryApplicationCommitReceipt) |
+| `PreviouslyCommitted` | tuple (WorthQueryHistoricalApplicationCommit) |
+| `IdempotencyIntentDrift` | unit |
+| `DomainDenied` | tuple (Denial) |
+| `Cancelled` | unit |
+| `DeadlineExceeded` | unit |
+| `Commit` | tuple (WorthQueryApplicationUncommitted) |
+<!-- source-facts: mutation-outcomes end -->
+
+### Retained capability commands
+
+Delegation and revocation enter through
+`WorthQueryApplicationRequest::retain_capability_delegation_in_program` and
+`retain_capability_revocation_in_program`, returning move-only
+`WorthQueryCapabilityCommand` owners. `advance(&fresh_request)` preserves
+original intent and custody through progress/refusal, native Fresh/Recovered
+completion and terminal posture. Completed `close_with_evidence` transfers the
+original receipt after native cleanup; close refusal returns the same owner.
+These commands reuse the native publication owner, without a mutation binding
+or fabricated handler result. See [owning command usage](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands).
+
+### Observable workflow requests
+
+Applications use `worth_query_host::facade::application_entry` for request
+methods and `application_discovery` for workflow read targets, history pages,
+marks and outcomes. Policies and typed read bindings come from
+`worth_query_decl::facade::application_program`; recorded actor requirements
+come from its `application_capability` module.
+
+| Task | Public receiver and returned meaning |
+| --- | --- |
+| Pin current selected data | `request.retain_current_read()`; no phase argument. Returns a retained read, not a disclosure grant. |
+| Select that data | `request.at(&basis)`; current request admission and selected data remain separate. |
+| Reacquire an original start | `read.read_original_workflow::<Spec, SubjectRead, AuditRead>(vocabulary, &original_start, input, audit_input)`; Live, Historical or Missing. |
+| Locate history | `found.target()` or `observation.target()`; a sealed data target, not a new field on Live or command authority. |
+| Read a bounded history | `read.read_workflow_history::<Spec, SubjectRead, AuditRead>(vocabulary, &target, input, audit_input, width, indexes, after)`; `after` is the previous history page at the same basis and selection. |
+| Subscribe to relevant changes | `read.subscribe_workflow_history::<Spec, SubjectRead>(vocabulary, &target, input)`; native envelope subscription custody. |
+| Check a mark | `read.poll_workflow_history::<Spec, SubjectRead>(vocabulary, &mut subscription, input)`; fresh subject admission, `Pending`, `Changed`, `Overflow` or `Closed`, no implicit data refresh. |
+| Release subscription custody | `subscription.close()`; no request argument and no operation cleanup evidence. |
+
+Audit is independently admitted: `Withheld` records undisclosed actor roles,
+while lifecycle rows and locators keep their subject-authorized meaning.
+A live reference, original start intent or observed actor supplies no execution
+permission. Advance and owning operation receivers require current admission.
+
+The [mixed caller journey](build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
+contains marker-bound proposal, archive/ingress/cleanup and old-basis/live-mark
+excerpts. Its complete public-facade target is
+[`observable_workflow`](../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs).

@@ -4,6 +4,7 @@ use worth_foundational::facade::AspectFieldLocator;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_relational::facade::identity::EntityId;
 
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 use worth_query_admission::facade::{
@@ -48,7 +49,7 @@ fn matches_outer_approval_identity(
 pub struct PreparedWorkflowApprovalAuthentication<Schema> {
     owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
     intent: WorthQueryAuthenticationEventIntent,
-    basis: Arc<[WorthQueryApplicationObservedFact]>,
+    basis: FactPayload,
     descriptor: ApprovalDescriptor,
     consumed: Option<WorthQueryConsumedAuthenticationEvent<Schema>>,
 }
@@ -87,7 +88,7 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
         Self {
             owner,
             intent,
-            basis,
+            basis: basis.into(),
             descriptor: ApprovalDescriptor {
                 program_revision: *program_revision,
                 transition_identity: transition_identity.clone(),
@@ -109,11 +110,8 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
         &self.intent
     }
 
-    pub(super) fn matches_basis(
-        &self,
-        candidate: Option<&Arc<[WorthQueryApplicationObservedFact]>>,
-    ) -> bool {
-        candidate.is_some_and(|candidate| Arc::ptr_eq(&self.basis, candidate))
+    pub(super) fn matches_basis(&self, candidate: Option<&FactPayload>) -> bool {
+        candidate.is_some_and(|candidate| self.basis.same_backing(candidate))
     }
 
     pub(super) fn bind_replays(&mut self, replays: &PreparedWorkflowTransitionReplays) {

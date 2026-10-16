@@ -6,6 +6,7 @@ use crate::domain_computation::{
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowProposalMeaning {
     pub(super) identity: String,
+    pub(super) proposer: worth_relational::facade::identity::EntityId,
     pub(super) operation: String,
     pub(super) input_type: String,
     pub(super) input_identity: String,
@@ -125,6 +126,7 @@ pub(in crate::domain_computation::primary_graph) fn derive_workflow_proposal(
     source_identity: Option<[u8; 32]>,
     node_path: &str,
     mut coverages: Vec<WorkflowProposalCoverageMeaning>,
+    proposer: worth_relational::facade::identity::EntityId,
 ) -> WorkflowProposalMeaning {
     coverages.sort_by(|left, right| left.selector.cmp(&right.selector));
     let input_identity = encode(input_identity);
@@ -139,6 +141,18 @@ pub(in crate::domain_computation::primary_graph) fn derive_workflow_proposal(
         coverage.identity = scope.coverage_identity(&coverage.local_identity);
     }
     let mut fields = vec![
+        (
+            "workflow.proposer.partition",
+            proposer.partition_value().to_string(),
+        ),
+        (
+            "workflow.proposer.slot",
+            proposer.local_slot_value().to_string(),
+        ),
+        (
+            "workflow.proposer.generation",
+            proposer.generation_value().to_string(),
+        ),
         ("workflow.transition", transition_identity.to_owned()),
         ("workflow.operation", operation.to_owned()),
         ("workflow.input-type", input_type.to_owned()),
@@ -158,6 +172,7 @@ pub(in crate::domain_computation::primary_graph) fn derive_workflow_proposal(
     let material = canonical_operation_material(fields);
     let identity_bytes: [u8; 32] = Sha256::digest(material.as_bytes()).into();
     WorkflowProposalMeaning {
+        proposer,
         identity: encode(identity_bytes),
         operation: operation.to_owned(),
         input_type: input_type.to_owned(),
@@ -256,6 +271,7 @@ mod tests {
             None,
             "proposal",
             vec![first_a.clone(), stable_b.clone()],
+            EntityId::new(PartitionId::main(), 99, 1),
         );
         let second = derive_workflow_proposal(
             "transition",
@@ -265,6 +281,7 @@ mod tests {
             None,
             "proposal",
             vec![second_a.clone(), stable_b.clone()],
+            EntityId::new(PartitionId::main(), 99, 1),
         );
 
         assert_ne!(first.identity, second.identity);
@@ -286,6 +303,7 @@ mod tests {
             Some([2; 32]),
             "proposal",
             vec![coverage.clone()],
+            EntityId::new(PartitionId::main(), 99, 1),
         );
         let changed = derive_workflow_proposal(
             "transition",
@@ -295,6 +313,7 @@ mod tests {
             Some([2; 32]),
             "proposal",
             vec![coverage],
+            EntityId::new(PartitionId::main(), 99, 1),
         );
         let changed_input = derive_workflow_proposal(
             "transition",
@@ -307,6 +326,7 @@ mod tests {
                 ApplicationWorkflowSubjectSelector::Resource,
                 EntityId::new(PartitionId::new(1), 10, 1),
             )],
+            EntityId::new(PartitionId::main(), 99, 1),
         );
         let changed_source = derive_workflow_proposal(
             "transition",
@@ -319,6 +339,7 @@ mod tests {
                 ApplicationWorkflowSubjectSelector::Resource,
                 EntityId::new(PartitionId::new(1), 10, 1),
             )],
+            EntityId::new(PartitionId::main(), 99, 1),
         );
 
         assert_ne!(first.coverages[0].identity, changed.coverages[0].identity);
@@ -346,6 +367,7 @@ mod tests {
             None,
             "proposal",
             vec![coverage.clone()],
+            EntityId::new(PartitionId::main(), 99, 1),
         );
         let later = derive_workflow_proposal(
             "transition/later-occurrence",
@@ -355,6 +377,7 @@ mod tests {
             None,
             "proposal",
             vec![coverage],
+            EntityId::new(PartitionId::main(), 99, 1),
         );
 
         assert_ne!(first.identity, later.identity);

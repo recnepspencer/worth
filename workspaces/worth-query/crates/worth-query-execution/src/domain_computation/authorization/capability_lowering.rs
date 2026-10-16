@@ -34,6 +34,8 @@ use accumulator::WorthQueryCapabilityRuleLoweringAccumulator;
 pub(super) use accumulator::WorthQueryCapabilityRuleSet;
 pub(super) use installed_plan::{compile_capability_plan, WorthQueryInstalledCapabilityPlan};
 
+const RECORDED_ACTOR_CLAUSE_NAMESPACE: u8 = 0xc8;
+
 fn compile_grant_path(
     capability: &[u8; 32],
     contract: &ErasedApplicationCapabilityContract,
@@ -121,6 +123,25 @@ fn compile_composition_rules(
     let conflict = compile_optional(composition.decision().conflict().graph())?;
     let separation_of_duty = compile_optional(composition.actors().separation_of_duty().graph())?;
     let distinct_actor = compile_optional(composition.actors().distinct_actor().graph())?;
+    let recorded_actor = composition
+        .actors()
+        .recorded_actor()
+        .requirement()
+        .map(|requirement| {
+            if !requirement.is_valid() {
+                return Err(authorization_denial(
+                    contract.name(),
+                    "invalid native recorded-role requirement",
+                ));
+            }
+            // Installed capability meaning already binds this exact requirement.
+            // Preserve all its identity bits in a namespace distinct from graph
+            // paths (0xc7), without deriving a second semantic digest.
+            let mut identity = *capability;
+            identity[0] ^= RECORDED_ACTOR_CLAUSE_NAMESPACE;
+            Ok(lowering.add_recorded_actor(requirement, identity))
+        })
+        .transpose()?;
     Ok(WorthQueryCapabilityDecisionRuleBindings {
         grant: 0,
         allow,
@@ -128,6 +149,7 @@ fn compile_composition_rules(
         conflict,
         separation_of_duty,
         distinct_actor,
+        recorded_actor,
     })
 }
 

@@ -164,12 +164,10 @@ fn fixed_missing_carrier_consumed_native_delivery_is_terminal_with_cleanup() {
         .consume_next_recovered_program_source_delivery_for_test()
         .unwrap();
     let operation = recover(operation, &request);
-    assert!(
-        guard
-            .captured_delivery_for_test()
-            .unwrap()
-            .has_original_delivery()
-    );
+    assert!(guard
+        .captured_delivery_for_test()
+        .unwrap()
+        .has_original_delivery());
     let page = world
         .application
         .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
@@ -222,14 +220,12 @@ fn fixed_missing_carrier_consumed_native_delivery_is_terminal_with_cleanup() {
     terminal
         .close(&world.application.request(&fresh_principal, &fresh_scope))
         .unwrap_or_else(|(_, cause)| panic!("fresh native cleanup: {cause:?}"));
-    assert!(
-        world
-            .application
-            .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
-            .unwrap()
-            .rows()
-            .is_empty()
-    );
+    assert!(world
+        .application
+        .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+        .unwrap()
+        .rows()
+        .is_empty());
     assert_eq!(planar_source_adjustment_contacts(&intent), (1, 1));
 }
 
@@ -292,12 +288,10 @@ fn fixed_missing_carrier_direct_query_promotion_retains_real_refusal() {
             .recover_unpublished_required_in_program(&mut recovery, &world.application)
             .unwrap();
         if let Some(guard) = &guard {
-            assert!(
-                guard
-                    .captured_delivery_for_test()
-                    .unwrap()
-                    .has_original_delivery()
-            );
+            assert!(guard
+                .captured_delivery_for_test()
+                .unwrap()
+                .has_original_delivery());
         }
         let promotion = request
             .advanced()

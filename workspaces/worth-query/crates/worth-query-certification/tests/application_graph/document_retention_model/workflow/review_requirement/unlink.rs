@@ -18,6 +18,12 @@ worth_query_structured_value_binding!(pub ReviewRequirementUnlinkedBinding for R
 
 pub struct UnlinkReviewRequirementBinding;
 impl ApplicationMutationBinding<DocumentRetentionSchema> for UnlinkReviewRequirementBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = ReviewRequirementInput;
     type InputBinding = ReviewRequirementInputBinding;
     type Result = ReviewRequirementUnlinked;

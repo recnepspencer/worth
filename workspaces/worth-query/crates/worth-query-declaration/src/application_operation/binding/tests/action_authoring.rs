@@ -89,7 +89,7 @@ fn combined_action_retains_every_contract_and_delivery_in_one_declaration() {
     );
     assert_eq!(
         action.workflow_execution_requirements(),
-        RenameBinding::workflow_execution_requirements().as_ref()
+        &RenameBinding::workflow_execution_requirements()
     );
 }
 

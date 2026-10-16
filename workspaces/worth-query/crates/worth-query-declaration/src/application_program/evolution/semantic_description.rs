@@ -341,7 +341,8 @@ fn append_actions(
                     .to_owned(),
             ),
         ];
-        if let Some(requirements) = action.workflow_execution_requirements() {
+        {
+            let requirements = action.workflow_execution_requirements();
             fields.push((
                 "workflow-execution-requirements",
                 requirements.persistence_identity(),

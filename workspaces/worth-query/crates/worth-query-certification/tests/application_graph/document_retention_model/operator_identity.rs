@@ -113,3 +113,10 @@ pub(crate) fn block_on<F: Future>(future: F) -> F::Output {
         }
     }
 }
+
+#[path = "operator_identity/reviewer.rs"]
+mod reviewer;
+pub use reviewer::{
+    authenticate_reviewer, authenticate_ungranted_reviewer, reviewer_identity,
+    ungranted_reviewer_identity,
+};

@@ -85,6 +85,12 @@ pub struct ReviewRequirementTargets {
 }
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewRequirementBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = ReviewRequirementInput;
     type InputBinding = ReviewRequirementInputBinding;
     type Result = ReviewRequirementLinked;

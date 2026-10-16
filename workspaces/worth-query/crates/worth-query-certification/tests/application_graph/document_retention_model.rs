@@ -34,3 +34,6 @@ pub mod schema;
 pub mod settled_verdict;
 #[path = "document_retention_model/workflow.rs"]
 pub mod workflow;
+
+#[path = "document_retention_model/actor_generation.rs"]
+pub mod actor_generation;

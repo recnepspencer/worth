@@ -110,7 +110,7 @@ fn approval_contract() -> ApplicationCapabilityContract<
         ),
         WorkflowAdvanceProvenance::reference(),
     ))
-    .composition(composition())
+    .composition(recorded_proposer_composition())
     .elevation(ApplicationCapabilityElevationRule::not_applicable())
     .build()
 }
@@ -313,7 +313,7 @@ fn contract() -> ApplicationCapabilityContract<
     .build()
 }
 
-fn composition() -> ApplicationCapabilityComposition {
+pub(super) fn composition() -> ApplicationCapabilityComposition {
     let allow = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .forward(WorkflowDocumentOwner::reference())
         .allow(Document::reference());
@@ -327,8 +327,7 @@ fn composition() -> ApplicationCapabilityComposition {
         ),
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
-            ApplicationCapabilityDistinctActorRule::not_applicable(),
-        ),
+            ApplicationCapabilityDistinctActorRule::not_applicable(), worth_query_decl::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         ApplicationCapabilityPropagationComposition::new(
             ApplicationCapabilityDelegationRule::forbidden(),
             ApplicationCapabilityDisclosureRule::not_applicable(),
@@ -339,4 +338,28 @@ fn composition() -> ApplicationCapabilityComposition {
 fn encoded(value: &str) -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {
     ApplicationEncodedScalarValue::try_new(value.to_owned())
         .expect("workflow capability fixture text must encode")
+}
+
+fn recorded_proposer_composition() -> ApplicationCapabilityComposition {
+    use worth_query_decl::facade::application_capability::{
+        ApplicationCapabilityRecordedActorRequirement, ApplicationCapabilityRecordedActorRule,
+        ApplicationRecordedActorComparison, ApplicationWorkflowRecordedActorSource,
+        ApplicationWorkflowRecordedRole,
+    };
+    let ordinary = composition();
+    ApplicationCapabilityComposition::new(
+        ordinary.decision().clone(),
+        ApplicationCapabilityActorComposition::new(
+            ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
+            ApplicationCapabilityDistinctActorRule::not_applicable(),
+            ApplicationCapabilityRecordedActorRule::required(
+                ApplicationCapabilityRecordedActorRequirement::new(
+                    ApplicationWorkflowRecordedActorSource::BoundProposal,
+                    ApplicationWorkflowRecordedRole::Proposer,
+                    ApplicationRecordedActorComparison::DifferentPrincipal,
+                ),
+            ),
+        ),
+        ordinary.propagation().clone(),
+    )
 }

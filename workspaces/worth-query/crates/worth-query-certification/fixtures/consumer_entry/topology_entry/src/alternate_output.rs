@@ -52,6 +52,12 @@ pub struct AlternatePlanarOutputBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for AlternatePlanarOutputBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = AlternatePlanarOutput;
     type InputBinding = AlternatePlanarOutputInputBinding;
     type Result = PlanarAdjustmentResult;

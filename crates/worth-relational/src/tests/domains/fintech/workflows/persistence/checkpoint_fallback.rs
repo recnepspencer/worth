@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn fintech_recovery_falls_back_from_corrupt_latest_checkpoint_and_keeps_truth() {
@@ -8,20 +9,24 @@ fn fintech_recovery_falls_back_from_corrupt_latest_checkpoint_and_keeps_truth() 
     let mut world = setup_world_for(execution, FintechScenario::PersistedSmokeBook);
     let analysis = open_analysis_branch(&mut world);
     let _shock = shock_market_on_branch(execution, &mut world, analysis.clone());
-    checkpoint_world(&mut world).unwrap();
+    checkpoint_world(execution, &mut world).unwrap();
     let correction = correct_seeded_trade_candidate(execution, &mut world, analysis);
-    checkpoint_world(&mut world).unwrap();
-    let plan = world.runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    checkpoint_world(execution, &mut world).unwrap();
+    let plan = world
+        .runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let corrupted = corrupt_latest_checkpoint_file(&plan);
     assert!(corrupted.is_some());
 
     let (recovered, outcome) = recover_runtime_from_plan(
         execution,
-        world.runtime.durability().recovery_plan(
-            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-        ),
+        world
+            .runtime
+            .durability()
+            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+            .unwrap(),
     )
     .unwrap();
     let recovered_snapshot = recovered.visibility_authority().snapshot();

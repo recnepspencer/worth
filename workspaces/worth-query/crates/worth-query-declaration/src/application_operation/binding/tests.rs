@@ -243,11 +243,9 @@ fn mutation_binding_registers_exact_handler_scope_and_candidate_metadata() {
             .maximum_retained_representation_bytes(),
         128
     );
-    assert!(
-        declaration
-            .member_provenance()
-            .admits_mutation_binding_operation(descriptor)
-    );
+    assert!(declaration
+        .member_provenance()
+        .admits_mutation_binding_operation(descriptor));
     assert!(declaration.erased().members().iter().any(|member| matches!(
         member,
         ApplicationSchemaMember::Operation { operation, .. }
@@ -282,7 +280,7 @@ fn principal_scope_resolution_uses_the_borrowed_principal_identity() {
 #[test]
 fn declaration_description_survives_portable_readmission_and_binds_denial_identity() {
     use crate::application_schema::{
-        WorthQueryPortableApplicationSchemaRecord, validate_portable_application_schema_freshly,
+        validate_portable_application_schema_freshly, WorthQueryPortableApplicationSchemaRecord,
     };
     let source = MutationSchema::declaration().unwrap();
     let portable = WorthQueryPortableApplicationSchemaRecord::project(source.erased());
@@ -334,8 +332,8 @@ fn declaration_description_survives_portable_readmission_and_binds_denial_identi
 #[test]
 fn portable_mutation_description_rejects_missing_scope_and_duplicate_binding() {
     use crate::application_schema::{
-        ApplicationSchemaDeclarationDenial, WorthQueryPortableApplicationSchemaRecord,
-        validate_portable_application_schema_freshly,
+        validate_portable_application_schema_freshly, ApplicationSchemaDeclarationDenial,
+        WorthQueryPortableApplicationSchemaRecord,
     };
     let source = MutationSchema::declaration().unwrap();
     let portable = WorthQueryPortableApplicationSchemaRecord::project(source.erased());

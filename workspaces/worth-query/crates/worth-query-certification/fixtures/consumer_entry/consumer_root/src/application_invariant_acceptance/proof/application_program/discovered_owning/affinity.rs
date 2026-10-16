@@ -6,8 +6,8 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 #[test]
-fn discovered_ordinary_fork_refuses_foreign_requests_and_current_changed_delivery_preserves_history()
- {
+fn discovered_ordinary_fork_refuses_foreign_requests_and_current_changed_delivery_preserves_history(
+) {
     let original = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
         .validated_program()
         .unwrap();

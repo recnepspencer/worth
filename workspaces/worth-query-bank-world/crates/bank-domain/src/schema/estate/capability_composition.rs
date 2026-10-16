@@ -41,8 +41,7 @@ fn compose(
         ),
         ApplicationCapabilityActorComposition::new(
             separation_of_duty_rule(action),
-            distinct_actor_rule(action),
-        ),
+            distinct_actor_rule(action), worth_query_decl::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         ApplicationCapabilityPropagationComposition::new(
             ApplicationCapabilityDelegationRule::narrow_all_dimensions(
                 worth_query_decl::facade::application_capability::ApplicationCapabilityDelegationDepth::new(8)

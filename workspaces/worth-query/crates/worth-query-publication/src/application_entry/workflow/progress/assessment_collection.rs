@@ -85,6 +85,7 @@ where
             PreparedWorkflowAdvance::Transition { .. }
             | PreparedWorkflowAdvance::AwaitingCondition(_)
             | PreparedWorkflowAdvance::AwaitingOperation(_)
+            | PreparedWorkflowAdvance::AwaitingProposal { .. }
             | PreparedWorkflowAdvance::AwaitingEvidence { .. }
             | PreparedWorkflowAdvance::AwaitingApproval { .. }
             | PreparedWorkflowAdvance::ReplayOnly { .. } => return Err(
@@ -125,6 +126,7 @@ where
             PreparedWorkflowAdvance::Transition { .. }
             | PreparedWorkflowAdvance::AwaitingCondition(_)
             | PreparedWorkflowAdvance::AwaitingOperation(_)
+            | PreparedWorkflowAdvance::AwaitingProposal { .. }
             | PreparedWorkflowAdvance::AwaitingEvidence { .. }
             | PreparedWorkflowAdvance::AwaitingApproval { .. }
             | PreparedWorkflowAdvance::ReplayOnly { .. } => return Err(
@@ -169,6 +171,7 @@ where
                     PreparedWorkflowAdvance::Transition { .. }
                     | PreparedWorkflowAdvance::AwaitingCondition(_)
                     | PreparedWorkflowAdvance::AwaitingOperation(_)
+                    | PreparedWorkflowAdvance::AwaitingProposal { .. }
                     | PreparedWorkflowAdvance::AwaitingEvidence { .. }
                     | PreparedWorkflowAdvance::AwaitingApproval { .. }
                     | PreparedWorkflowAdvance::ReplayOnly { .. } => {

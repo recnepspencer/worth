@@ -2,6 +2,7 @@ pub mod builder;
 mod configuration;
 mod construction;
 mod durability_fault_injection;
+mod field_text;
 mod guided;
 mod initial_schema_installation;
 mod interruption_counters;

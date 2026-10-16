@@ -174,6 +174,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
         input: ApplicationEncodedInput<Operation::InputBinding>,
         request: &WorthQueryRequestScope,
+        workflow_actor: Option<&crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext>,
     ) -> Result<
         WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         WorthQueryOperationAuthorizationDenial,
@@ -192,6 +193,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             capability,
             input,
             request,
+            workflow_actor,
         )
     }
 
@@ -209,6 +211,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
         input: ApplicationEncodedInput<Operation::InputBinding>,
         request: &WorthQueryRequestScope,
+        workflow_actor: Option<&crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext>,
     ) -> Result<
         WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         WorthQueryOperationAuthorizationDenial,
@@ -226,6 +229,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             capability,
             input,
             request,
+            workflow_actor,
         )
     }
 

@@ -10,8 +10,8 @@ mod installation;
 pub(crate) mod product_world_resources;
 
 #[cfg(test)]
-pub(crate) fn bank_application_limits()
--> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+pub(crate) fn bank_application_limits(
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
     installation::bank_application_limits()
 }
 
@@ -23,9 +23,9 @@ use bank_domain::schema::{
     ExternalPrincipalMapping, Principal,
 };
 use worth_query_host::facade::admission::authenticated_principal::{
-    WorthQueryAuthenticationAdapter, WorthQueryAuthenticationAdapterAdmission,
-    WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod, WorthQueryRequestScope,
-    admit_authentication_adapter,
+    admit_authentication_adapter, WorthQueryAuthenticationAdapter,
+    WorthQueryAuthenticationAdapterAdmission, WorthQueryAuthenticationAudience,
+    WorthQueryAuthenticationMethod, WorthQueryRequestScope,
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,

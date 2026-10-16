@@ -65,7 +65,7 @@ impl WorthQueryOperationCleanup {
         self.producer_outcome = Some(Box::new(outcome));
         self.absorb_managed(runtime, cleanup);
     }
-    pub(super) fn absorb_managed<S, P>(
+    pub(in crate::application_entry) fn absorb_managed<S, P>(
         &mut self,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
         cleanup: worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup,
@@ -100,6 +100,26 @@ impl WorthQueryOperationCleanup {
             other => other,
         }
     }
+    pub(in crate::application_entry) fn absorb_command_outcome<S, P>(
+        &mut self,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
+        outcome: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome,
+    ) -> worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome
+    where
+        S: ApplicationSchema + 'static,
+        P: ApplicationProgramDefinition<S>,
+        WorthQueryProgramApplicationRuntime<S, P>: Send + Sync + 'static,
+    {
+        use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome as O;
+        match outcome {
+            O::CleanupRequired(required) if self.managed.is_none() => {
+                let (outcome, cleanup) = required.into_parts();
+                self.absorb_managed(runtime, cleanup);
+                outcome.into()
+            }
+            other => other,
+        }
+    }
     /// Original output-producer business evidence remains independent of cleanup release.
     pub fn producer_native_outcome(
         &self,
@@ -114,12 +134,17 @@ impl WorthQueryOperationCleanup {
     {
         self.managed.as_ref().map(|cleanup| cleanup.failure())
     }
-    pub(super) fn reserve_release_failure(&mut self) -> Result<(), WorthQueryOperationCloseDenial> {
+    pub(in crate::application_entry) fn reserve_release_failure(
+        &mut self,
+    ) -> Result<(), WorthQueryOperationCloseDenial> {
         self.failures
             .try_reserve(1)
             .map_err(|_| WorthQueryOperationCloseDenial::CleanupCapacity)
     }
-    pub(super) fn absorb_release_failure(&mut self, failure: Option<Failure>) {
+    pub(in crate::application_entry) fn absorb_release_failure(
+        &mut self,
+        failure: Option<Failure>,
+    ) {
         if let Some(failure) = failure {
             self.failures.push(failure);
         }

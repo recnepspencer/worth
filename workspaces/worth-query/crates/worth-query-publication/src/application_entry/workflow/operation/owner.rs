@@ -269,6 +269,7 @@ where
         &prepared.admission,
         prepared.idempotency,
         required.transition_identity_bytes(),
+        None,
     )
     .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Inspection)?;
     Ok((prepared, custody))

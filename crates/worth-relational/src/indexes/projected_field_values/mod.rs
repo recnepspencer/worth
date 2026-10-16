@@ -19,7 +19,7 @@ pub(super) use exact_entity_field_match::exact_entity_field_matches;
 pub(super) use index_projection_source::IndexProjectionSource;
 pub(super) use related_entity_ordering::{
     build_related_entity_ordering_index, build_related_entity_ordering_index_checked,
-    compare_related_entries, RelatedEntityOrderingProjection,
+    compare_ordering_value, compare_related_entries, RelatedEntityOrderingProjection,
 };
 pub(super) use relation_field_index_values::{
     build_relation_aspect_field_index, build_relation_aspect_field_index_checked,

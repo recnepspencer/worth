@@ -24,6 +24,10 @@ use super::{
 pub enum WorthQueryWorkflowDefinitionDraftDenialKind {
     /// The draft was authored under another workflow spec.
     ForeignSpec,
+    /// The installed observation/audit policy differs from the authored policy.
+    ChangedObservationPolicy,
+    /// The installed recorded-actor policy differs from the authored policy.
+    ChangedActorPolicy,
     /// A node names an operation, binding, query or capability the spec did
     /// not install.
     UnknownMember,
@@ -95,6 +99,12 @@ impl WorthQueryUntrustedWorkflowDefinitionDraft {
         if self.spec != Spec::IDENTITY.as_str() {
             return Err(denial(Kind::ForeignSpec, &self.spec));
         }
+        if self.observation_policy != installed.observation_policy().persistence_identity() {
+            return Err(denial(Kind::ChangedObservationPolicy, &self.spec));
+        }
+        if self.actor_policy != installed.actor_policy().persistence_identity() {
+            return Err(denial(Kind::ChangedActorPolicy, &self.spec));
+        }
         let mut schema = None;
         let mut commands = Vec::with_capacity(1 + self.nodes.len() + self.connections.len());
         for node in &self.nodes {
@@ -152,8 +162,7 @@ where
                 .draft_operation(identifier, binding.as_deref())
                 .ok_or_else(unknown)?;
             if operation.input_type().as_str() != input_type
-                || operation.workflow_execution_requirements()
-                    != workflow_execution_requirements.as_ref()
+                || operation.workflow_execution_requirements() != workflow_execution_requirements
             {
                 return Err(changed());
             }

@@ -1,5 +1,5 @@
 use crate::application::{
-    PlatformPulsePreparationDenial, PreparedPlatformPulseComposition, prepare_composition,
+    prepare_composition, PlatformPulsePreparationDenial, PreparedPlatformPulseComposition,
 };
 use crate::source_watch::PlatformPulseSourceWatch;
 use crate::visual_identity_execution::PlatformPulseVisualIdentityExecution;

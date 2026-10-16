@@ -164,7 +164,7 @@ fn a_cancellation_replays_exactly_after_its_branch_adopts_a_new_program() {
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| inventory.carry_compatible().unwrap()),
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
         ),
     );
 
@@ -203,7 +203,7 @@ fn a_cancellation_replays_after_adoption_leaves_its_retired_definition_behind() 
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| inventory.carry_compatible().unwrap()),
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
         ),
     );
 

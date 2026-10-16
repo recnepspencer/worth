@@ -23,6 +23,7 @@ mod projection;
 mod validation;
 use materialization::materialize_decision;
 pub(super) use operation_inputs::observe_operation_approval_inputs;
+pub(super) use validation::validate_requirement_definition as actor_approval_node;
 use validation::*;
 
 impl<Schema, Operation, Input, Scope>
@@ -129,6 +130,7 @@ where
         )?;
         facts.extend(inputs.facts);
         let meaning = identity::derive(
+            execution,
             &compiled,
             required,
             proposal,
@@ -136,7 +138,17 @@ where
             &self.admission,
             &inputs.evidence,
         )?;
-        let approval_projection = projection::prepare(&layout, &meaning)?;
+        let field_basis = self.lease.product().relational_basis().clone();
+        let admitted_text = self.lease.handle().with_runtime(execution, |runtime| {
+            crate::domain_computation::primary_graph::workflow::WorkflowApprovalFieldText::admit(
+                runtime,
+                execution,
+                &field_basis,
+                &meaning,
+            )
+        })?;
+        let approval_projection =
+            projection::prepare(&layout, &meaning, &field_basis, &admitted_text)?;
         let latest = observed
             .progress_basis
             .progress()
@@ -352,6 +364,8 @@ where
             *compiled.program_revision(),
             admitted,
             meaning,
+            &field_basis,
+            &admitted_text,
             evidence_currentness,
             approval_projection,
         )?;

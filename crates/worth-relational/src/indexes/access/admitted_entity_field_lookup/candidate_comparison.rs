@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn borrowed_matches<E>(
+pub(in crate::indexes::access) fn borrowed_matches<E>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     index: DerivedIndexId,
     view: &VisibilityProjectionView,

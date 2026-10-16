@@ -15,7 +15,7 @@ mod debt_snapshot;
 mod doc_presence;
 mod observation;
 mod ratchet;
-mod resolution;
+pub(crate) mod resolution;
 
 #[cfg(test)]
 mod tests;

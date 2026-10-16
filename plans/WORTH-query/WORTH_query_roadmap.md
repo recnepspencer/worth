@@ -5621,7 +5621,8 @@ authenticated principal.
 
 ## Milestone 9.17.6.5: Observable Workflow Truth
 
-**Planned.** [milestone-9.17.6.5.md](./milestone-9.17.6.5.md) follows 9.17.6.4.
+**Complete — public implementation and certification (2026-10-16).**
+[milestone-9.17.6.5.md](./milestone-9.17.6.5.md) follows 9.17.6.4.
 Make kernel-owned workflow truth sufficient for a multi-actor application without
 a consumer status store, actor copy or instance registry. Ship required canonical
 proposer, advancer, executor and approver roles where those roles have occurred;

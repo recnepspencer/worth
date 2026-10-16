@@ -11,99 +11,24 @@ use super::capability_delegation_mutation::{
 };
 use super::capability_delegation_progression::revoke_parent;
 use super::capability_progression::{admitted_capability_operation, time, Admission};
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::authorization::{
-    decode_workflow_approval_support, WorthQueryDurableCapabilityLineage,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryRetainedCapabilityRequest,
-    WorthQueryWorkflowApprovalAuthorityBasis,
-};
-use crate::domain_computation::primary_graph::WorthQueryDurablePrincipalCurrentness;
 use worth_query_installation::facade::ApplicationScalarValueBinding;
-
-fn durable_approval_basis(admission: &Admission) -> WorthQueryWorkflowApprovalAuthorityBasis {
-    durable_approval_basis_with_snapshots(admission, None, None)
-}
-
-fn durable_approval_basis_with_snapshots(
-    admission: &Admission,
-    replacement_support: Option<&str>,
-    replacement_lineage: Option<&str>,
-) -> WorthQueryWorkflowApprovalAuthorityBasis {
-    durable_approval_basis_with_dependency_snapshot(
-        admission,
-        replacement_support,
-        replacement_lineage,
-        None,
-    )
-}
-
-fn durable_approval_basis_with_dependency_snapshot(
-    admission: &Admission,
-    replacement_support: Option<&str>,
-    replacement_lineage: Option<&str>,
-    replacement_dependencies: Option<&str>,
-) -> WorthQueryWorkflowApprovalAuthorityBasis {
-    let authority = admission.workflow_approval_authority().unwrap();
-    let request = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
-        &admission
-            .workflow_approval_request_snapshot()
-            .unwrap()
-            .unwrap(),
-    )
-    .unwrap();
-    let principal: WorthQueryDurablePrincipalCurrentness = serde_json::from_str(
-        &admission
-            .workflow_approval_principal_snapshot()
-            .unwrap()
-            .unwrap(),
-    )
-    .unwrap();
-    let original_lineage = admission
-        .workflow_approval_lineage_snapshot()
-        .unwrap()
-        .unwrap();
-    let lineage: WorthQueryDurableCapabilityLineage =
-        serde_json::from_str(replacement_lineage.unwrap_or(&original_lineage)).unwrap();
-    let original_support = admission
-        .workflow_approval_support_snapshot()
-        .unwrap()
-        .unwrap();
-    let support =
-        decode_workflow_approval_support(replacement_support.unwrap_or(&original_support)).unwrap();
-    let original_dependencies = admission
-        .workflow_approval_dependencies_snapshot()
-        .unwrap()
-        .unwrap();
-    let mut dependency_snapshot: serde_json::Value =
-        serde_json::from_str(replacement_dependencies.unwrap_or(&original_dependencies)).unwrap();
-    if support.is_some() && dependency_snapshot["support"].is_null() {
-        dependency_snapshot["support"] = dependency_snapshot["primary"].clone();
-    }
-    let dependencies =
-        crate::domain_computation::authorization::WorthQueryWorkflowApprovalDependencies::decode(
-            &dependency_snapshot.to_string(),
-        )
-        .unwrap();
-    let worth_foundational::facade::AspectValue::UInt64(expiry) = authority.expiry else {
-        panic!("the fixture uses an unsigned capability expiry");
-    };
-    WorthQueryWorkflowApprovalAuthorityBasis::from_retained_approval(
-        request,
-        principal,
-        authority.grant,
-        authority.capability_authority_identity,
-        lineage,
-        support,
-        dependencies,
-        authority.timeline,
-        expiry,
-    )
-}
 
 #[path = "workflow_approval_revalidation/native.rs"]
 mod native;
 #[path = "workflow_approval_revalidation/support.rs"]
 mod support;
+
+#[path = "workflow_approval_revalidation/field_text.rs"]
+mod field_text;
+
+#[path = "workflow_approval_revalidation/durable_basis.rs"]
+mod durable_basis;
+use durable_basis::{
+    durable_approval_basis, durable_approval_basis_with_dependency_snapshot,
+    durable_approval_basis_with_snapshots,
+};
 
 #[test]
 fn durable_approval_readmission_rejects_changed_lineage_shape() {
@@ -127,13 +52,30 @@ fn durable_approval_readmission_rejects_changed_lineage_shape() {
             )
         })
         .expect("the fixture read owns its installed host call");
-    let original = admission
-        .workflow_approval_lineage_snapshot()
-        .unwrap()
-        .unwrap();
+    let original = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            admission
+                .workflow_approval_lineage_snapshot(&host.borrowed_request_for_test())
+                .unwrap()
+                .unwrap()
+        })
+        .expect("the fixture envelope owns its installed host call");
     assert!(original.contains("Root"));
     let changed = "\"Unbound\"";
-    let basis = durable_approval_basis_with_snapshots(&admission, None, Some(changed));
+    let basis = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            durable_approval_basis_with_snapshots(
+                &host.borrowed_request_for_test(),
+                &admission,
+                None,
+                Some(changed),
+            )
+        })
+        .expect("the fixture envelope owns its installed host call");
     let denial = world
         .application
         .with_host_advancement(|phase| {
@@ -178,7 +120,13 @@ fn durable_approval_readmission_denies_revoked_grant() {
             )
         })
         .expect("the fixture read owns its installed host call");
-    let basis = durable_approval_basis(&admission);
+    let basis = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            durable_approval_basis(&host.borrowed_request_for_test(), &admission)
+        })
+        .expect("the fixture envelope owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
@@ -253,7 +201,13 @@ fn durable_approval_readmission_denies_expired_grant() {
             )
         })
         .expect("the fixture read owns its installed host call");
-    let basis = durable_approval_basis(&admission);
+    let basis = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            durable_approval_basis(&host.borrowed_request_for_test(), &admission)
+        })
+        .expect("the fixture envelope owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
@@ -316,7 +270,13 @@ fn durable_approval_readmission_denies_revoked_delegation_parent() {
             )
         })
         .expect("the fixture read owns its installed host call");
-    let basis = durable_approval_basis(&admission);
+    let basis = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            durable_approval_basis(&host.borrowed_request_for_test(), &admission)
+        })
+        .expect("the fixture envelope owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {

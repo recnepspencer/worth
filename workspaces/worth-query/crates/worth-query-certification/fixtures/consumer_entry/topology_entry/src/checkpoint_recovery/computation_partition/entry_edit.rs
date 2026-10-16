@@ -189,6 +189,12 @@ pub(super) enum EditTarget<Schema> {
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for EntryEditBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EntryEdit;
     type InputBinding = EntryEditInputBinding;
     type Result = PlanarAdjustmentResult;

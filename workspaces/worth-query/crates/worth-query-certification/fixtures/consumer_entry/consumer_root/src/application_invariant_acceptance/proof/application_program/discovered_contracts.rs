@@ -65,11 +65,9 @@ fn discovered_installed_concrete_delivery_and_occurrence_are_exact() {
         Binding,
         QueryDelivery,
     >;
-    assert!(
-        installed
-            .resolve_action::<Binding, WrongInstance>()
-            .is_err()
-    );
+    assert!(installed
+        .resolve_action::<Binding, WrongInstance>()
+        .is_err());
 }
 
 #[test]

@@ -6,6 +6,11 @@ use super::*;
 struct SameIdentityBinding;
 
 impl ApplicationMutationBinding<MutationSchema> for SameIdentityBinding {
+    fn workflow_execution_requirements(
+    ) -> crate::application_operation::ApplicationWorkflowExecutionRequirements {
+        RenameBinding::workflow_execution_requirements()
+    }
+
     type Input = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Input;
     type InputBinding = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::InputBinding;
     type Result = <RenameBinding as ApplicationMutationBinding<MutationSchema>>::Result;
@@ -89,18 +94,14 @@ impl<const CASE: u8> ApplicationProgramDefinition<MutationSchema> for DuplicateP
             .native_action::<RenameBinding>()
             .finish_action();
         match CASE {
-            0 => vec![
-                source
-                    .native_action::<RenameBinding>()
-                    .finish_action()
-                    .finish(),
-            ],
-            1 => vec![
-                source
-                    .native_action::<SameIdentityBinding>()
-                    .finish_action()
-                    .finish(),
-            ],
+            0 => vec![source
+                .native_action::<RenameBinding>()
+                .finish_action()
+                .finish()],
+            1 => vec![source
+                .native_action::<SameIdentityBinding>()
+                .finish_action()
+                .finish()],
             2 => vec![
                 source.finish(),
                 ApplicationFeatureSpec::at::<MutationSchema, OtherOccurrence, Source>()
@@ -108,12 +109,10 @@ impl<const CASE: u8> ApplicationProgramDefinition<MutationSchema> for DuplicateP
                     .finish_action()
                     .finish(),
             ],
-            3 => vec![
-                ApplicationFeatureSpec::root::<MutationSchema, Source>()
-                    .native_action::<SameIdentityBinding>()
-                    .finish_action()
-                    .finish(),
-            ],
+            3 => vec![ApplicationFeatureSpec::root::<MutationSchema, Source>()
+                .native_action::<SameIdentityBinding>()
+                .finish_action()
+                .finish()],
             _ => unreachable!(),
         }
     }

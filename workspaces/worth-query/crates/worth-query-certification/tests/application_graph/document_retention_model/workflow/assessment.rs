@@ -17,6 +17,9 @@ pub fn accept_assessment(
         impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
             crate::document_retention_model::schema::DocumentRetentionSchema,
         >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
     >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     settlement: &WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>,
@@ -158,6 +161,9 @@ pub fn settle_assessment(
         impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
             crate::document_retention_model::schema::DocumentRetentionSchema,
         >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
     >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
@@ -169,6 +175,9 @@ pub fn settle_assessment_for(
     application: &DocumentWorkflowRuntime<
         impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
             crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = crate::document_retention_model::schema::DocumentRetentionSchema,
         >,
     >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,

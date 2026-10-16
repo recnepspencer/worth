@@ -17,17 +17,23 @@ fn operation(version: u16, requirements: Option<&str>) -> Vec<u8> {
 }
 
 #[test]
-fn current_operation_drafts_distinguish_absent_and_empty_evidence() {
-    for (version, encoded, expected) in [
-        (4, Some(""), None),
-        (
-            4,
-            Some("1:none"),
-            Some(ApplicationWorkflowExecutionRequirements::new()),
-        ),
+fn current_operation_drafts_preserve_explicit_evidence_requirements() {
+    // Structural decoding carries explicit applicability; installed authoring
+    // separately rejects a guarded node whose declaration is NotApplicable.
+    for expected in [
+        ApplicationWorkflowExecutionRequirements::not_applicable(),
+        ApplicationWorkflowExecutionRequirements::occurrence_only(),
+        ApplicationWorkflowExecutionRequirements::Approval {
+            capability: "review".to_owned(),
+            identity: "review.v1".to_owned(),
+        },
     ] {
+        let encoded = expected.persistence_identity();
         let draft = decode_workflow_definition_draft(
-            &operation(version, encoded),
+            &operation(
+                WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
+                Some(&encoded),
+            ),
             WorthQueryPackageArchiveLimits::DEFAULT,
         )
         .unwrap();
@@ -44,15 +50,24 @@ fn current_operation_drafts_distinguish_absent_and_empty_evidence() {
 }
 
 #[test]
-fn malformed_or_missing_new_operation_evidence_is_not_legacy_absence() {
-    for encoded in ["2:none", "1:approval:0:0:", "1:nonex"] {
+fn malformed_or_missing_current_operation_evidence_is_not_legacy_absence() {
+    for encoded in [
+        "",
+        "1:none",
+        "1:approval:6:9:reviewreview.v1",
+        "2:approval:0:0:",
+        "2:none",
+    ] {
         assert_eq!(
-            refused(&operation(4, Some(encoded))),
+            refused(&operation(
+                WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
+                Some(encoded)
+            )),
             Kind::InvalidRecordShape
         );
     }
-    // Version 4 always carries the field; deleting it cannot request legacy semantics.
-    let mut truncated = operation(4, None);
+    // Current nodes always carry the field; omission cannot request a default.
+    let mut truncated = operation(WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION, None);
     truncated.truncate(truncated.len() - 4);
     assert_eq!(refused(&truncated), Kind::Truncated);
 }

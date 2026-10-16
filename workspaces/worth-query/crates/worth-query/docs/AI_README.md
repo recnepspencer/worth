@@ -746,13 +746,13 @@ The installed requirement (`workflow_requirements` inside
 
 | Declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Default guarded requirement: exactly one approval edge is required. |
-| `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| Guarded requirement omitted | Compile refusal; manual bindings must implement the requirement method explicitly. |
+| `ApplicationWorkflowExecutionRequirements::not_applicable()` | Explicit non-workflow applicability; refused for a guarded binding. |
+| `ApplicationWorkflowExecutionRequirements::occurrence_only()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 
-Leaving `workflow_requirements` out does **not** mean "no approval". It means
-"exactly one approval". To run a guarded operation without a signature, declare
-`new()`. A definition cannot weaken the installed evidence floor. Execute
+Guarded bindings explicitly declare `occurrence_only()` or a mandatory approval
+capability; omission is a compile refusal. A definition cannot weaken the installed evidence floor. Execute
 through fallible `idempotency_owned`, `for_workflow_operation`, the installed
 action's `retain_operation`, and fresh owning `advance`/`close`.
 Do not invent signed/unsigned authorization modes, dummy approvals, host permit

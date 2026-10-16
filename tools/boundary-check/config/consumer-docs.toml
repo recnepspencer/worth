@@ -1,3 +1,5 @@
+derive_skills = true
+
 # Exact consumer inventory. Doctest roots also drive query_gate.py doc.
 documents = [
   "docs/build-an-application.md",
@@ -49,9 +51,55 @@ name = "owning_workflow.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification"
 target = "examples/authored_workflow/main.rs"
 source = "examples/authored_workflow/main.rs"
+[[compiled_sources]]
+name = "observable_proposal.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "examples/observable_workflow.rs"
+source = "examples/observable_workflow/journey.rs"
+
+[[compiled_sources]]
+name = "observable_operation.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "examples/observable_workflow.rs"
+source = "examples/observable_workflow/operations.rs"
+
+[[compiled_sources]]
+name = "observable_history.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "examples/observable_workflow.rs"
+source = "examples/observable_workflow/history.rs"
 
 [[compiled_sources]]
 name = "composed_action.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
 target = "src/main.rs"
 source = "src/application_program/composed_action.rs"
+
+[[facts]]
+id = "workflow-node-kinds"
+manifest = "workspaces/worth-query/crates/worth-query-decl/Cargo.toml"
+item = "facade::application_program::ApplicationWorkflowNodeKind"
+document = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+
+[[facts]]
+id = "workflow-progress"
+manifest = "workspaces/worth-query/crates/worth-query-host/Cargo.toml"
+item = "facade::application_entry::WorkflowProgressOutcome"
+document = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+
+[[facts]]
+id = "workflow-validation-denials"
+manifest = "workspaces/worth-query/crates/worth-query-decl/Cargo.toml"
+item = "facade::application_program::ApplicationWorkflowValidationDenialKind"
+document = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+
+[[facts]]
+id = "mutation-outcomes"
+manifest = "workspaces/worth-query/crates/worth-query-host/Cargo.toml"
+item = "facade::application_entry::WorthQueryApplicationMutationOutcome"
+document = "docs/api.md"
+
+[navigation]
+index = "docs/capability-index.md"
+guides = ["docs/build-an-application.md", "docs/how-it-works.md", "workspaces/worth-query/crates/worth-query-host/README.md", "workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md"]
+crate_roots = ["workspaces/worth-query/crates/worth-query-decl/src/lib.rs", "workspaces/worth-query/crates/worth-query-host/src/lib.rs"]

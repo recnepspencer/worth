@@ -99,7 +99,7 @@ fn decode(value: &str) -> Result<String, String> {
     String::from_utf8(bytes).map_err(|error| error.to_string())
 }
 
-fn anchors(text: &str) -> BTreeSet<String> {
+pub(super) fn anchors(text: &str) -> BTreeSet<String> {
     let mut anchors = BTreeSet::new();
     let mut heading = None;
     for event in Parser::new_ext(text, Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH) {

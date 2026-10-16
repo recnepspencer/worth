@@ -31,55 +31,10 @@ pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
     >,
 }
 
-/// A reference to a published workflow proposal: its identity, the operation and input it
-/// proposes, and the node path it was proposed at.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PublishedWorkflowProposalRef {
-    branch: crate::basis::WorthQueryProductBranch,
-    entity: EntityId,
-    instance: EntityId,
-    definition: EntityId,
-    identity: String,
-    operation: String,
-    input_type: String,
-    input_identity: [u8; 32],
-    source_identity: Option<[u8; 32]>,
-    node_path: String,
-}
-
-impl PublishedWorkflowProposalRef {
-    pub const fn entity_id(&self) -> EntityId {
-        self.entity
-    }
-    pub const fn instance_entity_id(&self) -> EntityId {
-        self.instance
-    }
-    pub const fn definition_entity_id(&self) -> EntityId {
-        self.definition
-    }
-    pub fn identity(&self) -> &str {
-        &self.identity
-    }
-    pub fn operation(&self) -> &str {
-        &self.operation
-    }
-    pub fn input_type(&self) -> &str {
-        &self.input_type
-    }
-    pub const fn input_identity(&self) -> &[u8; 32] {
-        &self.input_identity
-    }
-    pub const fn source_identity(&self) -> Option<&[u8; 32]> {
-        self.source_identity.as_ref()
-    }
-    pub fn node_path(&self) -> &str {
-        &self.node_path
-    }
-    pub const fn branch(&self) -> crate::basis::WorthQueryProductBranch {
-        self.branch
-    }
-}
-
+mod reference;
+pub use reference::PublishedWorkflowProposalRef;
+mod read_only;
+pub(in crate::domain_computation::primary_graph) use read_only::observe as observe_read_only_proposal;
 /// A workflow proposal that landed: the proposal, the transition it opened, its commit
 /// receipt, and whether the idempotency key replayed an already-landed commit.
 #[derive(Debug)]
@@ -312,12 +267,12 @@ fn project(
         entity: proposal,
         instance: context.instance.entity_id(),
         definition: context.instance.definition_entity_id(),
-        identity,
-        operation: context.operation,
-        input_type: context.input_type,
+        identity: identity.into(),
+        operation: context.operation.into(),
+        input_type: context.input_type.into(),
         input_identity: context.input_identity,
         source_identity: context.source_identity,
-        node_path,
+        node_path: node_path.into(),
     };
     WorkflowProposalOutcome::Published(PerformedWorkflowProposal {
         proposal: published,

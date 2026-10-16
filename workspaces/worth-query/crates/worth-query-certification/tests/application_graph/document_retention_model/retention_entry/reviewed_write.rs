@@ -60,6 +60,12 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewedSetRetentio
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.document-retention.reviewed-command.v1";
     const REQUIRES_WORKFLOW_AUTHORITY: bool = true;
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<super::super::workflow::WorkflowApprovalCapability>()
+    }
+
     const CANDIDATES: ApplicationCandidateRequirements = SetRetentionBinding::CANDIDATES;
 
     fn scope_field() -> ApplicationFieldRef<

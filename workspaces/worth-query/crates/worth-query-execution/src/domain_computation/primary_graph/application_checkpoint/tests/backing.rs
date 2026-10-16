@@ -29,6 +29,8 @@ fn untrusted_query_clones_share_moved_bytes_after_original_owner_drops() {
 fn query_clones_decode_into_the_same_native_payload_backing() {
     let mut body = Vec::new();
     body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
+    body.extend_from_slice(&super::super::WORKFLOW_FACTS.to_be_bytes());
+    body.extend_from_slice(&super::super::WORKFLOW_INSTANCES.to_be_bytes());
     body.extend_from_slice(&1_u64.to_be_bytes());
     body.extend_from_slice(&3_u64.to_be_bytes());
     body.extend_from_slice(&0_u64.to_be_bytes());

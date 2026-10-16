@@ -40,30 +40,22 @@ where
             });
         match outcome {
             Ok(Ok(WorkflowStep::Progress)) => WorthQueryWorkflowOperationAdvance::Progress(self),
-            Ok(Ok(WorkflowStep::Completed)) => {
-                let evidence = self
-                    .completion
-                    .take()
-                    .expect("native effect evidence retained");
-                WorthQueryWorkflowOperationAdvance::Completed(
-                    WorthQueryCompletedWorkflowOperation {
-                        source: WorthQueryCompletedSourceOperation {
-                            operation: self.source,
-                            evidence,
-                        },
-                        required: self.required,
-                        recovery: self.recovery,
-                        recovery_result: self.recovery_result,
+            Ok(Ok(WorkflowStep::Completed)) => WorthQueryWorkflowOperationAdvance::Completed(
+                WorthQueryCompletedWorkflowOperation {
+                    source: WorthQueryCompletedSourceOperation {
+                        operation: self.source,
                     },
-                )
-            }
+                    required: self.required,
+                    recovery: self.recovery,
+                    recovery_result: self.recovery_result,
+                },
+            ),
             Ok(Ok(WorkflowStep::Terminal)) => {
                 WorthQueryWorkflowOperationAdvance::Terminal(WorthQueryTerminalWorkflowOperation {
                     state: super::completion::TerminalWorkflowState::Native {
                         source: WorthQueryTerminalSourceOperation {
                             operation: self.source,
                         },
-                        required: self.required,
                     },
                 })
             }
@@ -103,7 +95,7 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorkflowStep, WorthQueryWorkflowOperationDenial> {
-        if self.completion.is_some() {
+        if self.source_completed {
             return self
                 .advance_dispatch(phase, request, true)
                 .map_err(WorthQueryWorkflowOperationDenial::Recovery);
@@ -111,8 +103,8 @@ where
         match self.source.step(phase,request,None) {
             Ok(SourceStep::Progress)=>Ok(WorkflowStep::Progress),
             Ok(SourceStep::Terminal)=>Ok(WorkflowStep::Terminal),
-            Ok(SourceStep::Completed(evidence))=>{
-                self.completion=Some(evidence);
+            Ok(SourceStep::Completed)=>{
+                self.source_completed=true;
                 self.advance_dispatch(phase,request,false).map_err(WorthQueryWorkflowOperationDenial::Recovery)
             },
             Err(denial) if matches!(&denial,WorthQuerySourceOnlyDenial::Mutation(crate::application_entry::WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent|crate::application_entry::WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness(_)))=>Ok(WorkflowStep::Spent(denial)),
@@ -130,57 +122,41 @@ where
         &self.required
     }
     pub fn close(
-        self,
+        mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        self.close_in_place(request)
+            .map_err(|denial| (self, denial))
+    }
+
+    pub(super) fn close_in_place(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
+        // An inbound-waiting owner cannot close away its original evidence before
+        // a fresh advance observes native settlement. Other close postures stay native.
         if matches!(
             self.recovery,
             super::completion::WorkflowDispatchRecovery::Retained(_)
                 | super::completion::WorkflowDispatchRecovery::Consumed
-        ) {
-            return Err((
-                self,
-                WorthQueryOperationCloseDenial::NativeObligationRetained,
-            ));
+        ) || (self.source_completed
+            && matches!(
+                self.recovery,
+                super::completion::WorkflowDispatchRecovery::Unopened
+            )
+            && match self.source.completion() {
+                WorthQuerySourceCompletion::Fresh { receipt, .. }
+                | WorthQuerySourceCompletion::Recovered { receipt, .. } => {
+                    super::recovery::inbound_without_recovery(receipt)
+                }
+            })
+        {
+            return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
         }
-        let Self {
-            source,
-            required,
-            completion,
-            recovery,
-            recovery_result,
-        } = self;
-        match completion {
-            None => source.close(request).map_err(|(source, cause)| {
-                (
-                    Self {
-                        source,
-                        required,
-                        completion: None,
-                        recovery,
-                        recovery_result,
-                    },
-                    cause,
-                )
-            }),
-            Some(evidence) => WorthQueryCompletedSourceOperation {
-                operation: source,
-                evidence,
-            }
-            .close_with_evidence(request)
-            .map(|(closed, _)| closed)
-            .map_err(|(done, cause)| {
-                (
-                    Self {
-                        source: done.operation,
-                        required,
-                        completion: Some(done.evidence),
-                        recovery,
-                        recovery_result,
-                    },
-                    cause,
-                )
-            }),
+        if self.source_completed {
+            self.source.close_cleanup(request)
+        } else {
+            self.source.close_in_place(request)
         }
     }
 }

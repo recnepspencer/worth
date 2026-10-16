@@ -54,7 +54,7 @@ mod verified_current;
 mod native_journey_tests;
 
 pub(in crate::domain_computation::primary_graph) use commit_touches::{
-    CommitTouchInterest, CommitTouchesStop, TouchedCommits,
+    CommitTouchEntities, CommitTouchInterest, CommitTouchesStop, TouchedCommits,
 };
 pub(in crate::domain_computation::primary_graph) use consumed_capacity::RetainedConsumedOutputCapacity;
 pub(in crate::domain_computation::primary_graph) use derived::{

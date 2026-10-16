@@ -115,12 +115,10 @@ fn authored_status_source_updates_the_real_application_root() {
     assert_eq!(online.value().status, "ONLINE");
     assert_eq!(online.value().revision, 1);
     assert_eq!(online.query_receipt().inspect().result_count(), 1);
-    assert!(
-        online
-            .query_receipt()
-            .inspect()
-            .terminal_resources_released()
-    );
+    assert!(online
+        .query_receipt()
+        .inspect()
+        .terminal_resources_released());
     let online_version = online.query_receipt().inspect().basis().version();
     let current = online
         .into_projection_observation()

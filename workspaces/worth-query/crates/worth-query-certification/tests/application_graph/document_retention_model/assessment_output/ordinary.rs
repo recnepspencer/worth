@@ -6,6 +6,12 @@ worth_query_operation_reads!(PublishOrdinaryRetentionAssessment => [Document, Do
 
 pub struct OrdinaryRetentionAssessmentBinding;
 impl ApplicationMutationBinding<DocumentRetentionSchema> for OrdinaryRetentionAssessmentBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = RetentionAssessmentInput;
     type InputBinding = RetentionAssessmentInputBinding;
     type Result = RetentionAssessmentPublished;

@@ -21,6 +21,14 @@ impl ApplicationWorkflowSpec for Spec {
     type Schema = CapabilitySchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity =
         ApplicationWorkflowSpecIdentity::new("capability-workflow.spec.v1");
+    fn observation_policy() -> ApplicationWorkflowObservationPolicy {
+        // This completion-only fixture installs no governed workflow-read binding.
+        ApplicationWorkflowObservationPolicy::disabled()
+    }
+    fn actor_policy() -> ApplicationWorkflowActorPolicy {
+        // Its real retention/start/advance grants declare no recorded-actor rule.
+        ApplicationWorkflowActorPolicy::not_applicable()
+    }
 }
 fn input() -> SetRetentionInput {
     SetRetentionInput {
@@ -172,12 +180,12 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let canceled = WorthQueryRequestScope::new(None, cancellation.token());
-    let owner = match owner.advance(
+    let (owner, canceled_denial) = match owner.advance(
         &runtime
             .request(&actor, &canceled)
             .on_branch(instance.branch()),
     ) {
-        WorthQueryWorkflowOperationAdvance::Refused { operation, .. } => operation,
+        WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => (operation, denial),
         _ => panic!("canceled attempt must return original owner without spending slot"),
     };
     assert_eq!(host.contacts.counts(), (0, 0));
@@ -202,7 +210,20 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
         let request = runtime.request(&actor, &scope).on_branch(instance.branch());
         let completed = match owner.advance(&request) {
             WorthQueryWorkflowOperationAdvance::Completed(done) => done,
-            _ => panic!("returned original owner still admits one real capability effect"),
+            WorthQueryWorkflowOperationAdvance::Progress(operation) => {
+                let _original_owner = operation;
+                panic!(
+                    "fresh advance returned Progress; canceled={canceled_denial:?}; contacts={:?}",
+                    host.contacts.counts()
+                );
+            }
+            WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
+                let _original_owner = operation;
+                panic!("fresh advance refused: {denial:?}; canceled={canceled_denial:?}; contacts={:?}", host.contacts.counts());
+            }
+            WorthQueryWorkflowOperationAdvance::Terminal(terminal) => {
+                panic!("fresh advance terminal: denial={:?}, native={:?}; canceled={canceled_denial:?}; contacts={:?}", terminal.denial(), terminal.native_terminal().and_then(|owner| owner.native_outcome()), host.contacts.counts());
+            }
         };
         assert!(
             matches!(completed.evidence(), WorthQuerySourceCompletion::Fresh { result, .. } if result.retention_days == 18)

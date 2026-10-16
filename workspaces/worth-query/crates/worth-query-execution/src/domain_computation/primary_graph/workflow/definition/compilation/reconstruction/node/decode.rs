@@ -32,12 +32,16 @@ pub(super) fn decode_kind(
     let workflow_execution_requirements = match (
         WorkflowNodeTag::from_persisted(tag), workflow_execution_requirements,
     ) {
-        (Some(WorkflowNodeTag::OperationWithRequirements), Some(encoded)) if requires_workflow_authority => {
-            Some(worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(&encoded)
-                .ok_or_else(invalid_node)?)
+        (Some(WorkflowNodeTag::Operation), Some(encoded)) => {
+            let value = worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(&encoded)
+                .ok_or_else(invalid_node)?;
+            if value.is_applicable() != requires_workflow_authority {
+                return Err(invalid_node());
+            }
+            value
         }
-        (Some(WorkflowNodeTag::OperationWithRequirements), _) | (_, Some(_)) => return Err(invalid_node()),
-        (_, None) => None,
+        (Some(WorkflowNodeTag::Operation), _) | (_, Some(_)) => return Err(invalid_node()),
+        (_, None) => worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
     };
     if matches!(
         WorkflowNodeTag::from_persisted(tag),
@@ -83,7 +87,7 @@ pub(super) fn decode_kind(
     }
     if (!matches!(
         WorkflowNodeTag::from_persisted(tag),
-        Some(WorkflowNodeTag::Operation | WorkflowNodeTag::OperationWithRequirements)
+        Some(WorkflowNodeTag::Operation)
     ) && operation_binding.is_some())
         || (requires_workflow_authority && operation_binding.as_deref().is_none_or(str::is_empty))
     {
@@ -116,7 +120,7 @@ pub(super) fn decode_kind(
         return Err(invalid_node());
     }
     match WorkflowNodeTag::from_persisted(tag) {
-        Some(WorkflowNodeTag::Operation | WorkflowNodeTag::OperationWithRequirements)
+        Some(WorkflowNodeTag::Operation)
             if parameter_type.is_none()
                 && result_type.is_none()
                 && assessment_binding.is_none()

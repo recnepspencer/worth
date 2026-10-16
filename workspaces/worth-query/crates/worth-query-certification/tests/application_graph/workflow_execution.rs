@@ -100,7 +100,6 @@ fn journey(
     };
     assert!(required
         .workflow_execution_requirements()
-        .unwrap()
         .approval()
         .is_none());
     (application, instance, required)
@@ -220,7 +219,6 @@ fn reconstructed_occurrence_only_contract_issues_fresh_execution_authority() {
     };
     assert!(rebuilt
         .workflow_execution_requirements()
-        .unwrap()
         .approval()
         .is_none());
     assert!(matches!(

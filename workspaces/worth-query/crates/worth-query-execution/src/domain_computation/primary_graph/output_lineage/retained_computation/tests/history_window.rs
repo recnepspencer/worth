@@ -85,7 +85,7 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
             super::super::super::RecordedSourceIdentity::Checkpoint(
                 crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x72; 32])),
             [0x71; 32], None, [0x73; 32],
-            super::super::super::ComputationSourceEvidence::for_test(false).retain_facts(Arc::from([])), None, None);
+            super::super::super::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])), None, None);
         };
     record(&mut lineage, parent);
     let run = sealed_run_for_lineage_test();

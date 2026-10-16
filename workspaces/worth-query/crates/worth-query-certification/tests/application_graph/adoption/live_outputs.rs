@@ -63,7 +63,7 @@ fn adopt_second_program(application: &mut DocumentWorkflowRuntime) {
         prepare_second_program_adoption(
             application,
             main,
-            Some(&|inventory| inventory.carry_compatible().unwrap()),
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
         ),
     );
 }

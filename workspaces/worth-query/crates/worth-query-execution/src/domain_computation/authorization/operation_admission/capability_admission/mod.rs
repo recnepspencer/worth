@@ -96,6 +96,7 @@ pub(in crate::domain_computation) fn admit_encoded_capability_access<
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     input: ApplicationEncodedInput<Operation::InputBinding>,
     request: &WorthQueryRequestScope,
+    workflow_actor: Option<&crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext>,
 ) -> Result<
     WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     WorthQueryOperationAuthorizationDenial,
@@ -107,7 +108,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
     admit_request(request, capability.contract().operation())?;
-    let prepared = prepare_capability_admission(
+    let mut prepared = prepare_capability_admission(
         execution,
         runtime,
         product,
@@ -117,5 +118,6 @@ where
         request,
         None,
     )?;
+    prepared.workflow_actor = workflow_actor.cloned();
     complete_capability_admission(execution, prepared)
 }

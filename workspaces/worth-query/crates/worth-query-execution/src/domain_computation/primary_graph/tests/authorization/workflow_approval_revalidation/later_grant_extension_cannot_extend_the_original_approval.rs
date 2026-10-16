@@ -24,7 +24,13 @@ fn later_grant_extension_cannot_extend_the_original_approval() {
             )
         })
         .expect("the fixture read owns its installed host call");
-    let basis = durable_approval_basis(&admission);
+    let basis = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            durable_approval_basis(&host.borrowed_request_for_test(), &admission)
+        })
+        .expect("the fixture envelope owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {

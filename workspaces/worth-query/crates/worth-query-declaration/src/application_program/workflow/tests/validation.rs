@@ -243,7 +243,7 @@ fn data_cannot_cross_a_mutually_exclusive_control_arm() -> Result<(), Box<dyn st
         ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
     )?;
     let approval = builder.approval::<ChangeApprover>("approval")?;
-    let approved = builder.operation::<ApplyChange>("approved", true)?;
+    let approved = builder.operation_binding::<ApplyBinding>("approved")?;
     let rejected = builder.operation::<ApplyChange>("rejected", false)?;
     let terminal = builder.terminal("terminal")?;
     builder
@@ -318,7 +318,7 @@ fn guarded_operation_requires_exact_approval_source() -> Result<(), Box<dyn std:
     let mut builder =
         ApplicationWorkflowDefinitionBuilder::<ReviewedChange>::new("denied", limits())?;
     let propose = builder.operation::<ProposeChange>("propose", false)?;
-    let apply = builder.operation::<ApplyChange>("apply", true)?;
+    let apply = builder.operation_binding::<ApplyBinding>("apply")?;
     let terminal = builder.terminal("terminal")?;
     builder
         .start(&propose)

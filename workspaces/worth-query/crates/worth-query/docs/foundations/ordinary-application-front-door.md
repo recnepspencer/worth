@@ -1097,20 +1097,25 @@ hardware; an absolute seconds threshold is not a portable Query contract.
 
 ## Anti-Patterns
 
-- importing internal Query authority crates from application code;
-- treating a role, relationship, token claim, or Signal decision as permission;
-- executing a provider or operation callback directly;
-- reading protected fields and redacting them after projection;
-- rebuilding cursors, continuation, or recovery authority from wire values;
-- maintaining a local temporal scheduler or conditional wake registry;
-- retrying an indeterminate mutation as though it definitely failed;
-- teaching provisional undo or redo as an accepted application contract.
+Use the
+[canonical consumer prohibitions](../../../../../../docs/capability-index.md#consumer-prohibitions).
 
-Before concluding that the platform lacks a capability, follow the
-missing-capability procedure in the
-[Capability Index](../../../../../../docs/capability-index.md). Do not build a
-substitute: no parallel registry, copied authority, host executor, host
-scheduler, or host persistence of platform truth.
+## Observable workflows through ordinary requests
+
+Use `request.retain_current_read()` to pin data, then `request.at(&basis)` for
+freshly governed workflow discovery and history. The no-argument receiver owns
+its native admission; examples need no internal control or fabricated phase.
+Subject read and actor audit are independent. `found.target()` and
+`observation.target()` return data locators, not approval needs or grants.
+History marks never auto-refresh the retained basis: explicitly retain a fresh
+read and reacquire a target. `subscription.close()` releases subscription custody;
+original owning operation settlement and cleanup still use their own receivers.
+
+The [neutral mixed workflow](../../../../../../docs/build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
+shows proposal waiting, occurrence capture, conditional distinct approval,
+real local archive ingress and the complete owning caller loop, with marker-bound
+excerpts. The [workflow guide](workflows.md)
+owns the detailed read policies and outcomes.
 
 ## Current Limits
 

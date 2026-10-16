@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn durability_contract_recovery_preserves_merge_parent_order() {
@@ -26,9 +27,10 @@ fn durability_contract_recovery_preserves_merge_parent_order() {
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
     );
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -84,7 +86,11 @@ fn durability_contract_replays_empty_intent_merge_currentness_once() {
 
     let plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -146,7 +152,11 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
 
     let segment_path = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap()
         .store
         .unwrap()
         .segments
@@ -155,7 +165,8 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
         .path
         .clone();
     let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(&segment_path).unwrap();
+        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
+            .unwrap();
     let merge_entry = file
         .entries
         .iter_mut()
@@ -175,11 +186,16 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
                 .authoritative_nested_bytes
     );
     merge_entry.diagnostics_summary.entries.clear();
-    crate::durability::log::native_file_codec::write_segment_file(&segment_path, &file).unwrap();
+    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
+        .unwrap();
 
     let plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -225,9 +241,8 @@ fn durability_contract_reports_parent_order_parity_drift_when_durable_segment_is
 
     let segment_path = runtime
         .durability()
-        .recovery_plan(
-            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-        )
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap()
         .store
         .unwrap()
         .segments
@@ -236,7 +251,8 @@ fn durability_contract_reports_parent_order_parity_drift_when_durable_segment_is
         .path
         .clone();
     let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(&segment_path).unwrap();
+        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
+            .unwrap();
     let merge_entry = file
         .entries
         .iter_mut()
@@ -248,11 +264,13 @@ fn durability_contract_reports_parent_order_parity_drift_when_durable_segment_is
         vec![main.commit.commit_id, feature.commit.commit_id]
     );
     merge_entry.commit.parents.reverse();
-    crate::durability::log::native_file_codec::write_segment_file(&segment_path, &file).unwrap();
+    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
+        .unwrap();
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
@@ -298,7 +316,11 @@ fn durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnos
 
     let segment_path = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap()
         .store
         .unwrap()
         .segments
@@ -307,7 +329,8 @@ fn durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnos
         .path
         .clone();
     let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(&segment_path).unwrap();
+        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
+            .unwrap();
     let merge_entry = file
         .entries
         .iter_mut()
@@ -317,11 +340,16 @@ fn durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnos
     assert!(merge_entry.merge_execution_authority.is_some());
     assert!(!merge_entry.diagnostics_summary.entries.is_empty());
     merge_entry.merge_execution_authority = None;
-    crate::durability::log::native_file_codec::write_segment_file(&segment_path, &file).unwrap();
+    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
+        .unwrap();
 
     let plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()

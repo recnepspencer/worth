@@ -3,11 +3,12 @@ mod outcome;
 mod settlement;
 
 pub(in crate::domain_computation::primary_graph) use admission::{
-    admit_workflow_transition, select_assessment_collection, select_current_transition,
-    select_navigation_back_transition, select_proposal_replay_transition,
-    select_proposal_transition, select_settled_replay_transition, select_terminal_transition,
-    AdmittedWorkflowTransition, SelectedWorkflowApproval, SelectedWorkflowAssessment,
-    SelectedWorkflowCondition, SelectedWorkflowInbound, SelectedWorkflowOperation,
+    admit_workflow_transition, select_assessment_collection, select_current_proposal_need,
+    select_current_transition, select_navigation_back_transition,
+    select_proposal_replay_transition, select_proposal_transition,
+    select_settled_replay_transition, select_terminal_transition, AdmittedWorkflowTransition,
+    SelectedWorkflowApproval, SelectedWorkflowAssessment, SelectedWorkflowCondition,
+    SelectedWorkflowInbound, SelectedWorkflowOperation, SelectedWorkflowProposal,
     SelectedWorkflowTransition, SelectedWorkflowTransitionKind, WorkflowOperationSettlementBasis,
 };
 pub(in crate::domain_computation::primary_graph) use outcome::{

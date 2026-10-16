@@ -23,6 +23,7 @@ fn a_wider_lease_funds_delivery_from_the_same_request() {
     let _guard = checkpoint_recovery_test_guard();
     let _restore = Restore(place(Placement::Serial), bound(None));
     refused_delivery(Placement::Leased(NonZeroUsize::new(4).unwrap()));
+    funded_delivery(Placement::Leased(NonZeroUsize::new(4).unwrap()));
 }
 }
 
@@ -62,7 +63,8 @@ fn refused_delivery(placement: Placement) {
         denial.kind(),
         WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::Resource(
             Resource::WorkExhausted
-        ))
+        )),
+        "the actual delivery stop must retain its native cause: {denial:?}"
     );
     assert!(
         room().first().unwrap().outcome.is_ok(),
@@ -82,4 +84,47 @@ fn refused_delivery(placement: Placement) {
     );
     // Err delivers no settlement. A request stop retains its owner's
     // terminal posture; this probe does not promise a fresh retry of it.
+}
+
+fn funded_delivery(placement: Placement) {
+    place(placement);
+    // Use the host's independently declared normal request, not a calibrated
+    // replacement ceiling. It must cover both producer and delivery/rejoin work.
+    bound(None);
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+    assert!(policy.work_ceiling() > CALLER_WORK);
+    let application = application_fixture::application();
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let mut interest = request
+        .demand(RegionOutputDemand(SCOPE.to_owned()))
+        .start_dependent_in_program::<OracleProgram<false, PRODUCER_WORK, RUNS>, RegionConnection>(
+            &application,
+        )
+        .unwrap();
+    arm_own_write(Some(OwnWrite {
+        number: 0,
+        bits: 2.5_f64.to_bits(),
+        read: OwnWriteRead::Blind,
+    }));
+    reports();
+    room().clear();
+    interest
+        .settle(&request)
+        .expect("the declared normal request funds real delivery");
+    // The entry changes once (1.0 -> 2.5): the existing oracle model requires
+    // an original decision and one refreshed decision, not an unbounded retry.
+    assert_eq!(room().len(), 2);
+    assert!(room().iter().all(|run| run.outcome.is_ok()));
+    let requests = reports();
+    assert_eq!(requests.len(), 1, "producer and delivery share one request");
+    assert!(requests[0].as_ref().unwrap().charged_work() <= policy.work_ceiling());
+    room().clear();
+    interest
+        .settle(&request)
+        .expect("completed interest remains settled");
+    assert!(
+        room().is_empty(),
+        "settlement cannot duplicate the producer effect"
+    );
 }

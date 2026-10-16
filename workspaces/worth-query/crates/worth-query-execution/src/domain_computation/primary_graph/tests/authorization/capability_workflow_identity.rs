@@ -111,6 +111,7 @@ fn a_capability_workflow_encodes_its_input_and_key_once_each_first_and_replayed(
                     &capability,
                     input,
                     &request,
+                    None,
                 )
                 .expect("the encoded input is admitted");
                 let admission_work = access.admission_canonical_work();

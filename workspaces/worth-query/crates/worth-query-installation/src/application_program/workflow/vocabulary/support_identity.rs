@@ -26,6 +26,8 @@ where
 pub(super) fn derive(
     program: &ApplicationProgramRevision,
     vocabulary: &str,
+    actor_policy: &worth_query_declaration::facade::application_program::ApplicationWorkflowActorPolicy,
+    observation_policy: &worth_query_declaration::facade::application_program::ApplicationWorkflowObservationPolicy,
     authoring: &InstalledWorkflowAuthoringCapability,
     start: &InstalledWorkflowInstanceStartCapability,
     advance: &InstalledWorkflowAdvanceCapability,
@@ -38,6 +40,14 @@ pub(super) fn derive(
     let mut entries = vec![
         encoded("program", program.as_bytes()),
         encoded("vocabulary", vocabulary.as_bytes()),
+        encoded(
+            "actor-policy",
+            actor_policy.persistence_identity().as_bytes(),
+        ),
+        encoded(
+            "observation-policy",
+            observation_policy.persistence_identity().as_bytes(),
+        ),
         capability("authoring", &authoring.binding),
         capability("start", &start.binding),
         capability("advance", &advance.binding),
@@ -54,8 +64,17 @@ pub(super) fn derive(
             }
             .to_owned(),
         ];
-        if let Some(requirements) = operation.reference.workflow_execution_requirements() {
+        {
+            let requirements = operation.reference.workflow_execution_requirements();
             values.push(requirements.persistence_identity());
+        }
+        match &operation.capability {
+            None => values.push("conventional-admission".to_owned()),
+            Some((name, identity)) => values.extend([
+                "capability-admission".to_owned(),
+                name.to_string(),
+                identity.as_str().to_owned(),
+            ]),
         }
         if let Some(inbound) = &operation.inbound_ref {
             let protocol = inbound.protocol();
@@ -146,7 +165,7 @@ pub(super) fn derive(
     ));
     entries.sort_unstable();
     let mut digest = Sha256::new();
-    digest.update(b"worth.query.workflow.installed-support.v1");
+    digest.update(b"worth.query.workflow.installed-support.v2");
     for entry in entries {
         frame(&mut digest, &entry);
     }

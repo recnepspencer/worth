@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn durable_recovery_and_schema_mismatch_test() {
@@ -41,9 +42,10 @@ fn durable_recovery_and_schema_mismatch_test() {
     .expect("test staging stays within configured resource budgets");
     let transitioned = txn.commit(execution, &runtime).unwrap();
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let live_schema_transition = transitioned.envelope().schema_transition.clone();
     let live_schema_continuation_descriptor = transitioned
         .envelope()
@@ -164,9 +166,10 @@ fn durability_contract_failure_aspect_plan_mismatch_is_explicit() {
     let runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     create_entity_outcome(execution, &runtime, "main-a");
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let expected_registry =
         declared_aspect_schema_registry(CascadeDeletePolicy::CascadeDeleteRelations);
     let mismatched_registry = AspectSchemaFixture {
@@ -276,9 +279,10 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     create_relation_outcome(execution, &runtime, source, target, "guarded");
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
 
     let mismatched_registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {

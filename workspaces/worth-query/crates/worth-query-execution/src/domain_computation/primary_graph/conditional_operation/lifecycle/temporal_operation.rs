@@ -254,7 +254,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             // entities, or every commit for whole-graph dependencies and until
             // the bootstrap evaluation first catches up with the branch.
             let interest = crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchInterest {
-                entities: self.commit_watch.entities(),
+                entities: self.commit_watch.entities().into(),
                 every_commit: self.commit_watch.includes_whole_graph() || self.bootstrap_commit_catch_up_pending,
             };
             let stop = match authoritative_clock_progression::reconsider_authoritative_clock_work(phase,

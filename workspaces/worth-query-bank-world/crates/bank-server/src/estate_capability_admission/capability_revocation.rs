@@ -75,28 +75,26 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
     assert_ne!(alternate_before.id(), GRANT);
     let binding = idempotency(131);
 
-    let first = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            revocation_action(),
-            &binding,
-            &request_scope(),
-        )
-        .expect("an active exact grant should admit public revocation");
+    let first = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        revocation_action(),
+        &binding,
+        &request_scope(),
+    )
+    .expect("an active exact grant should admit public revocation");
     let BankMutationCommitOutcome::Committed(committed) = first else {
         panic!("the first revocation must authoritatively commit: {first:?}");
     };
 
-    let retry = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            revocation_action(),
-            &binding,
-            &request_scope(),
-        )
-        .expect("an equivalent retry should resolve idempotency before active-state projection");
+    let retry = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        revocation_action(),
+        &binding,
+        &request_scope(),
+    )
+    .expect("an equivalent retry should resolve idempotency before active-state projection");
     let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
         panic!("the equivalent retry must recover the prior commit: {retry:?}");
     };
@@ -111,15 +109,14 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
         WorthQueryPublishedApplicationCommitKind::Recovered
     );
 
-    let target_drift = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            revocation_action_for(ALTERNATE_EMERGENCY_BOUND_GRANT),
-            &binding,
-            &request_scope(),
-        )
-        .expect("governed target drift is a typed commit outcome");
+    let target_drift = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        revocation_action_for(ALTERNATE_EMERGENCY_BOUND_GRANT),
+        &binding,
+        &request_scope(),
+    )
+    .expect("governed target drift is a typed commit outcome");
     assert!(matches!(
         target_drift,
         BankMutationCommitOutcome::Denied {
@@ -132,15 +129,14 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
     assert_revoked_target_and_unchanged_alternate(&after_commit, &alternate_before);
     let target_after_commit = capability(&after_commit, GRANT).clone();
 
-    let denial = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            revocation_action(),
-            &idempotency(133),
-            &request_scope(),
-        )
-        .expect_err("a fresh intent must evaluate the authoritative Revoked poststate");
+    let denial = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        revocation_action(),
+        &idempotency(133),
+        &request_scope(),
+    )
+    .expect_err("a fresh intent must evaluate the authoritative Revoked poststate");
     assert!(matches!(
         denial,
         BankEstateProgressionDenial::CapabilityRevocationProjection(
@@ -169,18 +165,17 @@ fn revocation_cannot_substitute_a_target_from_another_estate() {
         CapabilityGrantStatus::Active
     );
 
-    let denial = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            EstateAction::RevokeCapability {
-                estate: FOREIGN_ESTATE,
-                grant: GRANT,
-            },
-            &idempotency(135),
-            &request_scope(),
-        )
-        .expect_err("the foreign command estate must not capture another estate's grant");
+    let denial = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        EstateAction::RevokeCapability {
+            estate: FOREIGN_ESTATE,
+            grant: GRANT,
+        },
+        &idempotency(135),
+        &request_scope(),
+    )
+    .expect_err("the foreign command estate must not capture another estate's grant");
     let BankEstateProgressionDenial::Attempt(denial) = denial else {
         panic!("foreign-target denial must come from exact revocation materialization: {denial:?}")
     };

@@ -11,24 +11,23 @@ impl WorthQueryAuthorizationDecisionFact {
         let encoded = runtime
             .capture_authorization_durable_dependencies(&self.relational, execution)
             .unwrap()
-            .to_wire_string()
+            .to_wire(execution)
             .unwrap();
         let retained = WorthQueryDurableAuthorizationDependencies {
-            primary: encoded.clone(),
+            recorded_actor: super::DurableRecordedActor::NotApplicable,
+            primary: encoded.as_str().to_owned(),
             delegation: None,
-            activation: Some(encoded.clone()),
+            activation: Some(encoded.as_str().to_owned()),
         };
-        let observed = WorthQueryDurableAuthorizationDependencies {
-            primary: encoded,
-            delegation: None,
-            activation: None,
-        };
+        let observed = encoding::conventional_observed_view(&encoded);
         assert_eq!(
-            retained.matches_with_retained_activation(execution, &observed, runtime, snapshot),
+            retained
+                .matches_with_retained_activation(execution, &observed, runtime, snapshot)
+                .map_err(|denial| denial.kind()),
             Ok(true)
         );
         crate::test_read_stops::every_consult(
-            |request| retained.matches_with_retained_activation(request, &observed, runtime, snapshot),
+            |request| retained.matches_with_retained_activation(request, &observed, runtime, snapshot).map_err(|denial| denial.kind()),
             crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)),
             crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
         );
@@ -41,7 +40,9 @@ impl WorthQueryAuthorizationDecisionFact {
                 None,
             );
             assert_eq!(
-                retained.matches_with_retained_activation(execution, &observed, runtime, snapshot),
+                retained
+                    .matches_with_retained_activation(execution, &observed, runtime, snapshot)
+                    .map_err(|denial| denial.kind()),
                 Ok(true)
             );
             probe.consults()
@@ -61,7 +62,7 @@ impl WorthQueryAuthorizationDecisionFact {
                 Some(k),
                 move || cancel.cancel(),
             );
-            assert_eq!(retained.matches_with_retained_activation(&execution, &observed, runtime, snapshot), Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled))));
+            assert_eq!(retained.matches_with_retained_activation(&execution, &observed, runtime, snapshot).map_err(|denial| denial.kind()), Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled))));
             assert!(probe.consults() >= k);
         }
         for k in 1..=count {
@@ -88,9 +89,11 @@ impl WorthQueryAuthorizationDecisionFact {
                 .run(
                     worth_execution::ExecutionWorkCeiling::new(u64::MAX - 1),
                     |_| {
-                        retained.matches_with_retained_activation(
-                            &request, &observed, runtime, snapshot,
-                        )
+                        retained
+                            .matches_with_retained_activation(
+                                &request, &observed, runtime, snapshot,
+                            )
+                            .map_err(|denial| denial.kind())
                     },
                 )
                 .unwrap();
@@ -103,7 +106,7 @@ impl WorthQueryAuthorizationDecisionFact {
 
         source.cancel();
         assert_eq!(
-            retained.matches_with_retained_activation(execution, &observed, runtime, snapshot),
+            retained.matches_with_retained_activation(execution, &observed, runtime, snapshot).map_err(|denial| denial.kind()),
             Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)))
         );
     }

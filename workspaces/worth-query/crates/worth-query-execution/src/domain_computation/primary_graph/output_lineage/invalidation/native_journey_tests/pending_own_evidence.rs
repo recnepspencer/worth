@@ -72,14 +72,19 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),
-        Default::default(),
-        vec![WorthQueryCheckpointOutputRole {
+        std::iter::empty(),
+        &[WorthQueryCheckpointOutputRole {
             role: "account".into(),
             posture: WorthQueryApplicationOutputPosture::Preserve,
             entity_name: "Account".into(),
             entity,
         }],
         |_| Some(TypeId::of::<()>()),
+        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::CancellationToken::new(),
+            None,
+        )),
     )
     .unwrap();
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {

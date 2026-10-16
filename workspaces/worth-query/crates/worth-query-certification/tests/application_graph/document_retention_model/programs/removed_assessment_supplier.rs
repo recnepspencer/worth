@@ -43,7 +43,7 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for RemovedAssessment
     }
 }
 
-pub fn validated_removed_assessment_supplier_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, RemovedAssessmentSupplierProgram> {
+pub fn validated_removed_assessment_supplier_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, RemovedAssessmentSupplierProgram> {
     validate::<RemovedAssessmentSupplierProgram>()
 }

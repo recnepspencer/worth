@@ -275,14 +275,16 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
         session: &mut Self::Session,
         checkpoint: &WorkflowCheckpoint,
     ) -> Result<(), Self::Error> {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         session.checkpoints.push(checkpoint.checkpoint_name.clone());
         session
             .world
             .runtime
             .durability_authority()
-            .checkpoint()
+            .checkpoint(execution)
             .map(|_| ())
-            .map_err(|error| error.detail)
+            .map_err(|error| error.to_string())
     }
 
     fn capture_artifacts(

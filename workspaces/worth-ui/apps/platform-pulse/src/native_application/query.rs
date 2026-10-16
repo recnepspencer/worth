@@ -4,9 +4,9 @@ use worth_ui_platform_pulse::observation_contract::{
 };
 
 use super::{
+    projection::{begin_projection, PlatformPulseProjectionPublication},
     PlatformPulseApplicationRuntime, PlatformPulseProjectionRebindDenial,
     PlatformPulseTerminalError,
-    projection::{PlatformPulseProjectionPublication, begin_projection},
 };
 
 pub(super) struct PlatformPulsePendingProjection {

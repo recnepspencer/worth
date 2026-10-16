@@ -7,9 +7,7 @@ use super::super::{
     WorthQueryPreparedProgramMigration,
 };
 use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
-use crate::domain_computation::primary_graph::workflow::{
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowDispositions,
-};
+use crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowDispositions;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// Describes the owner-computed requirements for moving this exact branch
@@ -21,36 +19,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<WorthQueryProgramAdoptionRequirements, WorthQueryBranchAdoptionPreparationDenial>
     {
         preparation::requirements(self, target)
-    }
-
-    /// Reads every workflow definition and live instance this exact branch
-    /// incarnation must decide before moving to `target`, with the
-    /// dispositions the adoption law leaves open for each.
-    pub fn workflow_adoption_inventory(
-        &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        target: &ApplicationProgramRevision,
-        expected_requirements: &WorthQueryProgramAdoptionRequirements,
-        maximum_work_units: usize,
-    ) -> Result<WorthQueryWorkflowAdoptionInventory, WorthQueryBranchAdoptionPreparationDenial>
-    {
-        let phase_request = match phase.execution_request_for(&self.application().product_runtime) {
-            Ok(request) => request,
-            Err(cause) => {
-                return Err(WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(
-                    cause.into(),
-                ))
-            }
-        };
-        let execution = &phase_request;
-
-        preparation::workflow_inventory(
-            execution,
-            self,
-            target,
-            expected_requirements,
-            maximum_work_units,
-        )
     }
 
     /// Prepares one branch-local move to `target` against the exact selected
@@ -105,8 +73,18 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     }
 
     /// Prepares one branch-local move with explicit workflow dispositions,
-    /// decided against [`Self::workflow_adoption_inventory`], and an optional
+    /// resolved against private fresh owner truth, and an optional
     /// admitted migration.
+    /// ```
+    /// use worth_query_execution::facade::primary_graph::{WorthQuerySelectedProductOperation, WorthQueryWorkflowDispositions};
+    /// use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdoptionRequirements};
+    /// use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+    /// use worth_query_admission::facade::authenticated_principal::{WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope};
+    /// fn explicit<S:ApplicationSchema>(selected:&WorthQuerySelectedProductOperation<'_, S>, target:&ApplicationProgramRevision,
+    ///     requirements:&WorthQueryProgramAdoptionRequirements, principal:&WorthQueryAuthenticatedExternalPrincipal<S>, scope:&WorthQueryRequestScope) {
+    ///     let _ = selected.prepare_branch_adoption_with_choices(target,requirements,None,Some(WorthQueryWorkflowDispositions::carry_compatible()),64,principal,scope);
+    /// }
+    /// ```
     pub fn prepare_branch_adoption_with_choices(
         &self,
         target: &ApplicationProgramRevision,

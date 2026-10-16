@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 mod drift_support;
 mod fixtures;
 
@@ -215,9 +216,8 @@ fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
 
     let segment_path = runtime
         .durability()
-        .recovery_plan(
-            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-        )
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap()
         .store
         .expect("persisted store")
         .segments
@@ -226,7 +226,8 @@ fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
         .path
         .clone();
     let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(&segment_path).unwrap();
+        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
+            .unwrap();
     let merge_entry = file
         .entries
         .iter_mut()
@@ -241,11 +242,13 @@ fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
         .schema_reconciliation_witness = schema_drifted_authority(&baseline)
         .execution_summary
         .schema_reconciliation_witness;
-    crate::durability::log::native_file_codec::write_segment_file(&segment_path, &file).unwrap();
+    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
+        .unwrap();
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = runtime_with_collaboration_merge_history();
     let error = recovered
         .durability_recovery()
@@ -269,9 +272,8 @@ fn merge_collaboration_truth_denies_summary_only_and_planner_shortcuts() {
     let outcome = execute_feature_merge(execution, &runtime);
     let segment_path = runtime
         .durability()
-        .recovery_plan(
-            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-        )
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap()
         .store
         .expect("persisted store")
         .segments
@@ -280,7 +282,8 @@ fn merge_collaboration_truth_denies_summary_only_and_planner_shortcuts() {
         .path
         .clone();
     let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(&segment_path).unwrap();
+        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
+            .unwrap();
     let merge_entry = file
         .entries
         .iter_mut()
@@ -293,11 +296,13 @@ fn merge_collaboration_truth_denies_summary_only_and_planner_shortcuts() {
         .expect("merge execution authority")
         .execution_summary
         .execution_digest = "forged-summary-digest".to_string();
-    crate::durability::log::native_file_codec::write_segment_file(&segment_path, &file).unwrap();
+    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
+        .unwrap();
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = runtime_with_collaboration_merge_history();
     let error = recovered
         .durability_recovery()

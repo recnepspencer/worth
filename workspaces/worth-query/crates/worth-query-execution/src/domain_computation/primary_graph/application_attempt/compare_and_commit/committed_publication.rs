@@ -215,6 +215,20 @@ impl WorthQueryCommittedProductPublication {
         }
     }
 
+    /// Borrow the actual native poststate retained by a performed World owner.
+    /// Retired descriptive history cannot reconstruct or lend this custody.
+    pub(in crate::domain_computation::primary_graph) fn retained_relational_basis(
+        &self,
+    ) -> Option<&worth_relational::facade::branch::AdmittedRelationalBranchBasis> {
+        Some(
+            self.performed()?
+                .publication()
+                .new_product_head()
+                .basis()
+                .relational_basis(),
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn take_successor_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {

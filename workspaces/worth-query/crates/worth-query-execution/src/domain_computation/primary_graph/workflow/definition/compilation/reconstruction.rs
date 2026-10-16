@@ -23,7 +23,9 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 
 mod cold;
 mod connection;
+pub(in crate::domain_computation::primary_graph) use connection::observe_connection;
 mod node;
+pub(in crate::domain_computation::primary_graph) use node::compile_node;
 mod operation_input;
 mod publication_header;
 use cold::reconstruct_cold_definition;
@@ -286,3 +288,7 @@ fn denial(subject: &str) -> WorthQueryApplicationAttemptDenial {
         subject,
     )
 }
+
+#[cfg(test)]
+#[path = "reconstruction/start_provenance_tests.rs"]
+mod start_provenance_tests;

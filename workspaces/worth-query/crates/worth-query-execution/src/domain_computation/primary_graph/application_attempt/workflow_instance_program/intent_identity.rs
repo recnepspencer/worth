@@ -1,27 +1,32 @@
+use super::WorthQueryWorkflowInstanceDiscoveryIntent;
 use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::canonical_operation_material;
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 
-pub(super) fn instance_identity(
+pub(super) fn instance_identity<Schema>(
     compiled: &CompiledWorkflowDefinition,
     subject: EntityId,
     start_key_identity: [u8; 32],
-) -> Result<(String, [u8; 32]), ()> {
-    identity(compiled, subject, start_key_identity, Vec::new())
+) -> Result<WorthQueryWorkflowInstanceDiscoveryIntent<Schema>, ()> {
+    WorthQueryWorkflowInstanceDiscoveryIntent::from_canonical(
+        subject,
+        *compiled.program_revision(),
+        identity(compiled, subject, start_key_identity, Vec::new())?,
+    )
 }
 
 /// A successor's identity also names the instance its migration ends, so
 /// two sources never mint the same successor. A fork continuation names the
 /// fork too, so the same source continued on two forks mints two successors.
-pub(super) fn migration_identity(
+pub(super) fn migration_identity<Schema>(
     resumed: &CompiledWorkflowDefinition,
     source: EntityId,
     fork: Option<u64>,
     subject: EntityId,
     start_key_identity: [u8; 32],
-) -> Result<(String, [u8; 32]), ()> {
+) -> Result<WorthQueryWorkflowInstanceDiscoveryIntent<Schema>, ()> {
     let mut material = vec![
         (
             "migration.source.partition",
@@ -37,7 +42,11 @@ pub(super) fn migration_identity(
         ),
     ];
     material.extend(fork.map(|occurrence| ("continuation.fork", occurrence.to_string())));
-    identity(resumed, subject, start_key_identity, material)
+    WorthQueryWorkflowInstanceDiscoveryIntent::from_canonical(
+        subject,
+        *resumed.program_revision(),
+        identity(resumed, subject, start_key_identity, material)?,
+    )
 }
 
 /// A cancellation names the one instance it ends, on the branch whose copy

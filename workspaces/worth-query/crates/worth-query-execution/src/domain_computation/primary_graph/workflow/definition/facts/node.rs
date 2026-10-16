@@ -110,9 +110,8 @@ pub(super) fn create_node(
             text(hex(binding.installed_capability_identity)),
         );
     }
-    if let ApplicationWorkflowNodeKind::Operation { operation, .. } = node.kind()
-        && let Some(requirements) = operation.workflow_execution_requirements()
-    {
+    if let ApplicationWorkflowNodeKind::Operation { operation, .. } = node.kind() {
+        let requirements = operation.workflow_execution_requirements();
         fields.insert(
             layout.node.workflow_execution_requirements.clone(),
             text(requirements.persistence_identity()),

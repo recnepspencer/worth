@@ -1,7 +1,6 @@
 //! A no-output operation owns original meaning and every native publication obligation.
 use super::*;
 use worth_query_declaration::facade::application_program::ApplicationAction;
-use worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted,
     WorthQueryManagedApplicationRecoveryPerformed,
@@ -50,21 +49,11 @@ where
         WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
 }
 
-enum SourceState<S: ApplicationSchema, I: ApplicationMutationIntent<S>> {
-    Initial,
-    Unpublished(WorthQueryProductUnpublishedRecovery),
-    Performed(WorthQueryManagedApplicationRecoveryPerformed),
-    Keyed(WorthQueryApplicationUncommitted),
-    UnresolvedAdvancement(
-        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
-    ),
-    RetryableNoEffect(NativeOutcome<S, I>),
-    Stopped(NativeOutcome<S, I>),
-    AdmissionStopped(WorthQueryApplicationRequestMutationDenial),
-    RetainedPending(
-        WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
-    ),
-}
+type SourceState<S, I> = super::native_publication::NativePublicationState<
+    NativeOutcome<S, I>,
+    WorthQuerySourceCompletion<<Binding<S, I> as ApplicationMutationBinding<S>>::Result>,
+    WorthQueryApplicationRequestMutationDenial,
+>;
 
 /// Fresh results and recovered receipt evidence never imply the same result provenance.
 pub enum WorthQuerySourceCompletion<Result> {
@@ -118,12 +107,12 @@ pub enum WorthQuerySourceOnlyPosture {
     Terminal,
 }
 impl<
-    S: ApplicationSchema,
-    I: ApplicationMutationIntent<S>,
-    P: ApplicationProgramDefinition<S>,
-    A,
-    M,
-> WorthQuerySourceOnlyOperation<S, I, P, A, M>
+        S: ApplicationSchema,
+        I: ApplicationMutationIntent<S>,
+        P: ApplicationProgramDefinition<S>,
+        A,
+        M,
+    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
     /// Abandons ordinary retry meaning while keeping the exact native cleanup authority alive.
     ///
@@ -152,23 +141,29 @@ impl<
     /// Exact completed native no-effect evidence retained for a fresh admitted attempt.
     pub fn native_retry_outcome(&self) -> Option<&NativeOutcome<S, I>> {
         match &self.state {
-            SourceState::RetryableNoEffect(outcome) => Some(outcome),
+            SourceState::<S, I>::RetryableNoEffect(outcome) => Some(outcome),
             _ => None,
         }
     }
     pub fn posture(&self) -> WorthQuerySourceOnlyPosture {
         match self.state {
-            SourceState::Initial => WorthQuerySourceOnlyPosture::Initial,
-            SourceState::RetryableNoEffect(_) => WorthQuerySourceOnlyPosture::RetryableNoEffect,
-            SourceState::Unpublished(_) => WorthQuerySourceOnlyPosture::ProductUnpublished,
-            SourceState::Performed(_) => WorthQuerySourceOnlyPosture::RecoveryPerformed,
-            SourceState::Keyed(WorthQueryApplicationUncommitted::Aborted) => {
+            SourceState::<S, I>::Initial => WorthQuerySourceOnlyPosture::Initial,
+            SourceState::<S, I>::RetryableNoEffect(_) => {
+                WorthQuerySourceOnlyPosture::RetryableNoEffect
+            }
+            SourceState::<S, I>::Unpublished(_) => WorthQuerySourceOnlyPosture::ProductUnpublished,
+            SourceState::<S, I>::Performed(_) => WorthQuerySourceOnlyPosture::RecoveryPerformed,
+            SourceState::<S, I>::Keyed(WorthQueryApplicationUncommitted::Aborted) => {
                 WorthQuerySourceOnlyPosture::ProvedAborted
             }
-            SourceState::Keyed(_) => WorthQuerySourceOnlyPosture::Indeterminate,
-            SourceState::UnresolvedAdvancement(_) => WorthQuerySourceOnlyPosture::Indeterminate,
-            SourceState::RetainedPending(_) => WorthQuerySourceOnlyPosture::RetainedDeliveryPending,
-            SourceState::Stopped(_) | SourceState::AdmissionStopped(_) => {
+            SourceState::<S, I>::Keyed(_) => WorthQuerySourceOnlyPosture::Indeterminate,
+            SourceState::<S, I>::UnresolvedAdvancement(_) => {
+                WorthQuerySourceOnlyPosture::Indeterminate
+            }
+            SourceState::<S, I>::RetainedPending(_) => {
+                WorthQuerySourceOnlyPosture::RetainedDeliveryPending
+            }
+            SourceState::<S, I>::Stopped(_) | SourceState::<S, I>::AdmissionStopped(_) => {
                 WorthQuerySourceOnlyPosture::Terminal
             }
         }
@@ -196,7 +191,7 @@ where
         WorthQuerySourceOperationAdmission::construct(description, runtime).map(|admission| Self {
             admission,
             cleanup: Default::default(),
-            state: SourceState::Initial,
+            state: SourceState::<S, I>::Initial,
             keyed_terminal: None,
             guarded_abort: None,
         })
@@ -204,13 +199,32 @@ where
 }
 
 impl<
-    S: ApplicationSchema,
-    I: ApplicationMutationIntent<S>,
-    P: ApplicationProgramDefinition<S>,
-    A,
-    M,
-> WorthQuerySourceOnlyOperation<S, I, P, A, M>
+        S: ApplicationSchema,
+        I: ApplicationMutationIntent<S>,
+        P: ApplicationProgramDefinition<S>,
+        A,
+        M,
+    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
+    // The native state's completion slot remains the sole evidence owner through
+    // delivery and completed wrappers; phase tags never duplicate its payload.
+    pub(super) fn completion(
+        &self,
+    ) -> &WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result> {
+        let SourceState::<S, I>::RetainedPending(evidence) = &self.state else {
+            unreachable!("completed source owns its native evidence")
+        };
+        evidence
+    }
+
+    fn complete(
+        &mut self,
+        evidence: WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
+    ) -> SourceStep {
+        self.state = SourceState::<S, I>::RetainedPending(evidence);
+        SourceStep::Completed
+    }
+
     pub(super) fn guarded_abort(&self) -> Option<&WorthQueryApplicationUncommitted> {
         self.guarded_abort.as_ref()
     }
@@ -218,7 +232,6 @@ impl<
         &mut self,
         denial:worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ) {
-        if matches!(denial,worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Panicked)
-            && matches!(self.state,SourceState::Initial|SourceState::RetryableNoEffect(_)) {self.state=SourceState::UnresolvedAdvancement(denial);}
+        self.state.record_unresolved_advancement(denial);
     }
 }

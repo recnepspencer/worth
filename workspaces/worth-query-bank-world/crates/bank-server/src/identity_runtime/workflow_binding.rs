@@ -9,8 +9,8 @@ use worth_query_host::facade::{
 
 use super::{BankIdentityRuntime, InstalledBankPrincipalBinding};
 use crate::{
-    BankIdentityRuntimeBuildError, application_definition::BankApplication,
-    approval_authentication::BankApprovalAuthenticationOwner,
+    application_definition::BankApplication,
+    approval_authentication::BankApprovalAuthenticationOwner, BankIdentityRuntimeBuildError,
 };
 
 /// A refused workflow binding retains the complete installed Bank world.

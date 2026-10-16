@@ -273,6 +273,16 @@ impl WorthQueryApplicationCommitReceipt {
         self.authority_binding.installed_aftermath()
     }
 
+    /// Installed recovery meaning from this original commit, not recovery authority.
+    pub const fn installed_recovery_contract(
+        &self,
+    ) -> Option<worth_query_installation::facade::InstalledAftermathRecoveryContract> {
+        match self.authority_binding.installed_aftermath() {
+            Some(aftermath) => Some(aftermath.recovery()),
+            None => None,
+        }
+    }
+
     pub const fn published_aftermath_posture(
         &self,
     ) -> Option<worth_query_installation::facade::PublishedAftermathPosture> {

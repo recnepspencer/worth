@@ -4,7 +4,7 @@ use worth_query_decl::facade::{
         ApplicationCandidateResourceCeiling, ApplicationConventionalAdmission,
         ApplicationMutationAdmissionBinding, ApplicationMutationBinding,
         ApplicationMutationFieldScope, ApplicationMutationIntent, ApplicationQueryMutationSource,
-        NoApplicationMutationOutputs,
+        ApplicationWorkflowExecutionRequirements, NoApplicationMutationOutputs,
     },
     application_schema::{
         ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
@@ -91,6 +91,10 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusUpdat
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 1),
             ApplicationCandidateResourceCeiling::representation_bytes(65_544),
         );
+
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
 
     fn scope_field() -> ApplicationFieldRef<
         WorthUiApplicationSchema,

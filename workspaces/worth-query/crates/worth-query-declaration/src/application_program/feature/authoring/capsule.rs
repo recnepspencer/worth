@@ -35,8 +35,8 @@ pub struct ApplicationFeatureSpec {
 }
 
 impl ApplicationFeatureSpec {
-    pub fn root<Schema, Feature>()
-    -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Feature>
+    pub fn root<Schema, Feature>(
+    ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Feature>
     where
         Schema: ApplicationSchema + 'static,
         Feature: ApplicationFeature<Schema>,
@@ -44,8 +44,8 @@ impl ApplicationFeatureSpec {
         ApplicationFeatureSpecBuilder::new()
     }
 
-    pub fn at<Schema, Instance, Feature>()
-    -> ApplicationFeatureSpecBuilder<Schema, Instance, Feature>
+    pub fn at<Schema, Instance, Feature>(
+    ) -> ApplicationFeatureSpecBuilder<Schema, Instance, Feature>
     where
         Schema: ApplicationSchema + 'static,
         Instance: ApplicationCompositionInstance,

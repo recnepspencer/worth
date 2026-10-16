@@ -22,7 +22,7 @@ pub enum WorthQueryWorkflowNodeDependency {
         input_type: String,
         binding: Option<String>,
         requires_authority: bool,
-        workflow_execution_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
+        workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
     },
     AwaitInbound {
         origin_operation: String,
@@ -138,7 +138,7 @@ where
                     workflow_execution_requirements: operation
                         .reference
                         .workflow_execution_requirements()
-                        .cloned(),
+                        .clone(),
                 });
         // An operation node declared without a mutation binding runs the
         // installed operation directly and never requires workflow authority.
@@ -151,7 +151,7 @@ where
                 input_type: operation.input_type.as_str().to_owned(),
                 binding: None,
                 requires_authority: false,
-                workflow_execution_requirements: None,
+                workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
             });
         let assessments = self.assessments.iter().map(|assessment| {
             WorthQueryWorkflowNodeDependency::Assessment {

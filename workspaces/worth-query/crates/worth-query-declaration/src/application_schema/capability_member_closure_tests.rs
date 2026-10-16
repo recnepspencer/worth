@@ -279,6 +279,7 @@ fn anchored_composition(
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
             ApplicationCapabilityDistinctActorRule::not_applicable(),
+            crate::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable(),
         ),
         ApplicationCapabilityPropagationComposition::new(
             ApplicationCapabilityDelegationRule::forbidden(),
@@ -314,6 +315,7 @@ fn composition(disclosure: bool) -> ApplicationCapabilityComposition {
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
             ApplicationCapabilityDistinctActorRule::not_applicable(),
+            crate::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable(),
         ),
         ApplicationCapabilityPropagationComposition::new(
             ApplicationCapabilityDelegationRule::forbidden(),

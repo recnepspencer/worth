@@ -34,6 +34,8 @@ fn boxed_authorization_and_spare_string_capacity_are_charged() {
         + 128
         + 256
         + std::mem::size_of::<WorthQueryOperationAuthorizationDenial>()
+        // The primary kind box is separate from the one-element causes vector.
+        + std::mem::size_of::<WorthQueryOperationAuthorizationDenialKind>()
         + std::mem::size_of::<WorthQueryOperationAuthorizationDenialKind>();
     assert_eq!(
         denial.additional_charged_bytes(),

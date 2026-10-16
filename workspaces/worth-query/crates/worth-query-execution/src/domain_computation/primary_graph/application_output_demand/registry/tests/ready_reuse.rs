@@ -28,13 +28,18 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),
-        std::collections::BTreeSet::new(),
-        Vec::new(),
+        std::iter::empty(),
+        &[],
         |_| None,
+        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::CancellationToken::new(),
+            None,
+        )),
     )
     .expect("empty restored correspondence is valid for a registry lifetime test");
     let checkpoint = super::super::WorthQueryAcceptedOutputCheckpointIdentity {
-        producer: "producer".to_owned(),
+        producer: ("producer".to_owned()).into(),
         posture: super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source: [1; 32],
         scope,
@@ -42,9 +47,10 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         producer_dependency: None,
         idempotency_key: [3; 32],
         resources: None,
-        roles: Vec::new(),
+        roles: (Vec::new()).into(),
         producer_facts: None,
         producer_fact_wire_version: 0,
+        metadata: None,
     };
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Restored(
@@ -54,7 +60,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
                 observation,
                 source_scope: scope,
                 source_identity: WorthQueryCheckpointSourceIdentity::new([1; 32]),
-                observed_source_facts: Arc::from([]),
+                observed_source_facts: Arc::<[_]>::from([]).into(),
                 native_output_witness: None,
             },
         ),

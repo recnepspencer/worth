@@ -14,13 +14,13 @@ pub use super::application_attempt::{
     PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart, WorkflowApprovalDecision,
-    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
-    WorkflowDefinitionRetirementOutcome, WorkflowInstanceBindingDenial,
-    WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorkflowInstanceStartOutcome, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
-    WorkflowProgressOutcome, WorkflowProposalBindingDenial, WorkflowProposalOutcome,
-    WorkflowProposalPreparationDenial, WorkflowTransitionBindingDenial,
+    RequiredWorkflowProposal, RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart,
+    WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
+    WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
+    WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
+    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowOperationAuthority,
+    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowProposalBindingDenial,
+    WorkflowProposalOutcome, WorkflowProposalPreparationDenial, WorkflowTransitionBindingDenial,
     WorkflowTransitionPreparationDenial, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCleanupRequired,
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDeferred,
@@ -55,7 +55,8 @@ pub use super::application_attempt::{
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
     WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
     WorthQueryRequestedElevation, WorthQueryReviewedElevation, WorthQueryWorkflowAdvanceAdapter,
-    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowProposalAdapter,
+    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
+    WorthQueryWorkflowProposalAdapter,
 };
 pub use super::application_checkpoint::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
@@ -347,12 +348,8 @@ pub use super::workflow::{
     WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
 };
 pub use super::workflow::{
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
-    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,
-    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
-    WorthQueryWorkflowInstanceProgressCounters,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceProgressCounters,
 };
 pub use crate::basis::{
     WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,

@@ -259,8 +259,8 @@ impl PlatformPulseQueryShutdownReceipt {
 mod tests;
 
 /// A new unprivileged request scope for each Query mutation or close attempt.
-fn fresh_query_scope()
--> worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope {
+fn fresh_query_scope(
+) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope {
     use worth_query_host::facade::admission::authenticated_principal::{
         WorthQueryCancellationSource, WorthQueryRequestScope,
     };

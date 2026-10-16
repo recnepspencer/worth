@@ -5,13 +5,11 @@
 use worth_query_host::facade::application_entry::{
     WorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenial,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceDisposition,
-};
+use worth_query_host::facade::primary_graph::WorthQueryWorkflowInstanceDisposition;
 
 use super::super::document_retention_model::{
     programs::RetentionProgramP1,
-    workflow::{migrate_instance, second_program_workflow_inventory, support_workflow_program},
+    workflow::{migrate_instance, support_workflow_program},
 };
 use super::*;
 
@@ -173,21 +171,21 @@ fn a_performed_effect_carries_as_history_the_successor_never_repeats() {
     .clone();
 
     support_workflow_program::<RetentionProgramP1>(&mut application);
-    let inventory = second_program_workflow_inventory(&application, instance.branch());
-    assert!(inventory.instance(instance.entity_id()).is_none());
-    assert!(inventory.instance(first.entity_id()).is_none());
-    let carried = inventory
-        .instance(successor.entity_id())
-        .expect("the successor is the live instance");
-    assert_eq!(
-        carried.custody(),
-        &WorthQueryWorkflowInstanceCustody::Performed
+    let cancel = worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+        .definition(
+            &next,
+            worth_query_host::facade::primary_graph::WorthQueryWorkflowDefinitionDisposition::Carry,
+        )
+        .instance(&successor, WorthQueryWorkflowInstanceDisposition::Cancel);
+    let cancellation = crate::document_retention_model::workflow::prepare_second_program_adoption(
+        &application,
+        instance.branch(),
+        Some(cancel),
     );
-    assert_eq!(
-        carried.legal_dispositions(),
-        &[WorthQueryWorkflowInstanceDisposition::Carry],
-        "inherited effects forbid cancelling the successor",
-    );
+    assert!(matches!(&cancellation,
+        Err(worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+            worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))),
+        "actual inherited performed effect forbids cancellation at the native safety owner; actual native refusal: {:?}", cancellation.as_ref().err());
 
     match advance_instance(&application, successor.clone(), 87_124) {
         Ok(WorkflowProgressOutcome::Completed(performed)) => {
@@ -249,10 +247,15 @@ pub(super) fn replace_definition(
 }
 
 pub(super) fn perform_approved_effect(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        crate::document_retention_model::programs::RetentionProgramP0,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
-) {
+) -> worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt {
     let required = match advance_instance(application, instance.clone(), key)
         .expect("the approved operation requirement prepares")
     {
@@ -281,10 +284,10 @@ pub(super) fn perform_approved_effect(
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the approved effect executes");
-    assert!(matches!(
-        effect,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
+    match effect {
+        WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => receipt,
+        other => panic!("the approved native effect did not commit: {other:?}"),
+    }
 }
 
 pub(super) fn started(

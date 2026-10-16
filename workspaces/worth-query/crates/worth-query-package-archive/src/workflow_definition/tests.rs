@@ -26,6 +26,8 @@ impl Draft {
         output.raw_bytes(b"WQWD");
         output.u16(version);
         output.text("spec.v1");
+        output.text("1:disabled");
+        output.text("1:not-applicable");
         output.text("definition.v1");
         output.u16(maximum_nodes);
         output.u16(8);
@@ -131,6 +133,10 @@ fn unsupported_draft_versions_report_their_exact_layer() {
         ),
         (
             3,
+            WorthQueryPackageArchiveCompatibilityPosture::PredatesWindow,
+        ),
+        (
+            4,
             WorthQueryPackageArchiveCompatibilityPosture::PredatesWindow,
         ),
         (

@@ -9,10 +9,10 @@ use crate::{
     WorthUiScalarProjectionSourceRecord, WorthUiStatusQueryRequest, WorthUiStatusQueryResult,
 };
 
-use super::WorthUiStatusOwnerError;
 use super::application_authentication::{authenticate, request_scope};
-use super::application_runtime::{WorthUiStatusApplication, install_status_application};
+use super::application_runtime::{install_status_application, WorthUiStatusApplication};
 use super::status_mutation::{WorthUiStatusMutation, WorthUiStatusMutationResult};
+use super::WorthUiStatusOwnerError;
 
 pub struct WorthUiStatusSourceOwner {
     pub(super) application: WorthUiStatusApplication,

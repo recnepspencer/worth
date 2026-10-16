@@ -137,6 +137,18 @@ shows the complete journey, and the
 [workflows guide](../worth-query/docs/foundations/workflows.md) documents it
 step by step.
 
+Workflow declarations also make three boundaries explicit:
+
+- `ApplicationWorkflowSpec::observation_policy()` and `actor_policy()` declare
+  governed disclosure and recorded-role policy; see [workflow actors](../worth-query/docs/foundations/workflows.md#recorded-workflow-actors).
+- `ApplicationMutationBinding::workflow_execution_requirements()` returns an
+  explicit `ApplicationWorkflowExecutionRequirements`; see [guarded operations](../../../../docs/build-an-application.md#65-who-may-run-a-guarded-operation).
+- `ApplicationCapabilityRecordedActorRule` in `application_capability` declares
+  how a command relates to a recorded native actor; see [actor declarations](../worth-query/docs/foundations/workflows.md#declare-evidence-not-authorization-modes).
+
+These declarations describe policy. Hosts still require fresh native admission;
+an observed actor or workflow locator grants no execution permission.
+
 An external-effect operation may declare one fixed inbound source, protocol,
 version and finite `ApplicationInboundOccurrenceLimits` with
 `external_effect_with_inbound`. The same typed binding can be used by a

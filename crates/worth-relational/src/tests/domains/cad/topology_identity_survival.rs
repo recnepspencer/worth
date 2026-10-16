@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::facade::history::BranchId;
 use crate::facade::lineage::{
     HistoricalResolutionBoundednessBasis, HistoricalResolutionDigestMode,
@@ -54,10 +55,14 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
     let history = history.expect("lineage aspect history");
     assert_lineage_history_origin_invariants(&history.entries, start_lineage);
 
-    runtime.durability_authority().checkpoint().unwrap();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()

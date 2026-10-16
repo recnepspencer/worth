@@ -51,7 +51,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
         release_test_commit_snapshot(&source, &committed);
     }
 
-    let image = source.durability_authority().checkpoint().unwrap();
+    let image = source.durability_authority().checkpoint(execution).unwrap();
     let roots = &image.branch_roots[0].partition_images;
     let encoded_bytes = rmp_serde::to_vec(roots).unwrap().len();
     let buffered_started = Instant::now();

@@ -150,7 +150,9 @@ impl WorthQueryExecutionInstallationAuthority {
                     .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
                     .map_err(|error| {
                         primary_graph_denial(
-                            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                            if error.kind() == worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenialKind::RecoveredAuthorityMismatch {
+                                WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedRecoveredNativeAuthorityLayout
+                            } else { WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected },
                             format!("recovered schema authority denied: {error}"),
                         )
                     })?;
@@ -216,6 +218,13 @@ fn map_checkpoint_recovery_stop(
         RelationalRecoveryStop::Durability(error) => primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
             format!("native checkpoint recovery denied: {error:?}"),
+        ),
+        RelationalRecoveryStop::Allocation(cause) => primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::NativeAllocation {
+                kind: cause.kind(),
+                requested_payload_bytes: cause.requested_payload_bytes(),
+            },
+            "native checkpoint recovery allocation refused",
         ),
         RelationalRecoveryStop::Request(cause) => {
             let translated =
@@ -289,6 +298,38 @@ mod tests {
             assert_eq!(
                 map_checkpoint_recovery_stop(Stop::Request(cause)).kind(),
                 kind
+            );
+        }
+    }
+    #[test]
+    fn checkpoint_recovery_allocation_keeps_physical_kind_and_checked_quote() {
+        use worth_execution::{
+            ExecutionAllocationDenialKind as AllocationKind, ExecutionAllocationPolicy,
+            ExecutionByteBuffer,
+        };
+        use worth_relational::facade::durability::RelationalRecoveryStop;
+        use WorthQueryPrimaryGraphInstallationDenialKind as Kind;
+
+        // Real owner failures: unrepresentable layout has no checked quote;
+        // an incomplete, representable backing retains its exact quote.
+        let layout =
+            ExecutionByteBuffer::allocate(usize::MAX, ExecutionAllocationPolicy::SystemAllocation)
+                .unwrap_err();
+        let incomplete =
+            ExecutionByteBuffer::allocate(17, ExecutionAllocationPolicy::SystemAllocation)
+                .unwrap()
+                .seal()
+                .unwrap_err();
+        for (cause, kind, quote) in [
+            (layout, AllocationKind::Layout, None),
+            (incomplete, AllocationKind::IncompleteSeal, Some(17)),
+        ] {
+            assert_eq!(
+                map_checkpoint_recovery_stop(RelationalRecoveryStop::Allocation(cause)).kind(),
+                Kind::NativeAllocation {
+                    kind,
+                    requested_payload_bytes: quote,
+                }
             );
         }
     }

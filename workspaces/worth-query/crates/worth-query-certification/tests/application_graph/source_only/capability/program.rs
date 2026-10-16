@@ -27,13 +27,11 @@ impl ApplicationProgramDefinition<CapabilitySchema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("capability-retention.program");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<CapabilitySchema, Feature>()
-                .action::<SetRetentionBinding, Completion>()
-                .finish_action()
-                .operation::<RevokeGrant>()
-                .finish(),
-        ]
+        vec![ApplicationFeatureSpec::root::<CapabilitySchema, Feature>()
+            .action::<SetRetentionBinding, Completion>()
+            .finish_action()
+            .operation::<RevokeGrant>()
+            .finish()]
     }
 }
 pub struct Original {

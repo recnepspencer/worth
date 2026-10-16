@@ -35,7 +35,7 @@ or recovered. A host can stop supporting a program with
 9. [Inspect and compare](#inspect-and-compare)
 10. [Adoption requirements](#adoption-requirements)
 11. [Migration](#migration)
-12. [Workflow inventory and dispositions](#workflow-inventory-and-dispositions)
+12. [Governed workflow reads and adoption choices](#governed-workflow-reads-and-adoption-choices)
 13. [Workflow disposition legality](#workflow-disposition-legality)
 14. [Custody dispositions](#custody-dispositions)
 15. [Prepare and publish](#prepare-and-publish)
@@ -64,7 +64,7 @@ or recovered. A host can stop supporting a program with
 | Adoption | Publishing a branch's move from its current (source) program to a rostered target program. |
 | Requirements | `WorthQueryProgramAdoptionRequirements`: what one exact source-to-target move demands. |
 | Migration | A target-owned mutation, prepared under the target program, that is committed atomically with the adoption. |
-| Workflow inventory | `WorthQueryWorkflowAdoptionInventory`: the current workflow definitions and live workflow instances on the branch, each with the dispositions the host allows. |
+| Workflow decisions | `WorthQueryWorkflowDispositions`: explicit choices over opaque references, or native carry-compatible intent. Complete safety inventory stays private. |
 | Custody disposition | What the host does with an in-flight operation continuation, external-effect recovery, or resource reservation when the program changes. The host derives it; you do not choose it. |
 | Branch-set adoption | Adoption over an admitted, ordered set of branches, published one branch at a time. |
 | Retirement | Removing a rostered program from ordinary host service with `retire_program_support`. |
@@ -238,7 +238,7 @@ raised at the `ProposalBinding` stage, before any effect.
 | 3 | `.compare(&target)` | `WorthQueryProgramAdoptionRequirements` |
 | 4 | `.adopt(&requirements)?` | `WorthQueryApplicationProgramAdoptionRequest`, after source capability admission |
 | 5 | `.migration(prepared)` if the requirements demand an assessment | same request |
-| 6 | `.workflow_inventory(max)`, then `.workflow(dispositions)` if the branch holds workflow facts | same request |
+| 6 | `.workflow(dispositions)` when workflow facts require explicit choices | same request |
 | 7 | `.prepare(max_selection_work)` | `WorthQueryPreparedBranchAdoption` |
 | 8 | `programs.publish(prepared)` | `WorthQueryBranchAdoptionPublicationOutcome` |
 | 9 | `programs().recover(recovery)` if step 8 was `ProductUnpublished` | `WorthQueryBranchAdoptionRecoveryOutcome` |
@@ -345,65 +345,45 @@ let migration = match runtime
   migration prepared for another target (`MigrationTargetMismatch`) or against
   branch state that has since moved (`MigrationSourceChanged`).
 
-## Workflow inventory and dispositions
+## Governed workflow reads and adoption choices
 
-A branch holding workflow facts needs one explicit decision per current
-workflow definition and per live workflow instance. Preparing without them is
-refused with `WorkflowDispositionRequired { inventory }`, which carries the
-inventory. You can also read it first:
+The runtime reads a complete private safety inventory at preparation and
+requires a total legal decision. Neither ordinary programs nor advanced selected
+operations expose that inventory. Consumer enumeration explicitly selects one
+typed definition and its installed Definition read binding through the retained
+`read_workflow_instances` owner; Metadata permission does not enumerate instances.
 
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-let adoption = programs.adopt(&requirements)?;
-let inventory = adoption.workflow_inventory(1_024)?;   // WorthQueryWorkflowAdoptionInventory
-```
-
-The inventory:
-
-| Method | Meaning |
-|---|---|
-| `definitions()`, `definition(entity)` | Current definitions (`WorthQueryWorkflowDefinitionOccurrence`). |
-| `instances()`, `instance(entity)` | Live instances (`WorthQueryWorkflowInstanceOccurrence`). Historical instances copied into a fork are not listed. |
-| `is_empty()`, `digest()`, `work_units()`, `source()`, `target()` | Shape and identity of the inventory. |
-| `dispositions()` | An empty `WorthQueryWorkflowDispositions` bound to this inventory's digest. |
-| `carry_compatible()` | Chooses `Carry` for everything, refusing at the first occurrence that cannot be carried. |
-
-Each occurrence reports:
-
-- `compatibility()`: `WorthQueryWorkflowCompatibility::Compatible`, or
-  `Incompatible(WorthQueryWorkflowIncompatibility)` with one of
-  `VocabularyUnsupported { spec }`, `NodeUncovered { node_path }`, or
-  `DependencyChanged { node_path, name }`.
-- `legal_dispositions()`: the only dispositions the builder accepts.
-- For instances, also `custody()` (`WorthQueryWorkflowInstanceCustody`) and
-  `requires_migration()`.
-
-Build the decisions by chaining. Each call consumes the builder and returns
-`Result<WorthQueryWorkflowDispositions, WorthQueryWorkflowDispositionDenial>`:
+The following illustrative call shape uses the governed adoption contract:
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
 use worth_query_host::facade::primary_graph::{
-    WorthQueryWorkflowDefinitionDisposition as Definition,
+    WorthQueryWorkflowDispositions, WorthQueryWorkflowDefinitionDisposition as Definition,
     WorthQueryWorkflowInstanceDisposition as Instance,
 };
-
-let choices = inventory
-    .dispositions()
-    .definition(&inventory.definitions()[0], Definition::Carry)?
-    .instance(&inventory.instances()[0], Instance::Cancel)?;
-let prepared = adoption.workflow(choices).prepare(1_024)?;
+let choices = WorthQueryWorkflowDispositions::new()
+    .definition(&definition, Definition::Carry)
+    .instance(&instance, Instance::Cancel);
+let prepared = programs.adopt(&requirements)?.workflow(choices).prepare(1_024)?;
 ```
 
-- A definition disposition is `Carry` or `Retire`.
-- An instance disposition is `Carry` or `Cancel`. After adoption cancels an
-  instance, requests on it are refused with the attempt denial
-  `WorkflowInstanceCancelled`, the same one an explicit cancellation produces.
-- If owner truth moves after you decide, preparation is refused with
-  `WorkflowInventoryChanged { inventory }`. Decide the new inventory and prepare
-  again.
+Use opaque references from genuine publication or governed reads. A reference
+is a locator, never authority. The native owner resolves the exact branch and
+full entity identity against its fresh complete inventory, binds the resolved
+decisions to its digest, and uses the existing legality and atomic staging path.
+Omission, duplicate targets, foreign branches and illegal choices refuse.
+`WorkflowDispositionRequired` and `WorkflowDispositionRejected` disclose no
+inventory, identities or population counts. Native relational preparation logs
+stay private; execution interruption/resource causes remain typed without the
+log or its partition context. A later start makes an earlier
+explicit list incomplete; publication also checks its expected product head.
+
+When the intended decision is to carry every fact that can legally carry, use
+`WorthQueryWorkflowDispositions::carry_compatible()`. This is explicit intent
+for the fresh safety check, not a cached read or a disclosure grant. Incompatible
+facts and outstanding custody still refuse. Individual choices may narrow the
+result, and total legality is always checked again by the native owner.
 
 ## Workflow disposition legality
 
@@ -624,7 +604,7 @@ While a retirement runs, adoption to that revision is refused with
 | Support and activation | `ProgramSupportUnavailable`, `ProgramActivationUnavailable`, `ProgramActivationUnreadable`, `ProgramActivationUnrostered`, `ProgramSupportRetirementInProgress` | Check the roster and retirement state. The source or target is not usable on this host. |
 | Requirements | `Requirements(WorthQueryProgramAdoptionRequirementsDenial)`, `RequirementsChanged` | Compare again. |
 | Migration and custody | `MigrationAssessmentRequired(..)`, `MigrationTargetMismatch`, `MigrationSourceChanged`, `CustodyDispositionUnsupported(..)` | Supply or re-prepare the migration; resolve unsupported custody. |
-| Workflow | `WorkflowDispositionRequired { inventory }`, `WorkflowInventoryChanged { inventory }`, `WorkflowDispositionRejected(..)`, `WorkflowInventoryUnreadable { .. }`, `WorkflowInventoryRelationUnreadable { .. }` | Decide the carried inventory and prepare again. |
+| Workflow | `WorkflowDispositionRequired`, `WorkflowDispositionRejected`, `WorkflowInventoryUnavailable`, `WorkflowInventoryWorkLimit` | Freshly authorize a definition-selected read if needed, then submit total legal choices. |
 | Scope and basis | `UnknownEntityScope { .. }`, `RelationScopeUnsupported { .. }`, `SelectionLimitExceeded { .. }`, `BranchBasisUnavailable(..)` | Raise the work bound or re-select the branch. |
 | Transaction and publication | `TransactionAdmission(..)`, `TransactionStaging(..)`, `TargetRuleRejected { .. }`, `RelationalPreparation(..)`, `WorldPreparation(..)`, `ProductActivation(..)` | `TargetRuleRejected` means existing state violates a target rule: migrate it. The rest are storage or publication refusals. |
 
@@ -762,8 +742,7 @@ The instance is compatible and `Unperformed`, so `Carry` is legal too.
 ```rust,ignore
 // Illustrative: not compiled.
 let adoption = programs.adopt(&requirements)?.migration(migration);
-let inventory = adoption.workflow_inventory(1_024)?;
-let choices = inventory.carry_compatible()?;
+let choices = WorthQueryWorkflowDispositions::carry_compatible();
 ```
 
 **5. Prepare and publish.**

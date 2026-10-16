@@ -6,8 +6,8 @@
 > `<!-- compiled: ... -->` marker is checked byte-for-byte by CI against a
 > compiled fixture. A `<!-- doctest: crate -->` marker binds a block to the
 > crate's rustdoc and CI doctest lane. Illustrative blocks visibly say
-> `// Illustrative: not compiled.`; remaining unclassified Rust fences are
-> tracked by a per-document debt that may only shrink.
+> `// Illustrative: not compiled.`. The configured consumer guides require zero
+> unclassified Rust fences; CI refuses debt growth.
 
 This is the centerpiece guide for building on WORTH. Other public documents
 explain *why* the platform works the way it does
@@ -43,7 +43,7 @@ use worth_query_host::facade::{
 | `…decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
 | `…host::facade::application_installation` | `in_memory_program`, `in_memory_rostered_program`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
 | `…host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryOperationBuilder`, `WorthQueryOperationDescription`, `WorthQueryOperationAdvance`, `WorthQuerySettledFixedOperation`, `WorthQueryTerminalFixedOperation`, `WorthQueryWorkflowOperation`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
-| `…host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery` |
+| `…host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery`, `WorthQueryWorkflowInstanceRead`, `WorthQueryWorkflowInstancePage`, `WorthQueryWorkflowHistoryPage`, `WorthQueryWorkflowHistoryMark` |
 | `…host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
 | `…host::facade::primary_graph` | `OperationHandler`, `DecisionReader`, `CandidateWriter`, `WorthQuerySelectedProgramInspection` |
 | `…host::facade::admission` | `authenticated_principal::{admit_authentication_adapter, WorthQueryRequestScope}`, `authentication_event::install_authentication_event_owner` |
@@ -1599,6 +1599,17 @@ intent, and the key is scoped to the operation and the requesting principal,
 so the same key from another principal or under another operation never
 replays the request.
 
+Capability delegation and revocation use retained native commands. Call
+`request.retain_capability_delegation_in_program(..)` or
+`request.retain_capability_revocation_in_program(..)` once with the owned original
+input and key. Capture refusal returns `(input, key, prepare, denial)` intact.
+The preparation closure may repeat under a fresh admission; it projects and
+materializes the native command program, while Query alone commits effects.
+Advance the returned owner with a fresh request rather than reissuing intent.
+A refusal returns the same command. A completed owner exposes native receipt
+evidence and still requires `close_with_evidence(&fresh_request)`; close refusal
+returns that same completed owner. See [owning capability commands](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands).
+
 **Provisional.** `compare_and_commit_program_undo::<Binding>` and
 `compare_and_commit_program_redo::<Binding>` take the effect program, the same
 mutation identities and idempotency extension, and the sealed progression
@@ -2810,7 +2821,7 @@ Ok(builder.finish()?.validate()?)
 carry `with_total_deadline` (without one, validation refuses with
 `MissingInboundDeadline`).
 
-**Node kinds.** There are exactly seven (`ApplicationWorkflowNodeKind`):
+**Node authoring.** The [source-derived node inventory](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#source-derived-vocabulary) owns the complete `ApplicationWorkflowNodeKind` list. The following table explains builder usage:
 
 | Builder method | Node | Notes |
 |---|---|---|
@@ -2948,13 +2959,13 @@ The installed requirement (`workflow_requirements` inside
 
 | Declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Default guarded requirement: exactly one approval edge is required. |
-| `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| Guarded requirement omitted | Compile refusal; manual bindings must implement the requirement method explicitly. |
+| `ApplicationWorkflowExecutionRequirements::not_applicable()` | Explicit non-workflow applicability; refused for a guarded binding. |
+| `ApplicationWorkflowExecutionRequirements::occurrence_only()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 
-> **Warning.** Leaving `workflow_requirements` out does **not** mean "no
-> approval". It means "exactly one approval". To run a guarded operation
-> without a signature, declare `new()`.
+Guarded bindings require an explicit declaration. Omission does not select a
+legacy policy. Manual implementations return the direct requirement type.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -2964,7 +2975,7 @@ worth_query_decl::facade::worth_query_mutation_binding!(
     pub OccurrenceSetRetentionBinding for SetRetentionInput, schema DocumentRetentionSchema,
     // ... identity, input, operation, result, idempotency, decision, handler ...
     workflow_authority required,
-    workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
+    workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only(),
     // ... outputs, principal, scope, candidates, resources ...
 );
 ```
@@ -2999,10 +3010,9 @@ The sequence, from proposal to settlement:
 6. **External effects** settle through owner custody and an `AwaitInbound` node.
 7. **Advance again** to move to the successor or terminal.
 
-Advancing at a proposal slot returns `PreparationDenied` with
-`WorkflowTransitionNodeUnsupported` and the node path. It means "this node
-needs a proposal", not a fault. There is no `AwaitingProposal` outcome (known
-gap).
+`AwaitingProposal(RequiredWorkflowProposal)` names the node, operation and input
+type. Publish the proposal through fresh `prepare_workflow_proposal` admission;
+the need grants no authority and waiting records no transition.
 
 Full reference: [Workflows: Operations](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations).
 The runnable unsigned, occurrence-only journey is
@@ -3053,33 +3063,28 @@ let definition: PublishedWorkflowDefinitionRef = published.definition().clone();
 `expected_predecessor` is `WorkflowDefinitionExpectedPredecessor::Absent` for
 the first revision, or `Published(previous_ref)` for a revision.
 
-**Discover** the current definition on a branch:
+**Discover** metadata only through an explicitly governed retained read. The
+workflow must declare a `definition_metadata`
+rule naming the concrete installed read binding. Subject permission does not
+open this separate route.
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// examples/authored_workflow/main.rs (`discover`)
-// `request_execution` is the caller's `ExecutionRequest`
-// (`worth_query_host::facade::primary_graph::ExecutionRequest`; the example
-// opens a serial one in `run`).
-application
-    .with_host_advancement(|host_phase| {
-        application
-            .runtime()
-            .on_branch(application.runtime().current_world())
-            .select(&host_phase)
-            .expect("the main branch selects its exact occurrence")
-    })
-    .expect("installed host call opens")
-    .discover_workflow_definition::<ReviewedDocumentWorkflow>(request_execution, identity)
-    .expect("the workflow lineage reads within its bound")
-// -> WorthQueryWorkflowDefinitionDiscovery::{Current(ref), Retired, Unpublished}
+let basis = request.retain_current_read()?;
+let target = ApplicationWorkflowDefinitionReadTarget::<PurchaseWorkflowSpec>::new(identity);
+let found = request.at(&basis)
+    .discover_workflow_definition::<PurchaseWorkflowSpec, DefinitionMetadataRead>(
+        workflow, &target, independently_supplied_read_input,
+    )?;
+// found.basis() identifies the exact data; found.definition() is Current,
+// Retired or Unpublished. Neither the result nor a reference authorizes a start.
 ```
 
-Branch selection needs a host advancement phase (`with_host_advancement`);
-discovery reads under the caller's execution request. A refused discovery is
-a `WorthQueryWorkflowDefinitionDiscoveryDenial` (for example `ForeignLineage`,
-`Cancelled`, or a stopped `ExecutionRequest(..)`).
+Fresh current capability admission precedes any existence-dependent lookup.
+Foreign-Spec names are undisclosed as `Unpublished`; technical/native corruption
+failures remain typed errors. A revoked disclosure grant cannot read even an old
+retained basis. There is no execution-request-only discovery overload.
 
 **Start** an instance, **propose**, and **advance**:
 
@@ -3131,6 +3136,7 @@ recorded outcome instead of performing a second step.
 | Variant | Meaning |
 |---|---|
 | `Completed` | A step was recorded |
+| `AwaitingProposal(RequiredWorkflowProposal)` | Names the node, operation and input type; publish through fresh `prepare_workflow_proposal` admission |
 | `AwaitingActor` | The caller is not authorized for the next step; an authorized caller pumps the same instance |
 | `AwaitingAssessment`, `AwaitingCondition`, `AwaitingEvidence` | Settle the named read, then accept it |
 | `AwaitingApproval` | A signed approval is required |
@@ -3139,10 +3145,9 @@ recorded outcome instead of performing a second step.
 | `ProjectionDenied` | The commit landed and carries its receipt; only its projection was refused |
 | `ProjectionReadStopped { receipt, cause }` | The commit landed and its receipt is retained; the projection read it requires stopped (`cause` is a `RelationalExecutionDenialCause`) |
 
-These are all thirteen variants. There is no `AwaitingProposal` outcome:
-advancing at a proposal slot returns `PreparationDenied` whose kind is
-`WorkflowTransitionNodeUnsupported` and names the node path. It means "this
-node needs a proposal" (`prepare_workflow_proposal`), not a fault to retry.
+`AwaitingProposal(RequiredWorkflowProposal)` names the node, operation and input
+type. Publish the proposal through fresh `prepare_workflow_proposal` admission;
+the need grants no authority and waiting records no transition.
 
 **Assessments and conditions.** Turn an advance into an assessment demand
 with `.into_assessment_demand(demand)`, settle it, then accept it with
@@ -3175,11 +3180,10 @@ signing.sign(&event).map(|request| request.execute())
 `decision` is `WorkflowApprovalDecision::{Approve, Reject}`.
 
 **Run the guarded effect** when an advance returns `AwaitingOperation`. Bank's
-`ApprovePaymentMutationBinding` declares `workflow_authority required` and no
-`workflow_requirements`, so the legacy contract applies: exactly one approval,
-and authority is issued only after it is approved. A binding that declares
-`ApplicationWorkflowExecutionRequirements::new()` runs the same way with no
-approval ([§6.5](#65-who-may-run-a-guarded-operation)).
+`ApprovePaymentMutationBinding` explicitly requires its approval capability.
+Authority is issued only after that exact approval is satisfied. A binding that
+declares `ApplicationWorkflowExecutionRequirements::occurrence_only()` can run
+without an approval ([§6.5](#65-who-may-run-a-guarded-operation)).
 
 <!-- illustrative -->
 ```rust,ignore
@@ -3268,6 +3272,438 @@ an unsigned, occurrence-only operation, then the signed review journey in
 ```bash
 cargo run --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --example authored_workflow
 ```
+
+---
+
+### 6.7 Capture, approve, archive, and observe one workflow
+
+The neutral [observable workflow example](../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs)
+connects the ordinary owners in one application. It captures a document's
+retention, checks the retained value, requires a different admitted approver,
+and waits for the original archive operation's inbound completion. Use this
+shape for a process that combines local data and an external effect.
+
+Run the complete example target:
+
+```sh
+cargo run --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification --example observable_workflow
+```
+
+The application imports `worth-query-decl` for meaning and `worth-query-host`
+for requests, owners and observations. Its [definition](../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow/definition.rs)
+explicitly installs subject, definition, metadata and audit read rules and a
+recorded-actor policy. Capture declares occurrence-only requirements; archival
+requires the authored approval. The admitted proposal and approval supply their
+actors. Business input never supplies an actor override.
+
+#### Keep a basis, reacquire a locator
+
+This smallest call sequence assumes the example's installed vocabulary and read
+bindings. Retain the original `prepared.discovery_intent()` before executing the
+start. A later request uses that typed data; it does not recompute start identity
+from the currently installed program. The receiver owns admission internally:
+`retain_current_read()` takes no phase argument. Inside an already admitted host
+call, the separate advanced `retain_read(&phase)` receiver remains available.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let request = runtime.request(&principal, &scope).on_branch(branch);
+let basis = request.retain_current_read()?;
+let found = request.at(&basis)
+    .read_original_workflow::<MixedWorkflow, SubjectRead, AuditRead>(
+        application.vocabulary(), &original_start, subject_input, audit_input,
+    )?;
+let target = found.target(); // Option<&WorthQueryWorkflowReadTarget>
+```
+
+Match Live, Historical or Missing before choosing what to do. Only Live returns
+a usable instance locator; a historical view is data. For an existing result,
+clone `observation.target()` or `found.target()` rather than assembling an
+identity. Discovery intent, locators, targets and pages retain data custody;
+none retains a grant, principal, request, approval need or command permission.
+Every read uses fresh current disclosure admission even at an old data basis.
+Subject read and audit are independent: withholding actors must not hide an
+approval, pending owner or incomplete recovery state.
+
+For current-format restore, retain the typed original start intent as ordinary
+intent data and use a new authenticated request against the restored runtime's
+own retained basis. Reacquire references there; do not serialize live locators,
+reuse an old runtime's retained basis, or interpret a format refusal as Missing.
+Unsupported displaced artifacts are refused intact before installation. Logical
+migration and native fork continuation remain separate current operations; see
+[discovery and observation](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
+
+#### Publish a proposal when the owner asks for one
+
+The example starts from the installed definition, then checks the actual
+`AwaitingProposal` need before publishing a proposal with an admitted request.
+The full principal identity read here is an independent example assertion
+against the native receipt, not business input or a source of authority.
+
+<!-- compiled: observable_proposal.rs -->
+```rust
+    let waiting = advance(&application, &instance, &[10, 11]);
+    let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingProposal(need)) =
+        waiting.stop()
+    else {
+        panic!("the first node must expose its actual proposal need: {waiting:?}");
+    };
+    assert_eq!(need.node_path(), "propose");
+    assert_eq!(
+        need.operation(),
+        WorkflowDefinitionAuthoringOperation::reference().name()
+    );
+    assert_eq!(
+        need.input_type(),
+        WorkflowDefinitionAuthoringOperation::reference()
+            .input_identity()
+            .as_str()
+    );
+    assert!(waiting.transitions().is_empty());
+    let proposal = runtime
+        .request(&actor, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowDefinitionAuthoringIntent { input: input() })
+        .without_source()
+        .idempotency(&20_u64)
+        .prepare_workflow_proposal(&application, instance.clone())
+        .unwrap()
+        .execute();
+    let (proposal, expected_proposer) = match proposal {
+        WorkflowProposalOutcome::Published(published) => {
+            let principal = published.receipt().principal_scope().principal();
+            (
+                published.proposal().clone(),
+                [
+                    u64::from(principal.partition_id()),
+                    principal.local_slot(),
+                    u64::from(principal.generation()),
+                ],
+            )
+        }
+        other => panic!("original proposal publication: {other:?}"),
+    };
+```
+
+Next it advances to capture, runs the original occurrence-bound owner, and
+independently reads retention `9`. The real condition selects the approval
+branch. A separately authenticated reviewer answers the original
+`RequiredWorkflowApproval` challenge and signs it. Observed actors and history
+never stand in for that required need or authentication.
+
+#### Keep the original external operation through settlement and cleanup
+
+The archive transport launches this same executable as a local OS child and
+writes the original payload through owned pipes to an actual file. Its installed
+verifier authenticates that bounded local channel. This is a local producer,
+not a remote cryptographic service or durable crash-recovery demonstration.
+The declared inbound operation retains a continuing owner until native ingress.
+Before dispatch, the caller drives that same owner while the transport has no child result.
+As soon as authenticated child output exists, it admits genuine ingress through
+the installed verifier before any further recovery advance. Transport failure is
+an error, not an instruction to retry a possibly performed external effect.
+Receiving the declared inbound completion is distinct from corrective recovery
+or permission to retry the external effect. The archive declares no corrective
+aftermath; the caller supplies genuine ingress and leaves settlement to native
+inspection of the original dispatch.
+At this example's real pending seam, `exercise_pending_custody` is an
+example-local assertion phase: close refuses while retaining the owner, a
+cancelled fresh advance returns typed cancellation with that owner, and a legal
+fresh advance still waits before ingress. It checks the committed head and
+actual handler/transport entry counts to reject repeated work. It returns the
+original owner; it is not a framework recovery or authority API.
+For this declared inbound effect, native `Progress` retains the original owner
+until authenticated ingress is admitted. The example requires that pending
+custody exercise before accepting the original performed operation under fresh
+admission and independently closing cleanup:
+
+<!-- compiled: observable_operation.rs -->
+```rust
+    let mut operation = request
+        .mutate(crate::effect::ArchiveIntent {
+            input: crate::journey::input(),
+        })
+        .without_source()
+        .idempotency_owned(80_u64)
+        .unwrap_or_else(|(_, _, cause)| panic!("original archive capture: {cause:?}"))
+        .for_workflow_operation(application, &required)
+        .unwrap_or_else(|_| panic!("exact approved occurrence"))
+        .retain_operation::<MixedProgram, crate::effect::ArchiveAction>(
+            application.program_runtime(),
+        )
+        .unwrap_or_else(|_| panic!("installed archive action"));
+    let receive = |envelope: &[u8]| {
+        application
+            .runtime()
+            .inbound_occurrences()
+            .receive(verifier, envelope, &scope)
+            .execute()
+            .expect("native provenance admission of the real completion");
+    };
+    let mut ingress_received = false;
+    let completed = loop {
+        match operation.advance(
+            &application
+                .runtime()
+                .request(&actor, &scope)
+                .on_branch(instance.branch()),
+        ) {
+            WorthQueryWorkflowOperationAdvance::Progress(next) => {
+                operation = next;
+                // Progress can precede dispatch. Actual child output, not this
+                // variant, determines when ingress must precede further recovery.
+                if !ingress_received
+                    && let Some(envelope) = archive.envelope().expect(
+                        "inspect actual child completion without retrying a failed dispatch",
+                    )
+                {
+                    operation = exercise_pending_custody(operation, application, archive);
+                    receive(&envelope);
+                    ingress_received = true;
+                }
+            }
+            WorthQueryWorkflowOperationAdvance::Completed(done) => {
+                if !ingress_received {
+                    let envelope = archive
+                        .envelope()
+                        .expect("inspect actual synchronous child completion")
+                        .expect("native completion must retain genuine authenticated child output");
+                    receive(&envelope);
+                }
+                break done;
+            }
+            WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
+                let _original_owner = operation;
+                panic!("archive advance refused with original custody: {denial:?}");
+            }
+            WorthQueryWorkflowOperationAdvance::Terminal(terminal) => {
+                panic!(
+                    "archive terminal: source={:?}, recovery={:?}, abort={:?}",
+                    terminal.denial(),
+                    terminal.recovery_denial(),
+                    terminal.original_abort()
+                );
+            }
+        }
+    };
+    assert!(
+        ingress_received,
+        "the original owner must exercise pending custody before ingress/completion"
+    );
+    assert_eq!(archive.dispatch_calls(), 1, "one original child dispatch");
+    assert_eq!(
+        crate::effect::handler_invocations(),
+        [1, 1],
+        "one original handler execution"
+    );
+    let accepted = request
+        .mutate(WorkflowAdvanceIntent {
+            input: WorkflowAdvanceInput {
+                document_identity: DOCUMENT_IDENTITY.into(),
+            },
+        })
+        .without_source()
+        .idempotency(&90_u64)
+        .prepare_workflow_advance(application, instance.clone())
+        .unwrap()
+        .accept_owned_operation(completed)
+        .unwrap_or_else(|(_owner, cause)| panic!("exact original external settlement: {cause:?}"));
+    assert!(
+        matches!(&accepted.progress, WorkflowProgressOutcome::Completed(performed) if performed.node_path() == "archive")
+    );
+    accepted
+        .operation
+        .close(&request)
+        .unwrap_or_else(|_| panic!("original dispatch and native cleanup must close"));
+```
+
+A refused advance returns its original owner; retain it before deciding whether
+to retry with a fresh request. `Completed` is not permission to abandon native
+cleanup. Before ingress, this declared inbound wait mints no corrective recovery
+handle or retry authority. Close refuses `NativeObligationRetained` with the same
+owner until a fresh advance observes native settlement. This example requires
+that wait and closes only after genuine ingress and acceptance.
+After settlement the caller advances through `AwaitInbound` to the terminal and
+checks that exactly one file contains the original identity and retention.
+[Operations and ownership](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations)
+explains the other stop postures; callers do not resubmit effects or decode
+private receipts to drive their own retry engine.
+
+#### A live mark does not refresh a retained read
+
+The example first reacquires a history target at an old basis. The operator has
+subject access; the reviewer independently has audit access. History preserves
+proposal and outcome rows while returning `WorthQueryWorkflowHistoryAudit::Withheld`
+for the operator. `page(..)` below calls the public
+`read_workflow_history::<MixedWorkflow, SubjectRead, AuditRead>` with both inputs,
+a width of `16`, `PublishedOnly`, and no prior page. A wider history continues
+with the returned page under the same exact basis and selection; each request
+rechecks disclosure. No page is authority to advance.
+
+The closure `approve()` performs the actual original approval with fresh reviewer
+authentication. Polling uses the existing native envelope subscription. `Changed`
+marks relevant changes without altering `old`. The caller explicitly retains
+`now`, reacquires a target and requests audit again:
+
+<!-- compiled: observable_history.rs -->
+```rust
+    let mut subscription = runtime
+        .request(&operator, &scope)
+        .on_branch(instance.branch())
+        .at(&old)
+        .subscribe_workflow_history::<MixedWorkflow, SubjectRead>(
+            application.vocabulary(),
+            &target,
+            input(),
+        )
+        .expect("native envelope interest at the old data basis");
+    assert_eq!(
+        runtime
+            .request(&operator, &scope)
+            .on_branch(instance.branch())
+            .at(&old)
+            .poll_workflow_history::<MixedWorkflow, SubjectRead>(
+                application.vocabulary(),
+                &mut subscription,
+                input(),
+            )
+            .unwrap(),
+        WorthQueryWorkflowHistoryMark::Pending
+    );
+    let expected_approver = approve();
+    assert_eq!(
+        runtime
+            .request(&operator, &scope)
+            .on_branch(instance.branch())
+            .at(&old)
+            .poll_workflow_history::<MixedWorkflow, SubjectRead>(
+                application.vocabulary(),
+                &mut subscription,
+                input(),
+            )
+            .unwrap(),
+        WorthQueryWorkflowHistoryMark::Changed
+    );
+    // A mark reports relevant change. It does not mutate the old retained read.
+    let historical = page(application, &reviewer, &scope, &old, &target);
+    assert_eq!(historical.basis().selected_commit(), old.selected_commit());
+    assert!(historical
+        .entries()
+        .iter()
+        .all(|row| row.approval().is_none()));
+    // Refresh is an explicit caller choice with new current admission.
+    let now = runtime
+        .request(&operator, &scope)
+        .on_branch(instance.branch())
+        .retain_current_read()
+        .expect("explicitly retain a fresh post-approval basis");
+    let fresh_discovery = runtime
+        .request(&operator, &scope)
+        .on_branch(instance.branch())
+        .at(&now)
+        .read_original_workflow::<MixedWorkflow, SubjectRead, AuditRead>(
+            application.vocabulary(),
+            original,
+            input(),
+            input(),
+        )
+        .unwrap();
+    let fresh_target = fresh_discovery
+        .target()
+        .expect("same native instance at fresh data");
+    let fresh = page(application, &reviewer, &scope, &now, fresh_target);
+    assert_eq!(fresh.basis().selected_commit(), now.selected_commit());
+    let approved = fresh
+        .entries()
+        .iter()
+        .find(|row| row.approval().is_some())
+        .expect("actual recorded approval");
+    assert_eq!(
+        approved.approval().unwrap().decision(),
+        WorkflowApprovalDecision::Approve
+    );
+    assert_eq!(
+        approved.approval().unwrap().proposal_identity(),
+        proposal.identity()
+    );
+    match approved.audit() {
+        WorthQueryWorkflowHistoryAudit::Visible {
+            approver: Some(actor),
+            ..
+        } => {
+            let actor = actor.entity_id();
+            assert_eq!(
+                [
+                    actor.partition_value_u64(),
+                    actor.local_slot_value(),
+                    u64::from(actor.generation_value())
+                ],
+                expected_approver,
+                "the performed native approval is the actor oracle"
+            );
+            assert_ne!(actor, proposer);
+        }
+        _ => panic!("independent audit reveals the performed approver"),
+    }
+    let fresh_withheld = page(application, &operator, &scope, &now, fresh_target);
+    assert_eq!(fresh.entries().len(), fresh_withheld.entries().len());
+    for (audited, withheld) in fresh.entries().iter().zip(fresh_withheld.entries()) {
+        assert_eq!(audited.occurrence(), withheld.occurrence());
+        assert_eq!(audited.node_path(), withheld.node_path());
+        assert_eq!(audited.outcome(), withheld.outcome());
+        assert_eq!(audited.proposal(), withheld.proposal());
+    }
+    let approved_without_audit = fresh_withheld
+        .entries()
+        .iter()
+        .find(|row| row.approval().is_some())
+        .expect("withholding cannot hide approval state");
+    assert!(matches!(
+        approved_without_audit.audit(),
+        WorthQueryWorkflowHistoryAudit::Withheld
+    ));
+    // Releases native subscription custody only; never operation cleanup proof.
+    subscription.close();
+```
+
+`subscription.close()` takes no request or execution argument: it releases native
+subscription custody. It does not close an operation, settle an inbound effect,
+accept workflow evidence or prove cleanup. Cancellation and read/reconstruction
+resource refusals remain typed; do not convert them to absent workflow state.
+
+The full example includes installation, authentic principals/grants, policies,
+producer verification and assertions outside these excerpts. It covers the
+positive mixed path; current restore, malformed/unsupported formats, revoked
+reads, fork/migration and cleanup failures have their own native courts. Follow
+the [canonical consumer prohibitions](capability-index.md#consumer-prohibitions)
+for the shared constraints rather than creating a host actor/status registry.
+
+---
+
+### 6.8 Retain capability commands instead of reissuing them
+
+Delegation and revocation use ordinary request-level command owners, separately
+from workflow-bound domain effects. Begin with
+`request.retain_capability_delegation_in_program(..)` or
+`request.retain_capability_revocation_in_program(..)`. Each captures the original
+input, owned key, preconditions and native preparation closure against the
+installed program and principal binding. Capture refusal returns those original
+values. The [workflow guide's command example](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands)
+shows the typed arguments; do not substitute a domain mutation handler.
+
+| Returned owner state | Caller responsibility |
+| --- | --- |
+| `WorthQueryCapabilityCommandAdvance::Progress(command)` | Retain that command. Release any pending managed cleanup through its receiver before the next advancement. Supply a fresh request to `command.advance(&request)`. |
+| `Refused { command, denial }` | Keep the returned original command and inspect the typed denial. Correct the request/admission or resolve the native condition before choosing another advancement; never recapture the command as a retry. |
+| `Completed(done)` | Inspect `done.evidence()` for the native Fresh/Recovered result. Independently call `done.close_with_evidence(&request)`; success returns the closed operation and original evidence, while refusal returns the same completed owner and denial. |
+| `Terminal(terminal)` | Stop effect advancement. Inspect the native outcome/idempotency resolution, and independently release cleanup or close the returned terminal owner. Terminality does not authorize resubmission. |
+
+A later request must still match runtime, principal and command meaning and
+pass fresh current authorization. Deferred publication and ambiguous commits
+recover the exact original native result through this owner. Do not interpret
+native replay receipts in a consumer retry loop. Command cleanup, workflow
+operation cleanup and history subscription release have distinct receivers.
 
 ---
 
@@ -3445,29 +3881,40 @@ until the adoption publishes.
 
 ### 7.4 Workflows and custody during adoption
 
-Every workflow definition and instance on the branch needs a legal
-disposition. Ask for the inventory, decide each item, and pass the decisions:
+The runtime privately checks every current definition and live instance before
+adoption. That complete safety inventory is not a consumer read surface.
+For disclosure, select one typed definition with `read_workflow_instances`,
+its installed Definition read binding and fresh principal/input. A metadata
+read does not grant instance enumeration.
+
+Submit explicit choices for opaque references already possessed, or request
+native carry-compatible handling of every fact found by the fresh safety check:
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// tests/application_graph/adoption/workflow_custody.rs (abridged)
-let adoption = programs.adopt(&requirements)?;
-let inventory = adoption.workflow_inventory(1_024)?;
-let decisions = inventory
-    .dispositions()
-    .definition(&inventory.definitions()[0], WorthQueryWorkflowDefinitionDisposition::Retire)?;
-let prepared = adoption.workflow(decisions).prepare(1_024)?;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryWorkflowDispositions, WorthQueryWorkflowDefinitionDisposition,
+};
+let choices = WorthQueryWorkflowDispositions::new()
+    .definition(&definition, WorthQueryWorkflowDefinitionDisposition::Retire);
+let prepared = programs.adopt(&requirements)?.workflow(choices).prepare(1_024)?;
+// When every fresh fact should be carried, use instead:
+let choices = WorthQueryWorkflowDispositions::carry_compatible();
 ```
 
-- Definitions are `Carry` or `Retire`; instances are `Carry` or `Cancel`. Each
-  occurrence's `legal_dispositions()` lists what is allowed.
-- An instance that must be migrated refuses a plain disposition
-  (`MigrationRequired`).
-- Missing decisions deny preparation with
-  `WorkflowDispositionRequired { inventory }`.
-- Custody dispositions for owner-held effects are derived by the runtime, not
-  chosen by you.
+Explicit choices must totally and legally decide the fresh native inventory.
+An omitted live instance refuses; retiring a definition does not cancel its
+instances. A performed effect or pending external-owner/approval obligation
+cannot be cancelled away. The existing source-program adoption authority is
+still required. References and read views grant no adoption permission.
+
+`WorkflowDispositionRequired` and `WorkflowDispositionRejected` carry no
+inventory or occurrence identities. Native candidate preparation logs also stay
+private; execution cancellation/resource causes retain their typed category. A new start can invalidate explicit
+choices; take a fresh governed view and decide again. A start after preparation
+is still fenced by the native expected head at publication. The carry-compatible
+policy explicitly applies to fresh native truth; it is not a cached inventory.
 
 ### 7.5 Several branches
 
@@ -3545,35 +3992,9 @@ but did not publish is recovered with
   `Completed(t)` with `t.terminal() == true`. `Completed` alone means one step
   was recorded.
 
-**Do not:**
+Consumer constraints are maintained in the
+[canonical consumer prohibitions](capability-index.md#consumer-prohibitions).
 
-- Do not import `worth_query_declaration`, `worth_query_installation`,
-  `worth_query_admission`, `worth_query_execution`, `worth_query_publication`,
-  or `worth_query`. Their consumer names are re-exported through the two
-  facades (for example `worth_query_host::facade::domain` and
-  `worth_query_host::facade::admission`).
-- Do not install a program-less runtime as an ordinary application or coordinate
-  fixed/discovered/source-only retries manually. Deliberate native control is described under
-  [Advanced](#advanced-native-mutation-control).
-- Do not substitute an action or program meaning on retry. Native admission compares the retained action with the branch's selected program.
-- Do not expect adoption to change sibling branches, or a branch set to adopt
-  atomically.
-- Do not register a handler for a workflow control binding.
-- Do not wait for a background scheduler to run work for you. There is none,
-  and no timer or callback advances a workflow instance: the caller pumps.
-  Time- and signal-driven work is declared with `conditional_operation`: the
-  host submits clock or predicate observations, Signal decides whether a wake
-  is eligible, and Query freshly admits the installed operation. Do not build
-  a host scheduler or wake registry.
-- Do not treat a validated program or validated workflow definition as
-  permission to do anything.
-- Do not treat names found only in `plans/` as real. Check §9.
-- Do not build a substitute for a capability you could not find: no parallel
-  registry, copied authority, host executor or scheduler, or host persistence
-  of platform truth. Follow the missing-capability procedure in the
-  [Capability Index](capability-index.md).
-- Do not present `compare_and_commit_program_undo` / `_redo` as an accepted
-  correction contract. They are provisional ([§5.2](#52-mutations-intent-binding-handler)).
 
 ---
 

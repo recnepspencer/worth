@@ -27,73 +27,34 @@ pub(in crate::domain_computation) enum WorthQueryDurableCapabilityLineage {
 pub(in crate::domain_computation::authorization) enum WorthQueryDelegationDecisionFact {
     Root {
         discovery: Arc<RelationalAuthorizationObservationEvidence>,
-        discovery_dependencies: String,
+        discovery_dependencies:
+            worth_relational::facade::authorization::RelationalAuthorizationDependencyWire,
         status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
     },
     Delegated {
         grantor: worth_relational::facade::identity::EntityId,
         parent_grant: worth_relational::facade::identity::EntityId,
         discovery: Arc<RelationalAuthorizationObservationEvidence>,
-        discovery_dependencies: String,
+        discovery_dependencies:
+            worth_relational::facade::authorization::RelationalAuthorizationDependencyWire,
         transition: Arc<RelationalAuthorizationObservationEvidence>,
-        transition_dependencies: String,
+        transition_dependencies:
+            worth_relational::facade::authorization::RelationalAuthorizationDependencyWire,
         parent: Arc<WorthQueryAuthorizationDecisionFact>,
         status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
     },
 }
 
 impl WorthQueryDelegationDecisionFact {
-    pub(super) fn retained_durable_dependencies(
-        &self,
-    ) -> Result<super::durable_dependencies::WorthQueryDurableDelegationDependencies, ()> {
-        use super::durable_dependencies::WorthQueryDurableDelegationDependencies;
-        match self {
-            Self::Root {
-                discovery_dependencies,
-                ..
-            } => Ok(WorthQueryDurableDelegationDependencies::Root {
-                discovery: discovery_dependencies.clone(),
-            }),
-            Self::Delegated {
-                discovery_dependencies,
-                transition_dependencies,
-                parent,
-                ..
-            } => Ok(WorthQueryDurableDelegationDependencies::Delegated {
-                discovery: discovery_dependencies.clone(),
-                transition: transition_dependencies.clone(),
-                parent: Box::new(parent.retained_durable_dependencies()?),
-            }),
-        }
-    }
-
-    pub(super) fn durable_lineage(&self) -> WorthQueryDurableCapabilityLineage {
-        match self {
-            Self::Root {
-                status_revision, ..
-            } => WorthQueryDurableCapabilityLineage::Root {
-                status_revision: *status_revision,
-            },
-            Self::Delegated {
-                grantor,
-                parent_grant,
-                parent,
-                status_revision,
-                ..
-            } => WorthQueryDurableCapabilityLineage::Delegated {
-                grantor: *grantor,
-                parent_grant: *parent_grant,
-                status_revision: *status_revision,
-                parent: Box::new(parent.durable_lineage()),
-            },
-        }
-    }
     pub(in crate::domain_computation::authorization) fn root(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         discovery: RelationalAuthorizationObservationEvidence,
         status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
-    ) -> Result<Self, ()> {
+    ) -> Result<
+        Self,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    > {
         let discovery_dependencies =
             super::durable_dependencies::capture(execution, runtime, &discovery)?;
         Ok(Self::Root {
@@ -112,7 +73,10 @@ impl WorthQueryDelegationDecisionFact {
         transition: RelationalAuthorizationObservationEvidence,
         parent: WorthQueryAuthorizationDecisionFact,
         status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
-    ) -> Result<Self, ()> {
+    ) -> Result<
+        Self,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    > {
         let discovery_dependencies =
             super::durable_dependencies::capture(execution, runtime, &discovery)?;
         let transition_dependencies =

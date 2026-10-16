@@ -12,6 +12,9 @@ use super::{
     RelationalCommittedBranchRoot, RelationalRootCorrectnessIndex,
 };
 
+#[path = "root_readmission/required_text.rs"]
+mod required_text;
+
 impl RelationalBranchRoot {
     pub(crate) fn readmit(
         issuer: &RelationalBranchRootIdentityIssuer,
@@ -22,6 +25,7 @@ impl RelationalBranchRoot {
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         validate_schema_root(&envelope, &descriptor)?;
+        required_text::validate(&partitions, symbols)?;
         let root_id = issuer.issue_root_id()?;
         let entity_slot_count = partitions
             .values()

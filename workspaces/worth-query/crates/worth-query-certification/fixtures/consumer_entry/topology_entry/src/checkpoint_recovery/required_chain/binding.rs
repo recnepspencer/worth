@@ -92,6 +92,12 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for ChainI
     }
 }
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema> for ChainBinding<Schema> {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = ChainInput;
     type InputBinding = ChainInputBinding;
     type Result = PlanarAdjustmentResult;

@@ -72,8 +72,8 @@ fn consumer_specs_with_source(source: ApplicationFeatureSpec) -> Vec<Application
     ]
 }
 
-pub(super) fn source_builder()
--> worth_query_decl::facade::application_program::ApplicationFeatureSpecBuilder<
+pub(super) fn source_builder(
+) -> worth_query_decl::facade::application_program::ApplicationFeatureSpecBuilder<
     ConsumerSchema,
     ApplicationRootComposition,
     PlanarSourceFeature,
@@ -103,9 +103,9 @@ pub(super) fn consumer_fixed_feature_specs() -> Vec<ApplicationFeatureSpec> {
 pub(super) fn source_delivery_specs<D>() -> Vec<ApplicationFeatureSpec>
 where
     D: worth_query_decl::facade::application_program::ApplicationActionDelivery<
-            ConsumerSchema,
-            PlanarSourceAdjustmentBinding<ConsumerSchema>,
-        >,
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    >,
 {
     consumer_specs_with_source(
         source_builder()

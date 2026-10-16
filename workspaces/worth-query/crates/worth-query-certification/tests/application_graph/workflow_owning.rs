@@ -13,3 +13,6 @@ mod host;
 mod keyed;
 #[path = "workflow_owning/unpublished.rs"]
 mod unpublished;
+
+#[path = "workflow_owning/proposal_wait.rs"]
+mod proposal_wait;

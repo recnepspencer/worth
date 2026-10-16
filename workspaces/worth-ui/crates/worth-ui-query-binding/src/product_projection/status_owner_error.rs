@@ -8,8 +8,8 @@ use worth_query_host::facade::{
 };
 
 use crate::{
-    WorthUiScalarProjectionSourceRecord, WorthUiStatusActionRequest, WorthUiStatusQueryResult,
     declaration::{WorthUiStatusQuery, WorthUiStatusUpdateDenial},
+    WorthUiScalarProjectionSourceRecord, WorthUiStatusActionRequest, WorthUiStatusQueryResult,
 };
 
 pub type WorthUiStatusMutationOutcome = WorthQueryApplicationMutationOutcome<

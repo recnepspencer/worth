@@ -154,21 +154,15 @@ fn read_node(
         record.optional_text(execution, locator)?.ok_or(unreadable)
     };
     let dependencies = match WorkflowNodeTag::from_persisted(record.u64(execution, &node.kind)?) {
-        Some(WorkflowNodeTag::Operation | WorkflowNodeTag::OperationWithRequirements) => {
+        Some(WorkflowNodeTag::Operation) => {
             vec![WorthQueryWorkflowNodeDependency::Operation {
                 input_type: required(&node.input_type)?,
                 binding: record
                     .optional_text(execution, &node.operation_binding)?
                     .filter(|binding| !binding.is_empty()),
                 requires_authority: record.bool(execution, &node.requires_authority)?,
-                workflow_execution_requirements: if record.u64(execution, &node.kind)?
-                    == WorkflowNodeTag::OperationWithRequirements.persisted()
-                {
-                    Some(worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(&required(&node.workflow_execution_requirements)?)
-                    .ok_or(unreadable)?)
-                } else {
-                    None
-                },
+                workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(
+                    &required(&node.workflow_execution_requirements)?).ok_or(unreadable)?,
                 identifier,
             }]
         }

@@ -2,6 +2,7 @@
 mod cleanup;
 mod close;
 mod mode_construction;
+pub(super) mod native_publication;
 mod source_admission;
 mod source_only;
 mod workflow;

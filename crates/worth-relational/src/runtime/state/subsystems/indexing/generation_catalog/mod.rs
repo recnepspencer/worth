@@ -24,7 +24,7 @@ use scope::GenerationScope;
 #[derive(Debug, Clone, Default)]
 pub(super) struct GenerationCatalog {
     entries: BTreeMap<DerivedIndexGenerationId, Arc<DerivedIndexGeneration>>,
-    scopes: BTreeMap<(DerivedIndexId, Option<BranchId>), GenerationScope>,
+    scopes: BTreeMap<DerivedIndexId, BTreeMap<Option<BranchId>, GenerationScope>>,
     commits: BTreeMap<CommitId, BTreeSet<DerivedIndexGenerationId>>,
     versions: BTreeMap<VersionId, BTreeSet<DerivedIndexGenerationId>>,
     work: selection_work::SelectionWork,
@@ -149,11 +149,9 @@ impl GenerationCatalog {
         if let Some(previous) = self.entries.remove(&generation.generation_id) {
             self.remove_bindings(&previous);
         }
+        let branches = self.scopes.entry(generation.index_id).or_default();
         for branch in [None, Some(generation.applicability.branch_id.clone())] {
-            self.scopes
-                .entry((generation.index_id, branch))
-                .or_default()
-                .insert(&generation);
+            branches.entry(branch).or_default().insert(&generation);
         }
         self.commits
             .entry(generation.source_commit_id)
@@ -168,13 +166,17 @@ impl GenerationCatalog {
     }
 
     fn remove_bindings(&mut self, generation: &DerivedIndexGeneration) {
-        for branch in [None, Some(generation.applicability.branch_id.clone())] {
-            let key = (generation.index_id, branch);
-            if let Some(scope) = self.scopes.get_mut(&key) {
-                scope.remove(generation);
-                if scope.is_empty() {
-                    self.scopes.remove(&key);
+        if let Some(branches) = self.scopes.get_mut(&generation.index_id) {
+            for branch in [None, Some(generation.applicability.branch_id.clone())] {
+                if let Some(scope) = branches.get_mut(&branch) {
+                    scope.remove(generation);
+                    if scope.is_empty() {
+                        branches.remove(&branch);
+                    }
                 }
+            }
+            if branches.is_empty() {
+                self.scopes.remove(&generation.index_id);
             }
         }
         remove_member(
@@ -249,7 +251,7 @@ impl GenerationCatalog {
     }
 
     fn scope(&self, index: DerivedIndexId, branch: Option<&BranchId>) -> Option<&GenerationScope> {
-        self.scopes.get(&(index, branch.cloned()))
+        self.scopes.get(&index)?.get(&branch.cloned())
     }
 
     pub(super) fn for_commit(&self, commit: CommitId) -> Vec<Arc<DerivedIndexGeneration>> {

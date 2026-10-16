@@ -43,6 +43,15 @@ pub(super) fn append_composition(
         "composition.distinct-actor",
         optional_distinct_actor_rule(composition.actors().distinct_actor()),
     );
+    text(
+        components,
+        "composition.recorded-actor".to_owned(),
+        composition
+            .actors()
+            .recorded_actor()
+            .requirement()
+            .map_or("not-applicable", |r| r.persistence_identity()),
+    );
     append_delegation(
         components,
         "composition.delegation",

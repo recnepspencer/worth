@@ -13,6 +13,33 @@ impl<Schema, Capability, Operation, Input>
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
+    pub(in crate::domain_computation) fn read_product(
+        &self,
+    ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
+        self.graph_work.mutation_product()
+    }
+    pub(in crate::domain_computation) fn read_security_basis(
+        &self,
+    ) -> Option<&worth_relational::facade::branch::AdmittedRelationalBranchBasis> {
+        self.read_product()
+            .map(|product| product.relational_basis())
+    }
+    pub(in crate::domain_computation::authorization) fn read_authorization(
+        &self,
+    ) -> &WorthQueryRetainedCapabilityAuthorization {
+        &self.authorization
+    }
+    pub(in crate::domain_computation) fn validate_workflow_read_authority(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        runtime.validate_capability_read_access(execution, self)
+    }
+
     pub(in crate::domain_computation) fn graph_work_session_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {

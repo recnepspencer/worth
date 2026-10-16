@@ -4,7 +4,6 @@
 //! validates and binds like any other.
 
 use worth_query_declaration::facade::{
-    application_operation::ApplicationMutationBinding,
     application_program::{
         ApplicationExpressionOperandValue, ApplicationWorkflowApprovalRef,
         ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionQuery,
@@ -23,7 +22,7 @@ impl InstalledWorkflowOperation {
     pub(super) fn declared<Spec, Binding>() -> Self
     where
         Spec: ApplicationWorkflowSpec,
-        Binding: ApplicationMutationBinding<Spec::Schema>,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Spec::Schema>,
     {
         let reference = ApplicationWorkflowOperationRef::declared_binding::<Spec, Binding>();
         Self {
@@ -33,6 +32,7 @@ impl InstalledWorkflowOperation {
             binding_type: std::any::TypeId::of::<Binding>(),
             binding_identity: Binding::IDENTITY,
             requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
+            capability: <Binding::Admission as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionMode>::capability_identity(),
             reference,
             inbound_ref: None,
         }

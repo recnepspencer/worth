@@ -127,3 +127,37 @@ fn an_authorization_read_stop_keeps_its_http_disposition() {
         );
     }
 }
+
+#[test]
+fn recorded_actor_refusals_distinguish_permission_source_and_capacity() {
+    for (cause, kind, next) in [
+        (
+            Authorization::WorkflowActorContextRequired,
+            Kind::PermissionDenied,
+            Next::None,
+        ),
+        (
+            Authorization::WorkflowActorAbsent,
+            Kind::PermissionDenied,
+            Next::None,
+        ),
+        (
+            Authorization::WorkflowActorComparisonMismatch,
+            Kind::PermissionDenied,
+            Next::None,
+        ),
+        (
+            Authorization::WorkflowActorSourceInvalid,
+            Kind::InternalDenied,
+            Next::ContactOperator,
+        ),
+        (
+            Authorization::WorkflowActorEvidenceUnavailable,
+            Kind::Unavailable,
+            Next::Retry,
+        ),
+    ] {
+        let denial = authorization_denial(cause);
+        assert_eq!((denial.kind, denial.next_action), (kind, next));
+    }
+}

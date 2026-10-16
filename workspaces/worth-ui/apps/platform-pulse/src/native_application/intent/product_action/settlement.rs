@@ -96,12 +96,11 @@ impl PlatformPulseApplicationRuntime {
                 });
                 #[cfg(test)]
                 if let Some(probe) = self.query_probe.clone() {
-                    assert!(
-                        self.query_lifecycle
-                            .as_ref()
-                            .unwrap()
-                            .authentication_cancelled_for_test()
-                    );
+                    assert!(self
+                        .query_lifecycle
+                        .as_ref()
+                        .unwrap()
+                        .authentication_cancelled_for_test());
                     {
                         let mut recording = probe.borrow_mut();
                         recording.cancelled_stops += 1;

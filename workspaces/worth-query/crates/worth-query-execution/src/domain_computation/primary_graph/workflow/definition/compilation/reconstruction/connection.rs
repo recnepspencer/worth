@@ -23,6 +23,20 @@ pub(super) fn compile_connection(
     nodes: &HashSet<EntityId>,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<CompiledWorkflowConnection, WorthQueryApplicationAttemptDenial> {
+    let connection = observe_connection(execution, runtime, snapshot, layout, entity, facts)?;
+    if !nodes.contains(&connection.source) || !nodes.contains(&connection.target) {
+        return Err(invalid_connection());
+    }
+    Ok(connection)
+}
+pub(in crate::domain_computation::primary_graph) fn observe_connection(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<CompiledWorkflowConnection, WorthQueryApplicationAttemptDenial> {
     facts.push(WorthQueryApplicationObservedFact::Entity {
         entity_id: entity,
         kind: layout.connection.entity_kind,
@@ -83,9 +97,6 @@ pub(super) fn compile_connection(
         2,
         facts,
     )?;
-    if !nodes.contains(&source) || !nodes.contains(&target) {
-        return Err(invalid_connection());
-    }
     let tag =
         WorkflowConnectionTag::from_persisted(family, variant).ok_or_else(invalid_connection)?;
     let retry_fields_present = retry_reason.is_some() && retry_maximum_attempts.is_some();

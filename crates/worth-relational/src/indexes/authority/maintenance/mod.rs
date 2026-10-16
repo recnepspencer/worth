@@ -15,6 +15,7 @@ mod persistent_allocation;
 mod preparation;
 mod publication;
 mod refresh_preparation;
+mod selected_field_request;
 use publication::PreparedRefresh;
 #[cfg(test)]
 pub(crate) mod charge_rendezvous;

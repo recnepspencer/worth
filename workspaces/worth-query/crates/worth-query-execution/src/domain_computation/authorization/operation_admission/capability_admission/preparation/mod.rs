@@ -119,6 +119,7 @@ pub(super) struct PreparedCapabilityAdmission<
     sample: WorthQueryRuntimeTimeSample,
     operation_admission_identity: WorthQueryOperationAdmissionIdentity,
     graph_work: WorthQueryManagedGraphWorkSession,
+    pub(super) workflow_actor: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext>,
     _seal: PreparedSeal,
 }
 
@@ -261,6 +262,7 @@ where
         sample,
         operation_admission_identity,
         graph_work,
+        workflow_actor: None,
         _seal: PreparedSeal,
     })
 }

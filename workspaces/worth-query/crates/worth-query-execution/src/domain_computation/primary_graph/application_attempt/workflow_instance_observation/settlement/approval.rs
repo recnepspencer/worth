@@ -75,29 +75,42 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         super::text(target_operation.to_owned()),
         facts,
     )?;
-    let request = observed_text(
+    let text_read = super::approval_text::pin(execution, runtime, snapshot)?;
+    let request = super::approval_text::decode(
         execution,
         runtime,
-        snapshot,
+        &text_read,
         *approval,
         kind,
         &layout.approval.authorization_request,
         facts,
+        |request| {
+            crate::domain_computation::authorization::WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(execution, request)
+        .map_err(|cause| match cause {
+            crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::InvalidRequest => denial("workflow approval authorization request is invalid"),
+            crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::Actor(cause) => *cause,
+        })
+        },
     )?;
-    let request = crate::domain_computation::authorization::WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(&request)
-        .map_err(|()| denial("workflow approval authorization request is invalid"))?;
-    let principal = observed_text(
+    let principal_owner = super::approval_text::decode(
         execution,
         runtime,
-        snapshot,
+        &text_read,
         *approval,
         kind,
         &layout.approval.authorization_principal,
         facts,
+        |principal| {
+            crate::domain_computation::authorization::decode_principal(execution, principal)
+                .map_err(|cause| {
+                    crate::domain_computation::primary_graph::workflow::actor::decoded_denial(
+                        cause,
+                        "workflow approval principal evidence is invalid",
+                    )
+                })
+        },
     )?;
-    let principal: crate::domain_computation::primary_graph::WorthQueryDurablePrincipalCurrentness =
-        serde_json::from_str(&principal)
-            .map_err(|_| denial("workflow approval principal evidence is invalid"))?;
+    let principal = principal_owner.value();
     if !principal.is_portable() {
         return Err(denial(
             "workflow approval principal evidence is nonportable",
@@ -231,49 +244,50 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
             "workflow approval capability authority identity is absent",
         ));
     }
-    let lineage = observed_text(
+    let lineage = super::approval_text::decode(
         execution,
         runtime,
-        snapshot,
+        &text_read,
         *approval,
         kind,
         &layout.approval.authorization_lineage,
         facts,
+        |lineage| super::approval_text::decode_lineage(execution, lineage),
     )?;
-    if lineage.len() > crate::domain_computation::authorization::MAXIMUM_PORTABLE_BYTES {
-        return Err(denial(
-            "workflow approval capability lineage exceeds its bound",
-        ));
-    }
-    let lineage: crate::domain_computation::authorization::WorthQueryDurableCapabilityLineage =
-        serde_json::from_str(&lineage)
-            .map_err(|_| denial("workflow approval capability lineage is invalid"))?;
-    let support = observed_text(
+    let support = super::approval_text::decode(
         execution,
         runtime,
-        snapshot,
+        &text_read,
         *approval,
         kind,
         &layout.approval.authorization_support,
         facts,
+        |support| {
+            crate::domain_computation::authorization::decode_workflow_approval_support(execution, support)
+            .map_err(|cause| match cause {
+                crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::InvalidRequest => denial("workflow approval capability support is invalid"),
+                crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::Actor(cause) => *cause,
+            })
+        },
     )?;
-    let support =
-        crate::domain_computation::authorization::decode_workflow_approval_support(&support)
-            .map_err(|()| denial("workflow approval capability support is invalid"))?;
-    let dependencies = observed_text(
+    let dependencies = super::approval_text::decode(
         execution,
         runtime,
-        snapshot,
+        &text_read,
         *approval,
         kind,
         &layout.approval.authorization_dependencies,
         facts,
-    )?;
-    let dependencies =
-        crate::domain_computation::authorization::WorthQueryWorkflowApprovalDependencies::decode(
-            &dependencies,
+        |dependencies| {
+            crate::domain_computation::authorization::WorthQueryWorkflowApprovalDependencies::decode(
+            execution, dependencies,
         )
-        .map_err(|()| denial("workflow approval native authority dependencies are invalid"))?;
+        .map_err(|cause| match cause {
+            crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::InvalidRequest => denial("workflow approval native authority dependencies are invalid"),
+            crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial::Actor(cause) => *cause,
+        })
+        },
+    )?;
     if dependencies.support_present() != support.is_some() {
         return Err(denial(
             "workflow approval support dependencies conflict with approval",
@@ -333,7 +347,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     }
     Ok(
         crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis::from_retained_approval(
-            request, principal, grant, policy, lineage, support, dependencies, timeline, expiry,
+            request, principal_owner, grant, policy, lineage, support, dependencies, timeline, expiry,
         ),
     )
 }

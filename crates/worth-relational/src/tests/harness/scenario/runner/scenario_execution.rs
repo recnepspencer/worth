@@ -60,7 +60,7 @@ pub(crate) fn run_seeded_scenario(
             &operation,
         );
         operations.push(operation);
-        run_periodic_authority_work(&mut runtime, &config, step, &mut operations);
+        run_periodic_authority_work(execution, &mut runtime, &config, step, &mut operations);
         maybe_record_checkpoint(&runtime, &config, &mut checkpoints);
     }
     record_final_checkpoint(&runtime, &mut checkpoints);
@@ -168,6 +168,7 @@ fn seed_initial_entities(
 }
 
 fn run_periodic_authority_work(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     config: &SeededScenarioConfig,
     step: usize,
@@ -178,7 +179,10 @@ fn run_periodic_authority_work(
         .map(|interval| (step + 1).is_multiple_of(interval))
         .unwrap_or(false)
     {
-        runtime.durability_authority().checkpoint().unwrap();
+        runtime
+            .durability_authority()
+            .checkpoint(execution)
+            .unwrap();
         operations.push(ScenarioOperation::DurableCheckpoint);
     }
 

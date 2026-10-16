@@ -29,8 +29,8 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial;
 use worth_query_host::facade::runtime::ProductUnpublishedCause;
 use worth_query_topology_entry::{
-    PlanarOutputRead, PlanarSourceAdjustmentBinding, planar_source_adjustment_contacts,
-    reset_planar_source_adjustment_contacts,
+    planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts, PlanarOutputRead,
+    PlanarSourceAdjustmentBinding,
 };
 
 // This consumer cannot clone its initiating intent.
@@ -323,14 +323,12 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .unwrap_or_else(|(_, denial)| {
             panic!("released native capability permits exact cleanup: {denial:?}")
         });
-    assert!(
-        world
-            .application
-            .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
-            .unwrap()
-            .rows()
-            .is_empty()
-    );
+    assert!(world
+        .application
+        .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+        .unwrap()
+        .rows()
+        .is_empty());
     assert_eq!(planar_source_adjustment_contacts(&contact_identity), (1, 1));
 }
 

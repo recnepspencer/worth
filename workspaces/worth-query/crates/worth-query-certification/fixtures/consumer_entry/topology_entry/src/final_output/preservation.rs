@@ -61,6 +61,12 @@ pub struct FinalPlanarPreserveBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for FinalPlanarPreserveBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = FinalPlanarPreserve;
     type InputBinding = FinalPlanarPreserveInputBinding;
     type Result = worth_query_consumer_values::PlanarAdjustmentResult;

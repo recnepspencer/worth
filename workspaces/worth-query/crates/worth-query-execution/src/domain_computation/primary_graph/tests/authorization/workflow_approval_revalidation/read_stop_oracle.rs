@@ -65,7 +65,13 @@ fn run(
             admitted_capability_operation(&phase.test_host_request(), &world, &principal, &request)
         })
         .unwrap();
-    let basis = durable_approval_basis(&admission);
+    let basis = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            durable_approval_basis(&host.borrowed_request_for_test(), &admission)
+        })
+        .expect("the fixture envelope owns its installed host call");
     let _policy = Policy(
         place(Placement::Leased(std::num::NonZeroUsize::MIN)),
         // Admission stays outside the observed read.

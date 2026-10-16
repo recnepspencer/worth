@@ -706,30 +706,9 @@ Host code may:
   progress owner-issued branch coverage, recover unpublished adoption, and
   retire unused program support through typed custody inventories.
 
-Host code must not:
+Host constraints are maintained in the
+[canonical consumer prohibitions](../../../../docs/capability-index.md#consumer-prohibitions).
 
-- create a second operating-world or application-authority root;
-- call operation executors directly;
-- expose raw Relational, Bridge, or Signal handles to application code;
-- reconstruct Query authority from receipts, reports, projections, or digests;
-- import certification replay through the host facade;
-- construct lineage outcomes or promoted graph identities from raw identity
-  material.
-- treat acknowledgement, timeout, disconnect, or lost response as external
-  completion;
-- serialize a recovery handle or treat its opaque wire identity as live
-  authority;
-- teach `facade::provisional_aftermath` as accepted undo/redo support.
-- schedule temporal work locally, return raw Signal decisions, or invoke a
-  conditional operation directly.
-- invent a host-local temporal binding or idempotency hash, or derive either
-  again during commit.
-
-Before concluding that the facade lacks a capability, follow the
-missing-capability procedure in the
-[Capability Index](../../../../docs/capability-index.md). Do not build a host
-substitute: no parallel registry, copied authority, host executor, host
-scheduler, or host persistence of platform truth.
 
 ## Application Readiness For Editors
 
@@ -774,3 +753,24 @@ WorthQueryOperationInputCaptureDenial)`; keep all three for retry. Success admit
 one typed payload and shares its backing/charge through native input consumers.
 Nested caller Clone heaps and allocator/Arc metadata retain their existing
 contracts; this payload quote does not describe total heap or grant permission.
+
+### Owning native capability commands
+
+`application_entry` exposes `WorthQueryCapabilityCommand` from
+`request.retain_capability_delegation_in_program(..)` and
+`retain_capability_revocation_in_program(..)`. Move the original input and key
+once; keep capture-refusal custody. Supply fresh requests to `advance` and
+`close`, retain same-owner refusals, and use completed `close_with_evidence` to
+transfer native Fresh/Recovered receipt evidence after cleanup. Commands are
+not domain mutations and have no public execute/recover or clone escape.
+See [owning capability commands](../worth-query/docs/foundations/workflows.md#owning-capability-commands)
+for native replay and authority distinctions.
+
+## Mixed workflow consumer
+
+The [observable workflow journey](../../../../docs/build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
+uses this facade for ordinary owning operations, current retained reads,
+original-start reacquisition, independent history audit and native live marks.
+`retain_current_read()` and subscription `close()` take no phase/request argument.
+The first retains data; the second releases subscription custody. Neither grants
+execution permission or settles operation cleanup.

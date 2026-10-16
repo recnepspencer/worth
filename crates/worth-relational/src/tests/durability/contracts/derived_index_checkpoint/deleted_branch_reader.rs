@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
@@ -31,10 +32,14 @@ fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
         .is_some());
     assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(0));
     assert!(runtime.indexes.generation(generation).is_some());
-    runtime.durability_authority().checkpoint().unwrap();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()

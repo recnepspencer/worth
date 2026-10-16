@@ -173,7 +173,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     self.session,
                     self.relational,
                     narrowing,
-                ).map_err(|()| inconsistent(installed.contract().name()))?,
+                )?,
             )
             .map_err(|()| inconsistent(installed.contract().name()))?;
         let supporting = WorthQueryRetainedCapabilitySupport::active(

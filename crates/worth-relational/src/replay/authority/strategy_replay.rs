@@ -177,6 +177,9 @@ fn rebuild_strategy_basis_runtime(
         Err(RelationalRecoveryStop::Request(cause)) => {
             return Err(RelationalRecoveryStop::Request(cause))
         }
+        Err(RelationalRecoveryStop::Allocation(error)) => {
+            return Err(RelationalRecoveryStop::Allocation(error))
+        }
         Err(RelationalRecoveryStop::Durability(error)) => {
             mismatches.push(strategy_mismatch(
                 ReplayMismatchClass::StrategyExecutorUnavailable,
@@ -331,6 +334,9 @@ fn lower_strategy_replay(
                 match crate::durability::authority::replay_commit_stop(error, detail.clone()) {
                     RelationalRecoveryStop::Request(cause) => {
                         return Err(RelationalRecoveryStop::Request(cause))
+                    }
+                    RelationalRecoveryStop::Allocation(error) => {
+                        return Err(RelationalRecoveryStop::Allocation(error))
                     }
                     RelationalRecoveryStop::Durability(_) => {}
                 }

@@ -15,8 +15,8 @@ use crate::document_retention_model::{
     retention_entry::DOCUMENT_IDENTITY,
     workflow::{
         advance_instance, prepare_second_program_adoption, publish_adoption, publish_definition,
-        retire_definition, second_program_workflow_inventory, start_instance, terminal_definition,
-        WorkflowAdvanceInput, WorkflowAdvanceIntent,
+        retire_definition, start_instance, terminal_definition, WorkflowAdvanceInput,
+        WorkflowAdvanceIntent,
     },
 };
 
@@ -37,16 +37,12 @@ fn equal_content_publications_and_their_instances_never_alias() {
     let late = expect_started(start_instance(&application, second, 85_523));
     assert_ne!(late.entity_id(), early.entity_id());
 
-    let inventory = second_program_workflow_inventory(&application, main);
-    assert_eq!(inventory.instances().len(), 2);
-    assert!(inventory.instance(early.entity_id()).is_some());
-    assert!(inventory.instance(late.entity_id()).is_some());
     publish_adoption(
         &application,
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| inventory.carry_compatible().unwrap()),
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
         ),
     );
 
@@ -90,7 +86,7 @@ fn an_advance_prepared_under_the_source_program_is_stale_after_adoption() {
         prepare_second_program_adoption(
             &application,
             main,
-            Some(&|inventory| inventory.carry_compatible().unwrap()),
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
         ),
     );
 

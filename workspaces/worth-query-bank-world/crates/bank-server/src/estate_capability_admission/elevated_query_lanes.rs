@@ -295,8 +295,9 @@ fn revoke_exact_support(
     std::thread::scope(|callers| {
         callers
             .spawn(move || {
-                let outcome = runtime
-                    .revoke_estate_capability_with_key(
+                let outcome =
+                    crate::estate_progression::delegation::command_courts::complete_revocation(
+                        runtime,
                         principal,
                         EstateAction::RevokeCapability {
                             estate: ESTATE,

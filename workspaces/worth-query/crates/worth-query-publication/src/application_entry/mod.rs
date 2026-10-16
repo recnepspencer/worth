@@ -7,7 +7,13 @@ pub mod advanced {
         WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
     };
 }
+mod capability_command;
 mod capability_delegation;
+pub use capability_command::{
+    WorthQueryCapabilityCommand, WorthQueryCapabilityCommandAdvance,
+    WorthQueryCapabilityCommandCompletion, WorthQueryCapabilityCommandDenial,
+    WorthQueryCompletedCapabilityCommand, WorthQueryTerminalCapabilityCommand,
+};
 mod capability_revocation;
 mod demand;
 mod denial;
@@ -127,11 +133,8 @@ pub use programs::{
     WorthQueryPreparedBranchSetAdoption, WorthQueryPreparedProgramMigration,
     WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial,
     WorthQueryStoppedBranchSetAdoption, WorthQueryUnpublishedBranchAdoption,
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
-    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,
-    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowInstanceDisposition,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use query_batch::{
@@ -142,7 +145,7 @@ pub use request::{
     WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
     WorthQueryApplicationReadObservationDenial, WorthQueryApplicationRequest,
     WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedRequest,
-    WorthQueryOutputCurrentnessDenial,
+    WorthQueryOutputCurrentnessDenial, WorthQueryWorkflowObservationDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
 pub use workflow::{
@@ -153,8 +156,8 @@ pub use workflow::{
     PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart, WorkflowApprovalDecision,
-    WorkflowConditionOperand, WorkflowDefinitionBindingDenial,
+    RequiredWorkflowProposal, RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart,
+    WorkflowApprovalDecision, WorkflowConditionOperand, WorkflowDefinitionBindingDenial,
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPreparationDenial,
     WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
     WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
@@ -183,11 +186,11 @@ pub use workflow::{
     WorthQueryWorkflowDefinitionRetirementPreparationDenial,
     WorthQueryWorkflowDefinitionRetirementPreparationDenialKind,
     WorthQueryWorkflowDefinitionRetirementRequest, WorthQueryWorkflowInstanceCancellationRequest,
-    WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenialKind,
-    WorthQueryWorkflowInstanceStartRequest, WorthQueryWorkflowNavigateBackRequest,
-    WorthQueryWorkflowOperationAcceptanceDenial, WorthQueryWorkflowOperationBindingDenial,
-    WorthQueryWorkflowOperationOwnerAcceptanceDenial, WorthQueryWorkflowOperationOwnerPosture,
-    WorthQueryWorkflowOperationRecoveryDenial,
+    WorthQueryWorkflowInstanceDiscoveryIntent, WorthQueryWorkflowInstancePreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
+    WorthQueryWorkflowNavigateBackRequest, WorthQueryWorkflowOperationAcceptanceDenial,
+    WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
+    WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryDenial,
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
     WorthQueryWorkflowProposalPreparationDenial, WorthQueryWorkflowProposalPreparationDenialKind,
     WorthQueryWorkflowProposalRequest,

@@ -14,6 +14,13 @@ mod coverage;
 use coverage::observe_coverages;
 pub(in crate::domain_computation::primary_graph) use coverage::observe_workflow_proposal_coverages;
 
+pub(in crate::domain_computation::primary_graph) struct ObservedWorkflowOperationInput {
+    pub(in crate::domain_computation::primary_graph) input_identity: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) proposal: EntityId,
+    pub(in crate::domain_computation::primary_graph) proposal_identity: String,
+    pub(in crate::domain_computation::primary_graph) facts: Vec<WorthQueryApplicationObservedFact>,
+}
+
 pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_input(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -25,8 +32,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
     expected_input_type: &str,
     expected_node_path: &str,
     observation_request: &WorthQueryRequestScope,
-) -> Result<([u8; 32], Vec<WorthQueryApplicationObservedFact>), WorthQueryApplicationAttemptDenial>
-{
+) -> Result<ObservedWorkflowOperationInput, WorthQueryApplicationAttemptDenial> {
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
     let relations = observe_adjacency(
         runtime,
@@ -140,6 +146,11 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         &mut facts,
         observation_request,
     )?;
+    let proposer = layout
+        .proposal
+        .proposer
+        .observe(runtime, execution, snapshot, proposal, kind, &mut facts)?
+        .ok_or_else(|| denial("current proposal lacks proposer"))?;
     let expected = super::derive_workflow_proposal(
         transition_identity,
         &operation,
@@ -148,6 +159,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         source_identity,
         &node_path,
         coverages,
+        proposer,
     );
     if identity != expected.identity()
         || operation != expected_operation
@@ -157,7 +169,12 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         return Err(denial("workflow operation input proposal changed"));
     }
     check_request_live(observation_request, "workflow operation input")?;
-    Ok((input_identity, facts))
+    Ok(ObservedWorkflowOperationInput {
+        input_identity,
+        proposal,
+        proposal_identity: identity,
+        facts,
+    })
 }
 
 pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
@@ -220,6 +237,16 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
             value,
         },
     ];
+    if layout
+        .proposal
+        .proposer
+        .observe(runtime, execution, snapshot, proposal, kind, &mut facts)?
+        != Some(expected.proposer)
+    {
+        return Err(denial(
+            "current proposal proposer differs from original intent",
+        ));
+    }
     let coverage_count = required_u64(
         execution,
         runtime,
@@ -338,8 +365,10 @@ fn optional_identity(
     Ok(Some(identity))
 }
 
-fn decode_identity(text: &str) -> Option<[u8; 32]> {
-    if text.len() != 64 {
+pub(in crate::domain_computation::primary_graph) fn decode_identity(
+    text: &str,
+) -> Option<[u8; 32]> {
+    if text.len() != 64 || !text.is_ascii() {
         return None;
     }
     let mut identity = [0_u8; 32];
@@ -347,4 +376,15 @@ fn decode_identity(text: &str) -> Option<[u8; 32]> {
         *byte = u8::from_str_radix(&text[index * 2..index * 2 + 2], 16).ok()?;
     }
     Some(identity)
+}
+
+#[cfg(test)]
+mod identity_tests {
+    #[test]
+    fn proposal_identity_rejects_utf8_split_before_slicing() {
+        let corrupt = format!("aé{}", "0".repeat(61));
+        assert_eq!(corrupt.len(), 64);
+        assert!(super::decode_identity(&corrupt).is_none());
+        assert_eq!(super::decode_identity(&"0".repeat(64)), Some([0; 32]));
+    }
 }

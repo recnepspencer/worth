@@ -18,12 +18,14 @@ pub(super) fn lower_bridge_observation(
     projection: &WorthQueryRetainedCapabilityRequest,
     evidence: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
     dependency_identity: [u8; 32],
+    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
 ) -> Result<BridgeAuthorizationObservation, WorthQueryOperationAuthorizationDenial> {
     lower_observation(
         installed,
         projection,
         evidence,
         dependency_identity,
+        recorded,
         installed.correspondence(),
         installed.rules(),
         installed.paths().len(),
@@ -35,6 +37,7 @@ pub(super) fn lower_upper_bound_observation(
     projection: &WorthQueryRetainedCapabilityRequest,
     evidence: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
     dependency_identity: [u8; 32],
+    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
 ) -> Result<BridgeAuthorizationObservation, WorthQueryOperationAuthorizationDenial> {
     let upper_bound = installed
         .upper_bound()
@@ -45,6 +48,7 @@ pub(super) fn lower_upper_bound_observation(
         projection,
         evidence,
         dependency_identity,
+        recorded,
         upper_bound.correspondence,
         &upper_bound.rules,
         upper_bound.path_count,
@@ -56,6 +60,7 @@ fn lower_observation(
     projection: &WorthQueryRetainedCapabilityRequest,
     evidence: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
     dependency_identity: [u8; 32],
+    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
     correspondence: worth_runtime_bridge::facade::BridgeAuthorizationCorrespondenceIdentity,
     rules: &[super::super::capability_registry::WorthQueryCapabilityRuleBinding],
     path_count: usize,
@@ -65,17 +70,37 @@ fn lower_observation(
     }
     let mut observed_rules = Vec::with_capacity(rules.len());
     for rule in rules {
-        let observed_requirements = rule
-            .path_requirements()
-            .iter()
-            .map(|indices| {
-                let clauses = indices
-                    .iter()
-                    .map(|index| observe_clause(installed, projection, evidence, *index))
-                    .collect::<Result<Vec<_>, _>>()?;
-                Ok(BridgeAuthorizationRequirementObservation::any(clauses))
-            })
-            .collect::<Result<Vec<_>, WorthQueryOperationAuthorizationDenial>>()?;
+        let observed_requirements = if let Some((requirement, identity)) = rule.recorded_actor() {
+            let observed = recorded;
+            let counts = observed.map_or([0; 3], |observed| observed.dependencies().counts());
+            let matches = observed.is_some_and(|observed| {
+                observed.requirement() == requirement && observed.matches(projection.principal())
+            });
+            vec![BridgeAuthorizationRequirementObservation::any([
+                BridgeAuthorizationClauseObservation::new(
+                    identity,
+                    matches,
+                    true,
+                    BridgeAuthorizationDependencyCardinality {
+                        entities: counts[0],
+                        relations: 0,
+                        adjacency_lists: counts[1],
+                        fields: counts[2],
+                    },
+                ),
+            ])]
+        } else {
+            rule.path_requirements()
+                .iter()
+                .map(|indices| {
+                    let clauses = indices
+                        .iter()
+                        .map(|index| observe_clause(installed, projection, evidence, *index))
+                        .collect::<Result<Vec<_>, _>>()?;
+                    Ok(BridgeAuthorizationRequirementObservation::any(clauses))
+                })
+                .collect::<Result<Vec<_>, WorthQueryOperationAuthorizationDenial>>()?
+        };
         observed_rules.push(BridgeAuthorizationRuleObservation::all(
             rule.bridge().effect(),
             observed_requirements,

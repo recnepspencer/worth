@@ -10,9 +10,7 @@ use super::document_retention_model::{
     },
 };
 use worth_query_decl::facade::application_program::*;
-use worth_query_host::facade::{
-    application_discovery::WorthQueryWorkflowDefinitionDiscovery, application_entry::*,
-};
+use worth_query_host::facade::application_entry::*;
 use worth_query_package_archive::facade::{
     decode_workflow_definition_draft, WorthQueryPackageArchiveLimits,
 };
@@ -74,25 +72,14 @@ fn ordinary_publication_refuses_zero_and_two_inputs_before_publication() {
             })
             .unwrap();
     }
-    let policy = crate::test_request_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&policy);
-    let selected = runtime
-        .with_host_advancement(|phase| {
-            runtime
-                .on_branch(runtime.current_world())
-                .select(&phase)
-                .unwrap()
-        })
-        .unwrap();
-    assert!(matches!(
-        selected
-            .discover_workflow_definition::<ReviewedDocumentWorkflow>(
-                &execution,
-                &ApplicationWorkflowDefinitionIdentity::new("input-cardinality").unwrap()
-            )
-            .unwrap(),
-        WorthQueryWorkflowDefinitionDiscovery::Unpublished
-    ));
+    assert_eq!(
+        super::document_retention_model::workflow::discover_definition_metadata(
+            &application,
+            runtime.current_world(),
+            &ApplicationWorkflowDefinitionIdentity::new("input-cardinality").unwrap()
+        ),
+        Err(())
+    );
     let published = runtime
         .with_host_advancement(|phase| {
             runtime
@@ -114,22 +101,13 @@ fn ordinary_publication_refuses_zero_and_two_inputs_before_publication() {
 
 #[test]
 fn authentic_predecessor_draft_cannot_import_executable_meaning() {
-    let application = publish_workflow_on_first_program();
+    let _application = publish_workflow_on_first_program();
     // Captured with the original production validator and writer, before the
     // guarded-input requirement was enforced. No bytes are converted on import.
     let bytes = include_bytes!("workflow_definition_readmission/missing_input.wqwd");
     let original = bytes.to_vec();
-    let decoded =
-        decode_workflow_definition_draft(bytes, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let authored = decoded.author(application.workflow_spec()).unwrap();
-    let denial = authored
-        .validate()
-        .err()
-        .expect("imported predecessor must fail current validation");
-    assert_eq!(
-        denial.kind(),
-        ApplicationWorkflowValidationDenialKind::MissingOperationInput
-    );
-    assert_eq!(denial.subject(), "perform");
+    let denial = decode_workflow_definition_draft(bytes, WorthQueryPackageArchiveLimits::DEFAULT)
+        .expect_err("displaced authored format is refused before executable interpretation");
+    assert_eq!(denial.kind(), worth_query_package_archive::facade::WorthQueryPackageArchiveDenialKind::UnsupportedWorkflowDefinitionDraftVersion);
     assert_eq!(bytes.as_slice(), original);
 }

@@ -1,6 +1,6 @@
 use super::{
-    PlatformPulseApplicationRuntime, PlatformPulsePendingManagedRebind,
-    PlatformPulseProjectionRebindDenial, PlatformPulseTerminalError, intent,
+    intent, PlatformPulseApplicationRuntime, PlatformPulsePendingManagedRebind,
+    PlatformPulseProjectionRebindDenial, PlatformPulseTerminalError,
 };
 
 mod installation;

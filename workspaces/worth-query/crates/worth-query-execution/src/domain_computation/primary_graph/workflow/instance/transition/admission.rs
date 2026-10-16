@@ -11,11 +11,12 @@ use crate::domain_computation::primary_graph::workflow::instance::progression::{
 
 mod selection;
 pub(in crate::domain_computation::primary_graph) use selection::{
-    select_assessment_collection, select_current_transition, select_navigation_back_transition,
-    select_proposal_replay_transition, select_proposal_transition,
-    select_settled_replay_transition, select_terminal_transition, SelectedWorkflowApproval,
-    SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowInbound,
-    SelectedWorkflowOperation, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
+    select_assessment_collection, select_current_proposal_need, select_current_transition,
+    select_navigation_back_transition, select_proposal_replay_transition,
+    select_proposal_transition, select_settled_replay_transition, select_terminal_transition,
+    SelectedWorkflowApproval, SelectedWorkflowAssessment, SelectedWorkflowCondition,
+    SelectedWorkflowInbound, SelectedWorkflowOperation, SelectedWorkflowProposal,
+    SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
 };
 
 pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransition<
@@ -31,6 +32,8 @@ pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransiti
         Scope,
         WorthQueryProjectedApplicationMutation,
     >,
+    pub(super) advancer:
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     pub(super) instance: EntityId,
     pub(super) subject: EntityId,
     pub(super) node: EntityId,
@@ -48,6 +51,8 @@ pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransiti
 /// the admitted transition's observed facts still fence the joint candidate.
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowOperationSettlementBasis {
+    pub(super) advancer:
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     pub(super) instance: EntityId,
     pub(super) node: EntityId,
     pub(super) node_path: String,
@@ -94,6 +99,7 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
         &self,
     ) -> WorkflowOperationSettlementBasis {
         WorkflowOperationSettlementBasis {
+            advancer: self.advancer,
             instance: self.instance,
             node: self.node,
             node_path: self.node_path.clone(),
@@ -220,7 +226,9 @@ pub(in crate::domain_computation::primary_graph) fn admit_workflow_transition<
     allowance: WorkflowStepAllowance,
 ) -> AdmittedWorkflowTransition<Schema, Operation, Input, Scope> {
     allowance.spend();
+    let advancer = read_set.admitted_workflow_actor();
     AdmittedWorkflowTransition {
+        advancer,
         read_set,
         instance,
         subject,

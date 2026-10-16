@@ -59,22 +59,23 @@ pub mod workflow_instance {
         RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart,
         WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
         WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-        WorthQueryWorkflowInstanceAdapter,
+        WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
     };
 }
 
 pub mod workflow_advance {
     pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody;
+    pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext;
     pub use crate::domain_computation::primary_graph::{
         PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
         PerformedWorkflowTransition, PreparedWorkflowAdvance, PreparedWorkflowAssessment,
         PreparedWorkflowOperation, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
         RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
         RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-        WorkflowApprovalDecision, WorkflowConditionOperand, WorkflowOperationAuthority,
-        WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
-        WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
-        WorthQueryWorkflowConditionSources,
+        RequiredWorkflowProposal, WorkflowApprovalDecision, WorkflowConditionOperand,
+        WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
+        WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+        WorthQueryWorkflowAdvanceAdapter, WorthQueryWorkflowConditionSources,
     };
 }
 
@@ -95,4 +96,10 @@ pub mod discovery_currentness {
 
 pub mod operation_input_capture {
     pub use crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial;
+}
+
+/// Native descriptive principal pin; no actor id or grant extraction.
+pub mod capability_command {
+    pub use crate::domain_computation::primary_graph::authenticated_principal::WorthQueryCommandPrincipalPin;
+    pub use crate::domain_computation::primary_graph::settlement_repair::WorthQueryCommandSettlementDenial;
 }

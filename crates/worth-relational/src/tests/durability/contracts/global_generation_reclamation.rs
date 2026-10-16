@@ -57,7 +57,10 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
     assert!(runtime.indexes.generation(selected_pinned).is_some());
     assert!(runtime.indexes.generation(current).is_some());
 
-    let checkpoint = runtime.durability_authority().checkpoint().unwrap();
+    let checkpoint = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let saved = checkpoint
         .derived_index_checkpoint
         .unwrap()

@@ -33,7 +33,7 @@ where
             .recovered_outputs
             .matching_source_partition(source_scope, observed_source.partition_identity())
             .find(|readmitted| {
-                readmitted.checkpoint.producer == producer
+                readmitted.checkpoint.producer.as_str() == producer
                     && readmitted.checkpoint.source == checkpoint_source.bytes()
                     && readmitted.checkpoint.idempotency_key == expected_idempotency_key
                     && readmitted.correspondence.binding_type() == Some(output_binding)
@@ -83,7 +83,7 @@ where
                 fact_bytes,
                 readmitted.checkpoint.producer_fact_wire_version,
                 None,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                execution.allocation_policy(),
             )
             .map_err(fact_denial::decode_denial)?.into_parts();
         // The checkpoint's expected output revisions are original facts, not
@@ -309,7 +309,7 @@ where
                 restored.checkpoint.source_partition,
                 restored.checkpoint.producer_dependency,
                 restored.checkpoint.idempotency_key,
-                readmitted.computation_source.retain_facts(std::sync::Arc::clone(&restored.observed_source_facts)),
+                readmitted.computation_source.retain_facts(restored.observed_source_facts.clone()),
                 restored.checkpoint.resources,
                 restored.native_output_witness.as_ref().map(std::sync::Arc::clone),
 

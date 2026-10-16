@@ -26,10 +26,7 @@ impl CompiledWorkflowNode {
                 binding.clone().unwrap_or_default(),
                 requires_workflow_authority.to_string(),
                 ];
-                if let Some(requirements) = workflow_execution_requirements {
-                    fields[0] = WorkflowNodeTag::OperationWithRequirements.identity().to_owned();
-                    fields.push(requirements.persistence_identity());
-                }
+                fields.push(workflow_execution_requirements.persistence_identity());
                 fields
             },
             CompiledWorkflowNodeKind::AwaitInbound { origin, effect, protocol, source_identity, limits, wait } => vec![

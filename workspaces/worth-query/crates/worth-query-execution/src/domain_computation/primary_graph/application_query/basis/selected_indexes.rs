@@ -1,7 +1,5 @@
 //! Index currency for the exact installed read that producer readmission will execute.
 
-use std::sync::atomic::{AtomicU8, Ordering};
-
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::indexes::DerivedIndexId;
@@ -16,26 +14,7 @@ use crate::domain_computation::primary_graph::index_currency::{
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraph;
 
-/// Maintenance proof for only the exact Native basis used during preparation.
-/// Its shared basis Arc keeps the owner-issued admission token and root alive.
-pub(in crate::domain_computation::primary_graph) struct PreparedSelectedReadIndexes {
-    basis: AdmittedRelationalBranchBasis,
-    remaining_security_checks: AtomicU8,
-}
-
-impl PreparedSelectedReadIndexes {
-    pub(in crate::domain_computation::primary_graph) fn matches_basis(
-        &self,
-        actual: &AdmittedRelationalBranchBasis,
-    ) -> bool {
-        self.remaining_security_checks
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |remaining| {
-                remaining.checked_sub(1)
-            })
-            .is_ok()
-            && self.basis.admission_identity() == actual.admission_identity()
-    }
-}
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn ensure_selected_read_indexes_admitted<
     Schema,
@@ -99,10 +78,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
             ),
             SelectedFieldIndexAdmissionStop::Native => denial(query.name()),
         })?;
-    Ok(PreparedSelectedReadIndexes {
-        basis: retained_basis,
-        remaining_security_checks: AtomicU8::new(2),
-    })
+    Ok(PreparedSelectedReadIndexes::for_query(retained_basis))
 }
 
 fn selected_field_id(

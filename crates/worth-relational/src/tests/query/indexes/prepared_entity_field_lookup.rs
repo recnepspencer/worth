@@ -1,5 +1,6 @@
 use super::*;
 mod admitted_request_precedence;
+mod population;
 use crate::facade::indexes::{
     BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenialKind,
     BoundedIndexParityMode,

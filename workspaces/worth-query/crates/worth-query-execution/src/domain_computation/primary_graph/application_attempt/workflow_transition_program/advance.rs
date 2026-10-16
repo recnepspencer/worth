@@ -164,6 +164,32 @@ where
                     });
             }
         };
+        let proposal = if request_kind == WorkflowTransitionRequestKind::Advance {
+            crate::domain_computation::primary_graph::workflow::instance::select_current_proposal_need(
+                &compiled, &observed.progress_basis,
+            )?
+        } else {
+            None
+        };
+        if let Some(proposal) = proposal {
+            let required = publication::RequiredWorkflowProposal::from_selected(
+                instance.entity_id(),
+                observed.progress_basis.progress().next_occurrence(),
+                proposal,
+            );
+            // Waiting describes native truth; it neither publishes a transition
+            // nor consumes a step or establishes a new admission deadline.
+            return Ok(PreparedWorkflowAdvance::AwaitingProposal {
+                read_set: self,
+                transition_identity_locator: layout.transition.identity.clone(),
+                assessment_identity_locator: layout.assessment_evidence.identity.clone(),
+                instance: instance.entity_id(),
+                required,
+                replays: publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
+                    &mut observed.replays,
+                )),
+            });
+        }
         // A step recorded before the budget is spent or the deadline passes
         // still replays after it.
         let allowance = match observed.ensure_step_left().and_then(|allowance| {

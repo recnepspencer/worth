@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -42,13 +43,14 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
             let checkpoint_started_at = Instant::now();
             runtime
                 .durability_authority()
-                .checkpoint()
+                .checkpoint(execution)
                 .expect("chip checkpoint window");
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
-            let plan = runtime.durability().recovery_plan(
-                crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-            );
+            let plan = runtime
+                .durability()
+                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+                .unwrap();
             let mut recovered = persisted_runtime_with_test_schema_profile(
                 RelationalRuntimeProfile::ChipSimulation,
             );

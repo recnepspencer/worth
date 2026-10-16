@@ -228,6 +228,7 @@ where
             &prepared.admission,
             prepared.idempotency,
             required.transition_identity_bytes(),
+            None,
         )
         .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Inspection)?;
         let receipt = match custody {

@@ -10,8 +10,8 @@ use worth_query_host::facade::{
 
 use crate::declaration::WorthUiApplicationSchema;
 
-use super::WorthUiStatusOwnerError;
 use super::application_runtime::external_identity;
+use super::WorthUiStatusOwnerError;
 
 pub(super) struct WorthUiLocalSourceAdapter;
 

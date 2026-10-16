@@ -55,6 +55,12 @@ impl ReleaseEstate {
 pub struct ReleaseEstateMutationBinding;
 
 impl ApplicationMutationBinding<BankSchema> for ReleaseEstateMutationBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EstateAction;
     type InputBinding = super::super::EstateActionInputBinding;
     type Result = EstateMutationResult;

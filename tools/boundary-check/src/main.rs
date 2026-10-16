@@ -9,6 +9,7 @@ mod consumer_docs;
 mod context_workspace_rules;
 mod control_seal;
 mod dependency_rules;
+mod derived_skills;
 mod diagnostics;
 mod facade_docs;
 mod governed_sources;
@@ -40,6 +41,7 @@ struct Arguments {
     snapshot_mode: SnapshotMode,
     profile_path: Option<PathBuf>,
     width: usize,
+    write_guidance: bool,
 }
 
 enum OutputFormat {
@@ -55,6 +57,7 @@ fn main() {
         snapshot_mode,
         profile_path,
         width,
+        write_guidance,
     } = match parse_args() {
         Ok(args) => args,
         Err(error) => {
@@ -63,6 +66,16 @@ fn main() {
         }
     };
 
+    if write_guidance {
+        match consumer_docs::write_guidance(&root) {
+            Ok(()) => println!("boundary-check: generated guidance regions and derived skills"),
+            Err(error) => {
+                eprintln!("{error}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
     let profile = scan_profile::Session::new(profile_path);
     let result = scan::run(root, config_path, snapshot_mode, width);
     drop(profile);
@@ -86,6 +99,7 @@ fn parse_args() -> Result<Arguments, String> {
     let mut snapshot_mode = SnapshotMode::Check;
     let mut profile = None;
     let mut width = std::thread::available_parallelism().map_or(1, usize::from);
+    let mut write_guidance = false;
     let mut args = env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -112,9 +126,13 @@ fn parse_args() -> Result<Arguments, String> {
                     return Err("--width must be a positive integer".into());
                 }
             }
+            "--write-guidance" => write_guidance = true,
             "--update-snapshots" => snapshot_mode = SnapshotMode::Update,
             other => return Err(format!("unknown argument: {other}")),
         }
+    }
+    if write_guidance && matches!(snapshot_mode, SnapshotMode::Update) {
+        return Err("guidance writes and snapshot updates are separate operations".into());
     }
     Ok(Arguments {
         root,
@@ -123,5 +141,6 @@ fn parse_args() -> Result<Arguments, String> {
         snapshot_mode,
         profile_path: profile,
         width,
+        write_guidance,
     })
 }

@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
@@ -9,13 +10,14 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
     create_entity_outcome(execution, &runtime, "checkpoint-before-tail-overflow");
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("checkpoint");
     let replay_invalid = create_entity_outcome(execution, &runtime, "tail-before-overflow");
     let allocator_exhausted = create_entity_outcome(execution, &runtime, "tail-event-overflow");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let invalid_envelope = plan
         .tail_log
         .iter_mut()
@@ -67,7 +69,10 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "lineage-gap-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let (abandoned_lineage_id, abandoned_event_id) = runtime.lineage.identity_frontiers();
     let published_node_count = runtime.lineage.node_count();
     let published_event_count = runtime.lineage.event_count();
@@ -127,9 +132,10 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
         }
     );
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     let recovery = recovered
         .durability_recovery()
@@ -228,9 +234,10 @@ fn branch_local_sparse_slot_create_publishes_and_recovers_exact_lineage() {
         .to_vec();
     assert_eq!(event_targets, vec![lineage_id]);
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()

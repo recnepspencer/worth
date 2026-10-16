@@ -82,7 +82,6 @@ fn explicitly_required_approval_executes_with_its_exact_native_grant() {
     let (application, instance, required) = approved::<ExplicitReviewedSetRetentionBinding>();
     assert!(required
         .workflow_execution_requirements()
-        .unwrap()
         .approval()
         .is_some());
     let runtime = application.runtime();
@@ -123,7 +122,6 @@ fn empty_installed_floor_does_not_ignore_an_authored_approval_or_its_revocation(
     let (application, instance, required) = approved::<OccurrenceSetRetentionBinding>();
     assert!(required
         .workflow_execution_requirements()
-        .unwrap()
         .approval()
         .is_none());
     let runtime = application.runtime();
@@ -156,4 +154,21 @@ fn empty_installed_floor_does_not_ignore_an_authored_approval_or_its_revocation(
             if denial.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowApprovalGrantUnavailable)
     );
     assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
+}
+
+#[test]
+fn occurrence_only_floor_still_consumes_the_authored_approval() {
+    // approved() first requires the real AwaitingApproval posture, signs it,
+    // and obtains the resulting native operation requirement.
+    let (application, instance, required) = approved::<OccurrenceSetRetentionBinding>();
+    assert!(required
+        .workflow_execution_requirements()
+        .approval()
+        .is_none());
+    let outcome = execute(&application, &instance, &required, 8, 92016).unwrap();
+    assert!(matches!(
+        outcome,
+        WorthQueryApplicationMutationOutcome::Committed { .. }
+    ));
+    assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
 }

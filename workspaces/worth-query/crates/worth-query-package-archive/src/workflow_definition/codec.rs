@@ -25,9 +25,9 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 
 const MAGIC: &[u8; 4] = b"WQWD";
 
-/// Current deterministic workflow definition draft protocol. Version 4
-/// carries operation evidence contracts. Only this version is supported.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 4;
+/// Current deterministic workflow definition draft protocol. Version 5
+/// carries explicit execution, observation and recorded-actor policies. Only this version is supported.
+pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 5;
 
 /// Encodes one validated definition's authored meaning. Only the draft
 /// travels: nothing about instances, approvals or publication is read.
@@ -43,6 +43,11 @@ where
     output.raw_bytes(MAGIC);
     output.u16(WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION);
     records::text(&mut output, Spec::IDENTITY.as_str())?;
+    records::text(
+        &mut output,
+        &Spec::observation_policy().persistence_identity(),
+    )?;
+    records::text(&mut output, &Spec::actor_policy().persistence_identity())?;
     records::text(&mut output, definition.identity().as_str())?;
     encode_limits(&mut output, definition.limits())?;
     records::text(&mut output, definition.start().as_str())?;
@@ -85,6 +90,8 @@ pub fn decode_workflow_definition_draft(
             )
         })?;
     let spec = records::nonempty_text(&mut input)?;
+    let observation_policy = records::nonempty_text(&mut input)?;
+    let actor_policy = records::nonempty_text(&mut input)?;
     let identity = records::nonempty_text(&mut input)?;
     let definition_limits = decode_limits(&mut input)?;
     let start = records::nonempty_text(&mut input)?;
@@ -122,6 +129,8 @@ pub fn decode_workflow_definition_draft(
     }
     Ok(WorthQueryUntrustedWorkflowDefinitionDraft {
         spec,
+        observation_policy,
+        actor_policy,
         identity,
         limits: definition_limits,
         start,

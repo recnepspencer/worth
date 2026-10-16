@@ -207,10 +207,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&814_u64)
         .for_workflow_operation(&application, &required);
     match wrong_input {
-        Err(denial) => assert_eq!(
+        Err(denial) => assert!(matches!(
             denial,
             worth_query_host::facade::application_entry::WorthQueryWorkflowOperationBindingDenial::RequirementMismatch
-        ),
+        )),
         Ok(_) => panic!("a different proposed input must not bind"),
     }
     let effect = runtime
@@ -391,3 +391,9 @@ fn approval_rejects_assessment_evidence_after_native_source_aba() {
             == WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
     ));
 }
+
+#[path = "workflow_approval/workflow_actor_contract.rs"]
+mod workflow_actor_contract;
+
+#[path = "workflow_approval/field_text_readmission.rs"]
+mod field_text_readmission;

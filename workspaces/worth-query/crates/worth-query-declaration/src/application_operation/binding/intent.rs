@@ -82,13 +82,9 @@ where
     /// refused, and the ordinary mutation lane refuses the binding.
     const WORKFLOW_CONTROL: bool = false;
 
-    /// Additional evidence for a guarded workflow operation. Absence preserves
-    /// the historical required-approval contract; explicit empty requirements
-    /// opt a new installed binding into occurrence-bound execution alone.
-    fn workflow_execution_requirements() -> Option<super::ApplicationWorkflowExecutionRequirements>
-    {
-        None
-    }
+    /// Explicit workflow applicability. Guarded bindings must choose occurrence
+    /// or approval evidence; a direct/control binding declares NotApplicable.
+    fn workflow_execution_requirements() -> super::ApplicationWorkflowExecutionRequirements;
     const CANDIDATES: ApplicationCandidateRequirements;
 
     /// Binds input-selected subjects to the exact parameters of retained source evidence.

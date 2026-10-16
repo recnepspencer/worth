@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use worth_foundational::{FoundationalBranchReferenceObservation, FoundationalBranchTarget};
 
 #[test]
@@ -8,11 +9,15 @@ fn durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commit
 
     let runtime = persisted_runtime_with_test_schema();
     let main = create_entity_outcome(execution, &runtime, "main-a");
-    let _checkpoint = runtime.durability_authority().checkpoint().unwrap();
+    let _checkpoint = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let later = create_entity_outcome(execution, &runtime, "main-b");
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let checkpoint_images = plan.checkpoint.as_ref().unwrap().partition_images.as_ptr();
     let mut recovered = persisted_runtime_with_test_schema();
     let outcome = recovered
@@ -53,7 +58,10 @@ fn durability_tail_replay_releases_each_commit_snapshot_beyond_live_capacity() {
         crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
     );
     create_entity(execution, &runtime, "replay-capacity-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     for index in 0..70 {
         create_entity(
             execution,
@@ -61,9 +69,10 @@ fn durability_tail_replay_releases_each_commit_snapshot_beyond_live_capacity() {
             &format!("replay-capacity-tail-{index}"),
         );
     }
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema_profile(
         crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
     );
@@ -91,10 +100,14 @@ fn durability_contract_recovery_fails_closed_without_exact_branch_cells() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "branch-cell-required");
-    runtime.durability_authority().checkpoint().unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     plan.checkpoint
         .as_mut()
         .expect("checkpoint is selected")
@@ -125,10 +138,14 @@ fn durability_contract_recovery_rejects_branch_cell_target_without_catalog_artif
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "branch-cell-artifact-required");
-    runtime.durability_authority().checkpoint().unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint is selected");
     let main_cell = checkpoint
         .branch_cells
@@ -170,11 +187,15 @@ fn durability_contract_recovery_rejects_tail_checkpoint_drift_before_mutation() 
 
     let runtime = persisted_runtime_with_test_schema();
     let _first = create_entity_outcome(execution, &runtime, "checkpoint-basis");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let second = create_entity_outcome(execution, &runtime, "tail-commit");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let tail = plan
         .tail_log
         .iter_mut()
@@ -232,10 +253,14 @@ fn durability_contract_checkpoint_recovers_index_metadata() {
             index_ids: vec![index.index_id],
         },
     );
-    runtime.durability_authority().checkpoint().unwrap();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -270,7 +295,10 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
         .for_record(second_entity)
         .unwrap()
         .lineage_id;
-    let checkpoint = runtime.durability_authority().checkpoint().unwrap();
+    let checkpoint = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     assert_eq!(
         checkpoint
             .lineage
@@ -311,9 +339,10 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
         checkpoint.lineage.counters().node_count,
         checkpoint.lineage.nodes().len()
     );
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()

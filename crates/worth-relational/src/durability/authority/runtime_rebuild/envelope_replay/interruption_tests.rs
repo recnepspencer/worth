@@ -16,20 +16,23 @@ use crate::tests::support::{create_entity, runtime_with_test_schema};
 fn fixture() -> (RelationalRuntime, Vec<u8>) {
     let source = runtime_with_test_schema();
     let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
     for name in ["replay-first", "replay-second", "replay-third"] {
         create_entity(&ExecutionRequest::serial(&host), &source, name);
     }
     let plan = source
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     assert_eq!(plan.tail_log.len(), 3);
     let persisted: Vec<_> = plan
         .tail_log
         .iter()
         .map(|entry| {
-            crate::durability::log::PersistedCanonicalCommit::from_positioned(
-                entry.positioned().unwrap(),
-            )
+            crate::durability::log::PersistedCanonicalCommit::from_positioned(entry.positioned())
         })
         .collect();
     let bytes = rmp_serde::to_vec_named(&persisted).unwrap();
@@ -37,11 +40,17 @@ fn fixture() -> (RelationalRuntime, Vec<u8>) {
 }
 
 fn plan_from_bytes(source: &RelationalRuntime, bytes: &[u8]) -> RecoveryPlan {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
     let persisted: Vec<crate::durability::log::PersistedCanonicalCommit> =
         rmp_serde::from_slice(bytes).unwrap();
     let mut plan = source
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     plan.tail_log = persisted
         .into_iter()
         .map(|record| record.readmit().unwrap())
@@ -299,6 +308,9 @@ fn corrupt_replay_keeps_its_durability_failure() {
         }
         RelationalRecoveryStop::Request(cause) => {
             panic!("corrupt evidence became request control: {cause:?}")
+        }
+        RelationalRecoveryStop::Allocation(cause) => {
+            panic!("corrupt evidence became allocation failure: {cause:?}")
         }
     }
 }

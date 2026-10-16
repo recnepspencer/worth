@@ -35,6 +35,10 @@ impl ReadyPaymentWorld {
     pub(super) fn new(scenario: &str, script: FaultScript) -> Self {
         let fixture =
             ordinary_read_world_with_approval_authentication(scenario, approval_configuration());
+        Self::from_fixture(fixture, script)
+    }
+
+    pub(super) fn from_fixture(fixture: OrdinaryReadFixture, script: FaultScript) -> Self {
         let rail_process = spawn_rail();
         let rail = Arc::new(BankEstateRailTransport::connected_to(
             rail_process.local_addr(),

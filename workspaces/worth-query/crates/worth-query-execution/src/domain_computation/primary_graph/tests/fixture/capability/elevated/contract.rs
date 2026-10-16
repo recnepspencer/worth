@@ -374,8 +374,7 @@ fn composition_with_propagation(
         ),
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
-            ApplicationCapabilityDistinctActorRule::not_applicable(),
-        ),
+            ApplicationCapabilityDistinctActorRule::not_applicable(), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         propagation,
     )
 }

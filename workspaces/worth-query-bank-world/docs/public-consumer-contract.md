@@ -192,8 +192,35 @@ receipts enter the existing published-effect recovery APIs. Those native handles
 own outbox/rail reconciliation or compensation; they are not permission to rerun
 the source handler. Source cleanup uses its native issuer custody and does not
 reacquire revoked business permission. Business retries and redispatch still
-require their applicable fresh native authorization. Elevation, delegation and
-approved-payment workflow transitions keep their separate issued native owners.
+require their applicable fresh native authorization. Elevation and approved-payment
+workflow transitions keep their separate issued native owners. Delegation and
+capability revocation retain the kernel-command owners described below.
+
+### Own capability delegation and revocation
+
+`retain_estate_capability_delegation` and `retain_estate_capability_revocation`
+consume the original action and owned key. Capture refusal returns the original
+input, key, repeatable projection preparation and typed native denial; it does
+not discard them or mint a partially admitted command.
+
+Advance the returned command with `advance(&bank.request(&principal, &scope))`.
+Keep the same owner on `Progress` or `Refused`, with its exact native cause.
+`Completed` owns either fresh receipt evidence or recovered receipt/publication
+evidence. Use `close_with_evidence(&fresh_request)` before transferring that
+receipt through `BankCommitReceipt::from_closed_capability_command`; a refused
+close returns the same completion. `Terminal` exposes original native posture
+and lawful close, never an effect retry. Cleanup does not reacquire a revoked
+business command grant, but preserves original principal/runtime/branch affinity.
+
+Each effect or recovery attempt freshly admits the command. A retained command
+cannot be retargeted to another principal, even when that person is independently
+authorized. Separate newly retained commands may use the same client key under
+different native principal scopes. Exact completed delegation can recover after
+its parent expires or is revoked only while current command admission permits
+it; that receipt does not authorize another child or partial recovery. Exact
+revocation recovery does not require its already-revoked target to become active.
+Never resubmit an incomplete command or interpret `AlreadyCommitted` in an
+ordinary caller loop. The existing native command owns those decisions.
 
 A freeze command enters through the same ordinary mutation frontdoor. Construction
 retains the command; it does not admit the business capability or execute an effect.

@@ -1,7 +1,12 @@
 use super::*;
 
 pub(super) fn published_proposal(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        crate::document_retention_model::programs::RetentionProgramP0,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: PublishedWorkflowInstanceRef,
     key: u64,
 ) -> PublishedWorkflowProposalRef {

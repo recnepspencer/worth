@@ -77,6 +77,7 @@ fn funded_capture_capability_input_holds_payload_until_its_last_native_owner() {
                     &capability,
                     sibling,
                     &request,
+                    None,
                 )
                 .unwrap();
             let held = parent.charged_memory_bytes();

@@ -1,4 +1,5 @@
-use std::{io::Write, sync::Arc};
+use super::encoding::{json, json_length, FactBytes};
+use std::sync::Arc;
 
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
@@ -10,7 +11,7 @@ use super::{
 
 const MAXIMUM_VALUE_BYTES: usize = 65_536;
 
-pub(super) fn encode(bytes: &mut Vec<u8>, fact: &Fact) -> Option<()> {
+pub(super) fn encode(bytes: &mut impl FactBytes, fact: &Fact) -> Option<()> {
     let Fact::IndexedEntitySelection {
         index_id,
         definition,
@@ -33,15 +34,14 @@ pub(super) fn encode(bytes: &mut Vec<u8>, fact: &Fact) -> Option<()> {
     {
         return None;
     }
-    let mut encoded = ValueWriter(Vec::new());
-    serde_json::to_writer(&mut encoded, value).ok()?;
+    let length = json_length(value, MAXIMUM_VALUE_BYTES)?;
     put_u64(bytes, index_id.0);
     put_text(bytes, &definition.name)?;
     bytes.push(u8::from(definition.branch_scoped));
     put_u32(bytes, entity_kind.as_u32());
     put_locator(bytes, locator)?;
-    put_u32(bytes, u32::try_from(encoded.0.len()).ok()?);
-    bytes.extend_from_slice(&encoded.0);
+    put_u32(bytes, u32::try_from(length).ok()?);
+    json(bytes, value, MAXIMUM_VALUE_BYTES)?;
     put_u64(bytes, u64::try_from(*candidate_limit).ok()?);
     put_u32(bytes, u32::try_from(candidates.len()).ok()?);
     for candidate in candidates {
@@ -107,23 +107,6 @@ pub(super) fn decode(cursor: &mut CheckpointCursor<'_>) -> Result<Fact, String> 
         candidate_limit,
         candidates,
     })
-}
-
-struct ValueWriter(Vec<u8>);
-impl Write for ValueWriter {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        if bytes.len() > MAXIMUM_VALUE_BYTES.saturating_sub(self.0.len()) {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "predicate value exceeds checkpoint budget",
-            ));
-        }
-        self.0.extend_from_slice(bytes);
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -209,9 +192,14 @@ mod tests {
 
     #[test]
     fn value_serialization_stops_at_the_declared_codec_budget() {
-        let mut writer = ValueWriter(Vec::new());
-        assert!(serde_json::to_writer(&mut writer, &"x".repeat(MAXIMUM_VALUE_BYTES + 1)).is_err());
-        assert!(writer.0.len() <= MAXIMUM_VALUE_BYTES);
+        let mut bytes = Vec::new();
+        assert!(json(
+            &mut bytes,
+            &"x".repeat(MAXIMUM_VALUE_BYTES + 1),
+            MAXIMUM_VALUE_BYTES
+        )
+        .is_none());
+        assert!(bytes.len() <= MAXIMUM_VALUE_BYTES);
     }
 
     #[test]

@@ -11,7 +11,8 @@ pub(super) fn append(
 ) {
     basis.text(format!("{prefix}.kind"), "application-mutation");
     // Omission preserves every historical mutation identity.
-    if let Some(requirements) = &description.parts().workflow_execution_requirements {
+    {
+        let requirements = &description.parts().workflow_execution_requirements;
         basis.text(
             format!("{prefix}.workflow-execution-requirements"),
             &requirements.persistence_identity(),

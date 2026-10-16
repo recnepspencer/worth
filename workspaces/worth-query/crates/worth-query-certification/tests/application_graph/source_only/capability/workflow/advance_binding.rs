@@ -5,6 +5,9 @@ use worth_query_host::facade::{
 };
 pub struct AdvanceBinding;
 impl ApplicationMutationBinding<CapabilitySchema> for AdvanceBinding {
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
     const WORKFLOW_CONTROL: bool = true;
     type Input = SetRetentionInput;
     type InputBinding = SetRetentionInputBinding;
