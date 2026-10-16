@@ -74,7 +74,7 @@ pub use mutation::{
     WorkflowInstanceStartBinding, WorkflowInstanceStartIntent,
 };
 pub use ordinary_run::run_instance;
-pub use program_adoption::{prepare_second_program_adoption, publish_adoption, second_revision};
+pub use program_adoption::{prepare_second_program_adoption, publish_adoption};
 pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
 pub use review_requirement::{
     link_review_requirement, link_review_requirement_on, unlink_review_requirement,
