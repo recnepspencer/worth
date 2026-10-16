@@ -1037,8 +1037,7 @@ original owning operation settlement and cleanup still use their own receivers.
 The [neutral mixed workflow](../../../../../../docs/build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
 shows proposal waiting, occurrence capture, conditional distinct approval,
 real local archive ingress and the complete owning caller loop, with marker-bound
-excerpts. Its new history receivers and example remain source-prepared pending
-joined compilation/runtime certification. The [workflow guide](workflows.md)
+excerpts. The [workflow guide](workflows.md)
 owns the detailed read policies and outcomes.
 
 ## Current Limits

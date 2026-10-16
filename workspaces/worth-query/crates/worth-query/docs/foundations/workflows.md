@@ -315,8 +315,7 @@ The sequence:
 Advancing at a proposal slot returns `AwaitingProposal(required)`. Inspect
 `required.node_path()`, `operation()` and `input_type()` to prepare the actual
 proposal input, then call `prepare_workflow_proposal` under fresh admission.
-The need grants no authority and waiting records no transition. This joined
-source is awaiting compiler and runtime qualification (see [Known gaps](#known-gaps)).
+The need grants no authority and waiting records no transition.
 
 ## Author a definition
 
@@ -445,11 +444,10 @@ Preparation refusals are `WorthQueryWorkflowDefinitionPublicationPreparationDeni
 
 ## Discover and retire definitions
 
-The unreleased metadata route requires an explicit `definition_metadata` read rule,
+The metadata route requires an explicit `definition_metadata` read rule,
 its concrete installed read binding, and independently supplied domain read input.
 It authorizes the current principal before looking up the name at the retained
-basis. It grants neither subject access nor definition-wide enumeration. Joined
-compilation and runtime certification are pending.
+basis. It grants neither subject access nor definition-wide enumeration.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -557,7 +555,7 @@ authoring control intent:
 | Variant | What the instance needs next |
 |---|---|
 | `Completed(PerformedWorkflowTransition)` | Nothing; a step was recorded. `node_path()` names it; `terminal()` says whether the instance ended. |
-| `AwaitingProposal(RequiredWorkflowProposal)` | A proposal of the named operation/input; fresh `prepare_workflow_proposal` admission owns publication. Joined source; qualification pending. |
+| `AwaitingProposal(RequiredWorkflowProposal)` | A proposal of the named operation/input; fresh `prepare_workflow_proposal` admission owns publication. |
 | `AwaitingActor(RequiredWorkflowActor)` | The pumping principal is not authorized for this step. `instance()` names the instance; `denial()` says why. A principal authorized for the step pumps the same instance again. |
 | `AwaitingAssessment(RequiredWorkflowAssessment)` | Evidence from an assessment. `node_path()` names it. |
 | `AwaitingCondition(RequiredWorkflowCondition)` | A condition result. |
@@ -573,8 +571,7 @@ authoring control intent:
 At a proposal slot, `execute()` returns `AwaitingProposal(required)` with the
 actual node, operation, input type and occurrence. `run_workflow` stops with
 `Outcome(WorkflowProgressOutcome::AwaitingProposal(required))`; supply a real
-proposal through fresh admission before advancing again. This source surface
-still awaits joined compiler and runtime qualification.
+proposal through fresh admission before advancing again.
 
 `WorthQueryWorkflowAdvancePreparationDenial` has `RuntimeMismatch`,
 `RequestAdmission(..)`, `TransitionPreparation(..)`, `Authentication(..)`, and
@@ -893,6 +890,12 @@ External source completion alone does not settle the operation. Its actual nativ
 recovery or authenticated inbound evidence must satisfy guarded custody before
 fresh acceptance can commit the owed workflow settlement. Dispatch-handle disposal,
 workflow settlement and source cleanup remain separate obligations.
+For originally declared inbound work without admissible corrective recovery,
+`Progress` retains the original source evidence while waiting for authenticated
+ingress; it mints no recovery handle and grants no retry authority. Each advance
+rechecks fresh admission and exact native custody. Close refuses
+`NativeObligationRetained` with the same owner until a fresh advance observes
+settlement and returns the completed owner.
 
 Acceptance refusal returns the same completed owner; success retains both actual
 WorkflowProgressOutcome and that owner. Close it through fresh authority; refusal
@@ -966,8 +969,7 @@ Every workflow spec explicitly declares `observation_policy()` and
 public discovery route. Governed original-intent reads enter through the
 principal-bearing retained request described below. Exact definition metadata
 requires its separate concrete `DefinitionMetadata` read slot; the former
-execution-only entrance is removed. Both surfaces remain unreleased source
-preparation pending joined proof. Actor capability enforcement is independent of read disclosure.
+execution-only entrance is removed. Actor capability enforcement is independent of read disclosure.
 Public workflow views never serve as permission.
 
 Current workflow layouts and portable definitions admit only their current
@@ -978,9 +980,8 @@ select an old condition decoder.
 
 ## Governed original-intent reads
 
-The unreleased original-intent read surface owns one exact data observation while
-using fresh current read authority. Its source is implemented; joined compilation,
-runtime certification and the remaining discovery routes are still pending.
+The original-intent read surface owns one exact data observation while
+using fresh current read authority.
 
 Retain `prepared.discovery_intent()` before executing an authentic workflow start.
 The opaque value is original creation intent, so keeping it across requests does
@@ -1015,9 +1016,7 @@ errors; they are not converted to missing records or audit withholding.
 The isolated Document Retention governed-read court exercises the real original
 start, separate subject/audit grants and native grant revocation. It also asserts
 that read-only history does not change the workflow progress cache or branch
-head, and that an unrelated cold equality index stays unpublished. This authored
-court has not yet run. The paged history and envelope receivers below are also
-uncompiled source; broader lifecycle and resource certification remain pending.
+head, and that an unrelated cold equality index stays unpublished.
 
 Actor values are historical identities with full generations, disclosed only
 after the separate audit gate. No authorization snapshot or external identity
@@ -1069,7 +1068,7 @@ operation still needs its own lane and its own key.
 - Each outcome is typed, so a caller (or an AI agent) can read the `Awaiting*` variant and choose the next request.
 - Each request carries its own idempotency key. Retrying a key replays the recorded outcome.
 
-### Retained proposal and approval history (unreleased source)
+### Retained proposal and approval history
 
 Use `found.target()` from an original-intent read or an indexed instance page to
 read its recorded transitions. The opaque target owns exact data custody and no
@@ -1138,22 +1137,6 @@ workflow edges. They do not refresh immutable data or advance the workflow.
 Every poll freshly authorizes before revealing even a discontinuity; refusal
 retains the subscription and its unacknowledged positions. There is no automatic
 poller or second observation stream. Closing releases only subscription custody.
-
-### Known gaps
-
-These limits are current, consumer-visible, and verified in source. Before
-concluding something else is missing, follow the procedure in the
-[capability index](../../../../../../docs/capability-index.md). Closing them is
-scheduled platform work, owned by
-[Milestone 9.17.6.5](../../../../../../plans/WORTH-query/milestone-9.17.6.5.md);
-until a row is removed, its "Do not" rule stands and no substitute may be built.
-
-| Gap | What exists today | Do not |
-|---|---|---|
-| Broader workflow discovery and state/history views | The unreleased original-intent retained-read surface above exposes native state and recorded paths, with independent audit withholding; its joined compilation/runtime certification is pending. Bounded instance/history pages, native proposal reacquisition and envelope marks are source-authored; joined compilation and runtime certification remain pending. | Views never authorize advancement. Do not mirror kernel state into your schema as authority; use fresh native command admission. |
-| Proposal reacquisition and subject/definition pages await joined qualification (references have no public constructor or serialization) | Use the opaque original discovery intent or an explicitly governed definition page, then freshly admit history reads; the authored receivers remain unreleased | Do not serialize, forge, or re-derive references; do not build an instance registry and treat it as authority. |
-| Full proposal/approval audit observation and recorded-role certification remain unfinished | The original-intent read uses canonical native actor fields under a separate audit grant; the new source surface still awaits joined certification | Do not supply an actor field or resolve a current logical identity to replace the historical native actor. |
-| Current proposal slot (joined M9.17.6.5 source; qualification pending) | `AwaitingProposal(RequiredWorkflowProposal)` names the actual instance, node path, operation, input type and occurrence. Ordinary `run_workflow` returns it through `Outcome`. | Propose through fresh `prepare_workflow_proposal` admission. The need grants no authority; waiting publishes no transition. |
 
 ## Cancellation
 

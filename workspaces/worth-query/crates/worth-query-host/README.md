@@ -749,5 +749,4 @@ uses this facade for ordinary owning operations, current retained reads,
 original-start reacquisition, independent history audit and native live marks.
 `retain_current_read()` and subscription `close()` take no phase/request argument.
 The first retains data; the second releases subscription custody. Neither grants
-execution permission or settles operation cleanup. The new example is
-source-prepared, with joined compilation/runtime and its registered CI run pending.
+execution permission or settles operation cleanup.

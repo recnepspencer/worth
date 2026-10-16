@@ -353,7 +353,7 @@ operations expose that inventory. Consumer enumeration explicitly selects one
 typed definition and its installed Definition read binding through the retained
 `read_workflow_instances` owner; Metadata permission does not enumerate instances.
 
-The following source contract is authored but uncompiled and unreleased:
+The following illustrative call shape uses the governed adoption contract:
 
 <!-- illustrative -->
 ```rust,ignore

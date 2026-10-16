@@ -1705,8 +1705,7 @@ let outcome      = prepared.publish(runtime, &principal, &scope); // native publ
   explicit carry-compatible intent. The complete safety inventory is not
   disclosed. Consumer reads use an explicit typed definition and its installed
   governed read binding; metadata alone grants no enumeration. Some custody
-  needs migration or blocks adoption until it settles. The new governed read
-  and choice source is authored but uncompiled and unreleased.
+  needs migration or blocks adoption until it settles.
 - Adoption across a **set of branches is not atomic**. Each branch publishes
   on its own, and progress can be resumed.
 - Support for a revision can be retired only when no branch and no retained
@@ -1797,7 +1796,7 @@ change marks the subscription without replacing the old retained basis. Refresh
 requires a new retained read and reacquisition. Releasing a subscription is
 separate from settlement and cleanup of the original operation. The
 [mixed workflow journey](build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
-shows these source-prepared receivers, pending joined runtime acceptance.
+shows these receivers in one owning application.
 
 ### 13.1 Who may run a guarded operation
 

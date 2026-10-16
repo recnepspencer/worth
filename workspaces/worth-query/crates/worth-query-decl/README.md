@@ -5,7 +5,9 @@ and Query meaning. Application and entry-band domain crates use it to declare
 typed entities, relations, aspects, fields, queries, operations, capabilities,
 policies, and principal bindings.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_decl::facade::{
     application_capability,
     application_query,
@@ -44,7 +46,9 @@ code.
 A program is built from features. Each `ApplicationFeature` owns actions,
 declared with an `ApplicationFeatureSpec`:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_decl::facade::application_program::*;
 
 impl ApplicationProgramDefinition<MySchema> for MyProgram {
@@ -113,6 +117,18 @@ publish, discover, start, and progress those definitions through
 shows the complete journey, and the
 [workflows guide](../worth-query/docs/foundations/workflows.md) documents it
 step by step.
+
+Workflow declarations also make three boundaries explicit:
+
+- `ApplicationWorkflowSpec::observation_policy()` and `actor_policy()` declare
+  governed disclosure and recorded-role policy; see [workflow actors](../worth-query/docs/foundations/workflows.md#recorded-workflow-actors).
+- `ApplicationMutationBinding::workflow_execution_requirements()` returns an
+  explicit `ApplicationWorkflowExecutionRequirements`; see [guarded operations](../../../../docs/build-an-application.md#65-who-may-run-a-guarded-operation).
+- `ApplicationCapabilityRecordedActorRule` in `application_capability` declares
+  how a command relates to a recorded native actor; see [actor declarations](../worth-query/docs/foundations/workflows.md#declare-evidence-not-authorization-modes).
+
+These declarations describe policy. Hosts still require fresh native admission;
+an observed actor or workflow locator grants no execution permission.
 
 An external-effect operation may declare one fixed inbound source, protocol,
 version and finite `ApplicationInboundOccurrenceLimits` with

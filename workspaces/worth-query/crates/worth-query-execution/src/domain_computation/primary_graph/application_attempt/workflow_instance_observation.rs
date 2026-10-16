@@ -98,7 +98,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         String,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_content_identity:
         String,
-    /// Absent on evidence recorded before revisions were bound; never current.
+    /// Required program revision of this current assessment evidence record.
     pub(in crate::domain_computation::primary_graph::application_attempt) program_revision: String,
 }
 

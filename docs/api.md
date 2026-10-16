@@ -490,8 +490,7 @@ Applications use `worth_query_host::facade::application_entry` for request
 methods and `application_discovery` for workflow read targets, history pages,
 marks and outcomes. Policies and typed read bindings come from
 `worth_query_decl::facade::application_program`; recorded actor requirements
-come from its `application_capability` module. These source-prepared history
-interfaces await joined compilation and runtime certification.
+come from its `application_capability` module.
 
 | Task | Public receiver and returned meaning |
 | --- | --- |
@@ -501,7 +500,7 @@ interfaces await joined compilation and runtime certification.
 | Locate history | `found.target()` or `observation.target()`; a sealed data target, not a new field on Live or command authority. |
 | Read a bounded history | `read.read_workflow_history::<Spec, SubjectRead, AuditRead>(vocabulary, &target, input, audit_input, width, indexes, after)`; `after` is the previous history page at the same basis and selection. |
 | Subscribe to relevant changes | `read.subscribe_workflow_history::<Spec, SubjectRead>(vocabulary, &target, input)`; native envelope subscription custody. |
-| Check a mark | `read.poll_workflow_history::<Spec, SubjectRead>(vocabulary, &mut subscription, input)`; fresh subject admission, Pending or Changed, no implicit data refresh. |
+| Check a mark | `read.poll_workflow_history::<Spec, SubjectRead>(vocabulary, &mut subscription, input)`; fresh subject admission, `Pending`, `Changed`, `Overflow` or `Closed`, no implicit data refresh. |
 | Release subscription custody | `subscription.close()`; no request argument and no operation cleanup evidence. |
 
 Audit is independently admitted: `Withheld` records undisclosed actor roles,
@@ -513,4 +512,3 @@ The [mixed caller journey](build-an-application.md#67-capture-approve-archive-an
 contains marker-bound proposal, archive/ingress/cleanup and old-basis/live-mark
 excerpts. Its complete public-facade target is
 [`observable_workflow`](../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs).
-CI registers a direct run; registration is not a successful run claim.
