@@ -4,6 +4,18 @@
 //! `finish_action` returns the feature parent. The sealed action selector names
 //! an occurrence; Installation owns its complete resolved declaration. Meaning
 //! grants neither request permission nor a native recovery capability.
+//!
+//! The retired fixed-action selector is not part of this audience.
+//!
+//! ```compile_fail,E0432
+//! use worth_query_decl::facade::application_program::ApplicationFixedAction;
+//! ```
+//!
+//! The retired discovered-action selector is independently unavailable.
+//!
+//! ```compile_fail,E0432
+//! use worth_query_decl::facade::application_program::ApplicationDiscoveredAction;
+//! ```
 
 pub use worth_query_declaration::facade::{
     application_aftermath, application_capability, application_operation, application_program,
