@@ -14,6 +14,9 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 use super::WorthQueryProgramApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 
+mod runtime_custody;
+use runtime_custody::PreviewRuntimeDestructionCustody;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationPreviewRequest {
     identity: String,
@@ -45,12 +48,25 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
 
 /// Owns the original native preview, source observation and installed runtime.
 /// Dropping this owner abandons it; only explicit successful discard closes it.
+/// The original production carriers and both preview phases preserve their
+/// structural Send/Sync bounds. Execution still obeys the native owner's affinity.
+/// ```
+/// use worth_query_execution::facade::application_installation::{
+///     WorthQueryApplicationPreviewSession, WorthQueryReadmittedApplicationPreview,
+/// };
+/// use worth_runtime_bridge::facade::{BridgeSpeculativeSessionHandle, RelationalBridgeObservationLease};
+/// fn send_sync<T: Send + Sync>() {}
+/// send_sync::<BridgeSpeculativeSessionHandle>();
+/// send_sync::<RelationalBridgeObservationLease>();
+/// send_sync::<WorthQueryApplicationPreviewSession>();
+/// send_sync::<WorthQueryReadmittedApplicationPreview>();
+/// ```
 pub struct WorthQueryApplicationPreviewSession {
     handle: BridgeSpeculativeSessionHandle,
     _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
-    // The actual installed runtime clone, erased only for destruction custody.
+    // One actual installed runtime clone, held solely for destruction custody.
     // Native handle and source above are destroyed before this backing is released.
-    _runtime: Box<dyn std::any::Any>,
+    _runtime: Box<dyn PreviewRuntimeDestructionCustody>,
     runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
     #[cfg(test)]
