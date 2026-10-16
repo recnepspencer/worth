@@ -61,12 +61,14 @@ fn owning_personal_account_partial_refuses_recovers_reads_and_closes_once() {
             operation.posture(),
             WorthQuerySourceOnlyPosture::ProductUnpublished
         );
-        assert!(request
-            .query(queries::accounts())
-            .execute()
-            .unwrap()
-            .rows()
-            .is_empty());
+        assert!(
+            request
+                .query(queries::accounts())
+                .execute()
+                .unwrap()
+                .rows()
+                .is_empty()
+        );
         operation
     };
     let read_scope = request_scope();

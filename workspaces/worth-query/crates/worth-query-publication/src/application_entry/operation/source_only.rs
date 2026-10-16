@@ -118,12 +118,12 @@ pub enum WorthQuerySourceOnlyPosture {
     Terminal,
 }
 impl<
-        S: ApplicationSchema,
-        I: ApplicationMutationIntent<S>,
-        P: ApplicationProgramDefinition<S>,
-        A,
-        M,
-    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
+    S: ApplicationSchema,
+    I: ApplicationMutationIntent<S>,
+    P: ApplicationProgramDefinition<S>,
+    A,
+    M,
+> WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
     /// Abandons ordinary retry meaning while keeping the exact native cleanup authority alive.
     ///
@@ -204,12 +204,12 @@ where
 }
 
 impl<
-        S: ApplicationSchema,
-        I: ApplicationMutationIntent<S>,
-        P: ApplicationProgramDefinition<S>,
-        A,
-        M,
-    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
+    S: ApplicationSchema,
+    I: ApplicationMutationIntent<S>,
+    P: ApplicationProgramDefinition<S>,
+    A,
+    M,
+> WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
     pub(super) fn guarded_abort(&self) -> Option<&WorthQueryApplicationUncommitted> {
         self.guarded_abort.as_ref()

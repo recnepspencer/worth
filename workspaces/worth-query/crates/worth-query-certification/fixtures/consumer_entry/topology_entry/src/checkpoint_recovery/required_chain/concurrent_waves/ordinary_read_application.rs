@@ -63,7 +63,9 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
             let entity = match reader.resolve_entity(BodyKey::reference(), key) {
                 Ok(entity) => entity,
                 Err(error) => {
-                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error));
+                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(
+                        error,
+                    ));
                 }
             };
             match reader.field(&entity, Length::reference()) {
@@ -74,7 +76,9 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
                     ));
                 }
                 Err(error) => {
-                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error));
+                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(
+                        error,
+                    ));
                 }
             }
         } else {
