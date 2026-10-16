@@ -86,7 +86,8 @@ pub(super) fn assert_same_world_current_work(
         settle_read_tree(app, "unrelated-15"),
     ];
     for tree in &foreign {
-        assert_eq!(tree.settlement().output_count(), 3);
+        // The root is retained separately; output_count counts its two leaves.
+        assert_eq!(tree.settlement().output_count(), 2);
     }
     let (scope, principal) = authenticate(app);
     let request = app.request(&principal, &scope);
