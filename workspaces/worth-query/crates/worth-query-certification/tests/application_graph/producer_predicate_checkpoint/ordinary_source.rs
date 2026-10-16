@@ -7,10 +7,10 @@ use crate::document_retention_model::{
     },
     host::publish,
     operator_identity::{authenticate_operator, request_scope},
-    programs::{DocumentRetentionFeature, RetentionCompletion, validated_second_program},
+    programs::{validated_second_program, DocumentRetentionFeature, RetentionCompletion},
     retention_entry::{
-        DOCUMENT_IDENTITY, DocumentRetentionRead, ReviewedSetRetentionBinding, SetRetentionBinding,
-        SetRetentionIntent,
+        DocumentRetentionRead, ReviewedSetRetentionBinding, SetRetentionBinding,
+        SetRetentionIntent, DOCUMENT_IDENTITY,
     },
     schema::{DocumentRetentionSchema, SetRetentionInput},
 };
@@ -222,16 +222,17 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         recovered.finish_unavailable(&host, &request),
         Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed)
     ));
-    assert!(
-        settled
-            .root_receipt()
-            .unwrap()
-            .outputs_of::<RetentionAssessmentOutputs>()
-            .unwrap()
-            .entity::<AssessmentOutput>()
-            .is_ok()
-    );
+    assert!(settled
+        .root_receipt()
+        .unwrap()
+        .outputs_of::<RetentionAssessmentOutputs>()
+        .unwrap()
+        .entity::<AssessmentOutput>()
+        .is_ok());
 }
 
 #[path = "ordinary_source/unpublished.rs"]
 mod unpublished;
+
+#[path = "ordinary_source/terminal_unavailable.rs"]
+mod terminal_unavailable;

@@ -30,10 +30,10 @@ where
         WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
     Root::Dependents:
         super::super::mutation::program_output_continuation::ProgramOutputContinuationFactory<
-                Schema,
-                Program,
-                Demand<Schema, Root>,
-            >,
+            Schema,
+            Program,
+            Demand<Schema, Root>,
+        >,
 {
     pub(super) fn advance_preparation_in_phase(
         mut self,
@@ -114,7 +114,9 @@ where
                     self.state = FixedState::Outputs(outputs);
                     return if terminal {
                         Advance::Terminal {
-                            operation: WorthQueryTerminalFixedOperation::new(self),
+                            operation: WorthQueryTerminalFixedOperation::new(self).with_output_completion(
+                                <Root::Dependents as super::super::mutation::program_output_continuation::ProgramOutputContinuationFactory<Schema, Program, Demand<Schema, Root>>>::unavailable_completion::<Root>(),
+                            ),
                             denial: Denial::Outputs(denial),
                         }
                     } else {

@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputEdge, ApplicationOutputEdgesShape,
-    ApplicationOutputLeaf, ApplicationProgramDefinition,
+    ApplicationOutputGraphShape, ApplicationOutputLeaf, ApplicationProgramDefinition,
+    ApplicationRequiredOutputRoot,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -16,6 +17,7 @@ use worth_query_execution::facade::application_installation::{
 };
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationDependentOutputConnection, WorthQueryApplicationProjection,
+    WorthQueryApplicationRequiredOutputConnection,
 };
 
 use super::program_output_settlement::ProgramOutputRecord;
@@ -56,6 +58,18 @@ type DiscoveryBinding<Schema, Connection> =
 type DiscoveryValue<Schema, Connection> =
     <<DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
+/// A sealed factory carries leaf eligibility; the native owner still decides legality.
+#[doc(hidden)]
+pub type ProgramOutputUnavailableCompletion<Schema, Program, Root> = fn(
+    &mut super::performed_outputs::WorthQueryApplicationProgramOutputHandle<Schema, Program, Root>,
+    &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+) -> Result<
+    super::performed_outputs::WorthQueryApplicationProgramOutputUnavailable,
+    WorthQueryRequiredOutputPreparationDenial,
+>;
+
 #[doc(hidden)]
 pub enum ProgramOutputContinuationProgress {
     Pending,
@@ -91,6 +105,20 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
 {
+    /// Nonleaf shapes carry no negative-completion capability.
+    fn unavailable_completion<Root>() -> Option<ProgramOutputUnavailableCompletion<Schema, Program, Root>>
+    where
+        Schema: 'static,
+        Self: Sized,
+        Root: ApplicationOutputGraphShape<Schema, Dependents = Self> + ApplicationRequiredOutputRoot,
+        Binding<Schema, Root::RootConnection>: WorthQueryApplicationRequiredOutputConnection<Schema, Demand = ParentDemand>,
+        SourceValue<Schema, ParentDemand>: WorthQueryApplicationProjection<Schema, SourceQuery<Schema, ParentDemand>> + Clone,
+        <Source<Schema, ParentDemand> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = Source<Schema, ParentDemand>>,
+        <Source<Schema, ParentDemand> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Source<Schema, ParentDemand> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
+    {
+        None
+    }
+
     fn start(
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
