@@ -1,3 +1,5 @@
+mod quiet;
+
 use super::*;
 // The first occupancy step in registry/record_capacity.rs::ordered_levels.
 const FIRST_LEDGER_LEVEL_ROWS: usize = 11;
@@ -31,9 +33,9 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
         let unrelated_request = app.request(&principal, &scope);
-        // All three queries read all three triangle vertices. These same
-        // interests are held in both measurements; only the additional,
-        // disjoint triangles differ in their number of open settled rows.
+        // All three queries read all three triangle vertices. Hold these
+        // interests across both pending-work populations; additional
+        // disjoint triangles cross the registry occupancy threshold.
         let mut triangle_rows = Vec::new();
         for corner in 0..TRIANGLE_ROWS {
             let mut row = unrelated_request
@@ -57,8 +59,6 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
             queue_caller.advance(&unrelated_request).unwrap(),
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
-        let mut costs = Vec::new();
-        let mut visited = Vec::new();
         let mut quiet_populations = Vec::new();
         let mut pending_visited = Vec::new();
         let mut held = Vec::new();
@@ -213,8 +213,8 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                     );
                 }
             }
-            // Measure this lane before creating the next lane's disjoint rows.
-            // All setup is drained.
+            // Drain this lane before observing its quiet registry population
+            // or creating the next lane's disjoint rows.
             for row in &mut held {
                 assert!(matches!(
                     row.advance(&unrelated_request).unwrap(),
@@ -242,38 +242,6 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                 "model population at the quiet boundary"
             );
             quiet_populations.push(app.registry_row_count_for_test());
-            // Measure a fresh caller authenticated at this settled world, not
-            // the setup request retained across both source-edit schedules.
-            let (quiet_scope, quiet_principal) = authenticate(&app);
-            let quiet_request = app.request(&quiet_principal, &quiet_scope);
-            let contacts_before = app.producer_contacts_on_this_thread_for_test();
-            app.caller_request_work_for_test();
-            app.caller_request_navigation_for_test();
-            let rows_before = app.whole_registry_rows_visited_for_test();
-            assert!(matches!(
-                output.advance(&quiet_request).unwrap(),
-                WorthQueryApplicationOutputDemandProgress::Settled(_)
-            ));
-            let work = app.caller_request_work_for_test();
-            assert_eq!(
-                app.producer_contacts_on_this_thread_for_test(),
-                contacts_before,
-                "the measured current caller executes no producer"
-            );
-            assert_eq!(app.queued_required_work_for_test(), 0);
-            assert_eq!(work.len(), 1);
-            costs.push(work[0]);
-            visited.push(app.whole_registry_rows_visited_for_test() - rows_before);
-            for (navigation, operations) in app.caller_request_navigation_for_test() {
-                assert!(
-                    navigation
-                        <= operations
-                            * primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<
-                                CheckpointSchema,
-                            >::maximum_ordered_descent_work_for_test(
-                            )
-                );
-            }
         }
         assert_eq!(
             populations[1] - populations[0],
@@ -288,7 +256,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
         // These lanes have different publication histories and tree occupancy,
         // so their physical bills need not match. The producer/output oracles,
         // zero whole-map visits and bounded selected navigation protect scope.
-        // Quiet current rows below must still add exactly zero caller work.
+        // The same-world quiet proof below isolates open unrelated interests.
         assert_eq!(
             pending_visited,
             [0, 0],
@@ -299,14 +267,6 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
             DISJOINT_ROWS,
             "quiet lanes differ by actual registry rows"
         );
-        assert_eq!(
-            costs[0], costs[1],
-            "settled current unrelated rows perform no request work; whole-map visits: {visited:?}"
-        );
-        assert_eq!(
-            visited,
-            [0, 0],
-            "a held current Ready needs no global row question"
-        );
+        quiet::assert_same_world_current_work(&app, &mut root, &mut output);
     }
 }
