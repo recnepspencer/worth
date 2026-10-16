@@ -19,7 +19,8 @@ where
     >,
 {
     /// Validates all required settlements at one authentic current observation without a query.
-    /// Refusal borrows this owner and preserves its descriptor, history, and cleanup.
+    /// Refusal borrows this already-closed owner and preserves its original meaning
+    /// and readonly history. It does not resume cleanup or certify future currentness.
     ///
     /// No-projection delivery is usable without query binding or selector bounds.
     /// ```

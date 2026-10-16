@@ -31,6 +31,8 @@ where
     pub fn close_evidence(&self) -> &WorthQueryClosedProgramOutputRequest {
         &self.closed
     }
+    /// Validates all original settlements/discovery and the selected typed root.
+    /// The returned observation is current as of this fresh native read phase.
     pub fn deliver_current(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -38,6 +40,8 @@ where
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
         self.delivery.deliver_current(request, policy)
     }
+    /// Validates original complete membership and reads at that same basis/phase.
+    /// Refusal retains this already-closed carrier without creating new work.
     pub fn read_current<I>(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -60,6 +64,7 @@ where
     {
         self.delivery.read_current(request, intent)
     }
+    /// Narrows installed native ceilings without weakening complete currentness.
     pub fn read_current_with_policy<I>(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -84,6 +89,8 @@ where
         self.delivery
             .read_current_with_policy(request, intent, policy)
     }
+    /// Original complete historical settlement, including immutable typed root roles.
+    /// Borrowing it alone establishes neither currentness nor fresh read authority.
     pub fn settlement(&self) -> &WorthQueryApplicationProgramOutputSettlement<Query<S, R>> {
         self.delivery.settlement()
     }

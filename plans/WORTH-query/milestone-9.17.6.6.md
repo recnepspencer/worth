@@ -544,6 +544,76 @@ These new hunks require Root compiler/runtime checks, scoped independent review
 and final Claude qualification; historical public qualification below does not
 qualify this added prerequisite or private adoption.
 
+## Post-Cleanup Delivery Adoption Prerequisite
+
+This bounded adoption prerequisite does not reopen or extend the historical
+qualification checkpoint above. Its source is implemented; focused native proof
+has passed at `81ab2bec6f`, while its compiler fences, repository gates, independent
+final review, publication/CI and private adoption remain separate pending steps.
+Root's actual existing consumer-root binary compiled (294); the original Fixed
+and complete no-source Stable/no-receipt close/read journey passed (295), and the
+pre-effect governed-artifact constructor denial passed (296). Earlier failed
+289 target discovery and 290 fixture compilation remain failed attempts.
+
+A settled Fixed parent can `close_for_delivery(&fresh_request)` into sealed
+`WorthQueryClosedFixedDelivery`; a settled complete no-source parent can do the
+same into `WorthQueryClosedProgramOutputDelivery`. Native cleanup and ALL original
+read interests close first. The closed stage preserves the authentic original
+complete settlement, root correspondence, installed meaning and SAME runtime,
+plus actual native close evidence. It cannot advance business work, replay a
+source/producer, reopen cleanup, clone custody or be minted from receipts/DTOs.
+Plain `close` remains valid cleanup-only intent.
+
+Each family has ONE owned delivery core. Existing live and closed methods use
+identical native complete-output/discovery currentness and actual selected
+program/action/root checks. Fixed declared query/batch selectors remain mandatory;
+no-query delivery requires `ApplicationNoProjection`. A current check and its
+read share the native basis and phase. Any refusal borrows the genuine CLOSED
+stage; it never reconstructs a live parent or claims an old prepared view fresh.
+
+Close checks original allocation/branch and fresh execution, independently of
+selected-current source/program meaning: adoption or supersession cannot strand
+cleanup. Fixed close refusal returns the SAME settled parent. No-source positive
+close refusal retains a NON-OPTIONAL full settlement plus the actual remaining
+native custody and any released prefix; only fresh `retry_close` is legal.
+Native performed-source/aggregate completion and unavailable-leaf eligibility
+are unchanged. No new cleanup engine, fault counter or disposal policy is added.
+
+The no-source closed core retains only settlement/branch/runtime; original
+extra basis/demand/controls are released after complete native close. Runtime is
+last in the ENTIRE owning destruction order, after native custody/evidence in
+outer parents/refusals and inside the shared core. Readonly carriers/observations
+pin history and runtime; release promptly after final publication and before
+whole-runtime close or OS join. Their presence is not uncleared cleanup and their
+root closure does not certify other cohorts or the whole application closed.
+
+The SDK's currentness claim is as of the actual fresh native observation and
+covers the original complete tree plus installed context. Applications must
+re-read additional source/model/membership/pose/context facts at that observation;
+old frozen projections or descriptive commit equality are insufficient. CAD
+meaning stays private and does not create an SDK projection-equivalence engine.
+
+Fixed construction now invokes the EXISTING native
+`validate_program_root_artifact_source` after installed action/delivery/root
+checks and before cloning the runtime or minting an effect-capable owner. The
+same immutable installed artifact/source guard already used for discovered
+construction checks actual locality/change/succession/dependencies. Refusal returns
+the original description with `ConstructionDenial::OutputSource`; the borrowed
+runtime remains caller-owned and no source effect runs. Later preparation retains
+its own authentic-context check; Legacy artifact posture and static definition
+policy are unchanged. The actual native missing-locality/no-effects court guards
+this timing repair without a new API, metadata mirror or checker family.
+
+Remaining proof is one Host compiler family for construction/phase/shape and
+valid counterparts, plus the existing rostered-successor closed-delivery court
+for action meaning drift/removal and compatible adoption. The original settlement
+moves whole, including discovery artifacts; its SAME native complete-membership
+guard retains the existing discovery-court scope. No new membership schema/world,
+root-kind coercion or repeated whole-milestone campaign is required absent a
+concrete finding. Root alone executes compiler/native/enforcement/doc checks,
+regenerates facade/context artifacts, and publishes after the SAME independent
+Sol source/receipt review and separate Claude final qualification.
+
 ## Public Qualification
 
 The joined public API and covered Query, Bank, fixture, example, facade and

@@ -2575,7 +2575,10 @@ old frozen views and descriptive commit equality provide no substitute.
 Closed carriers and returned observations pin readonly lineage/history and the
 runtime; they do not certify whole-application shutdown or own uncleared cleanup.
 Drop them promptly after final publication, before whole-runtime close or OS join.
-The neutral `application_program::closed_delivery` fixture exercises both owners.
+The neutral `application_program::closed_delivery` fixture exercises both owners,
+including a real native source perturbation for Stable/no-receipt reuse. Its
+rostered-successor court distinguishes changed/removed action meaning from
+compatible adoption without replaying a source or producer.
 
 #### Original root output evidence
 

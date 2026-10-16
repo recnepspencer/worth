@@ -28,6 +28,9 @@ where
     pub fn branch(&self) -> WorthQueryProductBranch {
         self.delivery.branch
     }
+    /// Retries only original native cleanup under fresh allocation/branch-affine authority.
+    /// Any released prefix stays discharged; source/program supersession does not
+    /// require a new demand or permit this owner to return to live delivery.
     pub fn retry_close(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,

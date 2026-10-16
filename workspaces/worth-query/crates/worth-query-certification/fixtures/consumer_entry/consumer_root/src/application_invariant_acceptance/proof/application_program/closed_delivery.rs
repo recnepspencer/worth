@@ -4,16 +4,19 @@ use crate::application_program::ConsumerFixedAction;
 use crate::{ConsumerProgram, ConsumerProgramRoot};
 use worth_query_host::facade::application_entry::{
     WorthQueryClosedFixedDelivery, WorthQueryOperationAdvance as FixedAdvance,
-    WorthQueryOperationDeliveryDenial, WorthQueryOutputSettlementPosture,
-    WorthQueryProgramOutputOperationAdvance as TreeAdvance, WorthQuerySettledFixedOperation,
-    WorthQuerySettledProgramOutputOperation,
+    WorthQueryOperationDeliveryDenial, WorthQueryOutputCurrentnessDenial,
+    WorthQueryOutputSettlementPosture, WorthQueryProgramOutputOperationAdvance as TreeAdvance,
+    WorthQuerySettledFixedOperation, WorthQuerySettledProgramOutputOperation,
 };
-use worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryOutputDemandDenialKind,
+};
 use worth_query_topology_entry::{
     planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts, PlanarAnchorOutput,
     PlanarEdit, PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarOutputs,
 };
 mod construction;
+mod selected_meaning;
 mod transitions;
 type World = installation::ConsumerWorld;
 type Request<'a, 'p, 's> =
@@ -196,8 +199,8 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         edit_source(&world, &request, "anchor-a", 4, 0x9176_6277);
         assert!(matches!(
             closed_fixed.read_current(&request),
-            Err(WorthQueryOperationDeliveryDenial::Currentness(_)
-                | WorthQueryOperationDeliveryDenial::Stale(_))
+            Err(WorthQueryOperationDeliveryDenial::Stale(cause))
+                if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
         ));
         assert!(matches!(
             closed_tree.read_current(
@@ -206,7 +209,8 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
                     body_key: "anchor-a".into()
                 }
             ),
-            Err(WorthQueryOperationDeliveryDenial::Currentness(_))
+            Err(WorthQueryOperationDeliveryDenial::Currentness(WorthQueryOutputCurrentnessDenial::Output(cause)))
+                if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
         ));
         assert_eq!(
             world
