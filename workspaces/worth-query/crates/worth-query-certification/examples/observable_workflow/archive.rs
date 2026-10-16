@@ -18,7 +18,7 @@ use worth_query_host::facade::primary_graph::{
 };
 
 pub const PROTOCOL: &str = "neutral.archive";
-pub const SOURCE: &str = "neutral.archive.child-process";
+pub const SOURCE: &str = "neutral-archive-child-process";
 pub const FAMILY: &str = "neutral-archive";
 pub const AUDIENCE: &str = "neutral.observable-workflow";
 const MAXIMUM_PAYLOAD: usize = 512;
