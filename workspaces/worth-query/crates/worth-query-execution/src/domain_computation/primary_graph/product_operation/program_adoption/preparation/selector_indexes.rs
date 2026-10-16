@@ -29,6 +29,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     // The next adoption reads this exact lineage population. Carry its
     // selected generation with the candidate, including an empty population.
     indexes.insert(graph.layout.workflow().lineage.identity_index_id);
+    indexes.insert(graph.layout.workflow().instance.identity_index_id);
     let indexes = indexes.into_iter().collect::<Vec<_>>();
     graph.with_runtime_mut(execution, |runtime| {
         let before = super::super::super::super::exact_basis_access::open_exact_basis_snapshot(

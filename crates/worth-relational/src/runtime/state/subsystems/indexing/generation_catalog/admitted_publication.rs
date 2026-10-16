@@ -4,7 +4,7 @@ use crate::history::data::BranchId;
 use crate::indexes::data::{
     DerivedIndexGeneration, DerivedIndexId, SelectedIndexGenerationAdmissionStop,
 };
-use std::mem::size_of;
+use std::{collections::BTreeMap, mem::size_of};
 
 impl GenerationCatalog {
     pub(in crate::runtime::state::subsystems::indexing) fn publish_batch_admitted<Stop>(
@@ -110,13 +110,15 @@ impl GenerationCatalog {
                 Some(width)
             }
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-            let global_scope =
-                insertion::<(DerivedIndexId, Option<BranchId>), GenerationScope>(scopes, 2)
+            let index_scope =
+                insertion::<DerivedIndexId, BTreeMap<Option<BranchId>, GenerationScope>>(scopes, 1)
                     .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-            let scope = insertion::<(DerivedIndexId, Option<BranchId>), GenerationScope>(
+            let global_scope = insertion::<Option<BranchId>, GenerationScope>(scopes, 1)
+                .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+            let scope = insertion::<Option<BranchId>, GenerationScope>(
                 scopes,
                 width
-                    .checked_add(2)
+                    .checked_add(1)
                     .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?,
             )
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
@@ -126,6 +128,7 @@ impl GenerationCatalog {
                     scope
                         .0
                         .checked_add(global_scope.0)
+                        .and_then(|work| work.checked_add(index_scope.0))
                         .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?,
                 )
                 .and_then(|n| n.checked_add(copies as u64))
@@ -136,6 +139,7 @@ impl GenerationCatalog {
                     scope
                         .1
                         .checked_add(global_scope.1)
+                        .and_then(|bytes| bytes.checked_add(index_scope.1))
                         .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?,
                 )
                 .and_then(|n| n.checked_add(copies as u64))
