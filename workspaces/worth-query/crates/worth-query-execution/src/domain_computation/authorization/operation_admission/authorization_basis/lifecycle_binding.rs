@@ -14,7 +14,7 @@ pub(in crate::domain_computation) struct LifecycleBinding<T> {
     _serial_backing: Option<ExecutionMemoryReservation>,
 }
 impl<T> LifecycleBinding<T> {
-    pub(in crate::domain_computation::authorization::operation_admission) fn retain(
+    pub(in super::super) fn retain(
         execution: &ExecutionRequest<'_, '_>,
         value: T,
         subject: &str,
@@ -66,12 +66,12 @@ impl<T> LifecycleBinding<T> {
             _serial_backing: serial_backing,
         })
     }
-    pub(in crate::domain_computation::authorization::operation_admission) fn get(&self) -> &T {
+    pub(in super::super) fn get(&self) -> &T {
         self.slot[0]
             .get()
             .expect("retained lifecycle slot is initialized")
     }
-    pub(in crate::domain_computation::authorization::operation_admission) fn into_inner(self) -> T {
+    pub(in super::super) fn into_inner(self) -> T {
         // No heap slot survives this consuming move to the caller's stack.
         // Nested payloads and native receipt obligations retain their own owners.
         self.slot
@@ -84,4 +84,5 @@ impl<T> LifecycleBinding<T> {
 }
 
 #[cfg(test)]
+#[path = "lifecycle_binding/tests.rs"]
 mod tests;

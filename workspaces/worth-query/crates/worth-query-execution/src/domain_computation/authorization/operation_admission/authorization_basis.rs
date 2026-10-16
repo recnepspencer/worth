@@ -1,3 +1,4 @@
+#[path = "authorization_basis/lifecycle_binding.rs"]
 mod lifecycle_binding;
 pub(super) use lifecycle_binding::LifecycleBinding;
 
