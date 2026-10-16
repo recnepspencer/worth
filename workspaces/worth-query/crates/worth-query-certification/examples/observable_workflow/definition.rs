@@ -59,6 +59,20 @@ pub fn definition() -> ValidatedWorkflowDefinition<MixedWorkflow> {
                 .query::<DocumentRetentionConditionQuery>("retained"),
         )
         .unwrap();
+    // Approval consumes recorded native evidence, not the condition's boolean.
+    // Both assessments use the installed retention query over the proposal subject.
+    let first_check = graph
+        .assessment::<DocumentRetentionQuery>("checks/first")
+        .unwrap();
+    let confirmation = graph
+        .assessment::<DocumentRetentionQuery>("checks/confirmation")
+        .unwrap();
+    let evidence = graph
+        .evidence_join(
+            "checks/evidence",
+            ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+        )
+        .unwrap();
     let approval = graph
         .approval::<WorkflowApprovalCapability>("approval")
         .unwrap();
@@ -90,11 +104,31 @@ pub fn definition() -> ValidatedWorkflowDefinition<MixedWorkflow> {
         .control(
             &condition,
             ApplicationWorkflowControlOutcome::ConditionSatisfied,
-            &approval,
+            &first_check,
         )
         .control(
             &condition,
             ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
+            &rejected,
+        )
+        .control(
+            &first_check,
+            ApplicationWorkflowControlOutcome::Completed,
+            &confirmation,
+        )
+        .control(
+            &confirmation,
+            ApplicationWorkflowControlOutcome::Completed,
+            &evidence,
+        )
+        .control(
+            &evidence,
+            ApplicationWorkflowControlOutcome::EvidenceSatisfied,
+            &approval,
+        )
+        .control(
+            &evidence,
+            ApplicationWorkflowControlOutcome::EvidenceFailed,
             &rejected,
         )
         .control(
@@ -118,7 +152,12 @@ pub fn definition() -> ValidatedWorkflowDefinition<MixedWorkflow> {
             &completed,
         )
         .condition_subject(&proposal, &condition)
+        .proposal_for_assessment(&proposal, &first_check)
+        .proposal_for_assessment(&proposal, &confirmation)
+        .assessment_evidence(&first_check, &evidence)
+        .assessment_evidence(&confirmation, &evidence)
         .proposal_for_approval(&proposal, &approval)
+        .joined_evidence(&evidence, &approval)
         .approval_authority(&approval, &archive)
         .operation_input(&proposal, &capture)
         .operation_input(&proposal, &archive);

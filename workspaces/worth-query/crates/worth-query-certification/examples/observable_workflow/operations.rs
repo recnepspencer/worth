@@ -140,3 +140,67 @@ pub fn archive(
         .unwrap_or_else(|_| panic!("original dispatch and native cleanup must close"));
     // compiled-example: end
 }
+
+/// Native producer output is admitted as evidence only at its exact waiting node.
+#[inline(never)]
+pub fn assess(
+    application: &MixedApplication,
+    instance: &PublishedWorkflowInstanceRef,
+    path: &str,
+    demand_key: u64,
+    acceptance_key: u64,
+) {
+    use crate::document_retention_model::assessment_output::RetentionAssessmentDemand;
+    use std::num::NonZeroUsize;
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let actor = authenticate_operator(runtime.installed_schema(), &scope);
+    let request = runtime.request(&actor, &scope).on_branch(instance.branch());
+    let mut owner = request
+        .mutate(WorkflowAdvanceIntent {
+            input: WorkflowAdvanceInput {
+                document_identity: DOCUMENT_IDENTITY.into(),
+            },
+        })
+        .without_source()
+        .idempotency(&demand_key)
+        .prepare_workflow_advance(application, instance.clone())
+        .expect("fresh admission at the waiting assessment")
+        .into_assessment_demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
+        .expect("installed retention query and producer contract")
+        .controls(WorthQueryOutputDemandControls::new(
+            NonZeroUsize::new(512).unwrap(),
+            NonZeroUsize::new(1024).unwrap(),
+        ))
+        .retain_operation(application.program_runtime())
+        .expect("retain the actual assessment producer owner");
+    let settlement = match owner
+        .advance(&request)
+        .expect("advance the native producer")
+    {
+        WorthQueryWorkflowAssessmentDemandProgress::Settled(settlement) => settlement,
+        WorthQueryWorkflowAssessmentDemandProgress::Pending => {
+            panic!("the bounded installed producer must settle before evidence acceptance")
+        }
+    };
+    owner
+        .close(&request)
+        .unwrap_or_else(|_| panic!("assessment cleanup retains failed custody"));
+    let accepted = request
+        .mutate(WorkflowAdvanceIntent {
+            input: WorkflowAdvanceInput {
+                document_identity: DOCUMENT_IDENTITY.into(),
+            },
+        })
+        .without_source()
+        .idempotency(&acceptance_key)
+        .prepare_workflow_advance(application, instance.clone())
+        .expect("fresh exact assessment acceptance")
+        .accept_assessment(&settlement)
+        .expect("native settlement matches this instance and node");
+    assert!(
+        matches!(accepted, WorkflowProgressOutcome::Completed(ref done)
+        if done.node_path() == path),
+        "exact native assessment transition: {accepted:?}"
+    );
+}

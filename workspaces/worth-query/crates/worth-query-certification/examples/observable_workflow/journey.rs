@@ -137,11 +137,30 @@ fn execute(application: MixedApplication) -> crate::restoration::CapturedJourney
         crate::document_retention_model::readback::read_retention(runtime, instance.branch()),
         9
     );
-    let progress = advance(&application, &instance, &[50, 51, 52]);
-    assert!(progress
-        .transitions()
-        .iter()
-        .any(|transition| transition.node_path() == "positive-retention"));
+    // Each assessment retains, drives and closes its actual output-demand owner.
+    for (path, run_keys, demand_key, acceptance_key) in [
+        ("checks/first", [50, 51], 52, 53),
+        ("checks/confirmation", [54, 55], 56, 57),
+    ] {
+        let progress = advance(&application, &instance, &run_keys);
+        assert!(
+            matches!(
+                progress.stop(),
+                WorthQueryOrdinaryWorkflowRunStop::Outcome(
+                    WorkflowProgressOutcome::AwaitingAssessment(required)
+                ) if required.node_path() == path
+            ),
+            "the native cursor must require the exact assessment: {progress:?}"
+        );
+        if path == "checks/first" {
+            assert!(progress
+                .transitions()
+                .iter()
+                .any(|transition| transition.node_path() == "positive-retention"));
+        }
+        crate::operations::assess(&application, &instance, path, demand_key, acceptance_key);
+    }
+    let progress = advance(&application, &instance, &[58, 59]);
     let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingApproval(
         required,
     )) = progress.stop()
