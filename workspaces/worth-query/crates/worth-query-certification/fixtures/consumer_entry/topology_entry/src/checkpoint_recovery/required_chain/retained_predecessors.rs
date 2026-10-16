@@ -86,7 +86,9 @@ fn fixed_tree_retains_exact_predecessors_through_cancel_reclaim_and_fresh_resume
             };
             assert_eq!(settled.root_observation().selected_commit(), &root_commit);
             assert_eq!(settled.root_producer_contacts_in_this_demand(), 1);
-            assert_eq!(settled.output_count(), 2);
+            // The fixture's registered final and alternate producers remain real
+            // sibling branches; the disputed dependent path is still A -> B -> C.
+            assert_eq!(settled.output_count(), 4);
             let decisions = take_all_decisions();
             for key in ["anchor-b", "anchor-c"] {
                 let inputs: Vec<_> = decisions

@@ -66,10 +66,16 @@ pub(super) type NestedConnection = ApplicationConnectionRef<
 >;
 pub(super) type Root = ApplicationOutputGraph<
     RootConnection,
-    ApplicationOutputEdge<
-        chain_program::ChainConnection,
-        ApplicationOutputEdge<NestedConnection, ApplicationOutputLeaf>,
-    >,
+    (
+        (
+            ApplicationOutputEdge<FinalConnection, ApplicationOutputLeaf>,
+            ApplicationOutputEdge<AlternateConnection, ApplicationOutputLeaf>,
+        ),
+        ApplicationOutputEdge<
+            chain_program::ChainConnection,
+            ApplicationOutputEdge<NestedConnection, ApplicationOutputLeaf>,
+        >,
+    ),
 >;
 pub(super) struct Program;
 impl ApplicationProgramDefinition<CheckpointSchema> for Program {
@@ -79,21 +85,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.retained-predecessors.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut features = vec![
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
-                .provides::<PlanarBodyOutput>()
-                .native_action::<PlanarEditBinding<CheckpointSchema>>()
-                .finish_action()
-                .finish(),
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
-                .provides::<PlanarDerivedBodyOutput>()
-                .conditional_operation::<MutatePlanar>()
-                .finish(),
-            ApplicationFeatureSpec::root::<CheckpointSchema, chain_program::ChainFeature>()
-                .provides::<chain_program::ChainOutput>()
-                .conditional_operation::<PublishChain>()
-                .finish(),
-        ];
+        let mut features = chain_program::ChainProgram::feature_specs();
         features.push(
             ApplicationFeatureSpec::root::<CheckpointSchema, TailFeature>()
                 .provides::<TailOutput>()
