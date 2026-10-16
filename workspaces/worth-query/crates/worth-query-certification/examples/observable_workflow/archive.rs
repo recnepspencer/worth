@@ -17,7 +17,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
 };
 
-pub const PROTOCOL: &str = "neutral.archive.v1";
+pub const PROTOCOL: &str = "neutral.archive";
 pub const SOURCE: &str = "neutral.archive.child-process";
 pub const FAMILY: &str = "neutral-archive";
 pub const AUDIENCE: &str = "neutral.observable-workflow";
