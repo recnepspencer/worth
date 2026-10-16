@@ -78,7 +78,7 @@ fn workflow_actor_contract_disabled_discovery_preserves_native_start_currentness
     expect_retired(retire_definition(&application, second.clone(), 605));
     assert_eq!(discover(&application, main, &identity), Err(()),);
     expect_retired_start(start_instance(&application, second, 606));
-    let reopened = expect_published(
+    let _reopened_definition = expect_published(
         "reopened lineage",
         publish_definition(
             &application,
@@ -107,7 +107,7 @@ fn workflow_actor_contract_disabled_discovery_preserves_fork_start_control() {
     );
     let fork = fork_of(&application, main);
     let copied = first.held_on(fork);
-    let successor = expect_published(
+    let _fork_successor = expect_published(
         "fork successor",
         publish_definition(
             &application,

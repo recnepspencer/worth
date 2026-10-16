@@ -20,7 +20,7 @@ use crate::document_retention_model::{
     programs::RetentionProgramP1,
     workflow::{
         advance_instance, prepare_second_program_adoption, publish_adoption, publish_definition,
-        second_revision, start_instance, support_workflow_program, terminal_definition,
+        start_instance, support_workflow_program, terminal_definition,
     },
 };
 

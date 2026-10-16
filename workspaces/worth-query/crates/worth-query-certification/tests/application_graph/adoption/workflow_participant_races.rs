@@ -92,7 +92,7 @@ fn a_start_between_preparation_and_publication_stales_the_adoption() {
 
 #[test]
 fn a_fork_adopts_without_deciding_the_instance_it_copied() {
-    let (application, definition, instance) = live_instance_on_first_program(85_400);
+    let (application, _retained_definition, instance) = live_instance_on_first_program(85_400);
     let main = application.current_world();
     let fork = application
         .with_host_advancement(|host_phase| {
