@@ -40,23 +40,16 @@ where
             });
         match outcome {
             Ok(Ok(WorkflowStep::Progress)) => WorthQueryWorkflowOperationAdvance::Progress(self),
-            Ok(Ok(WorkflowStep::Completed)) => {
-                let evidence = self
-                    .completion
-                    .take()
-                    .expect("native effect evidence retained");
-                WorthQueryWorkflowOperationAdvance::Completed(
-                    WorthQueryCompletedWorkflowOperation {
-                        source: WorthQueryCompletedSourceOperation {
-                            operation: self.source,
-                            evidence,
-                        },
-                        required: self.required,
-                        recovery: self.recovery,
-                        recovery_result: self.recovery_result,
+            Ok(Ok(WorkflowStep::Completed)) => WorthQueryWorkflowOperationAdvance::Completed(
+                WorthQueryCompletedWorkflowOperation {
+                    source: WorthQueryCompletedSourceOperation {
+                        operation: self.source,
                     },
-                )
-            }
+                    required: self.required,
+                    recovery: self.recovery,
+                    recovery_result: self.recovery_result,
+                },
+            ),
             Ok(Ok(WorkflowStep::Terminal)) => {
                 WorthQueryWorkflowOperationAdvance::Terminal(WorthQueryTerminalWorkflowOperation {
                     state: super::completion::TerminalWorkflowState::Native {
@@ -103,7 +96,7 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorkflowStep, WorthQueryWorkflowOperationDenial> {
-        if self.completion.is_some() {
+        if self.source_completed {
             return self
                 .advance_dispatch(phase, request, true)
                 .map_err(WorthQueryWorkflowOperationDenial::Recovery);
@@ -111,8 +104,8 @@ where
         match self.source.step(phase,request,None) {
             Ok(SourceStep::Progress)=>Ok(WorkflowStep::Progress),
             Ok(SourceStep::Terminal)=>Ok(WorkflowStep::Terminal),
-            Ok(SourceStep::Completed(evidence))=>{
-                self.completion=Some(evidence);
+            Ok(SourceStep::Completed)=>{
+                self.source_completed=true;
                 self.advance_dispatch(phase,request,false).map_err(WorthQueryWorkflowOperationDenial::Recovery)
             },
             Err(denial) if matches!(&denial,WorthQuerySourceOnlyDenial::Mutation(crate::application_entry::WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent|crate::application_entry::WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness(_)))=>Ok(WorkflowStep::Spent(denial)),
@@ -146,41 +139,38 @@ where
         let Self {
             source,
             required,
-            completion,
+            source_completed,
             recovery,
             recovery_result,
         } = self;
-        match completion {
-            None => source.close(request).map_err(|(source, cause)| {
+        if !source_completed {
+            source.close(request).map_err(|(source, cause)| {
                 (
                     Self {
                         source,
                         required,
-                        completion: None,
+                        source_completed: false,
                         recovery,
                         recovery_result,
                     },
                     cause,
                 )
-            }),
-            Some(evidence) => WorthQueryCompletedSourceOperation {
-                operation: source,
-                evidence,
-            }
-            .close_with_evidence(request)
-            .map(|(closed, _)| closed)
-            .map_err(|(done, cause)| {
-                (
-                    Self {
-                        source: done.operation,
-                        required,
-                        completion: Some(done.evidence),
-                        recovery,
-                        recovery_result,
-                    },
-                    cause,
-                )
-            }),
+            })
+        } else {
+            WorthQueryCompletedSourceOperation { operation: source }
+                .close(request)
+                .map_err(|(done, cause)| {
+                    (
+                        Self {
+                            source: done.operation,
+                            required,
+                            source_completed: true,
+                            recovery,
+                            recovery_result,
+                        },
+                        cause,
+                    )
+                })
         }
     }
 }

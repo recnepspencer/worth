@@ -29,8 +29,8 @@ where
 {
     source: WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationSourceCompletion>,
     required: RequiredWorkflowOperation,
-    completion:
-        Option<WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>>,
+    // Set only by the genuine completed source step, never by pending delivery.
+    source_completed: bool,
     recovery: completion::WorkflowDispatchRecovery,
     recovery_result:
         Option<worth_query_execution::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission>,

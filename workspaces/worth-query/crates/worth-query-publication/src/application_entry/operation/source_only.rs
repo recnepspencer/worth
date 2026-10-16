@@ -205,6 +205,25 @@ impl<
         M,
     > WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
+    // The native state's completion slot remains the sole evidence owner through
+    // delivery and completed wrappers; phase tags never duplicate its payload.
+    pub(super) fn completion(
+        &self,
+    ) -> &WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result> {
+        let SourceState::<S, I>::RetainedPending(evidence) = &self.state else {
+            unreachable!("completed source owns its native evidence")
+        };
+        evidence
+    }
+
+    fn complete(
+        &mut self,
+        evidence: WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
+    ) -> SourceStep {
+        self.state = SourceState::<S, I>::RetainedPending(evidence);
+        SourceStep::Completed
+    }
+
     pub(super) fn guarded_abort(&self) -> Option<&WorthQueryApplicationUncommitted> {
         self.guarded_abort.as_ref()
     }

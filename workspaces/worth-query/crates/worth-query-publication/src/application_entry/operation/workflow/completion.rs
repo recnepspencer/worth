@@ -194,7 +194,9 @@ where
     ) -> Option<&WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>>
     {
         match &self.state {
-            TerminalWorkflowState::Recovery { operation, .. } => operation.completion.as_ref(),
+            TerminalWorkflowState::Recovery { operation, .. } => operation
+                .source_completed
+                .then(|| operation.source.completion()),
             _ => None,
         }
     }
