@@ -2532,6 +2532,38 @@ abandonment, not a successful close. Performed-source required and
 discovered aggregate completion rules, including fixed-leaf unavailable
 completion, are unchanged.
 
+### 5.6 Retain preview custody across refusal
+
+An application preview starts from an exact retained read observation:
+`runtime.begin_preview(&phase, &observation, WorthQueryApplicationPreviewRequest::new(identity))`.
+The request and session types are exported from
+`worth_query_host::facade::application_installation` as
+`WorthQueryApplicationPreviewRequest` and `WorthQueryApplicationPreviewSession`.
+
+`preview.readmit(&phase, &runtime)` returns either the readmitted owner or
+`(original_preview, WorthQueryApplicationPreviewReadmissionDenial)`. A foreign
+phase/runtime, stopped selection or stale source leaves that original preview
+available for explicit discard. Each preview retains one authentic installed
+runtime clone until its native owner and source custody are discharged; closing
+the installed runtime while a preview retains it returns `RuntimeKeepaliveRetained`.
+Readmission never replaces its selected source or automatically discards it. A new request can retry the same owner when the
+cause permits; stale source does not become fresh by retrying.
+
+`readmitted.promote()` finalizes the original admitted native session and execution
+proof. Failure returns `(same_readmitted_owner, BridgeSpeculationError)`.
+Promotion is the preview evidence transition; it does not reselect current Query
+source, save source, settle required outputs, or certify current publication.
+An admitted source action may legitimately commit between readmission and preview
+promotion; that action's authentic source and output contracts still govern its
+publication. Successful promotion consumes the original native preview once.
+
+Both preview phases expose `discard() -> Result<(), (Self, BridgeSpeculationError)>`.
+Discard uses the original native owner and can release a stale preview without
+selecting a new source. On refusal, retain the returned owner and its original
+application context; retry lawful explicit discard on that owner. Dropping either
+phase is abandonment, and does not post a successful discard record. Preview
+liveness observation is not proof of cleanup or promotion.
+
 ## 6. Author, publish, and run workflows
 
 Guarded no-output effects use the original descriptor and issued requirement:

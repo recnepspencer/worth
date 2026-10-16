@@ -64,13 +64,26 @@ fn runtime_rejects_stale_duplicate_and_post_discard_promotion() {
     let (active_b_stale, execution_record_b_stale) =
         runtime.activate_preview_session(admitted_b, 2, 1, 1);
 
-    let stale_error = runtime
+    let original_digest = active_b_stale.digest().to_owned();
+    let (active_b, stale_error) = runtime
         .promote_preview_session(active_b_stale, &execution_record_b_stale, &stale_proof)
         .expect_err("stale proof must fail promotion");
     assert_eq!(
         stale_error.kind(),
         crate::error::BridgeSpeculationErrorKind::PromotionAdmissibilityMismatch
     );
+    assert_eq!(active_b.digest(), original_digest);
+    assert!(runtime.diagnostics().preview_promotion_records().is_empty());
+    let actual_proof = active_b.promotion_admissibility_proof();
+    let (promoted, _) = runtime
+        .promote_preview_session(active_b, &execution_record_b_stale, &actual_proof)
+        .unwrap();
+    assert_eq!(
+        promoted.session_identity().as_str(),
+        "preview-session:promotion-b"
+    );
+    assert_eq!(runtime.diagnostics().preview_execution_records().len(), 2);
+    assert_eq!(runtime.diagnostics().preview_promotion_records().len(), 1);
 
     let duplicate_admission_error = runtime
         .admit_preview_session(

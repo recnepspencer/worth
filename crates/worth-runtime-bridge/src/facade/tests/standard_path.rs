@@ -283,6 +283,17 @@ fn preview_liveness_observer_tracks_handle_disposal_without_retaining_session() 
         .expect("the live handle must admit a lifecycle guard");
     drop(guard);
 
+    let original_execution = handle.execution_record().digest().to_owned();
+    let (handle, denial) = handle
+        .discard(vec![BridgePreviewResidueClass::AuthoritativeRoutingResidue])
+        .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        crate::error::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch
+    );
+    assert!(observer.admit_active_session().is_some());
+    assert_eq!(handle.execution_record().digest(), original_execution);
+    assert!(runtime.diagnostics().preview_discard_records().is_empty());
     handle
         .discard(Vec::new())
         .expect("zero-residue preview discard should succeed");
@@ -301,4 +312,6 @@ fn preview_liveness_observer_tracks_handle_disposal_without_retaining_session() 
     drop(abandoned);
 
     assert!(abandoned_observer.admit_active_session().is_none());
+    assert_eq!(runtime.diagnostics().preview_discard_records().len(), 1);
+    assert!(runtime.diagnostics().preview_promotion_records().is_empty());
 }

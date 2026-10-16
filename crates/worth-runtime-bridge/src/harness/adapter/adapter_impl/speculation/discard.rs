@@ -29,18 +29,22 @@ pub(super) fn execute_discard_certification(
             BridgeHarnessError::new(format!("speculation admission failed: {error}"))
         })?;
     let (active, execution_record) = runtime_bridge.activate_preview_session(admitted, 4, 2, 2);
-    let (_discarded, discard_record) = runtime_bridge
-        .discard_preview_session(
-            active,
-            &execution_record,
-            vec![
-                crate::facade::BridgePreviewResidueClass::PreviewExecutionRetained,
-                crate::facade::BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-                crate::facade::BridgePreviewResidueClass::TemporaryRoutingResidue,
-                crate::facade::BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-            ],
-        )
-        .map_err(|error| BridgeHarnessError::new(format!("speculation discard failed: {error}")))?;
+    let preview = crate::facade::BridgeSpeculativeSessionHandle::new(
+        runtime_bridge.clone(),
+        active,
+        execution_record,
+    );
+    let execution_record = preview.execution_record().clone();
+    let outcome = match preview.discard(vec![
+        crate::facade::BridgePreviewResidueClass::PreviewExecutionRetained,
+        crate::facade::BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
+        crate::facade::BridgePreviewResidueClass::TemporaryRoutingResidue,
+        crate::facade::BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
+    ]) {
+        Ok(outcome) => outcome,
+        Err((preview, denial)) => return Err(BridgeHarnessError::preview_refused(preview, denial)),
+    };
+    let discard_record = outcome.record().clone();
     let routing_digest =
         shared::first_commit_routing_digest(runtime_bridge, fixture, resource_request)?;
 

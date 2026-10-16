@@ -41,157 +41,128 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
     SourceUnavailable,
     SourceSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     AdmissionRejected,
-    CleanupRejected,
-    CleanupRejectedAfterStop {
-        stop: Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-        cleanup: worth_runtime_bridge::facade::BridgeSpeculationErrorKind,
-    },
 }
 
+/// Owns the original native preview, source observation and installed runtime.
+/// Dropping this owner abandons it; only explicit successful discard closes it.
 pub struct WorthQueryApplicationPreviewSession {
-    handle: Option<BridgeSpeculativeSessionHandle>,
-    source: Option<std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>>,
+    handle: BridgeSpeculativeSessionHandle,
+    _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
+    // The actual installed runtime clone, erased only for destruction custody.
+    // Native handle and source above are destroyed before this backing is released.
+    _runtime: Box<dyn std::any::Any>,
     runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
     #[cfg(test)]
     discard_fault: std::rc::Rc<std::cell::Cell<bool>>,
 }
 
+impl std::fmt::Debug for WorthQueryApplicationPreviewSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WorthQueryApplicationPreviewSession")
+            .field("handle", &self.handle)
+            .field("source_commit", &self.source_commit)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Original preview evidence admitted against its exact source at readmission.
+/// Promotion finalizes that evidence; it does not certify current Query output.
+#[derive(Debug)]
 pub struct WorthQueryReadmittedApplicationPreview {
-    handle: Option<BridgeSpeculativeSessionHandle>,
-    _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
+    session: WorthQueryApplicationPreviewSession,
 }
 
 impl WorthQueryApplicationPreviewSession {
+    /// Fresh selection refusal returns the complete original owner without cleanup.
     pub fn readmit<Schema, Program>(
-        mut self,
+        self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<WorthQueryReadmittedApplicationPreview, WorthQueryApplicationPreviewReadmissionDenial>
+    ) -> Result<
+        WorthQueryReadmittedApplicationPreview,
+        (Self, WorthQueryApplicationPreviewReadmissionDenial),
+    >
     where
         Schema: ApplicationSchema,
         Program: ApplicationProgramDefinition<Schema>,
     {
-        let phase_request = phase
+        match self.check_readmission(phase, runtime) {
+            Ok(()) => Ok(WorthQueryReadmittedApplicationPreview { session: self }),
+            Err(denial) => Err((self, denial)),
+        }
+    }
+
+    fn check_readmission<Schema, Program>(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<(), WorthQueryApplicationPreviewReadmissionDenial>
+    where
+        Schema: ApplicationSchema,
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        let execution = phase
             .execution_request_for(&runtime.runtime().product_runtime)
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
-        let execution = &phase_request;
         if runtime.runtime().runtime.authority_identity().as_u64() != self.runtime_authority {
-            self.discard_active()
-                .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
             return Err(WorthQueryApplicationPreviewReadmissionDenial::ForeignRuntime);
         }
-        let current = match runtime
+        let current = runtime
             .on_branch(runtime.current_world())
-            .select_with_request(execution)
-        {
-            Ok(current) => current,
-            Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop)) => {
-                return Err(match self.discard_active() {
-                    Ok(()) => WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(
-                        crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop),
-                    ),
-                    Err(cleanup) => {
-                        WorthQueryApplicationPreviewReadmissionDenial::CleanupRejectedAfterStop {
-                            stop,
-                            cleanup: cleanup.kind(),
-                        }
-                    }
-                });
-            }
-            Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_)) => {
-                self.discard_active()
-                    .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
-                return Err(WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable);
-            }
-        };
+            .select_with_request(&execution)
+            .map_err(WorthQueryApplicationPreviewReadmissionDenial::SourceSelection)?;
         if current.product().selected_commit() != &self.source_commit {
-            self.discard_active()
-                .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
             return Err(WorthQueryApplicationPreviewReadmissionDenial::StaleSource);
         }
-        Ok(WorthQueryReadmittedApplicationPreview {
-            handle: self.handle.take(),
-            _source: self
-                .source
-                .take()
-                .expect("an active preview session retains its exact source basis"),
-        })
+        Ok(())
     }
 
-    pub fn discard(mut self) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
-        self.discard_active()
-    }
-
-    fn discard_active(
-        &mut self,
-    ) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
+    /// Refusal returns the same preview, including its source observation.
+    pub fn discard(
+        mut self,
+    ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
+        let residue = vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue];
         #[cfg(test)]
-        if self.discard_fault.get() {
-            return self
-                .handle
-                .take()
-                .expect("active preview owns its handle")
-                .discard(vec![
-                    BridgePreviewResidueClass::AuthoritativeDiagnosticsResidue,
-                ])
-                .map(|_| ());
+        let residue = if self.discard_fault.get() {
+            vec![BridgePreviewResidueClass::AuthoritativeDiagnosticsResidue]
+        } else {
+            residue
+        };
+        match self.handle.discard(residue) {
+            Ok(_) => Ok(()),
+            Err((handle, denial)) => {
+                self.handle = handle;
+                Err((self, denial))
+            }
         }
-        discard_handle(
-            self.handle
-                .take()
-                .expect("an active preview session owns its bridge handle"),
-        )
     }
 }
 
 impl WorthQueryReadmittedApplicationPreview {
+    /// Finalizes the original admitted preview evidence, not current Query output.
     pub fn promote(
         mut self,
     ) -> Result<
         BridgeSpeculativePromotionOutcome,
-        worth_runtime_bridge::facade::BridgeSpeculationError,
+        (Self, worth_runtime_bridge::facade::BridgeSpeculationError),
     > {
-        self.handle
-            .take()
-            .expect("a readmitted preview owns its bridge handle")
-            .promote()
-    }
-
-    pub fn discard(mut self) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
-        discard_handle(
-            self.handle
-                .take()
-                .expect("a readmitted preview owns its bridge handle"),
-        )
-    }
-}
-
-impl Drop for WorthQueryApplicationPreviewSession {
-    fn drop(&mut self) {
-        if let Some(handle) = self.handle.take() {
-            let _ = discard_handle(handle);
+        match self.session.handle.promote() {
+            Ok(outcome) => Ok(outcome),
+            Err((handle, denial)) => {
+                self.session.handle = handle;
+                Err((self, denial))
+            }
         }
     }
-}
 
-impl Drop for WorthQueryReadmittedApplicationPreview {
-    fn drop(&mut self) {
-        if let Some(handle) = self.handle.take() {
-            let _ = discard_handle(handle);
-        }
+    pub fn discard(
+        self,
+    ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
+        self.session
+            .discard()
+            .map_err(|(session, denial)| (Self { session }, denial))
     }
-}
-
-fn discard_handle(
-    handle: BridgeSpeculativeSessionHandle,
-) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
-    handle
-        .discard(vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue])
-        .map(|_| ())
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -263,8 +234,9 @@ where
             ))
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::AdmissionRejected)?;
         Ok(WorthQueryApplicationPreviewSession {
-            handle: Some(handle),
-            source: Some(source),
+            handle,
+            _source: source,
+            _runtime: Box::new(self.clone()),
             runtime_authority: self.runtime().runtime.authority_identity().as_u64(),
             source_commit: observation.selected_commit().clone(),
             #[cfg(test)]

@@ -517,6 +517,33 @@ documentation and scoped independent review with adequate executed evidence.
 The downstream application consumes that result; future 9.17.6.5 workflow work
 extends the same declarations and owners without reintroducing a second authority.
 
+## Preview refusal custody prerequisite
+
+The covered public preview lifecycle must return original custody on every
+readmission, discard and promotion refusal. Bridge's execution-binding,
+nonterminal-state, residue, proof and authority-basis checks precede any terminal
+transition; errors therefore return the same active native session. Its owning
+handle preserves the original runtime, execution record and liveness owner.
+Query also retains one authentic installed ProgramRuntime clone, keeping its
+conditional resources alive through native carrier destruction; no runtime
+accessor or per-attempt clone is introduced. There is no partial cleanup phase to reconstruct, and no new cleanup engine.
+
+Query readmission returns `(original_session, typed_denial)` without automatic
+discard. A readmitted preview retains the complete original source/session;
+promotion finalizes that original native session/execution proof without claiming
+current Query source or publication. An authentic source action may commit after
+readmission and before this separate preview evidence transition. Discard refusal returns the same phase owner. Stale, foreign and stopped
+admission cannot refresh the source; explicit discard remains available. Drop
+is abandonment and does not certify discard or promotion. Direct returning
+certification errors also preserve actual preview custody.
+
+Focused proof uses existing Bridge residue/proof/liveness courts and Query's
+installed preview request-stop/fault courts: exact denial, unchanged original
+owner/source/execution, lawful retry and exactly one real terminal posting.
+These new hunks require Root compiler/runtime checks, scoped independent review
+and final Claude qualification; historical public qualification below does not
+qualify this added prerequisite or private adoption.
+
 ## Public Qualification
 
 The joined public API and covered Query, Bank, fixture, example, facade and

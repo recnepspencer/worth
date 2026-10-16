@@ -64,7 +64,8 @@ fn runtime_rejects_preview_discard_when_authoritative_residue_remains() {
         .expect("preview declaration should admit");
     let (active, execution_record) = runtime.activate_preview_session(admitted, 2, 1, 1);
 
-    let error = runtime
+    let original_digest = active.digest().to_owned();
+    let (active, error) = runtime
         .discard_preview_session(
             active,
             &execution_record,
@@ -76,4 +77,15 @@ fn runtime_rejects_preview_discard_when_authoritative_residue_remains() {
         error.kind(),
         crate::error::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch
     );
+    assert_eq!(active.digest(), original_digest);
+    assert!(runtime.diagnostics().preview_discard_records().is_empty());
+    let (discarded, _) = runtime
+        .discard_preview_session(active, &execution_record, Vec::new())
+        .unwrap();
+    assert_eq!(
+        discarded.session_identity().as_str(),
+        "preview-session:authority"
+    );
+    assert_eq!(runtime.diagnostics().preview_execution_records().len(), 1);
+    assert_eq!(runtime.diagnostics().preview_discard_records().len(), 1);
 }

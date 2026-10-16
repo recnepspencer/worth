@@ -362,6 +362,8 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/counted_read_stops.rs
+# Preview custody uses the existing receiver-owned residue fault; no new control.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/counted_read_stops/custody.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/read_ceiling_terminal.rs
 
