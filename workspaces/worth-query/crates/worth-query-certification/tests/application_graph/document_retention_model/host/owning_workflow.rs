@@ -24,7 +24,9 @@ pub fn publish_owner_workflow_with_projection() -> (
         program,
         // The contribution installs both V1 and V2 rule contracts. Keep V2
         // honestly declared in the existing roster; this branch still runs owner V1.
-        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+        WorthQueryApplicationProgramRoster::new()
+            .support(validated_second_program())
+            .support(super::super::actor_generation::validated_actor_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         host_limits(),

@@ -1,11 +1,9 @@
 //! An original actor remains historical when its principal slot is genuinely reused.
 use super::super::super::document_retention_model::{
-    actor_generation::{
-        validated_actor_program, ActorLifecycleInput, ActorLifecycleIntent, ActorProgram,
-    },
+    actor_generation::{ActorLifecycleInput, ActorLifecycleIntent, ActorProgram},
     host::publish,
     programs::{validated_first_program, validated_second_program},
-    workflow::{retain_workflow, support_workflow_program},
+    workflow::{authoring_intent, retain_workflow, support_workflow_program},
 };
 use super::*;
 use worth_query_host::facade::{
@@ -18,9 +16,7 @@ fn workflow_actor_contract_reused_principal_slot_is_not_the_original_generation(
     let mut application = retain_workflow(
         publish(
             validated_first_program(),
-            WorthQueryApplicationProgramRoster::new()
-                .support(validated_second_program())
-                .support(validated_actor_program()),
+            WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         )
         .unwrap(),
     );
@@ -41,14 +37,30 @@ fn workflow_actor_contract_reused_principal_slot_is_not_the_original_generation(
             WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
         ));
     }
-    let definition = match publish_definition(
-        &application,
-        reviewed_document_definition("actor-generation"),
-        WorkflowDefinitionExpectedPredecessor::Absent,
-        74_000,
-    )
-    .unwrap()
-    {
+    // Bind against the vocabulary installed for the actually adopted program,
+    // rather than the host's initial P0 vocabulary.
+    let contract = application
+        .with_host_advancement(|phase| {
+            application
+                .vocabulary()
+                .workflow_spec_on(&phase, application.current_world())
+                .unwrap()
+                .bind_definition(reviewed_document_definition("actor-generation"))
+                .unwrap()
+        })
+        .unwrap();
+    let scope = request_scope();
+    let principal = authenticate_operator(application.runtime().installed_schema(), &scope);
+    let publication = application
+        .runtime()
+        .request(&principal, &scope)
+        .mutate(authoring_intent())
+        .without_source()
+        .idempotency(&74_000_u64)
+        .prepare_workflow_publication(contract, WorkflowDefinitionExpectedPredecessor::Absent)
+        .unwrap()
+        .execute();
+    let definition = match publication {
         WorkflowDefinitionPublicationOutcome::Published(performed) => {
             performed.definition().clone()
         }

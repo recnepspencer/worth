@@ -209,7 +209,7 @@ pub fn publish_on_first_resource_program() -> DocumentRetentionRuntime<ResourceR
     .expect("the resource-custody host must install")
 }
 
-/// Attempts a host that rosters P0 alone against the two-rule catalog.
+/// Attempts a host without a V2 program against the two-rule catalog.
 pub fn publish_first_program_alone(
 ) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
     publish(
@@ -268,7 +268,9 @@ where
 {
     in_memory_rostered_program(
         initial,
-        roster,
+        // The installed lifecycle binding is owned by this explicitly rostered
+        // program, not implicitly added to P0/P1 or the alternative programs.
+        roster.support(super::actor_generation::validated_actor_program()),
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         limits,
