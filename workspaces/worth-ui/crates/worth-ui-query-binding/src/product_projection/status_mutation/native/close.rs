@@ -32,6 +32,10 @@ impl<I: ApplicationMutationIntent<WorthUiApplicationSchema> + 'static, A> State<
     }
 }
 impl NativeCustody {
+    #[expect(
+        clippy::result_large_err,
+        reason = "close refusal must return the unique original native custody without another allocation"
+    )]
     pub(in crate::product_projection::status_mutation) fn close(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, WorthUiApplicationSchema>,
