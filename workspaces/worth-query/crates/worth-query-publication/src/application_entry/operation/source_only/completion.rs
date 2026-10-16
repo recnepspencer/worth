@@ -10,8 +10,6 @@ where
     P: ApplicationProgramDefinition<S>,
 {
     pub(in crate::application_entry) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
-    pub(in crate::application_entry::operation) evidence:
-        WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
 }
 #[must_use = "retain terminal evidence and close its remaining cleanup"]
 /// Native terminal custody cannot be advanced.
@@ -47,13 +45,16 @@ where
     pub fn evidence(
         &self,
     ) -> &WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result> {
-        &self.evidence
+        self.operation.completion()
     }
     pub fn close(
-        self,
+        mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
-        self.close_with_evidence(request).map(|(closed, _)| closed)
+        match self.operation.close_cleanup(request) {
+            Ok(closed) => Ok(closed),
+            Err(denial) => Err((self, denial)),
+        }
     }
 
     /// Releases native cleanup before transferring the original completion evidence.
@@ -85,7 +86,12 @@ where
         (Self, WorthQueryOperationCloseDenial),
     > {
         match self.operation.close_cleanup(request) {
-            Ok(closed) => Ok((closed, self.evidence)),
+            Ok(closed) => {
+                let SourceState::<S, I>::RetainedPending(evidence) = self.operation.state else {
+                    unreachable!("completed source owns its native evidence")
+                };
+                Ok((closed, evidence))
+            }
             Err(denial) => Err((self, denial)),
         }
     }

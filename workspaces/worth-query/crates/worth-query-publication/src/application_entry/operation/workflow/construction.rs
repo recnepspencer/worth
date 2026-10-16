@@ -109,7 +109,7 @@ impl<'w, S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
                 Ok(WorthQueryWorkflowOperation {
                     source,
                     required,
-                    completion: None,
+                    source_completed: false,
                     recovery: super::completion::WorkflowDispatchRecovery::Unopened,
                     recovery_result: None,
                 })

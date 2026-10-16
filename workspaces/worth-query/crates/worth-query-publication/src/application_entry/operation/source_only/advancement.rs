@@ -36,10 +36,9 @@ where
             self.step(&phase, request, maximum_history_work)
         }) {
             Ok(Ok(Step::Progress)) => WorthQuerySourceOnlyAdvance::Progress(self),
-            Ok(Ok(Step::Completed(evidence))) => {
+            Ok(Ok(Step::Completed)) => {
                 WorthQuerySourceOnlyAdvance::Completed(WorthQueryCompletedSourceOperation {
                     operation: self,
-                    evidence,
                 })
             }
             Ok(Ok(Step::Terminal)) => {
@@ -66,10 +65,7 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         maximum_history_work: Option<std::num::NonZeroUsize>,
-    ) -> Result<
-        Step<<I::Binding as ApplicationMutationBinding<S>>::Result>,
-        WorthQuerySourceOnlyDenial,
-    > {
+    ) -> Result<Step, WorthQuerySourceOnlyDenial> {
         match &mut self.state {
             SourceState::<S, I>::Initial | SourceState::<S, I>::RetryableNoEffect(_) => {
                 let outcome = match self.admission.execute_in_advancement(phase, request) {
@@ -85,7 +81,7 @@ where
                         receipt,
                         result,
                         retained,
-                    } => Ok(Step::Completed(WorthQuerySourceCompletion::Fresh {
+                    } => Ok(self.complete(WorthQuerySourceCompletion::Fresh {
                         receipt,
                         result,
                         retained: Some(retained),
@@ -146,7 +142,7 @@ where
                     maximum_history_work
                         .expect("retained mode requires a per-attempt history bound"),
                 )
-                .map(Step::Completed)
+                .map(|()| Step::Completed)
             }
             SourceState::<S, I>::Stopped(_) | SourceState::<S, I>::AdmissionStopped(_) => {
                 Ok(Step::Terminal)
@@ -157,17 +153,14 @@ where
     fn accept_initial(
         &mut self,
         outcome: NativeOutcome<S, I>,
-    ) -> Result<
-        Step<<I::Binding as ApplicationMutationBinding<S>>::Result>,
-        WorthQuerySourceOnlyDenial,
-    > {
+    ) -> Result<Step, WorthQuerySourceOnlyDenial> {
         use WorthQueryApplicationMutationOutcome as O;
         let outcome = self
             .cleanup
             .absorb_native_outcome(&self.admission.runtime, outcome);
         match outcome {
             O::Committed { receipt, result } => {
-                Ok(Step::Completed(WorthQuerySourceCompletion::Fresh {
+                Ok(self.complete(WorthQuerySourceCompletion::Fresh {
                     receipt,
                     result,
                     retained: None,
@@ -185,7 +178,7 @@ where
                 Ok(Step::Progress)
             }
             O::AlreadyCommitted(receipt) => {
-                Ok(Step::Completed(WorthQuerySourceCompletion::Recovered {
+                Ok(self.complete(WorthQuerySourceCompletion::Recovered {
                     retained: None,
                     receipt,
                     publication: None,
@@ -204,10 +197,7 @@ where
     fn accept_no_effect_or_terminal(
         &mut self,
         outcome: NativeOutcome<S, I>,
-    ) -> Result<
-        Step<<I::Binding as ApplicationMutationBinding<S>>::Result>,
-        WorthQuerySourceOnlyDenial,
-    > {
+    ) -> Result<Step, WorthQuerySourceOnlyDenial> {
         match outcome {
             other
                 if self.admission.description.source.is_none()
@@ -223,13 +213,7 @@ where
         }
     }
 
-    fn accept_keyed(
-        &mut self,
-        resolution: Resolution,
-    ) -> Result<
-        Step<<I::Binding as ApplicationMutationBinding<S>>::Result>,
-        WorthQuerySourceOnlyDenial,
-    > {
+    fn accept_keyed(&mut self, resolution: Resolution) -> Result<Step, WorthQuerySourceOnlyDenial> {
         use super::super::native_publication::NativeKeyedProgress;
         match self
             .state
@@ -248,7 +232,7 @@ where
                     self.state = SourceState::<S, I>::RetainedPending(evidence);
                     Ok(Step::Progress)
                 } else {
-                    Ok(Step::Completed(evidence))
+                    Ok(self.complete(evidence))
                 }
             }
             NativeKeyedProgress::Progress { proved_abort } => {
@@ -265,8 +249,8 @@ where
     }
 }
 
-pub(in crate::application_entry::operation) enum Step<Result> {
+pub(in crate::application_entry::operation) enum Step {
     Progress,
-    Completed(WorthQuerySourceCompletion<Result>),
+    Completed,
     Terminal,
 }
