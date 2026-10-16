@@ -64,8 +64,14 @@ impl VisibilityReadContext<'_> {
 }
 
 impl VisibilityReadContext<'_> {
-    /// Pin an already issued exact projection without opening a tracked snapshot.
-    pub(crate) fn pin_view_read_capability(
+    /// Pin an owner-issued exact projection without opening a tracked snapshot.
+    ///
+    /// The view must belong to this runtime and retain an exact native basis.
+    /// Its immutable root, symbol dictionary and selected index handles stay
+    /// shared with their original storage owners through the last pin clone.
+    /// This capability has no operational snapshot identity and cannot open a
+    /// snapshot query-plan door. The caller's request still checks liveness.
+    pub fn pin_view_read_capability(
         &self,
         view: &crate::runtime::VisibilityProjectionView,
         selected_indexes: &[DerivedIndexId],

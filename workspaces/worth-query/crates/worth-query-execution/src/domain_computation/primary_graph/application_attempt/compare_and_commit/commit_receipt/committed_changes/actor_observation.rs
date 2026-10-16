@@ -69,7 +69,7 @@ impl WorthQueryApplicationCommittedChanges {
             )
             .map_err(|_| invalid("committed approval request locator is invalid"))?;
         // The receipt must own this exact artifact; its native runtime identity
-        // and canonical commit select the retained snapshot, never current head.
+        // and canonical commit select the retained poststate, never current head.
         if !Arc::ptr_eq(&self.envelope, &receipt.committed_changes().envelope) {
             return Err(invalid("committed approval receipt envelope differs"));
         }
@@ -84,25 +84,28 @@ impl WorthQueryApplicationCommittedChanges {
             .primary_provider
             .graph
             .with_runtime(execution, |native| {
-                use worth_relational::facade::runtime::{
-                    RelationalPinnedReadAdmissionDenial as PinStop,
-                    RelationalRetainedCommitSnapshotDenialKind as SnapshotStop,
-                };
-                let snapshot = native
-                    .snapshots()
-                    .retained_snapshot_for_commit(
-                        receipt.provider_runtime_instance_id(),
-                        self.commit_reference(),
-                    )
-                    .map_err(|cause| match cause.kind() {
-                        SnapshotStop::Execution(cause) => {
-                            Denial::relational_read_stopped(cause, "committed approval snapshot")
-                        }
-                        _ => invalid(cause.detail()),
-                    })?;
+                use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as PinStop;
+                if native.runtime_instance_id() != receipt.provider_runtime_instance_id() {
+                    return Err(invalid("committed approval receipt belongs to another runtime"));
+                }
+                // The operational commit snapshot was lawfully released at
+                // publication. Borrow the original performed World poststate;
+                // never open a replacement snapshot or inspect today's head.
+                let basis = receipt
+                    .committed_product_publication()
+                    .retained_relational_basis()
+                    .ok_or_else(|| invalid("committed approval has no retained performed poststate"))?;
+                let observation = basis.observation();
+                if observation.commit_receipt() != Some(self.commit_reference()) {
+                    return Err(invalid("committed approval retained poststate differs from its original commit"));
+                }
+                let view = native
+                    .read_truth()
+                    .project_observation(&observation)
+                    .map_err(|_| invalid("committed approval retained poststate belongs to another runtime or is unavailable"))?;
                 let pin = native
                     .read_truth()
-                    .pin_read_capability(snapshot.snapshot_handle(), &[], execution)
+                    .pin_view_read_capability(&view, &[], execution)
                     .map_err(|cause| match cause {
                         PinStop::Request(cause) => {
                             Denial::request_read_stopped(cause, "committed approval symbols")
