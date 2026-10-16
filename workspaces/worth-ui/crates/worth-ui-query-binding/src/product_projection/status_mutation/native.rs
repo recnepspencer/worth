@@ -5,10 +5,9 @@ use super::super::application_program::{
 use super::*;
 use worth_query_host::facade::{
     application_entry::{
-        WorthQueryApplicationRequest,
-        WorthQueryCompletedSourceOperation, WorthQueryOperationDescription,
-        WorthQueryOperationInputCaptureRefusal, WorthQuerySourceCompletion,
-        WorthQuerySourceOnlyAdvance, WorthQuerySourceOnlyOperation,
+        WorthQueryApplicationRequest, WorthQueryCompletedSourceOperation,
+        WorthQueryOperationDescription, WorthQueryOperationInputCaptureRefusal,
+        WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance, WorthQuerySourceOnlyOperation,
         WorthQueryTerminalSourceOperation,
     },
     declaration::{
@@ -27,34 +26,41 @@ pub(super) enum Step {
 }
 
 pub(super) enum State<I: ApplicationMutationIntent<WorthUiApplicationSchema> + 'static, A> {
-    Original(I),
-    Capture(WorthQueryOperationInputCaptureRefusal<WorthUiApplicationSchema, I>),
-    Description(WorthQueryOperationDescription<WorthUiApplicationSchema, I>),
+    // Each phase owns its original carrier; transitions move bounded custody slots.
+    Original(Box<I>),
+    Capture(Box<WorthQueryOperationInputCaptureRefusal<WorthUiApplicationSchema, I>>),
+    Description(Box<WorthQueryOperationDescription<WorthUiApplicationSchema, I>>),
     Pending(
-        WorthQuerySourceOnlyOperation<
-            WorthUiApplicationSchema,
-            I,
-            WorthUiStatusProgram,
-            A,
-            ApplicationRetainedCommit,
+        Box<
+            WorthQuerySourceOnlyOperation<
+                WorthUiApplicationSchema,
+                I,
+                WorthUiStatusProgram,
+                A,
+                ApplicationRetainedCommit,
+            >,
         >,
     ),
     Completed(
-        WorthQueryCompletedSourceOperation<
-            WorthUiApplicationSchema,
-            I,
-            WorthUiStatusProgram,
-            A,
-            ApplicationRetainedCommit,
+        Box<
+            WorthQueryCompletedSourceOperation<
+                WorthUiApplicationSchema,
+                I,
+                WorthUiStatusProgram,
+                A,
+                ApplicationRetainedCommit,
+            >,
         >,
     ),
     Terminal(
-        WorthQueryTerminalSourceOperation<
-            WorthUiApplicationSchema,
-            I,
-            WorthUiStatusProgram,
-            A,
-            ApplicationRetainedCommit,
+        Box<
+            WorthQueryTerminalSourceOperation<
+                WorthUiApplicationSchema,
+                I,
+                WorthUiStatusProgram,
+                A,
+                ApplicationRetainedCommit,
+            >,
         >,
     ),
 }
@@ -74,18 +80,20 @@ macro_rules! retained_status {
                 source: &WorthQueryObservedSource<WorthUiStatusQuery>,
                 application: &WorthUiStatusApplication,
             ) -> (Self, Result<(), WorthUiStatusMutationStop>) {
-                let description = match self {
+                let mut description = match self {
                     Self::Original(input) => {
                         let key = ($key)(&input);
                         match request
-                            .mutate(input)
+                            .mutate(*input)
                             .expect_source(source.clone())
                             .idempotency_owned(key)
                         {
-                            Ok(description) => description,
+                            Ok(description) => Box::new(description),
                             Err((builder, key, denial)) => {
                                 return (
-                                    Self::Capture(builder.into_capture_refusal(key, denial)),
+                                    Self::Capture(Box::new(
+                                        builder.into_capture_refusal(key, denial),
+                                    )),
                                     Err(WorthUiStatusMutationStop::Capture(
                                         WorthQueryOperationInputCaptureRetryDenial::Capture,
                                     )),
@@ -93,9 +101,10 @@ macro_rules! retained_status {
                             }
                         }
                     }
-                    Self::Capture(original) => match original.retry_capture(request) {
-                        Ok(description) => description,
-                        Err((original, denial)) => {
+                    Self::Capture(mut original) => match (*original).retry_capture(request) {
+                        Ok(description) => Box::new(description),
+                        Err((returned, denial)) => {
+                            *original = returned;
                             return (
                                 Self::Capture(original),
                                 Err(WorthUiStatusMutationStop::Capture(denial)),
@@ -105,12 +114,16 @@ macro_rules! retained_status {
                     Self::Description(description) => description,
                     other => return (other, Ok(())),
                 };
-                match description.retain_operation::<WorthUiStatusProgram, $action>(application) {
-                    Ok(operation) => (Self::Pending(operation), Ok(())),
-                    Err((description, denial)) => (
-                        Self::Description(description),
-                        Err(WorthUiStatusMutationStop::Construction(denial)),
-                    ),
+                match (*description).retain_operation::<WorthUiStatusProgram, $action>(application)
+                {
+                    Ok(operation) => (Self::Pending(Box::new(operation)), Ok(())),
+                    Err((returned, denial)) => {
+                        *description = returned;
+                        (
+                            Self::Description(description),
+                            Err(WorthUiStatusMutationStop::Construction(denial)),
+                        )
+                    }
                 }
             }
             fn advance(
@@ -118,26 +131,33 @@ macro_rules! retained_status {
                 request: &WorthQueryApplicationRequest<'_, '_, '_, WorthUiApplicationSchema>,
                 history: NonZeroUsize,
             ) -> (Self, Result<Step, WorthUiStatusMutationStop>) {
-                let Self::Pending(operation) = self else {
+                let Self::Pending(mut operation) = self else {
                     return match self {
                         Self::Completed(_) => (self, Ok(Step::Ready)),
                         Self::Terminal(_) => (self, Ok(Step::Terminal)),
                         _ => unreachable!("production preparation precedes advancement"),
                     };
                 };
-                match operation.advance(request, history) {
-                    WorthQuerySourceOnlyAdvance::Progress(operation) => {
+                match (*operation).advance(request, history) {
+                    WorthQuerySourceOnlyAdvance::Progress(returned) => {
+                        *operation = returned;
                         (Self::Pending(operation), Ok(Step::Progress))
                     }
-                    WorthQuerySourceOnlyAdvance::Refused { operation, denial } => (
-                        Self::Pending(operation),
-                        Err(WorthUiStatusMutationStop::Advance(denial)),
-                    ),
+                    WorthQuerySourceOnlyAdvance::Refused {
+                        operation: returned,
+                        denial,
+                    } => {
+                        *operation = returned;
+                        (
+                            Self::Pending(operation),
+                            Err(WorthUiStatusMutationStop::Advance(denial)),
+                        )
+                    }
                     WorthQuerySourceOnlyAdvance::Completed(operation) => {
-                        (Self::Completed(operation), Ok(Step::Ready))
+                        (Self::Completed(Box::new(operation)), Ok(Step::Ready))
                     }
                     WorthQuerySourceOnlyAdvance::Terminal(operation) => {
-                        (Self::Terminal(operation), Ok(Step::Terminal))
+                        (Self::Terminal(Box::new(operation)), Ok(Step::Terminal))
                     }
                 }
             }
@@ -157,10 +177,10 @@ retained_status!(
 
 impl NativeCustody {
     pub(super) fn source(input: WorthUiScalarProjectionSourceRecord) -> Self {
-        Self::Source(State::Original(input))
+        Self::Source(State::Original(Box::new(input)))
     }
     pub(super) fn action(input: WorthUiStatusActionRequest) -> Self {
-        Self::Action(State::Original(input))
+        Self::Action(State::Original(Box::new(input)))
     }
     pub(super) fn prepare(
         self,
