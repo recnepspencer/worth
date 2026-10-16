@@ -928,7 +928,8 @@ Use `not_applicable()` when no recorded role is required.
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: these are declaration expressions inside a real spec and capability.
+// Illustrative: not compiled.
+// Declaration expressions inside a real spec and capability.
 let source = ApplicationWorkflowRecordedActorSource::BoundProposal;
 let actors = ApplicationWorkflowActorPolicy::for_approval::<ReviewWorkflow, ApproveBinding>(source);
 let requirement = ApplicationCapabilityRecordedActorRule::required(

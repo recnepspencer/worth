@@ -35,7 +35,7 @@ or recovered. A host can stop supporting a program with
 9. [Inspect and compare](#inspect-and-compare)
 10. [Adoption requirements](#adoption-requirements)
 11. [Migration](#migration)
-12. [Workflow inventory and dispositions](#workflow-inventory-and-dispositions)
+12. [Governed workflow reads and adoption choices](#governed-workflow-reads-and-adoption-choices)
 13. [Workflow disposition legality](#workflow-disposition-legality)
 14. [Custody dispositions](#custody-dispositions)
 15. [Prepare and publish](#prepare-and-publish)
