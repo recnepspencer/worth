@@ -3,7 +3,6 @@
 use crate::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod capacity;
-mod lifecycle_storage;
 mod workflow_actor;
 use workflow_actor::WorkflowActorNativeDenial;
 mod relational_read;
@@ -222,7 +221,6 @@ pub struct WorthQueryOperationAuthorizationDenial {
     explanation_cause: Option<WorthQueryApplicationAuthorizationExplanationCause>,
     subject: String,
     workflow_actor_cause: Option<WorkflowActorNativeDenial>,
-    lifecycle_storage_cause: Option<std::sync::Arc<lifecycle_storage::LifecycleStorageCause>>,
 }
 
 impl WorthQueryOperationAuthorizationDenial {
@@ -239,7 +237,6 @@ impl WorthQueryOperationAuthorizationDenial {
             ),
             subject: subject.into(),
             workflow_actor_cause: None,
-            lifecycle_storage_cause: None,
         }
     }
 
@@ -263,7 +260,6 @@ impl WorthQueryOperationAuthorizationDenial {
             ),
             subject: subject.into(),
             workflow_actor_cause: None,
-            lifecycle_storage_cause: None,
         }
     }
 
@@ -313,11 +309,6 @@ impl std::error::Error for WorthQueryOperationAuthorizationDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.workflow_actor_source_denial()
             .map(|cause| cause as &(dyn std::error::Error + 'static))
-            .or_else(|| {
-                self.lifecycle_storage_cause
-                    .as_deref()
-                    .map(|cause| cause as &(dyn std::error::Error + 'static))
-            })
     }
 }
 

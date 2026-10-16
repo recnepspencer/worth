@@ -207,7 +207,6 @@ where
             WorthQueryCapabilityOperationProgression::CapabilityRevocation,
         )?;
         admitted.bind_capability_revocation(
-            execution,
             WorthQueryCapabilityRevocationBinding {
                 proposal_identity,
                 required_field_touch,

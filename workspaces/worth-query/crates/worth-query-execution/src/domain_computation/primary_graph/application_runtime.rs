@@ -15,7 +15,7 @@ use super::{
     WorthQueryPrimaryGraphPublication,
 };
 pub use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupReport;
-mod installed_authorization;
+use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
 mod certification_controls;
 mod certification_cost;
@@ -113,8 +113,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) application_readiness_schema_token: String,
     publication: WorthQueryPrimaryGraphPublication,
     checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
-    pub(in crate::domain_computation) authorization:
-        installed_authorization::InstalledApplicationAuthorization,
+    pub(in crate::domain_computation) authorization: WorthQueryInstalledAuthorizationRegistry,
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
     authentication_clock: WorthQueryAuthenticationClock,
     pub(super) relational_branch_identity:

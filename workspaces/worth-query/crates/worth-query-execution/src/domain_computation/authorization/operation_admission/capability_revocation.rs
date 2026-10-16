@@ -1,4 +1,3 @@
-use super::authorization_basis::LifecycleBinding;
 use super::{WorthQueryAdmittedApplicationOperation, WorthQueryOperationAuthorizationBasis};
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
@@ -11,7 +10,6 @@ impl<Schema, Operation, Input, Scope>
 {
     pub(in crate::domain_computation) fn bind_capability_revocation(
         mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryCapabilityRevocationBinding,
         work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
     ) -> Result<Self, WorthQueryOperationAuthorizationDenial> {
@@ -28,8 +26,6 @@ impl<Schema, Operation, Input, Scope>
             ));
         };
         self.canonical_work = self.canonical_work.with_execution_work(work);
-        let binding = LifecycleBinding::retain(execution, binding, &self.operation)
-            .map_err(|(denial, _binding)| denial)?;
         self.authorization_basis =
             WorthQueryOperationAuthorizationBasis::CapabilityRevocation { input, binding };
         Ok(self)
@@ -40,7 +36,7 @@ impl<Schema, Operation, Input, Scope>
     ) -> Option<&WorthQueryCapabilityRevocationBinding> {
         match &self.authorization_basis {
             WorthQueryOperationAuthorizationBasis::CapabilityRevocation { binding, .. } => {
-                Some(binding.get())
+                Some(binding)
             }
             _ => None,
         }

@@ -182,7 +182,7 @@ where
             Err(denial) => return Err(approval_denial(requested, denial)),
         };
         admission
-            .bind_elevation_approval(execution, draft.bind(requested))
+            .bind_elevation_approval(draft.bind(requested))
             .map_err(|(denial, binding)| approval_denial(binding.into_requested(), denial))
     }
 }

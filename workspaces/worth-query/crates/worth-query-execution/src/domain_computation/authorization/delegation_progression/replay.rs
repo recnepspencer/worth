@@ -169,14 +169,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
             },
         };
-        let admission = match prepared.finish(execution, admission) {
-            Ok(admission) => admission,
-            Err(denial) => match denial.kind() {
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
-                    return Err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial));
-                }
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
-            },
+        let Ok(admission) = prepared.finish(admission) else {
+            return Ok(None);
         };
         let resolution = self
             .resolve_admitted_application_idempotency_with_request(

@@ -1,7 +1,3 @@
-#[path = "authorization_basis/lifecycle_binding.rs"]
-mod lifecycle_binding;
-pub(super) use lifecycle_binding::LifecycleBinding;
-
 use crate::domain_computation::authorization::{
     WorthQueryCapabilityRevocationBinding, WorthQueryDelegationActivationBinding,
     WorthQueryElevationApprovalBinding, WorthQueryElevationCloseBinding,
@@ -17,32 +13,32 @@ pub(in crate::domain_computation) enum WorthQueryOperationAuthorizationBasis<Inp
     DelegationActivation {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: LifecycleBinding<WorthQueryDelegationActivationBinding>,
+        binding: WorthQueryDelegationActivationBinding,
     },
     CapabilityRevocation {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: LifecycleBinding<WorthQueryCapabilityRevocationBinding>,
+        binding: WorthQueryCapabilityRevocationBinding,
     },
     ElevationRequest {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: LifecycleBinding<WorthQueryElevationRequestBinding>,
+        binding: WorthQueryElevationRequestBinding,
     },
     ElevationApproval {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: LifecycleBinding<WorthQueryElevationApprovalBinding>,
+        binding: WorthQueryElevationApprovalBinding,
     },
     ElevationClose {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: LifecycleBinding<WorthQueryElevationCloseBinding>,
+        binding: WorthQueryElevationCloseBinding,
     },
     MandatoryReview {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: LifecycleBinding<WorthQueryMandatoryReviewBinding>,
+        binding: WorthQueryMandatoryReviewBinding,
     },
 }
 

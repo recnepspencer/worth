@@ -159,7 +159,7 @@ where
             Err(denial) => return Err(close_denial(approved, denial)),
         };
         admission
-            .bind_elevation_close(execution, draft.bind(approved))
+            .bind_elevation_close(draft.bind(approved))
             .map_err(|(denial, binding)| close_denial(binding.into_approved(), denial))
     }
 }

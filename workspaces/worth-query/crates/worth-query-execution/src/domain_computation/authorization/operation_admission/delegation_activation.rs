@@ -1,4 +1,3 @@
-use super::authorization_basis::LifecycleBinding;
 use super::{WorthQueryAdmittedApplicationOperation, WorthQueryOperationAuthorizationBasis};
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
@@ -18,7 +17,6 @@ impl<Schema, Operation, Input, Scope>
 
     pub(in crate::domain_computation) fn bind_delegation_activation(
         mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryDelegationActivationBinding,
     ) -> Result<Self, WorthQueryOperationAuthorizationDenial> {
         let basis = std::mem::replace(
@@ -33,8 +31,6 @@ impl<Schema, Operation, Input, Scope>
                 &self.operation,
             ));
         };
-        let binding = LifecycleBinding::retain(execution, binding, &self.operation)
-            .map_err(|(denial, _binding)| denial)?;
         self.authorization_basis =
             WorthQueryOperationAuthorizationBasis::DelegationActivation { input, binding };
         Ok(self)
@@ -45,7 +41,7 @@ impl<Schema, Operation, Input, Scope>
     ) -> Option<&WorthQueryDelegationActivationBinding> {
         match &self.authorization_basis {
             WorthQueryOperationAuthorizationBasis::DelegationActivation { binding, .. } => {
-                Some(binding.get())
+                Some(binding)
             }
             _ => None,
         }

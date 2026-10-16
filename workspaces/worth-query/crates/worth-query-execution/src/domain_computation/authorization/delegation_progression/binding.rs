@@ -55,7 +55,6 @@ pub(super) struct WorthQueryPreparedDelegationActivation {
 impl WorthQueryPreparedDelegationActivation {
     pub(super) fn finish<Schema, Operation, Input, Scope>(
         self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut admitted: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
             Schema,
             Operation,
@@ -72,7 +71,7 @@ impl WorthQueryPreparedDelegationActivation {
         WorthQueryOperationAuthorizationDenial,
     > {
         admitted.retain_delegation_proposal_canonical_work(self.canonical_work);
-        admitted.bind_delegation_activation(execution, self.binding)
+        admitted.bind_delegation_activation(self.binding)
     }
 }
 

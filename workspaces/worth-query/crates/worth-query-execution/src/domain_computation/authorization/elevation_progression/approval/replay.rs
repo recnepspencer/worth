@@ -128,16 +128,8 @@ where
             },
         };
         let mut admission = admission
-            .bind_elevation_approval(execution, draft.bind(requested))
-            .map_err(|(denial, binding)| {
-                let stopped = match denial.kind() {
-                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => Some(
-                        WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial),
-                    ),
-                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => None,
-                };
-                (stopped, binding.into_requested())
-            })?;
+            .bind_elevation_approval(draft.bind(requested))
+            .map_err(|(_, binding)| (None, binding.into_requested()))?;
         match self.resolve_admitted_elevation_approval_replay_with_request(
             execution,
             &mut admission,
