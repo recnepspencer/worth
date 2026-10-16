@@ -25,6 +25,18 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
         publish_on_first_program(),
         workflow_resources(),
     );
+    // Capture only descriptive identities; no old installed handle survives restore.
+    let original_capability = application
+        .runtime()
+        .installed_schema()
+        .capability(
+            crate::document_retention_model::workflow::WorkflowApprovalCapability::reference(),
+            crate::document_retention_model::workflow::WorkflowAdvanceOperation::reference(),
+        )
+        .unwrap();
+    let original_capability_identity = *original_capability.identity().bytes();
+    let original_installation_seal = original_capability.authority_identity().to_owned();
+    drop(original_capability);
     let definition = match publish_definition(
         &application,
         governed_reviewed_definition(),
@@ -110,6 +122,24 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
         workflow_resources(),
     );
     assert_eq!(retained.bytes(), intact);
+    let current_capability = restored
+        .runtime()
+        .installed_schema()
+        .capability(
+            crate::document_retention_model::workflow::WorkflowApprovalCapability::reference(),
+            crate::document_retention_model::workflow::WorkflowAdvanceOperation::reference(),
+        )
+        .unwrap();
+    assert_eq!(
+        current_capability.identity().bytes(),
+        &original_capability_identity
+    );
+    assert_ne!(
+        current_capability.authority_identity(),
+        original_installation_seal
+    );
+    drop(current_capability);
+
     let restored_instance = match reacquisition::read(&restored, &original_start) {
         WorthQueryWorkflowInstanceRead::Live {
             instance,

@@ -125,10 +125,6 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
             for mutated in [
                 support.replace("\"active\"", "\"upper_bound\""),
                 support.replace("delegation_target", "elevation_upper_bound"),
-                support.replace(
-                    &authority.capability_authority_identity,
-                    "uninstalled-support-authority",
-                ),
             ] {
                 let altered = durable_approval_basis_with_dependency_snapshot(
                     execution, &admission,
