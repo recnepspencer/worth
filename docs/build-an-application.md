@@ -3180,6 +3180,10 @@ The caller drives the same original owner while the transport has no child resul
 As soon as authenticated child output exists, it admits genuine ingress through
 the installed verifier before any further recovery advance. Transport failure is
 an error, not an instruction to retry a possibly performed external effect.
+Receiving the declared inbound completion is distinct from corrective recovery
+or permission to retry the external effect. The archive declares no corrective
+aftermath; the caller supplies genuine ingress and leaves settlement to native
+inspection of the original dispatch.
 Both completion paths accept the original performed operation under fresh admission
 and independently close cleanup:
 
