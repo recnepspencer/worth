@@ -2534,6 +2534,23 @@ abandonment, not a successful close. Performed-source required and
 discovered aggregate completion rules, including fixed-leaf unavailable
 completion, are unchanged.
 
+#### Original root output evidence
+
+A settled parent's `settlement().root_settlement()` borrows its actual immutable
+`WorthQueryApplicationOutputDemandSettlement<RootQuery>`. Inspect its existing
+`outputs_of::<Contract>()` and typed `entity::<Role>()` correspondence to validate
+which native entity fills the original root role. A genuinely reused root can
+have `root_receipt() == None` and still carry that correspondence; no receipt,
+new demand, key lookup or source-query identity needs to replace it.
+
+This borrow is root-only retained evidence. It performs no fresh currentness
+check and discharges no tree or cleanup custody. Keep the parent operation;
+use its `read_current` or `deliver_current` for complete-tree validation, and
+its `close` for lawful original read-request disposal. Projection at the
+aggregate basis uses `settlement().observation()`, not `root_observation()`.
+The executable `checkpoint_recovery::root_delivery` fixture exercises the
+no-receipt case and closes the same original parent and runtime.
+
 ### 5.6 Retain preview custody across refusal
 
 An application preview starts from an exact retained read observation:

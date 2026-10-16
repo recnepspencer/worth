@@ -39,6 +39,7 @@ mod parallel_history;
 mod producer_domain_denial;
 pub(crate) mod required_chain;
 mod reuse_opt_out;
+mod root_delivery;
 mod stable_refresh;
 mod support;
 use support::{authenticate, install, length};

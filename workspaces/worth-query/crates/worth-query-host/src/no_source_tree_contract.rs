@@ -79,3 +79,24 @@
 //!     R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
 //!     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S> { let _ = operation.advance(); }
 //! ```
+//!
+//! A program settlement lends its original root without requiring a receipt.
+//! ```
+//! use worth_query_host::facade::{application_entry::{
+//!     WorthQueryApplicationProgramOutputSettlement, WorthQueryApplicationOutputDemandSettlement},
+//!     primary_graph::{WorthQueryApplicationTypedOutputCorrespondence, WorthQueryApplicationOutputProjectionDenial}};
+//! fn root<Q>(parent: &WorthQueryApplicationProgramOutputSettlement<Q>)
+//!     -> &WorthQueryApplicationOutputDemandSettlement<Q> { parent.root_settlement() }
+//! fn roles<Q, Contract: 'static>(parent: &WorthQueryApplicationProgramOutputSettlement<Q>)
+//!     -> Result<WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>, WorthQueryApplicationOutputProjectionDenial> {
+//!     parent.root_settlement().outputs_of::<Contract>()
+//! }
+//! ```
+//!
+//! Even exclusive access to the parent cannot mutate or replace the borrowed root.
+//! ```compile_fail,E0308
+//! use worth_query_host::facade::application_entry::{
+//!     WorthQueryApplicationProgramOutputSettlement, WorthQueryApplicationOutputDemandSettlement};
+//! fn mutable_root<Q>(parent: &mut WorthQueryApplicationProgramOutputSettlement<Q>)
+//!     -> &mut WorthQueryApplicationOutputDemandSettlement<Q> { parent.root_settlement() }
+//! ```
