@@ -75,7 +75,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ExecutionDenied {
         kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
     },
-    /// Native checkpoint recovery's allocation owner refused the backing.
+    /// Native installation or checkpoint recovery's allocation owner refused the backing.
     /// The checked quote is absent when layout could not be represented.
     NativeAllocation {
         kind: worth_execution::ExecutionAllocationDenialKind,

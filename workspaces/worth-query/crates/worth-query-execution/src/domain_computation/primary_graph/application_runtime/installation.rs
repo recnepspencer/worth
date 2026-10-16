@@ -67,7 +67,7 @@ where
     let mutation_handlers = bootstrap
         .mutation_handlers
         .seal(&installed_schema, bootstrap.graph.binding_identity())?;
-    let authorization = compile_authorization(&bootstrap, &installed_schema)?;
+    let authorization = compile_authorization(phase, &bootstrap, &installed_schema)?;
     let graph = publish_application_graph(
         phase,
         bootstrap,
@@ -137,7 +137,7 @@ where
         &bindings,
         output_readiness.len(),
     )?;
-    let authorization = compile_authorization(&bootstrap, &installed_schema)
+    let authorization = compile_authorization(phase, &bootstrap, &installed_schema)
         .map_err(super::super::conditional_operation::publication_denial)?;
     let mut graph = publish_application_graph(
         phase,
@@ -240,19 +240,39 @@ where
         })
 }
 fn compile_authorization<Schema>(
+    phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     bootstrap: &WorthQueryPrimaryGraphBootstrap<Schema>,
     installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-) -> Result<WorthQueryInstalledAuthorizationRegistry, WorthQueryPrimaryGraphInstallationDenial>
+) -> Result<
+    super::installed_authorization::InstalledApplicationAuthorization,
+    WorthQueryPrimaryGraphInstallationDenial,
+>
 where
     Schema: ApplicationSchema,
 {
-    WorthQueryInstalledAuthorizationRegistry::compile(installed_schema, &bootstrap.graph.layout)
-        .map_err(|denial| {
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::AuthorizationPolicyRejected,
-                denial.subject(),
-            )
-        })
+    let registry = WorthQueryInstalledAuthorizationRegistry::compile(
+        installed_schema,
+        &bootstrap.graph.layout,
+    )
+    .map_err(|denial| {
+        WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::AuthorizationPolicyRejected,
+            denial.subject(),
+        )
+    })?;
+    super::installed_authorization::InstalledApplicationAuthorization::capture(
+        registry,
+        phase.execution_request().allocation_policy(),
+    )
+    .map_err(|cause| {
+        WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::NativeAllocation {
+                kind: cause.kind(),
+                requested_payload_bytes: cause.requested_payload_bytes(),
+            },
+            "compiled application authorization backing refused",
+        )
+    })
 }
 fn publish_application_graph<Schema>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,

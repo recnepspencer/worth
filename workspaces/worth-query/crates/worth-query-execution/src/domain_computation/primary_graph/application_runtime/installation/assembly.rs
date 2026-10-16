@@ -1,7 +1,5 @@
 use super::PublishedApplicationGraph;
-use crate::domain_computation::authorization::{
-    WorthQueryInstalledAuthorizationRegistry, WorthQueryRuntimeClock,
-};
+use crate::domain_computation::authorization::WorthQueryRuntimeClock;
 use crate::domain_computation::primary_graph::authentication_clock::WorthQueryAuthenticationClock;
 use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
@@ -15,7 +13,7 @@ pub(super) fn assemble_application_runtime<Schema>(
         crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge,
     >,
     installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
-    authorization: WorthQueryInstalledAuthorizationRegistry,
+    authorization: super::super::installed_authorization::InstalledApplicationAuthorization,
     authorization_clock: WorthQueryRuntimeClock,
     conditional_operations:
         crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
