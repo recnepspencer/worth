@@ -200,7 +200,7 @@ fn meaning_digest(
     let semantics =
         format!("{AUDIENCE}|{SOURCE}|1|{message}|{issued}|{expires}|{PROTOCOL}|1|{FAMILY}|{body}");
     let entry = CanonicalBasisEntry::new(
-        domain.clone(),
+        domain,
         CanonicalBasisLocus::Named("claims".into()),
         CanonicalBasisEntryKind::Value,
         CanonicalBasisValue::ExactText(semantics.into()),

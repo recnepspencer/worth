@@ -191,10 +191,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 }
                 let installed = request.application.installed_schema();
                 let command_capability = installed
-                    .capability(command_capability.clone(), operation.clone())
+                    .capability(command_capability, operation)
                     .map_err(Denial::CapabilityInstallation)?;
                 let target_capability = installed
-                    .capability(target_capability.clone(), target_operation.clone())
+                    .capability(target_capability, target_operation)
                     .map_err(Denial::CapabilityInstallation)?;
                 let principal_binding = installed
                     .principal_binding(principal_binding.clone())
@@ -243,7 +243,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     .map_err(Denial::Authorization)?;
                 access.record_request_identity_work(&publication, workflow.key_work());
                 let operation = installed
-                    .installed_operation(operation.clone())
+                    .installed_operation(operation)
                     .map_err(Denial::OperationInstallation)?;
                 let admission = match request.application.authorize_capability_delegation(
                     phase,

@@ -181,7 +181,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 let capability = request
                     .application
                     .installed_schema()
-                    .capability(capability.clone(), operation.clone())
+                    .capability(capability, operation)
                     .map_err(Denial::CapabilityInstallation)?;
                 let principal_binding = request
                     .application
@@ -234,7 +234,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 let operation = request
                     .application
                     .installed_schema()
-                    .installed_operation(operation.clone())
+                    .installed_operation(operation)
                     .map_err(Denial::OperationInstallation)?;
                 let admission = request
                     .application
