@@ -171,6 +171,9 @@ impl WorthQueryPrimaryGraph {
                 self.layout.provider_aftermath_causality().key_index_id,
             ))
             .chain(std::iter::once(
+                self.layout.workflow().instance.identity_index_id,
+            ))
+            .chain(std::iter::once(
                 self.layout.workflow().lineage.identity_index_id,
             ))
             .chain(std::iter::once(
