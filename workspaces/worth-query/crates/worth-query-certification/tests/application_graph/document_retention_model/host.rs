@@ -166,7 +166,7 @@ pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime
     )
 }
 
-fn publish_on_first_program_with_limits(
+pub(super) fn publish_on_first_program_with_limits(
     limits: WorthQueryInMemoryApplicationLimits,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
     publish_with_limits(
@@ -372,21 +372,10 @@ fn seed_document(
         .expect("the related document must seed");
 }
 
-pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
-    // Installation admits the binding's maximum publication shape even though
-    // the ordinary Document handler requests its narrow candidate at execution.
-    WorthQueryInMemoryApplicationLimits::new(
-        world_resources(256, 4 * 1024 * 1024, 256),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            200_000,
-            128 * 1024 * 1024,
-        )
-        .expect("valid candidate limits"),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
-            .expect("valid query limits"),
-        primary_graph::SignalConditionalEvaluationBudget::development(),
-    )
-}
+#[path = "host/query_resources.rs"]
+mod query_resources;
+pub use query_resources::host_limits;
+pub(super) use query_resources::with_query_resources;
 
 #[path = "host/owning_workflow.rs"]
 mod owning_workflow;
