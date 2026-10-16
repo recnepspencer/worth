@@ -324,6 +324,7 @@ where
             prepared,
             effect_admission,
             effect_idempotency,
+            receipt,
             required,
             recovery,
             self.idempotency,

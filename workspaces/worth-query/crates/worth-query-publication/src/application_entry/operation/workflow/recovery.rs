@@ -59,6 +59,7 @@ where
             &prepared.admission,
             prepared.idempotency,
             self.required.transition_identity_bytes(),
+            None,
         )
         .map_err(WorthQueryWorkflowEffectRecoveryDenial::Inspection)?;
         // A descriptive committed read cannot discharge a retained or interrupted handle.

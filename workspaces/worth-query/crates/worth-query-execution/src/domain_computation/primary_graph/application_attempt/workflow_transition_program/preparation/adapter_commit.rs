@@ -106,6 +106,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         prepared: super::super::PreparedWorkflowOperation<Schema, Operation, Input, Scope>,
         effect_admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, EffectOperation, EffectInput, EffectScope>,
         effect_idempotency: WorthQueryApplicationIdempotencyBinding,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         required: &RequiredWorkflowOperation,
         recovery: Option<
             &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
@@ -152,6 +153,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
                 effect_admission,
                 effect_idempotency,
                 required.transition_identity_bytes(),
+                Some(receipt),
             )
             .map_err(|_| owner_custody_denial(required))?;
         use crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody as Custody;
