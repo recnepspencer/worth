@@ -46,7 +46,10 @@ fn measure(
     output: &mut WorthQueryApplicationOutputDemandHandle<'_, CheckpointSchema, RegionOutputDemand>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, CheckpointSchema>,
 ) -> u64 {
-    assert_eq!(app.queued_required_work_for_test(), 0);
+    // Queue length counts physical hints, including inactive/acknowledged
+    // tokens until a queue pop removes them. Settled does not mean globally
+    // drained. This selected current caller must leave those hints untouched.
+    let queued = app.queued_required_work_for_test();
     let contacts = app.producer_contacts_on_this_thread_for_test();
     app.caller_request_work_for_test();
     app.caller_request_navigation_for_test();
@@ -62,7 +65,11 @@ fn measure(
         contacts,
         "a measured current caller executes no producer"
     );
-    assert_eq!(app.queued_required_work_for_test(), 0);
+    assert_eq!(
+        app.queued_required_work_for_test(),
+        queued,
+        "the selected current caller leaves unrelated physical queue custody untouched"
+    );
     assert_eq!(
         app.whole_registry_rows_visited_for_test() - rows,
         0,
@@ -108,6 +115,10 @@ pub(super) fn assert_same_world_current_work(
         .clone();
     let members_open = required_members(app);
     let records_open = app.registry_row_count_for_test();
+    assert!(
+        app.queued_required_work_for_test() > 0,
+        "foreign tree setup exercises locality with actual queued hints"
+    );
     let open_work = measure(app, output, &request);
     let contacts = app.producer_contacts_on_this_thread_for_test();
     for tree in foreign {
@@ -132,8 +143,11 @@ pub(super) fn assert_same_world_current_work(
         members_closed < members_open,
         "actual native required interests were discharged: {members_open} -> {members_closed}"
     );
-    // Healthy Ready can remain cached after the interests close. Those records
-    // hold the same physical lookup population in both measured requests.
+    // Read close releases actual interests, not the global scheduling queue.
+    // A deactivated queued membership remains a physical token until popped.
+    // Healthy Ready can remain cached after close: both measured requests keep
+    // the same graph commit and record lookup population. Each must preserve
+    // its own queue count; neither measurement drains the foreign hints.
     assert_eq!(app.registry_row_count_for_test(), records_open);
     let closed_work = measure(app, output, &request);
     assert_eq!(
