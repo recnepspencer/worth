@@ -26,3 +26,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };
+
+// Actual result vocabulary returned by the application preview lifecycle.
+pub use worth_runtime_bridge::facade::{
+    BridgeSpeculationError, BridgeSpeculationErrorKind, BridgeSpeculativePromotionOutcome,
+};
