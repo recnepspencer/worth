@@ -1,9 +1,10 @@
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationActionDelivery, ApplicationCommitBoundary, ApplicationFeature,
-    ApplicationFeatureInputLeaf, ApplicationFeatureSpec, ApplicationLocalRuleRef,
-    ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
-    ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRetainedCommit,
-    ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ValidatedApplicationProgram,
+    ApplicationActionDelivery, ApplicationActionReference, ApplicationCommitBoundary,
+    ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
+    ApplicationLocalRuleRef, ApplicationNoOutputGraph, ApplicationProgramAuthoring,
+    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
+    ApplicationRetainedCommit, ApplicationRootComposition, ApplicationRuleAt, ApplicationRuleLeaf,
+    ApplicationRuleList, ValidatedApplicationProgram,
 };
 
 use crate::declaration::{
@@ -13,6 +14,21 @@ use crate::declaration::{
 
 pub(super) struct WorthUiStatusProgram;
 pub(super) struct WorthUiStatusFeature;
+
+pub(super) type WorthUiStatusUpdateAction = ApplicationActionReference<
+    WorthUiApplicationSchema,
+    ApplicationRootComposition,
+    WorthUiStatusFeature,
+    WorthUiStatusUpdateBinding,
+    WorthUiStatusUpdateDelivery,
+>;
+pub(super) type WorthUiStatusAction = ApplicationActionReference<
+    WorthUiApplicationSchema,
+    ApplicationRootComposition,
+    WorthUiStatusFeature,
+    WorthUiStatusActionBinding,
+    WorthUiStatusActionDelivery,
+>;
 
 pub(super) struct WorthUiStatusUpdateDelivery;
 impl ApplicationActionDelivery<WorthUiApplicationSchema, WorthUiStatusUpdateBinding>

@@ -137,19 +137,17 @@ pub use inspection::{
 };
 pub(crate) use installed_domain::WorthUiQueryHost;
 pub use installed_domain::{
-    install_worth_ui_operation_executors, WorthUiInstalledQueryDomain, WorthUiMeasurementRecording,
-    WorthUiMeasurementRecordingFamily, WorthUiQueryDomainRebindDenial,
-    WorthUiQueryDomainRebindDenialKind, WorthUiQueryDomainRebindNextAction,
-    WorthUiQueryDomainRebindReceipt, WorthUiQueryInstallationDenial,
-    WorthUiQueryInstallationDenialKind, WorthUiScalarTextProjection,
-    WorthUiScalarTextProjectionFamily, WorthUiSnapshotMeasurement,
-    WorthUiSnapshotMeasurementFamily,
+    WorthUiInstalledQueryDomain, WorthUiMeasurementRecording, WorthUiMeasurementRecordingFamily,
+    WorthUiQueryDomainRebindDenial, WorthUiQueryDomainRebindDenialKind,
+    WorthUiQueryDomainRebindNextAction, WorthUiQueryDomainRebindReceipt,
+    WorthUiQueryInstallationDenial, WorthUiQueryInstallationDenialKind,
+    WorthUiScalarTextProjection, WorthUiScalarTextProjectionFamily, WorthUiSnapshotMeasurement,
+    WorthUiSnapshotMeasurementFamily, install_worth_ui_operation_executors,
 };
 #[cfg(any(test, feature = "certification-construction"))]
 pub use installed_domain::{
-    install_worth_ui_partial_collection_test_operation_executors,
+    WorthUiQueryWorkspaceExt, install_worth_ui_partial_collection_test_operation_executors,
     install_worth_ui_partial_test_operation_executors, install_worth_ui_test_operation_executors,
-    WorthUiQueryWorkspaceExt,
 };
 pub use native_aspect_contracts::worth_ui_native_aspect_contracts;
 pub use operation_live::{
@@ -170,6 +168,7 @@ pub use operation_live::{
     WorthUiValidatedCollectionChangeObservation,
 };
 pub use presentation_async::{
+    WORTH_UI_PRESENTATION_PENDING_CAPACITY, WORTH_UI_PRESENTATION_TRANSITION_CAPACITY,
     WorthUiPresentationAdmissionRecovery, WorthUiPresentationAdmissionStop,
     WorthUiPresentationAsyncCloseDenial, WorthUiPresentationAsyncCloseReceipt,
     WorthUiPresentationAsyncHostCompletion, WorthUiPresentationAsyncHostPlan,
@@ -191,7 +190,6 @@ pub use presentation_async::{
     WorthUiPresentationSettlementStop, WorthUiPresentationSupersededPhysicalObservation,
     WorthUiPresentationTransitionKind, WorthUiPresentationTransitionObservation,
     WorthUiPresentationUnresolvedReceipt, WorthUiPresentationValidatedCompletion,
-    WORTH_UI_PRESENTATION_PENDING_CAPACITY, WORTH_UI_PRESENTATION_TRANSITION_CAPACITY,
 };
 pub use product_projection::{
     WorthUiScalarProjectionActionEvidence, WorthUiScalarProjectionActionPreconditionDenial,
@@ -200,8 +198,10 @@ pub use product_projection::{
 pub use product_projection::{
     WorthUiStatusActionExecution, WorthUiStatusActionIdentity, WorthUiStatusActionMutationOutcome,
     WorthUiStatusActionOutcome, WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop,
-    WorthUiStatusMutationOutcome, WorthUiStatusOwnerCloseReceipt, WorthUiStatusOwnerError,
-    WorthUiStatusPublication, WorthUiStatusSourceOwner,
+    WorthUiStatusMutation, WorthUiStatusMutationClose, WorthUiStatusMutationOutcome,
+    WorthUiStatusMutationResult, WorthUiStatusMutationStop, WorthUiStatusOwnerCloseReceipt,
+    WorthUiStatusOwnerError, WorthUiStatusPublication, WorthUiStatusSourceOwner,
+    WorthUiStatusTerminalOutcome,
 };
 pub use projection_binding::{
     UiCollectionProjectionBinding, UiCollectionProjectionBindingAdmission,

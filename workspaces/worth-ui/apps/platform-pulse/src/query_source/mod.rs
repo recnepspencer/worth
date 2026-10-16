@@ -9,10 +9,11 @@ pub(crate) use external_value::{
 #[cfg(feature = "executable-world")]
 pub(crate) use installation::install_native_presentation_async_for_transition_courtroom;
 pub(crate) use installation::{
-    install, install_native_presentation_async, InstalledPlatformPulseQuery,
-    PlatformPulseQueryInstallationDenial,
+    InstalledPlatformPulseQuery, PlatformPulseQueryInstallationDenial, install,
+    install_native_presentation_async,
 };
 pub(crate) use lifecycle_application::{
-    PlatformPulseQueryActionOutcome, PlatformPulseQueryLifecycle,
-    PlatformPulseQueryLifecycleDenial, PlatformPulseQueryShutdownReceipt,
+    PlatformPulseQueryActionOutcome, PlatformPulseQueryContinuation, PlatformPulseQueryLifecycle,
+    PlatformPulseQueryLifecycleDenial, PlatformPulseQueryMutation,
+    PlatformPulseQueryMutationPurpose, PlatformPulseQueryShutdownReceipt,
 };

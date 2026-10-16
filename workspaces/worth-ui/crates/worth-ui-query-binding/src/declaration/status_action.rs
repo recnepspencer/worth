@@ -1,7 +1,8 @@
 use worth_query_decl::facade::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling, ApplicationMutationBinding, ApplicationMutationIntent,
+        ApplicationCandidateResourceCeiling, ApplicationConventionalAdmission,
+        ApplicationMutationAdmissionBinding, ApplicationMutationBinding, ApplicationMutationIntent,
         ApplicationQueryMutationSource, NoApplicationMutationOutputs,
     },
     application_schema::{
@@ -39,6 +40,10 @@ worth_query_operation_writes!(WorthUiApplyStatusAction => [QueryTextStatusField]
 worth_query_operation_emits!(WorthUiApplyStatusAction => [WorthUiStatusChangedEffect]);
 
 pub struct WorthUiStatusActionBinding;
+
+impl ApplicationMutationAdmissionBinding<WorthUiApplicationSchema> for WorthUiStatusActionBinding {
+    type Admission = ApplicationConventionalAdmission;
+}
 
 impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusActionBinding {
     type Input = WorthUiStatusActionRequest;
@@ -146,7 +151,7 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusActionBinding>
         let current = match reader.field(&entity, QueryRevisionValueField::reference()) {
             Ok(Some(current)) => current,
             Ok(None) => {
-                return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::RevisionMismatch)
+                return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::RevisionMismatch);
             }
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
@@ -171,7 +176,7 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusActionBinding>
         let entity = match writer.projected_entity(&target) {
             Ok(entity) => entity,
             Err(error) => {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
             }
         };
         if let Err(error) = writer.write_field(

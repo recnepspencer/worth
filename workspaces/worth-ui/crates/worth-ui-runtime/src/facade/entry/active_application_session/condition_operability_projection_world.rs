@@ -304,7 +304,10 @@ pub(super) fn status(
     revision: u64,
 ) -> UiProjectionObservation {
     owner
-        .publish_source(WorthUiScalarProjectionSourceRecord::new(status, revision).unwrap())
+        .publish_source(
+            WorthUiScalarProjectionSourceRecord::new(status, revision).unwrap(),
+            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+        )
         .unwrap()
         .into_projection_observation()
         .unwrap()
