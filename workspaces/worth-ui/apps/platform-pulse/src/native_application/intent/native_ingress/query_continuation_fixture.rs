@@ -98,7 +98,7 @@ impl PlatformPulseApplicationRuntime {
                 ingress.transitions(),
                 [WorthUiNativeIntentTransition::AttemptPrepared(_)]
             ),
-            "real framework dispatch required: transitions={:?}, interaction_stops={}, duplicates={}",
+            "real framework dispatch required: transitions={:?}, interaction_stops={:?}, duplicates={}",
             ingress
                 .transitions()
                 .iter()
@@ -109,7 +109,12 @@ impl PlatformPulseApplicationRuntime {
                         native_intent_stop_kind(stopped.stop()),
                 })
                 .collect::<Vec<_>>(),
-            ingress.interaction_stops().len(),
+            ingress.interaction_stops().iter().map(|stop| match stop {
+                worth_ui::facade::app::WorthUiNativeInteractionIngressStop::ManagedPublicationPending(_) => "managed publication pending".to_owned(),
+                worth_ui::facade::app::WorthUiNativeInteractionIngressStop::ManagedObservationProgressPending(_) => "managed observation pending".to_owned(),
+                worth_ui::facade::app::WorthUiNativeInteractionIngressStop::Quarantined(cause) => format!("quarantined: {cause:?}"),
+                worth_ui::facade::app::WorthUiNativeInteractionIngressStop::Denied(cause) => format!("denied: {cause:?}"),
+            }).collect::<Vec<_>>(),
             ingress.duplicate_batches(),
         );
         self.settle_native_intent_ingress(&mut shell, ingress);
