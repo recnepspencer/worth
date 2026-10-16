@@ -206,7 +206,7 @@ fn committed_owner_custody_is_accepted_in_one_request() {
                 "workflow-committed-custody",
                 authentication::approval_configuration(),
             ),
-            FaultScript::Succeed,
+            FaultScript::CommitThenLoseResponse,
         );
         let route = ready.install_synchronous_completion();
         let runtime = &ready.fixture.world.runtime;
@@ -225,6 +225,10 @@ fn committed_owner_custody_is_accepted_in_one_request() {
             .expect("retain the installed payment action and original occurrence");
         let mut operation = match operation.advance(&request) {
             worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Progress(operation) => operation,
+            worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
+                let _original_owner = operation;
+                panic!("the original dispatch was refused: {denial:?}");
+            }
             _ => panic!("the actual dispatch must retain its original owner until inbound"),
         };
 
@@ -232,12 +236,18 @@ fn committed_owner_custody_is_accepted_in_one_request() {
             .token()
             .try_into()
             .expect("the real dispatch token has 32 bytes");
+        assert!(
+            runtime
+                .observe_payment_rail_completion(&route, token)
+                .is_none(),
+            "a lost response cannot manufacture native inbound completion"
+        );
+        assert_eq!(ready.rail.completed_effect_count(), 1);
+        // Complete through the existing original outbox handle and the real
+        // rail's same-key reply, never by manufacturing an inbound message.
         ready
-            .fixture
-            .world
-            .runtime
-            .observe_payment_rail_completion(&route, token)
-            .expect("the synchronous transport completion entered the installed terminal owner");
+            .rail
+            .under(FaultScript::Succeed, Duration::from_millis(150));
         let effect = loop {
             use worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance as Advance;
             match operation.advance(&request) {
@@ -253,6 +263,13 @@ fn committed_owner_custody_is_accepted_in_one_request() {
                 }
             }
         };
+        let dispatches = ready.rail.production_dispatches();
+        assert_eq!(dispatches.len(), 2);
+        assert_eq!(dispatches[0].correlation, dispatches[1].correlation);
+        assert_eq!(dispatches[0].payload, dispatches[1].payload);
+        runtime
+            .observe_payment_rail_completion(&route, token)
+            .expect("the real same-key completion entered the installed terminal owner");
         // The actual original receipt is the actor oracle, never business input.
         let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
             receipt: original_receipt,

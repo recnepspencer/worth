@@ -90,6 +90,25 @@ fn retained_delegation_recovers_original_publication_and_refuses_cancelled_clean
         .is_none(),
         "partial source publication is not current child publication"
     );
+    // Observe the actual World record, not the count of retired owner components:
+    // recovered components become live product truth and must not be retired.
+    let recovery_page = || {
+        let page = fixture
+            .runtime
+            .application_runtime()
+            .product_publication_recovery_page(None, std::num::NonZeroUsize::new(8).unwrap())
+            .expect("the native recovery catalog remains inspectable");
+        assert!(
+            page.next_after().is_none(),
+            "the complete fixture catalog fits one page"
+        );
+        page
+    };
+    let original_records = recovery_page();
+    let [original_record] = original_records.rows() else {
+        panic!("the failed durable append must retain exactly one genuine World recovery record");
+    };
+    let original_handle = original_record.handle().clone();
     let completed = loop {
         match command.advance(&fixture.runtime.request(&original, &request_scope())) {
             Advance::Progress(next) => command = next,
@@ -136,9 +155,16 @@ fn retained_delegation_recovers_original_publication_and_refuses_cancelled_clean
             ..
         }
     ));
-    let closed = completed
+    let retained_records = recovery_page();
+    let [retained_record] = retained_records.rows() else {
+        panic!("cancelled cleanup must preserve the original native recovery record");
+    };
+    assert_eq!(retained_record.handle(), &original_handle);
+    completed
         .close(&fixture.runtime.request(&original, &request_scope()))
         .unwrap_or_else(|_| panic!("fresh issuer request lawfully releases original collection"));
-    assert!(closed.retired_component_count() > 0,
-        "recovered native record custody is actually retired; empty cleanup cannot satisfy this court");
+    assert!(
+        recovery_page().rows().is_empty(),
+        "the original nonempty native record collection is actually released"
+    );
 }
