@@ -12,6 +12,8 @@ impl PlatformPulseApplicationRuntime {
         worth_ui_native_platform::UiNativeApplicationRuntimeCloseIncomplete,
     > {
         self.shell = Some(application);
+        self.external_close_requested = true;
+        self.advance_closing_query_turn();
         let shutdown = match self.shutdown_product() {
             Some(shutdown) => shutdown,
             None => {
@@ -34,12 +36,14 @@ impl PlatformPulseApplicationRuntime {
     pub(super) fn shutdown_product(
         &mut self,
     ) -> Option<worth_ui::facade::app::WorthUiNativeApplicationShutdownReceipt> {
+        // Request, cancellation and presentation obligations stay in the runtime
+        // until their actual existing owners have settled them.
+        if !self.query_close_ready() {
+            return None;
+        }
         // Query refusal preserves the whole lifecycle before any shell/watch teardown,
         // including when the product is already terminal.
-        let query = match close_query_for_shutdown(
-            &mut self.query_lifecycle,
-            &crate::query_source::fresh_close_scope(),
-        ) {
+        let query = match close_query_for_shutdown(&mut self.query_lifecycle) {
             Ok(query) => query,
             Err(_) => return None,
         };
@@ -119,7 +123,6 @@ impl PlatformPulseApplicationRuntime {
 /// leaves shell, subscriptions, watches and terminal posture with the native runtime.
 fn close_query_for_shutdown(
     owner: &mut Option<crate::query_source::PlatformPulseQueryLifecycle>,
-    scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<
     crate::query_source::PlatformPulseQueryShutdownReceipt,
     crate::query_source::PlatformPulseQueryLifecycleDenial,
@@ -127,10 +130,10 @@ fn close_query_for_shutdown(
     let lifecycle = owner
         .take()
         .ok_or(crate::query_source::PlatformPulseQueryLifecycleDenial::OwnerNotLive)?;
-    match lifecycle.close_with_scope(scope) {
+    match lifecycle.close() {
         Ok(closed) => Ok(closed),
         Err((lifecycle, denial)) => {
-            *owner = Some(lifecycle);
+            *owner = Some(*lifecycle);
             Err(denial)
         }
     }

@@ -1,9 +1,8 @@
 mod actions;
 mod continuation;
 mod error;
-pub(crate) use continuation::{
-    PlatformPulseQueryContinuation, PlatformPulseQueryMutation, PlatformPulseQueryMutationPurpose,
-};
+pub(crate) use continuation::PlatformPulseQueryContinuation;
+use continuation::{PlatformPulseQueryMutation, PlatformPulseQueryMutationPurpose};
 pub(crate) use error::{PlatformPulseQueryActionOutcome, PlatformPulseQueryLifecycleDenial};
 
 use worth_query_host::facade::publication::domain_computation::WorthQueryApplicationQueryPublicationReceipt;
@@ -15,6 +14,10 @@ use worth_ui::facade::query_binding::{
 pub(crate) struct PlatformPulseQueryLifecycle {
     owner: WorthUiStatusSourceOwner,
     state: PlatformPulseQueryOwnerState,
+    #[cfg(test)]
+    next_attempt_scope_for_test: Option<
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
+    >,
 }
 
 enum PlatformPulseQueryOwnerState {
@@ -22,7 +25,7 @@ enum PlatformPulseQueryOwnerState {
     AwaitingPublication(ExpectedPublication),
     Live,
     Indeterminate,
-    Mutation(continuation::PlatformPulseQueryMutation),
+    Mutation(PlatformPulseQueryMutation),
     Closed,
 }
 
@@ -44,6 +47,8 @@ impl PlatformPulseQueryLifecycle {
         Self {
             owner,
             state: PlatformPulseQueryOwnerState::BeforeInitial(initial),
+            #[cfg(test)]
+            next_attempt_scope_for_test: None,
         }
     }
 
@@ -67,18 +72,22 @@ impl PlatformPulseQueryLifecycle {
         record: WorthUiScalarProjectionSourceRecord,
     ) -> Result<UiProjectionObservation, PlatformPulseQueryLifecycleDenial> {
         self.require_live()?;
+        let scope = self.next_request_scope();
         let publication = match self
             .owner
-            .publish_source(record, std::num::NonZeroUsize::MAX)
+            .prepare_source(record, &scope)
+            .and_then(|original| original.advance(&scope, std::num::NonZeroUsize::MAX))
         {
-            Ok(publication) => publication,
+            Ok(worth_ui::facade::query_binding::WorthUiStatusMutationResult::Source(
+                publication,
+            )) => publication,
+            Ok(_) => unreachable!("original source construction retains its family"),
             Err(operation) => {
-                self.state = PlatformPulseQueryOwnerState::Mutation(
-                    continuation::PlatformPulseQueryMutation::new(
+                self.state =
+                    PlatformPulseQueryOwnerState::Mutation(PlatformPulseQueryMutation::new(
                         operation,
-                        continuation::PlatformPulseQueryMutationPurpose::Source,
-                    ),
-                );
+                        PlatformPulseQueryMutationPurpose::Source,
+                    ));
                 return Err(PlatformPulseQueryLifecycleDenial::MutationPending);
             }
         };
@@ -87,6 +96,47 @@ impl PlatformPulseQueryLifecycle {
             .map_err(PlatformPulseQueryLifecycleDenial::Projection)?;
         self.retain_awaiting(&observation);
         Ok(observation)
+    }
+
+    fn next_request_scope(
+        &mut self,
+    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope {
+        #[cfg(test)]
+        if let Some(scope) = self.next_attempt_scope_for_test.take() {
+            return scope;
+        }
+        fresh_query_scope()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn cancel_next_attempt_for_test(&mut self) {
+        use worth_query_host::facade::admission::authenticated_principal::{
+            WorthQueryCancellationSource, WorthQueryRequestScope,
+        };
+        let cancellation = WorthQueryCancellationSource::new();
+        let scope = WorthQueryRequestScope::new(None, cancellation.token());
+        cancellation.cancel();
+        self.next_attempt_scope_for_test = Some(scope);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn authentication_cancelled_for_test(&self) -> bool {
+        matches!(self.mutation_stop(), Some(worth_ui::facade::query_binding::WorthUiStatusMutationStop::Setup(worth_ui::facade::query_binding::WorthUiStatusOwnerError::Authentication(denial))) if denial.kind() == worth_query_host::facade::admission::authenticated_principal::WorthQueryAuthenticationDenialKind::Cancelled)
+    }
+
+    pub(crate) fn has_pending_mutation(&self) -> bool {
+        matches!(self.state, PlatformPulseQueryOwnerState::Mutation(_))
+    }
+
+    pub(crate) fn has_pending_publication(&self) -> bool {
+        matches!(
+            self.state,
+            PlatformPulseQueryOwnerState::AwaitingPublication(_)
+        )
+    }
+
+    pub(crate) fn accepts_command(&self) -> bool {
+        matches!(self.state, PlatformPulseQueryOwnerState::Live)
     }
 
     fn require_live(&self) -> Result<(), PlatformPulseQueryLifecycleDenial> {
@@ -127,16 +177,18 @@ impl PlatformPulseQueryLifecycle {
 
     pub(crate) fn close(
         self,
-    ) -> Result<PlatformPulseQueryShutdownReceipt, (Self, PlatformPulseQueryLifecycleDenial)> {
-        self.close_with_scope(&fresh_close_scope())
+    ) -> Result<PlatformPulseQueryShutdownReceipt, (Box<Self>, PlatformPulseQueryLifecycleDenial)>
+    {
+        self.close_with_scope(&fresh_query_scope())
     }
 
     /// Every refusal returns this whole owner, including its presentation state.
     /// Closing never advances a user command or turns cleanup into delivery evidence.
-    pub(crate) fn close_with_scope(
+    pub(super) fn close_with_scope(
         mut self,
         scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
-    ) -> Result<PlatformPulseQueryShutdownReceipt, (Self, PlatformPulseQueryLifecycleDenial)> {
+    ) -> Result<PlatformPulseQueryShutdownReceipt, (Box<Self>, PlatformPulseQueryLifecycleDenial)>
+    {
         let state = std::mem::replace(&mut self.state, PlatformPulseQueryOwnerState::Closed);
         match state {
             PlatformPulseQueryOwnerState::Live => {}
@@ -144,12 +196,12 @@ impl PlatformPulseQueryLifecycle {
                 match mutation.close_without_commit(scope) {
                     Err(mutation) => {
                         self.state = PlatformPulseQueryOwnerState::Mutation(mutation);
-                        return Err((self, PlatformPulseQueryLifecycleDenial::MutationPending));
+                        return Err((Box::new(self), PlatformPulseQueryLifecycleDenial::MutationPending));
                     }
                     Ok(closed) => {
                         if matches!(closed.live, Some(worth_query_host::facade::primary_graph::WorthQueryApplicationLiveCloseOutcome::Unavailable)) {
                             self.state = PlatformPulseQueryOwnerState::Indeterminate;
-                            return Err((self, PlatformPulseQueryLifecycleDenial::IndeterminateAtClose));
+                            return Err((Box::new(self), PlatformPulseQueryLifecycleDenial::IndeterminateAtClose));
                         }
                     }
                 }
@@ -165,7 +217,7 @@ impl PlatformPulseQueryLifecycle {
                     _ => PlatformPulseQueryLifecycleDenial::OwnerNotLive,
                 };
                 self.state = state;
-                return Err((self, denial));
+                return Err((Box::new(self), denial));
             }
         }
         let receipt = self.owner.close();
@@ -206,8 +258,8 @@ impl PlatformPulseQueryShutdownReceipt {
 #[cfg(test)]
 mod tests;
 
-/// A new unprivileged request scope for each native-driver close attempt.
-pub(crate) fn fresh_close_scope()
+/// A new unprivileged request scope for each Query mutation or close attempt.
+fn fresh_query_scope()
 -> worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope {
     use worth_query_host::facade::admission::authenticated_principal::{
         WorthQueryCancellationSource, WorthQueryRequestScope,

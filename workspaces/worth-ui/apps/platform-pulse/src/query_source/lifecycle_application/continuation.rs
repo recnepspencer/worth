@@ -6,11 +6,13 @@ use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequ
 use worth_ui::facade::query_binding::{
     WorthUiScalarProjectionActionPreconditionDenial, WorthUiStatusActionOutcome,
     WorthUiStatusMutation, WorthUiStatusMutationClose, WorthUiStatusMutationResult,
-    WorthUiStatusMutationStop,
 };
 
+#[cfg(test)]
+use worth_ui::facade::query_binding::WorthUiStatusMutationStop;
+
 #[derive(Debug)]
-pub(crate) enum PlatformPulseQueryMutationPurpose {
+pub(super) enum PlatformPulseQueryMutationPurpose {
     Source,
     CurrentAction,
     DeniedAction,
@@ -18,7 +20,7 @@ pub(crate) enum PlatformPulseQueryMutationPurpose {
 
 #[must_use = "retain the original mutation until fresh-request continuation or lawful close"]
 #[derive(Debug)]
-pub(crate) struct PlatformPulseQueryMutation {
+pub(super) struct PlatformPulseQueryMutation {
     operation: WorthUiStatusMutation,
     purpose: PlatformPulseQueryMutationPurpose,
 }
@@ -29,13 +31,15 @@ impl PlatformPulseQueryMutation {
     ) -> Self {
         Self { operation, purpose }
     }
-    pub(crate) fn purpose(&self) -> &PlatformPulseQueryMutationPurpose {
+    #[cfg(test)]
+    pub(super) fn purpose(&self) -> &PlatformPulseQueryMutationPurpose {
         &self.purpose
     }
-    pub(crate) fn stop(&self) -> Option<&WorthUiStatusMutationStop> {
+    #[cfg(test)]
+    pub(super) fn stop(&self) -> Option<&WorthUiStatusMutationStop> {
         self.operation.stop()
     }
-    pub(crate) fn advance(
+    pub(super) fn advance(
         self,
         scope: &WorthQueryRequestScope,
         history: NonZeroUsize,
@@ -72,6 +76,32 @@ pub(crate) enum PlatformPulseQueryContinuation {
     Action(PlatformPulseQueryActionOutcome),
 }
 impl PlatformPulseQueryLifecycle {
+    /// Cancels only when the actual original native owner proves a no-commit close.
+    /// A committed or unresolved operation remains owned for normal continuation.
+    pub(crate) fn cancel_pending_mutation(
+        &mut self,
+    ) -> Result<(), PlatformPulseQueryLifecycleDenial> {
+        let state = std::mem::replace(&mut self.state, PlatformPulseQueryOwnerState::Indeterminate);
+        let PlatformPulseQueryOwnerState::Mutation(mutation) = state else {
+            self.state = state;
+            return Err(PlatformPulseQueryLifecycleDenial::OwnerNotLive);
+        };
+        match mutation.close_without_commit(&super::fresh_query_scope()) {
+            Err(mutation) => {
+                self.state = PlatformPulseQueryOwnerState::Mutation(mutation);
+                Err(PlatformPulseQueryLifecycleDenial::MutationPending)
+            }
+            Ok(closed) => {
+                if matches!(closed.live, Some(worth_query_host::facade::primary_graph::WorthQueryApplicationLiveCloseOutcome::Unavailable)) {
+                    return Err(PlatformPulseQueryLifecycleDenial::IndeterminateAtClose);
+                }
+                self.state = PlatformPulseQueryOwnerState::Live;
+                Ok(())
+            }
+        }
+    }
+
+    #[cfg(test)]
     pub(crate) fn mutation_stop(&self) -> Option<&WorthUiStatusMutationStop> {
         match &self.state {
             PlatformPulseQueryOwnerState::Mutation(mutation) => mutation.stop(),
@@ -82,7 +112,6 @@ impl PlatformPulseQueryLifecycle {
     /// this same product stage; no source command, key or presentation purpose is rebuilt.
     pub(crate) fn continue_mutation(
         &mut self,
-        scope: &WorthQueryRequestScope,
         history: NonZeroUsize,
     ) -> Result<PlatformPulseQueryContinuation, PlatformPulseQueryLifecycleDenial> {
         let state = std::mem::replace(&mut self.state, PlatformPulseQueryOwnerState::Indeterminate);
@@ -90,7 +119,8 @@ impl PlatformPulseQueryLifecycle {
             self.state = state;
             return Err(PlatformPulseQueryLifecycleDenial::OwnerNotLive);
         };
-        let (purpose, result) = match mutation.advance(scope, history) {
+        let scope = self.next_request_scope();
+        let (purpose, result) = match mutation.advance(&scope, history) {
             Ok(result) => result,
             Err(mutation) => {
                 self.state = PlatformPulseQueryOwnerState::Mutation(mutation);

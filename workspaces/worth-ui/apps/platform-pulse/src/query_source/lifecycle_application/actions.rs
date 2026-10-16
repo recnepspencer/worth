@@ -20,26 +20,31 @@ impl PlatformPulseQueryLifecycle {
             idempotency_lineage,
         )
         .map_err(PlatformPulseQueryLifecycleDenial::ActionRequest)?;
+        let scope = self.next_request_scope();
         let execution = match self
             .owner
-            .execute_action(action, std::num::NonZeroUsize::MAX)
+            .prepare_action(action, &scope)
+            .and_then(|original| original.advance(&scope, std::num::NonZeroUsize::MAX))
         {
-            Ok(WorthUiStatusActionOutcome::Committed(execution)) => execution,
-            Ok(WorthUiStatusActionOutcome::DeniedRevisionMismatch { .. }) => {
+            Ok(worth_ui::facade::query_binding::WorthUiStatusMutationResult::Action(
+                WorthUiStatusActionOutcome::Committed(execution),
+            )) => execution,
+            Ok(worth_ui::facade::query_binding::WorthUiStatusMutationResult::Action(
+                WorthUiStatusActionOutcome::DeniedRevisionMismatch { .. },
+            )) => {
                 self.state = PlatformPulseQueryOwnerState::Indeterminate;
                 return Ok(PlatformPulseQueryActionOutcome::Indeterminate(
                     PlatformPulseQueryActionIndeterminate::CurrentRevisionLost,
                 ));
             }
+            Ok(_) => unreachable!("original action construction retains its family"),
             Err(detail) => {
                 self.state =
                     PlatformPulseQueryOwnerState::Mutation(PlatformPulseQueryMutation::new(
                         detail,
                         PlatformPulseQueryMutationPurpose::CurrentAction,
                     ));
-                return Ok(PlatformPulseQueryActionOutcome::Indeterminate(
-                    PlatformPulseQueryActionIndeterminate::MutationPending,
-                ));
+                return Ok(PlatformPulseQueryActionOutcome::Pending);
             }
         };
         let (publication, evidence) = execution.into_parts();
@@ -68,34 +73,39 @@ impl PlatformPulseQueryLifecycle {
             idempotency_lineage,
         )
         .map_err(PlatformPulseQueryLifecycleDenial::ActionRequest)?;
+        let scope = self.next_request_scope();
         match self
             .owner
-            .execute_action(action, std::num::NonZeroUsize::MAX)
+            .prepare_action(action, &scope)
+            .and_then(|original| original.advance(&scope, std::num::NonZeroUsize::MAX))
         {
-            Ok(WorthUiStatusActionOutcome::DeniedRevisionMismatch {
-                active_revision,
-                submitted_revision,
-                ..
-            }) => Ok(PlatformPulseQueryActionOutcome::Denied {
+            Ok(worth_ui::facade::query_binding::WorthUiStatusMutationResult::Action(
+                WorthUiStatusActionOutcome::DeniedRevisionMismatch {
+                    active_revision,
+                    submitted_revision,
+                    ..
+                },
+            )) => Ok(PlatformPulseQueryActionOutcome::Denied {
                 denial: WorthUiScalarProjectionActionPreconditionDenial::SourceRevisionMismatch,
                 active_query_source_revision: active_revision,
                 submitted_query_source_revision: submitted_revision,
             }),
-            Ok(WorthUiStatusActionOutcome::Committed(_)) => {
+            Ok(worth_ui::facade::query_binding::WorthUiStatusMutationResult::Action(
+                WorthUiStatusActionOutcome::Committed(_),
+            )) => {
                 self.state = PlatformPulseQueryOwnerState::Indeterminate;
                 Ok(PlatformPulseQueryActionOutcome::Indeterminate(
                     PlatformPulseQueryActionIndeterminate::DeniedActionCommitted,
                 ))
             }
+            Ok(_) => unreachable!("original action construction retains its family"),
             Err(detail) => {
                 self.state =
                     PlatformPulseQueryOwnerState::Mutation(PlatformPulseQueryMutation::new(
                         detail,
                         PlatformPulseQueryMutationPurpose::DeniedAction,
                     ));
-                Ok(PlatformPulseQueryActionOutcome::Indeterminate(
-                    PlatformPulseQueryActionIndeterminate::MutationPending,
-                ))
+                Ok(PlatformPulseQueryActionOutcome::Pending)
             }
         }
     }

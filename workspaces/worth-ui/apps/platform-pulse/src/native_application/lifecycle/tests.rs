@@ -1,8 +1,6 @@
 //! CPU-only proof of the same Query gate native close uses before shell/watch teardown.
 use super::close_query_for_shutdown;
-use crate::query_source::{
-    PlatformPulseQueryLifecycle, PlatformPulseQueryLifecycleDenial, fresh_close_scope,
-};
+use crate::query_source::{PlatformPulseQueryLifecycle, PlatformPulseQueryLifecycleDenial};
 use worth_ui::facade::query_binding::{UiProjectionObservation, WorthUiStatusSourceOwner};
 
 #[test]
@@ -11,7 +9,7 @@ fn native_shutdown_gate_preserves_the_whole_unpresented_query_owner() {
     let (_, initial) = owner.initial_projection().unwrap();
     let mut owner = Some(PlatformPulseQueryLifecycle::new(owner, initial));
     assert!(matches!(
-        close_query_for_shutdown(&mut owner, &fresh_close_scope()),
+        close_query_for_shutdown(&mut owner),
         Err(PlatformPulseQueryLifecycleDenial::OwnerNotLive)
     ));
     let UiProjectionObservation::ApplicationScalar(initial) = owner
@@ -23,7 +21,7 @@ fn native_shutdown_gate_preserves_the_whole_unpresented_query_owner() {
         panic!("real scalar fact expected");
     };
     assert!(matches!(
-        close_query_for_shutdown(&mut owner, &fresh_close_scope()),
+        close_query_for_shutdown(&mut owner),
         Err(PlatformPulseQueryLifecycleDenial::UnsettledPublicationAtClose)
     ));
     owner
@@ -31,7 +29,7 @@ fn native_shutdown_gate_preserves_the_whole_unpresented_query_owner() {
         .expect("presentation-pending custody was restored")
         .admit_publication(initial)
         .unwrap();
-    let closed = close_query_for_shutdown(&mut owner, &fresh_close_scope())
+    let closed = close_query_for_shutdown(&mut owner)
         .expect("only the genuine admitted presentation can close the original owner");
     assert!(closed.owner_terminal());
     assert!(

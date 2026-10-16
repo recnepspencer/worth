@@ -59,7 +59,7 @@ fn cancelled_close_returns_the_whole_original_lifecycle_then_fresh_retry_closes(
         .owner
         .prepare_source(
             WorthUiScalarProjectionSourceRecord::new("UNEXECUTED", 1).unwrap(),
-            &super::fresh_close_scope(),
+            &super::fresh_query_scope(),
         )
         .unwrap();
     lifecycle.state = PlatformPulseQueryOwnerState::Mutation(PlatformPulseQueryMutation::new(
@@ -73,6 +73,7 @@ fn cancelled_close_returns_the_whole_original_lifecycle_then_fresh_retry_closes(
         Err(refused) => refused,
         Ok(_) => panic!("cancelled authentication cannot close actual operation custody"),
     };
+    let lifecycle = *lifecycle;
     assert!(matches!(
         denial,
         PlatformPulseQueryLifecycleDenial::MutationPending
@@ -97,7 +98,7 @@ fn cancelled_close_returns_the_whole_original_lifecycle_then_fresh_retry_closes(
         )),
         _ => panic!("same native operation and purpose must stay owned"),
     }
-    let closed = match lifecycle.close_with_scope(&super::fresh_close_scope()) {
+    let closed = match lifecycle.close_with_scope(&super::fresh_query_scope()) {
         Ok(closed) => closed,
         Err(_) => panic!(
             "fresh authority closes the actual unexecuted operation and original source owner"
@@ -117,6 +118,7 @@ fn indeterminate_close_keeps_the_original_query_owner() {
         Err(refused) => refused,
         Ok(_) => panic!("indeterminate product state cannot claim clean shutdown"),
     };
+    let lifecycle = *lifecycle;
     assert!(matches!(
         denial,
         PlatformPulseQueryLifecycleDenial::IndeterminateAtClose
