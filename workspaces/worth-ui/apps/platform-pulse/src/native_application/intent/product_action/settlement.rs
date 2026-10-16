@@ -214,7 +214,10 @@ impl PlatformPulseApplicationRuntime {
         self.publish_query_action(report);
     }
 
-    fn publish_query_action(&mut self, observation: PlatformPulseQueryActionObservation) -> bool {
+    pub(super) fn publish_query_action(
+        &mut self,
+        observation: PlatformPulseQueryActionObservation,
+    ) -> bool {
         match self.publisher.query_action(observation) {
             Ok(()) => true,
             Err(error) => {
