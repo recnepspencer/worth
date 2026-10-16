@@ -1,5 +1,6 @@
 //! Target laws must judge all recovered rows before a World exists.
 use crate::document_retention_model::{
+    actor_generation::validated_actor_program,
     host::{host_limits, publish_on_first_program, restore_on_first_program},
     presented_request::set_retention,
     programs::{validated_first_program, validated_second_program},
@@ -36,7 +37,9 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
     let mut authored = false;
     let denial = installation::in_memory_rostered_program_from_checkpoint_with_transition(
         validated_second_program(),
-        installation::WorthQueryApplicationProgramRoster::new().support(validated_first_program()),
+        installation::WorthQueryApplicationProgramRoster::new()
+            .support(validated_first_program())
+            .support(validated_actor_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         host_limits(),
@@ -98,7 +101,9 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
     drop(host);
     let migrated = installation::in_memory_rostered_program_from_checkpoint_with_transition(
         validated_second_program(),
-        installation::WorthQueryApplicationProgramRoster::new().support(validated_first_program()),
+        installation::WorthQueryApplicationProgramRoster::new()
+            .support(validated_first_program())
+            .support(validated_actor_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         host_limits(),

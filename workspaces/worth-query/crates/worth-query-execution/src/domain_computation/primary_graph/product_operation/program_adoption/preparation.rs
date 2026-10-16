@@ -93,6 +93,8 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     WorkflowInventoryUnavailable,
     /// Private workflow safety selection exceeded the admitted work allowance.
     WorkflowInventoryWorkLimit,
+    /// The private inventory's original preparation allowance refused work or storage.
+    WorkflowInventoryPreparation(worth_relational::facade::mvcc::CompanionPreflightStop),
     /// A validation scope names an entity type the schema does not declare.
     UnknownEntityScope {
         entity: String,
