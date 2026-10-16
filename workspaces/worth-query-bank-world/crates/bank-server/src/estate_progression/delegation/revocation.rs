@@ -9,7 +9,6 @@ use bank_domain::{
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
-    application_entry::WorthQueryApplicationCapabilityRevocationDenial,
     declaration::application_schema::TypedMutationPreconditions,
     primary_graph::{
         WorthQueryAdmittedApplicationOperation,
@@ -70,6 +69,10 @@ impl std::error::Error for BankCapabilityRevocationProjectionDenial {}
 
 impl BankIdentityRuntime {
     /// Retains one exact revocation command, including its original key and principal.
+    #[allow(
+        clippy::result_large_err,
+        reason = "Capture refusal returns the original action, key, preparation owner and typed denial without another allocation"
+    )]
     pub fn retain_estate_capability_revocation<'runtime>(
         &'runtime self,
         principal: &BankAuthenticatedPrincipal,
