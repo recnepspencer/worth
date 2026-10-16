@@ -277,6 +277,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCommittedDispatchOutboxReadWork,
 };
 pub use crate::domain_computation::primary_graph::{
+    WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
+};
+pub use crate::domain_computation::primary_graph::{
     WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
     WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
     WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,

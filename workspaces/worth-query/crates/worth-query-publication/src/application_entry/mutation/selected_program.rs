@@ -197,5 +197,8 @@ pub(in crate::application_entry) fn map_selected_program_owner_denial(
         WorthQuerySelectedProgramOwnerDenial::InstalledOwnerUnavailable => {
             WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired
         }
+        WorthQuerySelectedProgramOwnerDenial::UndeclaredOutputRoot => {
+            WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch
+        }
     }
 }
