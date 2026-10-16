@@ -123,7 +123,8 @@ impl CustomInvariantRule for WorkflowFactCustody {
                     // History links may share a member endpoint without
                     // changing that member or a protected relation kind.
                     include_relation_endpoint_entity_touches: false,
-                },
+                }
+                .canonicalize(),
             },
         }
     }
