@@ -79,7 +79,16 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.retained-predecessors.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut features = chain_program::ChainProgram::feature_specs();
+        let mut features = vec![
+            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
+                .provides::<PlanarDerivedBodyOutput>()
+                .conditional_operation::<MutatePlanar>()
+                .finish(),
+            ApplicationFeatureSpec::root::<CheckpointSchema, chain_program::ChainFeature>()
+                .provides::<chain_program::ChainOutput>()
+                .conditional_operation::<PublishChain>()
+                .finish(),
+        ];
         features.push(
             ApplicationFeatureSpec::root::<CheckpointSchema, TailFeature>()
                 .provides::<TailOutput>()
