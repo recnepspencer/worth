@@ -242,16 +242,14 @@ impl BankIdentityRuntime {
                     ViewRestrictedEstateOperation
                 )
             }
-            _ => {
-                return Err((
-                    action,
-                    key,
-                    prepare,
-                    WorthQueryApplicationCapabilityDelegationDenial::Preparation(
-                        BankEstateProgressionDenial::CommandInput("delegated capability target"),
-                    ),
-                ))
-            }
+            _ => Err((
+                action,
+                key,
+                prepare,
+                WorthQueryApplicationCapabilityDelegationDenial::Preparation(
+                    BankEstateProgressionDenial::CommandInput("delegated capability target"),
+                ),
+            )),
         }
     }
 
