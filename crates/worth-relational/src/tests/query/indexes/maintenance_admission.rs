@@ -196,6 +196,30 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
         cold.kind,
         crate::indexes::data::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
     ));
+    let no_population = DerivedIndexMaintenanceBudget {
+        maximum_cold_record_slots: 0,
+        ..budget()
+    };
+    let admitted_cold = runtime
+        .index_authority()
+        .refresh_field_indexes_for_basis_admitted(
+            request.clone(),
+            &basis,
+            no_population,
+            execution,
+            |_, _| Ok::<_, ()>(()),
+        )
+        .unwrap_err();
+    assert!(matches!(
+        admitted_cold,
+        DerivedIndexMaintenanceAdmissionStop::Native(ref cause)
+            if matches!(cause.kind,
+                crate::indexes::data::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired)
+    ));
+    assert!(runtime
+        .index_access()
+        .published_generation_for_observation(selected, &observation)
+        .is_none());
     // Genuine native bootstrap builds the authoring generation; the ordinary selector
     // path then seeds this exact root on a fresh branch without a population scan.
     assert!(runtime
@@ -230,6 +254,22 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
         outcome.work.cold_record_slots, 0,
         "exact authoring generation seeds without population reconstruction"
     );
+    let admitted_warm = runtime
+        .index_authority()
+        .refresh_field_indexes_for_basis_admitted(
+            DerivedIndexBuildRequest {
+                source_commit_id: observation.commit_id().unwrap(),
+                branch_id: observation.identity().branch_id().clone(),
+                index_ids: vec![selected],
+            },
+            &fork_basis,
+            no_population,
+            execution,
+            |_, _| Ok::<_, ()>(()),
+        )
+        .unwrap();
+    assert_eq!(admitted_warm.work.cold_record_slots, 0);
+    assert_eq!(admitted_warm.work.reused_generations, 1);
     // A real data patch cannot masquerade as the unchanged-record seed.
     let predecessor = runtime
         .snapshots()
