@@ -95,7 +95,23 @@ impl Collector {
 }
 
 impl Visit<'_> for Collector {
+    fn visit_item_extern_crate(&mut self, item: &syn::ItemExternCrate) {
+        let name = item.rename.as_ref().map_or(&item.ident, |(_, alias)| alias);
+        let target = if item.ident == "self" {
+            "crate".to_owned()
+        } else {
+            item.ident.to_string()
+        };
+        self.bindings
+            .bind(&self.module, name.to_string(), vec![target]);
+    }
+
     fn visit_item_mod(&mut self, item: &syn::ItemMod) {
+        self.bindings.bind(
+            &self.module,
+            item.ident.to_string(),
+            vec!["self".into(), item.ident.to_string()],
+        );
         let inline = item.content.is_some();
         if inline {
             self.module.push(item.ident.to_string());
@@ -108,5 +124,52 @@ impl Visit<'_> for Collector {
 
     fn visit_item_use(&mut self, item: &syn::ItemUse) {
         self.tree(&item.tree, &mut Vec::new());
+    }
+}
+
+impl super::IsolationVisitor<'_> {
+    pub(super) fn visit_use_tree_segments(
+        &mut self,
+        tree: &syn::UseTree,
+        prefix: &mut Vec<String>,
+    ) {
+        match tree {
+            syn::UseTree::Path(path) => {
+                prefix.push(path.ident.to_string());
+                self.visit_use_tree_segments(&path.tree, prefix);
+                prefix.pop();
+            }
+            syn::UseTree::Name(name) => self.check_leaf(prefix, &name.ident),
+            syn::UseTree::Rename(rename) => self.check_leaf(prefix, &rename.ident),
+            syn::UseTree::Glob(_) => {
+                let reported = self.found.len();
+                self.check_segments(prefix);
+                if self.found.len() == reported {
+                    self.check_glob(prefix);
+                }
+            }
+            syn::UseTree::Group(group) => {
+                for tree in &group.items {
+                    self.visit_use_tree_segments(tree, prefix);
+                }
+            }
+        }
+    }
+
+    /// A crate-relative glob import must stay inside a guarded root; a glob
+    /// from an enclosing facade could bring owner values in by bare name.
+    fn check_glob(&mut self, prefix: &[String]) {
+        let Some(resolved) = self.resolve_local(prefix) else {
+            return;
+        };
+        if resolved.is_empty() || !self.guarded.iter().any(|root| resolved.starts_with(root)) {
+            self.found.insert(format!("{}::*", prefix.join("::")));
+        }
+    }
+
+    fn check_leaf(&mut self, prefix: &[String], leaf: &proc_macro2::Ident) {
+        let mut segments = prefix.to_vec();
+        segments.push(leaf.to_string());
+        self.check_segments(&segments);
     }
 }
