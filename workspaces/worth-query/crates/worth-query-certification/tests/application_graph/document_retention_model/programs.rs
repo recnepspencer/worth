@@ -33,7 +33,7 @@ use super::workflow::{
 #[path = "programs/removed_assessment_supplier.rs"]
 mod removed_assessment_supplier;
 pub use removed_assessment_supplier::{
-    RemovedAssessmentSupplierProgram, validated_removed_assessment_supplier_program,
+    validated_removed_assessment_supplier_program, RemovedAssessmentSupplierProgram,
 };
 
 /// The one feature both programs govern.
@@ -213,43 +213,43 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for ForeignRuleRetent
 #[path = "programs/resource.rs"]
 mod resource;
 
-pub fn validated_first_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP0> {
+pub fn validated_first_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP0> {
     validate::<RetentionProgramP0>()
 }
 
-pub fn validated_second_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP1> {
+pub fn validated_second_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP1> {
     validate::<RetentionProgramP1>()
 }
 
-pub fn validated_changed_feature_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedFeatureRetentionProgram> {
+pub fn validated_changed_feature_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedFeatureRetentionProgram> {
     validate::<ChangedFeatureRetentionProgram>()
 }
 
-pub fn validated_removed_operation_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, RemovedOperationRetentionProgram> {
+pub fn validated_removed_operation_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, RemovedOperationRetentionProgram> {
     validate::<RemovedOperationRetentionProgram>()
 }
 
-pub fn validated_changed_operation_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedOperationRetentionProgram> {
+pub fn validated_changed_operation_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedOperationRetentionProgram> {
     validate::<ChangedOperationRetentionProgram>()
 }
 
-pub fn validated_first_resource_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP0> {
+pub fn validated_first_resource_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP0> {
     validate::<ResourceRetentionProgramP0>()
 }
 
-pub fn validated_second_resource_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP1> {
+pub fn validated_second_resource_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP1> {
     validate::<ResourceRetentionProgramP1>()
 }
 
-pub fn validated_foreign_rule_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, ForeignRuleRetentionProgram> {
+pub fn validated_foreign_rule_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, ForeignRuleRetentionProgram> {
     validate::<ForeignRuleRetentionProgram>()
 }
 

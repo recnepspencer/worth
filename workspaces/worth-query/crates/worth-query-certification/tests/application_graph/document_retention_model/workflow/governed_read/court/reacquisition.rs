@@ -134,7 +134,11 @@ fn support_successor(application: &mut GovernedRuntime) {
             .installed_program(),
         workflow::runtime::workflow_resources(),
     );
-    application.support_workflow_spec(supported).unwrap();
+    application
+        .support_workflow_spec(supported)
+        .unwrap_or_else(|(_supported, denial)| {
+            panic!("the vocabulary belongs to a rostered program: {denial:?}")
+        });
 }
 fn carry(
     application: &GovernedRuntime,

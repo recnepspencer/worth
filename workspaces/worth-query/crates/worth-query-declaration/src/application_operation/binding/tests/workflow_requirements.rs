@@ -77,8 +77,8 @@ impl<Binding: ApplicationMutationBinding<MutationSchema>>
 
 #[test]
 fn evidence_floor_changes_canonical_program_revision_and_operation_comparison() {
-    fn meaning<Binding: ApplicationMutationBinding<MutationSchema>>()
-    -> (ApplicationProgramRevision, ApplicationSemanticDescription) {
+    fn meaning<Binding: ApplicationMutationBinding<MutationSchema>>(
+    ) -> (ApplicationProgramRevision, ApplicationSemanticDescription) {
         let program =
             ApplicationProgramAuthoring::<MutationSchema, EvidenceProgram<Binding>>::begin()
                 .validated_program()
@@ -126,8 +126,8 @@ impl ApplicationWorkflowSpec for Workflow {
         ApplicationWorkflowSpecIdentity::new("test.workflow.v1");
 }
 
-fn authored<Binding: ApplicationMutationBinding<MutationSchema>>()
--> AuthoredWorkflowDefinition<Workflow> {
+fn authored<Binding: ApplicationMutationBinding<MutationSchema>>(
+) -> AuthoredWorkflowDefinition<Workflow> {
     let limits = ApplicationWorkflowDefinitionLimits::new(
         8,
         8,
@@ -162,12 +162,14 @@ fn authored<Binding: ApplicationMutationBinding<MutationSchema>>()
 #[test]
 fn workflow_actor_contract_explicit_occurrence_allows_binding_without_approval() {
     assert!(authored::<OccurrenceBinding>().validate().is_ok());
-    for denial in [authored::<ApprovalBinding>().validate().err()] {
-        assert_eq!(
-            denial.unwrap().kind(),
-            ApplicationWorkflowValidationDenialKind::MissingWorkflowAuthority
-        );
-    }
+    assert_eq!(
+        authored::<ApprovalBinding>()
+            .validate()
+            .err()
+            .unwrap()
+            .kind(),
+        ApplicationWorkflowValidationDenialKind::MissingWorkflowAuthority
+    );
 }
 
 #[test]

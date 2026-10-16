@@ -10,8 +10,8 @@ mod external_input;
 use super::{authentication, resources, seed};
 use crate::{ConsumerProgram, ConsumerSchema};
 use std::sync::{
-    Arc,
     atomic::{AtomicBool, AtomicUsize, Ordering},
+    Arc,
 };
 use worth_query_host::facade::{
     application_installation::{self as installation, WorthQueryInMemoryApplicationLimits},
@@ -212,11 +212,9 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     );
     assert_eq!(first.target(), "row-a");
     assert_eq!(first.initial_member().map(PositiveLength::get), Some(2));
-    assert!(
-        first
-            .apply(ApplicationOptionalMemberEdit::Unchanged)
-            .is_none()
-    );
+    assert!(first
+        .apply(ApplicationOptionalMemberEdit::Unchanged)
+        .is_none());
 
     let set = first
         .apply(ApplicationOptionalMemberEdit::Set(

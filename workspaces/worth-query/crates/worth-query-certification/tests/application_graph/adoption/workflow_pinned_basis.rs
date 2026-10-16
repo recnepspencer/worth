@@ -11,7 +11,7 @@ use worth_query_host::facade::domain::WorthQueryApplicationWorkflowResourceCeili
 
 use super::workflow_participant::expect_started;
 use crate::document_retention_model::{
-    host::{DocumentWorkflowRuntime, publish_on_first_program},
+    host::{publish_on_first_program, DocumentWorkflowRuntime},
     programs::RetentionProgramP1,
     workflow::{
         advance_instance, expect_capacity_refused, expect_superseded_start, install_workflow_spec,

@@ -110,6 +110,10 @@ impl ApplicationExternalInputProvider<MutationSchema, RenameOperation> for Provi
         ))
     }
     fn validate_revision(&self, _: &u64, revision: &u64) -> Result<(), ()> {
-        if *revision == 1 { Ok(()) } else { Err(()) }
+        if *revision == 1 {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 }

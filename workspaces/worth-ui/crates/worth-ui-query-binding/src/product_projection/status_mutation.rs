@@ -1,11 +1,11 @@
 //! Ordinary status mutation custody across fresh requests and live disclosure.
 use super::application_runtime::WorthUiStatusApplication;
 use crate::{
+    declaration::{WorthUiApplicationSchema, WorthUiStatusQuery},
     WorthUiScalarProjectionSourceRecord, WorthUiStatusActionMutationOutcome,
     WorthUiStatusActionOutcome, WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop,
     WorthUiStatusMutationOutcome, WorthUiStatusOwnerError, WorthUiStatusPublication,
     WorthUiStatusQueryRequest,
-    declaration::{WorthUiApplicationSchema, WorthUiStatusQuery},
 };
 use std::num::NonZeroUsize;
 use worth_query_host::facade::{

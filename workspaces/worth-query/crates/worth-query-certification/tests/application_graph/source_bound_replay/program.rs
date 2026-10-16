@@ -37,8 +37,8 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for SourceBoundReplay
     }
 }
 
-pub(super) fn validated_program()
--> ValidatedApplicationProgram<DocumentRetentionSchema, SourceBoundReplayProgram> {
+pub(super) fn validated_program(
+) -> ValidatedApplicationProgram<DocumentRetentionSchema, SourceBoundReplayProgram> {
     ApplicationProgramAuthoring::<DocumentRetentionSchema, SourceBoundReplayProgram>::begin()
         .validated_program()
         .expect("the real source-bound action program must validate")

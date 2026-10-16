@@ -1,14 +1,14 @@
 //! One installed Bank world exercises binding refusal, native close and vocabulary retry.
 use super::*;
 use crate::{
-    BankApprovalAuthenticationConfiguration, BankAuthenticationBoundary, BankPrincipalSeed,
-    PersonalAccountCreationAction,
     application_definition::BankApplicationP1,
     identity_runtime::{installation, prepare_seeds},
     support::{
-        CausalBankAuthenticationAdapter, CausalCredential, DynamicIdentity,
-        authentication_configuration, block_on, request_scope,
+        authentication_configuration, block_on, request_scope, CausalBankAuthenticationAdapter,
+        CausalCredential, DynamicIdentity,
     },
+    BankApprovalAuthenticationConfiguration, BankAuthenticationBoundary, BankPrincipalSeed,
+    PersonalAccountCreationAction,
 };
 use bank_domain::{
     model::{AccountName, BankPrincipalId, InstitutionId},
@@ -17,8 +17,9 @@ use bank_domain::{
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::{
-        WorthQueryAuthenticatedExternalPrincipal, WorthQueryAuthenticationAdapterAdmission,
-        WorthQueryCancellationSource, WorthQueryRequestScope, admit_authentication_adapter,
+        admit_authentication_adapter, WorthQueryAuthenticatedExternalPrincipal,
+        WorthQueryAuthenticationAdapterAdmission, WorthQueryCancellationSource,
+        WorthQueryRequestScope,
     },
     application_entry::{
         WorthQueryApplicationRequestExt, WorthQueryOperationCloseDenial,

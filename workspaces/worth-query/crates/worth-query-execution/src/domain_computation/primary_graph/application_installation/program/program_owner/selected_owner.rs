@@ -77,7 +77,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProgramOwner<'_, Schema> {
     >
     where
         Binding: ApplicationMutationBinding<Schema>,
-        Action: worth_query_declaration::facade::application_program::ApplicationAction<Schema, Binding>,
+        Action: worth_query_declaration::facade::application_program::ApplicationAction<
+            Schema,
+            Binding,
+        >,
     {
         self.action_inventory
             .resolve_action::<Schema, Binding, Action>()

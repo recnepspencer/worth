@@ -210,7 +210,11 @@ fn carry_keeps_original_start_revision_while_fresh_advance_uses_current_program(
             .installed_program(),
         workflow::runtime::workflow_resources(),
     );
-    application.support_workflow_spec(supported).unwrap();
+    application
+        .support_workflow_spec(supported)
+        .unwrap_or_else(|(_supported, denial)| {
+            panic!("the vocabulary belongs to a rostered program: {denial:?}")
+        });
     let definition = publish(&application);
     let prepared = prepare(&application, definition, 91_640);
     let performed = started(prepared.execute());

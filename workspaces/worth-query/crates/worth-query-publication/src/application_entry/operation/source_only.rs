@@ -107,12 +107,12 @@ pub enum WorthQuerySourceOnlyPosture {
     Terminal,
 }
 impl<
-    S: ApplicationSchema,
-    I: ApplicationMutationIntent<S>,
-    P: ApplicationProgramDefinition<S>,
-    A,
-    M,
-> WorthQuerySourceOnlyOperation<S, I, P, A, M>
+        S: ApplicationSchema,
+        I: ApplicationMutationIntent<S>,
+        P: ApplicationProgramDefinition<S>,
+        A,
+        M,
+    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
     /// Abandons ordinary retry meaning while keeping the exact native cleanup authority alive.
     ///
@@ -199,12 +199,12 @@ where
 }
 
 impl<
-    S: ApplicationSchema,
-    I: ApplicationMutationIntent<S>,
-    P: ApplicationProgramDefinition<S>,
-    A,
-    M,
-> WorthQuerySourceOnlyOperation<S, I, P, A, M>
+        S: ApplicationSchema,
+        I: ApplicationMutationIntent<S>,
+        P: ApplicationProgramDefinition<S>,
+        A,
+        M,
+    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
     // The native state's completion slot remains the sole evidence owner through
     // delivery and completed wrappers; phase tags never duplicate its payload.

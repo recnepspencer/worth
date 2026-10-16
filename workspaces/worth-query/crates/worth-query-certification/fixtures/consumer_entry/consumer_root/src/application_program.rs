@@ -346,9 +346,9 @@ impl ApplicationProgramDefinition<ConsumerSchema> for OmittedInstalledRuleProgra
 pub(crate) fn source_delivery_specs<D>() -> Vec<ApplicationFeatureSpec>
 where
     D: worth_query_decl::facade::application_program::ApplicationActionDelivery<
-            ConsumerSchema,
-            PlanarSourceAdjustmentBinding<ConsumerSchema>,
-        >,
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    >,
 {
     features::source_delivery_specs::<D>()
 }

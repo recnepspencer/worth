@@ -12,8 +12,8 @@ use bank_domain::{
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_host::facade::{
     application_installation::{
-        WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
         in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
+        WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
     },
     domain::{
         WorthQueryApplicationWorkflowResourceCeiling,
@@ -31,7 +31,6 @@ use worth_query_host::facade::{
 
 use super::{BankGraphSeed, BankIdentityRuntime, InstalledBankPrincipalBinding};
 use crate::{
-    BankApprovalAuthenticationConfiguration,
     application_definition::{
         validated_bank_application, validated_bank_application_p1, validated_bank_application_p2,
     },
@@ -39,6 +38,7 @@ use crate::{
     error::BankIdentityRuntimeBuildError,
     graph_bootstrap::bind_bank_world_with_estate,
     principal_seed::PreparedBankPrincipalSeed,
+    BankApprovalAuthenticationConfiguration,
 };
 
 pub(super) enum BankAuthorizationTimeInstallation {
@@ -150,8 +150,8 @@ pub(super) fn install_payment_workflow_spec<Program>(
 where
     Program:
         worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-                BankSchema,
-            >,
+            BankSchema,
+        >,
 {
     WorthQueryApplicationWorkflowSpecInstallation::<
         BankSchema,

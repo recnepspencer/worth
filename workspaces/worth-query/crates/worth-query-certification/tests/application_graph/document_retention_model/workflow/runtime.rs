@@ -17,12 +17,12 @@ use super::super::{
     schema::DocumentRetentionSchema,
 };
 use super::{
-    ReviewedDocumentWorkflow, WorkflowAdvanceCapability, WorkflowAdvanceInput,
-    WorkflowAdvanceOperation, WorkflowApprovalCapability, WorkflowDefinitionAuthoringBinding,
+    install_certification_authentication_with_clock, ReviewedDocumentWorkflow,
+    WorkflowAdvanceCapability, WorkflowAdvanceInput, WorkflowAdvanceOperation,
+    WorkflowApprovalCapability, WorkflowDefinitionAuthoringBinding,
     WorkflowDefinitionAuthoringCapability, WorkflowDefinitionAuthoringInput,
     WorkflowDefinitionAuthoringOperation, WorkflowInstanceStartCapability,
     WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
-    install_certification_authentication_with_clock,
 };
 
 pub fn retain_workflow<Program: ApplicationProgramDefinition<DocumentRetentionSchema>>(

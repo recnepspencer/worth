@@ -117,8 +117,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ]
     }
 }
-pub(super) fn install()
--> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
+pub(super) fn install(
+) -> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
     install_with_witnesses(0)
 }
 pub(super) fn install_with_witnesses(
@@ -127,8 +127,8 @@ pub(super) fn install_with_witnesses(
     install_configured(witnesses, false)
 }
 
-pub(super) fn install_with_indexed_decision()
--> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
+pub(super) fn install_with_indexed_decision(
+) -> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
     install_configured(0, true)
 }
 

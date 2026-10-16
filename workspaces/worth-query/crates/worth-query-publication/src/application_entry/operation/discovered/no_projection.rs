@@ -58,7 +58,8 @@ where
         {
             return Err(WorthQueryOperationDeliveryDenial::FreshRequestMismatch);
         }
-        request.application
+        request
+            .application
             .with_application_advancement(request.scope, |phase| {
                 self.current_observation(request, &phase, policy)
             })

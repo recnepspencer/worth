@@ -13,13 +13,13 @@ use worth_query_host::facade::product::WorthQueryProductBranch;
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
 use crate::document_retention_model::{
-    host::{DocumentWorkflowRuntime, publish_workflow_on_first_program},
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
     programs::RetentionProgramP1,
     schema::DocumentRetentionSchema,
     workflow::{
-        ReviewedDocumentWorkflow, advance_instance, authoring_intent, install_workflow_spec,
-        start_instance, support_workflow_program, terminal_definition,
+        advance_instance, authoring_intent, install_workflow_spec, start_instance,
+        support_workflow_program, terminal_definition, ReviewedDocumentWorkflow,
     },
 };
 

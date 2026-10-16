@@ -91,9 +91,9 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
         Connection<Schema, FixedRoot<Schema, Intent, Action>>:
             WorthQueryApplicationRequiredOutputConnection<Schema>,
         Binding<Schema, Intent>: WorthQueryApplicationRequiredOutputSource<
-                Schema,
-                Connection<Schema, FixedRoot<Schema, Intent, Action>>,
-            >,
+            Schema,
+            Connection<Schema, FixedRoot<Schema, Intent, Action>>,
+        >,
         Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
         Delivery<Schema, Intent, Action>:
             ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>>,

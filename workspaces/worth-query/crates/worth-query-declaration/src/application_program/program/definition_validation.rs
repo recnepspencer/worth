@@ -1,9 +1,8 @@
 use std::collections::BTreeSet;
 
 use super::{
-    ApplicationActionDeclaration, ApplicationFeatureDeclaration,
-    ApplicationProgramValidationDenial, ApplicationProgramValidationDenialKind, denial,
-    require_identity,
+    denial, require_identity, ApplicationActionDeclaration, ApplicationFeatureDeclaration,
+    ApplicationProgramValidationDenial, ApplicationProgramValidationDenialKind,
 };
 
 pub(super) type FeatureIdentity = (&'static str, &'static str);

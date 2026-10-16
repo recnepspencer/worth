@@ -5,7 +5,7 @@ use bank_domain::{
     proposals::BankIdempotencyKey,
     schema::{AccountStatus, FreezeEstateAccount},
 };
-use bank_server::{BankMutationControls, BankReadControls, mutations, queries};
+use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_entry::{

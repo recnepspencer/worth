@@ -119,13 +119,11 @@ fn authored_application_scalar_reaches_native_publication_and_returns_its_exact_
         current.owner_order(),
         current.fact().query_receipt().inspect().basis().version()
     );
-    assert!(
-        current
-            .fact()
-            .query_receipt()
-            .inspect()
-            .terminal_resources_released()
-    );
+    assert!(current
+        .fact()
+        .query_receipt()
+        .inspect()
+        .terminal_resources_released());
     assert_eq!(host.presentation_calls(), 2);
     assert!(matches!(
         shell.begin_projection_rebind(

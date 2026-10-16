@@ -1,6 +1,6 @@
 //! Borrowed-key workflow binding; ordinary execution retains an owner, native execution selects advanced.
-use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
 use crate::application_entry::mutation::request::WorthQueryMutationSourceUnprepared;
+use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
 use worth_query_declaration::facade::application_operation::ApplicationMutationIntent;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 

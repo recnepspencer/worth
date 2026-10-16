@@ -3,7 +3,7 @@ use crate::document_retention_model::{
     host::publish_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
     programs::{DocumentRetentionFeature, RetentionCompletion, RetentionProgramP0},
-    retention_entry::{DOCUMENT_IDENTITY, SetRetentionBinding, SetRetentionIntent},
+    retention_entry::{SetRetentionBinding, SetRetentionIntent, DOCUMENT_IDENTITY},
     schema::{DocumentRetentionSchema, SetRetentionInput},
     workflow::{
         install_certification_authentication_with_clock, install_workflow_spec, workflow_resources,

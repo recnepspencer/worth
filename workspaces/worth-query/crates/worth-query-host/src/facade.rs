@@ -218,9 +218,9 @@ pub use worth_query_execution::facade::provisional_aftermath;
 pub use worth_query_execution::facade::runtime;
 pub use worth_query_installation::facade as domain;
 pub use worth_query_installation::facade::{
-    WorthQueryGraphObligationAdoptionDenial, WorthQueryGraphObligationAdoptionDenialKind,
-    WorthQueryGraphObligationAdoptionProof, WorthQueryGraphObligationAdoptionRow,
-    inspect_installed_graph_obligations,
+    inspect_installed_graph_obligations, WorthQueryGraphObligationAdoptionDenial,
+    WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof,
+    WorthQueryGraphObligationAdoptionRow,
 };
 pub use worth_query_installation::worth_query_conditional_node;
 pub use worth_query_publication::facade as publication;

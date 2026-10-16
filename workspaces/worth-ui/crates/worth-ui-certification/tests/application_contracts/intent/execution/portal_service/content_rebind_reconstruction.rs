@@ -15,7 +15,7 @@ use worth_ui_runtime::{
 
 use super::super::{execution_deadline, execution_reading};
 use crate::intent::operability::{
-    PrimaryIntent, build_open_portal_projection_application_with_host,
+    build_open_portal_projection_application_with_host, PrimaryIntent,
 };
 
 #[test]
@@ -216,11 +216,9 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
     assert!(registration.admits(returned.fact()));
     let source_close = owner.close();
     assert!(source_close.owner_terminal());
-    assert!(
-        shell
-            .inspect_service_proposals_for_certification()
-            .is_zero()
-    );
+    assert!(shell
+        .inspect_service_proposals_for_certification()
+        .is_zero());
     let shutdown = shell.shutdown();
     assert!(shutdown.intent_resources_empty());
     assert_eq!(shutdown.portal_final_active_records(), 0);

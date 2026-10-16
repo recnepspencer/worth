@@ -280,13 +280,12 @@ fn unpublished_retained_recovery_preserves_evidence_and_cleanup_through_refusals
     completed
         .close(&fresh)
         .unwrap_or_else(|(_, cause)| panic!("fresh cleanup retry: {cause:?}"));
-    assert!(
-        host.runtime()
-            .product_publication_recovery_page(None, bound())
-            .unwrap()
-            .rows()
-            .is_empty()
-    );
+    assert!(host
+        .runtime()
+        .product_publication_recovery_page(None, bound())
+        .unwrap()
+        .rows()
+        .is_empty());
 }
 
 #[path = "native_postures/retained_capacity.rs"]
