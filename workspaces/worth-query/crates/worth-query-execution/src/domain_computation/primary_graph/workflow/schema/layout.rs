@@ -2,8 +2,38 @@ use worth_foundational::facade::AspectFieldLocator;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::indexes::DerivedIndexId;
 
+/// Retained installed vocabulary; request phases share its immutable storage.
+/// Keeping the vocabulary inline would copy every locator through read sets,
+/// effect programs and their result variants even when no workflow is bound.
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowLayout {
+    fields: std::sync::Arc<WorkflowLayoutFields>,
+}
+
+impl WorthQueryWorkflowLayout {
+    pub(super) fn new(fields: WorkflowLayoutFields) -> Self {
+        Self {
+            fields: std::sync::Arc::new(fields),
+        }
+    }
+
+    /// Index identities are filled only during installation. A cloned layout
+    /// keeps its own installed interpretation if another installation changes it.
+    pub(super) fn installation_fields_mut(&mut self) -> &mut WorkflowLayoutFields {
+        std::sync::Arc::make_mut(&mut self.fields)
+    }
+}
+
+impl std::ops::Deref for WorthQueryWorkflowLayout {
+    type Target = WorkflowLayoutFields;
+
+    fn deref(&self) -> &Self::Target {
+        &self.fields
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowLayoutFields {
     pub(in crate::domain_computation::primary_graph) lineage: WorkflowLineageLayout,
     pub(in crate::domain_computation::primary_graph) definition: WorkflowDefinitionLayout,
     pub(in crate::domain_computation::primary_graph) node: WorkflowNodeLayout,
