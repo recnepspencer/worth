@@ -196,3 +196,8 @@ pub type ArchiveAction = ApplicationActionReference<
 #[path = "effect/handler.rs"]
 mod handler;
 use handler::ArchiveHandler;
+
+/// Counts actual example handler entries; neither grants nor drives an operation.
+pub fn handler_invocations() -> [usize; 2] {
+    handler::invocation_counts()
+}

@@ -100,6 +100,7 @@ pub fn archive(
                         "inspect actual child completion without retrying a failed dispatch",
                     )
                 {
+                    operation = exercise_pending_custody(operation, application, archive);
                     receive(&envelope);
                     ingress_received = true;
                 }
@@ -128,6 +129,12 @@ pub fn archive(
             }
         }
     };
+    assert_eq!(archive.dispatch_calls(), 1, "one original child dispatch");
+    assert_eq!(
+        crate::effect::handler_invocations(),
+        [1, 1],
+        "one original handler execution"
+    );
     let accepted = request
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
@@ -261,4 +268,107 @@ pub fn condition(
         if done.node_path() == "positive-retention"),
         "the real condition transition must be performed: {accepted:?}"
     );
+}
+
+/// Exercise only the real authenticated-child / not-yet-ingressed native wait.
+#[inline(never)]
+fn exercise_pending_custody(
+    operation: WorthQueryWorkflowOperation<
+        crate::document_retention_model::schema::DocumentRetentionSchema,
+        crate::effect::ArchiveIntent,
+        MixedProgram,
+        crate::effect::ArchiveAction,
+    >,
+    application: &MixedApplication,
+    archive: &crate::archive::ArchiveTransport,
+) -> WorthQueryWorkflowOperation<
+    crate::document_retention_model::schema::DocumentRetentionSchema,
+    crate::effect::ArchiveIntent,
+    MixedProgram,
+    crate::effect::ArchiveAction,
+> {
+    use worth_query_host::facade::{
+        admission::authenticated_principal::{
+            WorthQueryCancellationSource, WorthQueryRequestScope,
+        },
+        application_contribution::{
+            WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
+        },
+    };
+    let runtime = application.runtime();
+    let branch = operation.required().branch();
+    let scope = request_scope();
+    let actor = authenticate_operator(runtime.installed_schema(), &scope);
+    let request = runtime.request(&actor, &scope).on_branch(branch);
+    let before = request.retain_current_read().unwrap();
+    let envelope = archive
+        .envelope()
+        .unwrap()
+        .expect("actual authenticated child output");
+    let calls = (
+        archive.dispatch_calls(),
+        crate::effect::handler_invocations(),
+    );
+    assert_eq!(
+        calls,
+        (1, [1, 1]),
+        "one actual dispatch and handler execution"
+    );
+    let (operation, cause) = operation
+        .close(&request)
+        .err()
+        .expect("unresolved native inbound custody must not close");
+    assert!(matches!(
+        cause,
+        WorthQueryOperationCloseDenial::NativeObligationRetained
+    ));
+    let cancellation = WorthQueryCancellationSource::new();
+    cancellation.cancel();
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let operation = match operation.advance(&runtime.request(&actor, &stopped).on_branch(branch)) {
+        WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
+            assert!(
+                matches!(
+                    denial,
+                    WorthQueryWorkflowOperationDenial::Source(
+                        WorthQuerySourceOnlyDenial::Execution(
+                            WorthQueryAdvancementDenial::Interrupted(
+                                WorthQueryManagedComputationInterruption::Cancelled
+                            )
+                        )
+                    )
+                ),
+                "actual typed cancellation: {denial:?}"
+            );
+            operation
+        }
+        _ => panic!("cancelled fresh advance must return original pending custody"),
+    };
+    let fresh_scope = request_scope();
+    let fresh_actor = authenticate_operator(runtime.installed_schema(), &fresh_scope);
+    let fresh = runtime
+        .request(&fresh_actor, &fresh_scope)
+        .on_branch(branch);
+    let operation = match operation.advance(&fresh) {
+        WorthQueryWorkflowOperationAdvance::Progress(operation) => operation,
+        WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
+            let _original_owner = operation;
+            panic!("legal original wait refused: {denial:?}");
+        }
+        _ => panic!("without native ingress the original effect must still wait"),
+    };
+    assert_eq!(
+        fresh.retain_current_read().unwrap().selected_commit(),
+        before.selected_commit()
+    );
+    assert_eq!(archive.envelope().unwrap().as_ref(), Some(&envelope));
+    assert_eq!(
+        (
+            archive.dispatch_calls(),
+            crate::effect::handler_invocations()
+        ),
+        calls,
+        "close/cancel/fresh wait must not redispatch or rerun the handler"
+    );
+    operation
 }

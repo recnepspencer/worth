@@ -25,6 +25,7 @@ const MAXIMUM_PAYLOAD: usize = 512;
 const MAXIMUM_ENVELOPE: usize = 40 + MAXIMUM_PAYLOAD;
 
 pub struct ArchiveTransport {
+    dispatch_calls: std::sync::atomic::AtomicUsize,
     directory: PathBuf,
     protocol: BoundaryProtocolIdentity,
     authenticated: Mutex<Option<Result<Vec<u8>, String>>>,
@@ -33,10 +34,16 @@ pub struct ArchiveTransport {
 impl ArchiveTransport {
     pub fn new(directory: PathBuf) -> Self {
         Self {
+            dispatch_calls: std::sync::atomic::AtomicUsize::new(0),
             directory,
             protocol: BoundaryProtocolIdentity::new(PROTOCOL),
             authenticated: Mutex::new(None),
         }
+    }
+
+    pub fn dispatch_calls(&self) -> usize {
+        self.dispatch_calls
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn envelope(&self) -> Result<Option<Vec<u8>>, String> {
@@ -101,6 +108,8 @@ impl WorthQueryExternalEffectTransport for ArchiveTransport {
         &self,
         request: WorthQueryExternalDispatchRequest<'_>,
     ) -> WorthQueryExternalTransportOutcome {
+        self.dispatch_calls
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         match self.dispatch_archive(request) {
             Ok(()) => WorthQueryExternalTransportOutcome::Acknowledged,
             // A failed child response cannot prove that no external write occurred.
