@@ -27,7 +27,7 @@ mod program;
 
 fn main() {
     match archive::handle_worker() {
-        Ok(true) => return,
+        Ok(true) => (),
         Ok(false) => journey::run(),
         Err(cause) => {
             eprintln!("archive worker failed: {cause}");

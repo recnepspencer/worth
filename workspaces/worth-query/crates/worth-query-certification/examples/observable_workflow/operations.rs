@@ -2,7 +2,7 @@
 use crate::{
     document_retention_model::{
         operator_identity::*, programs::OccurrenceAction, retention_entry::DOCUMENT_IDENTITY,
-        schema::*, workflow::*, MixedApplication,
+        workflow::*, MixedApplication,
     },
     program::MixedProgram,
 };
