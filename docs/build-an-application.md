@@ -2482,6 +2482,7 @@ The following fixture deliberately coordinates native output custody through
 Use the ordinary demand builder when a read request needs the complete installed
 output graph without an authored source mutation:
 
+<!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled. Concrete call bodies live in the neutral tree fixture.
 let operation = request.demand(original_demand)
