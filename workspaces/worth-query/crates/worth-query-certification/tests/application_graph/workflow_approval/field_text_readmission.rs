@@ -98,7 +98,6 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
     drop(performed);
     drop(required);
     drop(proposal);
-    drop(definition);
     drop(application);
     let retained = WorthQueryApplicationCheckpoint::from_untrusted_bytes(checkpoint);
     let intact = retained.bytes().to_vec();

@@ -2,7 +2,6 @@
 mod reviewed;
 use reviewed::{reviewed_document_definition_with_policy, Rejection};
 
-use worth_query_host::facade::domain::WorthQueryInstalledWorkflowDefinitionContract;
 use worth_query_host::facade::{
     application_entry::{
         PublishedWorkflowDefinitionRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
@@ -271,21 +270,6 @@ pub fn repeated_proposal_definition() -> ValidatedWorkflowDefinition<ReviewedDoc
         .expect("the repeated-proposal definition is complete")
         .validate()
         .expect("the repeated-proposal definition is valid")
-}
-
-pub fn bind_definition(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            crate::document_retention_model::schema::DocumentRetentionSchema,
-        >,
-    >,
-    definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
-) -> WorthQueryInstalledWorkflowDefinitionContract<DocumentRetentionSchema, ReviewedDocumentWorkflow>
-{
-    application
-        .workflow_spec()
-        .bind_definition(definition)
-        .expect("the workflow definition binds to installed vocabulary")
 }
 
 pub(crate) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
