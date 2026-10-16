@@ -2484,7 +2484,8 @@ output graph without an authored source mutation:
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled. Concrete call bodies live in the neutral tree fixture.
+// Illustrative: not compiled.
+// Concrete call bodies live in the neutral tree fixture.
 let operation = request.demand(original_demand)
     .controls(WorthQueryOutputDemandControls::host_policy())
     .retain_program_outputs::<Program, FullTree>(&program);
