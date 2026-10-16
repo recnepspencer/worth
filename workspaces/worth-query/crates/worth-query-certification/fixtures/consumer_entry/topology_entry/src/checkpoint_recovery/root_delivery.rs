@@ -100,9 +100,10 @@ fn change_suffix_preserving_root_input(
         CheckpointSchema,
     >,
 ) {
-    // Deliberate native court setup: change a real source suffix outside
-    // the root producer's declared input, as in the existing cutoff court.
-    // This edit changes source only; it starts no output demand.
+    // Deliberate native court setup: use CheckpointProgram's actual declared
+    // PlanarEdit action to change a suffix outside the root producer's input.
+    // The schema's specialized PlanarSourceAdjustment binding is not a program
+    // action. Adjust writes the same PositionY fact and starts no output demand.
     let input = request
         .query(PlanarRead {
             body_key: "anchor-a".into(),
@@ -119,10 +120,15 @@ fn change_suffix_preserving_root_input(
         .unwrap();
     let edited = request
         .advanced()
-        .mutate(PlanarSourceAdjustment {
+        .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-b".into(),
-            replacement_y: length(2),
-        })
+            operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                worth_query_consumer_values::PlanarAdjustment {
+                    body_key: "anchor-b".into(),
+                    replacement_y: length(2),
+                },
+            ]),
+        }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_6619_u64)
         .execute_in_program::<CheckpointProgram>(
