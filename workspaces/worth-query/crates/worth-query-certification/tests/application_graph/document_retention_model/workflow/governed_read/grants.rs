@@ -87,7 +87,7 @@ fn seed_grant(
     graph
         .bind_relation(WorthQueryApplicationRelationSeed::new(
             WorkflowGrantResource::reference(),
-            &format!("{grant}-resource"),
+            format!("{grant}-resource"),
             key::<WorkflowAuthoringGrant>(grant),
             key::<Document>(document),
         ))
@@ -95,7 +95,7 @@ fn seed_grant(
     graph
         .bind_relation(WorthQueryApplicationRelationSeed::new(
             WorkflowGrantGrantor::reference(),
-            &format!("{grant}-issuer"),
+            format!("{grant}-issuer"),
             key::<Principal>("document-retention-operator"),
             key::<WorkflowAuthoringGrant>(grant),
         ))
@@ -104,7 +104,7 @@ fn seed_grant(
         graph
             .bind_relation(WorthQueryApplicationRelationSeed::new(
                 WorkflowGrantGrantee::reference(),
-                &format!("{grant}-{grantee}"),
+                format!("{grant}-{grantee}"),
                 key::<Principal>(grantee),
                 key::<WorkflowAuthoringGrant>(grant),
             ))
