@@ -223,10 +223,24 @@ pub(super) fn install_binding(
         .application_mutation_binding::<WorkflowApprovalBinding>()
 }
 
-impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for WorkflowAdvanceBinding {
-    type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<WorkflowAdvanceCapability>;
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for WorkflowAdvanceBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            WorkflowAdvanceCapability,
+        >;
 }
 
-impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for WorkflowApprovalBinding {
-    type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<WorkflowApprovalCapability>;
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for WorkflowApprovalBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            WorkflowApprovalCapability,
+        >;
 }

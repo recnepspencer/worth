@@ -71,7 +71,10 @@ pub(super) fn derive(
         match &operation.capability {
             None => values.push("conventional-admission".to_owned()),
             Some((name, identity)) => values.extend([
-                "capability-admission".to_owned(), name.to_string(), identity.as_str().to_owned()]),
+                "capability-admission".to_owned(),
+                name.to_string(),
+                identity.as_str().to_owned(),
+            ]),
         }
         if let Some(inbound) = &operation.inbound_ref {
             let protocol = inbound.protocol();
