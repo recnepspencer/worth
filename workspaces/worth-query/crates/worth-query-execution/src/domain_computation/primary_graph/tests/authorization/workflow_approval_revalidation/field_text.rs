@@ -210,11 +210,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
         })
         .collect::<Vec<_>>();
     assert_eq!(symbols.len(), 5);
-    let published_basis = performed.commit().basis().relational_basis();
     let pin = handle.with_runtime_mut(&execution, |runtime| {
-        handle
-            .ensure_primary_indexes_for_basis(&execution, runtime, published_basis)
-            .unwrap();
         let pin = runtime
             .read_truth()
             .pin_read_capability(&commit.snapshot, &[], &execution)
