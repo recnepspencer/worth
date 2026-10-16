@@ -547,13 +547,18 @@ qualify this added prerequisite or private adoption.
 ## Post-Cleanup Delivery Adoption Prerequisite
 
 This bounded adoption prerequisite does not reopen or extend the historical
-qualification checkpoint above. Its source is implemented; focused native proof
-has passed at `81ab2bec6f`, while its compiler fences, repository gates, independent
-final review, publication/CI and private adoption remain separate pending steps.
+qualification checkpoint above. Its source is implemented; focused native and
+compiler proof passed at their scoped revisions through `b196481079`. Final
+review, publication/CI and private adoption remain separate qualification steps.
 Root's actual existing consumer-root binary compiled (294); the original Fixed
 and complete no-source Stable/no-receipt close/read journey passed (295), and the
 pre-effect governed-artifact constructor denial passed (296). Earlier failed
 289 target discovery and 290 fixture compilation remain failed attempts.
+The final consumer binary compiled (301); the source-change and constructor
+guards passed (302-source/302-guard), as did the Host family's four valid and nine
+compile-fail contracts (303). The first selected-meaning attempt (302-meaning)
+failed on an unavailable native retained basis; its corrected ordering and exact
+refusal expectations compiled (308) and passed (309) at `b196481079`.
 
 A settled Fixed parent can `close_for_delivery(&fresh_request)` into sealed
 `WorthQueryClosedFixedDelivery`; a settled complete no-source parent can do the
@@ -604,9 +609,12 @@ its own authentic-context check; Legacy artifact posture and static definition
 policy are unchanged. The actual native missing-locality/no-effects court guards
 this timing repair without a new API, metadata mirror or checker family.
 
-Remaining proof is one Host compiler family for construction/phase/shape and
-valid counterparts, plus the existing rostered-successor closed-delivery court
-for action meaning drift/removal and compatible adoption. The original settlement
+The Host compiler family covers construction/phase/shape and valid counterparts.
+The new rostered-successor closed-delivery court covers action meaning
+drift/removal and compatible meaning selected before capturing the operation.
+Program adoption after settlement may make its retained basis terminally
+unavailable (`RetainedBasisUnavailable`); restoring compatible meaning does not
+resurrect it, and the application must run a fresh operation. The original settlement
 moves whole, including discovery artifacts; its SAME native complete-membership
 guard retains the existing discovery-court scope. No new membership schema/world,
 root-kind coercion or repeated whole-milestone campaign is required absent a

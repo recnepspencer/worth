@@ -2583,6 +2583,9 @@ actions deny delivery while original native read interests still close. Restorin
 a program does not restore an unavailable exact native output basis: matching
 action meaning is necessary, and complete-tree currentness remains a separate
 requirement. These checks do not replay a source or producer.
+Any program adoption after settlement may make the original retained basis
+terminally unavailable (`RetainedBasisUnavailable`). Matching action meaning
+does not repair that basis; the application must run a fresh operation.
 
 #### Original root output evidence
 
