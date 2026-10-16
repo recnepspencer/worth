@@ -23,6 +23,8 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         })
         .unwrap()
         .unwrap();
+    let original_identity = preview.handle.session_identity().clone();
+    let diagnostics = preview.handle.diagnostics().clone();
     let original_source = std::sync::Arc::clone(&preview._source);
     let observer = preview.handle.liveness_observer();
     let original_execution = preview.handle.execution_record().digest().to_owned();
@@ -57,35 +59,11 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         original_execution
     );
     let outcome = preview.promote().unwrap();
-    assert_eq!(
-        outcome.session().session_identity().as_str(),
-        "fresh-preview-promotion:session"
-    );
+    assert_eq!(outcome.session().session_identity(), &original_identity);
     assert!(observer.admit_active_session().is_none());
-    assert_eq!(
-        runtime
-            .runtime()
-            .bridge
-            .diagnostics()
-            .preview_execution_records()
-            .len(),
-        1
-    );
-    assert_eq!(
-        runtime
-            .runtime()
-            .bridge
-            .diagnostics()
-            .preview_promotion_records()
-            .len(),
-        1
-    );
-    assert!(runtime
-        .runtime()
-        .bridge
-        .diagnostics()
-        .preview_discard_records()
-        .is_empty());
+    assert_eq!(diagnostics.preview_execution_records().len(), 1);
+    assert_eq!(diagnostics.preview_promotion_records().len(), 1);
+    assert!(diagnostics.preview_discard_records().is_empty());
 }
 
 #[test]
@@ -110,6 +88,7 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
         })
         .unwrap()
         .unwrap();
+    let diagnostics = preview.handle.diagnostics().clone();
     let source = std::sync::Arc::clone(&preview._source);
     let observer = preview.handle.liveness_observer();
     let fault = preview.reject_discard_for_test();
@@ -121,39 +100,13 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
     assert_eq!(denial.kind(), worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch);
     assert!(std::sync::Arc::ptr_eq(&preview.session._source, &source));
     assert!(observer.admit_active_session().is_some());
-    assert!(runtime
-        .runtime()
-        .bridge
-        .diagnostics()
-        .preview_discard_records()
-        .is_empty());
+    assert!(diagnostics.preview_discard_records().is_empty());
     drop(fault);
     preview.discard().unwrap();
     assert!(observer.admit_active_session().is_none());
-    assert_eq!(
-        runtime
-            .runtime()
-            .bridge
-            .diagnostics()
-            .preview_execution_records()
-            .len(),
-        1
-    );
-    assert_eq!(
-        runtime
-            .runtime()
-            .bridge
-            .diagnostics()
-            .preview_discard_records()
-            .len(),
-        1
-    );
-    assert!(runtime
-        .runtime()
-        .bridge
-        .diagnostics()
-        .preview_promotion_records()
-        .is_empty());
+    assert_eq!(diagnostics.preview_execution_records().len(), 1);
+    assert_eq!(diagnostics.preview_discard_records().len(), 1);
+    assert!(diagnostics.preview_promotion_records().is_empty());
 }
 
 #[test]
