@@ -31,31 +31,33 @@ pub enum WorthQueryApplicationProgramAdoptionPreparationDenial {
 /// consumer views; preparation never returns its complete safety inventory.
 ///
 /// ```compile_fail,E0599
-/// use worth_query_publication::application_entry::WorthQueryApplicationProgramAdoptionRequest;
+/// use worth_query_publication::facade::application_entry::WorthQueryApplicationProgramAdoptionRequest;
 /// use worth_query_installation::facade::ApplicationSchema;
 /// fn no_complete_disclosure<S: ApplicationSchema>(request: WorthQueryApplicationProgramAdoptionRequest<'_, '_, '_, '_, S>) {
 ///     request.workflow_inventory(64);
 /// }
 /// ```
 /// ```
-/// use worth_query_publication::application_entry::{WorthQueryApplicationProgramAdoptionRequest, WorthQueryWorkflowDispositions};
+/// use worth_query_publication::facade::application_entry::{WorthQueryApplicationProgramAdoptionRequest, WorthQueryWorkflowDispositions, WorthQueryPreparedBranchAdoption};
 /// use worth_query_installation::facade::ApplicationSchema;
 /// fn explicit_native_intent<S: ApplicationSchema>(request: WorthQueryApplicationProgramAdoptionRequest<'_, '_, '_, '_, S>) {
 ///     let _owned_request = request.workflow(WorthQueryWorkflowDispositions::carry_compatible());
 /// }
+/// fn preserve_prepared_custody(prepared: WorthQueryPreparedBranchAdoption) -> WorthQueryPreparedBranchAdoption {
+///     prepared
+/// }
 /// ```
 ///
-/// ```compile_fail,E0451
-/// use worth_query_execution::facade::primary_graph::WorthQueryPreparedBranchAdoption;
+/// A genuine prepared value can be moved intact, but callers cannot replace
+/// its target while carrying its private native publication custody.
 ///
-/// fn callers_cannot_forge_prepared_adoption() {
+/// ```compile_fail,E0451
+/// use worth_query_publication::facade::application_entry::WorthQueryPreparedBranchAdoption;
+///
+/// fn callers_cannot_retarget_prepared_adoption(prepared: WorthQueryPreparedBranchAdoption) {
 ///     let _forged = WorthQueryPreparedBranchAdoption {
-///         source: todo!(),
-///         target: todo!(),
-///         requirements: todo!(),
-///         selected_entity_count: 0,
-///         selection_work_units: 0,
-///         publication: todo!(),
+///         target: *prepared.target(),
+///         ..prepared
 ///     };
 /// }
 /// ```
