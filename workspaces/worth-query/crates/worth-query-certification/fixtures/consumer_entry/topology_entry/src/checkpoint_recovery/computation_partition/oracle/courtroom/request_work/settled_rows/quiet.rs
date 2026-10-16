@@ -46,10 +46,9 @@ fn measure(
     output: &mut WorthQueryApplicationOutputDemandHandle<'_, CheckpointSchema, RegionOutputDemand>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, CheckpointSchema>,
 ) -> u64 {
-    // Queue length counts physical hints, including inactive/acknowledged
-    // tokens until a queue pop removes them. Settled does not mean globally
-    // drained. This selected current caller must leave those hints untouched.
-    let queued = app.queued_required_work_for_test();
+    // The named current-selection warmup below has already acknowledged the
+    // setup hints. Neither measured call may inherit that one-time maintenance.
+    assert_eq!(app.queued_required_work_for_test(), 0);
     let contacts = app.producer_contacts_on_this_thread_for_test();
     app.caller_request_work_for_test();
     app.caller_request_navigation_for_test();
@@ -67,8 +66,8 @@ fn measure(
     );
     assert_eq!(
         app.queued_required_work_for_test(),
-        queued,
-        "the selected current caller leaves unrelated physical queue custody untouched"
+        0,
+        "the measured current caller leaves no new required hints"
     );
     assert_eq!(
         app.whole_registry_rows_visited_for_test() - rows,
@@ -104,21 +103,70 @@ pub(super) fn assert_same_world_current_work(
         root.advance(&request).unwrap(),
         WorthQueryApplicationOutputDemandProgress::Settled(_)
     ));
-    assert!(matches!(
-        output.advance(&request).unwrap(),
-        WorthQueryApplicationOutputDemandProgress::Settled(_)
-    ));
+    let WorthQueryApplicationOutputDemandProgress::Settled(settled) =
+        output.advance(&request).unwrap()
+    else {
+        panic!("the selected output settles before current-selection warmup")
+    };
+    let current = settled
+        .outputs_of::<PlanarOutputs>()
+        .unwrap()
+        .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+        .unwrap()
+        .entity_id();
+    drop(settled);
     let original = request
         .retain_current_read()
         .unwrap()
         .selected_commit()
         .clone();
-    let members_open = required_members(app);
     let records_open = app.registry_row_count_for_test();
     assert!(
         app.queued_required_work_for_test() > 0,
-        "foreign tree setup exercises locality with actual queued hints"
+        "settled tree setup leaves actual hints for current-selection acknowledgement"
     );
+    // A just-settled output may return before the next current selection pays
+    // for its queued hints. Advance THIS original caller once to acknowledge
+    // them. This is a checked setup transition, not a measured request or a
+    // pump: failure to reach the queue-empty boundary fails the fixture.
+    let contacts = app.producer_contacts_on_this_thread_for_test();
+    let WorthQueryApplicationOutputDemandProgress::Settled(acknowledged) =
+        output.advance(&request).unwrap()
+    else {
+        panic!("one current-selection acknowledgement must remain settled")
+    };
+    assert_eq!(
+        acknowledged
+            .outputs_of::<PlanarOutputs>()
+            .unwrap()
+            .entity::<PlanarAnchorOutput<CheckpointSchema>>()
+            .unwrap()
+            .entity_id(),
+        current,
+        "hint acknowledgement preserves the actual current output"
+    );
+    drop(acknowledged);
+    assert_eq!(
+        app.producer_contacts_on_this_thread_for_test(),
+        contacts,
+        "current-selection warmup executes no producer"
+    );
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &original,
+        "hint acknowledgement publishes no graph change"
+    );
+    assert_eq!(
+        app.registry_row_count_for_test(),
+        records_open,
+        "hint acknowledgement preserves the cached lookup population"
+    );
+    assert_eq!(
+        app.queued_required_work_for_test(),
+        0,
+        "current-selection acknowledgement establishes the warm interval"
+    );
+    let members_open = required_members(app);
     let open_work = measure(app, output, &request);
     let contacts = app.producer_contacts_on_this_thread_for_test();
     for tree in foreign {
@@ -143,11 +191,9 @@ pub(super) fn assert_same_world_current_work(
         members_closed < members_open,
         "actual native required interests were discharged: {members_open} -> {members_closed}"
     );
-    // Read close releases actual interests, not the global scheduling queue.
-    // A deactivated queued membership remains a physical token until popped.
-    // Healthy Ready can remain cached after close: both measured requests keep
-    // the same graph commit and record lookup population. Each must preserve
-    // its own queue count; neither measurement drains the foreign hints.
+    // Healthy Ready remains cached after original read close. Both measured
+    // requests keep the same graph commit and record lookup population; the
+    // measured interval began only after setup hints were acknowledged.
     assert_eq!(app.registry_row_count_for_test(), records_open);
     let closed_work = measure(app, output, &request);
     assert_eq!(
