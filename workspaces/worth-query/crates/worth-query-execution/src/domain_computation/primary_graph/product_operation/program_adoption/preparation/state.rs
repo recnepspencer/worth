@@ -171,7 +171,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
                 .get() as u64,
         };
         let inventory = inventory_workflows(execution, runtime, basis, view, &workflow_request)
-            .map_err(workflow_read_denial)?;
+            .map_err(|cause| workflow_read_denial(cause, maximum_selection_work))?;
         Ok((selection, Some(inventory)))
     })?;
     let selected_entity_count = selection.entities.len();

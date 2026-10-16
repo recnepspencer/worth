@@ -30,6 +30,9 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     // selected generation with the candidate, including an empty population.
     indexes.insert(graph.layout.workflow().lineage.identity_index_id);
     indexes.insert(graph.layout.workflow().instance.identity_index_id);
+    if let Some(reads) = graph.layout.workflow_reads() {
+        indexes.extend([reads.instances, reads.transitions]);
+    }
     let indexes = indexes.into_iter().collect::<Vec<_>>();
     graph.with_runtime_mut(execution, |runtime| {
         let before = super::super::super::super::exact_basis_access::open_exact_basis_snapshot(

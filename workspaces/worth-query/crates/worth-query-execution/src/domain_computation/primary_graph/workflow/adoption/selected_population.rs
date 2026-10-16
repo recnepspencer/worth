@@ -2,18 +2,14 @@
 
 use super::inventory::WorkflowAdoptionInventoryRequest;
 use super::WorkflowAdoptionReadDenial as Denial;
-use crate::domain_computation::primary_graph::{
-    index_currency::selected_index_is_current_admitted,
-    output_lineage::invalidation::InvalidationEditAdmission,
-};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
     indexes::{
         BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldLookupDenial,
-        BoundedEntityFieldLookupDenialKind, DerivedIndexBuildRequest,
-        DerivedIndexMaintenanceDenialKind,
+        BoundedEntityFieldLookupDenialKind, DerivedIndexMaintenanceDenialKind,
     },
-    mvcc::{CompanionPreflightBudget, CompanionPreflightStop},
+    mvcc::CompanionPreflightBudget,
     runtime::{RelationalRuntime, VisibilityProjectionView},
 };
 
@@ -31,57 +27,22 @@ pub(super) fn is_empty(
         maximum_preparation_bytes: request.maximum_preparation_bytes,
     });
     let lineage = &request.layout.lineage;
-    if !selected_index_is_current_admitted(
-        runtime,
-        basis,
+    // Currency is one logical metadata selection. The native owner pays its
+    // real branch-key comparisons/copies and any authentic fork preparation
+    // on this same original execution, even when the selected index is warm.
+    admission
+        .charge_external_work(1)
+        .map_err(Denial::Preparation)?;
+    runtime.index_authority().ensure_field_index_for_basis(
         lineage.identity_index_id,
-        &mut admission,
-    )
-    .map_err(Denial::Preparation)?
-    {
-        let observation = basis.observation();
-        let source_commit_id = observation
-            .commit_id()
-            .ok_or(Denial::SelectedIndexUnavailable)?;
-        let branch = observation.identity().branch_id();
-        let branch_bytes = u64::try_from(branch.0.len()).map_err(|_| {
-            Denial::Preparation(CompanionPreflightStop::PreparationMemoryCounterOverflow)
-        })?;
-        let bytes = branch_bytes
-            .checked_add(std::mem::size_of_val(&lineage.identity_index_id) as u64)
-            .ok_or(Denial::Preparation(
-                CompanionPreflightStop::PreparationMemoryCounterOverflow,
-            ))?;
-        let work = branch_bytes.checked_add(2).ok_or(Denial::Preparation(
-            CompanionPreflightStop::WorkCounterOverflow,
-        ))?;
-        admission
-            .admit_read_scratch(bytes)
-            .and_then(|()| admission.charge_external_work(work))
-            .map_err(Denial::Preparation)?;
-        // Inventory selection counts logical reads. Native maintenance's
-        // comparison/allocation quotes belong to the original execution's
-        // physical work and memory payer, not this record-selection counter.
-        // This native door accepts only field indexes and exact/fork seeds;
-        // it refuses population reconstruction.
-        let built = runtime.index_authority().refresh_field_indexes_for_basis(
-            DerivedIndexBuildRequest {
-                source_commit_id, branch_id: branch.clone(),
-                index_ids: vec![lineage.identity_index_id],
-            }, basis, None,
-            crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(),
-            execution,
-        ).map_err(|cause| match cause.kind {
-                DerivedIndexMaintenanceDenialKind::Execution(cause) => Denial::ReadExecution(cause),
-                DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded => Denial::WorkLimitExceeded {
-                    consumed_work_units: cause.work.work_units,
-                },
-                _ => Denial::SelectedIndexUnavailable,
-        })?;
-        if built.generations.len() != 1 {
-            return Err(Denial::SelectedIndexUnavailable);
-        }
-    }
+        basis,
+        crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(),
+        execution,
+    ).map_err(|cause| match cause.kind {
+        DerivedIndexMaintenanceDenialKind::Execution(cause) => Denial::ReadExecution(cause),
+        DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded => Denial::IndexMaintenanceWorkLimit,
+        _ => Denial::SelectedIndexUnavailable,
+    })?;
     admission
         .charge_external_work(1)
         .map_err(Denial::Preparation)?;
