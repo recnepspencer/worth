@@ -202,41 +202,45 @@ fn money_actions_install_exact_retained_meaning_and_deployment_authority() {
         let program = ApplicationProgramAuthoring::<BankSchema, P>::begin()
             .validated_program()
             .unwrap();
-        let expected = [
+        let expected_selectors = [
             <bank_server::OpeningFundingAction as ApplicationAction<
                 BankSchema,
                 bank_domain::schema::ApplyOpeningFundingMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::DepositAction as ApplicationAction<
                 BankSchema,
                 bank_domain::schema::DepositMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::WithdrawalAction as ApplicationAction<
                 BankSchema,
                 bank_domain::schema::WithdrawMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::SendMoneyAction as ApplicationAction<
                 BankSchema,
                 bank_domain::schema::SendMoneyMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::ReverseJournalAction as ApplicationAction<
                 BankSchema,
                 bank_domain::schema::ReverseJournalMutationBinding,
-            >>::declaration(),
+            >>::selector(),
         ];
         let mut identities = std::collections::BTreeSet::new();
-        for action in expected {
+        for selector in expected_selectors {
             let installed = program
                 .actions()
                 .iter()
-                .filter(|installed| installed.binding() == action.binding())
+                .filter(|installed| installed.binding() == selector.binding())
                 .collect::<Vec<_>>();
             assert_eq!(installed.len(), 1);
             assert_eq!(
                 installed[0].composition_instance(),
-                action.composition_instance()
+                selector.composition_instance()
             );
-            assert_eq!(installed[0].feature(), action.feature());
+            assert_eq!(installed[0].feature(), selector.feature());
+            assert_eq!(
+                installed[0].mutation_binding_type(),
+                Some(selector.mutation_binding_type())
+            );
             assert!(!installed[0].required_output_source());
             let delivery = installed[0]
                 .delivery()
@@ -245,10 +249,7 @@ fn money_actions_install_exact_retained_meaning_and_deployment_authority() {
                 delivery,
                 ApplicationActionDeliveryDeclaration::RetainedCommit { .. }
             ));
-            assert_eq!(
-                delivery.canonical_meaning(),
-                action.delivery().unwrap().canonical_meaning()
-            );
+            assert_eq!(delivery, selector.delivery());
             assert!(identities.insert(delivery.identity()));
         }
         assert_eq!(

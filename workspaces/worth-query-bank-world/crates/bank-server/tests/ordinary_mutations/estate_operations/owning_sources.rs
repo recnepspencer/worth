@@ -192,45 +192,45 @@ fn eight_remaining_source_actions_install_exact_completion_and_deployment_meanin
         let program = ApplicationProgramAuthoring::<BankSchema, P>::begin()
             .validated_program()
             .unwrap();
-        let actions = [
+        let expected_selectors = [
             <bank_server::DeathNotificationAction as ApplicationAction<
                 BankSchema,
                 NotifyEstateDeathMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::EstateAccountFreezeAction as ApplicationAction<
                 BankSchema,
                 FreezeEstateAccountMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::EstateCaseOpeningAction as ApplicationAction<
                 BankSchema,
                 OpenEstateCaseMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::ExecutorRecognitionAction as ApplicationAction<
                 BankSchema,
                 RecognizeEstateExecutorMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::EstateReleaseAction as ApplicationAction<
                 BankSchema,
                 ReleaseEstateMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::EstateDisbursementAction as ApplicationAction<
                 BankSchema,
                 DisburseEstateMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::DeathNoticeRetransmissionAction as ApplicationAction<
                 BankSchema,
                 RetransmitEstateDeathNoticeMutationBinding,
-            >>::declaration(),
+            >>::selector(),
             <bank_server::ProgramDeploymentRevocationAction as ApplicationAction<
                 BankSchema,
                 ProgramDeploymentRevocationBinding,
-            >>::declaration(),
+            >>::selector(),
         ];
-        for (index, action) in actions.into_iter().enumerate() {
+        for (index, selector) in expected_selectors.into_iter().enumerate() {
             let installed = program
                 .actions()
                 .iter()
-                .filter(|candidate| candidate.binding() == action.binding())
+                .filter(|candidate| candidate.binding() == selector.binding())
                 .collect::<Vec<_>>();
             if index == 0 && !notify {
                 assert!(installed.is_empty());
@@ -239,14 +239,15 @@ fn eight_remaining_source_actions_install_exact_completion_and_deployment_meanin
             assert_eq!(installed.len(), 1);
             assert_eq!(
                 installed[0].composition_instance(),
-                action.composition_instance()
+                selector.composition_instance()
             );
-            assert_eq!(installed[0].feature(), action.feature());
-            assert!(!installed[0].required_output_source());
+            assert_eq!(installed[0].feature(), selector.feature());
             assert_eq!(
-                installed[0].delivery().unwrap().canonical_meaning(),
-                action.delivery().unwrap().canonical_meaning()
+                installed[0].mutation_binding_type(),
+                Some(selector.mutation_binding_type())
             );
+            assert!(!installed[0].required_output_source());
+            assert_eq!(installed[0].delivery().unwrap(), selector.delivery());
             assert!(matches!(
                 installed[0].delivery().unwrap(),
                 ApplicationActionDeliveryDeclaration::SourceCompletion { .. }
