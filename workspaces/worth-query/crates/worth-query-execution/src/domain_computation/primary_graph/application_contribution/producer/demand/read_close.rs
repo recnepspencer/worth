@@ -37,7 +37,7 @@ impl WorthQueryOutputReadCleanup {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     ) -> Result<(), WorthQueryOutputReadCloseDenial> {
         self.custody.close_read(phase, &mut |recovery| {
-            runtime.release_product_publication_recovery_in_advancement(phase, recovery, 0)
+            runtime.close_read_product_publication_recovery_in_advancement(phase, recovery)
         })
     }
     pub fn retired_component_count(&mut self) -> usize {

@@ -6,6 +6,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
 };
 use worth_query_host::facade::application_entry::*;
+use worth_query_host::facade::primary_graph::WorthQueryOutputDemandRecoveryPosture;
 type Pending = WorthQueryProgramOutputOperation<CheckpointSchema, Program, Root>;
 type Settled = WorthQuerySettledProgramOutputOperation<CheckpointSchema, Program, Root>;
 fn finish(
@@ -92,7 +93,8 @@ fn ordinary_complete_tree_escapes_scope_resumes_reads_current_and_closes() {
                     assert!(
                         matches!(denial, WorthQueryProgramOutputAdvanceDenial::Outputs(
                         WorthQueryRequiredOutputPreparationDenial::Demand(WorthQueryApplicationOutputDemandDenial::Demand(cause)))
-                        if cause.kind() == WorthQueryOutputDemandDenialKind::Cancelled)
+                        if cause.kind() == WorthQueryOutputDemandDenialKind::Cancelled
+                            && cause.recovery_posture() == WorthQueryOutputDemandRecoveryPosture::Retryable)
                     );
                     retained = Some(next);
                     break;

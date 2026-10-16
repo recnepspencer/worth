@@ -2524,7 +2524,9 @@ interests. Actual producer cleanup, typed required successors and selected
 unpublished checkpoints remain owned until their native obligations permit
 disposal. An actual producer unpublished partial releases through its original
 native recovery owner; refusal retains that same owner for fresh close retry.
-Neither release nor close reruns the producer or publishes a current result.
+When native release requires settlement, close may finish that original owner's
+retained settlement before asking native release again. Neither release nor
+close reruns the producer or publishes a current result.
 Physical release never erases unresolved producer recovery. Dropping an owner is
 abandonment, not a successful close. Performed-source required and
 discovered aggregate completion rules, including fixed-leaf unavailable

@@ -106,6 +106,18 @@ pub(super) fn request_authority_stop(
 pub(super) fn request_admission_rejected(
     denial: WorthQueryOutputDemandDenial,
 ) -> ProducerExecutionStop {
+    // Only this typed pre-effect stop relinquishes the selected execution.
+    // The same kinds from a stopped producer/commit keep their native defaults.
+    let denial = if matches!(
+        denial.kind(),
+        WorthQueryOutputDemandDenialKind::Cancelled | WorthQueryOutputDemandDenialKind::TimedOut
+    ) {
+        denial.with_recovery_posture(
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+        )
+    } else {
+        denial
+    };
     ProducerExecutionStop::RequestAdmissionDenied(ProducerRequestAdmissionRejection { denial })
 }
 

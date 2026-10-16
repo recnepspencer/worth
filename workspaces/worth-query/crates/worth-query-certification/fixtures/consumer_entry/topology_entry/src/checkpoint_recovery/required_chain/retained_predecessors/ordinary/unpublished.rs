@@ -63,6 +63,10 @@ fn ordinary_unpublished_producer_close_retries_original_native_recovery() {
             .readmit_product_publication_recovery(catalog.rows()[0].handle())
             .unwrap();
         let held = inspector.inspect().unwrap();
+        assert!(
+            held.relational_requires_settlement(),
+            "the original failed producer publication genuinely owes native settlement"
+        );
         let refused = match terminal.close(&request) {
             Err(refused) => refused,
             Ok(_) => panic!("live original effects loan must refuse native retirement"),
@@ -100,9 +104,17 @@ fn ordinary_unpublished_producer_close_retries_original_native_recovery() {
         let mut closed = refused
             .retry_close(&fresh)
             .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
+        assert_eq!(
+            closed.retired_component_count(),
+            0,
+            "ordinary publication creates no forked component branches to retire"
+        );
         assert!(
-            closed.retired_component_count() > 0,
-            "real native recovery owner retirement must complete"
+            matches!(
+                inspector.inspect(),
+                Err(RuntimeWorldRecoveryDenial::MissingRecord)
+            ),
+            "the exact original recovery record must be released after native settlement"
         );
         assert_eq!(
             crate::producer::provider_contacts(),
