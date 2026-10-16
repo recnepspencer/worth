@@ -3,7 +3,6 @@ use super::super::schema::{
     Document, DocumentIdentityField, DocumentPrincipalBinding, DocumentRetentionSchema,
     ExternalMapping, Principal,
 };
-use super::declaration::WorkflowAuthoringGrant;
 use worth_query_decl::facade::{
     application_capability::*, application_program::*, application_schema::*,
     worth_query_capability, worth_query_capability_context, worth_query_capability_provenance,
@@ -212,15 +211,14 @@ pub(super) fn declare(
             MetadataReadOperation,
         >(MetadataReadCapability::reference(), op));
     let op = AuditReadOperation::reference();
-    let schema = schema
+    schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 512)
         .operation_read_field(op, DocumentIdentityField::reference())
         .capability(contract::read::<AuditReadCapability, AuditReadOperation>(
             AuditReadCapability::reference(),
             op,
-        ));
-    schema
+        ))
 }
 fn encoded(value: String) -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {
     ApplicationEncodedScalarValue::try_new(value).expect("finite fixture read text")

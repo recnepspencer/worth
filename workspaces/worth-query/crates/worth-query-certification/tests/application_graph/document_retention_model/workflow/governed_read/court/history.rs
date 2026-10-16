@@ -79,7 +79,7 @@ fn start(application: &GovernedRuntime, key: u64) -> PublishedWorkflowInstanceRe
         .unwrap();
     let found = read(application, &principal, &scope, &basis, &original).unwrap();
     assert!(found.target().is_some());
-    drop(original); // Every subsequent locator in this family is reacquired without a start token.
+    // Only the instance ref leaves this helper; later locators need no start token.
     started.instance().clone()
 }
 fn propose(
