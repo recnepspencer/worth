@@ -66,6 +66,8 @@ harness = false
 [[example]]
 name = "observable_workflow"
 path = "examples/observable_workflow.rs"
+test = true
+harness = false
 
 [[example]]
 name = "authored_workflow"

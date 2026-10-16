@@ -62,7 +62,7 @@ pub fn archive(
         .request(&actor, &scope)
         .on_branch(required.branch());
     // compiled-example: begin
-    let operation = request
+    let mut operation = request
         .mutate(crate::effect::ArchiveIntent {
             input: crate::journey::input(),
         })
@@ -75,31 +75,15 @@ pub fn archive(
             application.program_runtime(),
         )
         .unwrap_or_else(|_| panic!("installed archive action"));
-    let operation = match operation.advance(&request) {
-        WorthQueryWorkflowOperationAdvance::Progress(operation) => operation,
-        _ => panic!("acknowledgement cannot settle the original dispatch"),
+    let receive = |envelope: &[u8]| {
+        application
+            .runtime()
+            .inbound_occurrences()
+            .receive(verifier, envelope, &scope)
+            .execute()
+            .expect("native provenance admission of the real completion");
     };
-    let (mut operation, cause) = operation
-        .close(&request)
-        .err()
-        .expect("DispatchPending retains original native owner");
-    assert!(matches!(
-        cause,
-        WorthQueryOperationCloseDenial::NativeObligationRetained
-    ));
-    let waiting = crate::journey::advance(application, instance, &[81, 82]);
-    assert!(
-        matches!(waiting.stop(), WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingOperation(need)) if need.node_path() == "archive")
-    );
-    let envelope = archive
-        .envelope()
-        .expect("actual child file write and authenticated pipe completion");
-    application
-        .runtime()
-        .inbound_occurrences()
-        .receive(verifier, &envelope, &scope)
-        .execute()
-        .expect("native provenance admission of the real completion");
+    let mut ingress_received = false;
     let completed = loop {
         match operation.advance(
             &application
@@ -107,15 +91,40 @@ pub fn archive(
                 .request(&actor, &scope)
                 .on_branch(instance.branch()),
         ) {
-            WorthQueryWorkflowOperationAdvance::Progress(next) => operation = next,
-            WorthQueryWorkflowOperationAdvance::Completed(done) => break done,
+            WorthQueryWorkflowOperationAdvance::Progress(next) => {
+                operation = next;
+                // Progress can precede dispatch. Actual child output, not this
+                // variant, determines when ingress must precede further recovery.
+                if !ingress_received {
+                    if let Some(envelope) = archive.envelope().expect(
+                        "inspect actual child completion without retrying a failed dispatch",
+                    ) {
+                        receive(&envelope);
+                        ingress_received = true;
+                    }
+                }
+            }
+            WorthQueryWorkflowOperationAdvance::Completed(done) => {
+                if !ingress_received {
+                    let envelope = archive
+                        .envelope()
+                        .expect("inspect actual synchronous child completion")
+                        .expect("native completion must retain genuine authenticated child output");
+                    receive(&envelope);
+                }
+                break done;
+            }
             WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
                 let _original_owner = operation;
-                panic!("native settlement refused with original custody: {denial:?}");
+                panic!("archive advance refused with original custody: {denial:?}");
             }
             WorthQueryWorkflowOperationAdvance::Terminal(terminal) => {
-                let _original_custody = terminal;
-                panic!("native settlement stopped terminally");
+                panic!(
+                    "archive terminal: source={:?}, recovery={:?}, abort={:?}",
+                    terminal.denial(),
+                    terminal.recovery_denial(),
+                    terminal.original_abort()
+                );
             }
         }
     };

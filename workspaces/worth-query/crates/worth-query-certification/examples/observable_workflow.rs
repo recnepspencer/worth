@@ -30,7 +30,13 @@ mod restoration;
 fn main() {
     match archive::handle_worker() {
         Ok(true) => (),
-        Ok(false) => journey::run(),
+        Ok(false) => std::thread::Builder::new()
+            .name("observable-workflow".to_owned())
+            .stack_size(8 * 1024 * 1024)
+            .spawn(journey::run)
+            .expect("the bounded example thread must start")
+            .join()
+            .expect("the observable workflow must not unwind"),
         Err(cause) => {
             eprintln!("archive worker failed: {cause}");
             std::process::exit(1);
