@@ -98,7 +98,19 @@ impl PlatformPulseApplicationRuntime {
                 ingress.transitions(),
                 [WorthUiNativeIntentTransition::AttemptPrepared(_)]
             ),
-            "real framework dispatch required: no fabricated request/evidence"
+            "real framework dispatch required: transitions={:?}, interaction_stops={}, duplicates={}",
+            ingress
+                .transitions()
+                .iter()
+                .map(|transition| match transition {
+                    WorthUiNativeIntentTransition::AttemptPrepared(_) => "prepared",
+                    WorthUiNativeIntentTransition::ConfirmationRequired(_) => "confirmation",
+                    WorthUiNativeIntentTransition::Stopped(stopped) =>
+                        native_intent_stop_kind(stopped.stop()),
+                })
+                .collect::<Vec<_>>(),
+            ingress.interaction_stops().len(),
+            ingress.duplicate_batches(),
         );
         self.settle_native_intent_ingress(&mut shell, ingress);
         self.shell = Some(shell);

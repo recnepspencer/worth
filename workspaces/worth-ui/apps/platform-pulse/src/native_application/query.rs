@@ -36,10 +36,9 @@ impl PlatformPulseApplicationRuntime {
             .query_lifecycle
             .as_ref()
             .is_some_and(|query| query.has_pending_mutation())
+            && !self.resume_query_mutation()
         {
-            if !self.resume_query_mutation() {
-                return;
-            }
+            return;
         }
         if self.pending_query_cancellation.is_some()
             || !self
