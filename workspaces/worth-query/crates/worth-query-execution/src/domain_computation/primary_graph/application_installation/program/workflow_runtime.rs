@@ -116,6 +116,22 @@ where
         )
     }
 
+    /// Close the contained native runtime without consuming its installed companions.
+    /// A refusal keeps this complete configured runtime available for retry.
+    pub fn close_conditional_runtime(
+        &mut self,
+    ) -> Result<
+        crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInspection,
+        crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
+    >
+    where
+        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<
+            Schema,
+        >,
+    {
+        self.runtime.close_conditional_runtime()
+    }
+
     pub fn into_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
         self.runtime
     }

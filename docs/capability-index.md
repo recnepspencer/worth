@@ -113,6 +113,10 @@ vocabulary before cloning runtime handles or retaining operations. A refused
 `retain_workflow_spec` preserves runtime, installed spec and signing owner in
 `WorthQueryWorkflowRuntimeBindingRefusal::into_parts()`; refused
 `support_workflow_spec` returns the original spec with its denial.
+`WorthQueryWorkflowApplicationRuntime::close_conditional_runtime(&mut self)`
+delegates native close while retaining the configured wrapper and its installed
+workflow/signing companions on refusal. Close the actual operation owners and
+retry the same wrapper; consuming it into a program runtime is unnecessary.
 
 ---
 

@@ -3,7 +3,7 @@ use crate::document_retention_model::{
     host::publish_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
     programs::{DocumentRetentionFeature, RetentionCompletion, RetentionProgramP0},
-    retention_entry::{DOCUMENT_IDENTITY, SetRetentionBinding, SetRetentionIntent},
+    retention_entry::{SetRetentionBinding, SetRetentionIntent, DOCUMENT_IDENTITY},
     schema::{DocumentRetentionSchema, SetRetentionInput},
     workflow::{
         install_certification_authentication_with_clock, install_workflow_spec, workflow_resources,
@@ -74,7 +74,7 @@ fn workflow_binding_keepalive_refusal_returns_inputs_for_authentic_retry() {
     operation
         .close(&runtime.request(&principal, &scope))
         .unwrap_or_else(|(_, denial)| panic!("initial owner close: {denial:?}"));
-    let bound = runtime
+    let mut bound = runtime
         .retain_workflow_spec(workflow, signing_owner)
         .unwrap_or_else(|refusal| {
             panic!(
@@ -84,4 +84,35 @@ fn workflow_binding_keepalive_refusal_returns_inputs_for_authentic_retry() {
         });
     assert_eq!(bound.workflow_spec().program_revision(), &expected_revision);
     assert_eq!(bound.installed_schema().binding_identity(), expected_schema);
+    let operation = bound
+        .request(&principal, &scope)
+        .mutate(SetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 9,
+            },
+        })
+        .without_source()
+        .idempotency_owned(0x9176_6602)
+        .unwrap_or_else(|(_, _, denial)| panic!("configured input capture: {denial:?}"))
+        .retain_operation::<RetentionProgramP0, Action>(bound.program_runtime())
+        .unwrap_or_else(|(_, denial)| panic!("configured original owner: {denial:?}"));
+    let stop = bound.close_conditional_runtime().unwrap_err();
+    assert_eq!(
+        stop.kind(),
+        worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained
+    );
+    assert_eq!(bound.workflow_spec().program_revision(), &expected_revision);
+    assert_eq!(bound.workflow_spec().schema_binding(), &expected_schema);
+    assert_eq!(
+        bound.authentication_owner().binding_identity(),
+        &expected_schema
+    );
+    operation
+        .close(&bound.request(&principal, &scope))
+        .unwrap_or_else(|(_, denial)| panic!("configured original owner close: {denial:?}"));
+    bound
+        .close_conditional_runtime()
+        .expect("configured runtime closes after its owner");
+    assert_eq!(bound.workflow_spec().program_revision(), &expected_revision);
 }
