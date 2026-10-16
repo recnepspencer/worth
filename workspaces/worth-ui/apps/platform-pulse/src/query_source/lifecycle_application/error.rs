@@ -44,7 +44,6 @@ pub(crate) enum PlatformPulseQueryLifecycleDenial {
     PublicationNotPending,
     OwnerNotLive,
     MutationPending,
-    RetainedMutation(Box<super::continuation::PlatformPulseQueryMutation>),
     ActionRequest(&'static str),
     Owner(WorthUiStatusOwnerError),
     Projection(WorthUiQueryViewIdentityError),
@@ -62,9 +61,6 @@ impl std::fmt::Display for PlatformPulseQueryLifecycleDenial {
             Self::OwnerNotLive => formatter.write_str("live owner unavailable"),
             Self::MutationPending => formatter
                 .write_str("original Query mutation retained; continue with a fresh request"),
-            Self::RetainedMutation(_) => {
-                formatter.write_str("close retains the original Query mutation and its context")
-            }
             Self::ActionRequest(denial) => write!(formatter, "action request: {denial}"),
             Self::Owner(denial) => write!(formatter, "Query owner: {denial}"),
             Self::Projection(denial) => write!(formatter, "projection: {denial:?}"),

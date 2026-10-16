@@ -161,12 +161,6 @@ impl PlatformPulseApplicationRuntime {
     }
 }
 
-impl Drop for PlatformPulseApplicationRuntime {
-    fn drop(&mut self) {
-        let _ = self.shutdown_product();
-    }
-}
-
 pub(crate) fn publish_preparation_failure(
     publisher: &PlatformPulseObservationPublisher,
     denial: &PlatformPulsePreparationDenial,

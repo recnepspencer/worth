@@ -1,6 +1,6 @@
 use super::{
-    intent, PlatformPulseApplicationRuntime, PlatformPulsePendingManagedRebind,
-    PlatformPulseProjectionRebindDenial, PlatformPulseTerminalError,
+    PlatformPulseApplicationRuntime, PlatformPulsePendingManagedRebind,
+    PlatformPulseProjectionRebindDenial, PlatformPulseTerminalError, intent,
 };
 
 mod observation_queue;
@@ -358,21 +358,13 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
     }
 
     fn close(
-        mut self: Box<Self>,
+        self: Box<Self>,
         application: worth_ui::facade::app::WorthUiNativeApplicationShell,
     ) -> Result<
         worth_ui_native_platform::UiNativeApplicationRuntimeClosed,
         worth_ui_native_platform::UiNativeApplicationRuntimeCloseIncomplete,
     > {
-        self.shell = Some(application);
-        let shutdown = self
-            .shutdown_product()
-            .expect("native Pulse close starts with the retained application shell");
-        Ok(
-            worth_ui_native_platform::UiNativeApplicationRuntimeClosed::from_application_shutdown(
-                shutdown,
-            ),
-        )
+        self.close_native_runtime(application)
     }
 }
 

@@ -127,24 +127,48 @@ impl PlatformPulseQueryLifecycle {
 
     pub(crate) fn close(
         self,
-    ) -> Result<PlatformPulseQueryShutdownReceipt, PlatformPulseQueryLifecycleDenial> {
-        match self.state {
+    ) -> Result<PlatformPulseQueryShutdownReceipt, (Self, PlatformPulseQueryLifecycleDenial)> {
+        self.close_with_scope(&fresh_close_scope())
+    }
+
+    /// Every refusal returns this whole owner, including its presentation state.
+    /// Closing never advances a user command or turns cleanup into delivery evidence.
+    pub(crate) fn close_with_scope(
+        mut self,
+        scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
+    ) -> Result<PlatformPulseQueryShutdownReceipt, (Self, PlatformPulseQueryLifecycleDenial)> {
+        let state = std::mem::replace(&mut self.state, PlatformPulseQueryOwnerState::Closed);
+        match state {
             PlatformPulseQueryOwnerState::Live => {}
             PlatformPulseQueryOwnerState::Mutation(mutation) => {
-                return Err(PlatformPulseQueryLifecycleDenial::RetainedMutation(
-                    Box::new(mutation),
-                ));
+                match mutation.close_without_commit(scope) {
+                    Err(mutation) => {
+                        self.state = PlatformPulseQueryOwnerState::Mutation(mutation);
+                        return Err((self, PlatformPulseQueryLifecycleDenial::MutationPending));
+                    }
+                    Ok(closed) => {
+                        if matches!(closed.live, Some(worth_query_host::facade::primary_graph::WorthQueryApplicationLiveCloseOutcome::Unavailable)) {
+                            self.state = PlatformPulseQueryOwnerState::Indeterminate;
+                            return Err((self, PlatformPulseQueryLifecycleDenial::IndeterminateAtClose));
+                        }
+                    }
+                }
             }
-            PlatformPulseQueryOwnerState::AwaitingPublication(_) => {
-                return Err(PlatformPulseQueryLifecycleDenial::UnsettledPublicationAtClose);
+            state => {
+                let denial = match state {
+                    PlatformPulseQueryOwnerState::AwaitingPublication(_) => {
+                        PlatformPulseQueryLifecycleDenial::UnsettledPublicationAtClose
+                    }
+                    PlatformPulseQueryOwnerState::Indeterminate => {
+                        PlatformPulseQueryLifecycleDenial::IndeterminateAtClose
+                    }
+                    _ => PlatformPulseQueryLifecycleDenial::OwnerNotLive,
+                };
+                self.state = state;
+                return Err((self, denial));
             }
-            PlatformPulseQueryOwnerState::Indeterminate => {
-                return Err(PlatformPulseQueryLifecycleDenial::IndeterminateAtClose);
-            }
-            _ => return Err(PlatformPulseQueryLifecycleDenial::OwnerNotLive),
         }
-        let owner = self.owner;
-        let receipt = owner.close();
+        let receipt = self.owner.close();
         Ok(PlatformPulseQueryShutdownReceipt {
             owner_terminal: receipt.owner_terminal(),
         })
@@ -181,3 +205,12 @@ impl PlatformPulseQueryShutdownReceipt {
 
 #[cfg(test)]
 mod tests;
+
+/// A new unprivileged request scope for each native-driver close attempt.
+pub(crate) fn fresh_close_scope()
+-> worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope {
+    use worth_query_host::facade::admission::authenticated_principal::{
+        WorthQueryCancellationSource, WorthQueryRequestScope,
+    };
+    WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token())
+}

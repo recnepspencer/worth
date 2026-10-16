@@ -4,6 +4,24 @@ use super::*;
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequest;
 
 impl WorthUiStatusMutation {
+    /// Shutdown may abandon an unexecuted command only after authentic native close.
+    /// Completed delivery and prior committed evidence stay owned for their ordinary
+    /// continuation; cleanup release alone would not prove that publication was presented.
+    pub fn close_without_commit(
+        self,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<WorthUiStatusMutationClose, Self> {
+        match self.state.native.as_ref().expect("one retained original owner") {
+            NativeCustody::Source(native::State::Completed(_)) | NativeCustody::Action(native::State::Completed(_)) =>
+                Err(self.refused(WorthUiStatusMutationStop::PublicationPending)),
+            NativeCustody::Source(native::State::Terminal(terminal)) if matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_) | worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_))) =>
+                Err(self.refused(WorthUiStatusMutationStop::PublicationPending)),
+            NativeCustody::Action(native::State::Terminal(terminal)) if matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_) | worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_))) =>
+                Err(self.refused(WorthUiStatusMutationStop::PublicationPending)),
+            _ => self.close(scope),
+        }
+    }
+
     /// Close under fresh authority. Unresolved native work refuses without discarding custody.
     pub fn close(
         mut self,

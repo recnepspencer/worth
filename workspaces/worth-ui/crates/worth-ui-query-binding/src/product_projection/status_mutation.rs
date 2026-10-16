@@ -36,6 +36,7 @@ pub enum WorthUiStatusMutationStop {
     Advance(WorthQuerySourceOnlyDenial),
     Terminal,
     RetainedObservationUnavailable,
+    PublicationPending,
     CurrentRead(WorthQueryApplicationReadObservationDenial),
     SnapshotQuery(WorthQueryApplicationRequestQueryDenial),
     LiveNext(WorthQueryApplicationLiveNextDenial),

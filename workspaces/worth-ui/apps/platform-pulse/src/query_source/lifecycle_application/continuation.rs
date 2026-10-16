@@ -29,6 +29,9 @@ impl PlatformPulseQueryMutation {
     ) -> Self {
         Self { operation, purpose }
     }
+    pub(crate) fn purpose(&self) -> &PlatformPulseQueryMutationPurpose {
+        &self.purpose
+    }
     pub(crate) fn stop(&self) -> Option<&WorthUiStatusMutationStop> {
         self.operation.stop()
     }
@@ -51,11 +54,11 @@ impl PlatformPulseQueryMutation {
             }),
         }
     }
-    pub(crate) fn close(
+    pub(super) fn close_without_commit(
         self,
         scope: &WorthQueryRequestScope,
     ) -> Result<WorthUiStatusMutationClose, Self> {
-        match self.operation.close(scope) {
+        match self.operation.close_without_commit(scope) {
             Ok(closed) => Ok(closed),
             Err(operation) => Err(Self {
                 operation,
