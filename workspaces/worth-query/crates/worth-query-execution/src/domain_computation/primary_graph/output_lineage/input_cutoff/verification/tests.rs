@@ -192,13 +192,7 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                         entity,
                     }],
                     |_| Some(TypeId::of::<()>()),
-                    &worth_execution::ExecutionRequest::serial(
-                        &worth_execution::SerialRequest::from_memory(
-                            worth_execution::SerialMemoryBudget::new(64 << 20),
-                            worth_execution::CancellationToken::new(),
-                            None,
-                        ),
-                    ),
+                    &execution,
                 )
                 .unwrap(),
             );

@@ -214,7 +214,7 @@ fn independent_v10(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) ->
     let mut body = Vec::new();
     body.extend_from_slice(&10_u16.to_be_bytes());
     body.extend_from_slice(&2_u16.to_be_bytes());
-    body.extend_from_slice(&3_u16.to_be_bytes());
+    body.extend_from_slice(&4_u16.to_be_bytes());
     body.extend_from_slice(&bootstrap.to_be_bytes());
     body.extend_from_slice(&(native.len() as u64).to_be_bytes());
     body.extend_from_slice(&2_u64.to_be_bytes());
