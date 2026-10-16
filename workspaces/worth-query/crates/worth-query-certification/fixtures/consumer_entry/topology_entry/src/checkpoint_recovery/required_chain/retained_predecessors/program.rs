@@ -80,6 +80,11 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
         ApplicationProgramIdentity::new("worth.query.certification.retained-predecessors.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let mut features = vec![
+            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
+                .provides::<PlanarBodyOutput>()
+                .native_action::<PlanarEditBinding<CheckpointSchema>>()
+                .finish_action()
+                .finish(),
             ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
                 .provides::<PlanarDerivedBodyOutput>()
                 .conditional_operation::<MutatePlanar>()
