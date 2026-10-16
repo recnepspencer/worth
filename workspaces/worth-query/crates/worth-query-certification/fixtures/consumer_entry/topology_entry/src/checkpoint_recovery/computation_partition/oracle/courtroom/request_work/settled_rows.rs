@@ -221,12 +221,15 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                     WorthQueryApplicationOutputDemandProgress::Settled(_)
                 ));
             }
+            // Drain the declared predecessor before its dependent. Advancing
+            // the root last can change the dependency basis after the Region
+            // caller was warmed, leaving verification work in the measured call.
             assert!(matches!(
-                output.advance(&request).unwrap(),
+                root.advance(&request).unwrap(),
                 WorthQueryApplicationOutputDemandProgress::Settled(_)
             ));
             assert!(matches!(
-                root.advance(&request).unwrap(),
+                output.advance(&request).unwrap(),
                 WorthQueryApplicationOutputDemandProgress::Settled(_)
             ));
             assert_eq!(app.queued_required_work_for_test(), 0);
@@ -239,14 +242,25 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                 "model population at the quiet boundary"
             );
             quiet_populations.push(app.registry_row_count_for_test());
+            // Measure a fresh caller authenticated at this settled world, not
+            // the setup request retained across both source-edit schedules.
+            let (quiet_scope, quiet_principal) = authenticate(&app);
+            let quiet_request = app.request(&quiet_principal, &quiet_scope);
+            let contacts_before = app.producer_contacts_on_this_thread_for_test();
             app.caller_request_work_for_test();
             app.caller_request_navigation_for_test();
             let rows_before = app.whole_registry_rows_visited_for_test();
             assert!(matches!(
-                output.advance(&request).unwrap(),
+                output.advance(&quiet_request).unwrap(),
                 WorthQueryApplicationOutputDemandProgress::Settled(_)
             ));
             let work = app.caller_request_work_for_test();
+            assert_eq!(
+                app.producer_contacts_on_this_thread_for_test(),
+                contacts_before,
+                "the measured current caller executes no producer"
+            );
+            assert_eq!(app.queued_required_work_for_test(), 0);
             assert_eq!(work.len(), 1);
             costs.push(work[0]);
             visited.push(app.whole_registry_rows_visited_for_test() - rows_before);
