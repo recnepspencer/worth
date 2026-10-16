@@ -253,10 +253,24 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for WorkflowInstanceStar
     }
 }
 
-impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for WorkflowDefinitionAuthoringBinding {
-    type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<WorkflowDefinitionAuthoringCapability>;
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for WorkflowDefinitionAuthoringBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            WorkflowDefinitionAuthoringCapability,
+        >;
 }
 
-impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for WorkflowInstanceStartBinding {
-    type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<WorkflowInstanceStartCapability>;
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for WorkflowInstanceStartBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            WorkflowInstanceStartCapability,
+        >;
 }
