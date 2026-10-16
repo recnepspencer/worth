@@ -204,3 +204,52 @@ pub fn assess(
         "exact native assessment transition: {accepted:?}"
     );
 }
+
+/// Evaluate the authored condition from a native published read, never a supplied boolean.
+#[inline(never)]
+pub fn condition(
+    application: &MixedApplication,
+    instance: &PublishedWorkflowInstanceRef,
+    required: &RequiredWorkflowCondition,
+) {
+    use crate::document_retention_model::retention_entry::{
+        DocumentRetentionConditionQueryBinding, DocumentRetentionConditionRead,
+    };
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let actor = authenticate_operator(runtime.installed_schema(), &scope);
+    let result = runtime
+        .request(&actor, &scope)
+        .on_branch(instance.branch())
+        .query(DocumentRetentionConditionRead {
+            identity: DOCUMENT_IDENTITY.into(),
+        })
+        .execute()
+        .expect("publish the real condition operand on this exact occurrence");
+    assert_eq!(
+        result.rows(),
+        &[true],
+        "native retention must satisfy the condition"
+    );
+    let accepted = runtime
+        .request(&actor, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowAdvanceIntent {
+            input: WorkflowAdvanceInput {
+                document_identity: DOCUMENT_IDENTITY.into(),
+            },
+        })
+        .without_source()
+        .idempotency(&49_u64)
+        .prepare_workflow_advance(application, instance.clone())
+        .expect("fresh admission at the original condition requirement")
+        .condition(required)
+        .operand::<DocumentRetentionConditionQueryBinding, _>("retained", result)
+        .accept()
+        .expect("native condition evaluates current published proof for this requirement");
+    assert!(
+        matches!(accepted, WorkflowProgressOutcome::Completed(ref done)
+        if done.node_path() == "positive-retention"),
+        "the real condition transition must be performed: {accepted:?}"
+    );
+}
