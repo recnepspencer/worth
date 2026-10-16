@@ -100,7 +100,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
     let baseline = payer.charged_memory_bytes();
     assert_eq!(baseline, 0);
     let request = live_scope();
-    let (pin, symbols, expected) = world
+    let (batch, carriers, expected, label_locator) = world
         .application
         .with_host_advancement(|phase| {
             let host = phase.test_host_request();
@@ -167,68 +167,76 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
                 })));
                 carriers.push(created);
             }
-            let prepared = prepare_relational_mutation_on_application(
-                &execution,
-                &world.application,
-                batch,
-                &request,
-            );
-            let Ok(Publication::Performed(performed)) = prepared.execute(execution) else {
-                panic!("the real native/World transport publication must perform");
-            };
-            let commit = performed
-                .component_results()
-                .relational_commit_result()
-                .unwrap();
-            let changes = WorthQueryApplicationCommittedChanges::from_commit(commit);
-            let mut actual_entities = std::collections::BTreeSet::new();
-            let symbols = carriers
-                .iter()
-                .map(|created| {
-                    let entity = commit
-                        .created_entity(created)
-                        .expect("actual Account carrier created reference");
-                    assert!(
-                        actual_entities.insert(entity),
-                        "five distinct actual carrier records"
-                    );
-                    let actual = changes
-                        .committed_field_values(entity, &[&label_locator])
-                        .expect("actual immutable committed AccountLabel");
-                    let [AspectValue::String(InternedString::Symbol(symbol))] = actual.as_slice()
-                    else {
-                        panic!("actual committed label must be exactly one Symbol: {actual:?}");
-                    };
-                    Symbol(symbol.0)
-                })
-                .collect::<Vec<_>>();
-            assert_eq!(symbols.len(), 5);
-            let published_basis = performed.commit().basis().relational_basis();
-            let pin = handle.with_runtime_mut(&execution, |runtime| {
-                handle
-                    .ensure_primary_indexes_for_basis(&execution, runtime, published_basis)
-                    .unwrap();
-                let pin = runtime
-                    .read_truth()
-                    .pin_read_capability(&commit.snapshot, &[], &execution)
-                    .unwrap();
-                assert_eq!(pin.snapshot(), &commit.snapshot);
-                for (symbol, expected) in symbols.iter().zip(&expected) {
-                    assert_eq!(
-                        pin.symbols().resolve(*symbol).unwrap().as_bytes(),
-                        expected.as_bytes()
-                    );
-                }
-                release_test_commit_snapshot(runtime, commit);
-                pin
-            });
-            drop(changes);
-            drop(performed.consume());
-            // Everything except native pin and test-oracle strings is local:
-            // Meaning, five handles, actual field vectors, admission and request end.
-            (pin, symbols, expected)
+            // End the installed host entry before running native publication
+            // under the original, independently retained text payer.
+            (batch, carriers, expected, label_locator)
         })
         .expect("genuine installed fixture host scope");
+    let execution = ExecutionRequest::leased(&payer);
+    let handle = world
+        .application
+        .runtime
+        .primary_graph()
+        .unwrap()
+        .integration_handle();
+    let prepared = prepare_relational_mutation_on_application(
+        &execution,
+        &world.application,
+        batch,
+        &request,
+    );
+    let Ok(Publication::Performed(performed)) = prepared.execute(execution) else {
+        panic!("the real native/World transport publication must perform");
+    };
+    let commit = performed
+        .component_results()
+        .relational_commit_result()
+        .unwrap();
+    let changes = WorthQueryApplicationCommittedChanges::from_commit(commit);
+    let mut actual_entities = std::collections::BTreeSet::new();
+    let symbols = carriers
+        .iter()
+        .map(|created| {
+            let entity = commit
+                .created_entity(created)
+                .expect("actual Account carrier created reference");
+            assert!(
+                actual_entities.insert(entity),
+                "five distinct actual carrier records"
+            );
+            let actual = changes
+                .committed_field_values(entity, &[&label_locator])
+                .expect("actual immutable committed AccountLabel");
+            let [AspectValue::String(InternedString::Symbol(symbol))] = actual.as_slice()
+            else {
+                panic!("actual committed label must be exactly one Symbol: {actual:?}");
+            };
+            Symbol(symbol.0)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(symbols.len(), 5);
+    let published_basis = performed.commit().basis().relational_basis();
+    let pin = handle.with_runtime_mut(&execution, |runtime| {
+        handle
+            .ensure_primary_indexes_for_basis(&execution, runtime, published_basis)
+            .unwrap();
+        let pin = runtime
+            .read_truth()
+            .pin_read_capability(&commit.snapshot, &[], &execution)
+            .unwrap();
+        assert_eq!(pin.snapshot(), &commit.snapshot);
+        for (symbol, expected) in symbols.iter().zip(&expected) {
+            assert_eq!(
+                pin.symbols().resolve(*symbol).unwrap().as_bytes(),
+                expected.as_bytes()
+            );
+        }
+        release_test_commit_snapshot(runtime, commit);
+        pin
+    });
+    drop(changes);
+    drop(performed.consume());
+    drop(handle); // No integration/runtime owner may outlive the final pin oracle.
     assert!(payer.charged_memory_bytes() > baseline);
     drop(request);
     drop(world); // Includes actual World/application/runtime/configuration owners.
