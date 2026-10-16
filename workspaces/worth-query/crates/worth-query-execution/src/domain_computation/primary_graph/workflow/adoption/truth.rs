@@ -22,6 +22,8 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowAdoptionReadDenial
     ReadExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Preparation(worth_relational::facade::mvcc::CompanionPreflightStop),
     SelectedIndexUnavailable,
+    /// Native mechanical maintenance exhausted its own declared bound.
+    IndexMaintenanceWorkLimit,
     WorkLimitExceeded {
         consumed_work_units: usize,
     },

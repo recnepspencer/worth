@@ -99,3 +99,92 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
     assert_ne!(main_generation.generation_id, fork_generation.generation_id);
     assert_eq!(main_generation.entries, fork_generation.entries);
 }
+
+#[test]
+fn selected_fork_currency_uses_original_request_work_and_never_cold_population() {
+    use crate::execution::RelationalExecutionDenialCause as Cause;
+    use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
+    use worth_execution::ExecutionWorkCeiling;
+
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = runtime_with_index_field_aspects();
+    let anchor = create_entity_outcome(execution, &runtime, "selected-fork-currency");
+    let index = name_index(&runtime, "selected-fork.name", true);
+    let (_, main_basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let budget = DerivedIndexMaintenanceBudget {
+        maximum_work_units: 16,
+        maximum_cold_record_slots: 0,
+        maximum_derived_rows: 0,
+    };
+    let missing = runtime
+        .index_authority()
+        .ensure_field_index_for_basis(index, &main_basis, budget, execution)
+        .unwrap_err();
+    assert_eq!(missing.kind, Denial::ColdReconstructionRequired);
+    let main_build = runtime.index_authority().build_for_basis(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: anchor.commit.commit_id,
+            branch_id: BranchId("main".into()),
+            index_ids: vec![index],
+        },
+        &main_basis,
+    );
+    assert!(main_build.failed_indexes.is_empty());
+    // The production Query fork-name shape, rather than the short main key.
+    let fork = create_branch_from_main(&runtime, "query-product-1-relational");
+    let (_, basis) = runtime
+        .observe_branch(&runtime.branch_identity(&fork).unwrap())
+        .unwrap();
+    let (short, _) = execution
+        .run(ExecutionWorkCeiling::new(0), |_| {
+            runtime
+                .index_authority()
+                .ensure_field_index_for_basis(index, &basis, budget, execution)
+        })
+        .unwrap();
+    assert_eq!(
+        short.unwrap_err().kind,
+        Denial::Execution(Cause::WorkExhausted)
+    );
+    assert!(runtime
+        .index_access()
+        .published_generation_for_observation(index, &basis.observation())
+        .is_none());
+    let (funded, report) = execution
+        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+            runtime
+                .index_authority()
+                .ensure_field_index_for_basis(index, &basis, budget, execution)
+        })
+        .unwrap();
+    funded.unwrap();
+    assert!(report.charged_work() > 0);
+    let fork_generation = runtime
+        .index_access()
+        .published_generation_for_observation(index, &basis.observation())
+        .unwrap();
+    assert_eq!(fork_generation.source_branch_id, fork);
+    assert_eq!(fork_generation.entries, main_build.generations[0].entries);
+    let (warm, report) = execution
+        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+            runtime
+                .index_authority()
+                .ensure_field_index_for_basis(index, &basis, budget, execution)
+        })
+        .unwrap();
+    warm.unwrap();
+    assert!(report.charged_work() > 0);
+    assert_eq!(
+        runtime
+            .index_access()
+            .published_generation_for_observation(index, &basis.observation())
+            .unwrap()
+            .generation_id,
+        fork_generation.generation_id
+    );
+    release_test_commit_snapshot(&runtime, &anchor);
+}

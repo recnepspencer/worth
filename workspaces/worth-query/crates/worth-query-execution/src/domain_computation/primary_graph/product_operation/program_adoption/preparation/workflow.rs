@@ -33,14 +33,15 @@ pub(super) fn admit_workflow_dispositions(
 
 pub(super) fn workflow_read_denial(
     denial: WorkflowAdoptionReadDenial,
+    maximum_selection_work: usize,
 ) -> WorthQueryBranchAdoptionPreparationDenial {
     match denial {
         WorkflowAdoptionReadDenial::Preparation(cause) => match cause {
             worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) =>
-                workflow_read_denial(WorkflowAdoptionReadDenial::ReadExecution(cause)),
+                workflow_read_denial(WorkflowAdoptionReadDenial::ReadExecution(cause), maximum_selection_work),
             worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
             | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } =>
-                WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryWorkLimit,
+                selection_limit(maximum_selection_work),
             cause => WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryPreparation(cause),
         },
         WorkflowAdoptionReadDenial::ReadExecution(cause) => {
@@ -49,6 +50,9 @@ pub(super) fn workflow_read_denial(
             )
         }
         WorkflowAdoptionReadDenial::WorkLimitExceeded { .. } => {
+            selection_limit(maximum_selection_work)
+        }
+        WorkflowAdoptionReadDenial::IndexMaintenanceWorkLimit => {
             WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryWorkLimit
         }
         WorkflowAdoptionReadDenial::SelectedIndexUnavailable
@@ -56,5 +60,14 @@ pub(super) fn workflow_read_denial(
         | WorkflowAdoptionReadDenial::UnreadableRelationSlot { .. } => {
             WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryUnavailable
         }
+    }
+}
+
+fn selection_limit(maximum_work_units: usize) -> WorthQueryBranchAdoptionPreparationDenial {
+    // State selection and inventory spend one logical allowance. Exhaustion
+    // identifies its stopping frontier, independently of native physical work.
+    WorthQueryBranchAdoptionPreparationDenial::SelectionLimitExceeded {
+        maximum_work_units,
+        consumed_work_units: maximum_work_units,
     }
 }
