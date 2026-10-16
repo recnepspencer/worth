@@ -132,17 +132,23 @@ fn governed_history_pages_and_envelope_marks_preserve_scope_revocation_and_custo
         "read-only pages, audit and marks do not spend workflow steps or warm progress"
     );
     // A genuine bounded native envelope overflow; no reduced test-only capacity or forged cause.
+    // The seeded seven days and its already committed successor (eight) both
+    // satisfy P0's ten-day ceiling. Start back at seven so every write changes truth.
     for offset in 0..65u64 {
-        assert!(matches!(
-            crate::document_retention_model::presented_request::set_retention(
-                application.program_runtime(),
-                instance.branch(),
-                old_retention + 2 + offset,
-                97_200 + offset
-            )
-            .unwrap(),
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ));
+        let outcome = crate::document_retention_model::presented_request::set_retention(
+            application.program_runtime(),
+            instance.branch(),
+            old_retention + offset % 2,
+            97_200 + offset,
+        )
+        .unwrap_or_else(|cause| panic!("overflow commit {offset} request failed: {cause:?}"));
+        assert!(
+            matches!(
+                &outcome,
+                WorthQueryApplicationMutationOutcome::Committed { .. }
+            ),
+            "overflow commit {offset} must genuinely publish: {outcome:?}"
+        );
     }
     assert_eq!(
         request
