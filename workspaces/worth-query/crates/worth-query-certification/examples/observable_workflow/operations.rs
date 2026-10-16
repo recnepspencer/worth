@@ -129,6 +129,10 @@ pub fn archive(
             }
         }
     };
+    assert!(
+        ingress_received,
+        "the original owner must exercise pending custody before ingress/completion"
+    );
     assert_eq!(archive.dispatch_calls(), 1, "one original child dispatch");
     assert_eq!(
         crate::effect::handler_invocations(),
