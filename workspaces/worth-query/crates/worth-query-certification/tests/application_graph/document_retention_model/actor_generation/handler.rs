@@ -64,6 +64,14 @@ fn observe(
     if input.restore == actor.is_some() {
         return Ok(None);
     }
+    if let Some(actor) = &actor {
+        // Indexed identity selection supplies the field predicate, not the
+        // entity-existence fact required to lower the actual retirement.
+        reader
+            .reader()
+            .require_decision_entity(actor, Principal::reference())
+            .map_err(HandlerExecutionDenial::new)?;
+    }
     let document =
         reader.resolve_entity(DocumentIdentityField::reference(), input.identity.clone())?;
     let mapping = reader.resolve_entity(

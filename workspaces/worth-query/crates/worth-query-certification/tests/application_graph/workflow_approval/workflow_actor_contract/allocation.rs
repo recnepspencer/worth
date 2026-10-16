@@ -73,12 +73,12 @@ fn workflow_actor_contract_retained_wire_refuses_unfunded_storage_and_preserves_
         "storage refusal never mutates the original committed proof"
     );
     drop(zero);
-    // The existing approval request codec bounds the entire portable request
-    // to 64KiB. Its inline native wire payload cannot exceed that bound.
-    let retry = authority.request_lease(request(64 * 1024)).unwrap();
+    // Wire length does not bound decode peak: outer text/DTO, context and
+    // native retained actor wire coexist. Use the existing paid fixture policy.
+    let retry = crate::test_request_policy::serial_request();
     original
         .retain_workflow_actor_evidence_for_test(
-            &worth_execution::ExecutionRequest::leased(&retry),
+            &worth_execution::ExecutionRequest::serial(&retry),
             application.runtime(),
             performed.receipt(),
             record,
