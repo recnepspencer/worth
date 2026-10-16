@@ -5,7 +5,6 @@ use crate::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
     WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
-use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
 
 #[derive(serde::Serialize)]
 pub(super) struct ProposalInput;

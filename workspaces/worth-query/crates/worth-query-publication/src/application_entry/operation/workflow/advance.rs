@@ -56,7 +56,6 @@ where
                         source: WorthQueryTerminalSourceOperation {
                             operation: self.source,
                         },
-                        required: self.required,
                     },
                 })
             }

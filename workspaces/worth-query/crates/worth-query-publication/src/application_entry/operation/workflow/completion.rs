@@ -57,7 +57,6 @@ where
         operation: WorthQueryWorkflowOperation<S, I, P, A>,
     },
     Native {
-        required: RequiredWorkflowOperation,
         source: WorthQueryTerminalSourceOperation<S, I, P, A, ApplicationSourceCompletion>,
     },
     Spent {
