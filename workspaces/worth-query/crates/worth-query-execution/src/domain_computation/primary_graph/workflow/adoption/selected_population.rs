@@ -11,7 +11,7 @@ use worth_relational::facade::{
     indexes::{
         BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldLookupDenial,
         BoundedEntityFieldLookupDenialKind, DerivedIndexBuildRequest,
-        DerivedIndexMaintenanceAdmissionStop, DerivedIndexMaintenanceDenialKind,
+        DerivedIndexMaintenanceDenialKind,
     },
     mvcc::{CompanionPreflightBudget, CompanionPreflightStop},
     runtime::{RelationalRuntime, VisibilityProjectionView},
@@ -59,28 +59,24 @@ pub(super) fn is_empty(
             .admit_read_scratch(bytes)
             .and_then(|()| admission.charge_external_work(work))
             .map_err(Denial::Preparation)?;
-        // Only this selected field index enters cold reconstruction. Native
-        // work and storage spend the SAME remaining caller admission below.
-        let built = runtime.index_authority().refresh_field_indexes_for_basis_admitted(
+        // Inventory selection counts logical reads. Native maintenance's
+        // comparison/allocation quotes belong to the original execution's
+        // physical work and memory payer, not this record-selection counter.
+        // This native door accepts only field indexes and exact/fork seeds;
+        // it refuses population reconstruction.
+        let built = runtime.index_authority().refresh_field_indexes_for_basis(
             DerivedIndexBuildRequest {
                 source_commit_id, branch_id: branch.clone(),
                 index_ids: vec![lineage.identity_index_id],
-            }, basis,
+            }, basis, None,
             crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(),
             execution,
-            |work, bytes| {
-                admission.admit_read_scratch(bytes)?;
-                admission.charge_external_work(work)
-            },
-        ).map_err(|stop| match stop {
-            DerivedIndexMaintenanceAdmissionStop::Admission(cause) => Denial::Preparation(cause),
-            DerivedIndexMaintenanceAdmissionStop::Native(cause) => match cause.kind {
+        ).map_err(|cause| match cause.kind {
                 DerivedIndexMaintenanceDenialKind::Execution(cause) => Denial::ReadExecution(cause),
                 DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded => Denial::WorkLimitExceeded {
                     consumed_work_units: cause.work.work_units,
                 },
                 _ => Denial::SelectedIndexUnavailable,
-            },
         })?;
         if built.generations.len() != 1 {
             return Err(Denial::SelectedIndexUnavailable);
