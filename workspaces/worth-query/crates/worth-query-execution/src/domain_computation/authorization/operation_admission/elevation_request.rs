@@ -1,3 +1,4 @@
+use super::authorization_basis::LifecycleBinding;
 use super::{WorthQueryAdmittedApplicationOperation, WorthQueryOperationAuthorizationBasis};
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
@@ -10,6 +11,7 @@ impl<Schema, Operation, Input, Scope>
 {
     pub(in crate::domain_computation) fn bind_elevation_request(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryElevationRequestBinding,
     ) -> Result<Self, WorthQueryOperationAuthorizationDenial> {
         let basis = std::mem::replace(
@@ -24,6 +26,8 @@ impl<Schema, Operation, Input, Scope>
                 &self.operation,
             ));
         };
+        let binding = LifecycleBinding::retain(execution, binding, &self.operation)
+            .map_err(|(denial, _binding)| denial)?;
         self.authorization_basis =
             WorthQueryOperationAuthorizationBasis::ElevationRequest { input, binding };
         Ok(self)
@@ -34,7 +38,7 @@ impl<Schema, Operation, Input, Scope>
     ) -> Option<&WorthQueryElevationRequestBinding> {
         match &self.authorization_basis {
             WorthQueryOperationAuthorizationBasis::ElevationRequest { binding, .. } => {
-                Some(binding)
+                Some(binding.get())
             }
             _ => None,
         }
@@ -51,7 +55,7 @@ impl<Schema, Operation, Input, Scope>
             WorthQueryOperationAuthorizationBasis::ElevationRequest { input, binding } => {
                 self.authorization_basis =
                     WorthQueryOperationAuthorizationBasis::Capability { input };
-                Some(binding)
+                Some(binding.into_inner())
             }
             other => {
                 self.authorization_basis = other;

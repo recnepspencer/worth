@@ -1,3 +1,6 @@
+mod lifecycle_binding;
+pub(super) use lifecycle_binding::LifecycleBinding;
+
 use crate::domain_computation::authorization::{
     WorthQueryCapabilityRevocationBinding, WorthQueryDelegationActivationBinding,
     WorthQueryElevationApprovalBinding, WorthQueryElevationCloseBinding,
@@ -13,32 +16,32 @@ pub(in crate::domain_computation) enum WorthQueryOperationAuthorizationBasis<Inp
     DelegationActivation {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: WorthQueryDelegationActivationBinding,
+        binding: LifecycleBinding<WorthQueryDelegationActivationBinding>,
     },
     CapabilityRevocation {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: WorthQueryCapabilityRevocationBinding,
+        binding: LifecycleBinding<WorthQueryCapabilityRevocationBinding>,
     },
     ElevationRequest {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: WorthQueryElevationRequestBinding,
+        binding: LifecycleBinding<WorthQueryElevationRequestBinding>,
     },
     ElevationApproval {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: WorthQueryElevationApprovalBinding,
+        binding: LifecycleBinding<WorthQueryElevationApprovalBinding>,
     },
     ElevationClose {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: WorthQueryElevationCloseBinding,
+        binding: LifecycleBinding<WorthQueryElevationCloseBinding>,
     },
     MandatoryReview {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: WorthQueryMandatoryReviewBinding,
+        binding: LifecycleBinding<WorthQueryMandatoryReviewBinding>,
     },
 }
 
