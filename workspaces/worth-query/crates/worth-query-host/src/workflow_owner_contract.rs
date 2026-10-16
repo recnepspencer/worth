@@ -69,3 +69,15 @@
 //!     operation: WorthQueryBoundWorkflowOperation<'_, '_, '_, '_, S, I, P>,
 //! ) { let _ = operation.native; }
 //! ```
+//!
+//! Effect-free construction refusal can release its runtime borrow without
+//! losing the original description or issued workflow requirement.
+//! ```
+//! use worth_query_host::facade::{application_entry::*, domain::ApplicationSchema};
+//! use worth_query_decl::facade::application_operation::ApplicationMutationIntent;
+//! fn retain_original<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(
+//!     binding: WorthQueryOwnedWorkflowBinding<'_, S, I>,
+//! ) -> (WorthQueryOperationDescription<S, I>, RequiredWorkflowOperation) {
+//!     binding.into_parts()
+//! }
+//! ```

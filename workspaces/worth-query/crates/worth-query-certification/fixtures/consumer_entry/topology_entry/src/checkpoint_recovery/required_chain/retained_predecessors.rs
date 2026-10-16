@@ -9,6 +9,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryProductBranchAdmissionDenial as AdmissionDenial,
     WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal,
 };
+mod ordinary;
 mod program;
 
 #[test]

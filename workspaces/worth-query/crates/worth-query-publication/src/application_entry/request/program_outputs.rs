@@ -1,3 +1,4 @@
+mod retained;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
@@ -130,19 +131,12 @@ where
         let observation = self.retain_read(phase).map_err(
             crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ReadObservation,
         )?;
-        let (root, retained) = self
-            .at(&observation)
-            .demand(root_demand.clone())
-            .controls(controls)
-            .start_for_program::<Program, Root>(phase, application)
-            .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
-        Ok(
-            crate::application_entry::WorthQueryApplicationProgramOutputHandle::new_initial(
-                crate::application_entry::WorthQueryApplicationReadObservation::new(retained),
-                root,
-                root_demand,
-                controls,
-            ),
+        self.start_program_outputs_at_in_advancement::<Program, Root>(
+            phase,
+            application,
+            root_demand,
+            controls,
+            &observation,
         )
     }
 

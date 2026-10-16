@@ -1,3 +1,4 @@
+mod read_close;
 mod source;
 mod unavailable;
 pub use unavailable::WorthQueryApplicationProgramOutputUnavailable;
@@ -317,8 +318,12 @@ where
                 }
                 self.complete = true;
                 self.source_preparation = None;
-                self.continuation = None;
-                self.root = None;
+                // A read-origin tree keeps its actual interests through explicit
+                // close. Performed-source completion keeps its existing release.
+                if self.source_receipt.is_some() {
+                    self.continuation = None;
+                    self.root = None;
+                }
                 let root = self
                     .root_settlement
                     .take()

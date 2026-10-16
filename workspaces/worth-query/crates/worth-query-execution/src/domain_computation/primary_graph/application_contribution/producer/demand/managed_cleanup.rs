@@ -20,6 +20,11 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
             .as_mut()
             .and_then(|stop| stop.take_managed_cleanup())
     }
+    pub fn take_read_cleanup(&mut self) -> Option<super::WorthQueryOutputReadCleanup> {
+        self.terminal_caller_denial
+            .as_mut()
+            .and_then(|stop| stop.take_read_cleanup())
+    }
     /// Discharges only native cleanup under a fresh issuer, never producer completion.
     pub fn release_managed_cleanup(
         &mut self,

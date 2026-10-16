@@ -28,6 +28,7 @@ pub(super) use registry_delivery::{RegistryDelivery, RequiredDelivery};
 mod prepared;
 mod progress;
 mod promotion;
+mod read_close;
 mod slot_preparation;
 mod successor_release;
 mod unavailable;
@@ -62,6 +63,13 @@ pub(in crate::domain_computation::primary_graph) enum RequiredFreshOutcome {
 /// This trait is private to the admitted-demand owner. The erased value is
 /// always an actual typed admitted demand, with its original real interest.
 trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
+    fn close_read_request(
+        &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<(), super::WorthQueryOutputReadCloseDenial>;
+
     fn interest(&self) -> &WorthQueryOutputDemandInterest;
     fn producer_identity(&self) -> &str;
     fn family_type(&self) -> TypeId;
@@ -124,6 +132,20 @@ where
         WorthQueryApplicationProjection<Schema, FamilySourceQuery<Schema, Family>> + 'static,
     FamilySourceQuery<Schema, Family>: 'static,
 {
+    fn close_read_request(
+        &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<(), super::WorthQueryOutputReadCloseDenial> {
+        if self.pending_claim.is_some() {
+            return Err(super::WorthQueryOutputReadCloseDenial::NativePublicationRetained);
+        }
+        if let Some(demand) = self.demand.as_mut() {
+            demand.close_read_request(phase, runtime, branch)?;
+        }
+        Ok(())
+    }
     fn interest(&self) -> &WorthQueryOutputDemandInterest {
         self.demand
             .as_ref()

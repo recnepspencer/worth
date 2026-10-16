@@ -177,6 +177,14 @@ where
             ChildDemand<Schema, Connection>,
         >,
 {
+    fn close_read_request(&mut self, phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>, application: &WorthQueryProgramApplicationRuntime<Schema, Program>, branch: worth_query_execution::facade::product::WorthQueryProductBranch) -> Result<(), worth_query_execution::facade::primary_graph::WorthQueryOutputReadCloseDenial> { if let Some(nodes) = self.nodes.as_mut() {
+            for node in nodes {
+                if let Some(children) = node.continuation.as_mut() { children.close_read_request(phase, application, branch)?; }
+                if let Some(handle) = node.handle.as_mut() { handle.close_read_request(phase, application, branch)?; }
+                if let Some(handle) = node._retained_handle.as_mut() { handle.close_read_request(phase, application, branch)?; }
+            }
+        }
+        Ok(()) }
     fn advance(
         &mut self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,

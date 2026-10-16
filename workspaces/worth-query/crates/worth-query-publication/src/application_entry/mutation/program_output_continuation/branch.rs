@@ -84,6 +84,18 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    fn close_read_request(
+        &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+    ) -> Result<(), worth_query_execution::facade::primary_graph::WorthQueryOutputReadCloseDenial>
+    {
+        self.left.close_read_request(phase, application, branch)?;
+        self.right.close_read_request(phase, application, branch)
+    }
     fn advance(
         &mut self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<

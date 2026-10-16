@@ -239,12 +239,30 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 .with_commit_denial_kind(kind)
                 .with_commit_execution_denial(execution))
         }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(outcome) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(graph::WorthQueryApplicationUncommitted::ProductUnpublished(
+            outcome,
+        ))),
+        WorthQueryApplicationCommitOutcome::Indeterminate(outcome) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(graph::WorthQueryApplicationUncommitted::Indeterminate(
+            outcome,
+        ))),
+        WorthQueryApplicationCommitOutcome::SettlementDeferred(outcome) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(graph::WorthQueryApplicationUncommitted::SettlementDeferred(
+            outcome,
+        ))),
         outcome @ (WorthQueryApplicationCommitOutcome::Deferred(_)
         | WorthQueryApplicationCommitOutcome::NoEffect(_)
-        | WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
-        | WorthQueryApplicationCommitOutcome::Aborted
-        | WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
-        | WorthQueryApplicationCommitOutcome::Indeterminate(_)) => Err(failed(identity, outcome)),
+        | WorthQueryApplicationCommitOutcome::Aborted) => Err(failed(identity, outcome)),
     }
 }
 

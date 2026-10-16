@@ -2466,10 +2466,68 @@ The following fixture deliberately coordinates native output custody through
 
 ---
 
+### 5.5 Own a complete no-source output tree
+
+Use the ordinary demand builder when a read request needs the complete installed
+output graph without an authored source mutation:
+
+```rust,ignore
+// Illustrative: not compiled. Concrete call bodies live in the neutral tree fixture.
+let operation = request.demand(original_demand)
+    .controls(WorthQueryOutputDemandControls::host_policy())
+    .retain_program_outputs::<Program, FullTree>(&program);
+```
+
+Success returns `WorthQueryProgramOutputOperation<Schema, Program, FullTree>`.
+Construction refusal owns the original demand, controls, branch, authentic program
+runtime and any already issued observation. Retain it past the initiating scope
+and call `retry(&fresh_request)`. A retry never replaces an issued basis;
+`into_parts()` returns the actual original inputs for an explicit correction.
+No principal, request scope or phase is retained.
+
+Call `advance(&fresh_request)` explicitly. `Pending` and `Refused` return the same
+original request custody; `Settled` owns all original output settlements and
+complete discovery evidence; `Terminal` owns the genuine refusal and cleanup.
+A root-only `start_in_program::<Program, FullTree>` demand does not traverse the
+dependent tree and cannot substitute for this contract.
+
+On the settled owner, `read_current(&fresh_request, typed_query_intent)` checks the
+fresh selected program/root, every original settlement and original discovery
+membership, then executes the actual typed query at that same native observation
+in the same phase. `read_current_with_policy` narrows installed native limits;
+`deliver_current` returns the checked observation without a query. Refusal leaves
+the owner intact. These calls do not create another traversal or replace the
+original source/demand.
+
+Initial, settled, terminal and construction-refusal owners expose consuming
+`close(&fresh_request)`. Success returns `WorthQueryClosedProgramOutputRequest`:
+this proves discharge of the caller's read custody, never positive output,
+source completion or platform shutdown. Close validates the original allocation
+and branch and fresh cleanup authority. It does not require the original source
+or root to remain current after supersession or program adoption.
+
+Close refusal owns the whole original context and any already discharged native
+prefix. Retain `WorthQueryProgramOutputCloseRefusal` and call `retry_close` with
+fresh original-runtime/branch authority. That stage cannot advance released
+interests. Actual producer cleanup, typed required successors and selected
+unpublished checkpoints remain owned until their native obligations permit
+disposal. An actual producer unpublished partial releases through its original
+native recovery owner; refusal retains that same owner for fresh close retry.
+Neither release nor close reruns the producer or publishes a current result.
+Physical release never erases unresolved producer recovery. Dropping an owner is
+abandonment, not a successful close. Performed-source required and
+discovered aggregate completion rules, including fixed-leaf unavailable
+completion, are unchanged.
+
 ## 6. Author, publish, and run workflows
 
 Guarded no-output effects use the original descriptor and issued requirement:
 `for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
+A refusal from this effect-free `retain_operation` returns the bound owner.
+Use its consuming `into_parts()` to recover the original description and issued
+requirement outside the borrowed workflow runtime, then correct the declared
+action/runtime and rebind that same description and requirement. No effect has
+run and no slot has been consumed at this construction boundary.
 Every `advance(&fresh_request)` rechecks current native authority. Effect
 completion retains native cleanup; workflow acceptance returns that completed
 owner on refusal and keeps it alongside successful native progression.

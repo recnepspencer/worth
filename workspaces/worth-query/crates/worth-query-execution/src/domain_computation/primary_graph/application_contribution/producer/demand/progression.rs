@@ -270,10 +270,10 @@ where
         } else {
             stop
         };
-        let mut stop = self.caller_custody_stop(demand, stop, &mut admission);
-        if let Some(cleanup) = stop.take_managed_cleanup() {
+        let stop = self.caller_custody_stop(demand, stop, &mut admission);
+        if stop.has_read_cleanup() {
             let diagnostic = stop.clone();
-            demand.terminal_caller_denial = Some(stop.with_managed_cleanup(cleanup));
+            demand.terminal_caller_denial = Some(stop);
             caller_pass_observation::observe_request_work(&admission);
             return Err(diagnostic);
         }

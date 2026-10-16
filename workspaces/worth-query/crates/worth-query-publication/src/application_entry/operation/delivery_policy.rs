@@ -4,10 +4,10 @@ use std::num::NonZeroUsize;
 /// Finite ceilings for one delivery attempt; none can enlarge installed native policy.
 #[derive(Clone, Copy, Debug)]
 pub struct WorthQueryOperationDeliveryPolicy {
-    pub(super) currentness_work: NonZeroUsize,
+    pub(in crate::application_entry) currentness_work: NonZeroUsize,
     pub(super) batch_limits:
         Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryBatchLimits>,
-    pub(super) query_limits: Option<(NonZeroUsize, NonZeroUsize)>,
+    pub(in crate::application_entry) query_limits: Option<(NonZeroUsize, NonZeroUsize)>,
 }
 impl WorthQueryOperationDeliveryPolicy {
     /// Narrows currentness work; the native installed ceiling still applies.

@@ -43,8 +43,8 @@ where
                 disclosure,
             )
             .map_err(|mut denial| {
-                if let Some(cleanup) = demand.admitted.take_managed_cleanup() {
-                    denial = denial.with_managed_cleanup(cleanup);
+                if let Some(cleanup) = demand.admitted.take_read_cleanup() {
+                    denial = denial.with_read_cleanup(cleanup);
                 }
                 denial
             })

@@ -1,4 +1,4 @@
-mod cleanup_custody;
+pub(super) mod cleanup_custody;
 mod kind;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
 
@@ -73,6 +73,43 @@ impl WorthQueryOutputDemandDenial {
             Some(Ok(receipt)) => Ok(receipt),
             None => Ok(None),
         }
+    }
+
+    pub(super) fn close_read_cleanup<S: worth_query_installation::facade::ApplicationSchema>(
+        &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+    ) -> Result<(), super::WorthQueryOutputReadCloseDenial> {
+        if let Some(cleanup) = self.cleanup.as_mut() {
+            cleanup.close_read(phase, &mut |recovery| {
+                runtime.release_product_publication_recovery_in_advancement(phase, recovery, 0)
+            })?;
+        }
+        Ok(())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_uncommitted(
+        mut self,
+        outcome: crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted,
+    ) -> Self {
+        self.cleanup = Some(cleanup_custody::DemandCleanupCustody::from_outcome(outcome));
+        self
+    }
+    pub(super) fn has_read_cleanup(&self) -> bool {
+        self.cleanup.is_some()
+    }
+    pub(in crate::domain_computation::primary_graph) fn with_read_cleanup(
+        mut self,
+        cleanup: super::WorthQueryOutputReadCleanup,
+    ) -> Self {
+        self.cleanup = Some(cleanup.custody);
+        self
+    }
+    /// Transfers actual native producer outcome/cleanup custody; diagnostic clones own none.
+    pub fn take_read_cleanup(&mut self) -> Option<super::WorthQueryOutputReadCleanup> {
+        self.cleanup
+            .take()
+            .map(super::WorthQueryOutputReadCleanup::from_custody)
     }
 
     fn evidence_mut(&mut self) -> &mut DemandDenialEvidence {

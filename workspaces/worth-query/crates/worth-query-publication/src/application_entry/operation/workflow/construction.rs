@@ -20,6 +20,21 @@ pub struct WorthQueryOwnedWorkflowBinding<'w, S: ApplicationSchema, I: Applicati
             S,
         >,
 }
+impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>>
+    WorthQueryOwnedWorkflowBinding<'_, S, I>
+{
+    /// Recovers the original effect-free description and issued requirement.
+    /// No action has run and no workflow authority slot has been consumed.
+    /// The caller keeps its authentic runtime for a later fresh binding attempt.
+    pub fn into_parts(
+        self,
+    ) -> (
+        WorthQueryOperationDescription<S, I>,
+        RequiredWorkflowOperation,
+    ) {
+        (self.description, self.required)
+    }
+}
 impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> WorthQueryOperationDescription<S, I> {
     pub fn for_workflow_operation<'w, Spec>(
         self,

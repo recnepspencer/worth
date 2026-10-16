@@ -58,9 +58,11 @@ pub enum WorthQuerySelectedProgramOwnerDenial {
     ),
     Inspection(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial),
     InstalledOwnerUnavailable,
+    UndeclaredOutputRoot,
 }
 
 mod contract;
+mod output_root;
 pub use contract::WorthQueryProgramOwner;
 
 /// The denial every owner reaches for when it presents meaning this host

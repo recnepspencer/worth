@@ -78,3 +78,17 @@ impl WorthQueryRequiredOutputPreparationDenial {
         }
     }
 }
+
+impl WorthQueryRequiredOutputPreparationDenial {
+    pub(in crate::application_entry) fn take_read_cleanup(
+        &mut self,
+    ) -> Option<worth_query_execution::facade::primary_graph::WorthQueryOutputReadCleanup> {
+        match self {
+            Self::DemandExecution(denial)
+            | Self::Demand(
+                crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
+            ) => denial.take_read_cleanup(),
+            _ => None,
+        }
+    }
+}
