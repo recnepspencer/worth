@@ -47,7 +47,7 @@ pub fn read<Program: ApplicationProgramDefinition<DocumentRetentionSchema>>(
     assert!(
         matches!(refusal,
             WorthQueryWorkflowObservationDenial::Read(WorthQueryWorkflowReadDenial::Authorization(ref cause))
-            if cause.kind() == WorthQueryOperationAuthorizationDenialKind::Refused(WorthQueryOperationAuthorizationRefusalKind::CapabilityAuthorizationMissing)
+            if cause.kind() == WorthQueryOperationAuthorizationDenialKind::Refused(WorthQueryOperationAuthorizationRefusalKind::CapabilityGrantMissing)
         ),
         "{refusal:?}"
     );

@@ -209,11 +209,15 @@ fn a_fork_carries_performed_effects_and_never_continues_an_unsettled_approval() 
     let decisions =
         worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()
             .instance(&successor, WorthQueryWorkflowInstanceDisposition::Cancel);
-    assert!(matches!(crate::document_retention_model::workflow::prepare_second_program_adoption(
-        &application, fork, Some(decisions)),
+    let cancellation = crate::document_retention_model::workflow::prepare_second_program_adoption(
+        &application,
+        fork,
+        Some(decisions),
+    );
+    assert!(matches!(&cancellation,
         Err(worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
             worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))),
-        "a genuine fork successor retains its inherited effect obligation");
+        "a genuine fork successor retains its inherited effect obligation; actual native refusal: {:?}", cancellation.as_ref().err());
     assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
     assert_eq!(read_retention(application.runtime(), fork), 8);
 }
