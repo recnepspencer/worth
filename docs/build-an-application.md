@@ -2577,8 +2577,12 @@ runtime; they do not certify whole-application shutdown or own uncleared cleanup
 Drop them promptly after final publication, before whole-runtime close or OS join.
 The neutral `application_program::closed_delivery` fixture exercises both owners,
 including a real native source perturbation for Stable/no-receipt reuse. Its
-rostered-successor court distinguishes changed/removed action meaning from
-compatible adoption without replaying a source or producer.
+rostered-successor court selects compatible meaning before capturing the original
+operation, then checks genuine post-close current delivery. Later changed/removed
+actions deny delivery while original native read interests still close. Restoring
+a program does not restore an unavailable exact native output basis: matching
+action meaning is necessary, and complete-tree currentness remains a separate
+requirement. These checks do not replay a source or producer.
 
 #### Original root output evidence
 

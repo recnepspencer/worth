@@ -70,11 +70,6 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
         ))
         .unwrap();
         let request = world.application.request(&principal, &scope);
-        let fixed = settle_fixed(&world, &request, input.clone());
-        let tree = settle_tree(&world, &request);
-        let contacts = world
-            .application
-            .producer_contacts_on_this_thread_for_test();
         let adopt = |revision| {
             let programs = request.programs();
             let requirements = programs.compare(&revision).unwrap();
@@ -88,20 +83,19 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
                 WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
             ));
         };
-        // The actual action no longer matches. Native cleanup must still close;
-        // refusing current delivery happens AFTER that distinct legal transition.
-        adopt(changed_revision);
+        // Matching action meaning does not maintain arbitrary native index bases.
+        // Select the compatible program before the original source/effect creates
+        // its current basis; final delivery still compares the original declared
+        // action with this authentic, different selected program.
+        adopt(unchanged_revision);
+        let fixed = settle_fixed(&world, &request, input.clone());
+        let tree = settle_tree(&world, &request);
+        let contacts = world
+            .application
+            .producer_contacts_on_this_thread_for_test();
         let closed_fixed = fixed
             .close_for_delivery(&request)
-            .unwrap_or_else(|(_, stop)| {
-                panic!("changed selected meaning cannot strand Fixed cleanup: {stop:?}")
-            });
-        let closed_tree = tree.close_for_delivery(&request).unwrap_or_else(|stop| {
-            panic!(
-                "adoption cannot strand original read interests: {:?}",
-                stop.denial()
-            )
-        });
+            .unwrap_or_else(|(_, stop)| panic!("compatible Fixed cleanup closes: {stop:?}"));
         let fresh_scope = authentication::request_scope();
         let fresh_principal = authentication::block_on(adapter.authenticate(
             authentication::LocalCredential::issued_for_model_owner(),
@@ -109,6 +103,31 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
         ))
         .unwrap();
         let fresh = world.application.request(&fresh_principal, &fresh_scope);
+        assert_eq!(
+            closed_fixed.read_current(&fresh).unwrap().rows()[0].value,
+            length(3)
+        );
+        assert_eq!(
+            tree.read_current(
+                &fresh,
+                PlanarOutputRead {
+                    body_key: "anchor-a".into()
+                }
+            )
+            .unwrap()
+            .rows()[0]
+                .value,
+            length(3)
+        );
+        // Current delivery and native disposal have distinct preconditions.
+        // Changed selected meaning cannot strand these original read interests.
+        adopt(changed_revision);
+        let closed_tree = tree.close_for_delivery(&fresh).unwrap_or_else(|stop| {
+            panic!(
+                "changed selected meaning cannot strand read cleanup: {:?}",
+                stop.denial()
+            )
+        });
         assert!(matches!(
             closed_fixed.read_current(&fresh),
             Err(WorthQueryOperationDeliveryDenial::Action(
@@ -122,44 +141,26 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
                 WorthQueryActionResolutionDenial::Missing
             ))
         ));
-        // Compatible adoption is genuine installed equivalence, not revision equality.
-        adopt(unchanged_revision);
-        assert_eq!(
-            closed_fixed.read_current(&fresh).unwrap().rows()[0].value,
-            length(3)
-        );
-        assert_eq!(
-            closed_tree
-                .read_current(
-                    &fresh,
-                    PlanarOutputRead {
-                        body_key: "anchor-a".into()
-                    }
-                )
-                .unwrap()
-                .rows()[0]
-                .value,
-            length(3)
-        );
         adopt(original_revision);
-        // Same already-closed carriers recover under the original lawful meaning.
-        assert_eq!(
-            closed_fixed.read_current(&fresh).unwrap().rows()[0].value,
-            length(3)
-        );
-        assert_eq!(
-            closed_tree
-                .read_current(
-                    &fresh,
-                    PlanarOutputRead {
-                        body_key: "anchor-a".into()
-                    }
-                )
-                .unwrap()
-                .rows()[0]
-                .value,
-            length(3)
-        );
+        // Restoring the program restores action meaning, not the missing exact
+        // native indexed generation. Neither carrier may reconstruct or replay.
+        assert!(matches!(
+            closed_fixed.read_current(&fresh),
+            Err(WorthQueryOperationDeliveryDenial::Currentness(
+                WorthQueryOutputCurrentnessDenial::Output(cause)
+            )) if cause.kind() == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+        ));
+        assert!(matches!(
+            closed_tree.read_current(
+                &fresh,
+                PlanarOutputRead {
+                    body_key: "anchor-a".into()
+                }
+            ),
+            Err(WorthQueryOperationDeliveryDenial::Currentness(
+                WorthQueryOutputCurrentnessDenial::Output(cause)
+            )) if cause.kind() == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+        ));
         assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
         assert_eq!(
             world
