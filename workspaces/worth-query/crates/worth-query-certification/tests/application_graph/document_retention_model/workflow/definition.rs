@@ -46,9 +46,9 @@ mod instance;
 pub use discovery::discover_definition_metadata;
 pub use instance::{
     advance_instance, advance_instance_on, approve_instance, cancel_instance, continue_on_fork,
-    migrate_instance, prepare_cancellation, prepare_cancellation_on, propose_authoring_instance,
-    propose_authoring_instance_with_retention, propose_instance, propose_instance_on_branch,
-    start_instance,
+    migrate_instance, prepare_cancellation, prepare_cancellation_on, prepare_instance_start,
+    propose_authoring_instance, propose_authoring_instance_with_retention, propose_instance,
+    propose_instance_on_branch, start_instance,
 };
 
 pub fn reviewed_document_definition(
@@ -299,7 +299,7 @@ pub(crate) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
     .expect("the workflow definition limits are nonzero")
 }
 
-pub(in super::super) fn governed_reviewed_definition(
+pub(crate) fn governed_reviewed_definition(
 ) -> ValidatedWorkflowDefinition<super::governed_read::GovernedDocumentWorkflow> {
     reviewed_document_definition_with_policy::<super::governed_read::GovernedDocumentWorkflow,ReviewedSetRetentionBinding>("applied",worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,Rejection::Terminal,definition_limits())
 }

@@ -1,6 +1,12 @@
 //! Genuine approval storage followed by cold current-format authority readmission.
 use super::super::document_retention_model::{
-    host::restore_on_first_program, programs::validated_second_program, workflow::retain_workflow,
+    host::{publish_on_first_program, restore_on_first_program},
+    programs::validated_second_program,
+    workflow::{
+        governed_read::{AuditRead, GovernedDocumentWorkflow, SubjectRead},
+        governed_reviewed_definition, prepare_instance_start, reacquisition, retain_workflow_for,
+        workflow_resources,
+    },
 };
 use super::*;
 use worth_query_host::facade::application_installation::{
@@ -10,8 +16,47 @@ use worth_query_host::facade::application_installation::{
 
 #[test]
 fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmission() {
-    let (application, definition, instance, proposal, required, _) =
-        approval_journey("field-text-restored", 98_000);
+    use crate::document_retention_model::operator_identity::authenticate_reviewer;
+    use worth_query_host::facade::application_discovery::{
+        WorthQueryWorkflowAudit, WorthQueryWorkflowHistoryAudit, WorthQueryWorkflowIndexRead,
+        WorthQueryWorkflowInstanceRead,
+    };
+    let application = retain_workflow_for::<_, GovernedDocumentWorkflow>(
+        publish_on_first_program(),
+        workflow_resources(),
+    );
+    let definition = match publish_definition(
+        &application,
+        governed_reviewed_definition(),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        98_000,
+    )
+    .unwrap()
+    {
+        WorkflowDefinitionPublicationOutcome::Published(performed) => {
+            performed.definition().clone()
+        }
+        other => panic!("real governed approval definition: {other:?}"),
+    };
+    let prepared = prepare_instance_start(&application, definition.clone(), 98_001).unwrap();
+    let original_start = prepared.discovery_intent();
+    let started = match prepared.execute() {
+        WorkflowInstanceStartOutcome::Started(performed) => performed,
+        other => panic!("real original governed start: {other:?}"),
+    };
+    let instance = started.instance().clone();
+    let original_instance = instance.entity_id();
+    let original_revision = *instance.program_revision();
+    let actor = started.receipt().principal_scope().principal();
+    let expected_start = [
+        u64::from(actor.partition_id()),
+        actor.local_slot(),
+        u64::from(actor.generation()),
+    ];
+    drop(started);
+    let (proposal, required, _) =
+        super::journey::approval_requirement(&application, instance.clone(), 98_000);
+    let original_proposal = proposal.identity().to_owned();
     let performed = match approve_instance(
         &application,
         instance,
@@ -25,6 +70,7 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
         WorkflowProgressOutcome::Completed(performed) => performed,
         other => panic!("the original admitted approval must publish: {other:?}"),
     };
+    let expected_approver = performed.approval().unwrap().approver();
     let original_approval = performed
         .approval()
         .expect("the receipt projects a genuine approval")
@@ -52,21 +98,97 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
     drop(performed);
     drop(required);
     drop(proposal);
+    drop(definition);
     drop(application);
-    let restored = retain_workflow(
+    let retained = WorthQueryApplicationCheckpoint::from_untrusted_bytes(checkpoint);
+    let intact = retained.bytes().to_vec();
+    let restored = retain_workflow_for::<_, GovernedDocumentWorkflow>(
         restore_on_first_program(
-            WorthQueryApplicationCheckpoint::from_untrusted_bytes(checkpoint),
+            retained.clone(),
             WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         )
         .expect("current native symbol dictionary and Query checkpoint restore"),
+        workflow_resources(),
     );
-    let rebuilt_definition = definition.held_on(restored.runtime().current_world());
-    let restored_instance = match start_instance(&restored, rebuilt_definition, 98_001).unwrap() {
-        WorkflowInstanceStartOutcome::Started(performed) => {
-            assert!(performed.replayed());
-            performed.instance().clone()
+    assert_eq!(retained.bytes(), intact);
+    let restored_instance = match reacquisition::read(&restored, &original_start) {
+        WorthQueryWorkflowInstanceRead::Live {
+            instance,
+            observation,
+        } => {
+            assert_eq!(instance.entity_id(), original_instance);
+            assert_eq!(instance.program_revision(), &original_revision);
+            match observation.audit() {
+                WorthQueryWorkflowAudit::Visible { start, .. } => {
+                    let actor = start.entity_id();
+                    assert_eq!(
+                        [
+                            actor.partition_value_u64(),
+                            actor.local_slot_value(),
+                            u64::from(actor.generation_value())
+                        ],
+                        expected_start
+                    );
+                }
+                _ => panic!("fresh audited read must retain original admitted start actor"),
+            }
+            let scope = request_scope();
+            let reviewer = authenticate_reviewer(restored.runtime().installed_schema(), &scope);
+            let request = restored.runtime().request(&reviewer, &scope);
+            let basis = request.retain_current_read().unwrap();
+            let fresh = request
+                .at(&basis)
+                .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
+                    restored.vocabulary(),
+                    &original_start,
+                    reacquisition::input(),
+                    reacquisition::input(),
+                )
+                .unwrap();
+            let WorthQueryWorkflowInstanceRead::Live {
+                observation: fresh, ..
+            } = fresh
+            else {
+                panic!("fresh history basis must select the restored original instance");
+            };
+            let page = request
+                .at(&basis)
+                .read_workflow_history::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
+                    restored.vocabulary(),
+                    fresh.target(),
+                    reacquisition::input(),
+                    reacquisition::input(),
+                    16,
+                    WorthQueryWorkflowIndexRead::PublishedOnly,
+                    None,
+                )
+                .unwrap();
+            assert!(page.continuation().is_none());
+            let approved = page
+                .entries()
+                .iter()
+                .find(|row| row.approval().is_some())
+                .expect("original native approval survives restore");
+            assert_eq!(
+                approved.approval().unwrap().proposal_identity(),
+                original_proposal
+            );
+            assert_eq!(
+                approved.approval().unwrap().decision(),
+                WorkflowApprovalDecision::Approve
+            );
+            match approved.audit() {
+                WorthQueryWorkflowHistoryAudit::Visible {
+                    approver: Some(actor),
+                    ..
+                } => assert_eq!(actor.entity_id(), expected_approver),
+                _ => panic!(
+                    "actual performed approver remains canonical after last old-runtime pin drops"
+                ),
+            }
+            instance
         }
-        other => panic!("the original native start reacquires its restored instance: {other:?}"),
+        _ => panic!("original native start must be reacquired under fresh read authority"),
     };
     // Preparing and performing this actual guarded operation reads the stored
     // five envelopes and readmits principal/grant/support under a fresh request.

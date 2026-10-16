@@ -5,10 +5,7 @@ use super::document_retention_model::{
     programs::{validated_second_program, OccurrenceAction, WorkflowOwnerProgram},
     retention_entry::OccurrenceSetRetentionBinding,
     schema::DocumentRetentionSchema,
-    workflow::{
-        advance_instance, propose_authoring_instance_with_retention, publish_definition,
-        retain_workflow, start_instance,
-    },
+    workflow::{advance_instance, propose_authoring_instance_with_retention, publish_definition},
 };
 use worth_query_host::facade::{
     application_entry::{
@@ -25,6 +22,9 @@ fn capture(
     application: &DocumentWorkflowRuntime<
         impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
             DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
         >,
     >,
 ) -> Vec<u8> {
@@ -43,7 +43,12 @@ fn capture(
         .unwrap()
 }
 
-fn restore(bytes: Vec<u8>) -> DocumentWorkflowRuntime<WorkflowOwnerProgram> {
+fn restore(
+    bytes: Vec<u8>,
+) -> DocumentWorkflowRuntime<
+    WorkflowOwnerProgram,
+    crate::document_retention_model::workflow::governed_read::GovernedDocumentWorkflow,
+> {
     let program =
         worth_query_host::facade::declaration::application_program::ApplicationProgramAuthoring::<
             DocumentRetentionSchema,
@@ -51,13 +56,14 @@ fn restore(bytes: Vec<u8>) -> DocumentWorkflowRuntime<WorkflowOwnerProgram> {
         >::begin()
         .validated_program()
         .unwrap();
-    retain_workflow(
+    crate::document_retention_model::workflow::retain_workflow_for(
         super::document_retention_model::host::restore(
             program,
             WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
             WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         )
         .expect("the original program and native checkpoint restore before definition readmission"),
+        crate::document_retention_model::workflow::workflow_resources(),
     )
 }
 
@@ -132,147 +138,8 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
     assert_eq!(&retained.bytes()[46..], &original[42..]);
 }
 
-#[test]
-fn current_contract_restores_original_identity_and_issues_fresh_operation_authority() {
-    // This existing program declares the owning occurrence action; canonical P0
-    // and its retained predecessor artifact keep their original meaning.
-    let application = super::document_retention_model::host::publish_owner_workflow();
-    use worth_query_package_archive::facade::{
-        decode_workflow_definition_draft, encode_workflow_definition_draft,
-        WorthQueryPackageArchiveLimits,
-    };
-    let definition =
-        super::workflow_execution::definition::<OccurrenceSetRetentionBinding>().unwrap();
-    let identity = definition.content_identity().clone();
-    let bytes =
-        encode_workflow_definition_draft(&definition, WorthQueryPackageArchiveLimits::DEFAULT)
-            .unwrap();
-    let definition =
-        decode_workflow_definition_draft(&bytes, WorthQueryPackageArchiveLimits::DEFAULT)
-            .unwrap()
-            .author(application.workflow_spec())
-            .unwrap()
-            .validate()
-            .unwrap();
-    assert_eq!(definition.content_identity(), &identity);
-    assert_eq!(
-        encode_workflow_definition_draft(&definition, WorthQueryPackageArchiveLimits::DEFAULT)
-            .unwrap(),
-        bytes
-    );
-    let published = match publish_definition(
-        &application,
-        definition,
-        WorkflowDefinitionExpectedPredecessor::Absent,
-        94011,
-    )
-    .unwrap()
-    {
-        WorkflowDefinitionPublicationOutcome::Published(performed) => {
-            performed.definition().clone()
-        }
-        other => panic!("current definition must publish: {other:?}"),
-    };
-    assert_eq!(published.content_identity(), &identity);
-    let original_instance = match start_instance(&application, published.clone(), 94012).unwrap() {
-        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
-        other => panic!("current native definition must start: {other:?}"),
-    };
-    let original_proposal = match propose_authoring_instance_with_retention(
-        &application,
-        original_instance.clone(),
-        94013,
-        8,
-    )
-    .unwrap()
-    {
-        WorkflowProposalOutcome::Published(performed) => performed,
-        other => panic!("current native proposal must publish: {other:?}"),
-    };
-    let restored = restore(capture(&application));
-    let rebuilt = published.held_on(restored.runtime().current_world());
-    assert_eq!(rebuilt.content_identity(), &identity);
-    // Exact native start replay reacquires a ref owned by the restored runtime;
-    // a live old-runtime ref is never reconstructed from public parts.
-    let instance = match start_instance(&restored, rebuilt, 94012).unwrap() {
-        WorkflowInstanceStartOutcome::Started(performed) => {
-            assert!(performed.replayed());
-            assert_eq!(
-                performed.instance().entity_id(),
-                original_instance.entity_id()
-            );
-            performed.instance().clone()
-        }
-        other => panic!("current native start must replay after restore: {other:?}"),
-    };
-    match propose_authoring_instance_with_retention(&restored, instance.clone(), 94013, 8).unwrap()
-    {
-        WorkflowProposalOutcome::Published(performed) => {
-            assert!(performed.replayed());
-            assert_eq!(
-                performed.proposal().entity_id(),
-                original_proposal.proposal().entity_id()
-            );
-            assert_eq!(
-                performed.receipt().outcome_identity(),
-                original_proposal.receipt().outcome_identity()
-            );
-        }
-        other => panic!("the original proposal must survive cold readmission: {other:?}"),
-    }
-    let required = match advance_instance(&restored, instance.clone(), 94014).unwrap() {
-        WorkflowProgressOutcome::AwaitingOperation(required) => required,
-        other => panic!("restored proposal must supply fresh operation authority: {other:?}"),
-    };
-    use super::document_retention_model::{
-        operator_identity::{authenticate_operator, request_scope},
-        readback::read_retention,
-        retention_entry::DOCUMENT_IDENTITY,
-        schema::SetRetentionInput,
-    };
-    use worth_query_host::facade::application_entry::{
-        WorthQueryApplicationRequestExt, WorthQuerySourceCompletion,
-        WorthQueryWorkflowOperationAdvance,
-    };
-    let runtime = restored.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    let request = runtime
-        .request(&principal, &scope)
-        .on_branch(instance.branch());
-    let operation = request
-        .mutate(SetRetentionInput {
-            identity: DOCUMENT_IDENTITY.to_owned(),
-            retention_days: 8,
-        })
-        .without_source()
-        .idempotency_owned(94015u64)
-        .unwrap_or_else(|(_, _, cause)| panic!("restored original input capture: {cause:?}"))
-        .for_workflow_operation(&restored, &required)
-        .unwrap_or_else(|_| panic!("restored occurrence must bind the actual original input"))
-        .retain_operation::<WorkflowOwnerProgram, OccurrenceAction>(restored.program_runtime())
-        .unwrap_or_else(|_| panic!("the restored installed owning action must retain custody"));
-    let completed = match operation.advance(&request) {
-        WorthQueryWorkflowOperationAdvance::Completed(completed) => completed,
-        _ => panic!("the fresh restored operation must really complete"),
-    };
-    assert!(matches!(
-        completed.evidence(),
-        WorthQuerySourceCompletion::Fresh { .. }
-    ));
-    completed
-        .close(&request)
-        .unwrap_or_else(|(_, cause)| panic!("actual restored operation cleanup: {cause:?}"));
-    assert_eq!(read_retention(runtime, instance.branch()), 8);
-    let performed_restore = restore(capture(&restored));
-    assert_eq!(
-        read_retention(
-            performed_restore.runtime(),
-            performed_restore.runtime().current_world()
-        ),
-        8
-    );
-}
+#[path = "workflow_definition_readmission/current.rs"]
+mod current;
 
 #[test]
 fn current_draft_policy_drift_refuses_before_publication() {

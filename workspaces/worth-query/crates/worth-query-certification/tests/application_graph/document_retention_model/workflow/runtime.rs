@@ -37,7 +37,20 @@ pub fn retain_workflow_with_resources<
     application: DocumentRetentionRuntime<Program>,
     resources: WorthQueryApplicationWorkflowResourceCeiling,
 ) -> DocumentWorkflowRuntime<Program> {
-    let workflow = install_workflow_spec(
+    retain_workflow_for::<Program, ReviewedDocumentWorkflow>(application, resources)
+}
+
+pub fn retain_workflow_for<Program, Spec>(
+    application: DocumentRetentionRuntime<Program>,
+    resources: WorthQueryApplicationWorkflowResourceCeiling,
+) -> DocumentWorkflowRuntime<Program, Spec>
+where
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
+    Spec: worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+        Schema = DocumentRetentionSchema,
+    >,
+{
+    let workflow = install_workflow_spec_for::<Program, Spec>(
         application.runtime().installed_schema(),
         application.installed_program(),
         resources,
