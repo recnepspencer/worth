@@ -1,4 +1,4 @@
-//! Only the original dispatch handle survives an attempt; admission is always fresh.
+//! Native inbound waiting and original dispatch custody always require fresh admission.
 use super::*;
 use super::{advance::WorkflowStep, completion::WorkflowDispatchRecovery};
 use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding;
@@ -119,6 +119,13 @@ where
             return Err(WorthQueryWorkflowEffectRecoveryDenial::NativeHandleConsumed);
         }
         if matches!(self.recovery, WorkflowDispatchRecovery::Unopened) {
+            // Waiting for declared authenticated inbound truth is not corrective
+            // recovery. Keep the original evidence without acquiring retry authority.
+            // Selection, fresh admission and exact native settlement inspection above
+            // still run on every advance; a dispatch without inbound cannot wait here.
+            if inbound_without_recovery(&receipt) {
+                return Ok(WorkflowStep::Progress);
+            }
             self.recovery = WorkflowDispatchRecovery::Retained(
                 source
                     .runtime
@@ -166,4 +173,21 @@ where
             }
         }
     }
+}
+
+// Descriptive original-receipt facts only; callers still inspect fresh native
+// settlement before waiting, and this predicate grants no recovery authority.
+pub(super) fn inbound_without_recovery(
+    receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+) -> bool {
+    receipt
+        .dispatch_outbox()
+        .and_then(|record| record.inbound())
+        .is_some()
+        && !matches!(
+            receipt.installed_recovery_contract(),
+            Some(
+                worth_query_installation::facade::InstalledAftermathRecoveryContract::Admissible { .. }
+            )
+        )
 }

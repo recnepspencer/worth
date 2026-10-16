@@ -126,11 +126,24 @@ where
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        // An inbound-waiting owner cannot close away its original evidence before
+        // a fresh advance observes native settlement. Other close postures stay native.
         if matches!(
             self.recovery,
             super::completion::WorkflowDispatchRecovery::Retained(_)
                 | super::completion::WorkflowDispatchRecovery::Consumed
-        ) {
+        ) || (self.source_completed
+            && matches!(
+                self.recovery,
+                super::completion::WorkflowDispatchRecovery::Unopened
+            )
+            && match self.source.completion() {
+                WorthQuerySourceCompletion::Fresh { receipt, .. }
+                | WorthQuerySourceCompletion::Recovered { receipt, .. } => {
+                    super::recovery::inbound_without_recovery(receipt)
+                }
+            })
+        {
             return Err((
                 self,
                 WorthQueryOperationCloseDenial::NativeObligationRetained,
