@@ -235,7 +235,7 @@ impl Host {
         let runtime = self.workflow.runtime();
         let scope = model::operator_identity::request_scope();
         let actor =
-            model::operator_identity::authenticate_operator(runtime.installed_schema(), &scope);
+            model::operator_identity::authenticate_reviewer(runtime.installed_schema(), &scope);
         let signing = runtime
             .request(&actor, &scope)
             .on_branch(instance.branch())

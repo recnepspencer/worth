@@ -1,4 +1,11 @@
 use super::*;
+use worth_query_host::facade::{
+    application_entry::WorthQueryApplicationRequestMutationDenial,
+    primary_graph::{
+        WorthQueryOperationAuthorizationDenialKind as AuthorizationDenial,
+        WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal,
+    },
+};
 
 #[test]
 fn older_approval_replays_after_the_same_node_settles_again() {
@@ -255,12 +262,23 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
             516,
         ),
     ] {
-        assert!(matches!(
-            denial,
-            Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
-                WorkflowTransitionPreparationDenial::Attempt(attempt)
-            )) if attempt.kind()
-                == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch
-        ));
+        let Err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(
+            WorthQueryApplicationRequestMutationDenial::Authorization(cause),
+        )) = denial
+        else {
+            panic!("foreign proposal must refuse during original actor admission: {denial:?}");
+        };
+        assert_eq!(
+            cause.kind(),
+            AuthorizationDenial::Refused(AuthorizationRefusal::WorkflowActorSourceInvalid),
+        );
+        let native = cause
+            .workflow_actor_source_denial()
+            .expect("original native affinity cause");
+        assert_eq!(
+            native.kind(),
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+        );
+        assert_eq!(native.subject(), "workflow approval actor context changed");
     }
 }

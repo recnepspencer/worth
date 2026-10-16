@@ -3,12 +3,13 @@
 //! source, and nothing at all without the start capability.
 
 use worth_query_host::facade::application_entry::{
-    WorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenial,
+    WorkflowInstancePreparationDenial, WorthQueryApplicationRequestMutationDenial,
+    WorthQueryWorkflowInstancePreparationDenial,
 };
 
 use super::super::document_retention_model::workflow::{
     cancel_instance, continue_on_fork, migrate_instance, prepare_cancellation_on,
-    WorkflowAdvanceInput, WorkflowApprovalIntent,
+    WorkflowAdvanceInput, WorkflowAdvanceIntent, WorkflowApprovalIntent,
 };
 use super::fork_continuation::fork_of;
 use super::instance_cancellation::{approve, cancellation_denial, cancelled};
@@ -91,6 +92,32 @@ fn a_cancellation_without_the_start_capability_is_refused_and_claims_no_key() {
         .request(&principal, &scope)
         .on_branch(instance.branch())
         .mutate(WorkflowApprovalIntent {
+            input: WorkflowAdvanceInput {
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&89_210_u64)
+        .prepare_workflow_instance_cancellation(&application, instance.clone())
+        .err();
+    match refused {
+        Some(WorthQueryWorkflowInstancePreparationDenial::RequestAdmission(
+            WorthQueryApplicationRequestMutationDenial::Authorization(cause),
+        )) => assert_eq!(
+            cause.kind(),
+            worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(
+                worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind::WorkflowActorContextRequired,
+            ),
+            "an approval request without its bound proposal refuses before cancellation authority",
+        ),
+        other => panic!("approval admission must retain its positive actor requirement: {other:?}"),
+    }
+    // A genuine advance capability has no bound-proposal actor requirement,
+    // but it still cannot substitute for the native start/cancel capability.
+    let refused = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 document_identity: DOCUMENT_IDENTITY.to_owned(),
             },

@@ -70,6 +70,16 @@ fn observe(
         ExternalIdentityField::reference(),
         super::super::operator_identity::operator_identity(),
     )?;
+    // The mapping replacement must carry the actual observed field preimage
+    // through native effect lowering, not just the mapping's entity identity.
+    let expected_status = if input.restore {
+        worth_query_decl::facade::authentication::WorthQueryPrincipalMappingStatus::Disabled
+    } else {
+        worth_query_decl::facade::authentication::WorthQueryPrincipalMappingStatus::Enabled
+    };
+    if reader.field(&mapping, MappingStatusField::reference())? != Some(expected_status) {
+        return Ok(None);
+    }
     let mut grants = Vec::new();
     for key in [
         "workflow-authoring-grant",

@@ -33,7 +33,22 @@ pub(in crate::domain_computation) fn fund_actor_codec(
         StorageControl::new(execution.allocation_policy(), None),
         bytes,
     )
-    .map_err(dependencies::decode_denial)?;
+    .map_err(|cause| {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryApplicationAttemptDenial as Denial,
+            WorthQueryApplicationAttemptDenialKind as Kind,
+        };
+        let subject = "workflow actor JSON payload";
+        match cause {
+            facts::FactDecodeDenial::Execution(cause) => {
+                Denial::relational_read_stopped(cause, subject)
+            }
+            facts::FactDecodeDenial::Retention(cause) => cause.into_attempt_denial(subject),
+            facts::FactDecodeDenial::Format(_) => {
+                Denial::new(Kind::InvalidAuthoritativeValue, subject)
+            }
+        }
+    })?;
     encoding::check_live(execution)?;
     Ok(std::sync::Arc::new(ActorCodecFunding { _payload: payload }))
 }

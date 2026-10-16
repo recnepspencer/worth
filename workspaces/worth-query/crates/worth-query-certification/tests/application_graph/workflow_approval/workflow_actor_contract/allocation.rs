@@ -65,7 +65,7 @@ fn workflow_actor_contract_retained_wire_refuses_unfunded_storage_and_preserves_
             partition_identity: None,
             policy_ancestor: Some(0),
         }) if requested > 0),
-        "the original native outer-parser admission must refuse before constructing its DTO"
+        "the original native outer-parser admission must refuse before constructing its DTO: {refusal:?}"
     );
     assert_eq!(refusal.subject(), "workflow actor JSON payload");
     assert!(
