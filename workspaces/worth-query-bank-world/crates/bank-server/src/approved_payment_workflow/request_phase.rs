@@ -285,15 +285,13 @@ fn committed_owner_custody_is_accepted_in_one_request() {
             original.generation(),
         );
         let later_actor = ready.fixture.authenticate(fixture::STRANGER);
-        let later_authority = bank_domain::schema::ApprovePayment {
-            payment: ready.fixture.payment,
-            approver: fixture::principal_id(fixture::STRANGER),
-        };
         let command_key = key("approved-payment:operation:committed-custody");
         let prepared = runtime
             .request(&later_actor, &ready.scope)
             .mutate(ApprovedBusinessPaymentAdvanceIntent {
-                input: later_authority,
+                // The advancer is authenticated independently; the original
+                // payment payload still names the approver who performed it.
+                input: ready.authority.clone(),
             })
             .without_source()
             .idempotency(&command_key)

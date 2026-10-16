@@ -64,7 +64,8 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
                         &host_custody.borrowed_request_for_test(),
                         &admission,
                         binding,
-                        &transition
+                        &transition,
+                        None,
                     )
                     .unwrap(),
                 WorthQueryGuardedWorkflowOperationCustody::Unseen
@@ -80,45 +81,52 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
     else {
         panic!("the guarded mutation must commit");
     };
-    let WorthQueryGuardedWorkflowOperationCustody::Committed(recovered) = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            world
-                .application
-                .resolve_admitted_guarded_workflow_operation_custody(
-                    &host_custody.borrowed_request_for_test(),
-                    &admission,
-                    binding,
-                    &transition,
-                )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call")
-    else {
-        panic!("exact owner custody must recover the guarded commit");
-    };
-    assert!(recovered.is_same_authoritative_commit(&committed));
-
-    let drift = idempotency(76, 77).bind_guarded_workflow_effect(&transition);
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert!(matches!(
+    for completed in [None, Some(&committed)] {
+        let WorthQueryGuardedWorkflowOperationCustody::Committed(recovered) = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
                 world
                     .application
                     .resolve_admitted_guarded_workflow_operation_custody(
                         &host_custody.borrowed_request_for_test(),
                         &admission,
-                        drift,
-                        &transition
+                        binding,
+                        &transition,
+                        completed,
                     )
-                    .unwrap(),
-                WorthQueryGuardedWorkflowOperationCustody::IntentDrift
-            ))
-        })
-        .expect("the fixture read owns its installed host call");
+                    .unwrap()
+            })
+            .expect("the fixture read owns its installed host call")
+        else {
+            panic!("exact owner custody must recover the guarded commit");
+        };
+        assert!(recovered.is_same_authoritative_commit(&committed));
+        assert_eq!(recovered.principal_scope(), committed.principal_scope());
+    }
+
+    let drift = idempotency(76, 77).bind_guarded_workflow_effect(&transition);
+    for completed in [None, Some(&committed)] {
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                assert!(matches!(
+                    world
+                        .application
+                        .resolve_admitted_guarded_workflow_operation_custody(
+                            &host_custody.borrowed_request_for_test(),
+                            &admission,
+                            drift,
+                            &transition,
+                            completed,
+                        )
+                        .unwrap(),
+                    WorthQueryGuardedWorkflowOperationCustody::IntentDrift
+                ))
+            })
+            .expect("the fixture read owns its installed host call");
+    }
     let denial = world
         .application
         .with_host_advancement(|phase| {
@@ -130,6 +138,7 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
                     &admission,
                     binding,
                     &[78; 32],
+                    None,
                 )
                 .unwrap_err()
         })
@@ -220,6 +229,7 @@ fn guarded_operation_custody_retains_world_issued_unpublished_recovery() {
                     &admission,
                     binding,
                     &transition,
+                    None,
                 )
                 .unwrap()
         })
@@ -241,7 +251,8 @@ fn guarded_operation_custody_retains_world_issued_unpublished_recovery() {
                         &host_custody.borrowed_request_for_test(),
                         &admission,
                         drift,
-                        &transition
+                        &transition,
+                        None,
                     )
                     .unwrap(),
                 WorthQueryGuardedWorkflowOperationCustody::IntentDrift
@@ -315,6 +326,7 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
                     &admission,
                     binding,
                     &transition,
+                    None,
                 )
                 .unwrap()
         })
@@ -338,7 +350,8 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
                         &host_custody.borrowed_request_for_test(),
                         &admission,
                         binding,
-                        &transition
+                        &transition,
+                        None,
                     )
                     .unwrap(),
                 WorthQueryGuardedWorkflowOperationCustody::Unseen
