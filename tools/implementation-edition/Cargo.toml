@@ -6,6 +6,7 @@ rust-version = "1.94"
 publish = false
 
 [workspace]
+members = ["compiler", "macro-guest", "macro-host"]
 
 [dependencies]
 flate2 = "1"
