@@ -136,6 +136,8 @@ impl ApplicationProgramManifest {
                         ("owner", owner.to_owned()),
                         ("feature", feature.identity().to_owned()),
                         ("identity", collection.identity().to_owned()),
+                        ("computation", collection.computation().to_owned()),
+                        ("completeness", collection.completeness().to_owned()),
                         ("contributor", collection.contributor().to_owned()),
                         ("grouping", collection.grouping().to_owned()),
                         ("measures", collection.measures().to_owned()),

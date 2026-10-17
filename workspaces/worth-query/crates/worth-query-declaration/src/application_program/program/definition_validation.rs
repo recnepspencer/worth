@@ -159,20 +159,48 @@ fn validate_feature(
         }
     }
     let mut collection_ids = BTreeSet::new();
+    let mut collection_computations = BTreeSet::new();
     for collection in feature.derived_collections() {
         require_identity(collection.identity())?;
-        require_identity(collection.contributor())?;
-        require_identity(collection.grouping())?;
-        require_identity(collection.measures())?;
-        require_identity(collection.lineage())?;
-        require_identity(collection.applicability())?;
-        require_identity(collection.incremental_update())?;
         if !collection_ids.insert(collection.identity()) {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DuplicateDerivedCollection,
                 format!("{}.{}", feature.identity(), collection.identity()),
             ));
         }
+
+        require_identity(collection.computation())?;
+        require_identity(collection.completeness())?;
+        if !collection_computations.insert(collection.computation_type()) {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::AmbiguousCollectionComputation,
+                collection.identity(),
+            ));
+        }
+        let computation = feature
+            .managed_computations()
+            .iter()
+            .find(|computation| computation.computation_type() == collection.computation_type())
+            .ok_or_else(|| {
+                denial(
+                    ApplicationProgramValidationDenialKind::MissingCollectionComputation,
+                    collection.identity(),
+                )
+            })?;
+        if computation.execution()
+            != super::super::ApplicationComputationExecution::DeterministicPartitioned
+        {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::CollectionComputationNotPartitioned,
+                collection.identity(),
+            ));
+        }
+        require_identity(collection.contributor())?;
+        require_identity(collection.grouping())?;
+        require_identity(collection.measures())?;
+        require_identity(collection.lineage())?;
+        require_identity(collection.applicability())?;
+        require_identity(collection.incremental_update())?;
     }
     Ok(())
 }

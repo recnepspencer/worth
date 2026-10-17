@@ -79,6 +79,7 @@ fn equal_feature_names_are_denied_in_declared_instance_order() {
     let mismatched_alpha = HashMap::from([(
         alpha.computation_type,
         InstalledManagedComputationOwner {
+            collection: None,
             feature_type: TypeId::of::<OtherFeature>(),
             computation_type: alpha.computation_type,
             output_artifact_type: alpha.output_artifact_type,
@@ -120,6 +121,7 @@ fn equal_computation_names_are_denied_in_declared_feature_order() {
     let mismatched_alpha = HashMap::from([(
         TypeId::of::<Computation>(),
         InstalledManagedComputationOwner {
+            collection: None,
             feature_type: TypeId::of::<OtherFeature>(),
             computation_type: TypeId::of::<Computation>(),
             output_artifact_type: TypeId::of::<Artifact>(),
@@ -155,6 +157,7 @@ fn declared_managed_computation_requires_its_exact_owner_inventory() {
     let mismatched = HashMap::from([(
         TypeId::of::<Computation>(),
         InstalledManagedComputationOwner {
+            collection: None,
             feature_type: TypeId::of::<OtherFeature>(),
             computation_type: TypeId::of::<Computation>(),
             output_artifact_type: TypeId::of::<Artifact>(),
@@ -170,6 +173,7 @@ fn declared_managed_computation_requires_its_exact_owner_inventory() {
     let exact = HashMap::from([(
         TypeId::of::<Computation>(),
         InstalledManagedComputationOwner {
+            collection: None,
             feature_type: TypeId::of::<Feature>(),
             computation_type: TypeId::of::<Computation>(),
             output_artifact_type: TypeId::of::<Artifact>(),
@@ -186,6 +190,7 @@ fn declared_managed_computation_requires_its_exact_owner_inventory() {
         (
             TypeId::of::<OtherFeature>(),
             InstalledManagedComputationOwner {
+                collection: None,
                 feature_type: TypeId::of::<OtherFeature>(),
                 computation_type: TypeId::of::<OtherFeature>(),
                 output_artifact_type: TypeId::of::<Artifact>(),
@@ -195,4 +200,44 @@ fn declared_managed_computation_requires_its_exact_owner_inventory() {
     let denial = validate_managed_computation_inventory(&foreign, &declared)
         .expect_err("an undeclared owner must be denied");
     assert_eq!(denial.kind(), DenialKind::ForeignManagedComputationOwner);
+}
+
+#[test]
+fn a_rostered_duplicate_cannot_hide_a_conflicting_computation_contract() {
+    let first = expectation();
+    let installed = HashMap::from([(
+        first.computation_type,
+        InstalledManagedComputationOwner {
+            collection: None,
+            feature_type: first.feature_type,
+            computation_type: first.computation_type,
+            output_artifact_type: first.output_artifact_type,
+        },
+    )]);
+    let same = [
+        (first.computation_type, first),
+        (first.computation_type, first),
+    ];
+    validate_managed_computation_inventory(&installed, &same).unwrap();
+    let other = ManagedComputationExpectation {
+        feature_type: TypeId::of::<OtherFeature>(),
+        ..first
+    };
+    for entries in [
+        [
+            (first.computation_type, first),
+            (first.computation_type, other),
+        ],
+        [
+            (first.computation_type, other),
+            (first.computation_type, first),
+        ],
+    ] {
+        assert_eq!(
+            validate_managed_computation_inventory(&installed, &entries)
+                .unwrap_err()
+                .kind(),
+            DenialKind::ManagedComputationOwnerMeaningMismatch
+        );
+    }
 }

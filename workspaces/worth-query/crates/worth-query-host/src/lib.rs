@@ -341,3 +341,5 @@ mod capability_command_contract;
 mod no_source_tree_contract;
 
 mod closed_delivery_contract;
+
+mod collection_contract;

@@ -99,8 +99,21 @@ struct Lineage;
 impl ApplicationCollectionLineage for Lineage {
     const IDENTITY: &'static str = "worth.query.tests.collection-lineage.v1";
 }
+struct Completeness;
+impl crate::application_program::ApplicationCollectionCompleteness for Completeness {
+    type Value = u64;
+    type Stopped = u32;
+    type Lineage = Lineage;
+    const IDENTITY: &'static str = "worth.query.tests.collection-completeness.v1";
+    fn check(_: &u64) -> Result<(), u32> {
+        Ok(())
+    }
+}
+
 struct Collection;
 impl ApplicationDerivedCollection<TestSchema, FlatFeature> for Collection {
+    type Computation = Computation;
+    type Completeness = Completeness;
     type Contributor = Contributor;
     type Grouping = Grouping;
     type Measures = Measures;
@@ -239,3 +252,5 @@ fn computation_without_its_output_artifact_is_denied() {
         ApplicationProgramValidationDenialKind::MissingManagedComputationArtifact
     );
 }
+
+mod collection_binding;
