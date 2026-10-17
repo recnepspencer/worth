@@ -34,6 +34,9 @@ struct DemandDenialEvidence {
     )>,
     requested_output:
         Option<crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead>,
+    capacity_stop: Option<
+        crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop,
+    >,
 }
 
 impl WorthQueryOutputDemandDenial {
@@ -132,6 +135,20 @@ impl WorthQueryOutputDemandDenial {
             .as_mut()
             .and_then(|evidence| evidence.requested_output.take())
     }
+    /// The bounded resource that refused verification or its meter, with
+    /// that owner's typed amounts. The denial kind and posture are unchanged.
+    pub(in crate::domain_computation::primary_graph) fn with_capacity_stop(
+        mut self,
+        stop: Option<
+            crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop,
+        >,
+    ) -> Self {
+        if let Some(stop) = stop {
+            self.evidence_mut().capacity_stop = Some(stop);
+        }
+        self
+    }
+
     pub fn kind(&self) -> WorthQueryOutputDemandDenialKind {
         self.kind.as_ref().clone()
     }

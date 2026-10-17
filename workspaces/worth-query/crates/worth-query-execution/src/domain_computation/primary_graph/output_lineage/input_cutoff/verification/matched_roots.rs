@@ -94,7 +94,7 @@ pub(super) fn rebound(
         // not an allocation refusal.
         Err(ConsumedOutputVerificationStop::Unavailable) => return Ok(None),
 
-        Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
+        Err(ConsumedOutputVerificationStop::CapacityExhausted(_)) => {
             return Err(InputCutoffVerificationStop::CapacityExhausted)
         }
         Err(ConsumedOutputVerificationStop::Execution(cause)) => {

@@ -44,7 +44,7 @@ pub use aggregate::{
 };
 pub(in crate::domain_computation::primary_graph) use consumed_output::{
     ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    PublicationRecoveryStop, SelectedPendingConsumedOutput,
+    PublicationRecoveryStop, SelectedPendingConsumedOutput, VerificationCapacityStop,
 };
 pub use locked_reader::{
     WorthQueryApplicationInvariantProjectionReader, WorthQueryCompletedInvariantProjection,

@@ -129,7 +129,7 @@ impl OwnedVerifiedInputCutoff {
             | ConsumedOutputVerificationStop::RetryCurrentness(_) => {
                 InputCutoffVerificationStop::CurrentnessRaced
             }
-            ConsumedOutputVerificationStop::CapacityExhausted => {
+            ConsumedOutputVerificationStop::CapacityExhausted(_) => {
                 InputCutoffVerificationStop::CapacityExhausted
             }
             ConsumedOutputVerificationStop::WorkExhausted => {
