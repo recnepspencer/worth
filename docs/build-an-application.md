@@ -281,9 +281,25 @@ authenticated read and current-format native recovery. The
 [compiler fixtures](../crates/worth-foundational/tests/value_shape/compiler.rs)
 cover supported and refused grammar.
 
-These representation bounds do not provide a cumulative native request budget,
-retained-size accounting, or derived-codec transition permission. Those owners
-remain separate. Package archive export of a canonical field currently refuses
+Ordinary `reader.field(...)` and query-row calls keep the same API. For canonical
+fields, native projection dispatch uses the installed field's exact codec and
+borrows the original execution request for all root and child decodes. Parser
+scratch and bounded diagnostics are reserved before parsing; owned strings,
+sequences and erased output are admitted
+before allocation. The first refused grant vetoes projection completion even
+when a seed or handler catches its error. A fresh request gets a fresh loan.
+Opaque canonical owners must explicitly implement `deserialize_admitted` and
+declare `SUPPORTS_ADMISSION`; installation refuses representation-only owners.
+The [native admission journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission.rs)
+exercises cumulative refusal, a swallowing seed/handler/projector, fresh success
+and current-format restore. Ordinary `begin_application_read_attempt` also
+borrows its original execution request: repeated observations share decode
+grants, and an ignored failure prevents `complete` from sealing facts. See the
+[ordinary read-attempt case](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/ordinary_attempt.rs).
+
+Representation bounds, request grants, resident retained-size accounting and
+derived-codec transition permission remain separate contracts. Package archive
+export of a canonical field currently refuses
 with `UnsupportedCanonicalValueContract` before emitting its payload; native
 application checkpoints use their existing owner and support the journey above.
 

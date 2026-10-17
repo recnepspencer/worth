@@ -135,7 +135,7 @@ where
                 plan.query.name(),
             ));
         }
-        finalize_continuation_page(self, plan, raw, authorization_work, read_proof)
+        finalize_continuation_page(execution, self, plan, raw, authorization_work, read_proof)
     }
 }
 

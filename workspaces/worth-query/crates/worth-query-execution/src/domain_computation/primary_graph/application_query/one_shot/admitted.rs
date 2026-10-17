@@ -72,6 +72,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Err(stop) => return Err(map_selected_read_stop(stop, plan.query.name())),
             };
         let result = finalize_one_shot(
+            execution,
             self,
             plan,
             raw,

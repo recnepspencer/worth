@@ -29,6 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn finalize_
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -324,6 +325,8 @@ where
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
 
     let projected = project_non_live_kernel::<Schema, Query, QueryResult, _>(
+        execution,
+        application.installed_schema().value_bindings(),
         kernel,
         &plan.governance,
         || admit_request(request, plan.query.name()),

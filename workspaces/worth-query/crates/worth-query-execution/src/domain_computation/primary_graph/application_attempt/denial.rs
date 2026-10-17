@@ -12,6 +12,8 @@
 /// and approvals.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationAttemptDenialKind {
+    /// The original request refused an admitted field decode; completion is vetoed.
+    ValueDecode(super::super::value_decode::WorthQueryValueDecodeDenial),
     ForeignPhase,
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     Cancelled,

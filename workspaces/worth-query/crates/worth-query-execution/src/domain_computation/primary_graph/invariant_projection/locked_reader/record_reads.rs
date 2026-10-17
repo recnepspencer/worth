@@ -126,6 +126,9 @@ where
         Unit: ApplicationFieldUnit,
     {
         let execution = self.execution;
+        if self.native_read_stop.is_some() || self.value_decode.stopped() {
+            return None;
+        }
         if !self.identity_is_local(identity, field.entity()) {
             return None;
         }
@@ -146,7 +149,7 @@ where
             identity.entity_id,
             identity.kind,
             &locator,
-            |raw| raw.and_then(|value| Field::Binding::decode(value).ok()),
+            |raw| raw.and_then(|value| self.value_decode.decode::<Field::Binding>(field.entity(), field.aspect(), field.field(), value)),
         )
         ;
         match observed {

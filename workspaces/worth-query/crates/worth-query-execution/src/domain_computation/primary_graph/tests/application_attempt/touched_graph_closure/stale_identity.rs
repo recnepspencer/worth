@@ -86,10 +86,10 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
             resolved_account(&(phase).test_host_request(), &world, "changed", &request)
         })
         .expect("the fixture read owns its installed host call");
-    let mut attempt = world
+    let denial = world
         .application
         .with_host_advancement(|phase| {
-            world
+            let mut attempt = world
                 .application
                 .begin_projected_application_read_attempt(
                     &phase,
@@ -97,13 +97,8 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
                     projection,
                     AllocationPolicy::SystemAllocation,
                 )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    take_native_field_contacts();
-    world
-        .application
-        .with_host_advancement(|phase| {
+                .unwrap();
+            take_native_field_contacts();
             let host_custody = phase.test_host_request();
             attempt
                 .observe_field(
@@ -111,18 +106,12 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
                     &other,
                     AccountStatus::reference(),
                 )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    assert_eq!(
-        take_native_field_contacts(),
-        1,
-        "a current identity really contacts the native value provider"
-    );
-    let denial = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+                .unwrap();
+            assert_eq!(
+                take_native_field_contacts(),
+                1,
+                "a current identity really contacts the native value provider"
+            );
             attempt
                 .observe_field(
                     &host_custody.borrowed_request_for_test(),

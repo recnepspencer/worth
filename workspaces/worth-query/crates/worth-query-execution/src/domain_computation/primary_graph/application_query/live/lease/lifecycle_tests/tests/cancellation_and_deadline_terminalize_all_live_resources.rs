@@ -2,6 +2,63 @@
 use super::*;
 
 #[test]
+fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption() {
+    use crate::domain_computation::primary_graph::{
+        value_decode::WorthQueryValueDecodeDenial, WorthQueryApplicationProjectionDenialKind,
+    };
+    use worth_query_declaration::facade::application_query::ApplicationQueryLiveCauseBinding;
+
+    let context =
+        LiveContext::new(crate::domain_computation::primary_graph::tests::fixture::live_scope());
+    let mut lease = context
+        .world
+        .application
+        .with_host_advancement(|phase| context.open(&phase.test_host_request()))
+        .unwrap();
+    let bridge = observer(&lease);
+    commit_live_activity_with_identity(
+        &context.world,
+        &context.principal,
+        &context.request,
+        "decode-refused-live-read",
+        229,
+        93,
+    );
+    lease.queue.fill(
+        &context.world.application.primary_provider.live_delivery,
+        lease.basis.as_mut().expect("opening owns its native basis"),
+        LiveAccountActivityCause::effect(),
+        lease.controls.buffer_capacity(),
+        |_| true,
+    );
+    assert!(
+        lease.buffered_cause_count() > 0,
+        "real committed cause is queued before refusal"
+    );
+
+    // Decoder behavior is tested at its own native boundary. This lifecycle
+    // court supplies that boundary's typed refusal to the actual live owner.
+    let cause = WorthQueryApplicationProjectionDenialKind::ValueDecode(
+        WorthQueryValueDecodeDenial::CodecRejected,
+    );
+    assert!(matches!(
+        lease.handle_projection_denial(cause),
+        WorthQueryApplicationLiveOutcome::ProjectionDenied(observed) if observed == cause
+    ));
+    assert_terminal(
+        &bridge,
+        BridgeExecutionBasisLifecycleSignalStatus::Cancelled,
+    );
+    assert_eq!(lease.buffered_cause_count(), 0);
+    assert!(matches!(
+        lease.observe_interruption(&context.request),
+        Some(WorthQueryApplicationLiveOutcome::Closed)
+    ));
+    drop(lease);
+    context.assert_source_released();
+}
+
+#[test]
 fn cancellation_and_deadline_terminalize_all_live_resources() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(

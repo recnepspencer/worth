@@ -259,7 +259,7 @@ pub use super::invariant_projection::{
     WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWork,
     WorthQueryInvariantRelation, WorthQueryOperationProjectionDenial,
     WorthQueryOperationProjectionDenialKind, WorthQueryPreparedEntitySelection,
-    WorthQueryPriorOutputFamilyMember,
+    WorthQueryPriorOutputFamilyMember, WorthQueryValueDecodeDenial,
 };
 pub use super::merge_unique_values::{
     WorthQueryMergeUniqueValueDenial, WorthQueryMergeUniqueValueDenialKind,

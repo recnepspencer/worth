@@ -63,7 +63,7 @@ fn structured_effect_validation_precedes_retention_and_external_projection() {
                 .into_parts()
         })
         .expect("the fixture read owns its installed host call");
-    let reads = world
+    let mut effects = world
         .application
         .with_host_advancement(|phase| {
             world
@@ -75,12 +75,6 @@ fn structured_effect_validation_precedes_retention_and_external_projection() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let mut effects = world
-        .application
-        .with_host_advancement(|phase| {
-            reads
                 .complete_projected_dependencies(
                     &phase,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

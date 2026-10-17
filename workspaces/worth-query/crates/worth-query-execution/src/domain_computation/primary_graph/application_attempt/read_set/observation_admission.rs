@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl<Schema, Operation, Input, Scope, Phase>
-    WorthQueryApplicationReadAttempt<Schema, Operation, Input, Scope, Phase>
+    WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
 {
     pub(super) fn admit_target(
         &self,

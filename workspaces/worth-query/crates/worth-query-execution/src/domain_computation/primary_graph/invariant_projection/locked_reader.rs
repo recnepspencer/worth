@@ -36,6 +36,7 @@ pub use traversal_denial::{
 /// It resolves entities by identity field, reads fields, traverses relations,
 /// and summarizes aggregates. Every read is charged to the projection's work.
 pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
+    pub(super) value_decode: &'runtime super::super::value_decode::ValueDecodeSession<'runtime>,
     pub(super) execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
     pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -182,9 +183,15 @@ where
                 .snapshot_for_observation(&basis.observation())
                 .map_err(super::admission_denial::from_snapshot_admission_denial)
         })?;
-        let projected = self.graph.with_runtime_mut(execution, |runtime| {
+        let decode_work = std::cell::Cell::new(None);
+        let projected = super::super::value_decode::with_value_decode(
+            execution,
+            &self.value_bindings,
+            |value_decode| {
+                self.graph.with_runtime_mut(execution, |runtime| {
             catch_unwind(AssertUnwindSafe(|| {
                 let mut reader = WorthQueryApplicationInvariantProjectionReader {
+                    value_decode,
                     execution,
                     runtime,
                     layout: &self.layout,
@@ -211,6 +218,7 @@ where
                     _schema: PhantomData,
                 };
                 let output = projection(&mut reader);
+                decode_work.set(Some(reader.work));
                 (
                     output,
                     reader.work,
@@ -222,7 +230,19 @@ where
                     reader.native_read_stop,
                 )
             }))
-        });
+            })
+            },
+        );
+        let projected = match projected {
+            Ok(projected) => projected,
+            Err(cause) => {
+                self.graph.release_query_snapshot(&snapshot);
+                return Err(WorthQueryInvariantProjectionDenial::value_decode_stopped(
+                    cause,
+                    decode_work.get(),
+                ));
+            }
+        };
         let (
             output,
             work,
@@ -274,6 +294,7 @@ where
             output,
             snapshot: WorthQueryApplicationInvariantProjectionSnapshot {
                 graph: self.graph.clone(),
+                value_bindings: self.value_bindings.clone(),
                 layout: Arc::clone(&self.layout),
                 basis: Some(basis),
                 snapshot: Some(snapshot),

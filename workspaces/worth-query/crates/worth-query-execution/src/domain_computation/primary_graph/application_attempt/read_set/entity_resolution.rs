@@ -2,7 +2,7 @@
 use super::*;
 
 impl<Schema, Operation, Input, Scope, Phase>
-    WorthQueryApplicationReadAttempt<Schema, Operation, Input, Scope, Phase>
+    WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
 {
     pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
         &self,
@@ -47,7 +47,7 @@ impl<Schema, Operation, Input, Scope, Phase>
         Unit,
     >(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -68,6 +68,8 @@ impl<Schema, Operation, Input, Scope, Phase>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        self.check_value_decode()?;
+        let execution = &self.execution;
         let value = Field::Binding::encode(&value).map_err(|_| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue,

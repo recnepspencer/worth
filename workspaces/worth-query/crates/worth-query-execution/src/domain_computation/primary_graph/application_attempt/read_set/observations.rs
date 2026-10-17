@@ -16,17 +16,19 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl<Schema, Operation, Input, Scope, Phase>
-    WorthQueryApplicationReadAttempt<Schema, Operation, Input, Scope, Phase>
+    WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
 {
     pub fn observe_entity<Entity>(
         &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: ApplicationEntityRef<Schema, Entity>,
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Entity: OperationReads<Operation>,
     {
+        self.check_value_decode()?;
+        let execution = &self.execution;
         let target = ApplicationOperationDecisionReadTarget::Entity {
             entity: entity.name().to_string(),
         };
@@ -54,7 +56,7 @@ impl<Schema, Operation, Input, Scope, Phase>
 
     pub fn observe_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Result<Value, WorthQueryApplicationAttemptDenial>
@@ -64,6 +66,8 @@ impl<Schema, Operation, Input, Scope, Phase>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        self.check_value_decode()?;
+        let execution = &self.execution;
         let target = ApplicationOperationDecisionReadTarget::Field {
             entity: field.entity().to_string(),
             aspect: field.aspect().to_string(),
@@ -101,12 +105,12 @@ impl<Schema, Operation, Input, Scope, Phase>
                     field.field(),
                 )
             })?;
-        let typed = Field::Binding::decode(&value).map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue,
-                field.field(),
-            )
-        })?;
+        let typed = self.decode_observed_value::<Field::Binding>(
+            field.entity(),
+            field.aspect(),
+            field.field(),
+            &value,
+        )?;
         self.installed_read_scopes.insert(key.clone(), read_scope);
         self.facts.insert(
             key,
@@ -122,7 +126,7 @@ impl<Schema, Operation, Input, Scope, Phase>
 
     pub fn observe_relation<Relation, From, To>(
         &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         from: &WorthQueryApplicationEntityIdentity<Schema, From>,
         to: &WorthQueryApplicationEntityIdentity<Schema, To>,
@@ -133,6 +137,8 @@ impl<Schema, Operation, Input, Scope, Phase>
     where
         Relation: OperationReads<Operation>,
     {
+        self.check_value_decode()?;
+        let execution = &self.execution;
         let target = ApplicationOperationDecisionReadTarget::Relation {
             relation: relation.name().to_string(),
             from: relation.from().to_string(),

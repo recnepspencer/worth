@@ -14,6 +14,10 @@ use super::{
 };
 use crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog;
 
+#[cfg(test)]
+#[path = "compilation_tests.rs"]
+mod tests;
+
 pub(crate) fn compile_value_binding_catalog(
     schema_binding: &ApplicationSchemaBindingIdentity,
     declaration: &ErasedApplicationSchemaDeclaration,
@@ -64,6 +68,9 @@ type DeclaredFieldContract<'a> = (
     &'a str,
     Option<&'a str>,
     Option<&'a str>,
+    Option<
+        &'a worth_query_declaration::facade::application_schema::ApplicationCanonicalValueContract,
+    >,
 );
 
 fn collect_declared_fields(
@@ -81,6 +88,7 @@ fn collect_declared_fields(
                 value_type,
                 unit,
                 frame,
+                canonical,
                 ..
             } = member
             else {
@@ -93,6 +101,7 @@ fn collect_declared_fields(
                     value_type.as_str(),
                     unit.as_deref(),
                     frame.as_deref(),
+                    canonical.as_ref(),
                 ),
             ))
         })
@@ -105,10 +114,12 @@ fn validate_contract(
     recipe: &ApplicationFieldBindingRecipe,
     native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
 ) -> Result<(), WorthQueryApplicationValueBindingInstallationDenial> {
-    let (scalar_family, identity, unit, frame) = declared;
+    let (scalar_family, identity, unit, frame, canonical) = declared;
     if recipe.scalar_family() != scalar_family
+        || recipe.canonical_contract() != canonical
         || (recipe.canonical_contract().is_some()
-            && scalar_family != worth_foundational::facade::ScalarAspectType::String)
+            && (scalar_family != worth_foundational::facade::ScalarAspectType::String
+                || !recipe.supports_admitted_decode()))
         || recipe.binding_identity().as_str() != identity
         || recipe.unit().map(|unit| unit.as_str()) != unit
         || recipe.frame().map(|frame| frame.as_str()) != frame
