@@ -2,6 +2,7 @@
 use super::*;
 mod mixed_retirement;
 mod mutation;
+mod one_pass;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryCheckpointOutputRole,
     output_reuse::{
@@ -74,6 +75,25 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         )),
     )
     .unwrap();
+    // Distinct roles may name one entity; each keeps its own expectations.
+    let alias_correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
+        TypeId::of::<()>(),
+        TypeId::of::<()>(),
+        std::iter::empty(),
+        &["account", "alias"].map(|role| WorthQueryCheckpointOutputRole {
+            role: role.to_owned(),
+            posture: WorthQueryApplicationOutputPosture::Preserve,
+            entity_name: "Account".to_owned(),
+            entity,
+        }),
+        |_| Some(TypeId::of::<()>()),
+        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::CancellationToken::new(),
+            None,
+        )),
+    )
+    .unwrap();
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
     let planned_status = layout
@@ -136,6 +156,19 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             runtime, &before, &facts, &mut recovery_admission,
         ).unwrap());
         assert!(recovery_admission.charged_work() - reconstruction_start <= comparison_bound);
+        assert!(facts.len() > 2, "the alias roles cover several real aspects");
+        let alias_bound = SealedNativeOutputWitness::checkpoint_comparison_work_bound(
+            &alias_correspondence, layout, &facts, &mut recovery_admission,
+        ).unwrap();
+        assert!(alias_bound > comparison_bound, "the second role's fan-out is priced");
+        let alias_start = recovery_admission.charged_work();
+        let alias = SealedNativeOutputWitness::from_checkpoint_facts(
+            &alias_correspondence, layout, &facts, owner, &mut recovery_admission,
+        ).unwrap().expect("both roles fill every aspect slot from the one entity's facts");
+        assert!(alias.get().unwrap().checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
+            runtime, &before, &facts, &mut recovery_admission,
+        ).unwrap());
+        assert!(recovery_admission.charged_work() - alias_start <= alias_bound);
         assert!(restored
             .get()
             .unwrap()
@@ -243,6 +276,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         )
         .unwrap()
         .is_none());
+        one_pass::assert_one_pass_reconstruction(
+            &correspondence, layout, &facts, &producer_facts[0], owner,
+        );
         change_label(request_execution, runtime, entity, label);
         let after = snapshot(runtime);
         let after_source = runtime

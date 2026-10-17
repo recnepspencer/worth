@@ -188,7 +188,9 @@ pub(super) fn execution_failed(
     if let MutationHandlerExecutionDenial::Projection(projection) = &error
         && let Some(kind) = projection_budget(projection.kind())
     {
-        return denial(kind, format!("{subject}: {projection}")).into();
+        // The reader's captured counters name which work exhausted the budget.
+        let work = projection.projection_work();
+        return denial(kind, format!("{subject}: {projection}; work {work:?}")).into();
     }
     if matches!(
         error,
