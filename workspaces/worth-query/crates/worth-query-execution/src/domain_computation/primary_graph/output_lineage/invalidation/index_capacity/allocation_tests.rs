@@ -6,7 +6,10 @@ use std::fmt::Debug;
 use im::{OrdMap, OrdSet};
 use stats_alloc::{Region, Stats, INSTRUMENTED_SYSTEM};
 
-use super::{ordered_edit_bytes, retained_forest_bytes, retained_map_bytes};
+use super::{
+    fresh_build_bytes, fresh_insert_bytes, ordered_edit_bytes, retained_forest_bytes,
+    retained_map_bytes,
+};
 
 const PROBE_ENV: &str = "WORTH_QUERY_INDEX_ALLOCATION_PROBE";
 
@@ -48,6 +51,10 @@ fn isolated_im_allocation_probe() {
             whole_set::<u64>(population, order);
             whole_map::<Aligned>(population, order);
             whole_set::<Aligned>(population, order);
+            fresh_map::<u64>(population, order);
+            fresh_set::<u64>(population, order);
+            fresh_map::<Aligned>(population, order);
+            fresh_set::<Aligned>(population, order);
             copied_paths::<u64>(population, order);
             copied_paths::<Aligned>(population, order);
         }
@@ -152,6 +159,41 @@ fn whole_set<K: ProbeKey>(population: usize, order: usize) {
         0,
         "last set root must release its nodes"
     );
+}
+
+/// A tree created empty and grown by insertion alone. Everything it ever
+/// allocated, split nodes since freed included, fits the growth admitted
+/// one insertion at a time, and that growth sums to the build forecast.
+/// The meter admits cumulative bytes, so this compares allocated, not live.
+fn fresh_map<K: ProbeKey>(population: usize, order: usize) {
+    let region = Region::new(&INSTRUMENTED_SYSTEM);
+    let mut map = OrdMap::<K, K>::new();
+    let mut admitted = 0u64;
+    for ordinal in 0..population {
+        admitted += fresh_insert_bytes::<K, K>(map.len()).unwrap();
+        let key = K::key(ordered_key(ordinal, population, order));
+        map.insert(key, key);
+        if checkpoint(map.len()) || map.len() == population {
+            assert_eq!(admitted, fresh_build_bytes::<K, K>(map.len()).unwrap());
+            assert!(region.change().bytes_allocated as u64 <= admitted);
+        }
+    }
+    drop(map);
+}
+
+fn fresh_set<K: ProbeKey>(population: usize, order: usize) {
+    let region = Region::new(&INSTRUMENTED_SYSTEM);
+    let mut set = OrdSet::<K>::new();
+    let mut admitted = 0u64;
+    for ordinal in 0..population {
+        admitted += fresh_insert_bytes::<K, ()>(set.len()).unwrap();
+        set.insert(K::key(ordered_key(ordinal, population, order)));
+        if checkpoint(set.len()) || set.len() == population {
+            assert_eq!(admitted, fresh_build_bytes::<K, ()>(set.len()).unwrap());
+            assert!(region.change().bytes_allocated as u64 <= admitted);
+        }
+    }
+    drop(set);
 }
 
 fn copied_paths<K: ProbeKey>(population: usize, order: usize) {

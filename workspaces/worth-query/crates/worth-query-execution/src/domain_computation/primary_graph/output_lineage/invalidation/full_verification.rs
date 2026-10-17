@@ -292,13 +292,15 @@ fn reserve_pending<T>(
     if needed <= pending.capacity() {
         return Ok(());
     }
-    let bytes = needed
+    // Doubling keeps admitted growth within twice the final backing.
+    let target = needed.max(pending.capacity().saturating_mul(2));
+    let bytes = target
         .checked_mul(size_of::<T>())
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     admission.bytes(bytes)?;
     admission.work(pending.len() as u64)?;
     pending
-        .try_reserve_exact(additional)
+        .try_reserve_exact(target - pending.len())
         .map_err(|_| FullVerificationStop::OutputEvidenceUnavailable)
 }

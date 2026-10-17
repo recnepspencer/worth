@@ -309,6 +309,8 @@ impl InvalidationEditAdmission {
     /// A closure's visited set uses the same pinned im ordered index as the
     /// reverse index. Exact settlement identities contain only fixed-width
     /// structural identities; they own no variable comparison payload.
+    /// Every visited set is created empty by its walk and never shared, so
+    /// `entries` prices that walk's own fresh build, not a copied path.
     #[track_caller]
     pub(in crate::domain_computation::primary_graph) fn admit_visited_settlement(
         &mut self,
@@ -319,9 +321,9 @@ impl InvalidationEditAdmission {
         let comparisons = super::index_capacity::ordered_navigation_work(entries)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
         // The identity is a fixed structural key. Each candidate comparison
-        // is one visit; its inline width is priced by ordered_edit bytes.
+        // is one visit; its inline width is priced by the build's growth.
         self.work(comparisons)?;
-        self.ordered_edit::<Arc<RecordedSettlementIdentity>, ()>(entries)
+        self.fresh_insert::<Arc<RecordedSettlementIdentity>, ()>(entries)
     }
 }
 

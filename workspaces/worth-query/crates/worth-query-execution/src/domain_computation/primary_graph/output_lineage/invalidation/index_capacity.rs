@@ -51,6 +51,30 @@ pub(super) fn retained_forest_bytes<K, V>(entries: usize, roots: usize) -> Optio
     ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
 }
 
+/// Every Arc node ever allocated while a tree created empty, and never
+/// shared, grows by insertion alone to `entries`. `new` allocates the root;
+/// im mutates an unshared path in place, so only a split allocates: its two
+/// halves replace the split node, and a root split also allocates the new
+/// root. Each split adds at least one live node, so F final nodes took at
+/// most 2F - 1 allocations. Insertion alone leaves every nonroot at least 32
+/// keys, so F fits the retained bound. No predecessor shares a path to copy.
+pub(super) fn fresh_build_bytes<K, V>(entries: usize) -> Option<u64> {
+    let nodes = 1usize.checked_add(entries.saturating_sub(1) / 31)?;
+    let allocations = nodes.checked_mul(2)?.checked_sub(1)?;
+    ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(allocations).ok()?)
+}
+
+/// What one insertion at `entries` adds to a fresh build: its root on the
+/// first, then two nodes for each further 31 entries. The sum over a build
+/// is [`fresh_build_bytes`] of its final length.
+pub(super) fn fresh_insert_bytes<K, V>(entries: usize) -> Option<u64> {
+    let built = match entries {
+        0 => 0,
+        entries => fresh_build_bytes::<K, V>(entries)?,
+    };
+    fresh_build_bytes::<K, V>(entries.checked_add(1)?)?.checked_sub(built)
+}
+
 /// All newly allocated Arc nodes beside a retained predecessor. Insertion
 /// copies one path and can allocate two split children at each level, then
 /// one root. Deletion can copy a child and donor and materialize a replacement
