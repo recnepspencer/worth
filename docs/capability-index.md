@@ -346,6 +346,14 @@ Handle `AwaitingProposal(RequiredWorkflowProposal)` as a typed need: inspect its
 
 ## Known gaps
 
+**Compiler-derived implementation editions.** Automatic producer/output/partition
+edition integration is not yet a Decl/Host capability. The initial
+[`implementation-edition` compiler observer](../tools/implementation-edition/src/lib.rs)
+captures supported workspace Rust/compiler/generator inputs; unqualified external,
+proc-macro, native and generator contexts refuse. It does not yet qualify the CAD
+closure or change installed output currentness. Consumers must await the native
+cutover rather than construct editions from descriptive digests or reports.
+
 Check the support posture in the capability table before concluding that a
 capability is missing. Follow the linked current owner and consumer guidance.
 
