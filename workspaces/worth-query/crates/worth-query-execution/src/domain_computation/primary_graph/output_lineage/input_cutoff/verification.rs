@@ -1,5 +1,8 @@
 //! Exact prior-output checks before a producer may omit its handler.
 
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::{
+    self as observation, Gate,
+};
 mod owned;
 mod refusal;
 pub(in crate::domain_computation::primary_graph) use owned::OwnedInputCutoffDecision;
@@ -133,13 +136,16 @@ impl RetainedInputCutoffCandidate {
         admission: &mut InvalidationEditAdmission,
         currentness: &mut InvalidationEditAdmission,
     ) -> Result<Option<VerifiedDependencies>, InputCutoffVerificationStop> {
+        observation::reach(Gate::PriorKey);
         admission.charge_external_work(1)?;
         let Some(prior_key) = self.prepared_input_key() else {
             return Ok(None);
         };
+        observation::reach(Gate::CompletedContext);
         let Some(prior_context) = self.completed_decision_reuse() else {
             return Ok(None);
         };
+        observation::reach(Gate::OutputWitness);
         let Some(witness) = self.native_output_witness() else {
             return Ok(None);
         };
@@ -147,30 +153,40 @@ impl RetainedInputCutoffCandidate {
             let visits =
                 u64::try_from(visits).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
             admission.charge_external_work(visits)
-        })? || !fresh_context.matches_completed(prior_context, |visits| {
+        })? {
+            return Ok(None);
+        }
+        observation::reach(Gate::DecisionContext);
+        if !fresh_context.matches_completed(prior_context, |visits| {
             admission.charge_external_work(visits)
         })? {
             return Ok(None);
         }
+        observation::reach(Gate::RestoreFence);
         let requirement = self.verification_requirement(admission)?;
         if cutoff_declines(requirement, None) {
             return Ok(None);
         }
+        observation::reach(Gate::ComparableFacts);
         let Some(facts) = self.observed_source_facts(admission)? else {
             return Ok(None);
         };
+        observation::reach(Gate::HandlerPrefixBoundary);
         let count = self.completed_handler_fact_count().unwrap_or(facts.len());
         if count > facts.len() {
             return Ok(None);
         }
+        observation::reach(Gate::SettlementCurrentness);
         let settlement = owner.currentness(selected, self.settlement_identity(), admission)?;
         if cutoff_declines(requirement, Some(&settlement)) {
             return Ok(None);
         }
         let verified_consumed = if let Some(matched) = &matched_predecessors {
+            observation::reach(Gate::MatchedConsumer);
             if !matched.matches_consumer(self.settlement_identity(), admission)? {
                 return Ok(None);
             }
+            observation::reach(Gate::MatchedRoots);
             let Some(rebound) = matched_roots::rebound(
                 self.consumed_outputs(),
                 matched,
@@ -195,6 +211,7 @@ impl RetainedInputCutoffCandidate {
                 // handler facts still require disclosure before old edges.
                 // Source input equality does not prove handler facts equal.
                 // A changed own decision may remove the old consumed edges.
+                observation::reach(Gate::OwnEvidence);
                 match ConsumedOutputEvidence::own_evidence_is_current(
                     execution,
                     &facts.slice(0..count),
@@ -227,6 +244,7 @@ impl RetainedInputCutoffCandidate {
                         return Err(InputCutoffVerificationStop::PendingUpstream)
                     }
                 }
+                observation::reach(Gate::PendingRoots);
                 let resolved_here = match &matched_predecessors {
                     Some(matched) => matched_roots::names_every_edge(&edges, matched, admission)?,
                     None => false,
@@ -253,6 +271,7 @@ impl RetainedInputCutoffCandidate {
             // `cutoff_declines` declined it above.
             SourceSettlementCurrentness::Foreign => return Ok(None),
         }
+        observation::reach(Gate::HandlerPrefix);
         let current = if verify_full_prefix {
             marked_facts_permit_reuse(
                 execution,
@@ -278,6 +297,7 @@ impl RetainedInputCutoffCandidate {
         if !current {
             return Ok(None);
         }
+        observation::reach(Gate::ConsumedOutputs);
         match ConsumedOutputEvidence::verify_many_with_admission(
             execution,
             verified_consumed
@@ -318,6 +338,7 @@ impl RetainedInputCutoffCandidate {
                 ));
             }
         }
+        observation::reach(Gate::OutputCurrentness);
         if !witness.unchanged_in(runtime, snapshot, admission)? {
             return Ok(None);
         }

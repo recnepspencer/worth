@@ -19,8 +19,10 @@ pub use crate::domain_computation::primary_graph::{
 };
 pub use crate::domain_computation::primary_graph::{
     fact_verification_on_this_thread_for_test, native_marking_on_this_thread_for_test,
-    WorthQueryFactVerificationForTest, WorthQueryMarkedOutputForTest,
-    WorthQueryNativeMarkingForTest, WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
+    WorthQueryFactVerificationForTest, WorthQueryInputCutoffForTest,
+    WorthQueryInputCutoffGateForTest, WorthQueryInputCutoffOutcomeForTest,
+    WorthQueryMarkedOutputForTest, WorthQueryNativeMarkingForTest,
+    WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
 };
 pub use crate::domain_computation::primary_graph::{
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,

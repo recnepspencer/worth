@@ -11,7 +11,9 @@ mod unrebased_settlement;
 
 #[test]
 fn fresh_source_suffix_with_equal_declared_input_reuses_without_a_handler_or_world_commit() {
-    exercise("anchor-a", "anchor-b", 2, true, controls());
+    checkpoint_polling::equal_input_receipt(|| {
+        exercise("anchor-a", "anchor-b", 2, true, controls());
+    });
 }
 
 #[test]

@@ -1,5 +1,10 @@
 //! Actual retained-fact examination at its owners, apart from request billing.
 use std::cell::Cell;
+pub(super) mod input_cutoff;
+pub use input_cutoff::{
+    WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
+    WorthQueryInputCutoffOutcomeForTest,
+};
 
 use crate::domain_computation::execution_observation;
 
@@ -7,6 +12,10 @@ use crate::domain_computation::execution_observation;
 /// double-count facts examined in several phases. These are not admission units.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryFactVerificationForTest {
+    /// Up to 32 actual cutoff invocations, in completion order. No fact data.
+    pub input_cutoffs: [Option<WorthQueryInputCutoffForTest>; 32],
+    /// Further invocations are counted, never silently treated as observed.
+    pub input_cutoffs_omitted: u64,
     /// Owned facts moved into pre-admitted native publication chunks.
     pub native_payload_fact_moves: u64,
     /// Native chunks sealed after successful postcommit resolution.
@@ -45,6 +54,7 @@ pub struct WorthQueryFactVerificationForTest {
 
 thread_local! {
     static OBSERVED: Cell<WorthQueryFactVerificationForTest> = const { Cell::new(WorthQueryFactVerificationForTest {
+        input_cutoffs: [None; 32], input_cutoffs_omitted: 0,
         native_payload_fact_moves: 0, native_payload_chunks: 0, native_payload_joins: 0,
         sealed_computation_index_visits: 0, source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,
         rebase_preparation_visits: 0, rebase_resolution_visits: 0, rebase_unanswered_visits: 0,
