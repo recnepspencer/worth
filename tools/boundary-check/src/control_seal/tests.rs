@@ -323,3 +323,5 @@ fn raw_declarations_and_ordinary_references_share_a_seal() {
 }
 
 mod lane_71_callers;
+
+mod locality_observers;

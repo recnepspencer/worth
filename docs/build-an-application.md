@@ -1432,6 +1432,11 @@ An opening refusal is `ExecutionRequest`, not a handler failure: no handler ran.
 an admitted request is executing.
 An interruption observed after admission keeps the executing owner's cancellation
 or timeout outcome.
+A decision handler can poll `reader.checkpoint()` during synchronous work.
+Preparation retains the first failed poll and refuses before candidate authoring,
+even if the handler catches the error. Successful polls preserve eligibility for
+completed-decision input reuse; the producer's canonical-input/context contract
+and all source and publication checks still apply.
 For an output demand refresh these are `Cancelled` and `TimedOut`; they are
 separate from admission's `ExecutionRequest(Interrupted(..))` refusals.
 Serial and leased placement both use checked leases. A reservation denied by

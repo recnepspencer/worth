@@ -157,5 +157,11 @@ mod tests {
         assert!(boundary
             .seal_decision_reuse(capture(), DecisionContextUse::default().key_for_test())
             .is_none());
+        for untracked in [
+            DecisionContextUse::default().managed_computation(),
+            DecisionContextUse::default().request_context_for_test(),
+        ] {
+            assert!(boundary.seal_decision_reuse(capture(), untracked).is_none());
+        }
     }
 }

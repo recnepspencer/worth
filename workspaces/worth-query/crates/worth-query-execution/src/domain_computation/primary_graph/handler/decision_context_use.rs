@@ -32,6 +32,7 @@ impl DecisionContextUse {
         Self(self.0 | Self::MANAGED_COMPUTATION)
     }
 
+    #[cfg(test)]
     pub(super) const fn request_context(self) -> Self {
         Self(self.0 | Self::REQUEST_CONTEXT)
     }

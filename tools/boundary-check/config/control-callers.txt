@@ -496,3 +496,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 # 9.17.6.6: exact-observation closed certification courts observe producer contacts.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/exact_observation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/exact_observation/selected_action.rs
+
+# M2.7.1: test-only native locality observations; adjacent sources gain no authority.
+workspaces/worth-query/crates/worth-query-execution/ crates/worthy-studio-application/src/tests/locality/observations.rs
