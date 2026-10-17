@@ -2589,20 +2589,26 @@ does not repair that basis; the application must run a fresh operation.
 
 To present several closed carriers together, retain one observation and deliver
 every carrier at it with `deliver_current_at(&request.at(&observation), policy)`.
-It runs the same native gate as `deliver_current` at that caller's observation:
-Fixed re-resolves its original installed action, no-source checks its selected
-typed root, and both validate their complete original lineage under the
-installed currentness ceiling. The request's scope is checked fresh. A
+It exists on closed no-projection Fixed and closed no-source carriers. It runs
+the same native gate as `deliver_current` at that caller's observation:
+no-projection Fixed re-resolves its original installed action, no-source checks
+its selected typed root, and both validate their complete original lineage under
+the installed currentness ceiling. A closed Fixed carrier with a declared query
+projection delivers only through its declared read (`read_current`,
+`read_batch_current`); it has no common-observation delivery today. That is a
+known gap, not permission to pair a unit gate with a replacement selector. The request's scope is checked fresh. A
 foreign runtime, branch or observation is refused before any installed meaning is
 read. Bare `request.at(&observation).require_current_program_output(...)` checks
 lineage only. It neither revalidates the selected action or root nor replaces
 this gate. Success returns `()` because the caller already holds the
 observation. Read every displayed fact at that same observation.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let observation = request.retain_current_read()?;
 let pinned = request.at(&observation);
-for carrier in &closed_fixed {
+for carrier in &closed_no_projection_fixed {
     carrier.deliver_current_at(&pinned, policy)?; // installed action + full lineage
 }
 for carrier in &closed_trees {

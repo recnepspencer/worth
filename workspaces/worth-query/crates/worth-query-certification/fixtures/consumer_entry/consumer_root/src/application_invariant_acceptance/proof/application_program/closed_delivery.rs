@@ -3,11 +3,10 @@ use super::*;
 use crate::application_program::ConsumerFixedAction;
 use crate::{ConsumerProgram, ConsumerProgramRoot};
 use worth_query_host::facade::application_entry::{
-    WorthQueryClosedFixedDelivery, WorthQueryClosedProgramOutputDelivery,
-    WorthQueryOperationAdvance as FixedAdvance, WorthQueryOperationDeliveryDenial,
-    WorthQueryOutputCurrentnessDenial, WorthQueryOutputSettlementPosture,
-    WorthQueryProgramOutputOperationAdvance as TreeAdvance, WorthQuerySettledFixedOperation,
-    WorthQuerySettledProgramOutputOperation,
+    WorthQueryClosedFixedDelivery, WorthQueryOperationAdvance as FixedAdvance,
+    WorthQueryOperationDeliveryDenial, WorthQueryOutputCurrentnessDenial,
+    WorthQueryOutputSettlementPosture, WorthQueryProgramOutputOperationAdvance as TreeAdvance,
+    WorthQuerySettledFixedOperation, WorthQuerySettledProgramOutputOperation,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryOutputDemandDenialKind,
@@ -44,8 +43,6 @@ type ClosedFixed = WorthQueryClosedFixedDelivery<
 >;
 type Tree =
     WorthQuerySettledProgramOutputOperation<ConsumerSchema, ConsumerProgram, ConsumerProgramRoot>;
-type ClosedTree =
-    WorthQueryClosedProgramOutputDelivery<ConsumerSchema, ConsumerProgram, ConsumerProgramRoot>;
 
 #[test]
 fn fixed_and_no_source_close_before_fresh_complete_current_read() {
@@ -80,7 +77,7 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         .entity::<PlanarAnchorOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id();
-    let (closed_fixed, closed_tree, other) = {
+    let (closed_fixed, closed_tree) = {
         let scope = authentication::request_scope();
         let adapter = authentication::admit(world.application.installed_schema());
         let principal = authentication::block_on(adapter.authenticate(
@@ -130,7 +127,7 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
             0
         );
         let closed_tree = transitions::close_tree_after_cancelled_refusal(settled, &world);
-        (closed_fixed, closed_tree, other)
+        (closed_fixed, closed_tree)
     };
     assert_eq!(
         world
@@ -198,20 +195,6 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         );
         drop((read, observation));
         transitions::cancelled_delivery_retains_closed(&closed_tree, &world, &request);
-        let foreign = world
-            .application
-            .request(&principal, &scope)
-            .on_branch(other)
-            .retain_current_read()
-            .unwrap();
-        exact_observation::one_caller_observation(
-            &closed_fixed,
-            &closed_tree,
-            &world,
-            &request,
-            &foreign,
-        );
-        drop(foreign);
         // Change an ACTUAL consumed root fact, not merely an unrelated suffix.
         // Both closed carriers retain their historical meaning on fresh refusal.
         edit_source(&world, &request, "anchor-a", 4, 0x9176_6277);
@@ -230,12 +213,6 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
             Err(WorthQueryOperationDeliveryDenial::Currentness(WorthQueryOutputCurrentnessDenial::Output(cause)))
                 if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
         ));
-        exact_observation::superseded_at_caller_observation(
-            &closed_fixed,
-            &closed_tree,
-            &world,
-            &request,
-        );
         assert_eq!(
             world
                 .application
@@ -332,7 +309,15 @@ fn change_suffix(world: &World, request: &Request<'_, '_, '_>) {
     );
 }
 
-fn edit_source(world: &World, request: &Request<'_, '_, '_>, body_key: &str, y: u64, key: u64) {
+fn edit_source<P>(
+    world: &installation::ConsumerWorld<P>,
+    request: &Request<'_, '_, '_>,
+    body_key: &str,
+    y: u64,
+    key: u64,
+) where
+    P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>,
+{
     let source = request
         .query(PlanarRead {
             body_key: body_key.into(),
@@ -358,7 +343,7 @@ fn edit_source(world: &World, request: &Request<'_, '_, '_>, body_key: &str, y: 
         .mutate(intent)
         .expect_source(source)
         .idempotency(&key)
-        .execute_in_program::<ConsumerProgram>(
+        .execute_in_program::<P>(
             &world.application,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )

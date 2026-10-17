@@ -115,6 +115,25 @@ where
     )
 }
 
+/// The same delivery under a changed declared locality/change contract.
+#[cfg(test)]
+pub(super) fn changed_source_delivery_specs<D>() -> Vec<ApplicationFeatureSpec>
+where
+    D: worth_query_decl::facade::application_program::ApplicationActionDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    >,
+{
+    use composed_action::{ChangedSourceChange, SourceLocality};
+    consumer_specs_with_source(
+        source_builder()
+            .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, D>()
+            .locality_and_change::<SourceLocality, ChangedSourceChange>()
+            .finish_action()
+            .finish(),
+    )
+}
+
 #[cfg(test)]
 pub(super) fn consumer_changed_fixed_feature_specs() -> Vec<ApplicationFeatureSpec> {
     consumer_specs_with_source(source_builder()
