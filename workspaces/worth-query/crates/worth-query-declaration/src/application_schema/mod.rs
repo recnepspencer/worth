@@ -51,6 +51,7 @@ mod references;
 mod relation_integrity;
 mod schema_identity;
 mod schema_member;
+mod shape;
 mod value_binding;
 mod values;
 
@@ -181,6 +182,10 @@ pub use schema_identity::ApplicationSchemaIdentity;
 pub use schema_member::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
     ApplicationSchemaMember,
+};
+pub use shape::{
+    ApplicationAspectMeaningChange, ApplicationAspectMeaningPredecessorDenial,
+    ApplicationAspectValueMeaning, ApplicationFieldValueMeaning, ApplicationValueMeaningDenial,
 };
 pub use value_binding::{
     decode_application_canonical_value, decode_application_canonical_value_with_admission,

@@ -10,6 +10,25 @@ use super::{
 
 const RULE_VERSION: &str = "worth-query-application-schema-v17";
 
+/// Reuses the schema's field emitter without the containing schema or aspect
+/// revision. This is descriptive codec meaning, never installation authority.
+pub(super) fn canonical_field_meaning(
+    member: &ApplicationSchemaMember,
+) -> ApplicationSchemaIdentity {
+    let mut basis =
+        ApplicationSchemaCanonicalBasis::with_capacity_and_limits(1, 0, u64::MAX, u64::MAX);
+    member::append_member(&mut basis, 0, member);
+    let (entries, _) = basis
+        .into_entries()
+        .expect("declared field meaning has finite source");
+    let version = CanonicalizationRuleVersion::new("worth-query-field-meaning-v1")
+        .expect("the field meaning rule is fixed");
+    let basis = prepare_canonical_basis_sequence(version, APPLICATION_SCHEMA_DOMAIN, entries)
+        .into_result()
+        .expect("field meaning uses the schema's unique typed loci");
+    ApplicationSchemaIdentity::from_canonical_basis(basis)
+}
+
 pub(super) struct ApplicationSchemaCanonicalHeader<'a> {
     pub owner: &'a str,
     pub name: &'a str,

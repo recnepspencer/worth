@@ -9,13 +9,14 @@ use crate::basis::WorthQueryProductBranchLease;
 use crate::domain_computation::primary_graph::application_query::derived_view::retention::{
     RetainedMemberToken, WorthQueryManagedDerivedMemberToken,
 };
-use crate::domain_computation::primary_graph::application_query::one_shot::outcome::finalize_one_shot;
+use crate::domain_computation::primary_graph::application_query::one_shot::outcome::finalize_one_shot_with_decode;
 #[cfg(test)]
 use crate::domain_computation::primary_graph::application_query::DispatchWitness;
 use crate::domain_computation::primary_graph::application_query::{
     read_execution::read_plan::ReadPlan, WorthQueryApplicationAuthorizationWorkEvidence,
     WorthQueryApplicationOneShotResult, WorthQueryDerivedPairReadPlans,
 };
+use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use std::collections::BTreeMap;
 use worth_execution::{
     ExecutionMap, ExecutionMemoryReservation, ExecutionRequest, KeylessPartition,
@@ -27,6 +28,7 @@ use worth_relational::facade::identity::EntityId;
 mod canonical_results;
 use super::reconstruction::owner_stage;
 use super::reconstruction_denial as denial;
+mod decode_custody;
 mod preparation;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -87,6 +89,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 worth_execution::ExecutionWorkCeiling::new(request.work_ceiling()),
                 |lease| {
                     let result = (|| {
+                    // Projected values remain staged until the whole view commits.
+                    // Their native grants and first refusal share that same life.
+                    let decode = ValueDecodeState::new(self.installed_schema().value_bindings().clone());
                     // The owner's staged data grows with the actual membership,
                     // plans and projected image, independently of view limit policy.
                     let mut owner_hold = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
@@ -190,6 +195,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     // Only this private canonical pairing can reach owner application.
                     let mut keys = Vec::with_capacity(outputs.len());
                     let mut entries = Vec::with_capacity(outputs.len());
+                    let mut last_decoded_root = None;
                     owner_stage::run(lease, |context| {
                         for (((root, output), pair), (first_work, second_work)) in
                             outputs.into_prefix().zip(plans).zip(authorization)
@@ -222,9 +228,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 .graph_work
                                 .seal_prepared_read(output.second.proof)
                                 .map_err(|cause| denial::session(cause, root, &ReadPlan::of(&pair.second)))?;
-                            let first = finalize_one_shot(
+                            last_decoded_root = Some(root);
+                            let first = finalize_one_shot_with_decode(
                                 &request,
                                 self,
+                                &decode,
                                 pair.first,
                                 output.first.raw,
                                 first_work,
@@ -232,9 +240,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 None,
                             )
                             .map_err(read_denied)?;
-                            let second = finalize_one_shot(
+                            let second = finalize_one_shot_with_decode(
                                 &request,
                                 self,
+                                &decode,
                                 pair.second,
                                 output.second.raw,
                                 second_work,
@@ -273,6 +282,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         context
                             .checkpoint(1)
                             .map_err(|stop| denial::kernel(stop, None))?;
+                        decode_custody::finish(&decode, last_decoded_root)?;
                         self.admit_view_product(view, product)?;
                         owner_stage::retain_image(&mut owner_hold, &entries, &membership, &tokens)?;
                         view.state.reconstruct(

@@ -13,14 +13,20 @@ use crate::domain_computation::primary_graph::application_query::{
         WorthQueryApplicationQueryReceiptBasis, WorthQueryApplicationQueryReceiptIdentity,
     },
     read_execution::{
-        project_non_live_kernel, OneShotReadWorkObservation, RawNonLiveKernelOutcome,
+        project_non_live_kernel_with_decode, OneShotReadWorkObservation, RawNonLiveKernelOutcome,
     },
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationAuthorizationWorkEvidence,
     WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessReceipt,
 };
+use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub(in crate::domain_computation::primary_graph::application_query) fn finalize_one_shot<
+mod ordinary;
+pub(in crate::domain_computation::primary_graph::application_query) use ordinary::finalize_one_shot;
+mod decode_denial;
+pub(in crate::domain_computation::primary_graph::application_query) use decode_denial::value_decode_denial;
+
+pub(in crate::domain_computation::primary_graph::application_query) fn finalize_one_shot_with_decode<
     Schema,
     Query,
     Parameters,
@@ -31,6 +37,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn finalize_
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    decode: &ValueDecodeState,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -53,6 +60,9 @@ where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
+    if let Some(cause) = decode.denial() {
+        return Err(value_decode_denial(cause, plan.query.name()));
+    }
     let request_affinity =
         super::super::admitted_result::WorthQueryApplicationQueryRequestAffinity::new(
             plan.principal,
@@ -324,9 +334,9 @@ where
     admit_request(request, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
 
-    let projected = project_non_live_kernel::<Schema, Query, QueryResult, _>(
+    let projected = project_non_live_kernel_with_decode::<Schema, Query, QueryResult, _>(
         execution,
-        application.installed_schema().value_bindings(),
+        decode,
         kernel,
         &plan.governance,
         || admit_request(request, plan.query.name()),
@@ -337,10 +347,13 @@ where
                 projection.subject(),
             )
         },
-    )?;
+    );
+    decode
+        .check(execution)
+        .map_err(|cause| value_decode_denial(cause, plan.query.name()))?;
     admit_request(request, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
-    let (rows, kernel_receipt) = projected.into_parts();
+    let (rows, kernel_receipt) = projected?.into_parts();
     let read_completion = plan
         .graph_work
         .complete_query_read(

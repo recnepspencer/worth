@@ -22,6 +22,8 @@ impl ApplicationProgramDefinition<AdmissionSchema> for Program {
         vec![ApplicationFeatureSpec::root::<AdmissionSchema, Feature>()
             .native_action::<operation::AdvanceBinding>()
             .finish_action()
+            .native_action::<super::live::publish::PublishBinding>()
+            .finish_action()
             .finish()]
     }
 }
@@ -31,12 +33,34 @@ impl WorthQueryApplicationContribution<AdmissionSchema> for AdmissionContributio
         _: (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, AdmissionSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<operation::AdvanceBinding, _>(operation::Handler)
+        setup.handler::<operation::AdvanceBinding, _>(operation::Handler)?;
+        setup.handler::<super::live::publish::PublishBinding, _>(super::live::publish::Handler)
     }
 }
 pub type Host = WorthQueryProgramApplicationRuntime<AdmissionSchema, Program>;
 pub fn install(work: u64) -> Host {
-    in_memory_program(
+    install_owned(work, false).0
+}
+pub fn install_page(work: u64) -> Host {
+    install_owned(work, true).0
+}
+pub fn install_with_projection(
+    work: u64,
+) -> (
+    Host,
+    WorthQueryApplicationInvariantProjectionAuthority<AdmissionSchema>,
+) {
+    install_owned(work, false)
+}
+fn install_owned(
+    work: u64,
+    page: bool,
+) -> (
+    Host,
+    WorthQueryApplicationInvariantProjectionAuthority<AdmissionSchema>,
+) {
+    let mut projection = None;
+    let host = in_memory_program(
         ApplicationProgramAuthoring::<AdmissionSchema, Program>::begin()
             .validated_program()
             .unwrap(),
@@ -44,6 +68,7 @@ pub fn install(work: u64) -> Host {
         ((),),
         super::limits::limits(work),
         |_, graph, installed| {
+            projection = Some(graph.retain_invariant_projection_authority());
             graph.bind_principal(
                 &installed
                     .principal_binding(DocumentPrincipalBinding::reference())
@@ -70,10 +95,22 @@ pub fn install(work: u64) -> Host {
                 key("root"),
                 key("child"),
             ))?;
+            if page {
+                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+                    ChildLink::reference(),
+                    "canonical-admission-self",
+                    key("root"),
+                    key("root"),
+                ))?;
+            }
             Ok(())
         },
     )
-    .expect("ordinary canonical admission schema installs")
+    .expect("ordinary canonical admission schema installs");
+    (
+        host,
+        projection.expect("real bootstrap retains its native projection authority"),
+    )
 }
 fn key(identity: &str) -> WorthQueryApplicationEntityKey<AdmissionSchema, Document> {
     WorthQueryApplicationEntityKey::new(identity).unwrap()

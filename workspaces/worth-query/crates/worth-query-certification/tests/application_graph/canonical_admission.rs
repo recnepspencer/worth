@@ -1,14 +1,22 @@
 //! Original-request cumulative decoding and native completion veto before effects.
 #[path = "canonical_admission/binding.rs"]
 mod binding;
+#[path = "canonical_admission/continuation.rs"]
+mod continuation;
 #[path = "canonical_admission/host.rs"]
 mod host;
 #[path = "canonical_admission/limits.rs"]
 mod limits;
+#[path = "canonical_admission/live.rs"]
+mod live;
 #[path = "canonical_value/model.rs"]
 #[expect(
     dead_code,
     reason = "the shared model's wire golden is exercised by canonical_value"
+)]
+#[expect(
+    clippy::duplicate_mod,
+    reason = "the admission fixture instantiates the accepted nested grammar under its opaque swallowing codec"
 )]
 mod model;
 #[path = "canonical_admission/opaque.rs"]
@@ -17,10 +25,14 @@ mod opaque;
 mod operation;
 #[path = "canonical_admission/ordinary_attempt.rs"]
 mod ordinary_attempt;
+#[path = "canonical_admission/paired.rs"]
+mod paired;
 #[path = "canonical_admission/query.rs"]
 mod query;
 #[path = "canonical_admission/repeated_query.rs"]
 mod repeated_query;
+#[path = "canonical_admission/retained_snapshot.rs"]
+mod retained_snapshot;
 #[path = "canonical_admission/schema.rs"]
 mod schema;
 

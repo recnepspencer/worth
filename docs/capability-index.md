@@ -65,6 +65,16 @@ For bounded nested persisted values, use the existing value-binding macro's
 shape and constant bounds. Native canonical projection reads dispatch the exact
 installed codec under the original request's cumulative execution allowance; ignored
 admission failures veto completion. Opaque owners must supply admitted seeds.
+Continuation and live delivery retain decode custody through their native final
+handoff. For cumulative reads of a retained invariant snapshot, use
+`snapshot.read_fields(&execution, |read| ...)`; its scoped `read.field(...)`
+calls borrow the original pin and refuse the entire output after an ignored
+decode failure or late cancellation.
+The installed `value_meaning()` roster checks executable and native field
+contracts; native canonical codec digests carry the same emitted meaning.
+Producer readiness uses the actual output-role carrier and its emitted meaning.
+Predecessor comparison requires explicit semantic aspect revision advancement
+for changed meaning and grants no recovered-transition permission.
 See [bounded canonical nested values](build-an-application.md#bounded-canonical-nested-values)
 for supported grammar, native checkpoint examples and the current package
 archive refusal. Representation limits do not grant request resources,

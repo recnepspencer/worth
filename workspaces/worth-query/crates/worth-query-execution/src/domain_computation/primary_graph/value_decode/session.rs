@@ -17,6 +17,10 @@ impl ValueDecodeSession<'_> {
         self.state.denial().is_some()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn denial(&self) -> Option<Stop> {
+        self.state.denial()
+    }
+
     fn refuse(&self, stop: Stop) -> ValueCodecDenial {
         self.state.refuse(stop);
         ValueCodecDenial::Admission

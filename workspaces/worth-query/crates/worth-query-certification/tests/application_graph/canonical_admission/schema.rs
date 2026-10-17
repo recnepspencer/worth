@@ -37,6 +37,19 @@ worth_query_application_contribution! { pub contribution AdmissionContribution i
             .operation_read_field(ordinary_attempt::ObserveCanonical::reference(), DocumentValueField::reference())
             .application_query_binding::<query::ReadBinding>().application_query(query::definition())
             .application_query_binding::<repeated_query::RepeatedBinding>().application_query(repeated_query::definition())
+            .application_query_binding::<super::paired::membership::MembershipBinding>()
+            .application_query(super::paired::membership::definition())
+            .application_query_binding::<super::paired::first_query::FirstBinding>()
+            .application_query(super::paired::first_query::definition())
+            .application_query_binding::<super::continuation::query::PageBinding>()
+            .application_query(super::continuation::query::definition())
+            .application_query_binding::<super::live::query::LiveBinding>()
+            .application_query(super::live::query::definition())
+            .effect(super::live::cause::ValueChanged::reference())
+            .operation(super::live::publish::PublishValue::reference().definition().no_external_effect().no_aftermath().finish())
+            .operation_projection_work_budget(super::live::publish::PublishValue::reference(), 1)
+            .operation_emit(super::live::publish::PublishValue::reference(), super::live::cause::ValueChanged::reference())
+            .application_mutation_binding::<super::live::publish::PublishBinding>()
     }
 }}
 worth_query_entity!(pub ExternalMapping for AdmissionSchema);

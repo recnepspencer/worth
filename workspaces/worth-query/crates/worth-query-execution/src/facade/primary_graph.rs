@@ -1,6 +1,7 @@
 //! Primary Graph application contracts.
 
 pub use crate::domain_computation::primary_graph::WorthQueryExecutionLeaseDenial;
+pub use crate::domain_computation::primary_graph::WorthQueryRetainedSnapshotRead;
 pub use crate::domain_computation::primary_graph::{
     WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial,
 };

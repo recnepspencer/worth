@@ -47,6 +47,7 @@ pub(in crate::domain_computation::primary_graph) use consumed_output::{
     ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
     PublicationRecoveryStop, SelectedPendingConsumedOutput, VerificationCapacityStop,
 };
+pub use field_projection::WorthQueryRetainedSnapshotRead;
 pub use locked_reader::{
     WorthQueryApplicationInvariantProjectionReader, WorthQueryCompletedInvariantProjection,
     WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,

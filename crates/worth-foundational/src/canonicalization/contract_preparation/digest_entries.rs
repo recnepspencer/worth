@@ -103,6 +103,15 @@ fn digest_basis_for_contract_shape(
                     evolution: field.evolution(),
                 }
             }));
+            basis.extend(shape.fields().iter().filter_map(|field| {
+                field.codec().map(
+                    |codec| CanonicalDigestPreparationEntry::ContractFieldCodec {
+                        key: contract.key().clone(),
+                        field: field.key().clone(),
+                        codec,
+                    },
+                )
+            }));
             basis
         }
         AspectShape::Opaque(opaque) => vec![
