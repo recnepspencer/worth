@@ -56,19 +56,6 @@ pub(super) trait IndexAdmission {
     }
 
     #[track_caller]
-    fn key_edit<K, V>(
-        &mut self,
-        key: &super::fact_key::FactPostingKey,
-        entries: usize,
-    ) -> Result<(), CompanionPreflightStop> {
-        self.key_read(key, entries)?;
-        self.bytes(
-            index_capacity::ordered_edit_bytes::<K, V>(entries)
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )
-    }
-
-    #[track_caller]
     fn ordered_read(&mut self, entries: usize) -> Result<(), CompanionPreflightStop> {
         // One declared unit per ordered operation; its path is navigation.
         self.work(1)?;
