@@ -119,12 +119,6 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
                 .value,
             length(3)
         );
-        let policy = super::exact_observation::installed_policy(&world);
-        let compatible = fresh.retain_current_read().unwrap();
-        closed_fixed
-            .deliver_current_at(&fresh.at(&compatible), policy)
-            .expect("compatible selected meaning is accepted at the caller observation");
-        drop(compatible);
         // Current delivery and native disposal have distinct preconditions.
         // Changed selected meaning cannot strand these original read interests.
         adopt(changed_revision);
@@ -140,17 +134,6 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
                 WorthQueryActionResolutionDenial::MeaningMismatch
             ))
         ));
-        // The caller's observation, not the latest one, selects the compared action.
-        let changed_at = fresh.retain_current_read().unwrap();
-        let mismatch = |denied: Result<(), WorthQueryOperationDeliveryDenial>| {
-            matches!(
-                denied,
-                Err(WorthQueryOperationDeliveryDenial::Action(
-                    WorthQueryActionResolutionDenial::MeaningMismatch
-                ))
-            )
-        };
-        assert!(mismatch(closed_fixed.deliver_current_at(&fresh.at(&changed_at), policy)));
         adopt(removed_revision);
         assert!(matches!(
             closed_fixed.read_current(&fresh),
@@ -158,16 +141,6 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
                 WorthQueryActionResolutionDenial::Missing
             ))
         ));
-        let removed_at = fresh.retain_current_read().unwrap();
-        assert!(matches!(
-            closed_fixed.deliver_current_at(&fresh.at(&removed_at), policy),
-            Err(WorthQueryOperationDeliveryDenial::Action(
-                WorthQueryActionResolutionDenial::Missing
-            ))
-        ));
-        // The older caller observation still compares its own changed action.
-        assert!(mismatch(closed_fixed.deliver_current_at(&fresh.at(&changed_at), policy)));
-        drop((removed_at, changed_at));
         adopt(original_revision);
         // Restoring the program restores action meaning, not the missing exact
         // native indexed generation. Neither carrier may reconstruct or replay.
@@ -188,18 +161,6 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
                 WorthQueryOutputCurrentnessDenial::Output(cause)
             )) if cause.kind() == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
         ));
-        let restored = fresh.retain_current_read().unwrap();
-        let unavailable = |denied: Result<(), WorthQueryOperationDeliveryDenial>| {
-            matches!(
-                denied,
-                Err(WorthQueryOperationDeliveryDenial::Currentness(
-                    WorthQueryOutputCurrentnessDenial::Output(cause)
-                )) if cause.kind() == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
-            )
-        };
-        assert!(unavailable(closed_fixed.deliver_current_at(&fresh.at(&restored), policy)));
-        assert!(unavailable(closed_tree.deliver_current_at(&fresh.at(&restored), policy)));
-        drop(restored);
         assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
         assert_eq!(
             world

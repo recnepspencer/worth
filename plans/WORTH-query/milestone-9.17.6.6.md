@@ -648,15 +648,30 @@ It reuses the existing core gate at the caller's observation, which covers:
 The existing `deliver_current` delegates to the same split gate unchanged. There
 is no new token, accessor, denial variant or replay.
 
-Proof extends the existing courts:
+A declared-query Fixed owner does not gain it. That owner delivers only through
+its declared projection, and the existing Host E0599 fence already refuses its
+no-query `deliver_current`. A unit gate at a caller `O` followed by an ordinary
+query would let it replace its declared selector. A projected exact-observation
+read would be new API with no consumer, so it is a known gap.
 
-- **Main closed-delivery court:** a cancelled scope, a foreign-branch
-  observation, and a common positive with a read at that same observation. After
-  the source edit, typed Superseded.
-- **Selected-meaning court:** a compatible positive at `O`. Changed and removed
-  actions are denied at `O`, and an older `O` keeps its own changed-action
-  verdict. `RetainedBasisUnavailable` is reported at the restored `O`.
-- **Host fences:** the existing Host positive fences call it.
+Proof runs in a genuine `NoProjectionProgram`-selected fixture world. The
+no-projection Fixed owner and a no-source tree are settled and closed under the
+same selected program. The pre-existing projected courts keep their
+`read_current` assertions unchanged.
+
+- **Exact-observation court:** a cancelled scope, a foreign-branch observation,
+  and a common positive with a read at that same observation. After an actual
+  consumed source edit through the selected program, typed Superseded.
+- **Selected-action court:** rostered no-projection successors with identical
+  meaning, changed declared contract, and removed action. It proves:
+  - a compatible positive at `O`;
+  - changed and removed actions are denied at `O`, and the owner's own
+    `deliver_current` gives the same verdict;
+  - an older `O` keeps its own changed-action verdict;
+  - `RetainedBasisUnavailable` is reported at the restored `O` for both
+    carriers.
+- **Host fences:** the existing positive fences call it. A new `E0599` fence
+  refuses it on a declared-query Fixed owner.
 
 The existing successors all share one root, so a removed no-source root is not
 constructible. Its eligibility at `O` is the same `validate_selected_output_root`
