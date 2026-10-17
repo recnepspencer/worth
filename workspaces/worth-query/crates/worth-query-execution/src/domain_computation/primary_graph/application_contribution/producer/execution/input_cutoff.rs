@@ -1,7 +1,11 @@
 //! Producer input preparation consumed by fresh execution or stable publication.
 
+mod refusal;
 mod stable_apply;
 use super::*;
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::{
+    self as observation, Gate, Outcome,
+};
 use crate::domain_computation::primary_graph::{
     application_contribution::InstalledProducerEdition,
     application_query::PreparedObservedSourceExpectation,
@@ -12,6 +16,7 @@ use crate::domain_computation::primary_graph::{
     },
     ComputationPrior, WorthQueryAdmittedApplicationOperation, WorthQuerySelectedProductOperation,
 };
+use refusal::{cutoff_admission_denial, cutoff_basis_denial, cutoff_denial};
 
 type StablePublication<'owner, Schema, OperationType, Input, Scope> = Box<
     dyn FnOnce(
@@ -54,6 +59,7 @@ fn fresh<'owner, Schema, OperationType, Input, Scope>(
     if let Some(prior) = prior {
         required_output.retain_computation_prior(prior);
     }
+    observation::finish(Outcome::Fresh);
     Ok(ProducerInputProgression::FreshPrepared {
         required_output,
         source,
@@ -87,6 +93,7 @@ where
     Schema: ApplicationSchema + 'static,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
 {
+    let _observation = observation::Scope::begin(Binding::IDENTITY, Gate::ExecutionRequest);
     let scope = operation.operation_scope_binding();
     let execution = phase
         .execution_request_for(&runtime.product_runtime)
@@ -107,6 +114,7 @@ where
     // partition index entries and the record it reads. No other producer
     // looks up or pays for one.
     let prior = if edition.retains_computation() {
+        observation::reach(Gate::ComputationPrior);
         let mut prior = handle
             .output_lineage
             .lock()
@@ -136,6 +144,11 @@ where
     let (key, context) = match (key, context) {
         (Some(key), Some(context)) => (key, context),
         (key, context) => {
+            observation::reach(if key.is_none() {
+                Gate::PreparedKey
+            } else {
+                Gate::PreparedContext
+            });
             return fresh(
                 required_output,
                 source,
@@ -144,9 +157,10 @@ where
                 prior,
                 Binding::IDENTITY,
                 "prepared input key or decision context unavailable",
-            )
+            );
         }
     };
+    observation::reach(Gate::Candidate);
     admission
         .charge_external_work(4)
         .map_err(cutoff_admission_denial)?;
@@ -179,6 +193,7 @@ where
     // A wave handoff retains the actual consumer row before its own refresh
     // supersedes the posting. That closed custody proof survives this handoff;
     // Released has no interest or evidence and always executes fresh.
+    observation::reach(Gate::RegistryCustody);
     let settlement = candidate.settlement_identity();
     if !candidate.consumed_outputs().is_empty()
         && settlement.address().0 == observation.lifecycle_incarnation()
@@ -186,6 +201,7 @@ where
             .registry()
             .posts_settlement(settlement, admission)?
     {
+        observation::reach(Gate::PredecessorHandoff);
         let handed_off = match matched_predecessors.as_ref() {
             Some(matched) => matched
                 .matches_consumer(settlement, admission)
@@ -206,6 +222,7 @@ where
     }
     // The Native owner authenticates and funds the exact issued handle once.
     // Verification consumes this paired proof instead of resolving it again.
+    observation::reach(Gate::NativeBasis);
     let basis = handle
         .with_runtime(&execution, |relational| {
             PreparedInputCutoffBasis::prepare(
@@ -244,11 +261,15 @@ where
         }
         OwnedInputCutoffDecision::Reuse(verified) => verified,
     };
+    observation::reach(Gate::SourceConsumption);
     let fresh = source
         .consume_stable(operation)
         .map_err(|error| failed(Binding::IDENTITY, error))?;
+    observation::finish(Outcome::Eligible);
     Ok(ProducerInputProgression::StablePrepared(Box::new(
         move |operation, admission| {
+            let _observation =
+                observation::Scope::begin(Binding::IDENTITY, Gate::PublicationSelection);
             // Completion uses the current head after earlier canonical slots
             // published. Recompare prepared facts; do not rerun a handler read.
             let current = runtime
@@ -260,6 +281,7 @@ where
                         "stable publication current Product",
                     )
                 })?;
+            observation::reach(Gate::PublicationBasis);
             let basis = handle
                 .with_runtime(&execution, |relational| {
                     PreparedInputCutoffBasis::prepare(
@@ -281,7 +303,8 @@ where
                     )
                 })
                 .map_err(cutoff_denial)?;
-            verified.with_verified(|verified| {
+            observation::reach(Gate::PublicationApply);
+            let result = verified.with_verified(|verified| {
                 stable_apply::publish::<Schema, Binding, _, _, _>(
                     runtime,
                     current.product().observation(),
@@ -292,74 +315,13 @@ where
                     resources,
                     admission,
                 )
-            })
+            });
+            if result.is_ok() {
+                observation::finish(Outcome::Published);
+            }
+            result
         },
     )))
-}
-
-/// Basis preparation may refuse its first claim, so no diagnostic allocation
-/// can depend on a budget that has already been exhausted.
-fn cutoff_basis_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Admission;
-    let kind = match stop {
-        InputCutoffVerificationStop::Admission(
-            Admission::WorkExhausted { .. }
-            | Admission::WorkExhaustedWithoutRequirement { .. }
-            | Admission::WorkCounterOverflow,
-        )
-        | InputCutoffVerificationStop::WorkExhausted => {
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        }
-        InputCutoffVerificationStop::Admission(Admission::Interrupted(event)) => {
-            WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
-        }
-        InputCutoffVerificationStop::CapacityExhausted
-        | InputCutoffVerificationStop::Admission(_) => {
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-        }
-        InputCutoffVerificationStop::Execution(cause) => {
-            return crate::domain_computation::primary_graph::output_reuse::read_denial(cause)
-        }
-        InputCutoffVerificationStop::SelectedSourceUnavailable => {
-            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
-        }
-        _ => WorthQueryOutputDemandDenialKind::PublicationStale,
-    };
-    denial(kind, String::new())
-}
-
-fn cutoff_admission_denial(
-    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    denial(
-        match stop {
-            Stop::WorkExhausted { .. }
-            | Stop::WorkExhaustedWithoutRequirement { .. }
-            | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            Stop::Interrupted(event) => {
-                WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
-            }
-            _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-        },
-        String::new(),
-    )
-}
-
-fn cutoff_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDemandDenial {
-    match stop {
-        InputCutoffVerificationStop::Execution(cause) => crate::domain_computation::primary_graph::output_reuse::read_denial(cause),
-        InputCutoffVerificationStop::Admission(stop) => cutoff_admission_denial(stop),
-        InputCutoffVerificationStop::CapacityExhausted => denial(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded, String::new()),
-        InputCutoffVerificationStop::WorkExhausted => denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, String::new()),
-        InputCutoffVerificationStop::PendingOutput(identity) => denial(
-            WorthQueryOutputDemandDenialKind::SchedulingDeferred,
-            format!("producer input cutoff awaits upstream output {identity:?}"),
-        ).with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),
-        InputCutoffVerificationStop::PendingUpstream => denial(WorthQueryOutputDemandDenialKind::SchedulingDeferred, "producer input cutoff awaits upstream outputs")
-            .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),
-        _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source moved"),
-    }
 }
 
 pub(super) fn source_preparation_denial(

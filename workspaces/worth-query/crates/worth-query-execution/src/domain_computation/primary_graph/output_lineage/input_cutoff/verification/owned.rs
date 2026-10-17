@@ -81,6 +81,7 @@ impl OwnedVerifiedInputCutoff {
         source_facts: &(impl FactSequence + ?Sized),
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, InputCutoffVerificationStop> {
+        observation::reach(Gate::PublicationSource);
         let (snapshot, selected) = basis.in_runtime(runtime, admission)?;
         admission.charge_external_work(
             u64::try_from(self.selected.branch_id().0.len())
@@ -96,6 +97,7 @@ impl OwnedVerifiedInputCutoff {
         {
             return Err(InputCutoffVerificationStop::SelectedSourceMismatch);
         }
+        observation::reach(Gate::PublicationPrefix);
         let prefix = self
             .candidate
             .completed_handler_fact_count()
@@ -114,6 +116,7 @@ impl OwnedVerifiedInputCutoff {
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
         }
+        observation::reach(Gate::PublicationConsumedOutputs);
         let current = ConsumedOutputEvidence::verify_many_with_admission(
             execution,
             self.verified_consumed
@@ -146,12 +149,15 @@ impl OwnedVerifiedInputCutoff {
                 InputCutoffVerificationStop::Admission(CompanionPreflightStop::Interrupted(event))
             }
         })?;
-        if !matches!(current, ConsumedOutputVerification::Current)
-            || !self
-                .candidate
-                .native_output_witness()
-                .ok_or(InputCutoffVerificationStop::CurrentnessRaced)?
-                .unchanged_in(runtime, snapshot, admission)?
+        if !matches!(current, ConsumedOutputVerification::Current) {
+            return Err(InputCutoffVerificationStop::CurrentnessRaced);
+        }
+        observation::reach(Gate::PublicationOutput);
+        if !self
+            .candidate
+            .native_output_witness()
+            .ok_or(InputCutoffVerificationStop::CurrentnessRaced)?
+            .unchanged_in(runtime, snapshot, admission)?
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
         }

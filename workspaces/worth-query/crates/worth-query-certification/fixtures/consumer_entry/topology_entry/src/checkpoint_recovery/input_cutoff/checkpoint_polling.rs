@@ -3,7 +3,12 @@ use super::*;
 use crate::handler::checkpoint_polling::PollObservation;
 use std::time::{Duration, Instant};
 use worth_query_host::facade::{
-    application_entry::WorthQueryApplicationOutputDemandDenial, primary_graph::HandlerInterruption,
+    application_entry::WorthQueryApplicationOutputDemandDenial,
+    primary_graph::{
+        fact_verification_on_this_thread_for_test as take_facts, HandlerInterruption,
+        WorthQueryExecutionObservation, WorthQueryInputCutoffGateForTest as Gate,
+        WorthQueryInputCutoffOutcomeForTest as Outcome,
+    },
 };
 
 #[test]
@@ -130,6 +135,8 @@ fn interrupted(deadline: bool, later_cancel: bool) {
 #[test]
 fn successful_polling_still_executes_and_publishes_changed_input() {
     let _guard = checkpoint_recovery_test_guard();
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    take_facts();
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
@@ -168,6 +175,11 @@ fn successful_polling_still_executes_and_publishes_changed_input() {
     assert_ne!(before.selected_commit(), after.selected_commit());
     assert_eq!(polling.polls(), [Ok(()), Ok(())]);
     assert_eq!(polling.candidates(), 1);
+    let observed = take_facts();
+    assert_eq!(observed.input_cutoffs_omitted, 0, "{observed:?}");
+    assert!(observed.input_cutoffs.iter().flatten().any(|receipt|
+        receipt.gate == Gate::InputIdentity && receipt.outcome == Outcome::Fresh),
+        "the actual changed input must select fresh execution: {observed:?}");
     let output = request
         .query(PlanarOutputRead {
             body_key: "anchor-a".to_owned(),
@@ -178,5 +190,28 @@ fn successful_polling_still_executes_and_publishes_changed_input() {
         output.rows()[0].value,
         length(4),
         "the new declared input reaches the real author"
+    );
+}
+
+/// Exercise the existing equal-input native producer without another fixture.
+pub(super) fn equal_input_receipt(run: impl FnOnce()) {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    take_facts();
+    run();
+    let observed = take_facts();
+    assert_eq!(observed.input_cutoffs_omitted, 0, "{observed:?}");
+    let receipts = observed.input_cutoffs.iter().flatten().collect::<Vec<_>>();
+    assert!(
+        receipts
+            .iter()
+            .any(|receipt| receipt.outcome == Outcome::Eligible),
+        "{observed:?}"
+    );
+    assert!(
+        receipts
+            .iter()
+            .any(|receipt| receipt.outcome == Outcome::Published
+                && receipt.gate == Gate::PublicationApply),
+        "{observed:?}"
     );
 }

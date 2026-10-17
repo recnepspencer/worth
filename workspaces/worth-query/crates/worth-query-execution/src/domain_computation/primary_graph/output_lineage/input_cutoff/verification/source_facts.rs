@@ -16,7 +16,10 @@ pub(super) fn marked_facts_permit_reuse<'fact>(
                 CompanionPreflightStop::WorkExhausted { .. }
                 | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. },
             ),
-        ) => Ok(false),
+        ) => {
+            observation::reach(Gate::HandlerPrefixAllowance);
+            Ok(false)
+        }
         Err(stop) => Err(stop),
     }
 }
