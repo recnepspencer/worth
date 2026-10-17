@@ -197,6 +197,9 @@ fn path_ceiling<T>(depth: usize, max_value_bytes: u64) -> Option<u64> {
 }
 
 #[cfg(test)]
+mod derived_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]

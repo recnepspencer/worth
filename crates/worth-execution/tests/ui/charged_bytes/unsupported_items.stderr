@@ -1,0 +1,11 @@
+error: ChargedBytes derives concrete resident values; generic owners must declare their own ChargedBytes contract
+ --> tests/ui/charged_bytes/unsupported_items.rs:4:15
+  |
+4 | struct Generic<T>(T);
+  |               ^^^
+
+error: ChargedBytes cannot identify a union's resident owner; declare an explicit owner ChargedBytes contract
+ --> tests/ui/charged_bytes/unsupported_items.rs:6:1
+  |
+6 | union Ambiguous {
+  | ^^^^^

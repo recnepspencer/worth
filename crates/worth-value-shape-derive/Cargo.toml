@@ -4,7 +4,7 @@ edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
 license.workspace = true
-description = "Query-free canonical value wire, shape, and bounded seed derivation."
+description = "Query-free canonical value and resident-memory derivation."
 
 [lib]
 proc-macro = true

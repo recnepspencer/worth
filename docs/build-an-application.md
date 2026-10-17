@@ -219,6 +219,37 @@ The rest of this guide is about what sits on top of the schema.
 
 ---
 
+### Resident value accounting
+
+Managed computation values can derive the existing native `ChargedBytes`
+contract through Host:
+
+```rust
+use worth_query_host::facade::application_contribution::ChargedBytes;
+
+#[derive(ChargedBytes)]
+#[charged_bytes(crate = "worth_query_host::facade::application_contribution")]
+struct RetainedResult {
+    total: u64,
+    labels: Vec<String>,
+    resident_notes: Option<Box<Vec<String>>>,
+}
+```
+
+The derive supports concrete structs and enums. Every resident field must
+implement `ChargedBytes`; this includes fields omitted by Serde. `String` and
+`Vec` contribute their actual backing capacity and nested owned storage, while
+admission separately counts inline storage. Wire shape and encoded length do
+not determine resident size. Unsupported heap owners fail compilation: provide
+a named opaque/shared owner's native `ChargedBytes` implementation rather than
+skipping its field. Generic owners and unions require an explicit owner contract.
+
+This description does not allocate, reserve memory, infer kernel work bounds or
+deduplicate shared pointers. Existing map/reduction admission, bounded checkpoints,
+tree sharing and retained reservations continue to own those responsibilities.
+See the [native resident-value tests](../crates/worth-execution/tests/charged_bytes_derive.rs)
+and the [Host facade consumer](../workspaces/worth-query/crates/worth-query-host/tests/charged_bytes_derive.rs).
+
 ### Bounded canonical nested values
 
 A pure value owner can derive `worth_foundational::facade::WorthValue` to emit

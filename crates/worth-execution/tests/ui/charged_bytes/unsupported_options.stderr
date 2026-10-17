@@ -1,0 +1,11 @@
+error: ChargedBytes cannot skip or override resident fields; implement ChargedBytes on the named opaque/shared owner
+ --> tests/ui/charged_bytes/unsupported_options.rs:5:5
+  |
+5 |     #[charged_bytes(skip)]
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+error: unsupported ChargedBytes option; every resident field must count; only crate = "path" is supported
+ --> tests/ui/charged_bytes/unsupported_options.rs:9:17
+  |
+9 | #[charged_bytes(wire_size)]
+  |                 ^^^^^^^^^
