@@ -221,6 +221,8 @@ fn append_feature_outputs(
             ApplicationSemanticFamily::Outputs,
             framed_parts(&[owner, feature_identity, "collection", collection.identity()]),
             framed_fields([
+                ("computation", collection.computation().to_owned()),
+                ("completeness", collection.completeness().to_owned()),
                 ("contributor", collection.contributor().to_owned()),
                 ("grouping", collection.grouping().to_owned()),
                 ("measures", collection.measures().to_owned()),

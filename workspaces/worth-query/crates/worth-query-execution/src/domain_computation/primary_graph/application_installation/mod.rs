@@ -188,6 +188,14 @@ where
     .map_err(Denial::Contributions)?;
     let (mut invariants, handlers, producers, conditionals) =
         configured.into_parts().map_err(Denial::Contributions)?;
+    if let Some(support) = &admitted_program_support {
+        handlers
+            .validate_managed_computations(&support.features)
+            .map_err(Denial::Contributions)?;
+        handlers
+            .validate_derived_collections(&support.features)
+            .map_err(Denial::Contributions)?;
+    }
     let activation = super::program_occurrence::WorthQueryProgramActivationCell::unpublished();
     if let Some(support) = &admitted_program_support {
         invariants.select_by_program(

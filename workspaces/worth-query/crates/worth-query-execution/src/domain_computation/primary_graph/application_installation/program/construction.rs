@@ -222,10 +222,6 @@ where
                 .insert(*record.revision(), record.adoption_admission::<Schema>());
         }
     }
-    runtime
-        .mutation_handlers
-        .validate_managed_computations(installed.features())
-        .map_err(WorthQueryInMemoryApplicationDenial::Contributions)?;
     super::conditional::validate_conditional_actions(
         installed.actions(),
         runtime.installed_conditionals.operation_types(),
@@ -319,6 +315,16 @@ where
         WorthQueryAdmittedProgramSupport {
             roster: std::sync::Arc::new(closed),
             initial_revision,
+            features: installed
+                .features()
+                .iter()
+                .chain(
+                    supported
+                        .iter()
+                        .flat_map(|record| record.installed.features()),
+                )
+                .cloned()
+                .collect(),
         },
         installed,
         supported,

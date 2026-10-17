@@ -825,6 +825,26 @@ where
 }
 ```
 
+A derived collection additionally names its `Computation` and `Completeness`
+associated types. `Completeness` implements `ApplicationCollectionCompleteness`:
+its `Value` and `Stopped` types must match the installed partitioned owner's
+output and stop types, and its `Lineage` must match the collection declaration.
+Declare both the collection and its computation on the feature, then install
+with `setup.derived_collection::<Feature, Collection, _>(owner)`. Ordinary
+`partitioned_computation` registration cannot satisfy a declared collection.
+Installation checks the exact types before the initial-state callback or
+checkpoint restoration. The existing completion path checks the actual value
+before allowing publication; it does not grant graph access to the check.
+
+Completeness remains a domain claim requiring runtime evidence. Keep known empty
+membership distinct from missing evidence, and retain pending physical measures
+when their required contributors are unavailable. A membership-only count need
+not gather geometry. Managed collection views present admitted rows; they do not
+replace the producing computation or establish aggregate completeness. The
+[neutral region collection](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection.rs)
+executes the checked binding through real publication and retained canonical
+reduction, with missing/misbound installation and completion-refusal twins.
+
 A managed computation declares only itself. `managed_computation` adds its
 declaration to the feature; the feature's operations, ports, and artifacts are
 declared on the same builder. Program validation refuses a computation whose

@@ -36,9 +36,17 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod certification;
+mod collection;
 
-pub struct WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner> {
+pub struct WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner>
+where
+    Schema: ApplicationSchema,
+    Feature: ApplicationFeature<Schema>,
+    Computation: ApplicationManagedComputation<Schema, Feature>,
+    Owner: WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>,
+{
     pub(super) owner: Arc<Owner>,
+    pub(super) completion: Option<fn(&Owner::Output) -> Result<(), Owner::Stopped>>,
     retention: ComputationRetention,
     installation: ComputationInstallation,
     marker: PhantomData<fn() -> (Schema, Feature, Computation)>,
@@ -57,10 +65,16 @@ pub(in crate::domain_computation::primary_graph) enum ComputationRetention {
 
 impl<Schema, Feature, Computation, Owner> Clone
     for WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner>
+where
+    Schema: ApplicationSchema,
+    Feature: ApplicationFeature<Schema>,
+    Computation: ApplicationManagedComputation<Schema, Feature>,
+    Owner: WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>,
 {
     fn clone(&self) -> Self {
         Self {
             owner: Arc::clone(&self.owner),
+            completion: self.completion,
             retention: self.retention,
             installation: self.installation.clone(),
             marker: PhantomData,
@@ -82,6 +96,7 @@ where
     ) -> Self {
         Self {
             owner: Arc::new(owner),
+            completion: None,
             retention,
             installation: ComputationInstallation::new(),
             marker: PhantomData,

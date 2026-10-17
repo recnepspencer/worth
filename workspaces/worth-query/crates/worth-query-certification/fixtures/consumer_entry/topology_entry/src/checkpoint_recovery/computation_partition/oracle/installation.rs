@@ -45,10 +45,15 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        let installed = setup
-            .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals<WORK>, _>(
+        let installed = if MODE == collection::CHECKED {
+            setup.derived_collection::<PlanarFinalOutputFeature, collection::RegionCollection<WORK>, _>(OracleOwner::<MODE>)?
+        } else if MODE == collection::MISBOUND {
+            setup.derived_collection::<PlanarFinalOutputFeature, collection::MisboundCollection<WORK>, _>(OracleOwner::<MODE>)?
+        } else {
+            setup.partitioned_computation::<PlanarFinalOutputFeature, OracleTotals<WORK>, _>(
                 OracleOwner::<MODE>,
-            )?;
+            )?
+        };
         let handler = RegionOutputHandler::running(move |reader, set| {
             let mut plan =
                 worth_query_host::facade::primary_graph::WorthQueryDecisionPlan::immediate(
@@ -67,7 +72,20 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                     .zip(decision_plan::prepared(prepared, |_| {}))
                     .map(|(_, value)| value);
             }
-            plan
+            if collection::declared(MODE) {
+                plan.and_then(|value| match value {
+                    Some(value) => {
+                        worth_query_host::facade::primary_graph::HandlerResult::Completed(Some(
+                            value,
+                        ))
+                    }
+                    None => worth_query_host::facade::primary_graph::HandlerResult::DomainDenied(
+                        worth_query_consumer_values::PlanarMutationDenial::MissingCoordinate,
+                    ),
+                })
+            } else {
+                plan
+            }
         });
         let handler = if MODE == 2 {
             handler.with_generated_payload()
@@ -123,17 +141,22 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
             >>()
     }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        demand_policy::feature_specs_with_final_output(
-            required_chain::output_feature_spec(),
-            demand_policy::final_output_feature::<RegionArtifact>()
+        let output = demand_policy::final_output_feature::<RegionArtifact>()
                 .managed_computation::<OracleTotals<WORK>>()
                 .managed_computation::<program::UnretainedTotals<WORK>>()
                 .conditional_operation::<TotalRegionOutput>()
                 .action::<EntryEditBinding<CheckpointSchema>, super::source_delivery::RetainedEntry>().finish_action()
                 .action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema>, super::source_delivery::CorrectEntryCompletion>().finish_action()
                 .native_action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema, true>>().finish_action()
-                .native_action::<RegionTotalsDemandBinding<CheckpointSchema>>().finish_action()
-                .finish(),
+                .native_action::<RegionTotalsDemandBinding<CheckpointSchema>>().finish_action();
+        let output = if collection::declared(MODE) {
+            output.derived_collection::<collection::RegionCollection<WORK>>()
+        } else {
+            output
+        };
+        demand_policy::feature_specs_with_final_output(
+            required_chain::output_feature_spec(),
+            output.finish(),
         )
     }
 }

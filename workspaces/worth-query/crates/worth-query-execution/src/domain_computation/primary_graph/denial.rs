@@ -182,6 +182,12 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// A managed computation declares an equivalence predicate, and no
     /// installed predicate is visible at installation.
     ManagedComputationEquivalenceUnavailable,
+    /// A declared collection has no checked computation/completeness binding.
+    MissingCollectionOwner,
+    /// The installed collection or completeness differs from the declaration.
+    CollectionOwnerMeaningMismatch,
+    /// A checked collection owner has no matching declaration.
+    ForeignCollectionOwner,
 }
 
 /// Refusal to install or publish an application's primary graph runtime.

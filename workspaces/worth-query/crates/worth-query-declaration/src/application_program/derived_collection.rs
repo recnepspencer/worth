@@ -2,7 +2,10 @@ use std::any::TypeId;
 
 use crate::application_schema::ApplicationSchema;
 
-use super::ApplicationFeature;
+use super::{ApplicationFeature, ApplicationManagedComputation};
+
+mod completeness;
+pub use completeness::ApplicationCollectionCompleteness;
 
 pub trait ApplicationCollectionContributor: 'static {
     const IDENTITY: &'static str;
@@ -46,6 +49,10 @@ where
     Schema: ApplicationSchema,
     Feature: ApplicationFeature<Schema>,
 {
+    /// The existing keyed managed computation that produces this collection.
+    type Computation: ApplicationManagedComputation<Schema, Feature>;
+    /// Pure completion checks for this collection's value and lineage contract.
+    type Completeness: ApplicationCollectionCompleteness<Lineage = Self::Lineage>;
     type Contributor: ApplicationCollectionContributor;
     type Grouping: ApplicationCollectionGrouping;
     type Measures: ApplicationCollectionMeasures;
@@ -62,6 +69,11 @@ pub struct ApplicationDerivedCollectionDeclaration {
     identity: &'static str,
     collection_type: TypeId,
     feature_type: TypeId,
+    computation: &'static str,
+    computation_type: TypeId,
+    completeness: &'static str,
+    completeness_type: TypeId,
+    value_type: TypeId,
     contributor: &'static str,
     contributor_type: TypeId,
     grouping: &'static str,
@@ -83,6 +95,13 @@ impl ApplicationDerivedCollectionDeclaration {
             identity: Collection::IDENTITY,
             collection_type: TypeId::of::<Collection>(),
             feature_type: TypeId::of::<Feature>(),
+            computation: Collection::Computation::IDENTITY,
+            computation_type: TypeId::of::<Collection::Computation>(),
+            completeness: Collection::Completeness::IDENTITY,
+            completeness_type: TypeId::of::<Collection::Completeness>(),
+            value_type: TypeId::of::<
+                <Collection::Completeness as ApplicationCollectionCompleteness>::Value,
+            >(),
             contributor: Collection::Contributor::IDENTITY,
             contributor_type: TypeId::of::<Collection::Contributor>(),
             grouping: Collection::Grouping::IDENTITY,
@@ -102,6 +121,21 @@ impl ApplicationDerivedCollectionDeclaration {
     }
     pub const fn feature_type(&self) -> TypeId {
         self.feature_type
+    }
+    pub const fn computation(&self) -> &'static str {
+        self.computation
+    }
+    pub const fn computation_type(&self) -> TypeId {
+        self.computation_type
+    }
+    pub const fn completeness(&self) -> &'static str {
+        self.completeness
+    }
+    pub const fn completeness_type(&self) -> TypeId {
+        self.completeness_type
+    }
+    pub const fn value_type(&self) -> TypeId {
+        self.value_type
     }
     pub const fn contributor(&self) -> &'static str {
         self.contributor
