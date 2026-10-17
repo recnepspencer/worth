@@ -2605,6 +2605,7 @@ observation. Read every displayed fact at that same observation.
 
 <!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let observation = request.retain_current_read()?;
 let pinned = request.at(&observation);
 for carrier in &closed_no_projection_fixed {
