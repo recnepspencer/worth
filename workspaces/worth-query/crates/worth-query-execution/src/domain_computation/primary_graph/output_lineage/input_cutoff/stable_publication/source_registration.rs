@@ -36,6 +36,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         };
         owner.prepare_current_stable_settlement(
             SettlementRegistration {
+                computation: None,
                 work_membership,
                 identity: Arc::clone(&self.address.identity),
                 facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::retain(self.address.verified.candidate.recorded().computation_source, Arc::clone(&self.facts)),

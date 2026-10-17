@@ -100,6 +100,8 @@ impl CancelledLineageSlot {
 
 /// What filling a prepared slot hands its publication.
 pub(in crate::domain_computation::primary_graph) struct RecordedLineageSlot {
+    pub(in crate::domain_computation::primary_graph) computation_registration:
+        Option<super::invalidation::ComputationRegistration>,
     pub(in crate::domain_computation::primary_graph) computation_source:
         super::ComputationSourceEvidence,
     pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
@@ -214,7 +216,19 @@ impl PreparedOutputLineageSlot {
             (identity, displaced)
         };
         self.filled = true;
+        let computation_registration = self.record_cell.get().and_then(|record| {
+            let row = record
+                .mutable
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            matches!(
+                row.computation,
+                super::retained_computation::RecordedComputation::Retained(_)
+            )
+            .then(super::invalidation::ComputationRegistration::retained)
+        });
         RecordedLineageSlot {
+            computation_registration,
             computation_source: self
                 .record_cell
                 .get()

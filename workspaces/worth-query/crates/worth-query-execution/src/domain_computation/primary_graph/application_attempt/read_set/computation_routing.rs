@@ -19,7 +19,7 @@ use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObse
 
 /// One owner call of a partitioned computation that reads through the lent
 /// reader.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) enum ComputationRead {
     /// `partitions`: which items the input holds.
     Membership,
@@ -122,6 +122,34 @@ pub(in crate::domain_computation::primary_graph) struct ComputationFactAttributi
 }
 
 impl ComputationFactAttribution {
+    /// Conservative pre-allocation bound: each read may have its own B-tree
+    /// root and key vector. Key clones reserve their declared nested payload.
+    pub(super) fn index_bytes(&self) -> Option<u64> {
+        use worth_execution::ChargedBytes;
+        let mut bytes = (size_of::<index::ComputationFactIndex>() + 2 * size_of::<usize>()) as u64;
+        for (key, reads) in &self.readers {
+            let key_bytes = (size_of::<WorthQueryApplicationFactKey>() as u64)
+                .checked_add(key.additional_charged_bytes())?;
+            // A B-tree node holds eleven slots and up to twelve pointers.
+            let ordinal = 11_u64
+                .checked_mul(key_bytes.checked_add(size_of::<usize>() as u64)?)?
+                .checked_add(16 * size_of::<usize>() as u64)?;
+            bytes = bytes.checked_add(ordinal)?;
+            let count = usize::from(reads.membership)
+                .checked_add(reads.item_keys.len())?
+                .checked_add(reads.partitions.len())?;
+            let per_read = 11_u64
+                .checked_mul(
+                    (size_of::<ComputationRead>() + size_of::<Vec<WorthQueryApplicationFactKey>>())
+                        as u64,
+                )?
+                .checked_add(16 * size_of::<usize>() as u64)?
+                .checked_add(4_u64.checked_mul(key_bytes)?)?;
+            bytes = bytes.checked_add(per_read.checked_mul(count as u64)?)?;
+        }
+        Some(bytes)
+    }
+
     /// Records that `read` read `key`. A key an earlier call already read
     /// gains this call too.
     pub(in crate::domain_computation::primary_graph) fn record(
@@ -161,6 +189,7 @@ pub(in crate::domain_computation::primary_graph) struct SealedComputationFact {
 /// content and they hide the attempt's own effect.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
+    index: std::sync::Arc<index::ComputationFactIndex>,
     facts: BTreeMap<WorthQueryApplicationFactKey, SealedComputationFact>,
 }
 
@@ -171,20 +200,25 @@ impl SealedComputationFacts {
         attribution: ComputationFactAttribution,
         sealed: &BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
     ) -> Self {
-        Self {
-            facts: attribution
-                .readers
-                .into_iter()
-                .map(|(key, readers)| {
-                    let fact = sealed
-                        .get(&key)
-                        .expect("seal observed every key an owner call read")
-                        .clone();
-                    let readers = readers.in_order();
-                    (key, SealedComputationFact { fact, readers })
-                })
-                .collect(),
-        }
+        let facts = attribution
+            .readers
+            .into_iter()
+            .map(|(key, readers)| {
+                let fact = sealed
+                    .get(&key)
+                    .expect("seal observed every owner key")
+                    .clone();
+                (
+                    key,
+                    SealedComputationFact {
+                        fact,
+                        readers: readers.in_order(),
+                    },
+                )
+            })
+            .collect();
+        let index = std::sync::Arc::new(index::ComputationFactIndex::build(&facts, sealed.keys()));
+        Self { facts, index }
     }
 
     /// The fact seal observed for `key`, when an owner call read it.
@@ -223,6 +257,10 @@ impl SealedComputationFacts {
             .expect("an owner call read the key")
             .clone();
         self.facts.insert(to, sealed);
+        self.index = std::sync::Arc::new(index::ComputationFactIndex::build(
+            &self.facts,
+            self.facts.keys(),
+        ));
     }
 
     /// Files what seal observed for `key` under `to`, as if a call had read
@@ -235,6 +273,10 @@ impl SealedComputationFacts {
     ) {
         let sealed = self.facts.remove(key).expect("an owner call read the key");
         self.facts.insert(to, sealed);
+        self.index = std::sync::Arc::new(index::ComputationFactIndex::build(
+            &self.facts,
+            self.facts.keys(),
+        ));
     }
 
     /// The most work observing every fact the calls read can take, or
@@ -242,10 +284,7 @@ impl SealedComputationFacts {
     pub(in crate::domain_computation::primary_graph) fn observation_work_bound(
         &self,
     ) -> Option<u64> {
-        self.facts.keys().try_fold(0_u64, |work, key| {
-            super::super::super::fact_verification_observation::retained_bound();
-            work.checked_add(super::fact_observation::observation_work_bound(key)?)
-        })
+        self.index.observation_work
     }
 
     /// Each fact a call read, in key order, with every call that read it.
@@ -267,3 +306,25 @@ impl SealedComputationFacts {
 mod charged;
 #[cfg(test)]
 mod tests;
+
+mod index;
+pub(in crate::domain_computation::primary_graph) use index::ComputationFactIndex;
+impl SealedComputationFacts {
+    pub(in crate::domain_computation::primary_graph) fn call_index(
+        &self,
+    ) -> std::sync::Arc<ComputationFactIndex> {
+        std::sync::Arc::clone(&self.index)
+    }
+    pub(in crate::domain_computation::primary_graph) fn at_ordinal(
+        &self,
+        ordinal: usize,
+    ) -> Option<(
+        &WorthQueryApplicationFactKey,
+        &WorthQueryApplicationObservedFact,
+        &ComputationFactReaders,
+    )> {
+        let key = self.index.ordinals.get(&ordinal)?;
+        let value = self.facts.get(key)?;
+        Some((key, &value.fact, &value.readers))
+    }
+}

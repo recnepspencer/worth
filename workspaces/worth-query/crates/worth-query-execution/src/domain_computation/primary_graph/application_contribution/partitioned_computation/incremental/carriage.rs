@@ -16,6 +16,9 @@ pub(in crate::domain_computation) struct ComputationPrior {
     pub(super) retained:
         Result<Arc<CustodiedComputation>, WorthQueryPartitionedComputationFullCause>,
     record: Option<PriorComputationRecord>,
+    changes: Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
+    >,
 }
 
 impl ComputationPrior {
@@ -28,9 +31,33 @@ impl ComputationPrior {
             edition,
             retained,
             record,
+            changes: None,
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn observe_changes(
+        &mut self,
+        owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
+        if let (Some(record), Ok(state)) = (&self.record, &self.retained) {
+            self.changes = record.changes(state, owner, runtime, snapshot, admission)?;
+        }
+        Ok(())
+    }
+    pub(in crate::domain_computation::primary_graph) fn changed_ordinals(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Option<&im::OrdSet<usize>> {
+        let changes = self.changes.as_ref()?;
+        if !self.record.as_ref()?.matches_changes(changes) {
+            return None;
+        }
+        changes.at_snapshot(runtime, snapshot)
+    }
     /// The record the state was selected from.
     pub(in crate::domain_computation::primary_graph) fn into_record(
         self,

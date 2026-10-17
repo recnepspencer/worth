@@ -128,6 +128,22 @@ impl<Schema, Operation>
         true
     }
 
+    pub(in crate::domain_computation::primary_graph) fn computation_changes(
+        &self,
+        _: &Comparator,
+        prior: &crate::domain_computation::primary_graph::application_contribution::ComputationPrior,
+    ) -> Option<im::OrdSet<usize>> {
+        prior
+            .changed_ordinals(self.reader.runtime, self.reader.snapshot)
+            .cloned()
+    }
+    pub(in crate::domain_computation::primary_graph) fn computation_snapshot(
+        &self,
+        _: &Comparator,
+    ) -> worth_relational::facade::snapshots::SnapshotHandle {
+        self.reader.snapshot.clone()
+    }
+
     /// The fact `key` names at this projection's snapshot, comparable only
     /// with the fact retained under it. Comparing a retained fact charges
     /// nothing: a full run would not compare it. The comparator compares only

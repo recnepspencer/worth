@@ -119,6 +119,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
             owner
                 .register_settlement(
                     SettlementRegistration {
+                        computation: None,
                         work_membership: None,
                         identity,
                         facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, facts),

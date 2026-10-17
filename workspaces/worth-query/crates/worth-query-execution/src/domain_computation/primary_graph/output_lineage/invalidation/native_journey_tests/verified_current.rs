@@ -80,6 +80,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         let alias = owner
             .prepare_current_stable_settlement(
                 SettlementRegistration {
+                    computation: None,
                     work_membership: None,
                     identity: Arc::clone(&current),
                     facts: RetainedSourceFacts::for_test(false, Arc::clone(&facts)),

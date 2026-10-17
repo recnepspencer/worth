@@ -160,6 +160,7 @@ fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_be
     let second = RecordedSettlementIdentity::retain(&source, coordinate, 1);
     let registration = |identity, count| SettlementRegistration {
         work_membership: None,
+        computation: None,
         identity,
         facts:
             crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(

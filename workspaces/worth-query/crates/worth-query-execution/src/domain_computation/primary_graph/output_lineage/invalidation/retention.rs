@@ -127,6 +127,10 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
             state.dirty_ordinal_count,
             rows,
         )?)?
+        .checked_add(retained_forest_bytes::<usize, ()>(
+            state.computation_dirty_ordinal_count,
+            rows,
+        )?)?
         .checked_add(
             retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
                 state.pending_edge_count,

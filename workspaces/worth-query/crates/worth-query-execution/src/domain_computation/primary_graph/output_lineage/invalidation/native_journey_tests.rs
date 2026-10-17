@@ -189,6 +189,7 @@ fn register(
     owner
         .register_settlement(
             SettlementRegistration {
+                computation: None,
                 work_membership: None,
                 identity,
                 facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, facts),

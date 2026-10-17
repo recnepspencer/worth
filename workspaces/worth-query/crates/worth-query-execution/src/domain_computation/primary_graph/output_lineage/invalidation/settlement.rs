@@ -30,6 +30,8 @@ pub(super) enum SettlementReadAlignment {
 }
 
 pub(in crate::domain_computation::primary_graph) struct SettlementRegistration {
+    pub(in crate::domain_computation::primary_graph) computation:
+        Option<super::ComputationRegistration>,
     pub(in crate::domain_computation::primary_graph) work_membership:
         Option<Arc<RequiredWorkMembership>>,
     pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
@@ -64,6 +66,7 @@ pub(super) fn insert(
         fact_capacity,
     } = registration;
     let SettlementRegistration {
+        computation,
         work_membership,
         identity,
         facts,
@@ -113,7 +116,15 @@ pub(super) fn insert(
             })
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     admission.record_index_bytes(source_sets)?;
+    let computation_frontier = computation.map(|_| stale_at_read_basis.clone());
+    if let Some(frontier) = &computation_frontier {
+        admission.record_index_bytes(
+            index_capacity::retained_map_bytes::<usize, ()>(frontier.len())
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        )?;
+    }
     let mut row = SettlementMarks {
+        computation_frontier,
         work_membership,
         _fact_capacity: fact_capacity,
         posting_payload_bytes,
@@ -172,6 +183,10 @@ pub(super) fn insert(
             row.pending_upstream.insert(Arc::clone(upstream));
         }
     }
+    state.computation_dirty_ordinal_count = state
+        .computation_dirty_ordinal_count
+        .checked_add(row.computation_frontier.as_ref().map_or(0, OrdSet::len))
+        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     state.dirty_ordinal_count = state
         .dirty_ordinal_count
         .checked_add(row.dirty_ordinals.len())
@@ -242,6 +257,10 @@ fn replay(
                 admission.work(1)?;
                 admission.index_edit::<usize, ()>(row.dirty_ordinals.len())?;
                 row.dirty_ordinals.insert(*ordinal);
+                if let Some(frontier) = &mut row.computation_frontier {
+                    admission.index_edit::<usize, ()>(frontier.len())?;
+                    frontier.insert(*ordinal);
+                }
             }
         }
     }
@@ -276,6 +295,10 @@ pub(super) fn remove(
             state.downstream.insert(Arc::clone(upstream), targets);
         }
     }
+    debit(
+        &mut state.computation_dirty_ordinal_count,
+        row.computation_frontier.as_ref().map_or(0, OrdSet::len),
+    )?;
     debit(&mut state.dirty_ordinal_count, row.dirty_ordinals.len())?;
     debit(&mut state.pending_edge_count, row.pending_upstream.len())?;
     debit(

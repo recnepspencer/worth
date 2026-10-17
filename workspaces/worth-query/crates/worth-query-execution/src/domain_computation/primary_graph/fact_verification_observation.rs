@@ -7,6 +7,8 @@ use crate::domain_computation::execution_observation;
 /// double-count facts examined in several phases. These are not admission units.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryFactVerificationForTest {
+    /// Current sealed computation facts visited while constructing ordinal/call metadata.
+    pub sealed_computation_index_visits: u64,
     /// Admitted source facts walked before interruption/validation filtering.
     pub source_admission_visits: u64,
     /// Postcommit capacity and endpoint preparation walks over source facts.
@@ -37,7 +39,7 @@ pub struct WorthQueryFactVerificationForTest {
 
 thread_local! {
     static OBSERVED: Cell<WorthQueryFactVerificationForTest> = const { Cell::new(WorthQueryFactVerificationForTest {
-        source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,
+        sealed_computation_index_visits: 0, source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,
         rebase_preparation_visits: 0, rebase_resolution_visits: 0, rebase_unanswered_visits: 0,
         value_comparison_visits: 0, retained_bound_visits: 0,
         retained_computation_visits: 0, retained_native_visits: 0, carried_seal_visits: 0,
@@ -84,10 +86,6 @@ pub(super) fn retained_computation() {
     record(|observed| add(&mut observed.retained_computation_visits, 1));
 }
 
-pub(super) fn retained_bound() {
-    record(|observed| add(&mut observed.retained_bound_visits, 1));
-}
-
 pub(super) fn retained_native() {
     record(|observed| add(&mut observed.retained_native_visits, 1));
 }
@@ -117,4 +115,8 @@ fn add(total: &mut u64, value: u64) {
 fn clear() {
     CLEANUP_REGISTERED.set(false);
     OBSERVED.take();
+}
+
+pub(super) fn sealed_computation_index() {
+    record(|observed| add(&mut observed.sealed_computation_index_visits, 1));
 }

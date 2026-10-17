@@ -80,6 +80,7 @@ pub(in super::super) struct PreparedIncremental<Key, Item, Reduced, Gathered> {
     next: NextPartitioning<Item>,
     basis: RetainedBasis,
     prior: TypedPrior<Key, Item, Reduced>,
+    validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
 }
 
 /// What computing an incremental run produced.
@@ -148,6 +149,7 @@ where
             next,
             basis,
             prior,
+            validated_at,
         } = self;
         let retained = prior.typed();
         let mut remaining = remaining_work;
@@ -350,6 +352,7 @@ where
                     typed_bytes: typed.charged_bytes(),
                     typed: Arc::new(typed),
                     carried: Some(CarriedCalls {
+                        validated_at,
                         prior: prior.into_state(),
                         membership: next.carried_membership,
                         items: next.carried_items,

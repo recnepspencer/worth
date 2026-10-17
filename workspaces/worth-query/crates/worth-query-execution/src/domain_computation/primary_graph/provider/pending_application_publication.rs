@@ -342,6 +342,7 @@ fn publish_with_snapshot(
             owner,
             &completed,
             recorded.as_ref().expect("performed lineage was recorded").computation_source,
+            recorded.as_ref().expect("performed lineage was recorded").computation_registration,
             &consumed_outputs,
             runtime,
             after,

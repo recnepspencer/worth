@@ -631,7 +631,23 @@ Otherwise the run names and keys again only what changed, and gathers and
 computes again only the partitions whose members or facts changed. A partition
 is carried only when every fact its owner calls read in the previous run has
 the same content at this attempt's snapshot; a fact that cannot be observed
-counts as changed. A run's result, charged work, structural span, and the
+counts as changed. When the exact retained settlement and selected native
+snapshot preserve complete change evidence, Query compares only the native
+owner's dirty computation facts. Ordinary output verification can clear its
+marks without discarding that computation frontier. History gaps, missing
+registrations, full re-establishment, and superseded own-write evidence retain
+full validation; an installation or edition change cannot reuse the old state.
+The completion consumes carried-fact validation only at the same pinned reader
+snapshot, after the ordinary declared read closure and preconditions pass.
+Applications supply no dirty list or freshness declaration.
+
+This reduces prior-fact comparison. Current read-set construction and sealing
+metadata, call charging, item and partition walks, map transport, tree deletions,
+and retained-size measurement still perform their existing work. Membership
+changes still enumerate membership; fewer gathers or kernels do not establish
+whole-computation locality.
+
+A run's result, charged work, structural span, and the
 partition a work ceiling names never depend on reuse: carried charges replay in a full run's
 order, `charged_work()` counts every partition's kernel and every combine
 whether the partition was computed again or carried, and a work ceiling names

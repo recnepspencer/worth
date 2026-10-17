@@ -202,6 +202,7 @@ fn register_dependent_alias(
     let prepared = owner
         .prepare_current_stable_settlement(
             SettlementRegistration {
+                computation: None,
                 work_membership: None,
                 identity: Arc::clone(successor),
                 facts: RetainedSourceFacts::for_test(false, Arc::from([])),

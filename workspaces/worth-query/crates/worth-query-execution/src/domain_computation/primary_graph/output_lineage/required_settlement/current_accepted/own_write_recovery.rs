@@ -57,7 +57,7 @@ fn check_own_write_recovery(index_loss: bool) {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         let snapshot = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
         let reason = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(execution,
-            owner, &completed, recorded.computation_source, &[], runtime, &snapshot, Arc::clone(&recorded.settlement_identity), None,
+            owner, &completed, recorded.computation_source, None, &[], runtime, &snapshot, Arc::clone(&recorded.settlement_identity), None,
             recorded.native_output_witness(), &mut owner.edit_admission()).unwrap_err();
         assert_eq!(reason, FullVerificationReason::RegistrationIncomplete);
         recorded.require_verification(reason);

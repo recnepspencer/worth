@@ -100,6 +100,7 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
         owner
             .register_settlement(
                 SettlementRegistration {
+                    computation: None,
                     work_membership: None,
                     identity: Arc::clone(&identity),
                     facts: RetainedSourceFacts::for_test(false, Arc::clone(&facts)),

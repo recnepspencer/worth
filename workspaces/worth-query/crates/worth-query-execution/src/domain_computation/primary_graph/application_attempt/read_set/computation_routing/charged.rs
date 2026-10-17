@@ -97,10 +97,12 @@ impl SealedComputationFacts {
                 + std::mem::size_of::<SealedComputationFact>(),
         )
         .ok()?;
-        self.facts.iter().try_fold(0_u64, |sum, (key, sealed)| {
-            sum.checked_add(entry)?
-                .checked_add(key.additional_charged_bytes())?
-                .checked_add(sealed.additional_charged_bytes())
-        })
+        self.facts
+            .iter()
+            .try_fold(self.index.charged_bytes()?, |sum, (key, sealed)| {
+                sum.checked_add(entry)?
+                    .checked_add(key.additional_charged_bytes())?
+                    .checked_add(sealed.additional_charged_bytes())
+            })
     }
 }

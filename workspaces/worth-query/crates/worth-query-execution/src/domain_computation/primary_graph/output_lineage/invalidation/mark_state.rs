@@ -78,6 +78,8 @@ impl DeliveryEpoch {
 /// can then re-establish a row in that exact epoch.
 #[derive(Clone, Debug)]
 pub(super) struct SettlementMarks {
+    /// Changes since retained computation, preserved by ordinary dirty clearing.
+    pub(super) computation_frontier: Option<OrdSet<usize>>,
     pub(super) work_membership: Option<Arc<RequiredWorkMembership>>,
     pub(super) _fact_capacity: Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>,
     pub(super) posting_payload_bytes: u64,
@@ -141,6 +143,7 @@ pub(super) struct MarkState {
     pub(super) maximum_basis_allocation_bytes: u64,
     pub(super) downstream_edge_count: usize,
     pub(super) dirty_ordinal_count: usize,
+    pub(super) computation_dirty_ordinal_count: usize,
     pub(super) pending_edge_count: usize,
     pub(super) delivery_epoch: DeliveryEpoch,
     pub(super) last_discontinuity: Option<FullVerificationReason>,
@@ -170,6 +173,7 @@ impl MarkState {
             maximum_basis_allocation_bytes: 0,
             downstream_edge_count: 0,
             dirty_ordinal_count: 0,
+            computation_dirty_ordinal_count: 0,
             pending_edge_count: 0,
             delivery_epoch: DeliveryEpoch::initial(),
             last_discontinuity: None,

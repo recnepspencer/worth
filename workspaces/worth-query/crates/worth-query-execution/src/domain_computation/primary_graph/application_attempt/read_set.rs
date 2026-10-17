@@ -30,7 +30,7 @@ mod computation_routing;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use computation_routing::{
-    ComputationFactAttribution, ComputationRead, SealedComputationFacts,
+    ComputationFactAttribution, ComputationFactIndex, ComputationRead, SealedComputationFacts,
 };
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;

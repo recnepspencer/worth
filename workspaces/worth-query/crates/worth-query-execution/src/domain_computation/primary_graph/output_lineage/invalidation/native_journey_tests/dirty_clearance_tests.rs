@@ -1,6 +1,7 @@
 //! A native add/remove restores the same observed relation set. Clearing its
 //! dirty mark requires native verification and a still-current companion image.
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
 use super::super::{DirtyReverification, InvalidationEditAdmission, SettlementVerificationStop};
 use super::*;
@@ -98,18 +99,16 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                     )
                     .expect("fixture read request remains live")
                     .is_empty());
-                register(
-                    owner,
-                    identity.clone(),
+                let tracked_facts = crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false,
                     Arc::from([WorthQueryApplicationObservedFact::Relation {
-                        relation_kind: kind,
-                        from: principal,
-                        to: account,
-                        matching_relations: Vec::new(),
-                    }]),
-                    &basis,
-                    OrdSet::new(),
-                );
+                        relation_kind: kind, from: principal, to: account, matching_relations: Vec::new(),
+                    }]));
+                owner.register_settlement(SettlementRegistration {
+                    computation: Some(super::super::ComputationRegistration::retained()),
+                    work_membership: None, identity: identity.clone(), facts: tracked_facts.clone(),
+                    output_facts: None, read_basis: basis.clone(), stale_at_read_basis: OrdSet::new(),
+                    requirement: None, upstream: OrdSet::new(),
+                }, &mut owner.edit_admission()).unwrap();
                 let created = CreatedRelationRef {
                     partition_id: PartitionId::main(),
                     kind_id: kind,
@@ -274,6 +273,15 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                     ),
                     "live clearing cannot rewrite a retained dirty image"
                 );
+                let changes = owner.computation_changes(runtime, &latest_handle, &identity, &tracked_facts, &mut owner.edit_admission()).unwrap().expect("ordinary clear preserves original computation frontier");
+                assert_eq!(changes.at_snapshot(runtime, &latest_handle).unwrap().iter().copied().collect::<Vec<_>>(), [0]);
+                assert!(changes.at_snapshot(runtime, &basis_handle).is_none(), "later evidence cannot bless an earlier source snapshot");
+                let old = owner.computation_changes(runtime, &basis_handle, &identity, &tracked_facts, &mut owner.edit_admission()).unwrap().unwrap();
+                assert!(old.at_snapshot(runtime, &basis_handle).unwrap().is_empty(), "historical native frontier stays immutable");
+                let different_backing = RetainedSourceFacts::for_test(false, Arc::from([]));
+                assert!(owner.computation_changes(runtime, &latest_handle, &identity,
+                    &different_backing, &mut owner.edit_admission()).unwrap().is_none(),
+                    "a source-current row cannot lend its frontier to foreign fact backing");
                 for snapshot in [basis_handle, changed_handle, restored_handle, latest_handle] {
                     runtime.snapshots().release_snapshot(&snapshot).unwrap();
                 }

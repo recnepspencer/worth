@@ -3,8 +3,9 @@
 //!
 //! A partition is skipped only if every fact its owner calls read last time,
 //! observed now at this attempt's own snapshot, has the same content. The
-//! comparator here observes every retained fact, decides which partitions
-//! are marked, charges the carried calls and enters their facts as admitted
+//! comparator observes the native owner's dirty ordinals when the exact prior
+//! and selected source qualify, otherwise every retained fact. It decides which
+//! partitions are marked, charges carried calls and enters their facts as admitted
 //! reads, and the next tree is built here from one disposition per
 //! partition: carried, or gathered and computed again. The retained state
 //! has no accessor outside this module, so every later way to skip work
@@ -60,7 +61,7 @@ pub use tree_report::{
     WorthQueryPartitionedTreeRun,
 };
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use worth_execution::PartitionItemId;
@@ -129,9 +130,8 @@ pub(super) struct IncrementalRun<Key, Item, Reduced> {
     moved_items: BTreeSet<PartitionItemId>,
     /// The partitions a fact their gathering read moved for.
     marked: BTreeSet<PartitionIdentity>,
-    membership: Vec<WorthQueryApplicationFactKey>,
-    item_keys: BTreeMap<PartitionItemId, Vec<WorthQueryApplicationFactKey>>,
-    partitions: BTreeMap<PartitionIdentity, Vec<WorthQueryApplicationFactKey>>,
+    calls: Arc<crate::domain_computation::primary_graph::application_attempt::ComputationFactIndex>,
+    validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
 }
 
 /// Compares the state the producer handed the reader with this attempt's
@@ -178,6 +178,7 @@ where
     if super::certification_reuse::disabled() {
         return full(basis, WorthQueryPartitionedComputationFullCause::Unretained);
     }
+    let changes = reader.computation_changes(&COMPARATOR, &prior);
     let retained = match prior.retained {
         Ok(retained) => retained,
         Err(cause) => return full(basis, cause),
@@ -204,11 +205,21 @@ where
         membership_moved: false,
         moved_items: BTreeSet::new(),
         marked: BTreeSet::new(),
-        membership: Vec::new(),
-        item_keys: BTreeMap::new(),
-        partitions: BTreeMap::new(),
+        calls: retained.facts.call_index(),
+        validated_at: changes
+            .as_ref()
+            .map(|_| reader.computation_snapshot(&COMPARATOR)),
     };
-    for (key, fact, readers) in retained.facts.facts() {
+    let all = changes
+        .is_none()
+        .then(|| retained.facts.facts())
+        .into_iter()
+        .flatten();
+    let dirty = changes
+        .iter()
+        .flat_map(|ordinals| ordinals.iter())
+        .filter_map(|ordinal| retained.facts.at_ordinal(*ordinal));
+    for (key, fact, readers) in all.chain(dirty) {
         super::super::super::fact_verification_observation::retained_computation();
         #[cfg(test)]
         let _read = observed::RetainedFactComparison::enter();
@@ -237,14 +248,6 @@ where
                     }
                 }
             }
-            let keys = match read {
-                ComputationRead::Membership => &mut run.membership,
-                ComputationRead::ItemKey(item) => run.item_keys.entry(item).or_default(),
-                ComputationRead::Partition(partition) => {
-                    run.partitions.entry(partition).or_default()
-                }
-            };
-            keys.push(key.clone());
         }
     }
     Ok(Begun::Incremental(run))
