@@ -250,7 +250,7 @@ mod tests {
                 &mut ordinary_work,
             ) {
                 super::super::RebasedSourceFacts::Exact(facts) => {
-                    assert_eq!(facts.as_ref(), &[stale_revision])
+                    assert_eq!(facts.iter().cloned().collect::<Vec<_>>(), &[stale_revision])
                 }
                 other => {
                     panic!("non-output evidence must retain its comparison posture: {other:?}")

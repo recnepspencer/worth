@@ -52,7 +52,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         let prefix = self
             .verified
             .verified_facts
-            .get(..prefix_count)
+            .checked_slice(0..prefix_count)
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
         let witness_facts = candidate
             .native_output_witness()
@@ -71,7 +71,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
 
         let mut retained_payload = witness_facts.retained_payload_bytes();
         let mut cloned_payload = retained_payload;
-        for fact in prefix {
+        for fact in &prefix {
             admission.charge_external_work(1).map_err(work_denial)?;
             let payload = retained_fact_payload_bytes(fact, admission).map_err(footprint_denial)?;
             retained_payload = retained_payload

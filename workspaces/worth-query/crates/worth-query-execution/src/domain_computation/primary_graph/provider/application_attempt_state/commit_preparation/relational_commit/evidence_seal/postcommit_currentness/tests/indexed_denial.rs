@@ -107,7 +107,7 @@ fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicat
         .checkpoint_facts_for_receipt(&receipt)
         .unwrap()
         .0;
-    facts.to_vec()
+    facts.iter().cloned().collect()
 }
 
 #[test]
@@ -238,7 +238,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
         let RebasedSourceFacts::Exact(facts) = outcome else {
             panic!("two native one-row probes fit four work units: {outcome:?}");
         };
-        assert_eq!(facts.as_ref(), original.as_slice(), "retain the original limits and dependencies");
+        assert_eq!(facts.iter().cloned().collect::<Vec<_>>(), original.as_slice(), "retain the original limits and dependencies");
         for fact in facts.iter() {
             let (movement, work) = fact.source_currentness_within(runtime,execution,  snapshot, 2).unwrap();
             assert_eq!(movement.movement(), Movement::Unmoved);

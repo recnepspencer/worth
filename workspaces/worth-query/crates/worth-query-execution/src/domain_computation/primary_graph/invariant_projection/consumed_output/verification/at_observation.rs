@@ -7,6 +7,7 @@
 //! settlement consumed, at its own snapshot.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 /// Whether a reader at `selected` reads at or after the position `observed`
 /// was read at, on the same branch of the same runtime.
@@ -88,14 +89,14 @@ impl ConsumedOutputEvidence {
     /// This comparison grants no currentness.
     pub(in crate::domain_computation::primary_graph) fn own_evidence_is_current(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        facts: &[WorthQueryApplicationObservedFact],
+        facts: &(impl FactSequence + ?Sized),
         consumed: &[ConsumedOutputEvidence],
         witness: &SealedNativeOutputWitness,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
-        for fact in facts {
+        for fact in facts.iter() {
             let mut child_content = false;
             for child in consumed {
                 charge_external(admission, 1)?;

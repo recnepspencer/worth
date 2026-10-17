@@ -40,7 +40,10 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the complete producer fact set round-trips");
-    assert_eq!(durable.as_ref(), facts.as_ref());
+    assert_eq!(
+        durable.iter().cloned().collect::<Vec<_>>(),
+        facts.iter().cloned().collect::<Vec<_>>()
+    );
     assert!(matches!(
         facts[0],
         WorthQueryApplicationObservedFact::SourceFieldRevision {

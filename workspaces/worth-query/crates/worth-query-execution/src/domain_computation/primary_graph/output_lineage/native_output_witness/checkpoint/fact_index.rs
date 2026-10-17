@@ -6,6 +6,7 @@
 //! role's own aspect comparisons, never a rescan of every fact per role and
 //! per aspect.
 
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use im::OrdSet;
 
 use super::*;
@@ -85,7 +86,7 @@ impl CheckpointRoleIndex {
     /// entity or aspect has no fact.
     pub(super) fn record_facts(
         &self,
-        facts: &[Fact],
+        facts: &(impl FactSequence + ?Sized),
         roles: &[RoleProbe],
         aspects: &mut [AspectProbe],
         admission: &mut InvalidationEditAdmission,
@@ -94,7 +95,7 @@ impl CheckpointRoleIndex {
             u64::try_from(roles.len() * size_of::<bool>()).map_err(|_| overflow())?,
         )?;
         let mut kind_seen = vec![false; roles.len()];
-        for fact in facts {
+        for fact in facts.iter() {
             admission.charge_external_work(1)?;
             match fact {
                 Fact::Entity { entity_id, kind } => {

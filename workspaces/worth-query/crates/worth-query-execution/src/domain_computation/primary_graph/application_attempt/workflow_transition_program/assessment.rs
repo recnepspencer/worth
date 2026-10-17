@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -156,7 +157,7 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
         Scope,
         super::super::WorthQueryProjectedApplicationMutation,
     >,
-    currentness_facts: &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
+    currentness_facts: &(impl FactSequence + ?Sized),
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     check_request_live(read_set.admission.publication_request(), subject)?;
@@ -192,7 +193,7 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
             std::collections::btree_map::Entry::Occupied(_) => {}
         }
     }
-    for fact in currentness_facts {
+    for fact in currentness_facts.iter() {
         let locator = fact.dependency_key();
         if merged
             .insert(locator, fact.clone())
@@ -232,11 +233,11 @@ pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
         Scope,
         super::super::WorthQueryProjectedApplicationMutation,
     >,
-    currentness_facts: &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
+    currentness_facts: &(impl FactSequence + ?Sized),
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let current = read_set.lease.handle().with_runtime(execution, |runtime| {
-        for fact in currentness_facts {
+        for fact in currentness_facts.iter() {
             check_request_live(read_set.admission.publication_request(), subject)?;
             if !fact.remains_equal_in(runtime, execution, read_set.lease.snapshot())? {
                 return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);

@@ -203,11 +203,9 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     pub(in crate::domain_computation::primary_graph) fn rebased_source_facts(
         &self,
     ) -> Result<
-        std::sync::Arc<
-            [crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact],
-        >,
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         FailedRebase,
-    >{
+    > {
         self.observed_source_facts.retained()
     }
 

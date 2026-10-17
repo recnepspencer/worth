@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
@@ -20,19 +21,21 @@ pub(in crate::domain_computation::primary_graph) enum OutputDependencySelection 
     FreshRequired,
 }
 
-pub(in crate::domain_computation::primary_graph) fn compare_retained_output_dependencies(
+pub(in crate::domain_computation::primary_graph) fn compare_retained_output_dependencies<
+    F: FactSequence + ?Sized,
+>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     identity_current: bool,
-    facts: Option<&[WorthQueryApplicationObservedFact]>,
+    facts: Option<&F>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<OutputDependencySelection, WorthQueryOutputDemandDenial> {
     let facts = match reusable_facts(identity_current, facts) {
         Ok(facts) => facts,
         Err(fresh) => return Ok(fresh),
     };
-    match first_moved_fact(execution, runtime, snapshot, facts, admission) {
+    match first_moved_fact(execution, runtime, snapshot, facts.iter(), admission) {
         Ok(None) => Ok(OutputDependencySelection::Reuse),
         Ok(Some(_)) => Ok(OutputDependencySelection::FreshRequired),
         Err(stop) => Err(retained_fact_denial(
@@ -212,10 +215,10 @@ fn work_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-fn reusable_facts(
+fn reusable_facts<F: FactSequence + ?Sized>(
     identity_current: bool,
-    facts: Option<&[WorthQueryApplicationObservedFact]>,
-) -> Result<&[WorthQueryApplicationObservedFact], OutputDependencySelection> {
+    facts: Option<&F>,
+) -> Result<&F, OutputDependencySelection> {
     if !identity_current {
         return Err(OutputDependencySelection::FreshRequired);
     }
@@ -257,7 +260,7 @@ mod tests {
     #[test]
     fn missing_dependency_facts_never_authorize_retained_output() {
         assert!(matches!(
-            reusable_facts(true, None),
+            reusable_facts::<[super::WorthQueryApplicationObservedFact]>(true, None),
             Err(OutputDependencySelection::FreshRequired)
         ));
         assert!(matches!(
@@ -265,7 +268,7 @@ mod tests {
             Err(OutputDependencySelection::FreshRequired)
         ));
         assert!(matches!(
-            reusable_facts(false, None),
+            reusable_facts::<[super::WorthQueryApplicationObservedFact]>(false, None),
             Err(OutputDependencySelection::FreshRequired)
         ));
     }

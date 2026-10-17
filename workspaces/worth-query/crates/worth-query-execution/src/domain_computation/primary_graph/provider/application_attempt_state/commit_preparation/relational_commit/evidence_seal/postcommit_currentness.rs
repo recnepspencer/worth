@@ -1,3 +1,6 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::{
+    FactPayload, NativeFactPayloadBuilder,
+};
 use std::{collections::BTreeSet, sync::Arc};
 
 use worth_relational::facade::{identity::EntityId, mvcc::CompanionPreflightStop};
@@ -11,13 +14,13 @@ mod retirement;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum RebasedSourceFacts {
-    Exact(Arc<[WorthQueryApplicationObservedFact]>),
+    Exact(FactPayload),
     /// Every fact is exact, and the committed effect moved the facts at these
     /// ordinals past what was read: a source query's read past its revision,
     /// or a field an owner call of the producer's partitioned computation
     /// read before the effect replaced it.
     SupersededByOwnEffect {
-        facts: Arc<[WorthQueryApplicationObservedFact]>,
+        facts: FactPayload,
         ordinals: Arc<[usize]>,
     },
     /// The rebase failed. It fails as a whole, so the commit retains none of
@@ -82,6 +85,7 @@ pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
     IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
     IndexedSelectionFactDenied(usize, crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
     UnsupportedDecisionFact,
+    NativePayloadStorage { kind: worth_execution::ExecutionAllocationDenialKind, requested: Option<u64> },
     AdmissionDenied(CompanionPreflightStop),
 }
 
@@ -98,7 +102,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedSourceFactRebase
         crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
     )>,
     actions: Vec<resolution::PreparedFactRebase>,
-    rebased: Vec<WorthQueryApplicationObservedFact>,
+    rebased: NativeFactPayloadBuilder,
     superseded: Vec<usize>,
 }
 
@@ -128,8 +132,7 @@ impl PreparedSourceFactRebase {
         let endpoints = endpoints.seal()?;
         let mut actions = Vec::new();
         actions.try_reserve_exact(facts.len())?;
-        let mut rebased = Vec::new();
-        rebased.try_reserve_exact(facts.len())?;
+        let rebased = NativeFactPayloadBuilder::allocate(facts.len(), control)?;
         let mut superseded = Vec::new();
         superseded.try_reserve_exact(facts.len())?;
         Ok(Self {
@@ -189,11 +192,9 @@ impl OwnEffectOnReads {
 impl RebasedSourceFacts {
     /// The facts the commit retains, or the rebase that failed and left it
     /// none.
-    pub(super) fn retained(
-        &self,
-    ) -> Result<Arc<[WorthQueryApplicationObservedFact]>, FailedRebase> {
+    pub(super) fn retained(&self) -> Result<FactPayload, FailedRebase> {
         match self {
-            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => Ok(Arc::clone(facts)),
+            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => Ok(facts.clone()),
             Self::VerificationRequired { reason, own_effect } => Err(FailedRebase {
                 reason: *reason,
                 own_effect: *own_effect,
@@ -202,7 +203,7 @@ impl RebasedSourceFacts {
     }
 
     #[cfg(test)]
-    pub(super) fn retain_exact(&self) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
+    pub(super) fn retain_exact(&self) -> Option<FactPayload> {
         self.retained().ok()
     }
 

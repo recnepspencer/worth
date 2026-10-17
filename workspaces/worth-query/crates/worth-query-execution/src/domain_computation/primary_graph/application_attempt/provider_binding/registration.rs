@@ -103,7 +103,10 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         }
     };
     let (source_facts, moved_by_own_effect) = match &output_currentness_facts {
-        Some(facts) => (facts.facts().to_vec(), facts.moved_by_own_effect()),
+        Some(facts) => (
+            facts.facts().iter().cloned().collect(),
+            facts.moved_by_own_effect(),
+        ),
         None => (
             decision_facts
                 .facts()

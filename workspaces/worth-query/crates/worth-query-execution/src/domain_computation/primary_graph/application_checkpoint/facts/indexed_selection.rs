@@ -153,7 +153,9 @@ mod tests {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation
                 )
                 .unwrap()
-                .as_ref(),
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>(),
                 &[fact]
             );
             assert!(

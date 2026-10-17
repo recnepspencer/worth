@@ -1,4 +1,5 @@
 //! Recover the original output expectations, never expectations from a new head.
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::Movement;
@@ -18,13 +19,13 @@ impl SealedNativeOutputWitness {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        facts: &[Fact],
+        facts: &(impl FactSequence + ?Sized),
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, super::super::invalidation::SettlementVerificationStop> {
         if !self.unchanged_in(relational, snapshot, admission)? {
             return Ok(false);
         }
-        for fact in facts {
+        for fact in facts.iter() {
             admission.charge_external_work(1)?;
             match fact {
                 Fact::SourceEntity { .. }
@@ -55,7 +56,7 @@ impl SealedNativeOutputWitness {
     pub(in crate::domain_computation::primary_graph) fn from_checkpoint_facts(
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         layout: &WorthQueryPrimaryGraphLayout,
-        facts: &[Fact],
+        facts: &(impl FactSequence + ?Sized),
         owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Arc<OnceLock<Self>>>, CompanionPreflightStop> {

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::sync::Arc;
 
 use worth_relational::facade::{
@@ -5,7 +6,6 @@ use worth_relational::facade::{
 };
 
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 
 use super::admission::IndexAdmission;
 use super::{fact_retention, retention, InvalidationEditAdmission, SourceInvalidationOwner};
@@ -21,7 +21,7 @@ pub(in crate::domain_computation::primary_graph) struct RetainedConsumedOutputCa
 impl SourceInvalidationOwner {
     pub(in crate::domain_computation::primary_graph) fn retain_consumed_output(
         &self,
-        facts: &[WorthQueryApplicationObservedFact],
+        facts: &(impl FactSequence + ?Sized),
         basis: &PositionedRelationalSnapshot,
         metadata_bytes: u64,
         admission: &mut InvalidationEditAdmission,

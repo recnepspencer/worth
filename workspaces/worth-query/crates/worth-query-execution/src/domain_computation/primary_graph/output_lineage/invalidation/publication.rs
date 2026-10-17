@@ -159,7 +159,8 @@ impl From<RebaseVerificationReason> for FullVerificationReason {
             // Pending publication already reported this request stop by value.
             // A later recovery records the incomplete source registration;
             // a settlement reason never carries an old request's interruption.
-            RebaseVerificationReason::Execution(_) => Self::RegistrationIncomplete,
+            RebaseVerificationReason::Execution(_)
+            | RebaseVerificationReason::NativePayloadStorage { .. } => Self::RegistrationIncomplete,
             RebaseVerificationReason::NativeRevisionUnavailable => Self::NativeRevisionUnavailable,
             RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal) => {
                 Self::NativeFactRevisionUnavailable(ordinal)

@@ -181,14 +181,14 @@ impl AcceptedCurrentCandidate {
             .selected
             .completed_handler_fact_count()
             .unwrap_or(facts.len());
-        let Some(handler_facts) = facts.get(..count) else {
+        let Some(handler_facts) = facts.checked_slice(0..count) else {
             return Ok(true);
         };
         // Handler evidence decides whether the old edges still apply. Source
         // query stamps are a suffix whose meaning is checked by input equality.
         match ConsumedOutputEvidence::own_evidence_is_current(
             request_execution,
-            handler_facts,
+            &handler_facts,
             &self.selected.recorded().consumed_outputs,
             witness,
             runtime,
