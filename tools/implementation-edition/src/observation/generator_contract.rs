@@ -1,149 +1,181 @@
-//! Closed first generator grammar. Accepting arbitrary build-script Rust would
-//! turn Cargo's rerun hints into an unjustified input-closure assertion.
-
-use std::{collections::BTreeSet, fs, path::PathBuf};
-
-use quote::ToTokens;
+//! Source-derived finite generator effects. Neither package identity nor a
+//! reviewed digest grants effects; every branch is checked before execution.
+use crate::{compiler_context, inputs::Discovered, rust_identifier::semantic_name};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
+    path::PathBuf,
+};
 use syn::{visit::Visit, Expr};
 
-use crate::{compiler_context, inputs::Discovered};
+mod effects;
+mod environment;
+pub(super) mod evaluation;
+mod formatting;
+mod methods;
+mod numeric;
+mod provenance;
+mod syntax;
+use syntax::Syntax;
+#[cfg(test)]
+mod tests;
+mod values;
+
+pub(super) struct Program {
+    functions: BTreeMap<String, syn::ItemFn>,
+    constants: BTreeMap<String, Expr>,
+    imports: BTreeMap<String, String>,
+    pub(super) reads: BTreeSet<String>,
+    environment: BTreeSet<String>,
+}
 
 pub(super) fn validate(
     arguments: &[String],
     discovered: &Discovered,
-) -> Result<Vec<PathBuf>, String> {
+) -> Result<Option<PathBuf>, String> {
     if compiler_context::flag(arguments, "--crate-name") != Some("build_script_build") {
-        return Ok(Vec::new());
+        return Ok(None);
     }
     if arguments
         .iter()
-        .any(|argument| argument == "--extern" || argument.starts_with("--extern="))
+        .any(|a| a == "--extern" || a.starts_with("--extern="))
     {
         return Err("generator build dependencies require input qualification".into());
     }
-    let source = discovered
+    let sources: Vec<_> = discovered
         .files
         .iter()
-        .find(|path| path.extension().is_some_and(|ext| ext == "rs"))
-        .ok_or("generator source missing")?;
-    if discovered
-        .files
-        .iter()
-        .filter(|path| path.extension().is_some_and(|ext| ext == "rs"))
-        .count()
-        != 1
-    {
-        return Err("multi-source generator requires input qualification".into());
+        .filter(|p| p.extension().is_some_and(|e| e == "rs"))
+        .collect();
+    if sources.len() != 1 {
+        return Err("generator requires one qualified Rust source".into());
     }
-    let parsed = syn::parse_file(&fs::read_to_string(source).map_err(|error| error.to_string())?)
-        .map_err(|error| error.to_string())?;
-    if parsed.items.len() != 1
-        || !matches!(&parsed.items[0], syn::Item::Fn(function) if function.sig.ident == "main" && function.sig.inputs.is_empty() && function.attrs.is_empty())
-    {
-        return Err("generator requires the closed single-main input grammar".into());
-    }
-    let mut contract = GeneratorContract::default();
-    contract.visit_file(&parsed);
-    if let Some(error) = contract.error {
-        return Err(error);
-    }
-    let mut reads = Vec::new();
-    let root = std::env::var_os("CARGO_MANIFEST_DIR").ok_or("generator package root missing")?;
-    for input in contract.reads {
-        if !contract.declared.contains(&input) {
-            return Err(format!("generator file read is not declared: {input}"));
+    Program::parse(&fs::read_to_string(sources[0]).map_err(|e| e.to_string())?)?;
+    Ok(Some(sources[0].clone()))
+}
+
+impl Program {
+    pub(super) fn parse(source: &str) -> Result<Self, String> {
+        let file = syn::parse_file(source).map_err(|e| e.to_string())?;
+        if !file.attrs.is_empty() {
+            return Err("generator file attributes require qualification".into());
         }
-        reads.push(
-            fs::canonicalize(std::path::Path::new(&root).join(input))
-                .map_err(|error| error.to_string())?,
-        );
-    }
-    Ok(reads)
-}
-
-#[derive(Default)]
-struct GeneratorContract {
-    declared: BTreeSet<String>,
-    reads: BTreeSet<String>,
-    error: Option<String>,
-}
-
-impl GeneratorContract {
-    fn refuse(&mut self, detail: impl Into<String>) {
-        self.error.get_or_insert_with(|| {
-            format!(
-                "generator input grammar requires qualification: {}",
-                detail.into()
-            )
-        });
-    }
-}
-
-impl<'ast> Visit<'ast> for GeneratorContract {
-    fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
-        let Expr::Path(callee) = call.func.as_ref() else {
-            self.refuse("indirect call");
-            return;
+        let mut program = Self {
+            functions: BTreeMap::new(),
+            constants: BTreeMap::new(),
+            imports: BTreeMap::new(),
+            reads: BTreeSet::new(),
+            environment: BTreeSet::new(),
         };
-        let path = callee.path.to_token_stream().to_string().replace(' ', "");
-        match path.as_str() {
-            "std::fs::read_to_string" | "std::fs::read" => {
-                if let Some(Expr::Lit(syn::ExprLit {
-                    lit: syn::Lit::Str(path),
-                    ..
-                })) = call.args.first()
+        for item in file.items {
+            match item {
+                syn::Item::Fn(function)
+                    if function.attrs.is_empty()
+                        && function.sig.inputs.is_empty()
+                        && function.sig.generics.params.is_empty()
+                        && function.sig.unsafety.is_none()
+                        && function.sig.abi.is_none()
+                        && function.sig.asyncness.is_none() =>
                 {
-                    self.reads.insert(path.value());
-                } else {
-                    self.refuse("file read must name one literal declared input");
+                    if program
+                        .functions
+                        .insert(semantic_name(&function.sig.ident), function)
+                        .is_some()
+                    {
+                        return Err("duplicate generator function".into());
+                    }
                 }
-            }
-            "std::env::var_os" => {
-                if !matches!(call.args.first(), Some(Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(name), .. })) if name.value() == "OUT_DIR")
+                syn::Item::Const(item)
+                    if item.attrs.is_empty() && matches!(*item.expr, Expr::Lit(_)) =>
                 {
-                    self.refuse("ambient generator environment");
+                    if program
+                        .constants
+                        .insert(semantic_name(&item.ident), *item.expr)
+                        .is_some()
+                    {
+                        return Err("duplicate generator constant".into());
+                    }
                 }
+                syn::Item::Use(item) if item.attrs.is_empty() => {
+                    program.import(&item.tree, String::new())?
+                }
+                _ => return Err("generator item requires input qualification".into()),
             }
-            "std::fs::write" | "std::path::PathBuf::from" => {}
-            _ => self.refuse(format!("call {path}")),
         }
-        syn::visit::visit_expr_call(self, call);
+        if !program.functions.contains_key("main") {
+            return Err("generator main missing".into());
+        }
+        for function in program.functions.values_mut() {
+            numeric::resolve(function)?;
+        }
+        let mut syntax = Syntax {
+            program: &program,
+            reads: BTreeSet::new(),
+            environment: BTreeSet::new(),
+            bindings: provenance::Bindings::default(),
+            error: None,
+        };
+        for function in program.functions.values() {
+            syntax.bindings = provenance::Bindings::of(&function.block);
+            syntax.visit_block(&function.block);
+        }
+        if let Some(error) = syntax.error {
+            return Err(error);
+        }
+        let reads = syntax.reads;
+        let environment = syntax.environment;
+        program.reads = reads;
+        program.environment = environment;
+        Ok(program)
     }
 
-    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
+    fn import(&mut self, tree: &syn::UseTree, prefix: String) -> Result<(), String> {
+        match tree {
+            syn::UseTree::Path(path) => self.import(
+                &path.tree,
+                format!("{prefix}{}::", semantic_name(&path.ident)),
+            ),
+            syn::UseTree::Group(group) => {
+                for item in &group.items {
+                    self.import(item, prefix.clone())?;
+                }
+                Ok(())
+            }
+            syn::UseTree::Name(name) => self.import_name(
+                prefix,
+                semantic_name(&name.ident),
+                semantic_name(&name.ident),
+            ),
+            syn::UseTree::Rename(name) => self.import_name(
+                prefix,
+                semantic_name(&name.ident),
+                semantic_name(&name.rename),
+            ),
+            _ => Err("generator glob import requires qualification".into()),
+        }
+    }
+    fn import_name(&mut self, prefix: String, name: String, alias: String) -> Result<(), String> {
+        let full = prefix + &name;
         if !matches!(
-            call.method.to_string().as_str(),
-            "unwrap" | "trim" | "parse" | "join"
-        ) {
-            self.refuse(format!("method {}", call.method));
+            full.as_str(),
+            "std::env" | "std::fs" | "std::path::PathBuf" | "std::process::Command" | "std::str"
+        ) || self.imports.insert(alias, full).is_some()
+        {
+            return Err("generator import requires qualification".into());
         }
-        syn::visit::visit_expr_method_call(self, call);
+        Ok(())
     }
-
-    fn visit_macro(&mut self, invocation: &'ast syn::Macro) {
-        if invocation.path.is_ident("println") {
-            match syn::parse2::<syn::LitStr>(invocation.tokens.clone()) {
-                Ok(text) if text.value().starts_with("cargo::rerun-if-changed=") => {
-                    self.declared
-                        .insert(text.value()["cargo::rerun-if-changed=".len()..].to_owned());
-                }
-                _ => self.refuse("only literal finite generator file directives are supported"),
-            }
-        } else if invocation.path.is_ident("format") {
-            // Interpolation is limited to primitive locals in the closed
-            // single-main grammar; macro argument expressions are refused.
-            if syn::parse2::<syn::LitStr>(invocation.tokens.clone()).is_err() {
-                self.refuse("format arguments must be primitive local interpolation");
-            }
-        } else {
-            self.refuse(format!("macro {}", invocation.path.to_token_stream()));
+    fn path(&self, path: &syn::Path) -> String {
+        let mut parts: Vec<_> = path
+            .segments
+            .iter()
+            .map(|s| semantic_name(&s.ident))
+            .collect();
+        if let Some(first) = parts.first_mut()
+            && let Some(import) = self.imports.get(first)
+        {
+            *first = import.clone();
         }
-    }
-
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        if !matches!(item, syn::Item::Fn(function) if function.sig.ident == "main") {
-            self.refuse("nested item or custom type");
-        }
-        syn::visit::visit_item(self, item);
+        parts.join("::")
     }
 }

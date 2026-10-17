@@ -3240,6 +3240,7 @@ dependencies = [
  "rayon",
  "worth-foundational",
  "worth-proof",
+ "worth-value-shape-derive",
 ]
 
 [[package]]
@@ -3250,6 +3251,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "worth-proof",
+ "worth-value-shape-derive",
 ]
 
 [[package]]
@@ -3574,6 +3576,15 @@ dependencies = [
  "unicode-bidi",
  "unicode-segmentation",
  "worth-ui-host-contract",
+]
+
+[[package]]
+name = "worth-value-shape-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]

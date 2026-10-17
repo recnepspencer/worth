@@ -15,6 +15,7 @@ use crate::{
 
 mod generated;
 mod generator_contract;
+pub(crate) mod generator_execution;
 
 pub(crate) fn compile(compiler: &str, arguments: &[String]) -> Result<(), String> {
     // Cargo queries do not compile an artifact and cannot mint a component.
@@ -40,6 +41,13 @@ pub(crate) fn compile(compiler: &str, arguments: &[String]) -> Result<(), String
         return Err("compiler observer session does not match this invocation".into());
     }
     let context = compiler_context::read(compiler, arguments, &session)?;
+    let package = session["packages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| Path::new(p["root"].as_str().unwrap()) == context.root)
+        .ok_or("compiler package missing")?;
+    let content = crate::package_content::verify(package, &session)?;
     let mut dependencies = dependencies(arguments)?;
     let generated = generated::basis(&context, &session)?;
     dependencies.extend(generated.dependencies);
@@ -49,12 +57,35 @@ pub(crate) fn compile(compiler: &str, arguments: &[String]) -> Result<(), String
     let probe = directory.join("inputs.d");
     discover(compiler, &context, &probe)?;
     let discovered = inputs::dep_info(&probe)?;
-    let generator_reads = generator_contract::validate(arguments, &discovered)?;
+    let generator_source = generator_contract::validate(arguments, &discovered)?;
+    let generator_reads = if let Some(source) = &generator_source {
+        generator_contract::Program::parse(&fs::read_to_string(source).map_err(|e| e.to_string())?)?
+            .reads
+            .iter()
+            .map(|p| fs::canonicalize(context.root.join(p)).map_err(|e| e.to_string()))
+            .collect::<Result<Vec<_>, _>>()?
+    } else {
+        Vec::new()
+    };
     validate_locations(&discovered, &context, &session)?;
+    for path in &discovered.files {
+        if path.starts_with(&context.root)
+            && !crate::package_content::contains_input(&content, &context.root, path)
+        {
+            return Err("unverified file entered external compiler inputs".into());
+        }
+        if std::env::var_os("OUT_DIR").is_some_and(|root| path.starts_with(root))
+            && !generated.writes.contains(path)
+        {
+            return Err("compiler input is not a validated generated write".into());
+        }
+    }
     let mut input_records = inputs::records(&discovered, &session, context.test)?;
     input_records.extend(generated.inputs.clone());
+    input_records.extend(content.inputs.clone());
     let mut semantic_context = context.semantic.clone();
     semantic_context["environment"] = inputs::environment(&discovered, &session)?;
+    semantic_context["package_content"] = content.identity;
     let generator_reads: Vec<_> = generator_reads.into_iter().map(|path| serde_json::json!({
         "identity": compiler_context::normalize_path(&path.to_string_lossy(), &session), "path": path,
     })).collect();
@@ -108,6 +139,7 @@ pub(crate) fn compile(compiler: &str, arguments: &[String]) -> Result<(), String
         }
         after.push(input);
     }
+    after.extend(crate::package_content::verify(package, &session)?.inputs);
     if after != input_records {
         return Err("compiler inputs changed during compilation; component withheld".into());
     }
@@ -117,6 +149,9 @@ pub(crate) fn compile(compiler: &str, arguments: &[String]) -> Result<(), String
         return Err("discovery and actual compilation input/context closure differ".into());
     }
     stamp::store(&unit, &artifacts)?;
+    if let Some(source) = generator_source {
+        generator_execution::install(&unit, &artifacts, &source, &context.root, &session)?;
+    }
     // This is a descriptive dispatcher dependency, not a semantic compiler
     // input. It forces Cargo to invoke the observer on the next build while
     // leaving rustc/sccache inputs unchanged, including on a cache hit.

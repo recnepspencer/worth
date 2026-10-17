@@ -63,7 +63,10 @@ pub(crate) fn read(
     // Stable virtual source paths also preserve file! semantics across checkouts.
     for package in session["packages"].as_array().unwrap() {
         let root = package["root"].as_str().ok_or("package path missing")?;
-        let name = package["name"].as_str().ok_or("package name missing")?;
+        let name = package["virtual_name"]
+            .as_str()
+            .or_else(|| package["name"].as_str())
+            .ok_or("package name missing")?;
         actual.push(format!("--remap-path-prefix={root}=/worth/packages/{name}"));
         let ordinary = root.trim_start_matches("\\\\?\\");
         if ordinary != root {
@@ -201,7 +204,10 @@ pub(crate) fn normalize_path(value: &str, session: &Value) -> String {
         if let Some(suffix) = path_suffix(&value, &root) {
             value = format!(
                 "/worth/packages/{}{suffix}",
-                package["name"].as_str().unwrap()
+                package["virtual_name"]
+                    .as_str()
+                    .or_else(|| package["name"].as_str())
+                    .unwrap()
             );
             break;
         }

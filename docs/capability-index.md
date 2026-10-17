@@ -349,7 +349,9 @@ Handle `AwaitingProposal(RequiredWorkflowProposal)` as a typed need: inspect its
 **Compiler-derived implementation editions.** Automatic producer/output/partition
 edition integration is not yet a Decl/Host capability. The initial
 [`implementation-edition` compiler observer](../tools/implementation-edition/src/lib.rs)
-captures supported workspace Rust/compiler/generator inputs; unqualified external,
+captures supported Rust/compiler inputs, verifies external bytes against locked
+registry archives or Git trees, and checks finite generator effects against actual
+execution. Serde Core 1.0.229 has a real compiler/generated-input proof; unqualified
 proc-macro, native and generator contexts refuse. It does not yet qualify the CAD
 closure or change installed output currentness. Consumers must await the native
 cutover rather than construct editions from descriptive digests or reports.
