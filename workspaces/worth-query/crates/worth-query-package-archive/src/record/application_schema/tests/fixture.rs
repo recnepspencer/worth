@@ -55,6 +55,7 @@ fn members() -> Vec<ApplicationSchemaMember> {
             field: text("field"),
             presence: ApplicationFieldPresence::Optional,
             scalar_family: ScalarAspectType::UInt64,
+            canonical: None,
             value_type: text("worth.rust.u64"),
             unit: Some(text("count")),
             frame: Some(text("worth.tests.frame.v1")),

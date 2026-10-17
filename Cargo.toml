@@ -21,6 +21,7 @@ members = [
     "crates/worth-server",
     "crates/worth-server-client-generation",
     "crates/worth-foundational",
+    "crates/worth-value-shape-derive",
     "crates/worth-proof",
     "crates/worth-execution",
     "crates/worth-signal",

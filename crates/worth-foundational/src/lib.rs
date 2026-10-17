@@ -53,6 +53,7 @@ mod profiles;
 pub mod profiles_api;
 mod responsibilities;
 mod transitions;
+mod value_shape;
 mod values;
 
 #[doc(hidden)]

@@ -176,6 +176,7 @@ fn dependencies() -> Vec<ApplicationSchemaMember> {
             field: "AccountId".to_string(),
             presence: crate::application_schema::ApplicationFieldPresence::Required,
             scalar_family: ScalarAspectType::UInt64,
+            canonical: None,
             value_type:
                 <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
                     .as_str()
@@ -207,6 +208,7 @@ fn relation_predicate_dependencies(equality_queryable: bool) -> Vec<ApplicationS
             field: "ActivityId".to_owned(),
             presence: crate::application_schema::ApplicationFieldPresence::Required,
             scalar_family: ScalarAspectType::UInt64,
+            canonical: None,
             value_type:
                 <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
                     .as_str()

@@ -1,0 +1,65 @@
+error[E0391]: cycle detected when elaborating drops for `<impl at $DIR/tests/value_shape/ui/fail/recursive_shape.rs:3:10: 3:20>::SHAPE_DEPTH`
+ --> tests/value_shape/ui/fail/recursive_shape.rs:3:10
+  |
+3 | #[derive(WorthValue)]
+  |          ^^^^^^^^^^
+  |
+note: ...which requires simplifying constant for the type system `worth_foundational::value_shape::containers::<impl worth_foundational::value_shape::wire::CanonicalValue for core::option::Option<Value>>::SHAPE_DEPTH`...
+ --> src/value_shape/containers.rs
+  |
+  |     const SHAPE_DEPTH: usize = {
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+note: ...which requires const-evaluating + checking `worth_foundational::value_shape::containers::<impl worth_foundational::value_shape::wire::CanonicalValue for core::option::Option<Value>>::SHAPE_DEPTH`...
+ --> src/value_shape/containers.rs
+  |
+  |         1 + Value::SHAPE_DEPTH
+  |             ^^^^^^^^^^^^^^^^^^
+note: ...which requires simplifying constant for the type system `<impl at $DIR/tests/value_shape/ui/fail/recursive_shape.rs:8:10: 8:20>::SHAPE_DEPTH`...
+ --> tests/value_shape/ui/fail/recursive_shape.rs:8:10
+  |
+8 | #[derive(WorthValue)]
+  |          ^^^^^^^^^^
+note: ...which requires const-evaluating + checking `<impl at $DIR/tests/value_shape/ui/fail/recursive_shape.rs:8:10: 8:20>::SHAPE_DEPTH`...
+ --> tests/value_shape/ui/fail/recursive_shape.rs:8:10
+  |
+8 | #[derive(WorthValue)]
+  |          ^^^^^^^^^^
+note: ...which requires caching mir of `<impl at $DIR/tests/value_shape/ui/fail/recursive_shape.rs:8:10: 8:20>::SHAPE_DEPTH` for CTFE...
+ --> tests/value_shape/ui/fail/recursive_shape.rs:8:10
+  |
+8 | #[derive(WorthValue)]
+  |          ^^^^^^^^^^
+note: ...which requires elaborating drops for `<impl at $DIR/tests/value_shape/ui/fail/recursive_shape.rs:8:10: 8:20>::SHAPE_DEPTH`...
+ --> tests/value_shape/ui/fail/recursive_shape.rs:8:10
+  |
+8 | #[derive(WorthValue)]
+  |          ^^^^^^^^^^
+note: ...which requires simplifying constant for the type system `worth_foundational::value_shape::containers::<impl worth_foundational::value_shape::wire::CanonicalValue for alloc::vec::Vec<Value>>::SHAPE_DEPTH`...
+ --> src/value_shape/containers.rs
+  |
+  |     const SHAPE_DEPTH: usize = 1 + Value::SHAPE_DEPTH;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+note: ...which requires const-evaluating + checking `worth_foundational::value_shape::containers::<impl worth_foundational::value_shape::wire::CanonicalValue for alloc::vec::Vec<Value>>::SHAPE_DEPTH`...
+ --> src/value_shape/containers.rs
+  |
+  |     const SHAPE_DEPTH: usize = 1 + Value::SHAPE_DEPTH;
+  |                                    ^^^^^^^^^^^^^^^^^^
+note: ...which requires simplifying constant for the type system `<impl at $DIR/tests/value_shape/ui/fail/recursive_shape.rs:3:10: 3:20>::SHAPE_DEPTH`...
+ --> tests/value_shape/ui/fail/recursive_shape.rs:3:10
+  |
+3 | #[derive(WorthValue)]
+  |          ^^^^^^^^^^
+note: ...which requires const-evaluating + checking `<impl at $DIR/tests/value_shape/ui/fail/recursive_shape.rs:3:10: 3:20>::SHAPE_DEPTH`...
+ --> tests/value_shape/ui/fail/recursive_shape.rs:3:10
+  |
+3 | #[derive(WorthValue)]
+  |          ^^^^^^^^^^
+note: ...which requires caching mir of `<impl at $DIR/tests/value_shape/ui/fail/recursive_shape.rs:3:10: 3:20>::SHAPE_DEPTH` for CTFE...
+ --> tests/value_shape/ui/fail/recursive_shape.rs:3:10
+  |
+3 | #[derive(WorthValue)]
+  |          ^^^^^^^^^^
+  = note: ...which again requires elaborating drops for `<impl at $DIR/tests/value_shape/ui/fail/recursive_shape.rs:3:10: 3:20>::SHAPE_DEPTH`, completing the cycle
+  = note: cycle used when running analysis passes on crate `$CRATE`
+  = note: see https://rustc-dev-guide.rust-lang.org/overview.html#queries and https://rustc-dev-guide.rust-lang.org/query.html for more information
+  = note: this error originates in the derive macro `WorthValue` (in Nightly builds, run with -Z macro-backtrace for more info)

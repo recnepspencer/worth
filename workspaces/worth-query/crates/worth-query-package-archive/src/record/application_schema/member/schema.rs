@@ -13,6 +13,21 @@ use crate::denial::{
 
 use super::super::super::{foundational_aspect, foundational_value};
 
+pub(super) fn require_supported_field_codec(
+    member: &ApplicationSchemaMember,
+) -> Result<(), Denial> {
+    if matches!(
+        member,
+        ApplicationSchemaMember::Field {
+            canonical: Some(_),
+            ..
+        }
+    ) {
+        return Err(Denial::new(Kind::UnsupportedCanonicalValueContract));
+    }
+    Ok(())
+}
+
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     member: &ApplicationSchemaMember,
@@ -77,6 +92,7 @@ fn write_field(
         field,
         presence,
         scalar_family,
+        canonical: _,
         value_type,
         unit,
         frame,
@@ -147,6 +163,7 @@ pub(super) fn decode(
             field: input.text()?.to_owned(),
             presence: decode_presence(input)?,
             scalar_family: foundational_aspect::decode_scalar_type(input)?,
+            canonical: None,
             value_type: input.text()?.to_owned(),
             unit: super::super::wire_vocabulary::decode_optional(input, |input| {
                 Ok(input.text()?.to_owned())

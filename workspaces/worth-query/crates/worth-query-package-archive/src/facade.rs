@@ -1,4 +1,8 @@
 //! Public archive protocol surface.
+//!
+//! This archive version refuses canonical value field contracts with
+//! `UnsupportedCanonicalValueContract` before encoding. It cannot yet preserve
+//! their portable shape and admission bounds; it never drops that metadata.
 
 pub use crate::application_program::{
     decode_application_program_description, encode_application_program_description,

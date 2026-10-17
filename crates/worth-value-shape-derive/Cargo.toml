@@ -1,0 +1,18 @@
+[package]
+name = "worth-value-shape-derive"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Query-free canonical value wire, shape, and bounded seed derivation."
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
+
+[lints]
+workspace = true

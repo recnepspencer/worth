@@ -31,6 +31,7 @@ fn field(presence: ApplicationFieldPresence) -> ApplicationSchemaMember {
         field: "Value".to_string(),
         presence,
         scalar_family: ScalarAspectType::UInt64,
+        canonical: None,
         value_type: std::any::type_name::<u64>().to_string(),
         unit: None,
         frame: None,

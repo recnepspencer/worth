@@ -35,6 +35,14 @@ impl WorthQueryInstalledApplicationValueBinding {
         self.recipe.binding_identity()
     }
 
+    pub const fn canonical_contract(
+        &self,
+    ) -> Option<
+        &worth_query_declaration::facade::application_schema::ApplicationCanonicalValueContract,
+    > {
+        self.recipe.canonical_contract()
+    }
+
     pub const fn scalar_family(&self) -> ScalarAspectType {
         self.recipe.scalar_family()
     }

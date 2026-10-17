@@ -7,6 +7,8 @@ mod adoption;
 mod allocation_custody;
 #[path = "application_graph/canonical_identity.rs"]
 mod canonical_identity;
+#[path = "application_graph/canonical_value.rs"]
+mod canonical_value;
 #[path = "application_graph/document_retention_model.rs"]
 mod document_retention_model;
 #[path = "application_graph/expressions/conditions.rs"]

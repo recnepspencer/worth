@@ -107,6 +107,8 @@ fn validate_contract(
 ) -> Result<(), WorthQueryApplicationValueBindingInstallationDenial> {
     let (scalar_family, identity, unit, frame) = declared;
     if recipe.scalar_family() != scalar_family
+        || (recipe.canonical_contract().is_some()
+            && scalar_family != worth_foundational::facade::ScalarAspectType::String)
         || recipe.binding_identity().as_str() != identity
         || recipe.unit().map(|unit| unit.as_str()) != unit
         || recipe.frame().map(|frame| frame.as_str()) != frame

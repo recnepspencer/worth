@@ -59,6 +59,14 @@ Do all five steps, in order.
 
 ## Task index
 
+For bounded nested persisted values, use the existing value-binding macro's
+`scalar: String, canonical: ValueDecodeBounds::new(...)` arm with Query-free
+`WorthValue` derivation. The installed value-binding catalog retains the derived
+shape and constant bounds. See [bounded canonical nested values](build-an-application.md#bounded-canonical-nested-values)
+for supported grammar, native checkpoint examples and the current package
+archive refusal. Representation limits do not grant request resources,
+currentness or codec-transition permission.
+
 "Guide" links to the section that shows the exact calls. The "Never build"
 column names the substitute that this capability makes wrong.
 

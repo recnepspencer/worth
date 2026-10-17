@@ -68,6 +68,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             presence: Field::PRESENCE,
             scalar_family: field.scalar_family(),
             value_type: field.value_type_name().to_string(),
+            canonical: recipe.canonical_contract().cloned(),
             unit: field.unit().map(str::to_string),
             frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
             writable: Write::WRITABLE,

@@ -22,6 +22,11 @@ pub trait ApplicationScalarValueBinding: 'static {
     const UNIT: Option<ApplicationUnitIdentity> = None;
     const FRAME: Option<ApplicationFrameIdentity> = None;
 
+    /// Derived complete wire meaning, when this binding adopts canonical values.
+    fn canonical_contract() -> Option<super::ApplicationCanonicalValueContract> {
+        None
+    }
+
     fn validate(value: &Self::Value) -> Result<(), ApplicationValueValidationDenial>;
 
     fn encode(value: &Self::Value) -> Result<AspectValue, ApplicationValueEncodeDenial>;

@@ -89,6 +89,7 @@ pub enum ApplicationSchemaMember {
         presence: ApplicationFieldPresence,
         scalar_family: ScalarAspectType,
         value_type: String,
+        canonical: Option<super::ApplicationCanonicalValueContract>,
         unit: Option<String>,
         frame: Option<String>,
         writable: bool,

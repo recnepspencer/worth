@@ -1,3 +1,8 @@
+mod canonical;
+pub use canonical::{
+    decode_application_canonical_value, decode_canonical_value, encode_canonical_value,
+    ApplicationCanonicalValueContract, CanonicalValue, ValueDecodeBounds, ValueShape,
+};
 mod denial;
 mod encoded_scalar;
 mod primitive;

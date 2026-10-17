@@ -16,10 +16,11 @@ mod operation;
 mod schema;
 mod vocabulary;
 
-pub(super) fn require_nesting_depth(
+pub(super) fn require_encoding_contract(
     member: &ApplicationSchemaMember,
     maximum_depth: u32,
 ) -> Result<(), Denial> {
+    schema::require_supported_field_codec(member)?;
     if matches!(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
@@ -35,6 +36,7 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     member: &ApplicationSchemaMember,
 ) -> Result<(), Denial> {
+    schema::require_supported_field_codec(member)?;
     output.u16(member_tag(member))?;
     match member {
         ApplicationSchemaMember::ApplicationMutation { description } => {

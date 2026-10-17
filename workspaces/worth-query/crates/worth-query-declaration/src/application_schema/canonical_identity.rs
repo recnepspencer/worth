@@ -8,7 +8,7 @@ use super::{
     ApplicationSchemaContributionProvenance, ApplicationSchemaIdentity, ApplicationSchemaMember,
 };
 
-const RULE_VERSION: &str = "worth-query-application-schema-v16";
+const RULE_VERSION: &str = "worth-query-application-schema-v17";
 
 pub(super) struct ApplicationSchemaCanonicalHeader<'a> {
     pub owner: &'a str,
@@ -109,3 +109,7 @@ mod tests;
 #[cfg(test)]
 #[path = "canonical_identity_version_tests.rs"]
 mod version_tests;
+
+#[cfg(test)]
+#[path = "canonical_value_identity_tests.rs"]
+mod canonical_value_tests;

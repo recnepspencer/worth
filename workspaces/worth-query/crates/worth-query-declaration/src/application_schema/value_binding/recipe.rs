@@ -59,6 +59,7 @@ pub struct ApplicationFieldBindingRecipe {
     decode: Option<ErasedApplicationValueDecode>,
     identity_capable: bool,
     signed_aggregate_decode: Option<ErasedApplicationSignedAggregateDecode>,
+    canonical: Option<super::ApplicationCanonicalValueContract>,
 }
 
 impl ApplicationFieldBindingRecipe {
@@ -78,6 +79,7 @@ impl ApplicationFieldBindingRecipe {
             decode: Binding::Decode::erased_decode(),
             identity_capable: Binding::Identity::CAPABLE,
             signed_aggregate_decode: Binding::SignedAggregate::erased_decode(),
+            canonical: Binding::canonical_contract(),
         }
     }
 
@@ -87,6 +89,10 @@ impl ApplicationFieldBindingRecipe {
 
     pub fn binding_identity(&self) -> &WorthQueryPortableTypeIdentity {
         &self.binding_identity
+    }
+
+    pub const fn canonical_contract(&self) -> Option<&super::ApplicationCanonicalValueContract> {
+        self.canonical.as_ref()
     }
 
     pub const fn scalar_family(&self) -> ScalarAspectType {
@@ -130,6 +136,7 @@ impl ApplicationFieldBindingRecipe {
 
     pub(crate) fn has_same_contract(&self, other: &Self) -> bool {
         self.binding_identity == other.binding_identity
+            && self.canonical == other.canonical
             && self.scalar_family == other.scalar_family
             && self.unit == other.unit
             && self.frame == other.frame
@@ -149,6 +156,7 @@ impl ApplicationFieldBindingRecipe {
             value_type,
             unit,
             frame,
+            canonical,
             ..
         } = member
         else {
@@ -161,6 +169,7 @@ impl ApplicationFieldBindingRecipe {
             && self.binding_identity.as_str() == value_type
             && self.unit.map(ApplicationUnitIdentity::as_str) == unit.as_deref()
             && self.frame.map(ApplicationFrameIdentity::as_str) == frame.as_deref()
+            && self.canonical.as_ref() == canonical.as_ref()
     }
 }
 

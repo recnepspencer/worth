@@ -35,6 +35,7 @@ fn members(unique: bool, equality_queryable: bool) -> Vec<ApplicationSchemaMembe
             field: "Key".to_owned(),
             presence: ApplicationFieldPresence::Required,
             scalar_family: ScalarAspectType::UInt64,
+            canonical: None,
             value_type: std::any::type_name::<u64>().to_owned(),
             unit: None,
             frame: None,

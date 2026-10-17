@@ -321,6 +321,7 @@ fn field(
         field: "Field".to_string(),
         presence: crate::application_schema::ApplicationFieldPresence::Required,
         scalar_family,
+        canonical: None,
         value_type: value_type.to_string(),
         unit: unit.map(str::to_string),
         frame: None,

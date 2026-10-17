@@ -687,3 +687,9 @@ pub use crate::values::{
 
 pub use crate::budget_limits::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
 pub use crate::responsibilities::{foundational_responsibilities, ResponsibilityArea};
+pub use crate::value_shape::{
+    decode_canonical_value, encode_canonical_value, CanonicalValue, CanonicalValueSeed,
+    ValueCodecDenial, ValueDecodeBounds, ValueFieldShape, ValuePrimitive, ValueShape,
+    ValueVariantShape,
+};
+pub use worth_value_shape_derive::WorthValue;

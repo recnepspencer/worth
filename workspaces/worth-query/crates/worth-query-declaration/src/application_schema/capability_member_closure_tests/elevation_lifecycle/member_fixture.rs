@@ -30,6 +30,7 @@ fn typed_field_member(entity: &str, aspect: &str, field: &str) -> ApplicationSch
         field: field.to_string(),
         presence: ApplicationFieldPresence::Required,
         scalar_family: ScalarAspectType::UInt64,
+        canonical: None,
         value_type:
             <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
                 .as_str()

@@ -219,6 +219,43 @@ The rest of this guide is about what sits on top of the schema.
 
 ---
 
+### Bounded canonical nested values
+
+A pure value owner can derive `worth_foundational::facade::WorthValue` to emit
+Serde serialization, portable wire shape, and a bounded deserialization seed
+from one definition. Do not also derive `Serialize` or `Deserialize`. The first
+supported grammar is named, unit, and newtype structs; externally tagged unit
+and newtype enum variants; 8–64 bit integers, booleans, strings, `Vec`, and
+`Option`. Literal `serde(rename = "...")` is supported. Unsupported Serde
+attributes, recursive types and unsupported containers fail compilation; an
+opaque domain owner must supply its own bounded `CanonicalValue` contract and
+admitted construction rather than an unbounded deserializer.
+Nullable optional payloads, such as `Option<Option<T>>` or `Option<()>`, are
+refused because Serde's `null` would erase the distinction between absence and
+a present null payload. Use an externally tagged enum for that meaning.
+
+The entry uses `worth_query_value_binding!` with `scalar: String` and
+`canonical: ValueDecodeBounds::new(wire_bytes, string_bytes, sequence_length,
+depth)`. These finite bounds are constant declaration meaning. Encoding checks
+structure before emitting bytes; decoding uses generated seeds and requires the
+exact canonical JSON form. There are no omitted fields or permissive defaults.
+The installed field's `canonical_contract()` exposes its shape, bounds and wire
+protocol. Nested field, enum, rename and bound changes participate in portable
+schema identity; semantic aspect revisions remain explicit.
+
+The executable [nested-value model](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value/model.rs)
+and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value.rs)
+exercise nondefault values through the entry binding, installed catalog,
+authenticated read and current-format native recovery. The
+[compiler fixtures](../crates/worth-foundational/tests/value_shape/compiler.rs)
+cover supported and refused grammar.
+
+These representation bounds do not provide a cumulative native request budget,
+retained-size accounting, or derived-codec transition permission. Those owners
+remain separate. Package archive export of a canonical field currently refuses
+with `UnsupportedCanonicalValueContract` before emitting its payload; native
+application checkpoints use their existing owner and support the journey above.
+
 ## 3. Declare features and the program
 
 A **program** is a type that implements `ApplicationProgramDefinition<Schema>`.

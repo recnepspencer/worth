@@ -103,6 +103,7 @@ pub(super) fn field_member(field: &str) -> ApplicationSchemaMember {
         field: field.to_string(),
         presence: ApplicationFieldPresence::Required,
         scalar_family: ScalarAspectType::UInt64,
+        canonical: None,
         value_type:
             <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
                 .as_str()
@@ -130,6 +131,7 @@ pub(super) fn resource_field_member(field: &str) -> ApplicationSchemaMember {
         field: field.to_string(),
         presence: ApplicationFieldPresence::Required,
         scalar_family: ScalarAspectType::UInt64,
+        canonical: None,
         value_type:
             <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
                 .as_str()

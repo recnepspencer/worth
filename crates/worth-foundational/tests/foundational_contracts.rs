@@ -8,3 +8,5 @@ mod certification;
 mod compile_time_boundaries;
 #[path = "expressions.rs"]
 mod expressions;
+#[path = "value_shape.rs"]
+mod value_shape;

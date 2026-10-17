@@ -183,8 +183,9 @@ pub use schema_member::{
     ApplicationSchemaMember,
 };
 pub use value_binding::{
-    ApplicationEncodedScalarValue, ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe,
-    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
+    decode_application_canonical_value, decode_canonical_value, encode_canonical_value,
+    ApplicationCanonicalValueContract, ApplicationEncodedScalarValue, ApplicationFieldBindingLocus,
+    ApplicationFieldBindingRecipe, ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
     ApplicationSignedAggregateValueBinding, ApplicationStructuredValueBinding,
     ApplicationUnitIdentity, ApplicationValueDecodeAvailable, ApplicationValueDecodeDenial,
@@ -192,10 +193,10 @@ pub use value_binding::{
     ApplicationValueIdentityPosture, ApplicationValueIsIdentity, ApplicationValueIsNotIdentity,
     ApplicationValueSignedAggregateAvailable, ApplicationValueSignedAggregatePosture,
     ApplicationValueSignedAggregateUnavailable, ApplicationValueValidationDenial,
-    BoolApplicationValueBinding, ErasedApplicationSignedAggregateDecode,
+    BoolApplicationValueBinding, CanonicalValue, ErasedApplicationSignedAggregateDecode,
     ErasedApplicationValueDecode, ErasedApplicationValueEncode, ErasedApplicationValueValidation,
     I64ApplicationValueBinding, InternedStringApplicationValueBinding,
-    StringApplicationValueBinding, U64ApplicationValueBinding,
+    StringApplicationValueBinding, U64ApplicationValueBinding, ValueDecodeBounds, ValueShape,
 };
 pub use values::{
     DeclaredApplicationFieldValue, OptionalApplicationFieldValue, RequiredApplicationFieldValue,

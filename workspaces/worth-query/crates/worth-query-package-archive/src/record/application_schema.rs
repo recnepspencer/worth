@@ -38,7 +38,7 @@ pub(super) fn payload_encoding_work(
     limits: WorthQueryPackageArchiveLimits,
 ) -> Result<RecordPayloadEncodingWork, Denial> {
     let limits = limits.narrowed();
-    require_nesting_depth(record, limits.maximum_nesting_depth())?;
+    require_encoding_contract(record, limits.maximum_nesting_depth())?;
     let mut measure = BinaryEncodingMeasure::default();
     write_record(&mut measure, record)?;
     RecordPayloadEncodingWork::from_measure(&measure, limits)
@@ -49,7 +49,7 @@ pub(super) fn write_payload(
     output: &mut BinaryOutput,
     limits: WorthQueryPackageArchiveLimits,
 ) -> Result<(), Denial> {
-    require_nesting_depth(record, limits.narrowed().maximum_nesting_depth())?;
+    require_encoding_contract(record, limits.narrowed().maximum_nesting_depth())?;
     write_record(output, record)
 }
 
@@ -103,12 +103,12 @@ fn write_record(
     }
 }
 
-fn require_nesting_depth(
+fn require_encoding_contract(
     record: &WorthQueryPortableApplicationSchemaRecord,
     maximum_depth: u32,
 ) -> Result<(), Denial> {
     for schema_member in record.members() {
-        member::require_nesting_depth(schema_member, maximum_depth)?;
+        member::require_encoding_contract(schema_member, maximum_depth)?;
     }
     Ok(())
 }

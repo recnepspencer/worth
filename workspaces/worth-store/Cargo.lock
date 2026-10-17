@@ -1231,6 +1231,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "worth-proof",
+ "worth-value-shape-derive",
 ]
 
 [[package]]
@@ -1909,6 +1910,15 @@ dependencies = [
  "worth-store-modes",
  "worth-store-physical-format",
  "worth-store-security",
+]
+
+[[package]]
+name = "worth-value-shape-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]
