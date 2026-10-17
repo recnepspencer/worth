@@ -9,6 +9,9 @@ fn main() {
 
 fn run() -> Result<(), String> {
     let arguments: Vec<_> = std::env::args().skip(1).collect();
+    if arguments.is_empty() {
+        return implementation_edition::observe_generator();
+    }
     if arguments.first().is_some_and(|value| value == "build") {
         if arguments.len() < 3 {
             return Err(

@@ -37,31 +37,7 @@ pub(crate) fn build(
     }
     let metadata: Value =
         serde_json::from_slice(&metadata.stdout).map_err(|error| error.to_string())?;
-    let mut packages = Vec::new();
-    for package in metadata["packages"]
-        .as_array()
-        .ok_or("Cargo packages missing")?
-    {
-        // A registry/git name and lock entry alone do not verify its content.
-        // Those source kinds will enter only with archive/tree verification.
-        if !package["source"].is_null() {
-            return Err(format!(
-                "unqualified external package content: {}",
-                package["id"]
-            ));
-        }
-        let manifest = Path::new(
-            package["manifest_path"]
-                .as_str()
-                .ok_or("package manifest missing")?,
-        );
-        let root = fs::canonicalize(manifest.parent().ok_or("package root missing")?)
-            .map_err(|error| error.to_string())?;
-        packages.push(json!({
-            "name": package["name"], "version": package["version"],
-            "root": root,
-        }));
-    }
+    let packages = crate::package_content::catalog(&metadata)?;
     let wrapper = std::env::var_os("RUSTC_WRAPPER").unwrap_or_else(|| "sccache".into());
     if Path::new(&wrapper)
         .file_stem()
@@ -85,11 +61,11 @@ pub(crate) fn build(
     );
     let compiler = std::env::var("RUSTC").unwrap_or_else(|_| "rustc".into());
     let compiler_path = crate::compiler_context::compiler_path(&compiler)?;
-    let identity = crate::compiler_context::compiler_identity(
-        &compiler,
-        crate::compiler_context::flag(arguments, "--target"),
-    )?;
-    let config = json!({"packages": packages, "wrapper": wrapper.to_string_lossy(), "state": state, "run": run,
+    // Build scripts are host units even in a target build. Only an actual
+    // rustc unit's --target selects a non-host compiler-library closure.
+    let identity = crate::compiler_context::compiler_identity(&compiler, None)?;
+    let observer = std::env::current_exe().map_err(|e| e.to_string())?;
+    let config = json!({"packages": packages, "wrapper": wrapper.to_string_lossy(), "state": state, "run": run, "observer": observer,
         "compiler_path": compiler_path, "compiler_identity": identity});
     fs::write(&session, serde_json::to_vec(&config).unwrap()).map_err(|error| error.to_string())?;
     let output = Command::new("cargo")
