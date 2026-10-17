@@ -35,6 +35,7 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
+pub use super::value_decode::WorthQueryValueDecodeDenial;
 pub use admission_denial::{
     WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
 };
@@ -84,6 +85,8 @@ pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     binding_identity: ApplicationSchemaBindingIdentity,
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
     authority_identity: u64,
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -94,6 +97,8 @@ pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
 /// Dropping the snapshot releases it.
 pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     graph: WorthQueryPrimaryGraphIntegrationHandle,
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     layout: Arc<WorthQueryPrimaryGraphLayout>,
     basis: Option<worth_relational::facade::branch::AdmittedRelationalBranchBasis>,
     snapshot: Option<worth_relational::facade::snapshots::SnapshotHandle>,
@@ -154,6 +159,7 @@ where
         &self,
     ) -> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
         WorthQueryApplicationInvariantProjectionAuthority {
+            value_bindings: self.value_bindings.clone(),
             graph: self.graph.integration_handle(),
             layout: Arc::clone(&self.graph.layout),
             runtime_authority: self.runtime_authority,
@@ -216,6 +222,7 @@ where
         })?;
         Ok(WorthQueryApplicationInvariantProjectionSnapshot {
             graph: self.graph.clone(),
+            value_bindings: self.value_bindings.clone(),
             layout: Arc::clone(&self.layout),
             basis: Some(basis),
             snapshot: Some(snapshot),

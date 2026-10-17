@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use super::super::value_decode::{ValueDecodeSession, WorthQueryValueDecodeDenial};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryMarkerIdentity, ApplicationQueryOptionalResultFieldRef,
     ApplicationQueryResultFieldRef, ApplicationQueryResultRelationCardinality,
@@ -27,6 +28,8 @@ pub(super) use projected_tree::{
 /// Why a query result row could not be projected into an application value.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationProjectionDenialKind {
+    /// Native admitted value decoding refused the original execution request.
+    ValueDecode(WorthQueryValueDecodeDenial),
     /// The selected field is not part of this row's projection.
     FieldNotProjected,
     /// The field selector does not match the installed field contract or disclosure.
@@ -66,6 +69,7 @@ pub struct WorthQueryApplicationProjectionDenial {
 pub struct WorthQueryApplicationProjectionRow<'row, Schema, Query> {
     node: WorthQueryApplicationDisclosedProjectionNode<'row>,
     governance: &'row super::disclosure::WorthQueryApplicationQueryGovernance,
+    decode: &'row ValueDecodeSession<'row>,
     _marker: PhantomData<fn() -> (Schema, Query)>,
 }
 
@@ -76,6 +80,7 @@ pub struct WorthQueryApplicationProjectionRows<'row, Schema, Query> {
     rows: &'row [WorthQueryApplicationProjectionNode],
     disclosure_parent: WorthQueryApplicationDisclosedProjectionNode<'row>,
     governance: &'row super::disclosure::WorthQueryApplicationQueryGovernance,
+    decode: &'row ValueDecodeSession<'row>,
     _marker: PhantomData<fn() -> (Schema, Query)>,
 }
 
@@ -95,7 +100,10 @@ impl WorthQueryApplicationProjectionDenial {
         &self.subject
     }
 
-    fn new(kind: WorthQueryApplicationProjectionDenialKind, subject: impl Into<String>) -> Self {
+    pub(super) fn new(
+        kind: WorthQueryApplicationProjectionDenialKind,
+        subject: impl Into<String>,
+    ) -> Self {
         Self {
             kind,
             subject: subject.into(),
@@ -194,6 +202,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
             [row] => Ok(Some(WorthQueryApplicationProjectionRow::new(
                 self.node.child(row),
                 self.governance,
+                self.decode,
             ))),
             _ => Err(relation_cardinality_denial(relation)),
         }
@@ -225,6 +234,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
             [row] => Ok(WorthQueryApplicationProjectionRow::new(
                 self.node.child(row),
                 self.governance,
+                self.decode,
             )),
             _ => Err(relation_cardinality_denial(relation)),
         }
@@ -256,6 +266,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
             rows: relation.rows(),
             disclosure_parent: self.node,
             governance: self.governance,
+            decode: self.decode,
             _marker: PhantomData,
         })
     }
@@ -286,10 +297,12 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     pub(super) const fn new(
         node: WorthQueryApplicationDisclosedProjectionNode<'row>,
         governance: &'row super::disclosure::WorthQueryApplicationQueryGovernance,
+        decode: &'row ValueDecodeSession<'row>,
     ) -> Self {
         Self {
             node,
             governance,
+            decode,
             _marker: PhantomData,
         }
     }
@@ -311,6 +324,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRows<'row, Schema, Quer
             WorthQueryApplicationProjectionRow::new(
                 self.disclosure_parent.child(row),
                 self.governance,
+                self.decode,
             )
         })
     }

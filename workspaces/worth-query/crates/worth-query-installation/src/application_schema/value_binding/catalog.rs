@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 
@@ -7,10 +8,12 @@ use super::WorthQueryInstalledApplicationValueBinding;
 /// Immutable installed bindings indexed by their exact field locus.
 #[derive(Clone, Debug, Default)]
 pub struct WorthQueryInstalledApplicationValueBindingCatalog {
-    bindings: BTreeMap<ApplicationFieldBindingLocus, WorthQueryInstalledApplicationValueBinding>,
+    bindings:
+        Arc<BTreeMap<ApplicationFieldBindingLocus, WorthQueryInstalledApplicationValueBinding>>,
 }
 
-pub(crate) enum AdmittedFieldBindingStop<E> {
+#[derive(Debug)]
+pub enum AdmittedFieldBindingStop<E> {
     Admission(E),
     AccountingOverflow,
 }
@@ -22,7 +25,9 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
             WorthQueryInstalledApplicationValueBinding,
         >,
     ) -> Self {
-        Self { bindings }
+        Self {
+            bindings: Arc::new(bindings),
+        }
     }
 
     pub fn field(
@@ -35,7 +40,9 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
             .get(&ApplicationFieldBindingLocus::new(entity, aspect, field))
     }
 
-    pub(crate) fn field_admitted<E>(
+    /// Inspect the existing immutable catalogue after funding its lookup and
+    /// temporary key storage through the caller's request authority.
+    pub fn field_admitted<E>(
         &self,
         entity: &str,
         aspect: &str,

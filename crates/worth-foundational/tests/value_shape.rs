@@ -1,4 +1,6 @@
 //! Canonical values retain nondefault meaning under finite representation bounds.
+#[path = "value_shape/admitted.rs"]
+mod admitted;
 #[path = "value_shape/compiler.rs"]
 mod compiler;
 

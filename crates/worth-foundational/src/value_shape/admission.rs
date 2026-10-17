@@ -63,6 +63,8 @@ pub enum ValueCodecDenial {
     Allocation,
     Malformed,
     NonCanonical,
+    Admission,
+    UnsupportedAdmission,
 }
 
 impl std::fmt::Display for ValueCodecDenial {
@@ -75,6 +77,10 @@ impl std::fmt::Display for ValueCodecDenial {
             Self::Allocation => "canonical value allocation refused",
             Self::Malformed => "canonical value does not match its declared wire grammar",
             Self::NonCanonical => "canonical value bytes are not in their declared canonical form",
+            Self::Admission => "canonical value request admission refused",
+            Self::UnsupportedAdmission => {
+                "canonical value owner does not provide admitted decoding"
+            }
         })
     }
 }

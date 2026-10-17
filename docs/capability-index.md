@@ -62,7 +62,10 @@ Do all five steps, in order.
 For bounded nested persisted values, use the existing value-binding macro's
 `scalar: String, canonical: ValueDecodeBounds::new(...)` arm with Query-free
 `WorthValue` derivation. The installed value-binding catalog retains the derived
-shape and constant bounds. See [bounded canonical nested values](build-an-application.md#bounded-canonical-nested-values)
+shape and constant bounds. Native canonical projection reads dispatch the exact
+installed codec under the original request's cumulative execution allowance; ignored
+admission failures veto completion. Opaque owners must supply admitted seeds.
+See [bounded canonical nested values](build-an-application.md#bounded-canonical-nested-values)
 for supported grammar, native checkpoint examples and the current package
 archive refusal. Representation limits do not grant request resources,
 currentness or codec-transition permission.

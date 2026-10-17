@@ -9,9 +9,12 @@ pub(crate) fn emit(value: &Value) -> TokenStream {
     let depth = shape_depth(value);
     let nullable = wire_nullable(value);
     let validation = validation(value);
-    let decode = crate::seed::emit(value);
+    let decode = crate::seed::emit(value, false);
+    let admitted_decode = crate::seed::emit(value, true);
+    let supports_admission = supports_admission(value);
     quote! {
         impl ::worth_foundational::facade::CanonicalValue for #ident {
+            const SUPPORTS_ADMISSION: bool = #supports_admission;
             const SHAPE_DEPTH: usize = #depth;
             const WIRE_NULLABLE: bool = #nullable;
 
@@ -33,8 +36,29 @@ pub(crate) fn emit(value: &Value) -> TokenStream {
             ) -> ::core::result::Result<Self, D::Error> {
                 #decode
             }
+
+            fn deserialize_admitted<'de, D: ::serde::Deserializer<'de>>(
+                deserializer: D,
+                bounds: ::worth_foundational::facade::ValueDecodeBounds,
+                admission: &mut ::worth_foundational::facade::ValueDecodeAdmission<'_>,
+            ) -> ::core::result::Result<Self, D::Error> {
+                #admitted_decode
+            }
         }
     }
+}
+
+fn supports_admission(value: &Value) -> TokenStream {
+    let children = match &value.kind {
+        ValueKind::Struct(fields) => fields.iter().map(|field| &field.ty).collect::<Vec<_>>(),
+        ValueKind::Newtype(ty) => vec![ty],
+        ValueKind::Unit => vec![],
+        ValueKind::Enum(variants) => variants
+            .iter()
+            .filter_map(|variant| variant.payload.as_ref())
+            .collect(),
+    };
+    quote! { true #(&& <#children as ::worth_foundational::facade::CanonicalValue>::SUPPORTS_ADMISSION)* }
 }
 
 fn wire_nullable(value: &Value) -> TokenStream {

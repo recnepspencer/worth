@@ -94,7 +94,7 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
                 .into_parts()
         })
         .expect("the fixture read owns its installed host call");
-    let reads = world
+    let mut effects = world
         .application
         .with_host_advancement(|phase| {
             world
@@ -106,12 +106,6 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let mut effects = world
-        .application
-        .with_host_advancement(|phase| {
-            reads
                 .complete_projected_dependencies(
                     &phase,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -207,7 +201,7 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
                 .into_parts()
         })
         .expect("the fixture read owns its installed host call");
-    let reads = world
+    let mut effects = world
         .application
         .with_host_advancement(|phase| {
             world
@@ -219,12 +213,6 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let mut effects = world
-        .application
-        .with_host_advancement(|phase| {
-            reads
                 .complete_projected_dependencies(
                     &phase,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

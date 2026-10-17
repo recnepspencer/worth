@@ -14,6 +14,10 @@ impl WorthQueryTemporalReentryDenial {
     }
     pub(super) fn invariant_kind(kind: Kind, refused: impl FnOnce(Kind) -> Terminal) -> Self {
         match kind {
+            Kind::ValueDecode(cause) => match cause.request_cause() {
+                Some(request) => Self::from_execution_request_stop(request),
+                None => Self::Terminal(refused(kind)),
+            },
             Kind::ExecutionRequest(cause) => Self::from_native_stop(cause),
             Kind::WorkBudgetExceeded => Self::from_native_stop(Native::WorkExhausted),
             Kind::ActiveSnapshotCapacityExhausted {

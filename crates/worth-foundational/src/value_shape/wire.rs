@@ -3,11 +3,18 @@ use super::{ValueCodecDenial as D, ValueDecodeBounds, ValueShape};
 use serde::{de::DeserializeSeed, Serialize};
 use std::{io::Write, marker::PhantomData};
 
+/// Borrowed admission callback; it does not itself establish request authority.
+/// The native owner supplies that authority and retains granted reservations.
+/// Bytes are newly requested storage, not wire size or retained ownership.
+pub type ValueDecodeAdmission<'a> = dyn FnMut(usize, usize) -> Result<(), D> + 'a;
+
 /// Implementations must describe and emit the same complete wire grammar.
 /// Derive `WorthValue` for ordinary structs/enums. Opaque domain owners implement
 /// this contract only with their own bounded seed and admitted constructor.
 /// No `DeserializeOwned` fallback participates in this contract.
 pub trait CanonicalValue: Serialize + Sized {
+    /// Opaque owners must explicitly supply an admitted seed; no fallback.
+    const SUPPORTS_ADMISSION: bool = false;
     /// Finite structural depth. Recursive type cycles are compile-time errors.
     const SHAPE_DEPTH: usize;
     /// Whether this wire grammar can emit JSON null. Optional payloads must
@@ -19,29 +26,73 @@ pub trait CanonicalValue: Serialize + Sized {
         decoder: Decoder,
         bounds: ValueDecodeBounds,
     ) -> Result<Self, Decoder::Error>;
+
+    /// Opaque owners must admit their variable work/storage, including custom
+    /// diagnostics beyond the built-in JSON machinery's bounded diagnostics.
+    fn deserialize_admitted<'de, Decoder: serde::Deserializer<'de>>(
+        _decoder: Decoder,
+        _bounds: ValueDecodeBounds,
+        _admission: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<Self, Decoder::Error> {
+        Err(serde::de::Error::custom(D::UnsupportedAdmission))
+    }
 }
 
-/// A finite grammar seed for an already admitted carrier. Use
-/// `decode_canonical_value` to check the complete JSON input byte bound as well.
-pub struct CanonicalValueSeed<Value> {
+/// A finite grammar seed. `new` enforces representation bounds only;
+/// `with_admission` also passes the caller's request loan through nested seeds.
+/// Whole-carrier decoding additionally checks input and canonical form.
+pub struct CanonicalValueSeed<'a, 'request, Value> {
     bounds: ValueDecodeBounds,
+    admission: Option<&'a mut ValueDecodeAdmission<'request>>,
     value: PhantomData<fn() -> Value>,
 }
-impl<Value> CanonicalValueSeed<Value> {
+impl<'a, 'request, Value> CanonicalValueSeed<'a, 'request, Value> {
     pub const fn new(bounds: ValueDecodeBounds) -> Self {
         Self {
             bounds,
+            admission: None,
+            value: PhantomData,
+        }
+    }
+
+    /// The same request loan is reborrowed by all nested seeds.
+    pub fn with_admission(
+        bounds: ValueDecodeBounds,
+        admission: &'a mut ValueDecodeAdmission<'request>,
+    ) -> Self {
+        Self {
+            bounds,
+            admission: Some(admission),
+            value: PhantomData,
+        }
+    }
+
+    /// Shared generated visitor plumbing for standalone and admitted decoding.
+    pub fn with_optional_admission(
+        bounds: ValueDecodeBounds,
+        admission: Option<&'a mut ValueDecodeAdmission<'request>>,
+    ) -> Self {
+        Self {
+            bounds,
+            admission,
             value: PhantomData,
         }
     }
 }
-impl<'de, Value: CanonicalValue> DeserializeSeed<'de> for CanonicalValueSeed<Value> {
+impl<'de, Value: CanonicalValue> DeserializeSeed<'de> for CanonicalValueSeed<'_, '_, Value> {
     type Value = Value;
     fn deserialize<Decoder: serde::Deserializer<'de>>(
         self,
         decoder: Decoder,
     ) -> Result<Value, Decoder::Error> {
-        Value::deserialize_bounded(decoder, self.bounds)
+        match self.admission {
+            Some(admission) => {
+                // Decode, bounds validation and structural re-encoding traversal.
+                admission(3, 0).map_err(serde::de::Error::custom)?;
+                Value::deserialize_admitted(decoder, self.bounds, admission)
+            }
+            None => Value::deserialize_bounded(decoder, self.bounds),
+        }
     }
 }
 

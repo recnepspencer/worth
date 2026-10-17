@@ -12,8 +12,8 @@ use crate::domain_computation::primary_graph::{
     application_query::{
         authorized_read::WorthQueryAuthorizedApplicationReadDenial,
         read_execution::WorthQueryApplicationReadExecutionDenialKind,
-        WorthQueryApplicationProjection, WorthQueryApplicationQueryAdmissionDenial,
-        WorthQueryApplicationQueryAdmissionDenialKind,
+        WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenialKind,
+        WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
     },
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
@@ -46,6 +46,26 @@ where
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
 {
+    pub(super) fn handle_projection_denial(
+        &mut self,
+        kind: WorthQueryApplicationProjectionDenialKind,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        if matches!(
+            kind,
+            WorthQueryApplicationProjectionDenialKind::ValueDecode(_)
+        ) {
+            // A refused native decode cancels this read's custody. It cannot
+            // consume the queued cause as though delivery had succeeded.
+            self.terminate_stopped_read();
+            return WorthQueryApplicationLiveOutcome::ProjectionDenied(kind);
+        }
+        if self.acknowledge_front() {
+            WorthQueryApplicationLiveOutcome::ProjectionDenied(kind)
+        } else {
+            WorthQueryApplicationLiveOutcome::Unavailable
+        }
+    }
+
     pub(super) fn handle_admission_denial(
         &mut self,
         denial: WorthQueryApplicationQueryAdmissionDenial,

@@ -59,6 +59,7 @@ pub(super) fn finalize_continuation_page<
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -84,6 +85,8 @@ where
     let mut finalization = release_continuation_page_basis(plan)?;
     validate_continuation_projection(application, &finalization)?;
     let projected = project_non_live_kernel::<Schema, Query, QueryResult, _>(
+        execution,
+        application.installed_schema().value_bindings(),
         kernel,
         &finalization.governance,
         || {

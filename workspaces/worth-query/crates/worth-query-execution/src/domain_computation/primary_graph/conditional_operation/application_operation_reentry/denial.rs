@@ -26,6 +26,35 @@ mod tests {
     use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 
     #[test]
+    fn native_decode_cancellation_remains_control_stop_and_codec_refusal_remains_terminal() {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryInvariantProjectionDenialKind as Kind, WorthQueryValueDecodeDenial as Decode,
+        };
+        assert!(matches!(
+            WorthQueryTemporalReentryDenial::invariant_kind(
+                Kind::ValueDecode(Decode::Checkpoint(
+                    worth_execution::MapKernelStop::Cancelled
+                )),
+                super::super::WorthQueryTemporalAdmissionTerminalFailure::Invariant,
+            ),
+            WorthQueryTemporalReentryDenial::ControlStopped(
+                super::super::WorthQueryTemporalControlStop::Cancelled
+            )
+        ));
+        assert!(matches!(
+            WorthQueryTemporalReentryDenial::invariant_kind(
+                Kind::ValueDecode(Decode::CodecRejected),
+                super::super::WorthQueryTemporalAdmissionTerminalFailure::Invariant,
+            ),
+            WorthQueryTemporalReentryDenial::Terminal(
+                super::super::WorthQueryTemporalAdmissionTerminalFailure::Invariant(
+                    Kind::ValueDecode(Decode::CodecRejected)
+                )
+            )
+        ));
+    }
+
+    #[test]
     fn workflow_actor_native_cause_survives_reentry_stop_and_resource_mapping() {
         use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Authorization;
         use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt;

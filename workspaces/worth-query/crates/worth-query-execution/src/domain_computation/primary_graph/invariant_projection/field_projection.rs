@@ -31,8 +31,8 @@ where
         else {
             return Ok(None);
         };
-        self.graph
-            .with_runtime(execution, |runtime| {
+        super::super::value_decode::with_value_decode(execution, &self.value_bindings, |decode| {
+            self.graph.with_runtime(execution, |runtime| {
                 super::super::application_attempt::observe_field_value_borrowed(
                     runtime,
                     execution,
@@ -40,12 +40,23 @@ where
                     identity.entity_id,
                     identity.kind,
                     &locator,
-                    |value| value.and_then(|value| Field::Binding::decode(value).ok()),
+                    |value| {
+                        value.and_then(|value| {
+                            decode.decode::<Field::Binding>(
+                                field.entity(),
+                                field.aspect(),
+                                field.field(),
+                                value,
+                            )
+                        })
+                    },
                 )
             })
-            .map(Option::flatten)
-            .map_err(|cause| {
-                WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None)
-            })
+        })
+        .map_err(|cause| WorthQueryInvariantProjectionDenial::value_decode_stopped(cause, None))?
+        .map(Option::flatten)
+        .map_err(|cause| {
+            WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None)
+        })
     }
 }

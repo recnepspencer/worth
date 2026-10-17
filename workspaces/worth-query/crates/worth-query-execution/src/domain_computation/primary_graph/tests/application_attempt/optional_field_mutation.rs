@@ -83,7 +83,7 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
                 .into_parts()
         })
         .expect("the fixture read owns its installed host call");
-    let reads = world
+    let mut effects = world
         .application
         .with_host_advancement(|phase| {
             world
@@ -95,12 +95,6 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let mut effects = world
-        .application
-        .with_host_advancement(|phase| {
-            reads
                 .complete_projected_dependencies(
                     &phase,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

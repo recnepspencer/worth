@@ -315,7 +315,14 @@ where
                     return self.handle_read_denial(denial);
                 }
             };
-        match finalize_live_projection(plan, raw, authorization_work, read_proof) {
+        match finalize_live_projection(
+            execution,
+            self.runtime,
+            plan,
+            raw,
+            authorization_work,
+            read_proof,
+        ) {
             Ok((result, receipt, governance)) => {
                 self.governance = governance;
                 if !self.acknowledge_front() {
@@ -335,11 +342,7 @@ where
                     WorthQueryApplicationLiveCauseDenialKind::ResultShapeUnavailable,
                 ),
             Err(WorthQueryLiveProjectionFinalizationDenial::Projection(kind)) => {
-                if self.acknowledge_front() {
-                    WorthQueryApplicationLiveOutcome::ProjectionDenied(kind)
-                } else {
-                    WorthQueryApplicationLiveOutcome::Unavailable
-                }
+                self.handle_projection_denial(kind)
             }
         }
     }

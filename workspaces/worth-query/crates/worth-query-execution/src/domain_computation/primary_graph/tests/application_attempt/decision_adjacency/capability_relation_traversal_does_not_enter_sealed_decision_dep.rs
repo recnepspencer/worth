@@ -76,10 +76,10 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
                 .into_parts()
         })
         .expect("the fixture read owns its installed host call");
-    let reads = world
+    world
         .application
         .with_host_advancement(|phase| {
-            world
+            let reads = world
                 .application
                 .begin_projected_application_read_attempt(
                     &phase,
@@ -87,12 +87,7 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
                     projection,
                     AllocationPolicy::SystemAllocation,
                 )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    world
-        .application
-        .with_host_advancement(|phase| {
+                .unwrap();
             reads
                 .complete_projected_dependencies(
                     &phase,

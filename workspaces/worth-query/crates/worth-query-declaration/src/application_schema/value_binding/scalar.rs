@@ -21,6 +21,8 @@ pub trait ApplicationScalarValueBinding: 'static {
     const SCALAR_FAMILY: ScalarAspectType;
     const UNIT: Option<ApplicationUnitIdentity> = None;
     const FRAME: Option<ApplicationFrameIdentity> = None;
+    /// Whether the owner supplies resource-admitted canonical decoding.
+    const SUPPORTS_ADMITTED_DECODE: bool = false;
 
     /// Derived complete wire meaning, when this binding adopts canonical values.
     fn canonical_contract() -> Option<super::ApplicationCanonicalValueContract> {
@@ -35,6 +37,20 @@ pub trait ApplicationScalarValueBinding: 'static {
 /// Scalar binding that can reconstruct its exact domain value.
 pub trait ApplicationReadableScalarValueBinding: ApplicationScalarValueBinding {
     fn decode(value: &AspectValue) -> Result<Self::Value, ApplicationValueDecodeDenial>;
+
+    /// Native request dispatch. Canonical owners must opt in explicitly; a
+    /// representation-only decoder is never an admitted decoder fallback.
+    fn decode_admitted(
+        value: &AspectValue,
+        _admission: &mut super::ValueDecodeAdmission<'_>,
+    ) -> Result<Self::Value, ApplicationValueDecodeDenial> {
+        if Self::canonical_contract().is_some() {
+            return Err(ApplicationValueDecodeDenial::CodecRejected {
+                binding_identity: Self::IDENTITY,
+            });
+        }
+        Self::decode(value)
+    }
 }
 
 /// Readable binding suitable for stable application identity fields.
@@ -47,11 +63,19 @@ pub trait ApplicationSignedAggregateValueBinding: ApplicationReadableScalarValue
 
 pub type ErasedApplicationValueDecode =
     fn(&AspectValue) -> Result<Box<dyn Any>, ApplicationValueDecodeDenial>;
+pub type ErasedApplicationValueAdmittedDecode =
+    fn(
+        &AspectValue,
+        &mut super::ValueDecodeAdmission<'_>,
+    ) -> Result<Box<dyn Any>, ApplicationValueDecodeDenial>;
 pub type ErasedApplicationSignedAggregateDecode =
     fn(i64) -> Result<Box<dyn Any>, ApplicationValueDecodeDenial>;
 
 pub trait ApplicationValueDecodePosture<Binding: ApplicationScalarValueBinding + ?Sized> {
     fn erased_decode() -> Option<ErasedApplicationValueDecode>;
+    fn erased_admitted_decode() -> Option<ErasedApplicationValueAdmittedDecode> {
+        None
+    }
 }
 
 pub trait ApplicationValueIdentityPosture {
@@ -75,6 +99,9 @@ impl<Binding: ApplicationScalarValueBinding> ApplicationValueDecodePosture<Bindi
     fn erased_decode() -> Option<ErasedApplicationValueDecode> {
         None
     }
+    fn erased_admitted_decode() -> Option<ErasedApplicationValueAdmittedDecode> {
+        None
+    }
 }
 
 impl<Binding> ApplicationValueDecodePosture<Binding> for ApplicationValueDecodeAvailable
@@ -87,6 +114,10 @@ where
             Binding::validate(&value)?;
             Ok(Box::new(value) as Box<dyn Any>)
         })
+    }
+
+    fn erased_admitted_decode() -> Option<ErasedApplicationValueAdmittedDecode> {
+        Some(super::admitted::decode_erased::<Binding>)
     }
 }
 

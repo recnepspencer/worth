@@ -26,6 +26,7 @@ macro_rules! worth_query_value_binding {
             type SignedAggregate = $crate::facade::application_schema::ApplicationValueSignedAggregateUnavailable;
             const IDENTITY_NAME: &'static str = $identity;
             const SCALAR_FAMILY: $crate::facade::typed::ScalarAspectType = $crate::facade::typed::ScalarAspectType::String;
+            const SUPPORTS_ADMITTED_DECODE: bool = <$Value as $crate::facade::application_schema::CanonicalValue>::SUPPORTS_ADMISSION;
             fn canonical_contract() -> Option<$crate::facade::application_schema::ApplicationCanonicalValueContract> {
                 Some($crate::facade::application_schema::ApplicationCanonicalValueContract::of::<$Value>(Self::CANONICAL_BOUNDS))
             }
@@ -49,6 +50,15 @@ macro_rules! worth_query_value_binding {
             fn decode(raw: &$crate::facade::application_schema::ApplicationValue) -> Result<Self::Value, $crate::facade::application_schema::ApplicationValueDecodeDenial> {
                 $crate::facade::application_schema::decode_application_canonical_value::<Self::Value>(
                     raw, Self::CANONICAL_BOUNDS, <Self as $crate::facade::application_schema::ApplicationScalarValueBinding>::IDENTITY,
+                )
+            }
+            fn decode_admitted(
+                raw: &$crate::facade::application_schema::ApplicationValue,
+                admission: &mut $crate::facade::application_schema::ValueDecodeAdmission<'_>,
+            ) -> Result<Self::Value, $crate::facade::application_schema::ApplicationValueDecodeDenial> {
+                $crate::facade::application_schema::decode_application_canonical_value_with_admission::<Self::Value>(
+                    raw, Self::CANONICAL_BOUNDS, <Self as $crate::facade::application_schema::ApplicationScalarValueBinding>::IDENTITY,
+                    admission,
                 )
             }
         }

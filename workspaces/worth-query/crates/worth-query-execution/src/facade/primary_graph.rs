@@ -270,7 +270,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryTemporalPrincipalSource, WorthQueryTemporalQueryAuthorization,
     WorthQueryTemporalQueryAuthorizationDenial, WorthQueryTemporalReconstructionAccess,
     WorthQueryTouchedRecordIdentity, WorthQueryUnpublishedBranchAdoption,
-    WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryUnpublishedGeneratedOutputRestoration, WorthQueryValueDecodeDenial,
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,

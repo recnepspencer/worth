@@ -13,6 +13,8 @@ use crate::domain_computation::primary_graph::{
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationReadAttempt<
+        '_,
+        '_,
         Schema,
         Operation,
         Input,

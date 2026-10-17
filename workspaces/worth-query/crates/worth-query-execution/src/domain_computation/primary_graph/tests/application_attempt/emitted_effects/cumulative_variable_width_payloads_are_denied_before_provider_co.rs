@@ -57,7 +57,7 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
                 .into_parts()
         })
         .expect("the fixture read owns its installed host call");
-    let reads = world
+    let mut effects = world
         .application
         .with_host_advancement(|phase| {
             world
@@ -69,12 +69,6 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
                     AllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let mut effects = world
-        .application
-        .with_host_advancement(|phase| {
-            reads
                 .complete_projected_dependencies(
                     &phase,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

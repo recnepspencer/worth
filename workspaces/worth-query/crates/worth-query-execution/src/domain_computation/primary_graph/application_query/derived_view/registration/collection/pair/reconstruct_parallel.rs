@@ -223,6 +223,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 .seal_prepared_read(output.second.proof)
                                 .map_err(|cause| denial::session(cause, root, &ReadPlan::of(&pair.second)))?;
                             let first = finalize_one_shot(
+                                &request,
                                 self,
                                 pair.first,
                                 output.first.raw,
@@ -232,6 +233,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             )
                             .map_err(read_denied)?;
                             let second = finalize_one_shot(
+                                &request,
                                 self,
                                 pair.second,
                                 output.second.raw,

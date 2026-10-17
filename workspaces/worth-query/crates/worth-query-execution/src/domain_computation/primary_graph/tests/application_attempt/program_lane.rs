@@ -59,7 +59,7 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
                 .into_parts()
         })
         .expect("the fixture read owns its installed host call");
-    let reads = world
+    let mut effects = world
         .application
         .with_host_advancement(|phase| {
             world
@@ -71,12 +71,6 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let mut effects = world
-        .application
-        .with_host_advancement(|phase| {
-            reads
                 .complete_projected_dependencies(
                     &phase,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

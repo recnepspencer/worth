@@ -1,0 +1,63 @@
+//! Finite host execution policy, consumed by ordinary installation and requests.
+use worth_foundational::{
+    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+};
+use worth_query_host::facade::{
+    application_installation::WorthQueryInMemoryApplicationLimits,
+    primary_graph::SignalConditionalEvaluationBudget, runtime::*,
+};
+
+pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
+    let policy = ExecutionRequestPolicy::new(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 * 1024 * 1024, work),
+    );
+    let resources = WorthQueryProductWorldResources::install(
+        RuntimeWorldBudgetInstallation {
+            branches: RuntimeWorldBranchBudgetInstallation {
+                live_product_branches: 8,
+            },
+            history: RuntimeWorldHistoryBudgetInstallation {
+                retained_composite_commits: 64,
+                history_metadata_bytes: 4 * 1024 * 1024,
+            },
+            observations: RuntimeWorldObservationBudgetInstallation {
+                active_observations: 32,
+            },
+            publication: RuntimeWorldPublicationBudgetInstallation {
+                active_publication_attempts: 8,
+            },
+            recovery: RuntimeWorldRecoveryBudgetInstallation {
+                retained_product_unpublished_records: 8,
+                retained_partial_metadata_bytes: 4 * 1024 * 1024,
+            },
+            retention: RuntimeWorldRetentionBudgetInstallation {
+                unique_exact_component_pins: 64,
+                in_flight_pin_acquisition_reservations: 16,
+            },
+            custody: RuntimeWorldCustodyBudgetInstallation {
+                owner_created_component_custody_records: 32,
+            },
+        },
+        WorthQueryProductWorldClock::start(),
+        WorthQueryInvalidationResources::install(
+            WorthQueryInvalidationResourceInstallation::bounded(
+                1_000_000,
+                64 * 1024 * 1024,
+                128 * 1024 * 1024,
+                64,
+            ),
+        )
+        .unwrap(),
+        policy,
+    )
+    .unwrap();
+    WorthQueryInMemoryApplicationLimits::new(
+        resources,
+        WorthQueryApplicationCandidateResourceProfile::physical_resources(1024, 1024 * 1024)
+            .unwrap(),
+        WorthQueryApplicationQueryResourceProfile::bounded(5120, 16 * 1024, 64, 32).unwrap(),
+        SignalConditionalEvaluationBudget::development(),
+    )
+}

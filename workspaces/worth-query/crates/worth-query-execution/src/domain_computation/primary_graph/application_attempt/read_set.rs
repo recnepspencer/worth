@@ -27,6 +27,7 @@ mod admitted_arrays;
 mod binding_proof;
 mod completion;
 mod computation_routing;
+mod value_decode;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use computation_routing::{
@@ -61,13 +62,19 @@ use source_facts::{merge_source_facts, validate_source_facts, SourceFacts};
 /// declares it reads, then call `complete` to seal them into a
 /// [`WorthQueryCompleteApplicationReadSet`]. Every read is checked against the
 /// operation's installed reads and its admitted scope.
+/// The attempt borrows its original execution request and retains cumulative
+/// decode grants. An ignored canonical decode refusal still prevents completion.
 pub struct WorthQueryApplicationReadAttempt<
+    'request,
+    'authority,
     Schema,
     Operation,
     Input,
     Scope,
     Phase = WorthQueryOrdinaryApplicationRead,
 > {
+    execution: worth_execution::ExecutionRequest<'request, 'authority>,
+    value_decode: super::super::value_decode::ValueDecodeState,
     admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: WorthQueryApplicationSnapshotLease,
     layout: Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
@@ -127,12 +134,12 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn begin_application_read_attempt<Operation, Input, Scope>(
+    pub fn begin_application_read_attempt<'request, 'authority, Operation, Input, Scope>(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'request, 'authority>,
         mut admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
-        WorthQueryApplicationReadAttempt<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
         if !admission.belongs_to(
@@ -166,6 +173,8 @@ where
         let source_facts =
             SourceFacts::Admitted(validate_source_facts(execution, &mut admission, &lease)?);
         Ok(WorthQueryApplicationReadAttempt {
+            execution: *execution,
+            value_decode: super::super::value_decode::ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
             admission,
             lease,
             layout: Arc::clone(&graph.layout),
@@ -210,14 +219,16 @@ where
     ///     let _ = runtime.begin_projected_application_read_attempt(admission, projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
     /// }
     /// ```
-    pub fn begin_projected_application_read_attempt<Operation, Input, Scope>(
+    pub fn begin_projected_application_read_attempt<'scope, Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<
+            'scope,
+            'scope,
             Schema,
             Operation,
             Input,
@@ -240,17 +251,21 @@ where
     }
 
     pub(in crate::domain_computation) fn begin_projected_application_read_attempt_with_request<
+        'request,
+        'authority,
         Operation,
         Input,
         Scope,
     >(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'request, 'authority>,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<
+            'request,
+            'authority,
             Schema,
             Operation,
             Input,
@@ -312,6 +327,10 @@ where
         )?;
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {
+            execution: *execution,
+            value_decode: super::super::value_decode::ValueDecodeState::new(
+                self.installed_schema.value_bindings().clone(),
+            ),
             admission,
             lease,
             layout,

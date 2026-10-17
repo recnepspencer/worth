@@ -1,6 +1,7 @@
 //! Focused binding dispatch tests, without graph/currentness claims.
 use super::decode_admitted;
 use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_installation::facade::ApplicationReadableScalarValueBinding;
 
 worth_query_declaration::worth_query_value_binding!(TestCarrierBinding for String {
     identity: "worth.query.test.predecode-carrier.v1", scalar: String,
@@ -26,8 +27,12 @@ fn decode(value: InternedString) -> Option<String> {
 #[test]
 fn predecode_denial_prevents_actual_declared_binding_dispatch() {
     let raw = AspectValue::String("decoder-must-not-run".into());
-    let result =
-        decode_admitted::<TestCarrierBinding, _>(&raw, |_, _| Err("owner-denied"), &|| Ok(()));
+    let result = decode_admitted::<String, _>(
+        &raw,
+        |_, _| Err("owner-denied"),
+        &|| Ok(()),
+        |raw| TestCarrierBinding::decode(raw).ok(),
+    );
     assert_eq!(result.unwrap(), Err("owner-denied"));
 }
 
@@ -39,17 +44,27 @@ fn accepted_admission_preserves_decode_rejection_and_mandatory_macro_validation(
         AspectValue::UInt64(5),
     ] {
         assert_eq!(
-            decode_admitted::<TestCarrierBinding, ()>(&raw, |_, _| Ok(()), &|| Ok(()))
-                .unwrap()
-                .unwrap(),
+            decode_admitted::<String, ()>(
+                &raw,
+                |_, _| Ok(()),
+                &|| Ok(()),
+                |raw| TestCarrierBinding::decode(raw).ok()
+            )
+            .unwrap()
+            .unwrap(),
             None
         );
     }
     let raw = AspectValue::String("accepted".into());
     assert_eq!(
-        decode_admitted::<TestCarrierBinding, ()>(&raw, |_, _| Ok(()), &|| Ok(()))
-            .unwrap()
-            .unwrap(),
+        decode_admitted::<String, ()>(
+            &raw,
+            |_, _| Ok(()),
+            &|| Ok(()),
+            |raw| TestCarrierBinding::decode(raw).ok()
+        )
+        .unwrap()
+        .unwrap(),
         Some("accepted".to_owned())
     );
 }

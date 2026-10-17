@@ -41,23 +41,22 @@ fn incomplete_mandatory_decision_reads_cannot_form_an_effect_program() {
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let attempt = world
+    let completion = world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            world
+            let attempt = world
                 .application
                 .begin_application_read_attempt(
                     &host_custody.borrowed_request_for_test(),
                     admission,
                 )
-                .unwrap()
+                .unwrap();
+            attempt.complete(AllocationPolicy::SystemAllocation)
         })
         .expect("the fixture read owns its installed host call");
 
-    let Err(denial) =
-        attempt.complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
-    else {
+    let Err(denial) = completion else {
         panic!("an incomplete mandatory decision-read set must not complete");
     };
     assert_eq!(
@@ -118,10 +117,10 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
                 .into_parts()
         })
         .expect("the fixture read owns its installed host call");
-    let attempt = world
+    world
         .application
         .with_host_advancement(|phase| {
-            world
+            let attempt = world
                 .application
                 .begin_projected_application_read_attempt(
                     &phase,
@@ -129,13 +128,7 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
                     projection,
                     AllocationPolicy::SystemAllocation,
                 )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-
-    world
-        .application
-        .with_host_advancement(|phase| {
+                .unwrap();
             attempt
                 .complete_projected_dependencies(
                     &phase,
@@ -183,29 +176,22 @@ fn same_type_entity_outside_the_admitted_root_cannot_enter_an_unprojected_read_s
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let attempt = world
+    let denial = world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            world
+            let attempt = world
                 .application
                 .begin_application_read_attempt(
                     &host_custody.borrowed_request_for_test(),
                     admission,
                 )
-                .unwrap()
+                .unwrap();
+            attempt
+                .resolve_entity(&phase, AccountStatus::reference(), "unrelated".to_string())
+                .expect_err("an unprojected read attempt must remain inside its admitted root")
         })
         .expect("the fixture read owns its installed host call");
-
-    let Err(denial) = world
-        .application
-        .with_host_advancement(|phase| {
-            attempt.resolve_entity(&phase, AccountStatus::reference(), "unrelated".to_string())
-        })
-        .expect("the fixture read owns its installed host call")
-    else {
-        panic!("an unprojected read attempt must remain inside its admitted root");
-    };
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope

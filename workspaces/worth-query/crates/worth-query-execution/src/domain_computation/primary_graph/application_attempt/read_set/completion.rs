@@ -9,7 +9,7 @@ use super::{
 };
 
 impl<Schema, Operation, Input, Scope, Phase>
-    WorthQueryApplicationReadAttempt<Schema, Operation, Input, Scope, Phase>
+    WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
 {
     pub fn complete(
         mut self,
@@ -18,6 +18,17 @@ impl<Schema, Operation, Input, Scope, Phase>
         WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
         WorthQueryApplicationAttemptDenial,
     > {
+        // No ignored ordinary decode refusal can seal/attribute facts, retain
+        // completed input, or advance to an effect/candidate owner.
+        self.check_value_decode()?;
+        self.execution.consult().map_err(|cause| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::ValueDecode(
+                    super::super::super::value_decode::WorthQueryValueDecodeDenial::Scope(cause),
+                ),
+                self.admission.operation(),
+            )
+        })?;
         check_request_live(
             self.admission.publication_request(),
             self.admission.operation(),

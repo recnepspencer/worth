@@ -7,7 +7,8 @@ use super::{
     ApplicationFrameIdentity, ApplicationScalarValueBinding, ApplicationUnitIdentity,
     ApplicationValueDecodePosture, ApplicationValueEncodeDenial, ApplicationValueIdentityPosture,
     ApplicationValueSignedAggregatePosture, ApplicationValueValidationDenial,
-    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueDecode,
+    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
+    ErasedApplicationValueDecode,
 };
 use crate::application_schema::ApplicationSchemaMember;
 
@@ -57,6 +58,8 @@ pub struct ApplicationFieldBindingRecipe {
     validate: ErasedApplicationValueValidation,
     encode: ErasedApplicationValueEncode,
     decode: Option<ErasedApplicationValueDecode>,
+    admitted_decode: Option<ErasedApplicationValueAdmittedDecode>,
+    supports_admitted_decode: bool,
     identity_capable: bool,
     signed_aggregate_decode: Option<ErasedApplicationSignedAggregateDecode>,
     canonical: Option<super::ApplicationCanonicalValueContract>,
@@ -77,6 +80,8 @@ impl ApplicationFieldBindingRecipe {
             validate: erased_validate::<Binding>,
             encode: erased_encode::<Binding>,
             decode: Binding::Decode::erased_decode(),
+            admitted_decode: Binding::Decode::erased_admitted_decode(),
+            supports_admitted_decode: Binding::SUPPORTS_ADMITTED_DECODE,
             identity_capable: Binding::Identity::CAPABLE,
             signed_aggregate_decode: Binding::SignedAggregate::erased_decode(),
             canonical: Binding::canonical_contract(),
@@ -127,6 +132,14 @@ impl ApplicationFieldBindingRecipe {
         self.decode
     }
 
+    pub const fn admitted_decode(&self) -> Option<ErasedApplicationValueAdmittedDecode> {
+        self.admitted_decode
+    }
+
+    pub const fn supports_admitted_decode(&self) -> bool {
+        self.supports_admitted_decode && self.admitted_decode.is_some()
+    }
+
     pub const fn identity_capable(&self) -> bool {
         self.identity_capable
     }
@@ -143,6 +156,8 @@ impl ApplicationFieldBindingRecipe {
             && self.binding_type == other.binding_type
             && self.value_type == other.value_type
             && self.decode.is_some() == other.decode.is_some()
+            && self.supports_admitted_decode == other.supports_admitted_decode
+            && self.admitted_decode.is_some() == other.admitted_decode.is_some()
             && self.identity_capable == other.identity_capable
             && self.signed_aggregate_decode.is_some() == other.signed_aggregate_decode.is_some()
     }

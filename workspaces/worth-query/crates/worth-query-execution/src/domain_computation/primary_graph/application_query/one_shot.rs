@@ -183,7 +183,15 @@ where
                 )
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
-        finalize_one_shot(self, plan, raw, authorization_work, read_proof, spent)
+        finalize_one_shot(
+            execution,
+            self,
+            plan,
+            raw,
+            authorization_work,
+            read_proof,
+            spent,
+        )
     }
 }
 

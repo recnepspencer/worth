@@ -5,6 +5,8 @@
 mod adoption;
 #[path = "application_graph/allocation_custody.rs"]
 mod allocation_custody;
+#[path = "application_graph/canonical_admission.rs"]
+mod canonical_admission;
 #[path = "application_graph/canonical_identity.rs"]
 mod canonical_identity;
 #[path = "application_graph/canonical_value.rs"]
