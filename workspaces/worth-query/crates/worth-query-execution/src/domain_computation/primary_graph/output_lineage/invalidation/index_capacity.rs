@@ -61,7 +61,9 @@ pub(super) fn retained_forest_bytes<K, V>(entries: usize, roots: usize) -> Optio
 /// A = copies + 2S + 3R and F = P0 + S + 2R, so A <= 2F - P0 - R <= 2F - 1.
 /// Every nonroot owns at least 31 keys, so F fits the retained bound. A
 /// removal can merge into a fresh node, which this bound does not cover.
-pub(super) fn insertion_sequence_bytes<K, V>(entries: usize) -> Option<u64> {
+pub(in crate::domain_computation::primary_graph) fn insertion_sequence_bytes<K, V>(
+    entries: usize,
+) -> Option<u64> {
     let nodes = 1usize.checked_add(entries.saturating_sub(1) / 31)?;
     let allocations = nodes.checked_mul(2)?.checked_sub(1)?;
     ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(allocations).ok()?)
@@ -112,7 +114,9 @@ fn ordered_height(entries: usize) -> Option<usize> {
 
 /// Binary search within at most 64 initialized entries plus navigation at
 /// each level. Key comparison payload work is admitted by the key owner.
-pub(super) fn ordered_navigation_work(entries: usize) -> Option<u64> {
+pub(in crate::domain_computation::primary_graph) fn ordered_navigation_work(
+    entries: usize,
+) -> Option<u64> {
     // Pinned im 15.1 splits into 32-key children; removal can leave 31.
     // A nonroot node therefore has at least 31 keys and 32 children. With
     // a one-key root, a height h needs at least 2 * 32^(h - 1) - 1 keys.

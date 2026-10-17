@@ -2,6 +2,7 @@
 use super::*;
 mod mixed_retirement;
 mod mutation;
+mod one_pass;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryCheckpointOutputRole,
     output_reuse::{
@@ -243,6 +244,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         )
         .unwrap()
         .is_none());
+        one_pass::assert_one_pass_reconstruction(
+            &correspondence, layout, &facts, &producer_facts[0], owner,
+        );
         change_label(request_execution, runtime, entity, label);
         let after = snapshot(runtime);
         let after_source = runtime
