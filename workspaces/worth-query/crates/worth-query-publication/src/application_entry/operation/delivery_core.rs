@@ -44,16 +44,35 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
         policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
-        use WorthQueryOperationDeliveryDenial as Denial;
-        if !std::ptr::eq(self.runtime.runtime(), request.application)
-            || self.description.branch != request.branch
-        {
-            return Err(Denial::FreshRequestMismatch);
+        if !self.matches(request) {
+            return Err(WorthQueryOperationDeliveryDenial::FreshRequestMismatch);
         }
-        let observation = request.retain_read(phase).map_err(Denial::Observation)?;
-        let selected = observation
-            .select_on(phase, request.application)
+        let observation = request
+            .retain_read(phase)
+            .map_err(WorthQueryOperationDeliveryDenial::Observation)?;
+        self.require_current_at(&request.at(&observation), phase, policy)?;
+        Ok(observation)
+    }
+    fn matches(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> bool {
+        std::ptr::eq(self.runtime.runtime(), request.application)
+            && self.description.branch == request.branch
+    }
+    /// The original action, ceiling and complete lineage at the request's pinned observation.
+    pub(super) fn require_current_at(
+        &self,
+        retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        policy: WorthQueryOperationDeliveryPolicy,
+    ) -> Result<(), WorthQueryOperationDeliveryDenial> {
+        use WorthQueryOperationDeliveryDenial as Denial;
+        let selected = retained
+            .retained_observation()
+            .select_on(phase, self.runtime.runtime())
             .map_err(Denial::Observation)?;
+        // A foreign branch is refused before its installed meaning is read.
+        if selected.product().product_branch() != self.description.branch {
+            return Err(Denial::Currentness(WorthQueryOutputCurrentnessDenial::ForeignBranch));
+        }
         let owner = self
             .runtime
             .selected_program_owner(&selected)
@@ -69,10 +88,9 @@ where
             .source_currentness_work();
         let work = std::num::NonZeroUsize::new(policy.currentness_work.get().min(installed))
             .expect("installed finite positive currentness policy");
-        request.at(&observation).require_current_program_output_in_advancement(phase, &self.settlement, work).map_err(|denial| match denial {
+        retained.require_current_program_output_in_advancement(phase, &self.settlement, work).map_err(|denial| match denial {
             WorthQueryOutputCurrentnessDenial::Output(output) if matches!(output.kind(), worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded) => Denial::Stale(output),
             other => Denial::Currentness(other),
-        })?;
-        Ok(observation)
+        })
     }
 }

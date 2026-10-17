@@ -3,10 +3,11 @@ use super::*;
 use crate::application_program::ConsumerFixedAction;
 use crate::{ConsumerProgram, ConsumerProgramRoot};
 use worth_query_host::facade::application_entry::{
-    WorthQueryClosedFixedDelivery, WorthQueryOperationAdvance as FixedAdvance,
-    WorthQueryOperationDeliveryDenial, WorthQueryOutputCurrentnessDenial,
-    WorthQueryOutputSettlementPosture, WorthQueryProgramOutputOperationAdvance as TreeAdvance,
-    WorthQuerySettledFixedOperation, WorthQuerySettledProgramOutputOperation,
+    WorthQueryClosedFixedDelivery, WorthQueryClosedProgramOutputDelivery,
+    WorthQueryOperationAdvance as FixedAdvance, WorthQueryOperationDeliveryDenial,
+    WorthQueryOutputCurrentnessDenial, WorthQueryOutputSettlementPosture,
+    WorthQueryProgramOutputOperationAdvance as TreeAdvance, WorthQuerySettledFixedOperation,
+    WorthQuerySettledProgramOutputOperation,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryOutputDemandDenialKind,
@@ -16,6 +17,7 @@ use worth_query_topology_entry::{
     PlanarEdit, PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarOutputs,
 };
 mod construction;
+mod exact_observation;
 mod selected_meaning;
 mod transitions;
 type World = installation::ConsumerWorld;
@@ -42,6 +44,8 @@ type ClosedFixed = WorthQueryClosedFixedDelivery<
 >;
 type Tree =
     WorthQuerySettledProgramOutputOperation<ConsumerSchema, ConsumerProgram, ConsumerProgramRoot>;
+type ClosedTree =
+    WorthQueryClosedProgramOutputDelivery<ConsumerSchema, ConsumerProgram, ConsumerProgramRoot>;
 
 #[test]
 fn fixed_and_no_source_close_before_fresh_complete_current_read() {
@@ -76,7 +80,7 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         .entity::<PlanarAnchorOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id();
-    let (closed_fixed, closed_tree) = {
+    let (closed_fixed, closed_tree, other) = {
         let scope = authentication::request_scope();
         let adapter = authentication::admit(world.application.installed_schema());
         let principal = authentication::block_on(adapter.authenticate(
@@ -126,7 +130,7 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
             0
         );
         let closed_tree = transitions::close_tree_after_cancelled_refusal(settled, &world);
-        (closed_fixed, closed_tree)
+        (closed_fixed, closed_tree, other)
     };
     assert_eq!(
         world
@@ -194,6 +198,20 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         );
         drop((read, observation));
         transitions::cancelled_delivery_retains_closed(&closed_tree, &world, &request);
+        let foreign = world
+            .application
+            .request(&principal, &scope)
+            .on_branch(other)
+            .retain_current_read()
+            .unwrap();
+        exact_observation::one_caller_observation(
+            &closed_fixed,
+            &closed_tree,
+            &world,
+            &request,
+            &foreign,
+        );
+        drop(foreign);
         // Change an ACTUAL consumed root fact, not merely an unrelated suffix.
         // Both closed carriers retain their historical meaning on fresh refusal.
         edit_source(&world, &request, "anchor-a", 4, 0x9176_6277);
@@ -212,6 +230,12 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
             Err(WorthQueryOperationDeliveryDenial::Currentness(WorthQueryOutputCurrentnessDenial::Output(cause)))
                 if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
         ));
+        exact_observation::superseded_at_caller_observation(
+            &closed_fixed,
+            &closed_tree,
+            &world,
+            &request,
+        );
         assert_eq!(
             world
                 .application

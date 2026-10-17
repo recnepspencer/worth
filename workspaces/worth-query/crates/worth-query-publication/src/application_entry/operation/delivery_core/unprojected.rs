@@ -22,15 +22,29 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
-        if !std::ptr::eq(self.runtime.runtime(), request.application)
-            || self.description.branch != request.branch
-        {
+        if !self.matches(request) {
             return Err(WorthQueryOperationDeliveryDenial::FreshRequestMismatch);
         }
         request
             .application
             .with_application_advancement(request.scope, |phase| {
                 self.current_observation(request, &phase, policy)
+            })
+            .map_err(WorthQueryOperationDeliveryDenial::Execution)?
+    }
+    pub fn deliver_current_at(
+        &self,
+        retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema>,
+        policy: WorthQueryOperationDeliveryPolicy,
+    ) -> Result<(), WorthQueryOperationDeliveryDenial> {
+        let request = retained.base_request();
+        if !self.matches(&request) {
+            return Err(WorthQueryOperationDeliveryDenial::FreshRequestMismatch);
+        }
+        request
+            .application
+            .with_application_advancement(request.scope, |phase| {
+                self.require_current_at(retained, &phase, policy)
             })
             .map_err(WorthQueryOperationDeliveryDenial::Execution)?
     }

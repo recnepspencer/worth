@@ -293,6 +293,18 @@ where
         super::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(&self.observation))
     }
 
+    /// The same runtime, principal, scope and branch, unpinned, for native owner affinity.
+    pub(in crate::application_entry) fn base_request(
+        &self,
+    ) -> WorthQueryApplicationRequest<'application, 'principal, 'scope, Schema> {
+        WorthQueryApplicationRequest {
+            application: self.application,
+            principal: self.principal,
+            scope: self.scope,
+            branch: self.branch,
+        }
+    }
+
     /// Reads independently scoped intents at this same observation, publishing
     /// only a complete ordered batch. Duplicate scopes are independently billed.
     pub fn query_batch<Intent>(

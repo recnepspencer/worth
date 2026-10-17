@@ -30,13 +30,25 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
         policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
+        let observation = request
+            .retain_read(phase)
+            .map_err(WorthQueryOperationDeliveryDenial::Observation)?;
+        self.require_current_at(&request.at(&observation), phase, policy)?;
+        Ok(observation)
+    }
+    /// The selected typed root, ceiling and complete original lineage at the pinned observation.
+    fn require_current_at(
+        &self,
+        retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, S>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        policy: WorthQueryOperationDeliveryPolicy,
+    ) -> Result<(), WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
-        let observation = request.retain_read(phase).map_err(Denial::Observation)?;
         self.runtime
             .validate_selected_output_root::<R>(
                 phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
-                &observation.retained,
+                &retained.retained_observation().retained,
             )
             .map_err(Denial::Program)?;
         let installed = self
@@ -47,11 +59,9 @@ where
             .source_currentness_work();
         let work = NonZeroUsize::new(policy.currentness_work.get().min(installed))
             .expect("native currentness ceiling is positive");
-        request
-            .at(&observation)
+        retained
             .require_current_program_output_in_advancement(phase, &self.settlement, work)
-            .map_err(Denial::Currentness)?;
-        Ok(observation)
+            .map_err(Denial::Currentness)
     }
     pub fn deliver_current(
         &self,
@@ -67,6 +77,33 @@ where
                 self.current_observation(request, &phase, policy)
             })
             .map_err(WorthQueryOperationDeliveryDenial::Execution)?
+    }
+    pub fn deliver_current_at(
+        &self,
+        retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, S>,
+        policy: WorthQueryOperationDeliveryPolicy,
+    ) -> Result<(), WorthQueryOperationDeliveryDenial> {
+        use WorthQueryOperationDeliveryDenial as Denial;
+        let request = retained.base_request();
+        if !self.matches(&request) {
+            return Err(Denial::FreshRequestMismatch);
+        }
+        request
+            .application
+            .with_application_advancement(request.scope, |phase| {
+                // A caller-pinned foreign branch is refused before its root eligibility is read.
+                let selected = retained
+                    .retained_observation()
+                    .select_on(&phase, request.application)
+                    .map_err(Denial::Observation)?;
+                if selected.product().product_branch() != self.branch {
+                    return Err(Denial::Currentness(
+                        WorthQueryOutputCurrentnessDenial::ForeignBranch,
+                    ));
+                }
+                self.require_current_at(retained, &phase, policy)
+            })
+            .map_err(Denial::Execution)?
     }
     pub fn read_current<I>(
         &self,

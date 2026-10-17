@@ -2587,6 +2587,36 @@ Any program adoption after settlement may make the original retained basis
 terminally unavailable (`RetainedBasisUnavailable`). Matching action meaning
 does not repair that basis; the application must run a fresh operation.
 
+To present several closed carriers together, retain one observation and deliver
+every carrier at it with `deliver_current_at(&request.at(&observation), policy)`.
+It runs the same native gate as `deliver_current` at that caller's observation:
+Fixed re-resolves its original installed action, no-source checks its selected
+typed root, and both validate their complete original lineage under the
+installed currentness ceiling. The request's scope is checked fresh. A
+foreign runtime, branch or observation is refused before any installed meaning is
+read. Bare `request.at(&observation).require_current_program_output(...)` checks
+lineage only. It neither revalidates the selected action or root nor replaces
+this gate. Success returns `()` because the caller already holds the
+observation. Read every displayed fact at that same observation.
+
+```rust,ignore
+let observation = request.retain_current_read()?;
+let pinned = request.at(&observation);
+for carrier in &closed_fixed {
+    carrier.deliver_current_at(&pinned, policy)?; // installed action + full lineage
+}
+for carrier in &closed_trees {
+    carrier.deliver_current_at(&pinned, policy)?; // selected typed root + full lineage
+}
+let membership = pinned.query(membership_read).execute()?; // facts at the same basis
+```
+
+A refusal for one carrier leaves every carrier closed and unchanged. Only a
+typed native `Superseded` (Fixed `Stale`, no-source `Currentness(Output(..))`
+of kind `Superseded`) tells the application to run a fresh operation for that
+carrier. `RetainedBasisUnavailable` and other causes keep their own posture.
+The compiled shape is in Host `closed_delivery_contract`.
+
 #### Original root output evidence
 
 A settled parent's `settlement().root_settlement()` borrows its actual immutable

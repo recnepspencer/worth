@@ -16,13 +16,16 @@
 //! Binding<S,I>: WorthQueryApplicationRequiredOutputSource<S,Connection<S,R>>,
 //! A: ApplicationAction<S,Binding<S,I>>,
 //! Delivery<S,I,A>: ApplicationFixedActionDelivery<S,Binding<S,I>,Root=R,Projection=ApplicationNoProjection> { owner.close_for_delivery(request) }
-//! fn deliver<S,I,P,R,A>(owner: &WorthQueryClosedFixedDelivery<S,I,P,R,A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, policy: WorthQueryOperationDeliveryPolicy)
+//! fn deliver<S,I,P,R,A>(owner: &WorthQueryClosedFixedDelivery<S,I,P,R,A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, common: &WorthQueryApplicationReadObservation, policy: WorthQueryOperationDeliveryPolicy)
 //! where S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>,
 //! R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
 //! Connection<S,R>: WorthQueryApplicationRequiredOutputConnection<S>,
 //! Binding<S,I>: WorthQueryApplicationRequiredOutputSource<S,Connection<S,R>>,
 //! A: ApplicationAction<S,Binding<S,I>>,
-//! Delivery<S,I,A>: ApplicationFixedActionDelivery<S,Binding<S,I>,Root=R,Projection=ApplicationNoProjection> { let _ = owner.deliver_current(request, policy); }
+//! Delivery<S,I,A>: ApplicationFixedActionDelivery<S,Binding<S,I>,Root=R,Projection=ApplicationNoProjection> {
+//!     let _ = owner.deliver_current(request, policy);
+//!     let _: Result<(), WorthQueryOperationDeliveryDenial> = owner.deliver_current_at(&request.at(common), policy);
+//! }
 //! ```
 //!
 //! Declared scalar delivery uses its real query contracts.

@@ -59,4 +59,29 @@ where
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
         self.delivery.deliver_current(request, policy)
     }
+    /// Validates this owner's original installed action, installed ceiling and every
+    /// required settlement at the caller's pinned observation, so several closed owners
+    /// can be shown current at one common basis. The scope is checked afresh; a refusal
+    /// borrows this owner unchanged and replays no source, demand or cleanup.
+    /// ```
+    /// use worth_query_publication::facade::application_entry::*;
+    /// use worth_query_declaration::facade::{application_operation::*, application_program::*, application_schema::ApplicationSchema};
+    /// use worth_query_execution::facade::primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource};
+    /// fn deliver<S, I, P, R, A>(settled: &WorthQueryClosedFixedDelivery<S, I, P, R, A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, observation: &WorthQueryApplicationReadObservation, policy: WorthQueryOperationDeliveryPolicy)
+    /// where S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>,
+    /// R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
+    /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S>,
+    /// I::Binding: WorthQueryApplicationRequiredOutputSource<S, <R::RootConnection as ApplicationConnectionShape<S>>::Binding>,
+    /// A: ApplicationAction<S, I::Binding>,
+    /// A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R, Projection = ApplicationNoProjection> {
+    ///     let _: Result<(), WorthQueryOperationDeliveryDenial> = settled.deliver_current_at(&request.at(observation), policy);
+    /// }
+    /// ```
+    pub fn deliver_current_at(
+        &self,
+        retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema>,
+        policy: WorthQueryOperationDeliveryPolicy,
+    ) -> Result<(), WorthQueryOperationDeliveryDenial> {
+        self.delivery.deliver_current_at(retained, policy)
+    }
 }

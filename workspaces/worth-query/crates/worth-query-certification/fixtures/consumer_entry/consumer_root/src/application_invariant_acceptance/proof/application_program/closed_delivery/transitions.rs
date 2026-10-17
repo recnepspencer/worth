@@ -5,13 +5,8 @@ use worth_query_host::facade::{
     application_contribution::{
         WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
     },
-    application_entry::{
-        WorthQueryClosedProgramOutputDelivery, WorthQueryOperationCloseDenial,
-        WorthQueryProgramOutputCloseDenial,
-    },
+    application_entry::{WorthQueryOperationCloseDenial, WorthQueryProgramOutputCloseDenial},
 };
-type ClosedTree =
-    WorthQueryClosedProgramOutputDelivery<ConsumerSchema, ConsumerProgram, ConsumerProgramRoot>;
 
 pub(super) fn close_fixed_after_foreign_refusal(
     fixed: Fixed,

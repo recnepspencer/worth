@@ -20,11 +20,12 @@
 //!     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S> {
 //!     owner.retry_close(request)
 //! }
-//! fn deliver<S,P,R>(owner: &WorthQueryClosedProgramOutputDelivery<S,P,R>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, policy: WorthQueryOperationDeliveryPolicy)
+//! fn deliver<S,P,R>(owner: &WorthQueryClosedProgramOutputDelivery<S,P,R>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, common: &WorthQueryApplicationReadObservation, policy: WorthQueryOperationDeliveryPolicy)
 //! where S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>,
 //!     R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
 //!     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S> {
 //!     let _ = owner.deliver_current(request, policy);
+//!     let _: Result<(), WorthQueryOperationDeliveryDenial> = owner.deliver_current_at(&request.at(common), policy);
 //!     let _ = (owner.settlement().root_settlement(), owner.close_evidence());
 //! }
 //! ```

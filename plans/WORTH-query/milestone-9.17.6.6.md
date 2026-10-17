@@ -622,6 +622,46 @@ concrete finding. Root alone executes compiler/native/enforcement/doc checks,
 regenerates facade/context artifacts, and publishes after the SAME independent
 Sol source/receipt review and separate Claude final qualification.
 
+### Exact-observation closed delivery
+
+The approved private cutover presents several closed carriers at ONE native
+observation. Bare `request.at(&O).require_current_program_output` validates
+lineage only. It omits Fixed's original installed-action comparison and
+no-source selected-root eligibility. Each closed carrier's `deliver_current`
+chose its own fresh observation, so no public path authorized a common `O`.
+
+Both authentic closed carriers therefore gain `deliver_current_at(&retained,
+policy) -> Result<(), WorthQueryOperationDeliveryDenial>`:
+
+- closed no-projection Fixed;
+- closed no-source.
+
+It reuses the existing core gate at the caller's observation, which covers:
+
+- runtime and branch affinity;
+- the fresh scope;
+- selection, with a foreign branch refused before installed meaning is read;
+- the original action or selected typed root;
+- the installed ceiling;
+- complete original lineage.
+
+The existing `deliver_current` delegates to the same split gate unchanged. There
+is no new token, accessor, denial variant or replay.
+
+Proof extends the existing courts:
+
+- **Main closed-delivery court:** a cancelled scope, a foreign-branch
+  observation, and a common positive with a read at that same observation. After
+  the source edit, typed Superseded.
+- **Selected-meaning court:** a compatible positive at `O`. Changed and removed
+  actions are denied at `O`, and an older `O` keeps its own changed-action
+  verdict. `RetainedBasisUnavailable` is reported at the restored `O`.
+- **Host fences:** the existing Host positive fences call it.
+
+The existing successors all share one root, so a removed no-source root is not
+constructible. Its eligibility at `O` is the same `validate_selected_output_root`
+call that `deliver_current` makes. Root executes the focused proofs and gates.
+
 ## Public Qualification
 
 The joined public API and covered Query, Bank, fixture, example, facade and
