@@ -3,7 +3,7 @@ mod session;
 mod state;
 
 pub(in crate::domain_computation::primary_graph) use session::ValueDecodeSession;
-pub(in crate::domain_computation::primary_graph) use state::{with_value_decode, ValueDecodeState};
+pub(in crate::domain_computation::primary_graph) use state::ValueDecodeState;
 
 /// The first refusal of a native admitted field decoder.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

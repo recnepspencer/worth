@@ -52,6 +52,11 @@ pub enum CanonicalDigestPreparationEntry {
         absence: AbsenceLaw,
         evolution: AspectEvolutionPolicy,
     },
+    ContractFieldCodec {
+        key: AspectKey,
+        field: FieldKey,
+        codec: crate::CanonicalDigestId,
+    },
     ContractMaskMode {
         key: AspectKey,
         mode: CanonicalDigestMaskMode,

@@ -117,6 +117,14 @@ fn canonical_entries_for_contract_digest_entry(
                 exact_text(aspect_evolution_policy_name(evolution)),
             ),
         ],
+        CanonicalDigestPreparationEntry::ContractFieldCodec { key, field, codec } => {
+            vec![contract_entry(
+                key.as_str(),
+                format!("field.{}.codec", field.as_str()),
+                CanonicalBasisEntryKind::Field,
+                CanonicalBasisValue::BytesDigest(codec),
+            )]
+        }
         CanonicalDigestPreparationEntry::ContractMaskMode { key, mode, allowed } => {
             vec![contract_entry(
                 key.as_str(),

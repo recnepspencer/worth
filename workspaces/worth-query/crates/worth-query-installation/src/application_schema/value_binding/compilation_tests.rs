@@ -59,6 +59,15 @@ schema!(
     OpaqueBinding,
     0x9174_0011
 );
+schema!(
+    LegacySchema,
+    LegacyEntity,
+    LegacyAspect,
+    LegacyField,
+    u64,
+    U64ApplicationValueBinding,
+    0x9174_0012
+);
 
 struct OpaqueBinding;
 impl ApplicationScalarValueBinding for OpaqueBinding {
@@ -168,7 +177,7 @@ fn canonical_admission_compilation_rejects_changed_shape_bounds_and_absent_meani
         .bind_application_schema(declaration.clone())
         .unwrap();
     let recipe = &declaration.member_provenance().field_bindings()[0];
-    let declared = collect_declared_fields(declaration.erased());
+    let declared = collect_declared_fields(declaration.erased()).unwrap();
     let contract = declared[recipe.locus()];
     validate_contract(recipe.locus(), contract, recipe, schema.native_contracts()).unwrap();
     let changed_shape = ApplicationCanonicalValueContract::of::<String>(BOUNDS);
@@ -176,9 +185,177 @@ fn canonical_admission_compilation_rejects_changed_shape_bounds_and_absent_meani
         ValueDecodeBounds::new(1024, 64, 8, 8),
     );
     for canonical in [None, Some(&changed_shape), Some(&changed_bounds)] {
-        let changed = (contract.0, contract.1, contract.2, contract.3, canonical);
+        let changed = (
+            contract.0, contract.1, contract.2, contract.3, canonical, contract.5, contract.6,
+        );
         let denial = validate_contract(recipe.locus(), changed, recipe, schema.native_contracts())
             .unwrap_err();
         assert_eq!(denial.kind(), DenialKind::ContractMismatch);
     }
+}
+
+#[test]
+fn installed_value_meaning_is_consumed_from_exact_native_and_executable_catalogues() {
+    use worth_foundational::facade::AspectShape;
+    let schema = index::<NestedSchema>()
+        .bind_application_schema(NestedSchema::declaration().unwrap())
+        .unwrap();
+    let meanings = schema.value_meaning().unwrap();
+    assert_eq!(meanings.len(), 1);
+    let meaning = &meanings[0];
+    let native = schema
+        .native_contracts()
+        .aspect("Entity", "Aspect")
+        .unwrap();
+    assert_eq!(meaning.identity(), native.contract().identity());
+    assert_eq!(meaning.revision(), native.contract().revision());
+    assert_eq!(meaning.fields().len(), 1);
+    let AspectShape::Struct(shape) = native.contract().shape() else {
+        panic!("declared field has native struct closure")
+    };
+    assert_eq!(
+        shape.fields()[0].codec(),
+        meaning.fields()[0].codec_digest()
+    );
+    assert!(
+        shape.fields()[0].codec().is_some(),
+        "canonical meaning cannot disappear behind the String carrier"
+    );
+    let ApplicationSchemaMember::Field { canonical, .. } = meaning.fields()[0].member() else {
+        unreachable!()
+    };
+    assert_eq!(
+        canonical.as_ref(),
+        schema
+            .value_bindings()
+            .field("Entity", "Aspect", "Field")
+            .unwrap()
+            .canonical_contract()
+    );
+}
+
+#[test]
+fn installed_codec_admission_refuses_missing_wrong_and_unexpected_native_meaning() {
+    let declaration = NestedSchema::declaration().unwrap();
+    let schema = index::<NestedSchema>()
+        .bind_application_schema(declaration.clone())
+        .unwrap();
+    let field = declaration
+        .erased()
+        .members()
+        .iter()
+        .find(|member| matches!(member, ApplicationSchemaMember::Field { .. }))
+        .unwrap();
+    let expected = ApplicationFieldValueMeaning::from_member(field)
+        .unwrap()
+        .unwrap()
+        .codec_digest()
+        .unwrap();
+    let mut changed = field.clone();
+    let ApplicationSchemaMember::Field { canonical, .. } = &mut changed else {
+        unreachable!()
+    };
+    *canonical = Some(ApplicationCanonicalValueContract::of::<String>(BOUNDS));
+    let wrong = ApplicationFieldValueMeaning::from_member(&changed)
+        .unwrap()
+        .unwrap()
+        .codec_digest()
+        .unwrap();
+    assert_ne!(
+        expected, wrong,
+        "the changed grammar uses the same String carrier"
+    );
+    for codec in [Some(expected), None, Some(wrong)] {
+        let native = imported_native_with_codec(&schema, codec);
+        let result = compile_value_binding_catalog(
+            &schema.binding_identity(),
+            declaration.erased(),
+            declaration.member_provenance(),
+            &native,
+        );
+        if codec == Some(expected) {
+            assert!(result.is_ok());
+        } else {
+            assert_eq!(result.unwrap_err().kind(), DenialKind::ContractMismatch);
+        }
+    }
+    let legacy_declaration = LegacySchema::declaration().unwrap();
+    let legacy = index::<LegacySchema>()
+        .bind_application_schema(legacy_declaration.clone())
+        .unwrap();
+    for codec in [None, Some(expected)] {
+        let native = imported_native_with_codec(&legacy, codec);
+        let result = compile_value_binding_catalog(
+            &legacy.binding_identity(),
+            legacy_declaration.erased(),
+            legacy_declaration.member_provenance(),
+            &native,
+        );
+        if codec.is_none() {
+            assert!(result.is_ok());
+        } else {
+            assert_eq!(result.unwrap_err().kind(), DenialKind::ContractMismatch);
+        }
+    }
+}
+
+fn imported_native_with_codec<Schema: ApplicationSchema>(
+    schema: &crate::application_schema::WorthQueryInstalledApplicationSchema<Schema>,
+    codec: Option<worth_foundational::facade::CanonicalDigestId>,
+) -> crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog {
+    use crate::application_schema::{
+        compile_native_contract_catalog, compile_portable_native_contract_records,
+    };
+    use crate::package::{
+        WorthQueryPortableNativeAspectContractParts, WorthQueryPortableNativeAspectContractRecord,
+    };
+    use worth_foundational::facade::{aspects, AspectShape, FieldDeclaration, StructAspectShape};
+    let record = compile_portable_native_contract_records(schema.installed_declaration())
+        .unwrap()
+        .remove(0);
+    let AspectShape::Struct(shape) = record.contract().shape() else {
+        unreachable!()
+    };
+    assert_eq!(
+        shape.fields().len(),
+        1,
+        "the fixture changes only one real native field"
+    );
+    let source = &shape.fields()[0];
+    let field = FieldDeclaration::new(
+        source.key().clone(),
+        source.value_type(),
+        source.requirement(),
+        source.absence(),
+        source.evolution(),
+    )
+    .unwrap();
+    let field = match codec {
+        Some(codec) => field.with_codec(codec),
+        None => field,
+    };
+    let contract = aspects()
+        .contract()
+        .for_key(record.aspect().clone())
+        .identified_by(record.contract().identity())
+        .at_revision(record.contract().revision())
+        .struct_aspect(StructAspectShape::new([field]).unwrap());
+    // The imported record is deliberately descriptive/untrusted; the normal
+    // native compiler and executable-binding admission must agree on its codec.
+    let imported = WorthQueryPortableNativeAspectContractRecord::from_untrusted_parts(
+        WorthQueryPortableNativeAspectContractParts {
+            schema: record.schema().into(),
+            entity: record.entity().into(),
+            aspect: record.aspect().clone(),
+            contract,
+            fields: record.fields().cloned().collect(),
+            binding: record.binding().clone(),
+        },
+    );
+    compile_native_contract_catalog(
+        &schema.binding_identity(),
+        &[imported],
+        schema.installation_canonical_work(),
+    )
+    .unwrap()
 }

@@ -276,6 +276,27 @@ The installed field's `canonical_contract()` exposes its shape, bounds and wire
 protocol. Nested field, enum, rename and bound changes participate in portable
 schema identity; semantic aspect revisions remain explicit.
 
+`installed_schema.value_meaning()` derives a descriptive aspect/field roster and
+checks it against the installed executable bindings and native contracts. Field
+codec digests use the same emitter as schema identity, including wire shape,
+bounds, presence, binding, unit and frame. Native contracts carry those digests
+beside the explicit semantic aspect revision. `compare_predecessor` refuses a
+changed field meaning without an advanced revision; a golden or this comparison
+does not establish authentic predecessor or migration authority.
+
+Ordinary native recovery refuses changed codec meaning before exposing the
+recovered graph. Advancing the aspect revision alone does not authorize adoption.
+The [native codec fixture](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition.rs)
+uses nonempty authored source and a distinct producer-created output. It covers
+current-format production/reopen and independently installed incompatible codecs;
+genuine derived-only adoption and regeneration remain unfinished.
+
+Producer readiness describes the record selected by the producer's output role.
+Its native carrier, field mask, codec meaning and semantic revision must match
+the installed output contract. The [created-output readiness example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/readiness.rs)
+derives that description from the same field-meaning emitter; it does not copy
+the authored input's contract or create migration authority.
+
 The executable [nested-value model](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value/model.rs)
 and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value.rs)
 exercise nondefault values through the entry binding, installed catalog,
@@ -298,6 +319,23 @@ and current-format restore. Ordinary `begin_application_read_attempt` also
 borrows its original execution request: repeated observations share decode
 grants, and an ignored failure prevents `complete` from sealing facts. See the
 [ordinary read-attempt case](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/ordinary_attempt.rs).
+Managed collection-pair reconstruction keeps one decode reservation and refusal
+state across both reads and all members until the atomic view decision. Its
+[canonical pair case](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/paired.rs)
+exercises a late swallowed refusal and a fresh funded retry on the same view.
+
+Continuation pages retain that custody through page, successor-token and receipt
+finalization. Live delivery retains it through the native cause acknowledgement;
+a refused decode cannot acknowledge a successful delivery. Both recheck the
+original request after application projection returns.
+
+For several reads from a retained invariant snapshot, use
+`snapshot.read_fields(&execution, |read| { /* read.field(&identity, field) */ })`.
+The closure borrows the existing native pin and shares one cumulative decode
+reservation. A swallowed field refusal or late cancellation discards its output.
+`snapshot.field(&execution, &identity, field)` remains a single completed read.
+See the [retained snapshot example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/retained_snapshot.rs)
+for fresh-request retry at the original version after a source edit.
 
 Representation bounds, request grants, resident retained-size accounting and
 derived-codec transition permission remain separate contracts. Package archive

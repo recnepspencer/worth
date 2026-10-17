@@ -1,6 +1,4 @@
-use crate::domain_computation::primary_graph::{
-    value_decode::with_value_decode, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::super::{
@@ -27,7 +25,7 @@ pub(super) fn finalize_live_projection<
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    decode: &ValueDecodeState,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -64,23 +62,26 @@ where
     let Some(node) = raw.rows.only() else {
         return Err(WorthQueryLiveProjectionFinalizationDenial::ResultShape);
     };
-    let result = with_value_decode(
-        execution,
-        application.installed_schema().value_bindings(),
-        |session| {
+    let projected = decode
+        .run(execution, |session| {
             QueryResult::project(&WorthQueryApplicationProjectionRow::new(
                 node,
                 &plan.governance,
                 session,
             ))
-        },
-    )
-    .map_err(|cause| {
+        })
+        .map_err(|cause| {
+            WorthQueryLiveProjectionFinalizationDenial::Projection(
+                WorthQueryApplicationProjectionDenialKind::ValueDecode(cause),
+            )
+        })?;
+    decode.check(execution).map_err(|cause| {
         WorthQueryLiveProjectionFinalizationDenial::Projection(
             WorthQueryApplicationProjectionDenialKind::ValueDecode(cause),
         )
-    })?
-    .map_err(|denial| WorthQueryLiveProjectionFinalizationDenial::Projection(denial.kind()))?;
+    })?;
+    let result = projected
+        .map_err(|denial| WorthQueryLiveProjectionFinalizationDenial::Projection(denial.kind()))?;
     drop(raw.rows);
     let result_buffer = result_buffer.release();
     let read_completion = plan

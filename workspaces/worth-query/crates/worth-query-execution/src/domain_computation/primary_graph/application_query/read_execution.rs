@@ -34,7 +34,9 @@ pub(super) use denial::{managed_read_denial, read_execution_denial, relational_r
 pub(super) use denial::{
     WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
 };
-pub(super) use kernel_outcome::{project_non_live_kernel, NonLiveKernelReceiptEvidence};
+pub(super) use kernel_outcome::{
+    project_non_live_kernel_with_decode, NonLiveKernelReceiptEvidence,
+};
 pub(super) use live_target::read_live_target;
 use root_selection::select_bounded_roots;
 use tree_materialization::materialize_result_tree;

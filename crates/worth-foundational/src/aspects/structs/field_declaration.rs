@@ -39,6 +39,7 @@ pub struct FieldDeclaration {
     requirement: FieldRequirement,
     absence: AbsenceLaw,
     evolution: AspectEvolutionPolicy,
+    codec: Option<crate::CanonicalDigestId>,
 }
 
 impl FieldDeclaration {
@@ -59,6 +60,7 @@ impl FieldDeclaration {
             requirement,
             absence,
             evolution,
+            codec: None,
         })
     }
 
@@ -80,6 +82,17 @@ impl FieldDeclaration {
 
     pub fn evolution(&self) -> AspectEvolutionPolicy {
         self.evolution
+    }
+
+    /// Portable representation meaning, separate from its scalar carrier.
+    /// This description grants neither decoding nor migration authority.
+    pub fn with_codec(mut self, codec: crate::CanonicalDigestId) -> Self {
+        self.codec = Some(codec);
+        self
+    }
+
+    pub const fn codec(&self) -> Option<crate::CanonicalDigestId> {
+        self.codec
     }
 }
 

@@ -238,7 +238,7 @@ pub mod facade {
         WorthQueryInstalledApplicationSchemaContractCatalogCounters,
         WorthQueryInstalledApplicationSchemaDenial, WorthQueryInstalledApplicationSchemaDenialKind,
         WorthQueryInstalledApplicationValueBinding,
-        WorthQueryInstalledApplicationValueBindingCatalog,
+        WorthQueryInstalledApplicationValueBindingCatalog, WorthQueryInstalledValueMeaningDenial,
     };
     pub use crate::canonical_work::{
         WorthQueryCanonicalWorkEvidence, WorthQueryCanonicalWorkPhases,

@@ -29,6 +29,22 @@ impl ValueDecodeState {
         self.first.set(self.first.get().or(Some(cause)));
     }
 
+    /// Poll the original request at the final handoff, without releasing the
+    /// cumulative parse reservation or replacing an earlier refusal.
+    pub(in crate::domain_computation::primary_graph) fn check(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Stop> {
+        if let Some(cause) = self.denial() {
+            return Err(cause);
+        }
+        execution.consult().map_err(|cause| {
+            let cause = Stop::Scope(cause);
+            self.refuse(cause);
+            cause
+        })
+    }
+
     /// The receiver retains grants and the first failure across individual
     /// observations. Its owner supplies the original borrowed request each time.
     pub(in crate::domain_computation::primary_graph) fn run<R>(
@@ -77,12 +93,4 @@ impl ValueDecodeState {
             None => result,
         }
     }
-}
-
-pub(in crate::domain_computation::primary_graph) fn with_value_decode<R>(
-    execution: &ExecutionRequest<'_, '_>,
-    bindings: &WorthQueryInstalledApplicationValueBindingCatalog,
-    body: impl FnOnce(&ValueDecodeSession<'_>) -> R,
-) -> Result<R, Stop> {
-    ValueDecodeState::new(bindings.clone()).run(execution, body)
 }

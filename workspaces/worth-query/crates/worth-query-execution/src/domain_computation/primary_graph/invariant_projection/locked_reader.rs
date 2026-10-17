@@ -184,9 +184,9 @@ where
                 .map_err(super::admission_denial::from_snapshot_admission_denial)
         })?;
         let decode_work = std::cell::Cell::new(None);
-        let projected = super::super::value_decode::with_value_decode(
+        let decode = super::super::value_decode::ValueDecodeState::new(self.value_bindings.clone());
+        let projected = decode.run(
             execution,
-            &self.value_bindings,
             |value_decode| {
                 self.graph.with_runtime_mut(execution, |runtime| {
             catch_unwind(AssertUnwindSafe(|| {
@@ -290,6 +290,13 @@ where
                 );
             }
         };
+        if let Err(cause) = decode.check(execution) {
+            self.graph.release_query_snapshot(&snapshot);
+            return Err(WorthQueryInvariantProjectionDenial::value_decode_stopped(
+                cause,
+                Some(work),
+            ));
+        }
         Ok(WorthQueryCompletedInvariantProjection {
             output,
             snapshot: WorthQueryApplicationInvariantProjectionSnapshot {

@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::value_decode::with_value_decode;
+use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::{RawNonLiveKernelOutcome, RawOneShotRows};
@@ -46,14 +46,14 @@ impl NonLiveKernelReceiptEvidence {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) fn project_non_live_kernel<
+pub(in crate::domain_computation::primary_graph::application_query) fn project_non_live_kernel_with_decode<
     Schema,
     Query,
     QueryResult,
     Denial,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    decode: &ValueDecodeState,
     kernel: RawNonLiveKernelOutcome,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
     mut validate: impl FnMut() -> Result<(), Denial>,
@@ -67,7 +67,7 @@ where
         mut raw,
         result_buffer,
     } = kernel;
-    let rows = with_value_decode(execution, bindings, |session| {
+    let projected = decode.run(execution, |session| {
         let mut rows = Vec::with_capacity(raw.rows.raw_rows().len());
         for node in raw.rows.iter() {
             validate()?;
@@ -82,13 +82,19 @@ where
             rows.push(value.map_err(&map_projection_denial)?);
         }
         Ok(rows)
-    })
-    .map_err(|cause| {
+    });
+    let map_decode_denial = |cause| {
         map_projection_denial(WorthQueryApplicationProjectionDenial::new(
             WorthQueryApplicationProjectionDenialKind::ValueDecode(cause),
             "value-decode",
         ))
-    })??;
+    };
+    // A projector may cancel the original request and return a domain error.
+    // Poll before accepting either result; a produced value from the native
+    // checkpoint scope does not by itself prove that request remained live.
+    decode.check(execution).map_err(map_decode_denial)?;
+    let projected = projected.map_err(map_decode_denial)?;
+    let rows = projected?;
     raw.rows.clear();
     let result_count = rows.len();
     let truncation_count = usize::from(raw.has_more);
