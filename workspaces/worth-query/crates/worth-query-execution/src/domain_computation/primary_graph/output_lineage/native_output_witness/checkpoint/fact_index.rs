@@ -46,7 +46,11 @@ impl CheckpointRoleIndex {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<impl Iterator<Item = usize> + use<'index>, CompanionPreflightStop> {
         let descent = navigation(self.by_entity.len())?;
-        admission.charge_external_work(descent.checked_mul(2).ok_or_else(overflow)?)?;
+        admission.charge_external_work(
+            descent
+                .checked_mul(2)
+                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
+        )?;
         Ok(self
             .by_entity
             .range((entity, 0)..=(entity, usize::MAX))
@@ -59,7 +63,8 @@ impl CheckpointRoleIndex {
         &self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<usize, CompanionPreflightStop> {
-        let len = u64::try_from(self.by_entity.len()).map_err(|_| overflow())?;
+        let len = u64::try_from(self.by_entity.len())
+            .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
         admission.charge_external_work(len)?;
         let (mut widest, mut run, mut previous) = (0, 0, None);
         for (entity, _) in self.by_entity.iter() {
@@ -115,7 +120,7 @@ impl CheckpointRoleIndex {
                                 .len()
                                 .checked_add(probe.aspect.as_str().len())
                                 .and_then(|n| n.checked_add(1))
-                                .ok_or_else(overflow)?;
+                                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
                             admission.charge_external_work(comparison as u64)?;
                             if probe.aspect != *aspect {
                                 continue;
@@ -138,7 +143,7 @@ impl CheckpointRoleIndex {
         let expectations = roles
             .len()
             .checked_add(aspects.len())
-            .ok_or_else(overflow)?;
+            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
         admission.charge_external_work(expectations as u64)?;
         Ok(kind_seen.iter().all(|seen| *seen)
             && aspects.iter().all(|probe| probe.revision.is_some()))
@@ -147,5 +152,5 @@ impl CheckpointRoleIndex {
 
 /// One fixed-width key comparison per step of a pinned im descent.
 pub(super) fn navigation(entries: usize) -> Result<u64, CompanionPreflightStop> {
-    ordered_navigation_work(entries).ok_or_else(overflow)
+    ordered_navigation_work(entries).ok_or(CompanionPreflightStop::WorkCounterOverflow)
 }
