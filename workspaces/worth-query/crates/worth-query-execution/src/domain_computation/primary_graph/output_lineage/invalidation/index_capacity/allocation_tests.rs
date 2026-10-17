@@ -7,7 +7,7 @@ use im::{OrdMap, OrdSet};
 use stats_alloc::{Region, Stats, INSTRUMENTED_SYSTEM};
 
 use super::{
-    fresh_build_bytes, fresh_insert_bytes, ordered_edit_bytes, retained_forest_bytes,
+    fresh_insert_bytes, insertion_sequence_bytes, ordered_edit_bytes, retained_forest_bytes,
     retained_map_bytes,
 };
 
@@ -174,7 +174,10 @@ fn fresh_map<K: ProbeKey>(population: usize, order: usize) {
         let key = K::key(ordered_key(ordinal, population, order));
         map.insert(key, key);
         if checkpoint(map.len()) || map.len() == population {
-            assert_eq!(admitted, fresh_build_bytes::<K, K>(map.len()).unwrap());
+            assert_eq!(
+                admitted,
+                insertion_sequence_bytes::<K, K>(map.len()).unwrap()
+            );
             assert!(region.change().bytes_allocated as u64 <= admitted);
         }
     }
@@ -189,7 +192,10 @@ fn fresh_set<K: ProbeKey>(population: usize, order: usize) {
         admitted += fresh_insert_bytes::<K, ()>(set.len()).unwrap();
         set.insert(K::key(ordered_key(ordinal, population, order)));
         if checkpoint(set.len()) || set.len() == population {
-            assert_eq!(admitted, fresh_build_bytes::<K, ()>(set.len()).unwrap());
+            assert_eq!(
+                admitted,
+                insertion_sequence_bytes::<K, ()>(set.len()).unwrap()
+            );
             assert!(region.change().bytes_allocated as u64 <= admitted);
         }
     }

@@ -100,7 +100,7 @@ fn vacant_im_root_has_no_key_comparison_and_nonempty_key_cost_tracks_payload() {
 #[test]
 fn a_fresh_build_admits_its_own_growth_and_ordered_navigation() {
     let entries = 200;
-    let whole = index_capacity::fresh_build_bytes::<usize, ()>(entries).unwrap();
+    let whole = index_capacity::insertion_sequence_bytes::<usize, ()>(entries).unwrap();
     let build = |bytes| {
         let mut meter = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: u64::MAX,
