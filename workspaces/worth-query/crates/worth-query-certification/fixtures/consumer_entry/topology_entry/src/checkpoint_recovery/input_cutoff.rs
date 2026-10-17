@@ -6,6 +6,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryOutputSettlementPosture,
 };
 
+mod checkpoint_polling;
 mod unrebased_settlement;
 
 #[test]
@@ -49,9 +50,12 @@ fn exercise(
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
+    let polling = crate::handler::checkpoint_polling::PollObservation::arm(|| {}, || {});
     let first =
         direct_demand_with_controls(&request, &application, root, demand_controls, "initial");
     assert_eq!(first.producer_contacts_in_this_demand(), 1);
+    assert_eq!(polling.polls(), [Ok(()), Ok(())]);
+    assert_eq!(polling.candidates(), 1);
     let original_receipt = first.application_commit_receipt().unwrap().clone();
     let original_entity = first
         .outputs_of::<PlanarOutputs>()
@@ -117,6 +121,8 @@ fn exercise(
         "edited source",
     );
     let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+    assert_eq!(polling.candidates(), if expect_reuse { 1 } else { 2 });
+    assert!(polling.polls().iter().all(Result::is_ok));
     if expect_reuse {
         assert_eq!(
             settled.posture(),

@@ -72,6 +72,7 @@ pub(super) fn try_with_reader<Output>(
     .unwrap();
     let affinity = admission.operation_scope_binding().clone();
     let context = std::cell::Cell::new(DecisionContextUse::default());
+    let interruption = std::cell::Cell::new(None);
     let execution = crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution::open(world.application.product_runtime().owner.execution_placement(), admission.publication_request());
     world
         .invariant
@@ -87,6 +88,7 @@ pub(super) fn try_with_reader<Output>(
                     &identities,
                     &execution,
                     &context,
+                    &interruption,
                 );
                 action(&mut decision)
             },

@@ -71,6 +71,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let context_use = std::cell::Cell::new(
             crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
         );
+        let interruption = std::cell::Cell::new(None);
         let mut handler_contacted = false;
         let phase_request = match phase.execution_request_for(&self.product_runtime) {
             Ok(request) => request,
@@ -103,6 +104,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             identities,
                             execution,
                             &context_use,
+                            &interruption,
                         );
                         on_contact();
                         handler_contacted = true;
@@ -126,6 +128,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         let (plan, projection, work) = projected.into_parts();
+        // A decision can swallow its poll result, but cannot turn an observed
+        // interruption into prepared compute, a candidate, or reusable input.
+        if let Some(interruption) = interruption.get() {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Ok(match interruption {
+                    super::super::HandlerInterruption::Cancelled => HandlerResult::Cancelled,
+                    super::super::HandlerInterruption::DeadlineExceeded => {
+                        HandlerResult::DeadlineExceeded
+                    }
+                }),
+                WorthQueryMutationHandlerWork::captured(work, handler_contacted),
+            ));
+        }
         let context_use = if plan.has_compute() {
             context_use.get().managed_computation()
         } else {
