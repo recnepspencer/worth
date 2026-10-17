@@ -85,7 +85,7 @@ pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
     IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
     IndexedSelectionFactDenied(usize, crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
     UnsupportedDecisionFact,
-    NativePayloadStorage { kind: worth_execution::ExecutionAllocationDenialKind, requested: Option<u64> },
+    NativePayloadStorage { class: worth_execution::ExecutionAllocationDenialClass, requested: Option<u64> },
     AdmissionDenied(CompanionPreflightStop),
 }
 

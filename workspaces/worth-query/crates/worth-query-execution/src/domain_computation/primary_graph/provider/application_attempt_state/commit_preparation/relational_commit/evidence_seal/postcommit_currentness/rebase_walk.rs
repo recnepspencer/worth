@@ -142,13 +142,20 @@ fn storage_stopped(
     cause: worth_execution::ExecutionAllocationDenial,
     own_effect: OwnEffectOnReads,
 ) -> RebasedSourceFacts {
-    use worth_execution::ExecutionAllocationDenialKind as Kind;
+    use worth_execution::{
+        ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
+        WorkCeilingDenial as Request,
+    };
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
-    let reason = match cause.kind() {
-        Kind::Cancelled => RebaseVerificationReason::Execution(Native::Cancelled),
-        Kind::DeadlineElapsed => RebaseVerificationReason::Execution(Native::DeadlineElapsed),
-        kind => RebaseVerificationReason::NativePayloadStorage {
-            kind,
+    let reason = match cause.classify() {
+        Class::Request(Request::Stopped(Stop::Cancelled)) => {
+            RebaseVerificationReason::Execution(Native::Cancelled)
+        }
+        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
+            RebaseVerificationReason::Execution(Native::DeadlineElapsed)
+        }
+        class => RebaseVerificationReason::NativePayloadStorage {
+            class,
             requested: cause.requested_payload_bytes(),
         },
     };
