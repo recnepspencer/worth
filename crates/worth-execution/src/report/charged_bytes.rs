@@ -2,6 +2,11 @@
 /// The map reserves this declared capacity before dispatch and rejects a result
 /// whose retained size exceeds it. Implementations for domain values must
 /// include every owned nested allocation.
+///
+/// Derive `ChargedBytes` for concrete resident structs and enums to compose every
+/// field's contract, including fields skipped by Serde. Inline bytes are counted
+/// by admission, not this method. Opaque or shared owners keep explicit native
+/// implementations; derivation neither deduplicates pointers nor moves custody.
 pub trait ChargedBytes {
     fn additional_charged_bytes(&self) -> u64;
 }

@@ -1,8 +1,9 @@
-//! Derive canonical wire encoding, portable shape, and bounded decoding together.
+//! Canonical wire derivation and independent resident-memory derivation.
 
 use proc_macro::TokenStream;
 
 mod grammar;
+mod retained;
 mod seed;
 mod serialize;
 mod shape;
@@ -22,4 +23,18 @@ pub fn derive_worth_value(input: TokenStream) -> TokenStream {
             quote::quote! { #serialize #canonical }
         });
     result.unwrap_or_else(syn::Error::into_compile_error).into()
+}
+
+/// Derives execution's resident heap accounting, independently of wire grammar.
+///
+/// Every field must implement `ChargedBytes`, including Serde-skipped fields.
+/// Opaque/shared owners supply their own trait implementation. The optional
+/// `#[charged_bytes(crate = "path")]` selects the trait's public facade.
+#[proc_macro_derive(ChargedBytes, attributes(charged_bytes))]
+pub fn derive_charged_bytes(input: TokenStream) -> TokenStream {
+    syn::parse::<syn::DeriveInput>(input)
+        .and_then(retained::grammar::ResidentValue::parse)
+        .map(|value| retained::emit::emit(&value))
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }

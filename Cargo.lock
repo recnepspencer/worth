@@ -1250,9 +1250,12 @@ version = "0.1.0"
 dependencies = [
  "allocator-api2",
  "rayon",
+ "serde",
+ "serde_json",
  "trybuild",
  "worth-foundational",
  "worth-proof",
+ "worth-value-shape-derive",
 ]
 
 [[package]]
