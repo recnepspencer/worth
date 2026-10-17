@@ -86,7 +86,11 @@ pub(super) fn reserve_pending<T>(
     if needed <= pending.capacity() {
         return Ok(());
     }
-    let bytes = needed
+    // Doubling keeps a worklist's admitted growth within twice its final
+    // backing. Growing to exactly `needed` would admit every intermediate
+    // length again: quadratic in a walk that pushes one row at a time.
+    let target = needed.max(pending.capacity().saturating_mul(2));
+    let bytes = target
         .checked_mul(size_of::<T>())
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or(unrepresentable)?;
@@ -94,11 +98,13 @@ pub(super) fn reserve_pending<T>(
         .admit_read_scratch(bytes)
         .map_err(map_admission_stop)?;
     charge_external(admission, pending.len())?;
-    pending.try_reserve_exact(additional).map_err(|_| {
-        ConsumedOutputVerificationStop::CapacityExhausted(
-            VerificationCapacityStop::ScratchAllocationRefused { bytes },
-        )
-    })
+    pending
+        .try_reserve_exact(target - pending.len())
+        .map_err(|_| {
+            ConsumedOutputVerificationStop::CapacityExhausted(
+                VerificationCapacityStop::ScratchAllocationRefused { bytes },
+            )
+        })
 }
 
 pub(super) fn fact_is_current(
@@ -193,6 +199,28 @@ mod tests {
             0,
             "a refused growth admits nothing"
         );
+    }
+
+    /// A walk pushing one row at a time admits each doubled backing once:
+    /// 1, 2, 4, ..., 1024 slots for 1000 rows. Exact growth to each length
+    /// would need n(n + 1)/2 slots and stop this meter long before the end.
+    #[test]
+    fn one_row_pushes_admit_growth_linear_in_the_final_length() {
+        let rows = 1_000usize;
+        let slot = size_of::<u64>() as u64;
+        let mut admission = InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: u64::MAX,
+                maximum_preparation_bytes: 4 * rows as u64 * slot,
+            },
+        );
+        let mut pending = Vec::<u64>::new();
+        for row in 0..rows as u64 {
+            reserve_pending(&mut pending, 1, &mut admission).unwrap();
+            pending.push(row);
+        }
+        assert_eq!(pending.len(), rows);
+        assert_eq!(admission.charged_bytes(), ((1 << 11) - 1) * slot);
     }
 
     /// An interrupted verification is the request's interruption. Read as

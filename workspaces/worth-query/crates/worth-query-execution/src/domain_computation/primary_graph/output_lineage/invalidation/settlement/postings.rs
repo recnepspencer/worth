@@ -152,12 +152,17 @@ impl PreparedPostingOrdinals {
             posting_payload_bytes = posting_payload_bytes
                 .checked_add(key_payload_bytes(&group.key)?)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            admission.key_edit::<Arc<FactPostingKey>, OrdSet<usize>>(&group.key, ordinals.len())?;
+            admission.fresh_key_insert::<Arc<FactPostingKey>, OrdSet<usize>>(
+                &group.key,
+                ordinals.len(),
+            )?;
             ordinals.insert(group.key, group.ordinals);
         }
         // Only the final local map, its independently rooted ordinal sets and
         // surviving key allocations become row storage. Sorting/group scratch,
-        // duplicate projected keys and intermediate insertion paths do not.
+        // duplicate projected keys and nodes a fresh build split away do not.
+        // These local trees are created empty here and are never shared while
+        // they grow, so each insertion is admitted as fresh-build growth.
         let retained = index_capacity::retained_map_bytes::<Arc<FactPostingKey>, OrdSet<usize>>(
             ordinals.len(),
         )
@@ -274,12 +279,12 @@ fn group_projected(
                 .last_mut()
                 .expect("an equal key has a group")
                 .ordinals;
-            admission.ordered_edit::<usize, ()>(ordinals.len())?;
+            admission.fresh_insert::<usize, ()>(ordinals.len())?;
             ordinals.insert(projection.ordinal);
         } else {
             admission.work(1)?;
             let mut ordinals = OrdSet::new();
-            admission.ordered_edit::<usize, ()>(0)?;
+            admission.fresh_insert::<usize, ()>(0)?;
             ordinals.insert(projection.ordinal);
             groups.push(PostingGroup {
                 key: projection.key,

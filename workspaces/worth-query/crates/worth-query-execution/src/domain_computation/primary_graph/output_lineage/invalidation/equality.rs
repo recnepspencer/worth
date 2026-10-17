@@ -64,7 +64,8 @@ pub(super) fn certify(
         if visited.contains(&ancestor) {
             return Err(missing(FullVerificationReason::RetainedDeliveryGap));
         }
-        admission.ordered_edit::<Arc<RecordedSettlementIdentity>, ()>(visited.len())?;
+        // The walk creates `visited` empty and never shares it while it grows.
+        admission.fresh_insert::<Arc<RecordedSettlementIdentity>, ()>(visited.len())?;
         visited.insert(Arc::clone(&ancestor));
         admission.ordered_read(state.settlements.len())?;
         if !state.settlements.contains_key(&ancestor) {
