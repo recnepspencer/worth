@@ -1,5 +1,6 @@
 //! Move the verified native basis with a suspended owner publication.
 use super::*;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 pub(in crate::domain_computation::primary_graph) enum OwnedInputCutoffDecision {
     Fresh {
@@ -77,7 +78,7 @@ impl OwnedVerifiedInputCutoff {
         runtime: &RelationalRuntime,
         basis: PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
-        source_facts: &[WorthQueryApplicationObservedFact],
+        source_facts: &(impl FactSequence + ?Sized),
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, InputCutoffVerificationStop> {
         let (snapshot, selected) = basis.in_runtime(runtime, admission)?;
@@ -102,7 +103,10 @@ impl OwnedVerifiedInputCutoff {
         if prefix > self.verified_facts.len()
             || !facts_are_current(
                 execution,
-                self.verified_facts.iter().take(prefix).chain(source_facts),
+                self.verified_facts
+                    .iter()
+                    .take(prefix)
+                    .chain(source_facts.iter()),
                 runtime,
                 snapshot,
                 admission,

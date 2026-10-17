@@ -81,7 +81,9 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
         )
         .unwrap()
-        .as_ref(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         expected.as_slice()
     );
 

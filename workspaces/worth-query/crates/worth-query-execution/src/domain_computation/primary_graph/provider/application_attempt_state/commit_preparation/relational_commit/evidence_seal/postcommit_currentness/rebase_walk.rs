@@ -103,13 +103,19 @@ pub(super) fn rebase(
         {
             superseded.push(ordinal);
         }
-        rebased.push(action.apply(fact));
+        if let Err(cause) = rebased.push(action.apply(fact)) {
+            return storage_stopped(cause, own_effect);
+        }
     }
+    let rebased = match rebased.seal() {
+        Ok(facts) => facts,
+        Err(cause) => return storage_stopped(cause, own_effect),
+    };
     if superseded.is_empty() {
-        RebasedSourceFacts::Exact(rebased.into())
+        RebasedSourceFacts::Exact(rebased)
     } else {
         RebasedSourceFacts::SupersededByOwnEffect {
-            facts: rebased.into(),
+            facts: rebased,
             ordinals: superseded.into(),
         }
     }
@@ -130,4 +136,21 @@ fn stopped(
         reason: failure.unwrap_or(RebaseVerificationReason::AdmissionDenied(stop)),
         own_effect: own_effect.with_unanswered(unasked, producer_output, OwnEffect::Moved),
     }
+}
+
+fn storage_stopped(
+    cause: worth_execution::ExecutionAllocationDenial,
+    own_effect: OwnEffectOnReads,
+) -> RebasedSourceFacts {
+    use worth_execution::ExecutionAllocationDenialKind as Kind;
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
+    let reason = match cause.kind() {
+        Kind::Cancelled => RebaseVerificationReason::Execution(Native::Cancelled),
+        Kind::DeadlineElapsed => RebaseVerificationReason::Execution(Native::DeadlineElapsed),
+        kind => RebaseVerificationReason::NativePayloadStorage {
+            kind,
+            requested: cause.requested_payload_bytes(),
+        },
+    };
+    RebasedSourceFacts::VerificationRequired { reason, own_effect }
 }

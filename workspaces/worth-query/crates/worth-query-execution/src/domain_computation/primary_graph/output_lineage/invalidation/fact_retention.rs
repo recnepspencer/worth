@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::mem::{align_of, size_of};
 use std::sync::Arc;
 
@@ -15,7 +16,7 @@ use super::{index_capacity, retention};
 /// A historical mark can outlive the application lineage that first owned
 /// these facts. Reserve their retained custody before making its Arc row.
 pub(super) fn reserve(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     read_basis: &PositionedRelationalSnapshot,
     resources: &WorthQueryInvalidationResources,
     admission: &mut impl IndexAdmission,
@@ -28,13 +29,14 @@ pub(super) fn reserve(
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
     )?;
 
-    let mut bytes = arc_slice_bytes::<WorthQueryApplicationObservedFact>(facts.len())
+    let mut bytes = facts
+        .retained_storage_bytes()
         .and_then(|base| {
             base.checked_add(index_capacity::arc_bytes::<PositionedRelationalSnapshot>()?)
         })
         .and_then(|base| base.checked_add(u64::try_from(read_basis.branch_id().0.capacity()).ok()?))
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    for fact in facts {
+    for fact in facts.iter() {
         let payload = fact_payload_bytes(fact, admission)?;
         bytes = bytes
             .checked_add(payload)

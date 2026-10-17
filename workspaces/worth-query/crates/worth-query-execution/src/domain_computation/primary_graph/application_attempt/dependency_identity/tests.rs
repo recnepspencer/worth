@@ -117,7 +117,9 @@ fn indexed_selection_remains_in_the_complete_reusable_fact_set() {
             Vec::new()
         )
         .facts()
-        .as_ref(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         &[comparable.clone(), selection]
     );
     assert_eq!(
@@ -126,7 +128,9 @@ fn indexed_selection_remains_in_the_complete_reusable_fact_set() {
             Vec::new()
         )
         .facts()
-        .as_ref(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         &[comparable],
     );
 }

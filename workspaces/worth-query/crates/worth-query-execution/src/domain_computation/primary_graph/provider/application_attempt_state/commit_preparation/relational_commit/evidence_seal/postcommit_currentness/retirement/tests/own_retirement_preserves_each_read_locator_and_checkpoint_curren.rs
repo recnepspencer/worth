@@ -67,7 +67,7 @@ let (entity, kind, facts) = reads(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-        assert_eq!(restored.as_ref(), retired.as_slice());
+        assert_eq!(restored.iter().cloned().collect::<Vec<_>>(), retired.as_slice());
         assert!(selection(
             &host_custody.phase_for_application(&world.application),
             execution,

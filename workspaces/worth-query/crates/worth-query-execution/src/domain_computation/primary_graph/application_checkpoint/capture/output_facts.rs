@@ -1,4 +1,5 @@
 //! Append the original performed-output footprint using the existing fact wire.
+use super::super::facts::FactSequence;
 
 use super::super::facts;
 use crate::domain_computation::primary_graph::{
@@ -7,7 +8,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(super) fn encode(
-    producer: &[Fact],
+    producer: &(impl facts::FactSequence + ?Sized),
     witness: &SealedNativeOutputWitness,
     admission: &mut InvalidationEditAdmission,
 ) -> Option<Vec<u8>> {

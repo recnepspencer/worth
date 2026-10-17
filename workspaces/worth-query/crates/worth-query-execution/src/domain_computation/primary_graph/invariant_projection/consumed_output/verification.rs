@@ -51,7 +51,8 @@ impl<'a> EvidenceView<'a> {
     }
     pub(in crate::domain_computation::primary_graph) fn source_facts(
         self,
-    ) -> &'a [WorthQueryApplicationObservedFact] {
+    ) -> &'a crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload
+    {
         self.source_facts
     }
     pub(in crate::domain_computation::primary_graph) fn upstream(

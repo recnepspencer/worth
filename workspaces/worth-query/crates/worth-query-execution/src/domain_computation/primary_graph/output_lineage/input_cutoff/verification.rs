@@ -197,7 +197,7 @@ impl RetainedInputCutoffCandidate {
                 // A changed own decision may remove the old consumed edges.
                 match ConsumedOutputEvidence::own_evidence_is_current(
                     execution,
-                    &facts[..count],
+                    &facts.slice(0..count),
                     self.consumed_outputs(),
                     witness,
                     runtime,

@@ -1,6 +1,7 @@
 //! One projection owns each local posting key and all of its fact ordinals.
 //! The global reverse index is edited once per unique key.
 
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::{
     cell::RefCell,
     hash::{Hash, Hasher},
@@ -64,7 +65,7 @@ fn maximum_keys(fact: &WorthQueryApplicationObservedFact) -> Option<usize> {
 
 impl PreparedPostingOrdinals {
     pub(super) fn prepare(
-        facts: &[WorthQueryApplicationObservedFact],
+        facts: &(impl FactSequence + ?Sized),
         output_facts: Option<&[WorthQueryApplicationObservedFact]>,
         verification_requirement: &mut Option<FullVerificationReason>,
         admission: &mut InvalidationEditAdmission,

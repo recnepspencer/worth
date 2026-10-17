@@ -5,7 +5,9 @@ use std::ops::Deref;
 #[cfg(test)]
 use std::sync::Arc;
 type Fact = WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::{
+    FactPayload, FactSequence,
+};
 
 /// Retained postconditions have no slice projection or Deref. Only the one
 /// computation-current door can expose them for comparison.
@@ -70,8 +72,20 @@ impl ComparableSourceFacts {
     }
 }
 impl Deref for ComparableSourceFacts {
-    type Target = [Fact];
+    type Target = FactPayload;
     fn deref(&self) -> &Self::Target {
         &self.facts
+    }
+}
+
+impl FactSequence for ComparableSourceFacts {
+    fn len(&self) -> usize {
+        self.facts().len()
+    }
+    fn retained_storage_bytes(&self) -> Option<u64> {
+        self.facts().retained_storage_bytes()
+    }
+    fn iter(&self) -> impl DoubleEndedIterator<Item = &Fact> + ExactSizeIterator + Clone {
+        self.facts().iter()
     }
 }

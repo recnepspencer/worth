@@ -1,4 +1,5 @@
 //! Structural ceiling for charged reconstruction and currentness comparison.
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 use super::*;
 
@@ -11,7 +12,7 @@ impl SealedNativeOutputWitness {
     pub(in crate::domain_computation::primary_graph) fn checkpoint_comparison_work_bound(
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         layout: &WorthQueryPrimaryGraphLayout,
-        facts: &[Fact],
+        facts: &(impl FactSequence + ?Sized),
         admission: &mut InvalidationEditAdmission,
     ) -> Result<u64, CompanionPreflightStop> {
         let index = super::CheckpointRoleIndex::build(
@@ -63,7 +64,7 @@ impl SealedNativeOutputWitness {
         bound = add(bound, roles)?;
         let kind_match = (1 + size_of::<KindId>() * 2) as u64;
         let revision_match = (size_of::<Option<u64>>() * 2 + 1) as u64;
-        for fact in facts {
+        for fact in facts.iter() {
             // The fixed inspection and checked arithmetic for one fact.
             admission.charge_external_work(8)?;
             // The fact's currentness probe, plus its entity lookup when it

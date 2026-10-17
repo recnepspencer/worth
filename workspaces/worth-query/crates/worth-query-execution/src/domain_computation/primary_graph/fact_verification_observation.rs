@@ -7,6 +7,12 @@ use crate::domain_computation::execution_observation;
 /// double-count facts examined in several phases. These are not admission units.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryFactVerificationForTest {
+    /// Owned facts moved into pre-admitted native publication chunks.
+    pub native_payload_fact_moves: u64,
+    /// Native chunks sealed after successful postcommit resolution.
+    pub native_payload_chunks: u64,
+    /// Pre-admitted two-child joins sealed for those chunks.
+    pub native_payload_joins: u64,
     /// Current sealed computation facts visited while constructing ordinal/call metadata.
     pub sealed_computation_index_visits: u64,
     /// Admitted source facts walked before interruption/validation filtering.
@@ -39,6 +45,7 @@ pub struct WorthQueryFactVerificationForTest {
 
 thread_local! {
     static OBSERVED: Cell<WorthQueryFactVerificationForTest> = const { Cell::new(WorthQueryFactVerificationForTest {
+        native_payload_fact_moves: 0, native_payload_chunks: 0, native_payload_joins: 0,
         sealed_computation_index_visits: 0, source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,
         rebase_preparation_visits: 0, rebase_resolution_visits: 0, rebase_unanswered_visits: 0,
         value_comparison_visits: 0, retained_bound_visits: 0,
@@ -56,6 +63,16 @@ pub fn fact_verification_on_this_thread_for_test() -> WorthQueryFactVerification
 
 pub(super) fn source_admission() {
     record(|observed| add(&mut observed.source_admission_visits, 1));
+}
+
+pub(super) fn native_payload_fact_move() {
+    record(|observed| add(&mut observed.native_payload_fact_moves, 1));
+}
+pub(super) fn native_payload_chunk() {
+    record(|observed| add(&mut observed.native_payload_chunks, 1));
+}
+pub(super) fn native_payload_join() {
+    record(|observed| add(&mut observed.native_payload_joins, 1));
 }
 
 pub(super) fn rebase_preparation() {

@@ -159,7 +159,7 @@ fn sealed_rebase(
     facts: Vec<Fact>,
     correspondence: &WorthQueryApplicationOutputCorrespondence,
     changed: &[RecordRef],
-) -> std::sync::Arc<[Fact]> {
+) -> crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application

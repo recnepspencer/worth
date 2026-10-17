@@ -1,5 +1,6 @@
 //! The inverse of a stable record's fact composition.
 
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::{mem::size_of, sync::Arc};
 
 use super::stable_record::charge_initialized_clone;
@@ -19,7 +20,7 @@ use crate::domain_computation::primary_graph::{
 /// are admitted before a fact is copied; `None` means the alias does not hold
 /// that composition or the copy was not admitted.
 pub(in crate::domain_computation::primary_graph::output_lineage) fn performed_fact_sequence(
-    alias_facts: &[Fact],
+    alias_facts: &(impl FactSequence + ?Sized),
     prefix_count: usize,
     origin_witness: &SealedNativeOutputWitness,
     retention: &LineageRetentionLedger,
@@ -29,11 +30,15 @@ pub(in crate::domain_computation::primary_graph::output_lineage) fn performed_fa
         .prepare_fact_projection(admission)
         .ok()??
         .count();
-    let prefix = alias_facts.get(..prefix_count)?;
-    let suffix = alias_facts.get(prefix_count.checked_add(projected)?..)?;
-    let total = prefix.len().checked_add(suffix.len())?;
+    let suffix_start = prefix_count.checked_add(projected)?;
+    if suffix_start > alias_facts.len() {
+        return None;
+    }
+    let prefix = alias_facts.iter().take(prefix_count);
+    let suffix = alias_facts.iter().skip(suffix_start);
+    let total = prefix_count.checked_add(alias_facts.len() - suffix_start)?;
     let mut payload = 0u64;
-    for fact in prefix.iter().chain(suffix) {
+    for fact in prefix.clone().chain(suffix.clone()) {
         admission.charge_external_work(1).ok()?;
         payload = payload.checked_add(retained_fact_payload_bytes(fact, admission).ok()?)?;
         charge_initialized_clone(fact, admission).ok()?;
@@ -51,7 +56,7 @@ pub(in crate::domain_computation::primary_graph::output_lineage) fn performed_fa
         .ok()?;
     let capacity = retention.reserve(arc_bytes.checked_add(payload)?).ok()?;
     let mut facts = Vec::with_capacity(total);
-    facts.extend(prefix.iter().cloned());
-    facts.extend(suffix.iter().cloned());
+    facts.extend(prefix.cloned());
+    facts.extend(suffix.cloned());
     Some((Arc::from(facts.into_boxed_slice()), capacity))
 }

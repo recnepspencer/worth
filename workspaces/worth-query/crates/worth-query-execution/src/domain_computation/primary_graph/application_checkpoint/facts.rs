@@ -22,7 +22,7 @@ use encoding::FactBytes;
 mod payload;
 mod record;
 pub(in crate::domain_computation::primary_graph) use payload::{
-    CodecPayloadReservation, FactPayload,
+    CodecPayloadReservation, FactPayload, FactSequence, NativeFactPayloadBuilder,
 };
 mod stream;
 pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;
@@ -40,11 +40,16 @@ const MAXIMUM_SET_ENTITIES: usize = 4096;
 const MAXIMUM_TEXT: usize = 4096;
 const MAXIMUM_FIELD_DEPTH: usize = 32;
 
-pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Option<Vec<u8>> {
+pub(in crate::domain_computation::primary_graph) fn encode(
+    facts: &(impl FactSequence + ?Sized),
+) -> Option<Vec<u8>> {
     encode_with_capacity(facts, 0)
 }
 
-pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Vec<u8>> {
+pub(super) fn encode_with_capacity(
+    facts: &(impl FactSequence + ?Sized),
+    capacity: usize,
+) -> Option<Vec<u8>> {
     if facts.is_empty() {
         return None;
     }
@@ -52,12 +57,12 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
     write_facts(facts, &mut bytes)?;
     Some(bytes)
 }
-fn write_facts(facts: &[Fact], bytes: &mut impl FactBytes) -> Option<()> {
+fn write_facts(facts: &(impl FactSequence + ?Sized), bytes: &mut impl FactBytes) -> Option<()> {
     if facts.is_empty() {
         return None;
     }
     put_u32(bytes, u32::try_from(facts.len()).ok()?);
-    for fact in facts {
+    for fact in facts.iter() {
         match fact {
             Fact::RetiredOutputEntity {
                 entity_id,

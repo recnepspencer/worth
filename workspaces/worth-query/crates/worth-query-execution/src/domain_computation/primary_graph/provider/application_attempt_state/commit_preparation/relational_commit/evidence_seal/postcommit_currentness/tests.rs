@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use worth_foundational::facade::{
     AspectFieldLocator, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
@@ -70,9 +71,9 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                     &phase,
                     &host_custody.borrowed_request_for_test(),
                     &world,
-                    read.to_vec()
+                    read.iter().cloned().collect()
                 ),
-                RebasedSourceFacts::Exact(Arc::clone(&read)),
+                RebasedSourceFacts::Exact(read.clone()),
                 "a source revision nothing moved stays exact"
             )
         })
@@ -100,10 +101,10 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                     &phase,
                     &host_custody.borrowed_request_for_test(),
                     &world,
-                    read.to_vec()
+                    read.iter().cloned().collect()
                 ),
                 RebasedSourceFacts::SupersededByOwnEffect {
-                    facts: Arc::clone(&read),
+                    facts: read.clone(),
                     ordinals: Arc::from([0]),
                 },
                 "the fact keeps the revision its source read and is reported stale"
@@ -201,7 +202,7 @@ pub(super) fn rebase_at_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     facts: Vec<WorthQueryApplicationObservedFact>,
-) -> Arc<[WorthQueryApplicationObservedFact]> {
+) -> super::FactPayload {
     match rebase_result_at_current(phase_custody, execution, world, facts) {
         RebasedSourceFacts::Exact(facts) => facts,
         other => panic!("fresh native facts must be exact: {other:?}"),
@@ -268,7 +269,7 @@ fn output_selection(
     phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
 ) -> OutputDependencySelection {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world

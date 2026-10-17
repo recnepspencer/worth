@@ -173,9 +173,10 @@ impl SourceInvalidationOwner {
             )
         );
         if !delivery_only
-            || !row.facts.for_comparison().is_some_and(|facts| {
-                std::ptr::eq(facts.facts().as_ref(), verified_facts.facts().as_ref())
-            })
+            || !row
+                .facts
+                .for_comparison()
+                .is_some_and(|facts| facts.facts().same_backing(verified_facts.facts()))
         {
             return Ok(false);
         }
