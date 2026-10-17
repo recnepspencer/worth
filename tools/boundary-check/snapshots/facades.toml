@@ -910,6 +910,7 @@ exports = [
     "WorthQueryTouchedRecordIdentity",
     "WorthQueryUnpublishedBranchAdoption",
     "WorthQueryUnpublishedGeneratedOutputRestoration",
+    "WorthQueryValueDecodeDenial",
     "WorthQueryWorkflowDefinitionDisposition",
     "WorthQueryWorkflowDispositions",
     "WorthQueryWorkflowInstanceDisposition",
