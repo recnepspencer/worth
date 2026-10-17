@@ -224,7 +224,9 @@ The rest of this guide is about what sits on top of the schema.
 Managed computation values can derive the existing native `ChargedBytes`
 contract through Host:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_contribution::ChargedBytes;
 
 #[derive(ChargedBytes)]

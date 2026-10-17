@@ -499,3 +499,5 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 # M2.7.1: test-only native locality observations; adjacent sources gain no authority.
 workspaces/worth-query/crates/worth-query-execution/ crates/worthy-studio-application/src/tests/locality/observations.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/input_cutoff/checkpoint_polling.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/input_cutoff/checkpoint_polling.rs
