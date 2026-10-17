@@ -21,7 +21,7 @@ const EDITED: usize = 7;
 const JOINED: u32 = 1_000_003;
 
 #[test]
-fn retained_fact_walks_are_visible_as_one_native_population_grows() {
+fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
     let _guard = checkpoint_recovery_test_guard();
     let application = install(|graph| facts::seed_set(graph, "even", -0.0));
     let (scope, principal) = authenticate(&application);
@@ -68,11 +68,26 @@ fn retained_fact_walks_are_visible_as_one_native_population_grows() {
                 Ok((size as f64 - 1.0 + value).to_bits()),
                 "{size}: independently authored values survive reuse"
             );
-            assert!(examined.retained_bound_visits > 0
-                && examined.retained_computation_visits > 0
-                && examined.retained_native_visits > 0
-                && examined.carried_seal_visits > 0,
-                "{size}: actual prior walks, probes and pre-filter sealing remain visible: {examined:?}");
+            assert_eq!(
+                examined.retained_bound_visits, 0,
+                "{size}: the retained bound is cached"
+            );
+            assert!(
+                examined.retained_computation_visits > 0 && examined.retained_native_visits > 0,
+                "{size}: actual dirty facts are examined: {examined:?}"
+            );
+            assert_eq!(
+                examined.carried_seal_visits, 0,
+                "{size}: same pinned carriage is consumed at seal"
+            );
+            assert!(
+                examined.sealed_computation_index_visits >= size as u64,
+                "{size}: current sealed metadata still visits the population: {examined:?}"
+            );
+            assert!(
+                examined.source_admission_visits > 0,
+                "ordinary read admission remains real"
+            );
             equivalent.push(examined);
         }
         // Compare equivalent actual runs; no fixture-fitted expected work count.
@@ -100,7 +115,17 @@ fn retained_fact_walks_are_visible_as_one_native_population_grows() {
         );
         demand(&request, &application);
     }
-    eprintln!("actual native retained-fact walks at growing 1/10/100 partitions: {growth:?}");
+    let first = growth[0].1[0];
+    for (size, runs) in &growth {
+        assert_eq!(
+            runs[0].retained_computation_visits, first.retained_computation_visits,
+            "{size}: comparison depends on the edited facts, not retained population"
+        );
+        assert_eq!(runs[0].retained_native_visits, first.retained_native_visits);
+    }
+    eprintln!(
+        "native dirty comparison and remaining current-read/meta work at 1/10/100: {growth:?}"
+    );
 }
 
 #[test]
@@ -250,4 +275,120 @@ fn reused(
     let next = runs.pop().unwrap();
     assert_eq!(next.runs, [Run::Incremental], "size {size}: {what}");
     next
+}
+
+#[test]
+fn one_shared_fact_reaches_every_actual_reader_without_population_fact_probes() {
+    let _guard = checkpoint_recovery_test_guard();
+    let mut compared = Vec::new();
+    for size in [1, 10, 100] {
+        let application = install(|graph| {
+            facts::seed_set(graph, "even", -0.0);
+            for number in 0..size {
+                seed_entry(
+                    graph,
+                    &["even"],
+                    number,
+                    RegionEntry {
+                        id: number as u64,
+                        region: (2 * number) as u32,
+                        value: 1.0,
+                        work: 1,
+                        fault: None,
+                    },
+                );
+            }
+        });
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let change = |fact, value: f64, command| {
+            edit(
+                &request,
+                &application,
+                EntryEdit::new("even", 0, fact, value.to_bits()),
+                command,
+            )
+        };
+        demand(&request, &application);
+        change(EntryFact::Weight, 2.0_f64, 500_001);
+        fact_verification();
+        let (contacts, runs) = demand(&request, &application);
+        let examined = fact_verification();
+        assert_eq!(contacts, 1);
+        let [run] = runs.as_slice() else {
+            panic!("one real shared-fact publication");
+        };
+        assert_eq!(run.runs, [Run::Incremental]);
+        assert_eq!(
+            run.calls,
+            OwnerCalls {
+                plans: 0,
+                keys: 0,
+                gathers: size,
+                kernels: size
+            }
+        );
+        assert_eq!(
+            run.outcome.as_ref().map(|(bits, _)| *bits),
+            Ok((3.0 * size as f64).to_bits())
+        );
+        assert!(
+            !run.published.is_empty(),
+            "the computed total is actually retained at publication"
+        );
+        assert_eq!(examined.carried_seal_visits, 0);
+        compared.push(examined.retained_native_visits);
+        // A field ABA changes its native revision: output verification must
+        // still execute. Original pre-effect values then permit actual carried
+        // gathers, rather than confusing rebased revisions with their content.
+        change(EntryFact::Weight, -0.0_f64, 500_002);
+        demand(&request, &application);
+        change(EntryFact::Value, 2.0_f64, 500_003);
+        change(EntryFact::Value, 1.0_f64, 500_004);
+        fact_verification();
+        let (contacts, aba_runs) = demand(&request, &application);
+        let aba = fact_verification();
+        assert_eq!(contacts, 1, "native field revision preserves the ABA fence");
+        assert_eq!(aba_runs.len(), 1);
+        assert_eq!(aba_runs[0].runs, [Run::Incremental]);
+        assert_eq!(
+            aba_runs[0].calls,
+            OwnerCalls {
+                plans: 0,
+                keys: 0,
+                gathers: 0,
+                kernels: 0
+            }
+        );
+        assert_eq!(
+            aba_runs[0].outcome.as_ref().map(|(bits, _)| *bits),
+            Ok((size as f64).to_bits())
+        );
+        assert!(aba.source_currentness_visits > 0);
+        assert!(
+            aba.retained_native_visits > 0,
+            "original values are actually compared"
+        );
+        assert_eq!(aba.carried_seal_visits, 0);
+        change(EntryFact::Weight, 2.0_f64, 500_005);
+        fact_verification();
+        let (_, after_aba) = demand(&request, &application);
+        let consumed = fact_verification();
+        assert_eq!(after_aba.len(), 1);
+        assert_eq!(after_aba[0].runs, [Run::Incremental]);
+        assert_eq!(
+            after_aba[0].outcome.as_ref().map(|(bits, _)| *bits),
+            Ok((3.0 * size as f64).to_bits())
+        );
+        assert_eq!(
+            consumed.retained_native_visits, examined.retained_native_visits,
+            "performed publication starts its own exact computation frontier"
+        );
+        assert_eq!(consumed.carried_seal_visits, 0);
+    }
+    assert!(compared[0] > 0);
+    assert!(
+        compared.iter().all(|visits| *visits == compared[0]),
+        "shared fact is observed once; its real call fanout is not hidden: {compared:?}"
+    );
 }

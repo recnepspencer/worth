@@ -107,7 +107,7 @@ where
     // partition index entries and the record it reads. No other producer
     // looks up or pays for one.
     let prior = if edition.retains_computation() {
-        let prior = handle
+        let mut prior = handle
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -118,6 +118,16 @@ where
                 edition,
                 admission,
             )
+            .map_err(cutoff_admission_denial)?;
+        handle
+            .with_runtime(&execution, |relational| {
+                prior.observe_changes(
+                    source_owner,
+                    relational,
+                    selected.application_basis().snapshot_handle(),
+                    admission,
+                )
+            })
             .map_err(cutoff_admission_denial)?;
         Some(prior)
     } else {

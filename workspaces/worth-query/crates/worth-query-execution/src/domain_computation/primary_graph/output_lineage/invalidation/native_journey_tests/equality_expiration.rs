@@ -118,6 +118,7 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
         owner
             .register_settlement(
                 SettlementRegistration {
+                    computation: None,
                     work_membership: None,
                     identity: Arc::clone(&origin),
                     facts: RetainedSourceFacts::for_test(false, Arc::from([origin_fact.clone()])),
@@ -138,6 +139,7 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
         let prepared = owner
             .prepare_current_stable_settlement(
                 SettlementRegistration {
+                    computation: None,
                     work_membership: None,
                     identity: Arc::clone(&terminal),
                     facts: RetainedSourceFacts::for_test(false, Arc::from([field_fact(execution,

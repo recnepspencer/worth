@@ -267,6 +267,7 @@ pub(in crate::domain_computation) struct RunTreeMemory {
 
 /// The owner calls a run carried from `prior` without making them.
 pub(super) struct CarriedCalls {
+    pub(super) validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
     pub(super) prior: Arc<CustodiedComputation>,
     pub(super) membership: bool,
     pub(super) items: BTreeSet<PartitionItemId>,

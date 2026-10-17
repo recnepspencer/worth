@@ -96,6 +96,7 @@ fn run(siblings: usize) -> super::super::logical_marking::WorthQueryNativeMarkin
             // child's output. Sibling paths have no consumed edge in common.
             let leaf = n % DEPTH == 0;
             owner.register_settlement(SettlementRegistration {
+                computation: None,
                 work_membership: Some(Arc::clone(&members[n].1)),
                 identity: Arc::clone(&outputs[n]),
                 facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false,

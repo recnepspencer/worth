@@ -86,7 +86,11 @@ where
         let carried_membership =
             !self.membership_moved && reader.carry(&COMPARATOR, &retained.membership.charge);
         let (items, digests, membership) = if carried_membership {
-            enter(reader, &self.membership, ComputationRead::Membership);
+            enter(
+                reader,
+                self.calls.keys(ComputationRead::Membership),
+                ComputationRead::Membership,
+            );
             remaining_work
                 .spend(Some(retained.membership.declared_units))
                 .map_err(resource)?;
@@ -141,7 +145,7 @@ where
                 .filter(|_| !rekeyed(item))
                 .filter(|call| reader.carry(&COMPARATOR, &call.charge));
             if let Some(call) = carried {
-                enter(reader, self.item_keys.get(item).into_iter().flatten(), read);
+                enter(reader, self.calls.keys(read), read);
                 remaining_work
                     .spend(Some(call.declared_units))
                     .map_err(resource)?;
@@ -217,6 +221,7 @@ where
             declared_bytes,
             self.basis,
             self.prior,
+            self.validated_at,
             NextPartitioning {
                 items: Arc::clone(&items),
                 digests,
@@ -241,11 +246,7 @@ where
             if let Some(prior) = prior.filter(|_| unmoved)
                 && reader.carry(&COMPARATOR, &prior.gather)
             {
-                enter(
-                    reader,
-                    self.partitions.get(&identity).into_iter().flatten(),
-                    read,
-                );
+                enter(reader, self.calls.keys(read), read);
                 prepared.carried(identity, prior);
                 continue;
             }

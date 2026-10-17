@@ -10,6 +10,7 @@ where
         declared_bytes: u64,
         basis: RetainedBasis,
         prior: TypedPrior<Key, Item, Reduced>,
+        validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
         next: NextPartitioning<Item>,
     ) -> Self {
         Self {
@@ -19,6 +20,7 @@ where
             next,
             basis,
             prior,
+            validated_at,
         }
     }
 

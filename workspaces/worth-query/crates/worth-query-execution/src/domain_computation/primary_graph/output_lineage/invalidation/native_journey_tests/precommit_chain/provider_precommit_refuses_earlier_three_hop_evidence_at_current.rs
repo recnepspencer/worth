@@ -182,6 +182,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     owner
         .register_settlement(
             SettlementRegistration {
+                computation: None,
                 work_membership: None,
                 identity: Arc::clone(&b),
                 facts: RetainedSourceFacts::for_test(false, Arc::from([])),

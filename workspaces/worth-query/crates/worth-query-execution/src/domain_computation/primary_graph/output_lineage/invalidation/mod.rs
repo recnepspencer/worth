@@ -4,6 +4,10 @@ mod admission;
 #[cfg(test)]
 mod canonical_binding_order;
 mod commit_touches;
+mod computation_changes;
+pub(in crate::domain_computation::primary_graph) use computation_changes::{
+    ComputationChanges, ComputationRegistration,
+};
 mod consumed_capacity;
 mod consumed_capacity_observation;
 mod delivery;

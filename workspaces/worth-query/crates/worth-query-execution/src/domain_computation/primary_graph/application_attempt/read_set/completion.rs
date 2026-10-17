@@ -93,19 +93,36 @@ impl<Schema, Operation, Input, Scope, Phase>
                     self.admission.operation(),
                 )
             })?;
-        let (reads, completed) = self.computation_reads;
+        allocation_policy.check_live().map_err(|cause| {
+            WorthQueryApplicationAttemptDenial::allocation_denied(self.admission.operation(), cause)
+        })?;
+        let (reads, mut completed) = self.computation_reads;
         let computation_fact_ordinals = reads.ordinals(&self.facts);
-        let computation_facts = reads
-            .into_attribution()
-            .map(|reads| SealedComputationFacts::at_seal(reads, &self.facts));
+        let attribution = reads.into_attribution();
+        let _temporary_index_memory = attribution.as_ref().map(|reads| {
+            reads.index_bytes().ok_or(
+                crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::CapacityOverflow,
+            )
+        }).transpose().and_then(|bytes| completed.reserve_fact_index(bytes, allocation_policy))
+            .map_err(|resource| denial(
+                WorthQueryApplicationAttemptDenialKind::ExecutionRequest(
+                    crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                        denial: resource, partition_identity: None, policy_ancestor: None,
+                    },
+                ), self.admission.operation(),
+            ))?;
+        let computation_facts =
+            attribution.map(|reads| SealedComputationFacts::at_seal(reads, &self.facts));
         // Seal only validates carried reads. Absence was already written
         // where the decision or computation dropped its state.
-        let retained = completed.seal(computation_facts.clone()).map_err(|()| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                self.admission.operation(),
-            )
-        })?;
+        let retained = completed
+            .seal_at(computation_facts.clone(), self.lease.snapshot())
+            .map_err(|()| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
+                    self.admission.operation(),
+                )
+            })?;
         // All decision reads, including dependent query and indexed-selection
         // facts, precede producer-source facts whose equality the prepared input proves.
         self.admission.record_completed_handler_facts(

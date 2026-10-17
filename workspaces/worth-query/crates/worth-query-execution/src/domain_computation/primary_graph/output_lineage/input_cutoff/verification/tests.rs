@@ -267,6 +267,7 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                 owner
                     .register_settlement(
                         SettlementRegistration {
+                            computation: None,
                             work_membership: None,
                             identity: Arc::clone(&identity),
                             facts: evidence.retain_facts(Arc::clone(&facts)),

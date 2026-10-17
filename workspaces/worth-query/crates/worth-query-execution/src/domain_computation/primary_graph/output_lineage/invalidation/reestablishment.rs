@@ -48,6 +48,7 @@ impl SourceInvalidationOwner {
         };
         self.register_settlement(
             SettlementRegistration {
+                computation: None,
                 work_membership: None,
                 identity: Arc::clone(identity),
                 facts: facts.retained(),
@@ -79,6 +80,7 @@ impl SourceInvalidationOwner {
             .ok_or(SettlementRegistrationStop::SourceUnavailable)?;
         self.register_settlement(
             SettlementRegistration {
+                computation: None,
                 work_membership: None,
                 identity: Arc::clone(identity),
                 facts: facts.retained(),
@@ -213,6 +215,8 @@ impl SourceInvalidationOwner {
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
         let mut replacement = (**row).clone();
+        // Ordinary full verification cannot requalify original computation coverage.
+        replacement.computation_frontier = None;
         replacement.dirty_ordinals = im::OrdSet::new();
         replacement.pending_upstream = im::OrdSet::new();
         replacement.read_basis = Arc::new(selected.clone());
@@ -220,6 +224,8 @@ impl SourceInvalidationOwner {
         let mut next = (**state).clone();
         next.maximum_basis_allocation_bytes = next.maximum_basis_allocation_bytes.max(basis_bytes);
         replacement.delivery_epoch = next.delivery_epoch;
+        next.computation_dirty_ordinal_count -=
+            row.computation_frontier.as_ref().map_or(0, im::OrdSet::len);
         next.dirty_ordinal_count -= row.dirty_ordinals.len();
         next.pending_edge_count -= row.pending_upstream.len();
         admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(

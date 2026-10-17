@@ -232,6 +232,24 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         SettlementCurrentness::Clean
     }
 
+    pub(super) fn computation_frontier(
+        &self,
+        identity: &RecordedSettlementIdentity,
+        facts: &super::super::RetainedSourceFacts,
+    ) -> Option<im::OrdSet<usize>> {
+        if !matches!(
+            self.currentness(identity),
+            SettlementCurrentness::Clean | SettlementCurrentness::Dirty(_)
+        ) {
+            return None;
+        }
+        let row = self.state.settlements.get(identity)?;
+        if !row.facts.same_binding(facts) {
+            return None;
+        }
+        row.computation_frontier.clone()
+    }
+
     /// Resolve an exact consumed identity through the actor's versioned
     /// stable-equality chain. The old row stays dirty; only output evidence
     /// may consume a clean certified successor consequence.

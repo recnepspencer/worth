@@ -43,6 +43,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
     owner: &SourceInvalidationOwner,
     application: &WorthQueryPrimaryGraphCommittedApplication,
     computation_source: super::super::ComputationSourceEvidence,
+    computation: Option<super::ComputationRegistration>,
     consumed_outputs: &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
@@ -77,6 +78,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
     owner
         .register_settlement(
             SettlementRegistration {
+                computation,
                 work_membership,
                 identity,
                 facts,
@@ -134,6 +136,7 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
     owner
         .register_settlement(
             SettlementRegistration {
+                computation: None,
                 work_membership: None,
                 identity,
                 facts,

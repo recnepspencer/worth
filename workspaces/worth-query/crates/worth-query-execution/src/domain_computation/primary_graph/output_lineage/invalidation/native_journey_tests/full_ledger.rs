@@ -76,6 +76,7 @@ let selected = world.selected_product(
             let fact = field_fact(execution, runtime, &basis_handle, entity, status.clone());
             let registered = owner.register_settlement(
                 SettlementRegistration {
+                    computation: None,
                     work_membership: None,
                     identity: Arc::clone(&row),
                     facts: RetainedSourceFacts::for_test(false, Arc::from([fact])),

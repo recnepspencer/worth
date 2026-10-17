@@ -65,6 +65,17 @@ pub(super) fn apply(
             meter.index_edit::<usize, ()>(existing.dirty_ordinals.len())?;
             let mut row = (**existing).clone();
             row.dirty_ordinals.insert(posting.ordinal);
+            if let Some(frontier) = &mut row.computation_frontier {
+                meter.ordered_read(frontier.len())?;
+                if !frontier.contains(&posting.ordinal) {
+                    meter.index_edit::<usize, ()>(frontier.len())?;
+                    frontier.insert(posting.ordinal);
+                    state.computation_dirty_ordinal_count = state
+                        .computation_dirty_ordinal_count
+                        .checked_add(1)
+                        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+                }
+            }
             counts.marked_fact_ordinals = counts
                 .marked_fact_ordinals
                 .checked_add(1)

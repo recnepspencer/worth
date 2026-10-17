@@ -76,6 +76,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
             owner
                 .register_settlement(
                     super::super::super::SettlementRegistration {
+                        computation: None,
                         work_membership: None,
                         identity,
                         facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([])),

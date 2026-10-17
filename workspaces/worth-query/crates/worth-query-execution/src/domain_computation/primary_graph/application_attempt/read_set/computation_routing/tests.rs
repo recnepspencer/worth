@@ -168,3 +168,42 @@ fn a_key_read_in_several_classes_belongs_to_every_one_of_them() {
         ]
     );
 }
+
+#[test]
+fn ordinal_alignment_includes_handler_gaps_and_retains_shared_call_keys() {
+    let observed = (1..=5)
+        .map(|slot| {
+            (
+                key(slot),
+                WorthQueryApplicationObservedFact::Entity {
+                    entity_id: entity(slot),
+                    kind: KindId::new(slot as u32),
+                },
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mut reads = ComputationFactAttribution::default();
+    reads.record(key(2), partition(7));
+    reads.record(key(2), partition(9));
+    reads.record(key(4), ComputationRead::Membership);
+    let quote = reads.index_bytes().unwrap();
+    let sealed = SealedComputationFacts::at_seal(reads, &observed);
+    assert!(quote >= sealed.index.charged_bytes().unwrap());
+    assert!(
+        sealed.at_ordinal(0).is_none(),
+        "a handler-only ordinal is not a computation fact"
+    );
+    assert_eq!(sealed.at_ordinal(1).unwrap().0, &key(2));
+    assert!(sealed.at_ordinal(2).is_none());
+    assert_eq!(sealed.at_ordinal(3).unwrap().0, &key(4));
+    assert!(sealed.at_ordinal(4).is_none());
+    assert_eq!(
+        sealed.call_index().keys(partition(7)).collect::<Vec<_>>(),
+        [&key(2)]
+    );
+    assert_eq!(
+        sealed.call_index().keys(partition(9)).collect::<Vec<_>>(),
+        [&key(2)]
+    );
+    assert_eq!(sealed.observation_work_bound(), Some(2));
+}

@@ -6,6 +6,7 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
 {
     pub(in super::super::super) fn transport_bytes(&self) -> u64 {
         let Self {
+            validated_at: _,
             remaining_work: _,
             declared_bytes: _,
             partitions,

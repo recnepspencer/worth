@@ -81,6 +81,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let registration = |identity| SettlementRegistration {
         work_membership: None,
+        computation: None,
         identity,
         facts: RetainedSourceFacts::for_test(false, Arc::clone(&facts)),
         output_facts: None,
@@ -144,6 +145,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     owner
         .register_settlement(
             SettlementRegistration {
+                computation: None,
                 read_basis: after.clone(),
                 stale_at_read_basis: OrdSet::unit(0),
                 ..registration(Arc::clone(&born_stale))
