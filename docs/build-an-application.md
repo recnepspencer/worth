@@ -2603,6 +2603,7 @@ lineage only. It neither revalidates the selected action or root nor replaces
 this gate. Success returns `()` because the caller already holds the
 observation. Read every displayed fact at that same observation.
 
+<!-- illustrative -->
 ```rust,ignore
 let observation = request.retain_current_read()?;
 let pinned = request.at(&observation);
