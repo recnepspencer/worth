@@ -71,7 +71,9 @@ where
             .map_err(Denial::Observation)?;
         // A foreign branch is refused before its installed meaning is read.
         if selected.product().product_branch() != self.description.branch {
-            return Err(Denial::Currentness(WorthQueryOutputCurrentnessDenial::ForeignBranch));
+            return Err(Denial::Currentness(
+                WorthQueryOutputCurrentnessDenial::ForeignBranch,
+            ));
         }
         let owner = self
             .runtime

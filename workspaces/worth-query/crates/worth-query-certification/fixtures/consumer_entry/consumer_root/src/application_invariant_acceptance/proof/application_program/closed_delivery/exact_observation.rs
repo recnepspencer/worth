@@ -155,8 +155,12 @@ fn one_caller_observation(
             ))
         )
     };
-    assert!(cancelled(closed_fixed.deliver_current_at(&stopped.at(&common), policy)));
-    assert!(cancelled(closed_tree.deliver_current_at(&stopped.at(&common), policy)));
+    assert!(cancelled(
+        closed_fixed.deliver_current_at(&stopped.at(&common), policy)
+    ));
+    assert!(cancelled(
+        closed_tree.deliver_current_at(&stopped.at(&common), policy)
+    ));
     // An observation retained on another branch is refused before installed meaning.
     let foreign_branch = |denied: Result<(), WorthQueryOperationDeliveryDenial>| {
         matches!(
@@ -166,8 +170,12 @@ fn one_caller_observation(
             ))
         )
     };
-    assert!(foreign_branch(closed_fixed.deliver_current_at(&request.at(foreign), policy)));
-    assert!(foreign_branch(closed_tree.deliver_current_at(&request.at(foreign), policy)));
+    assert!(foreign_branch(
+        closed_fixed.deliver_current_at(&request.at(foreign), policy)
+    ));
+    assert!(foreign_branch(
+        closed_tree.deliver_current_at(&request.at(foreign), policy)
+    ));
     // Refusal left both carriers intact: they deliver at the common observation.
     let pinned = request.at(&common);
     closed_fixed

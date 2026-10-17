@@ -118,15 +118,25 @@ fn closed_no_projection_compares_the_action_selected_at_the_caller_observation()
             )
         };
         // The owner's own observation and a caller-held one agree.
-        assert!(mismatch(closed_fixed.deliver_current(&fresh, policy).map(drop)));
+        assert!(mismatch(
+            closed_fixed.deliver_current(&fresh, policy).map(drop)
+        ));
         let changed_at = fresh.retain_current_read().unwrap();
-        assert!(mismatch(closed_fixed.deliver_current_at(&fresh.at(&changed_at), policy)));
+        assert!(mismatch(
+            closed_fixed.deliver_current_at(&fresh.at(&changed_at), policy)
+        ));
         adopt(removed_revision);
-        assert!(missing(closed_fixed.deliver_current(&fresh, policy).map(drop)));
+        assert!(missing(
+            closed_fixed.deliver_current(&fresh, policy).map(drop)
+        ));
         let removed_at = fresh.retain_current_read().unwrap();
-        assert!(missing(closed_fixed.deliver_current_at(&fresh.at(&removed_at), policy)));
+        assert!(missing(
+            closed_fixed.deliver_current_at(&fresh.at(&removed_at), policy)
+        ));
         // The older caller observation still compares its own changed action.
-        assert!(mismatch(closed_fixed.deliver_current_at(&fresh.at(&changed_at), policy)));
+        assert!(mismatch(
+            closed_fixed.deliver_current_at(&fresh.at(&changed_at), policy)
+        ));
         drop((removed_at, changed_at));
         adopt(original_revision);
         // Restoring the program restores action meaning, not the missing exact
@@ -139,11 +149,19 @@ fn closed_no_projection_compares_the_action_selected_at_the_caller_observation()
                 )) if cause.kind() == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
             )
         };
-        assert!(unavailable(closed_fixed.deliver_current(&fresh, policy).map(drop)));
-        assert!(unavailable(closed_tree.deliver_current(&fresh, policy).map(drop)));
+        assert!(unavailable(
+            closed_fixed.deliver_current(&fresh, policy).map(drop)
+        ));
+        assert!(unavailable(
+            closed_tree.deliver_current(&fresh, policy).map(drop)
+        ));
         let restored = fresh.retain_current_read().unwrap();
-        assert!(unavailable(closed_fixed.deliver_current_at(&fresh.at(&restored), policy)));
-        assert!(unavailable(closed_tree.deliver_current_at(&fresh.at(&restored), policy)));
+        assert!(unavailable(
+            closed_fixed.deliver_current_at(&fresh.at(&restored), policy)
+        ));
+        assert!(unavailable(
+            closed_tree.deliver_current_at(&fresh.at(&restored), policy)
+        ));
         drop(restored);
         assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
         assert_eq!(
