@@ -18,14 +18,15 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .output_lineage
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let read = lineage_read(admission, |maximum_work| {
+            let read = lineage_read(admission, |admission| {
                 if let Some(receipt) = settlement.application_commit_receipt() {
                     lineage.source_facts_for_receipt(
                         runtime.runtime.authority_identity().as_u64(),
                         &runtime.installed_schema.binding_identity(),
                         self.product().observation(),
                         receipt,
-                        maximum_work,
+                        &execution,
+                        admission,
                     )
                 } else if let Some(stable) = settlement.stable.as_ref() {
                     lineage.source_facts_for_stable_output(
@@ -33,7 +34,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         &runtime.installed_schema.binding_identity(),
                         self.product().observation(),
                         stable,
-                        maximum_work,
+                        &execution,
+                        admission,
                     )
                 } else {
                     lineage.source_facts_for_restored_output(
@@ -41,7 +43,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         &runtime.installed_schema.binding_identity(),
                         self.product().observation(),
                         settlement,
-                        maximum_work,
+                        &execution,
+                        admission,
                     )
                 }
             })?;

@@ -35,7 +35,11 @@ impl SignalPreparationBudget {
         let policy = worth_foundational::ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,
             worth_foundational::DeterminismContract::CanonicalBitwise,
-            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, capacity, 10_000),
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                capacity,
+                Some(10_000),
+            ),
         );
         Self {
             capacity,

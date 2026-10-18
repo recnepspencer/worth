@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::{
 
 fn batch(work: usize, bytes: usize) -> Batch {
     let nz = |value| NonZeroUsize::new(value).unwrap();
-    Batch::new(Limits::new(nz(2), nz(work), nz(bytes), nz(4_096)))
+    Batch::new(Limits::new(nz(2), Some(nz(work)), nz(bytes), nz(4_096)))
 }
 
 pub(super) fn refuse_then_refresh(

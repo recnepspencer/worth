@@ -28,7 +28,7 @@ fn resource_pressure_remains_typed_across_the_effect_boundary() {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Serial,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64, 1),
+                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64, Some(1)),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),

@@ -48,7 +48,7 @@ fn earlier_completion_failure_does_not_refund_the_later_request_boundary() {
         let ((result, ()), report) = execution
             .execution_request()
             .unwrap()
-            .run(worth_execution::ExecutionWorkCeiling::new(CHARGES[..2].iter().sum()), |_| {
+            .run(worth_execution::ExecutionWorkCeiling::new(Some(CHARGES[..2].iter().sum())), |_| {
                 let cursor = CanonicalApplyCursor::compute(
                     CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1, 2]).unwrap(),
                     plans,
@@ -59,7 +59,7 @@ fn earlier_completion_failure_does_not_refund_the_later_request_boundary() {
                         crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted
                     ))), "the later root stops on the request's refused charge");
                 let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                    maximum_work_visits: 0,
+                    maximum_work_visits: Some(0),
                     maximum_preparation_bytes: 0,
                 });
                 (

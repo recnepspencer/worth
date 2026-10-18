@@ -61,7 +61,7 @@ where
         .resolve_application_query_limits(binding.limits());
     let item_limits = match query_limits {
         Some((results, work)) => item_limits
-            .narrow(results, work)
+            .narrow(results, Some(work))
             .map_err(|cause| item(0, ItemDenial::Limit(cause)))?,
         None => item_limits,
     };

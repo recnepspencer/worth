@@ -34,7 +34,7 @@ impl CustomInvariantRule for BuilderTestRule {
             },
             display_name: Arc::from("Builder Test Rule"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(1).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(1).unwrap()),
                 access: crate::validation::data::CustomInvariantAccessContract::default(),
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),

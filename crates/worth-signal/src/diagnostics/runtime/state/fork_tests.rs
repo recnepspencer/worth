@@ -94,13 +94,13 @@ fn carrier_catalog_charge_includes_removed_shared_base_entries() {
     let catalog_charge = |state: &DiagnosticsState| {
         state
             .branch_catalog
-            .retained_heap_charge(&mut RetainedStoragePreparation::new(1000))
+            .retained_heap_charge(&mut RetainedStoragePreparation::new(Some(1000)))
             .unwrap()
             .bytes()
     };
     let carrier_charge = |state: &DiagnosticsState| {
         state
-            .retained_branch_carrier_charge(&mut RetainedStoragePreparation::new(1000))
+            .retained_branch_carrier_charge(&mut RetainedStoragePreparation::new(Some(1000)))
             .unwrap()
             .bytes()
     };

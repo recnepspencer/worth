@@ -73,7 +73,7 @@ impl WorthUiStatusSourceOwner {
     pub fn execute_action(
         &self,
         action: WorthUiStatusActionRequest,
-        maximum_history_work: NonZeroUsize,
+        maximum_history_work: Option<NonZeroUsize>,
     ) -> Result<WorthUiStatusActionOutcome, WorthUiStatusMutation> {
         let scope = request_scope();
         let operation = self.prepare_action(action, &scope)?;

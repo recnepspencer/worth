@@ -17,11 +17,11 @@ fn shared_index_history_prepares_without_copying_and_mutation_invalidates_only_i
     assert!(std::ptr::eq(source, sibling));
     let entries = source.entries.clone();
     let wire = serde_json::to_value(source).unwrap();
-    let mut measured_work = Work::new(1000);
+    let mut measured_work = Work::new(Some(1000));
     let expected = source.retained_heap_charge(&mut measured_work).unwrap();
     let limit = measured_work.visits() - 1;
     assert_eq!(
-        source.prepare_retained_charge(&mut Work::new(limit)),
+        source.prepare_retained_charge(&mut Work::new(Some(limit))),
         Err(Denial::WorkExhausted {
             maximum_visits: limit
         })
@@ -32,7 +32,7 @@ fn shared_index_history_prepares_without_copying_and_mutation_invalidates_only_i
     );
     assert_eq!(
         source
-            .prepare_retained_charge(&mut Work::new(measured_work.visits()))
+            .prepare_retained_charge(&mut Work::new(Some(measured_work.visits())))
             .unwrap(),
         expected
     );
@@ -60,16 +60,18 @@ fn shared_index_history_prepares_without_copying_and_mutation_invalidates_only_i
 fn concurrent_cold_history_preparation_converges_on_one_nonsemantic_fact() {
     let mut history = DiagnosticHistory::new();
     history.push_back("shared evidence".repeat(64)).unwrap();
-    let expected = history.retained_heap_charge(&mut Work::new(1000)).unwrap();
+    let expected = history
+        .retained_heap_charge(&mut Work::new(Some(1000)))
+        .unwrap();
     std::thread::scope(|scope| {
         let left = scope.spawn(|| {
             history
-                .prepare_retained_charge(&mut Work::new(1000))
+                .prepare_retained_charge(&mut Work::new(Some(1000)))
                 .unwrap()
         });
         let right = scope.spawn(|| {
             history
-                .prepare_retained_charge(&mut Work::new(1000))
+                .prepare_retained_charge(&mut Work::new(Some(1000)))
                 .unwrap()
         });
         assert_eq!(left.join().unwrap(), expected);

@@ -19,13 +19,15 @@ use crate::domain_computation::{
 
 fn admission(work: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: work,
+        maximum_work_visits: Some(work),
         maximum_preparation_bytes: 1024 * 1024,
     })
 }
 
 #[test]
 fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
@@ -134,6 +136,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
             &scope,
             &child,
             target_partition,
+            execution,
             &mut funded,
         )
         .expect("the selected ancestor lookup is funded")
@@ -156,6 +159,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
             &scope,
             &child,
             target_partition,
+            execution,
             &mut short,
         ),
         Err(CompanionPreflightStop::WorkExhausted { .. })
@@ -174,6 +178,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
     let prior = lineage
         .partition_index
         .latest_admitted(
+            execution,
             &source,
             ProductCoordinate {
                 occurrence: parent.lifecycle_incarnation(),

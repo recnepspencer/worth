@@ -12,7 +12,7 @@ use crate::data::retained_storage::{
 };
 
 fn work() -> Preparation<'static> {
-    Preparation::new(100_000)
+    Preparation::new(Some(100_000))
 }
 
 fn accounted<R>(outcome: Result<Outcome<R>, MutationDenial>) -> R {
@@ -59,7 +59,7 @@ fn sparse_base_preparation_admits_retained_bucket_work_before_traversal() {
     }
     assert_eq!(map.len(), 1);
     assert!(map.base_capacity.unwrap() >= 1024);
-    let mut sparse_work = Preparation::new(3);
+    let mut sparse_work = Preparation::new(Some(3));
     assert!(matches!(
         map.prepare_retained_charge(&mut sparse_work),
         Err(Denial::WorkExhausted { .. })
@@ -78,7 +78,9 @@ fn sparse_base_preparation_admits_retained_bucket_work_before_traversal() {
     assert_charge(&map);
     // Prepared, keyed mutation does not inherit the table-scan work bound.
     accounted(
-        map.edit_with_retained_charge(&1023, &mut Preparation::new(6), |value| value.push('!')),
+        map.edit_with_retained_charge(&1023, &mut Preparation::new(Some(6)), |value| {
+            value.push('!')
+        }),
     );
     assert_charge(&map);
 }
@@ -159,12 +161,14 @@ fn raw_mutation_and_missing_extent_history_require_explicit_preparation_or_recon
     map.prepare_retained_charge(&mut work()).unwrap();
     let before = map.prepared_retained_charge().unwrap();
     assert!(matches!(
-        map.edit_with_retained_charge(&1, &mut Preparation::new(0), |_| panic!("denied edit ran")),
+        map.edit_with_retained_charge(&1, &mut Preparation::new(Some(0)), |_| panic!(
+            "denied edit ran"
+        )),
         Err(MutationDenial::Accounting(Denial::WorkExhausted { .. }))
     ));
     assert_eq!(map.prepared_retained_charge().unwrap(), before);
     match map
-        .edit_with_retained_charge(&1, &mut Preparation::new(3), |value| {
+        .edit_with_retained_charge(&1, &mut Preparation::new(Some(3)), |value| {
             value.push_str(" changed");
             Box::new(42)
         })
@@ -263,7 +267,7 @@ fn mixed_operations_match_independent_values_and_accounting_visits_ignore_popula
         accounted(map.edit_with_retained_charge(&0, &mut edit_work, |value| value.push('!')));
         visits.push(edit_work.visits());
         for _ in 0..64 {
-            map.prepare_retained_charge(&mut Preparation::new(0))
+            map.prepare_retained_charge(&mut Preparation::new(Some(0)))
                 .unwrap();
         }
         assert_charge(&map);

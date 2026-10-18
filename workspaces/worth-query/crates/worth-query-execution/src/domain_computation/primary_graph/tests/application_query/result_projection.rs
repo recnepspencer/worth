@@ -80,7 +80,7 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(1).unwrap(),
-        NonZeroUsize::new(10_000).unwrap(),
+        Some(NonZeroUsize::new(10_000).unwrap()),
         &request,
     );
     let plan = world

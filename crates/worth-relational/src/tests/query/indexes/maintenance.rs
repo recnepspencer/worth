@@ -10,9 +10,9 @@ fn field_comparison_key(value: &str) -> AuthoritativeFieldComparisonKey {
 
 fn budget() -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 100_000,
-        maximum_cold_record_slots: 0,
-        maximum_derived_rows: 100_000,
+        maximum_work_units: Some(100_000),
+        maximum_cold_record_slots: Some(0),
+        maximum_derived_rows: Some(100_000),
     }
 }
 
@@ -127,9 +127,9 @@ fn exhausted_refresh_and_wrong_before_root_publish_nothing() {
             &basis,
             Some(&first.snapshot),
             DerivedIndexMaintenanceBudget {
-                maximum_work_units: 0,
-                maximum_cold_record_slots: 0,
-                maximum_derived_rows: 0,
+                maximum_work_units: Some(0),
+                maximum_cold_record_slots: Some(0),
+                maximum_derived_rows: Some(0),
             },
             execution,
         )

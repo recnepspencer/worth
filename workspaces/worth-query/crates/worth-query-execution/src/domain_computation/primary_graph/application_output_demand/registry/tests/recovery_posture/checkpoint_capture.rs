@@ -19,7 +19,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
             WorthQueryOutputCheckpoint::Ready(super::super::super::ReadyCompletion::for_test(super::super::super::WorthQueryCompletedOutputDemand {
                 authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
                 readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-                resources: Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(7, 8)),
+                resources: Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(Some(7), 8)),
             })),
         ))
     };

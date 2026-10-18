@@ -28,7 +28,7 @@ pub struct WorthQueryApplicationQueryBatchReadPlan {
     query: WorthQueryInstalledApplicationQueryIdentity,
     binding: &'static str,
     count: usize,
-    work: usize,
+    work: Option<usize>,
     roots: usize,
     result: usize,
 }
@@ -39,7 +39,7 @@ pub(super) struct InstalledBatchPlan {
     profile: WorthQueryApplicationQueryResourceProfile,
     slots: BTreeMap<WorthQueryInstalledApplicationQueryIdentity, PlannedSlots>,
     pub(super) items: usize,
-    pub(super) work: usize,
+    pub(super) work: Option<usize>,
     pub(super) bytes: usize,
     pub(super) result: NonZeroUsize,
     pub(super) frozen: bool,
@@ -51,7 +51,7 @@ pub(super) struct InstalledBatchPlan {
 struct PlannedSlots {
     binding: &'static str,
     remaining: usize,
-    work: usize,
+    work: Option<usize>,
     roots: usize,
 }
 
@@ -103,7 +103,7 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
             query: binding.query().identity().clone(),
             binding: B::IDENTITY,
             count,
-            work: limits.maximum_work().get(),
+            work: limits.maximum_work().map(std::num::NonZeroUsize::get),
             roots: limits.maximum_results().get(),
             result,
         })
@@ -125,7 +125,7 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
             profile,
             slots: BTreeMap::new(),
             items: 0,
-            work: 0,
+            work: Some(0),
             bytes: 0,
             result: profile.maximum_result_bytes_per_root(),
             frozen: false,
@@ -189,9 +189,16 @@ impl InstalledBatchPlan {
                 return Err(ForeignPlan);
             }
             items = items.checked_add(read.count).ok_or(CounterOverflow)?;
-            work = work
-                .checked_add(read.work.checked_mul(read.count).ok_or(CounterOverflow)?)
-                .ok_or(CounterOverflow)?;
+            if read.count != 0 {
+                work = match (work, read.work) {
+                    (Some(total), Some(item)) => Some(
+                        total
+                            .checked_add(item.checked_mul(read.count).ok_or(CounterOverflow)?)
+                            .ok_or(CounterOverflow)?,
+                    ),
+                    _ => None,
+                };
+            }
             // Result staging and the live kernel buffer may coexist. Source and
             // basis metadata are quoted by their real owners before each copy.
             bytes = bytes
@@ -251,7 +258,7 @@ impl WorthQueryApplicationQueryBatchAdmission {
         runtime: u64,
         schema: &ApplicationSchemaBindingIdentity,
         query: &WorthQueryInstalledApplicationQueryIdentity,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
         maximum_roots: usize,
     ) -> Result<Option<PlannedBatchItem>, WorthQueryApplicationQueryBatchResourceDenial> {
         let plan = match &self.policy {
@@ -291,11 +298,16 @@ impl WorthQueryApplicationQueryBatchAdmission {
             .slots
             .get_mut(query)
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::UnplannedRead)?;
-        if maximum_work > slot.work {
-            return Err(WorthQueryApplicationQueryBatchResourceDenial::WorkLimit {
-                required: maximum_work,
-                maximum: slot.work,
-            });
+        if let Some(maximum) = slot.work {
+            let required = maximum_work.ok_or(
+                WorthQueryApplicationQueryBatchResourceDenial::WorkLimitWidening { maximum },
+            )?;
+            if required > maximum {
+                return Err(WorthQueryApplicationQueryBatchResourceDenial::WorkLimit {
+                    required,
+                    maximum,
+                });
+            }
         }
         if maximum_roots > slot.roots {
             return Err(WorthQueryApplicationQueryBatchResourceDenial::ItemLimit {
@@ -320,3 +332,6 @@ impl WorthQueryApplicationQueryBatchAdmission {
         self.claim_publication_memory(bytes)
     }
 }
+
+#[cfg(test)]
+mod tests;

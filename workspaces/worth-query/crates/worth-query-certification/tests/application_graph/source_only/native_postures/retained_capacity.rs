@@ -30,7 +30,7 @@ fn retained_native_no_effect_capacity_keeps_terminal_custody_until_fresh_close()
                 let fresh_principal = authenticate_operator(host.installed_schema(), &fresh_scope);
                 original.advance(
                     &host.runtime().request(&fresh_principal, &fresh_scope),
-                    bound(),
+                    None,
                 )
             });
             assert!(pause.wait_until_reached(Duration::from_secs(10)));
@@ -77,7 +77,7 @@ fn retained_native_no_effect_capacity_keeps_terminal_custody_until_fresh_close()
         );
         assert!(host
             .runtime()
-            .product_publication_recovery_page(None, bound())
+            .product_publication_recovery_page(None, NonZeroUsize::MIN)
             .unwrap()
             .rows()
             .is_empty());
@@ -122,7 +122,7 @@ fn retained_native_capacity_unpressured_twin_delivers_actual_commit() {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
-    let done = match operation(&host, &request, 19, 0x9176_6319).advance(&request, bound()) {
+    let done = match operation(&host, &request, 19, 0x9176_6319).advance(&request, None) {
         WorthQuerySourceOnlyAdvance::Completed(done) => done,
         _ => panic!("real retained observation reservation succeeds"),
     };

@@ -15,9 +15,9 @@ pub struct SignalRuntimePolicy {
     /// Serial request memory ceiling; older records use the 64 MiB baseline.
     #[serde(default = "default_serial_memory_bytes")]
     pub serial_memory_bytes: u64,
-    /// Required on decoded requests; presets choose an explicit finite limit.
-    pub maximum_waiter_resolution_visits: usize,
-    pub maximum_upstream_dependency_visits: usize,
+    /// Optional caller limits; presets leave ordinary work unbounded.
+    pub maximum_waiter_resolution_visits: Option<usize>,
+    pub maximum_upstream_dependency_visits: Option<usize>,
     pub conditional_evaluation_budget: super::SignalConditionalEvaluationBudget,
     pub conditional_temporal_budget: super::SignalConditionalTemporalBudget,
     pub tier: DiagnosticsTier,

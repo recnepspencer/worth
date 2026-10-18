@@ -33,7 +33,8 @@ fn canceled_foreign_branch_is_refused_and_the_next_good_request_delivers() {
         .account_activity(OTHER_ACCOUNT)
         .as_principal(&owner)
         .subscribe(
-            WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8, 2_048).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8, Some(2_048))
+                .unwrap(),
         )
         .unwrap();
     let cancellation = WorthQueryCancellationSource::new();

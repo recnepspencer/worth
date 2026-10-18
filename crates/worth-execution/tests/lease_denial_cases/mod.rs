@@ -25,7 +25,7 @@ fn request(workers: usize, memory: u64, work: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, work),
+            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, Some(work)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,
@@ -84,7 +84,7 @@ pub fn denial(cause: Cause) -> LeaseDenial {
         Cause::Memory => refused(Some(&parent), 0, 4 << 20),
         Cause::Overflow => refused(Some(&parent), u64::MAX, 0),
         Cause::Nested => {
-            ExecutionWorkCeiling::new(1000)
+            ExecutionWorkCeiling::new(Some(1000))
                 .run(&parent, || refused(None, 0, 0))
                 .unwrap()
                 .0

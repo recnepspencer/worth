@@ -290,7 +290,7 @@ async fn assert_live_fixture_admits(application: &CausalHttpApplication, account
         cancellation.token(),
     );
     let principal = application.authenticate(&scope).await;
-    let controls = WorthQueryApplicationLiveControls::bounded(scope, 16, 8, 2_048).unwrap();
+    let controls = WorthQueryApplicationLiveControls::bounded(scope, 16, 8, Some(2_048)).unwrap();
     match application
         .runtime
         .account_activity(account)

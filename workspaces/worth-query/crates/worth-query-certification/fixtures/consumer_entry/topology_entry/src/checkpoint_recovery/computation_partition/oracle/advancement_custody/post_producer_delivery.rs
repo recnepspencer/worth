@@ -51,7 +51,7 @@ fn refused_delivery(placement: Placement) {
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),
-        ceiling,
+        Some(ceiling),
     )));
     reports();
     room().clear();
@@ -92,7 +92,12 @@ fn funded_delivery(placement: Placement) {
     // replacement ceiling. It must cover both producer and delivery/rejoin work.
     bound(None);
     let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
-    assert!(policy.work_ceiling() > CALLER_WORK);
+    assert!(
+        policy
+            .work_ceiling()
+            .expect("checkpoint fixture explicitly chooses a finite request")
+            > CALLER_WORK
+    );
     let application = application_fixture::application();
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
@@ -118,7 +123,12 @@ fn funded_delivery(placement: Placement) {
     assert!(room().iter().all(|run| run.outcome.is_ok()));
     let requests = reports();
     assert_eq!(requests.len(), 1, "producer and delivery share one request");
-    assert!(requests[0].as_ref().unwrap().charged_work() <= policy.work_ceiling());
+    assert!(
+        requests[0].as_ref().unwrap().charged_work()
+            <= policy
+                .work_ceiling()
+                .expect("checkpoint fixture explicitly chooses a finite request")
+    );
     room().clear();
     interest
         .settle(&request)

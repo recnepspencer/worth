@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 use super::{DerivedIndexGeneration, DerivedIndexId};
 
 /// Explicit limits for patch-local work and optional cold reconstruction.
-/// A zero cold limit prohibits reconstruction, including a missing generation.
+/// An explicit Some(0) cold limit prohibits reconstruction, including a missing generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DerivedIndexMaintenanceBudget {
-    pub maximum_work_units: usize,
-    pub maximum_cold_record_slots: usize,
-    pub maximum_derived_rows: usize,
+    pub maximum_work_units: Option<usize>,
+    pub maximum_cold_record_slots: Option<usize>,
+    pub maximum_derived_rows: Option<usize>,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

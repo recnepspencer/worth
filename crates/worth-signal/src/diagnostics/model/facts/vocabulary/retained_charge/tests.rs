@@ -7,13 +7,13 @@ fn materialized_fact_maps_prepare_bounded_charges_and_share_them_across_forks() 
     let explanation = materialized_explanation();
     let fact = ExplanationFact::from_explanation(&explanation);
     let mut map: PersistentOrdMap<_, _> = [(fact.node, fact.clone())].into_iter().collect();
-    let mut work = Work::new(10000);
+    let mut work = Work::new(Some(10000));
     map.prepare_retained_charge(&mut work).unwrap();
     let visits = work.visits();
     let mut short: PersistentOrdMap<_, _> = [(fact.node, fact.clone())].into_iter().collect();
     let old_allocation = short.get(&fact.node).unwrap() as *const ExplanationFact;
     assert_eq!(
-        short.prepare_retained_charge(&mut Work::new(visits - 1)),
+        short.prepare_retained_charge(&mut Work::new(Some(visits - 1))),
         Err(Denial::WorkExhausted {
             maximum_visits: visits - 1
         })
@@ -24,17 +24,18 @@ fn materialized_fact_maps_prepare_bounded_charges_and_share_them_across_forks() 
     );
     assert_eq!(short.get(&fact.node).unwrap(), &fact);
     short
-        .prepare_retained_charge(&mut Work::new(visits))
+        .prepare_retained_charge(&mut Work::new(Some(visits)))
         .unwrap();
     let mut fork = map.fork_persistent();
     assert!(map.ptr_eq(&fork));
     let retained_charge = map.prepared_retained_charge().unwrap();
     assert_eq!(
-        fork.prepare_retained_charge(&mut Work::new(0)).unwrap(),
+        fork.prepare_retained_charge(&mut Work::new(Some(0)))
+            .unwrap(),
         retained_charge
     );
     let outcome = fork
-        .edit_with_retained_charge(&fact.node, &mut Work::new(10000), |value| {
+        .edit_with_retained_charge(&fact.node, &mut Work::new(Some(10000)), |value| {
             value.state.push_str(" draft")
         })
         .unwrap();
@@ -43,13 +44,15 @@ fn materialized_fact_maps_prepare_bounded_charges_and_share_them_across_forks() 
     };
     assert_eq!(
         charge,
-        fork.retained_heap_charge(&mut Work::new(10000)).unwrap()
+        fork.retained_heap_charge(&mut Work::new(Some(10000)))
+            .unwrap()
     );
     assert_eq!(map.get(&fact.node).unwrap(), &fact);
     assert_eq!(map.prepared_retained_charge().unwrap(), retained_charge);
     let provenance = ProvenanceFact::from_explanation(&explanation);
     let mut map: PersistentOrdMap<_, _> = [(provenance.node, provenance)].into_iter().collect();
-    map.prepare_retained_charge(&mut Work::new(10000)).unwrap();
+    map.prepare_retained_charge(&mut Work::new(Some(10000)))
+        .unwrap();
     let fork = map.fork_persistent();
     assert!(map.ptr_eq(&fork));
     assert_eq!(
@@ -63,13 +66,15 @@ fn fact_capacity_is_separate_from_nested_explanation_and_provenance_payloads() {
     let explanation = materialized_explanation();
     let mut fact = ExplanationFact::from_explanation(&explanation);
     let original = fact.clone();
-    let before = fact.retained_heap_charge(&mut Work::new(10000)).unwrap();
+    let before = fact
+        .retained_heap_charge(&mut Work::new(Some(10000)))
+        .unwrap();
     let mut delta = grow_string(&mut fact.state);
     if let Some(output) = &mut fact.output_change {
         delta += grow_string(output);
     }
     assert_eq!(
-        fact.retained_heap_charge(&mut Work::new(10000))
+        fact.retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap()
             .bytes()
             - before.bytes(),
@@ -80,7 +85,7 @@ fn fact_capacity_is_separate_from_nested_explanation_and_provenance_payloads() {
     assert!(!provenance.vertices.is_empty());
     let original = provenance.clone();
     let before = provenance
-        .retained_heap_charge(&mut Work::new(10000))
+        .retained_heap_charge(&mut Work::new(Some(10000)))
         .unwrap();
     let mut delta = grow_vec(&mut provenance.vertices)
         + grow_vec(&mut provenance.edges)
@@ -92,7 +97,7 @@ fn fact_capacity_is_separate_from_nested_explanation_and_provenance_payloads() {
     }
     assert_eq!(
         provenance
-            .retained_heap_charge(&mut Work::new(10000))
+            .retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap()
             .bytes()
             - before.bytes(),
@@ -121,7 +126,9 @@ fn provenance_nested_edges_and_rewiring_contribute_payload_and_vector_capacity()
     // Explicit representation extension; this is not executed topology evidence.
     fact.edges.clear();
     fact.rewiring = None;
-    let before = fact.retained_heap_charge(&mut Work::new(10000)).unwrap();
+    let before = fact
+        .retained_heap_charge(&mut Work::new(Some(10000)))
+        .unwrap();
     let previous_capacity = fact.edges.capacity();
     let mut partition = String::with_capacity(512);
     partition.push('p');
@@ -146,7 +153,7 @@ fn provenance_nested_edges_and_rewiring_contribute_payload_and_vector_capacity()
         reason: Some(reason),
     };
     assert_eq!(
-        edge.retained_heap_charge(&mut Work::new(100))
+        edge.retained_heap_charge(&mut Work::new(Some(100)))
             .unwrap()
             .bytes(),
         edge_bytes
@@ -177,14 +184,14 @@ fn provenance_nested_edges_and_rewiring_contribute_payload_and_vector_capacity()
     let rewiring = RewiringSummary { added, removed };
     assert_eq!(
         rewiring
-            .retained_heap_charge(&mut Work::new(100))
+            .retained_heap_charge(&mut Work::new(Some(100)))
             .unwrap()
             .bytes(),
         rewiring_bytes
     );
     fact.rewiring = Some(rewiring);
     assert_eq!(
-        fact.retained_heap_charge(&mut Work::new(10000))
+        fact.retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap()
             .bytes()
             - before.bytes(),

@@ -23,7 +23,7 @@ pub(crate) fn with_bootstrap<R>(
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::new(1).unwrap(),
                 64 * 1024 * 1024,
-                u64::MAX,
+                None,
             ),
         ),
         body,

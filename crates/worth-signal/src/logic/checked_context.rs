@@ -147,7 +147,7 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
             .execution
             .max_checked_result_heap_bytes
         {
-            let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+            let mut measurement = RetainedStoragePreparation::new(None);
             let mut checkpoint = |visits: usize| {
                 let units = u64::try_from(visits).map_err(|_| {
                     RetainedStoragePreparationDenial::ExecutionStopped(

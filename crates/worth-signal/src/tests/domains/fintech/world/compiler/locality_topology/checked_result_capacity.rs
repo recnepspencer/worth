@@ -49,7 +49,7 @@ pub(super) fn maximum_result_heap(
                 }
             }
             let candidate = result
-                .retained_heap_charge(&mut RetainedStoragePreparation::new(usize::MAX))
+                .retained_heap_charge(&mut RetainedStoragePreparation::new(None))
                 .map(|charge| charge.bytes())
                 .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
             maximum = maximum.max(candidate);

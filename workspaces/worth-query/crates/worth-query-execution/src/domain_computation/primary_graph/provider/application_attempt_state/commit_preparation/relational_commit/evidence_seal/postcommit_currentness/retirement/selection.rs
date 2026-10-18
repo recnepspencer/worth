@@ -184,7 +184,7 @@ fn sealed_rebase(
                 correspondence,
                 changed,
                 true,
-                64,
+                Some(64),
                 &mut admission(),
             ))
         })

@@ -100,7 +100,7 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
     let (settled, _) = root
         .execution_request()
         .unwrap()
-        .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
             wave_dispatch::dispatch(&root, vec![member])
         })
         .unwrap();

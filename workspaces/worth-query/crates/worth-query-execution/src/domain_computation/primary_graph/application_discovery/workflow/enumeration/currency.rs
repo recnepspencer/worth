@@ -24,13 +24,21 @@ pub(in crate::domain_computation::primary_graph::application_discovery::workflow
     };
     let host=crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget();
     let budget = DerivedIndexMaintenanceBudget {
-        maximum_work_units: requested.maximum_work_units.min(host.maximum_work_units),
+        maximum_work_units: requested
+            .maximum_work_units
+            .into_iter()
+            .chain(host.maximum_work_units)
+            .min(),
         maximum_cold_record_slots: requested
             .maximum_cold_record_slots
-            .min(host.maximum_cold_record_slots),
+            .into_iter()
+            .chain(host.maximum_cold_record_slots)
+            .min(),
         maximum_derived_rows: requested
             .maximum_derived_rows
-            .min(host.maximum_derived_rows),
+            .into_iter()
+            .chain(host.maximum_derived_rows)
+            .min(),
     };
     let observation = basis.observation();
     let commit = observation.commit_id().ok_or(Denial::BasisUnavailable)?;

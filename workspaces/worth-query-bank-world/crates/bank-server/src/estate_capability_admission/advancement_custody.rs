@@ -101,7 +101,7 @@ fn run(entry: Entry, refusal: Option<bool>) {
         bound(Some(worth_foundational::ExecutionBudget::new(
             NonZeroUsize::MIN,
             if memory { 0 } else { 128 * 1024 * 1024 },
-            if memory { 16_000_000 } else { 0 },
+            Some(if memory { 16_000_000 } else { 0 }),
         )));
     }
     let before = reads();

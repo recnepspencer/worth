@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     invariant_projection::ConsumedOutputEvidence,
     output_lineage::invalidation::InvalidationEditAdmission,
 };
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// One retained output as a retained observation selects it. Holding it
 /// keeps its lineage row. The row is the latest one at or before the
@@ -38,8 +39,9 @@ impl WorthQueryApplicationOutputLineage {
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         output_bindings: &[TypeId],
         source_partition_identity: [u8; 32],
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Vec<ObservedRetainedOutput>, ()> {
+    ) -> Result<Vec<ObservedRetainedOutput>, CompanionPreflightStop> {
         let mut outputs = Vec::new();
         for output_binding in output_bindings {
             let source = SemanticSource {
@@ -51,7 +53,7 @@ impl WorthQueryApplicationOutputLineage {
                     .expect("output family binding is installed"),
             };
             if !self.by_source.contains_key(&source) {
-                admission.charge_external_work(1).map_err(|_| ())?;
+                admission.charge_external_work(1)?;
                 continue;
             }
             let mut coordinate = ProductCoordinate {
@@ -59,16 +61,27 @@ impl WorthQueryApplicationOutputLineage {
                 generation: observation.reference_generation().get(),
             };
             loop {
-                let cell = admission
-                    .reserved_read(|maximum_work| {
-                        self.latest_cell_in_partition_budgeted(
+                execution
+                    .consult()
+                    .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
+                let cell = self
+                    .partition_index
+                    .latest_admitted(
+                        execution,
+                        &source,
+                        coordinate,
+                        source_partition_identity,
+                        admission,
+                    )?
+                    .map(|(generation, slot)| {
+                        self.cell_at_partition_slot(
                             &source,
-                            coordinate,
-                            source_partition_identity,
-                            maximum_work,
+                            coordinate.occurrence,
+                            generation,
+                            Some(source_partition_identity),
+                            slot,
                         )
-                    })
-                    .map_err(|_| ())??;
+                    });
                 if let Some((cell, recorded)) = cell.and_then(|cell| Some((cell, cell.get()?))) {
                     let origin = recorded
                         .performed_origin

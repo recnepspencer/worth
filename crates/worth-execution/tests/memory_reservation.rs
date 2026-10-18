@@ -40,7 +40,7 @@ fn policy(bytes: u64) -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, u64::MAX),
+        ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, Some(u64::MAX)),
     )
 }
 
@@ -154,7 +154,7 @@ fn serial_run_holding(bytes: u64, hold: Option<u64>) -> Option<bool> {
     let budget = SerialMemoryBudget::from_policy(&policy(bytes));
     let held = hold.map(|hold| budget.reserve(hold).unwrap());
     let request = serial_request(budget);
-    let ran = ExecutionWorkCeiling::new(u64::MAX).run_serial(&request, || {
+    let ran = ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(&request, || {
         let kernel =
             |value: &u64, _: &mut MapKernelContext<'_, '_>| Ok::<_, MapKernelFailure<()>>(*value);
         match held {
@@ -209,7 +209,7 @@ fn a_serial_run_with_a_policy_refuses_at_its_own_memory_boundary() {
     );
     assert_eq!(serial_run(admitted), Some(true));
 
-    let funded = ExecutionWorkCeiling::new(u64::MAX).run_serial(
+    let funded = ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(
         &serial_request(SerialMemoryBudget::from_policy(&policy(1 << 20))),
         || one_partition_map().run(None, |value, _| Ok::<_, MapKernelFailure<()>>(*value)),
     );

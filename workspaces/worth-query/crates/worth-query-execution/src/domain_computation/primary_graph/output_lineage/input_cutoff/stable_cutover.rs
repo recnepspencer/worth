@@ -93,6 +93,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         observation: &ProductBranchObservation,
         world: &RuntimeWorldObservationPort,
         registration: PreparedCurrentSettlementRegistration<'selected>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PublishedStableLineage, StablePublicationStop> {
         let scope = operation.operation_scope_binding();
@@ -123,11 +124,21 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         // final locked selection also excludes retirement and other writers.
         let revalidation = (|| {
             lineage.drain_cancelled_slots(admission)?;
-            let actual = lineage.prior_input_cutoff_candidate::<Binding>(scope, observation, self.address.partition, admission)
-                .map_err(|stop| match stop {
-                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-                    | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => denial(Kind::WorkBudgetExceeded),
-                    _ => denial(Kind::RetainedBasisUnavailable),
+            let actual = lineage
+                .prior_input_cutoff_candidate::<Binding>(
+                    scope,
+                    observation,
+                    self.address.partition,
+                    execution,
+                    admission,
+                )
+                .map_err(|stop| {
+                    crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+                        crate::domain_computation::primary_graph::output_reuse::preflight_stop(
+                            stop,
+                        ),
+                        "stable lineage basis unavailable",
+                    )
                 })?;
             if !actual.as_ref().is_some_and(|actual| {
                 Arc::ptr_eq(&actual.cell, &self.address.verified.candidate.cell)

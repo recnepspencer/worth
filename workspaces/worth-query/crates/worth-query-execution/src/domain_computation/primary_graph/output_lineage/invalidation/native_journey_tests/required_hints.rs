@@ -237,7 +237,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                     .activate(
                         participant,
                         CompanionPreflightBudget {
-                            maximum_work_visits: 1_000_000,
+                            maximum_work_visits: Some(1_000_000),
                             maximum_preparation_bytes: 8 * 1024 * 1024,
                         },
                     )

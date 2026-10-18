@@ -30,7 +30,7 @@ fn remaining_lineage_variants_charge_their_actual_retained_payloads() {
             }
         };
         assert_eq!(
-            kind.retained_heap_charge(&mut Work::new(100))
+            kind.retained_heap_charge(&mut Work::new(Some(100)))
                 .unwrap()
                 .bytes(),
             expected as u64
@@ -57,7 +57,7 @@ fn remaining_lineage_variants_charge_their_actual_retained_payloads() {
         resolved_conflict_kinds,
     };
     assert_eq!(
-        kind.retained_heap_charge(&mut Work::new(100))
+        kind.retained_heap_charge(&mut Work::new(Some(100)))
             .unwrap()
             .bytes(),
         expected as u64
@@ -79,13 +79,14 @@ fn remaining_lineage_variants_charge_their_actual_retained_payloads() {
         },
     ] {
         assert_eq!(
-            kind.retained_heap_charge(&mut Work::new(100)).unwrap(),
+            kind.retained_heap_charge(&mut Work::new(Some(100)))
+                .unwrap(),
             Charge::ZERO
         );
     }
     assert_eq!(
         ArtifactTransitionKind::Replaced
-            .retained_heap_charge(&mut Work::new(1))
+            .retained_heap_charge(&mut Work::new(Some(1)))
             .unwrap(),
         Charge::ZERO
     );

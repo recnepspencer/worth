@@ -16,7 +16,7 @@ fn queued_real_lifecycle_cause_is_cut_off_before_live_payload_and_closes() {
         super::super::fixture::request_scope(),
         4,
         8,
-        2_048,
+        Some(2_048),
     )
     .unwrap();
     let first_requested = take_first_requested(&mut world);
@@ -62,7 +62,7 @@ fn failed_fresh_principal_resolution_ends_the_live_lease() {
         super::super::fixture::request_scope(),
         4,
         8,
-        2_048,
+        Some(2_048),
     )
     .unwrap();
     let first_requested = take_first_requested(&mut world);
@@ -111,7 +111,7 @@ fn revoked_support_refuses_live_subscription_before_open() {
         super::super::fixture::request_scope(),
         4,
         8,
-        2_048,
+        Some(2_048),
     )
     .unwrap();
     let result = world

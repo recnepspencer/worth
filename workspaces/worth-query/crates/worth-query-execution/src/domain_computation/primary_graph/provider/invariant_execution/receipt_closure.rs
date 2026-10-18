@@ -26,7 +26,7 @@ struct ReceiptFact<'a> {
 #[derive(Clone, Copy)]
 struct RequirementFact<'a> {
     key: ReceiptKey<'a>,
-    maximum_work: u64,
+    maximum_work: Option<u64>,
 }
 
 /// Consumes the owner's exact invocation set, including unrequested extra rules.
@@ -125,7 +125,9 @@ fn validate_required_receipt(
             receipt.decision,
             InvariantDecisionKind::Passed | InvariantDecisionKind::NotApplicable
         )
-        || receipt.work > required.maximum_work
+        || required
+            .maximum_work
+            .is_some_and(|maximum| receipt.work > maximum)
     {
         return Err(super::closure_failure(
             "custom invariant receipt does not prove this candidate within its installed contract",
@@ -153,7 +155,9 @@ fn requirement_fact(
 ) -> RequirementFact<'_> {
     RequirementFact {
         key: requirement_key(descriptor),
-        maximum_work: descriptor.maximum_work_units().get(),
+        maximum_work: descriptor
+            .maximum_work_units()
+            .map(std::num::NonZeroU64::get),
     }
 }
 

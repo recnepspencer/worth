@@ -31,7 +31,7 @@ fn parent(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 1024 * 1024, 100),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 1024 * 1024, Some(100)),
             ),
             cancellation,
             deadline,

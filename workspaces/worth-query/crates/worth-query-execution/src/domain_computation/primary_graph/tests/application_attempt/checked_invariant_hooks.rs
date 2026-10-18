@@ -70,7 +70,7 @@ fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparati
         NonZeroUsize::new(if checked { 1 } else { 2 }).unwrap(),
     ));
     bound(ceiling.map(|work| {
-        worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work)
+        worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, Some(work))
     }));
     let mut outcome = None;
     let opening = world

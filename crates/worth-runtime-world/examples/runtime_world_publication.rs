@@ -101,7 +101,7 @@ fn publication_workflow() {
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
                 64 << 20,
-                8_000_000,
+                Some(8_000_000),
             ),
         ))
         .with_bridge_correspondence(bridge_port)

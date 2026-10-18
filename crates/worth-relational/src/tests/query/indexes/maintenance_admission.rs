@@ -33,9 +33,9 @@ fn fixture(
 
 fn budget() -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 1_000_000,
-        maximum_cold_record_slots: 100_000,
-        maximum_derived_rows: 100_000,
+        maximum_work_units: Some(1_000_000),
+        maximum_cold_record_slots: Some(100_000),
+        maximum_derived_rows: Some(100_000),
     }
 }
 
@@ -77,7 +77,7 @@ fn selected_field_cold_admission_matches_native_build_and_warm_reuse_is_not_cold
             request,
             &basis,
             DerivedIndexMaintenanceBudget {
-                maximum_cold_record_slots: 0,
+                maximum_cold_record_slots: Some(0),
                 ..budget()
             },
             execution,
@@ -179,7 +179,7 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
     let selected = request.index_ids[0];
     let observation = basis.observation();
     let mut refused_budget = budget();
-    refused_budget.maximum_work_units = 0;
+    refused_budget.maximum_work_units = Some(0);
     assert!(runtime
         .index_authority()
         .refresh_field_indexes_for_basis(request.clone(), &basis, None, refused_budget, execution)
@@ -197,7 +197,7 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
         crate::indexes::data::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
     ));
     let no_population = DerivedIndexMaintenanceBudget {
-        maximum_cold_record_slots: 0,
+        maximum_cold_record_slots: Some(0),
         ..budget()
     };
     let admitted_cold = runtime

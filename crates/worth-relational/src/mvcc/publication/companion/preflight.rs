@@ -19,7 +19,7 @@ pub use observer::{CompanionPublicationCompletion, CompanionPublicationCompletio
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompanionPreflightBudget {
-    pub maximum_work_visits: u64,
+    pub maximum_work_visits: Option<u64>,
     pub maximum_preparation_bytes: u64,
 }
 
@@ -138,11 +138,10 @@ impl<'a> PublicationCompanionPreflight<'a> {
             .charged_work
             .checked_add(visits)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        if required > self.budget.maximum_work_visits {
-            return Err(CompanionPreflightStop::WorkExhausted {
-                required,
-                maximum: self.budget.maximum_work_visits,
-            });
+        if let Some(maximum) = self.budget.maximum_work_visits
+            && required > maximum
+        {
+            return Err(CompanionPreflightStop::WorkExhausted { required, maximum });
         }
         self.charged_work = required;
         Ok(())

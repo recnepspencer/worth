@@ -15,14 +15,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .checked_execution_request_for(&self.application().product_runtime)
             .unwrap();
         let control = RequestAllocationControl::new(request, execution.allocation_policy());
-        let installed = NonZeroUsize::new(
-            self.application()
-                .runtime
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
-        .unwrap();
+        let installed = self
+            .application()
+            .runtime
+            .output_demand_resource_profile()
+            .limits()
+            .source_currentness_work();
         let bound =
             self.application()
                 .primary_provider
@@ -51,7 +49,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     // mirrored algorithm, padded allowance or a subset labelled complete.
                     let bound = NonZeroUsize::new(usize::try_from(largest).unwrap()).unwrap();
                     for source in original.sources.elements() {
-                        let mut native = self.request_admission(bound);
+                        let mut native = self.request_admission(Some(bound.get()));
                         self.require_current_dependency_in(
                             &execution,
                             relational,
@@ -71,7 +69,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 request,
                 std::iter::empty(),
                 original,
-                bound,
+                Some(bound.get()),
             )
             .unwrap_err();
         assert!(

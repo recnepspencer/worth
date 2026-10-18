@@ -18,7 +18,7 @@ fn draft_admission_denies_before_activation_and_retains_rejected_inline_custody(
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 1,
             maximum_retained_bytes: bytes,
-            maximum_attempt_visits: 1_000_000,
+            maximum_attempt_visits: Some(1_000_000),
         },
         crate::runtime_policy::SignalConditionalTemporalBudget {
             maximum_live_partitions: 1,
@@ -26,14 +26,14 @@ fn draft_admission_denies_before_activation_and_retains_rejected_inline_custody(
         },
     );
     let basis =
-        SignalRetainedExecutionBasis::capture(&mut graph, &ledger, &mut Work::new(1_000_000))
+        SignalRetainedExecutionBasis::capture(&mut graph, &ledger, &mut Work::new(Some(1_000_000)))
             .unwrap();
     let mut slot = basis
-        .new_evaluation_partition(&mut Work::new(1_000_000))
+        .new_evaluation_partition(&mut Work::new(Some(1_000_000)))
         .unwrap();
     let initial = ledger.usage();
     assert!(matches!(
-        ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(0)),
+        ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(Some(0))),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));
     assert_eq!(ledger.usage(), initial);
@@ -48,13 +48,14 @@ fn draft_admission_denies_before_activation_and_retains_rejected_inline_custody(
         .unwrap();
     let full = ledger.usage();
     assert!(matches!(
-        ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(1_000_000)),
+        ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(Some(1_000_000))),
         Err(SignalError::EvaluationStorageCapacityExhausted)
     ));
     assert_eq!(ledger.usage(), full);
     drop(pressure);
     let mut contacts = 0;
-    let draft = ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(1_000_000)).unwrap();
+    let draft =
+        ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(Some(1_000_000))).unwrap();
     draft
         .partition
         .execute(&mut graph, |_| contacts += 1)
@@ -63,7 +64,7 @@ fn draft_admission_denies_before_activation_and_retains_rejected_inline_custody(
     assert_eq!(contacts, 1);
     let installed = ledger.usage();
     for _ in 0..8 {
-        ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(1_000_000))
+        ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(Some(1_000_000)))
             .unwrap()
             .install();
         assert_eq!(
@@ -72,13 +73,13 @@ fn draft_admission_denies_before_activation_and_retains_rejected_inline_custody(
             "inline custody does not accumulate with attempts"
         );
     }
-    let rejected = ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(1_000_000))
+    let rejected = ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(Some(1_000_000)))
         .unwrap()
         .reject();
     assert!(ledger.usage().1 > installed.1);
     ledger.close();
     assert!(matches!(
-        ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(1_000_000)),
+        ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(Some(1_000_000))),
         Err(SignalError::EvaluationStorageUnavailable)
     ));
     drop(slot);

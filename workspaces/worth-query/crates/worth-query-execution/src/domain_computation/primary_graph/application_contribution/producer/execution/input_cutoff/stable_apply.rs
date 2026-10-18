@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) fn publish<Schema, Binding, OperationType, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     observation: &worth_runtime_world::facade::ProductBranchObservation,
     operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
@@ -38,6 +39,7 @@ where
         scope,
         observation,
         &coordination,
+        execution,
         admission,
     )?;
     let publication = address.prepare_record(fresh, operation, resources, admission)?;
@@ -63,7 +65,7 @@ where
         observation,
         &runtime.product_runtime.owner.observation_port(),
         registration,
-        admission,
+        execution, admission,
     ).map_err(|stop| match stop {
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),

@@ -142,19 +142,19 @@ pub struct WorthQueryProducerInvariantRequirement {
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryProducerDemandResources {
-    work: usize,
+    work: Option<usize>,
     retained_bytes: usize,
 }
 
 impl WorthQueryProducerDemandResources {
-    pub const fn new(work: usize, retained_bytes: usize) -> Self {
+    pub const fn new(work: Option<usize>, retained_bytes: usize) -> Self {
         Self {
             work,
             retained_bytes,
         }
     }
 
-    pub const fn work(self) -> usize {
+    pub const fn work(self) -> Option<usize> {
         self.work
     }
 

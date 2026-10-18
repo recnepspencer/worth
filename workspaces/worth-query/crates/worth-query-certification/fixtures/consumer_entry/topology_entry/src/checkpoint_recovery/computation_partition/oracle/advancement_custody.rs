@@ -67,7 +67,7 @@ fn run() {
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),
-        ceiling,
+        Some(ceiling),
     )));
     reports();
     passes();
@@ -188,7 +188,7 @@ fn producer_caller_pass_refuses_before_its_source_or_handler_reads() {
                     if zero_memory {
                         policy.work_ceiling()
                     } else {
-                        0
+                        Some(0)
                     },
                 ))),
             );

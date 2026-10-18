@@ -65,7 +65,7 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 0, 1),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 0, Some(1)),
             ),
             deadline: None,
             cancellation: token.token(),

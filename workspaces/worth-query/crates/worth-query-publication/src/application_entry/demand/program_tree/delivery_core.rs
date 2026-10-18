@@ -13,7 +13,6 @@ where
     pub(super) runtime: WorthQueryProgramApplicationRuntime<S, P>,
 }
 
-use std::num::NonZeroUsize;
 impl<S, P, R> ProgramOutputDeliveryCore<S, P, R>
 where
     S: ApplicationSchema + 'static,
@@ -57,8 +56,12 @@ where
             .output_demand_resource_profile()
             .limits()
             .source_currentness_work();
-        let work = NonZeroUsize::new(policy.currentness_work.get().min(installed))
-            .expect("native currentness ceiling is positive");
+        let work = policy
+            .currentness_work
+            .map(std::num::NonZeroUsize::get)
+            .into_iter()
+            .chain(installed)
+            .min();
         retained
             .require_current_program_output_in_advancement(phase, &self.settlement, work)
             .map_err(Denial::Currentness)
@@ -125,16 +128,7 @@ where
             >,
         ReadValue<S, I>: WorthQueryApplicationProjection<S, ReadQuery<S, I>>,
     {
-        let policy = WorthQueryOperationDeliveryPolicy::currentness(
-            NonZeroUsize::new(
-                self.runtime
-                    .runtime()
-                    .output_demand_resource_profile()
-                    .limits()
-                    .source_currentness_work(),
-            )
-            .expect("native policy is finite"),
-        );
+        let policy = WorthQueryOperationDeliveryPolicy::default();
         self.read_current_with_policy(request, intent, policy)
     }
     pub fn read_current_with_policy<I>(

@@ -45,7 +45,7 @@ fn equal_fingerprints_keep_distinct_exact_keys_and_merge_only_equal_keys() {
         },
     ];
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 10_000,
+        maximum_work_visits: Some(10_000),
         maximum_preparation_bytes: 64 * 1024 * 1024,
     });
     let groups = group_projected(projected, 3, &mut admission).unwrap();
@@ -72,7 +72,7 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
         kind: KindId::new(9),
     }];
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 10_000,
+        maximum_work_visits: Some(10_000),
         maximum_preparation_bytes: 64 * 1024 * 1024,
     });
     let prepared =
@@ -114,7 +114,7 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
             })
             .collect();
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: 1_000_000,
+            maximum_work_visits: Some(1_000_000),
             maximum_preparation_bytes: 64 * 1024 * 1024,
         });
         let prepared =

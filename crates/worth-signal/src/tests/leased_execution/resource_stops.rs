@@ -34,7 +34,7 @@ fn framework_preparation_denial_precedes_evaluator_and_publication() {
         ExecutionBudget::new(
             admission.policy.budget().max_workers(),
             16 * 1024,
-            1_000_000,
+            Some(1_000_000),
         ),
     );
     let lease = authority().request_lease(admission).unwrap();

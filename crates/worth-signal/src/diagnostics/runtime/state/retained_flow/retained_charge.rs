@@ -52,7 +52,9 @@ mod tests {
     #[test]
     fn retained_flow_charges_actual_arc_headers_without_cloning_payload_capacity() {
         let flow = super::super::tests::recorded_flow();
-        let logical_heap = flow.retained_heap_charge(&mut Work::new(100000)).unwrap();
+        let logical_heap = flow
+            .retained_heap_charge(&mut Work::new(Some(100000)))
+            .unwrap();
         let mut expected = logical_heap
             .checked_add(arc_allocation_charge::<FlowPayload>().unwrap())
             .unwrap()
@@ -66,7 +68,7 @@ mod tests {
         let retained: RetainedFlow = flow.into();
         assert_eq!(
             retained
-                .retained_heap_charge(&mut Work::new(100000))
+                .retained_heap_charge(&mut Work::new(Some(100000)))
                 .unwrap(),
             expected
         );

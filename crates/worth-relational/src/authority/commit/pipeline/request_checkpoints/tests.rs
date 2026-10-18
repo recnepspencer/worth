@@ -111,7 +111,7 @@ fn a_completed_empty_commit_keeps_its_zero_data_work_charge() {
     );
     let execution = ExecutionRequest::serial(&backing);
     let (result, report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime.commit_branch_transaction(&execution, transaction(&runtime, 1))
         })
         .unwrap();

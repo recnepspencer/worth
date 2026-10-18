@@ -60,7 +60,7 @@ fn exact_activity_meaning_survives_every_public_lane() {
         super::super::fixture::request_scope(),
         4,
         8,
-        2_048,
+        Some(2_048),
     )
     .unwrap();
     let first_requested = take_first_requested(&mut world);

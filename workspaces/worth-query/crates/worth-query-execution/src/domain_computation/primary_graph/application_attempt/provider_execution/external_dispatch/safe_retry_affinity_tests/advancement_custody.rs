@@ -32,7 +32,7 @@ fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
                 if memory { 0 } else { 64 * 1024 * 1024 },
-                if memory { 8_000_000 } else { 0 },
+                Some(if memory { 8_000_000 } else { 0 }),
             )));
             let before = reads();
             let Err(WorthQueryExternalRedispatchDenial::CompletionExecutionDenied {

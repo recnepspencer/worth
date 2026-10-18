@@ -141,7 +141,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
                     })
                     .collect();
                 let map = ExecutionMap::<_, ()>::from_keyless_partitions(partitions).unwrap();
-                let (outcome, _) = ExecutionWorkCeiling::new(ceiling)
+                let (outcome, _) = ExecutionWorkCeiling::new(Some(ceiling))
                     .run(&lease, || {
                         map.run_owned(Some(&lease), |pair, context| {
                             pair.run(&host_custody.borrowed_request_for_test(), context)

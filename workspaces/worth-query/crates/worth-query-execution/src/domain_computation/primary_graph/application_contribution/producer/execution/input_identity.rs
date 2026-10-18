@@ -106,7 +106,7 @@ mod tests {
 
     fn admission(work: u64) -> InvalidationEditAdmission {
         InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: work,
+            maximum_work_visits: Some(work),
             maximum_preparation_bytes: 1024 * 1024,
         })
     }

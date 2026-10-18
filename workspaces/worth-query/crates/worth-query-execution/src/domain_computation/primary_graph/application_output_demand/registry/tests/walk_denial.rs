@@ -39,7 +39,7 @@ fn every_request_walk_names_its_path_and_row_refusals_and_rejoin_keeps_its_text(
     for (kind, subject) in cases {
         for work in [0, 2] {
             let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                maximum_work_visits: work,
+                maximum_work_visits: Some(work),
                 maximum_preparation_bytes: 8 * 1024 * 1024,
             });
             let denial = newest_of_occurrence(
@@ -57,7 +57,7 @@ fn every_request_walk_names_its_path_and_row_refusals_and_rejoin_keeps_its_text(
         }
     }
     let mut original = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 0,
+        maximum_work_visits: Some(0),
         maximum_preparation_bytes: 8 * 1024 * 1024,
     });
     let denial = newest_of_occurrence(&state.records, &selected, &mut original).unwrap_err();

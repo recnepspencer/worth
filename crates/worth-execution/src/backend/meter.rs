@@ -103,7 +103,7 @@ impl<E> From<KernelStop> for KernelFailure<E> {
 pub(crate) struct RunLimits {
     tokens: Vec<CancellationToken>,
     deadline: Option<Instant>,
-    ceiling: u64,
+    ceiling: Option<u64>,
     ceiling_owner: NestedStopOwner,
     worker_activity: Arc<WorkerActivity>,
     physical_activity: Arc<PhysicalActivity>,
@@ -176,7 +176,7 @@ impl RunLimits {
         Ok(())
     }
 
-    pub(crate) fn ceiling(&self) -> u64 {
+    pub(crate) fn ceiling(&self) -> Option<u64> {
         self.ceiling
     }
 
@@ -315,7 +315,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
                 .span
                 .checked_add(units)
                 .ok_or(KernelStop::WorkCounterOverflow)?;
-            if next > meter.limits.ceiling {
+            if meter.limits.ceiling.is_some_and(|ceiling| next > ceiling) {
                 return Err(KernelStop::WorkCeiling);
             }
             meter.work = next;
@@ -333,9 +333,17 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
         result
     }
 
-    pub fn remaining_work(&self) -> u64 {
+    /// Work units charged to this kernel's existing meter.
+    pub fn charged_work(&self) -> u64 {
+        self.meter.borrow().work
+    }
+
+    pub fn remaining_work(&self) -> Option<u64> {
         let meter = self.meter.borrow();
-        meter.limits.ceiling.saturating_sub(meter.work)
+        meter
+            .limits
+            .ceiling
+            .map(|ceiling| ceiling.saturating_sub(meter.work))
     }
 }
 

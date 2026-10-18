@@ -14,7 +14,7 @@ fn the_checked_plan_ceiling_has_an_exact_scratch_and_retention_boundary() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, bytes, 100_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, bytes, Some(100_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -38,9 +38,9 @@ fn the_checked_plan_ceiling_has_an_exact_scratch_and_retention_boundary() {
         let ceiling = preparation_ceiling(&scan, &lease);
         assert_eq!(ceiling, EXTENT - u64::from(under));
         let meter = CustomPreparationBudget::new(lease.status(), Some(100_000), Some(ceiling));
-        let work = crate::validation::custom_rule::CustomInvariantWorkMeter::new(
+        let work = crate::validation::custom_rule::CustomInvariantWorkMeter::new(Some(
             NonZeroU64::new(100_000).unwrap(),
-        )
+        ))
         .with_lease(&meter);
         assert_eq!(work.try_claim_bytes(EXTENT), !under);
         assert_eq!(

@@ -7,7 +7,6 @@ use crate::domain_computation::primary_graph::{
     request_allocation_control::RequestAllocationControl,
     WorthQueryOutputDemandSettlement,
 };
-use std::num::NonZeroUsize;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
@@ -20,7 +19,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
         settlements: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,
         dependencies: &WorthQueryRetainedQueryDependencies,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
         let runtime = self.application();
         let execution = phase

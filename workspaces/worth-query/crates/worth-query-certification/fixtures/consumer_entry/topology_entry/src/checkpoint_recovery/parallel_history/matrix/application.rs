@@ -117,7 +117,7 @@ impl ApplicationDerivedArtifact<Schema, Feature> for Artifact {
         )];
     const REUSE_RULE: &'static str = "matrix-exact";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(8192, 16384);
+        ApplicationArtifactResourceCeiling::new(Some(8192), 16384);
     const STOPPED_OUTCOME: &'static str = "matrix-stop";
 }
 pub struct Program;

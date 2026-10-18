@@ -76,7 +76,7 @@ impl PlatformPulseQueryLifecycle {
         let publication = match self
             .owner
             .prepare_source(record, &scope)
-            .and_then(|original| original.advance(&scope, std::num::NonZeroUsize::MAX))
+            .and_then(|original| original.advance(&scope, None))
         {
             Ok(worth_ui::facade::query_binding::WorthUiStatusMutationResult::Source(
                 publication,

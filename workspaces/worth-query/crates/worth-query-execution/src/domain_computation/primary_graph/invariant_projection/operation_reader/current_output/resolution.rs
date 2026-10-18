@@ -91,8 +91,7 @@ where
             self.current_correspondences::<Family, Producer>(execution, producer)?;
         let mut entities = Vec::new();
         for (correspondence, output_role) in correspondences {
-            self.require_current_output_budget(1, &output_role)?;
-            self.reader.work_budget.consume(1);
+            self.charge_current_output_work(1, &output_role)?;
             self.reader.work.record_output_lineage_role_lookup();
             let entity = correspondence
                 .current_entity_for_role::<Family::Entity>(&output_role)
@@ -168,6 +167,7 @@ where
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .resolve_current_family(
+                execution,
                 self.runtime_authority.as_u64(),
                 self.binding_identity,
                 crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
@@ -178,15 +178,18 @@ where
                 generation,
                 self.reader.work_budget.remaining(),
             )
-            .map_err(|_| {
+            .map_err(|stop| {
+                if let worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) = stop {
+                    return WorthQueryCurrentOutputDenial::new(
+                        WorthQueryCurrentOutputDenialKind::ExecutionRequest(cause), Family::IDENTITY);
+                }
                 self.reader.work_budget.mark_exceeded();
                 WorthQueryCurrentOutputDenial::new(
                     WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
                     Family::IDENTITY,
                 )
             })?;
-        self.require_current_output_budget(resolution.selection_work, Family::IDENTITY)?;
-        self.reader.work_budget.consume(resolution.selection_work);
+        self.charge_current_output_work(resolution.selection_work, Family::IDENTITY)?;
         self.reader
             .work
             .record_output_lineage_selection(resolution.selection_work);
@@ -203,8 +206,7 @@ where
             ));
         }
 
-        self.require_current_output_budget(1, Family::IDENTITY)?;
-        self.reader.work_budget.consume(1);
+        self.charge_current_output_work(1, Family::IDENTITY)?;
         let selected_native_root = self
             .reader
             .runtime
@@ -222,8 +224,7 @@ where
         let mut requested_output = None;
         let mut obsolete = false;
         for candidate in resolution.candidates {
-            self.require_current_output_budget(1, Family::IDENTITY)?;
-            self.reader.work_budget.consume(1);
+            self.charge_current_output_work(1, Family::IDENTITY)?;
             let Some(verification) = self.verify_current_candidate(
                 execution,
                 &candidate,
@@ -240,28 +241,20 @@ where
                     witness,
                 } => {
                     let computation = facts.computation();
-                    // Retention is paid from the reader's remaining work.
-                    let Some(maximum_work) =
-                        std::num::NonZeroUsize::new(self.reader.work_budget.remaining())
-                    else {
-                        self.reader.work_budget.mark_exceeded();
-                        return Err(WorthQueryCurrentOutputDenial::new(
-                            WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
-                            Family::IDENTITY,
-                        ));
-                    };
-                    let mut admission = self
-                        .reader
-                        .invalidation_owner
-                        .edit_admission_within(maximum_work);
+                    let mut admission = self.reader.invalidation_owner
+                        .edit_admission_with_work_limit(self.reader.work_budget.remaining());
                     let capacity = self.reader.invalidation_owner.retain_consumed_output(
                         &facts,
                         &selected_native_root,
                         ConsumedOutputEvidence::metadata_bytes(),
                         &mut admission,
                     );
-                    let charged = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
-                    self.reader.work_budget.consume(charged);
+                    let charged = usize::try_from(admission.charged_work())
+                        .map_err(|_| {
+                            self.reader.work_budget.mark_overflowed();
+                            self.current_output_work_exhausted(Family::IDENTITY)
+                        })?;
+                    self.charge_current_output_work(charged, Family::IDENTITY)?;
                     self.reader.work.record_output_lineage_selection(charged);
                     let capacity = capacity.map_err(|stop| {
                         let stop = crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop);
@@ -354,5 +347,24 @@ where
                     subject,
                 )
             })
+    }
+    fn charge_current_output_work(
+        &mut self,
+        actual: usize,
+        subject: &str,
+    ) -> Result<(), WorthQueryCurrentOutputDenial> {
+        self.reader
+            .work_budget
+            .consume(actual)
+            .then_some(())
+            .ok_or_else(|| self.current_output_work_exhausted(subject))
+    }
+
+    fn current_output_work_exhausted(&mut self, subject: &str) -> WorthQueryCurrentOutputDenial {
+        self.reader.work_budget.mark_exceeded();
+        WorthQueryCurrentOutputDenial::new(
+            WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
+            subject,
+        )
     }
 }

@@ -150,10 +150,13 @@ impl FullTreeMapWork {
         if !self.observing {
             return kernel(input, context);
         }
-        let before = context.remaining_work();
+        let before = context.charged_work();
         let outcome = kernel(input, context);
         self.work.fetch_add(
-            before - context.remaining_work(),
+            context
+                .charged_work()
+                .checked_sub(before)
+                .expect("same kernel work counter is monotone"),
             std::sync::atomic::Ordering::Relaxed,
         );
         outcome

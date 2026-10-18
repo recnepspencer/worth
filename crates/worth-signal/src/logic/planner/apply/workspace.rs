@@ -279,7 +279,7 @@ impl worth_execution::ChargedBytes for GroupLocalTaskCommit {
         use crate::data::retained_storage::{
             RetainedStorageMeasurement, RetainedStoragePreparation,
         };
-        let mut work = RetainedStoragePreparation::new(usize::MAX);
+        let mut work = RetainedStoragePreparation::new(None);
         let metadata = self
             .before_artifact_state
             .retained_heap_charge(&mut work)
@@ -303,7 +303,7 @@ impl worth_execution::ChargedBytes for ConcurrentWorkerInput {
             RetainedStorageCharge as Charge, RetainedStorageMeasurement,
             RetainedStoragePreparation as Work,
         };
-        let mut work = Work::new(usize::MAX);
+        let mut work = Work::new(None);
         self.before_artifact_state
             .retained_heap_charge(&mut work)
             .and_then(|charge| charge.checked_add(self.rewiring.retained_heap_charge(&mut work)?))

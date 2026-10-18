@@ -15,7 +15,7 @@ fn policy(memory: u64) -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, memory, 1_000),
+        ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(1_000)),
     )
 }
 
@@ -28,7 +28,7 @@ fn sealed_serial_request_refuses_memory_before_running_the_operation() {
     );
     let called = AtomicBool::new(false);
     let denial = ExecutionRequest::serial(&serial)
-        .run(ExecutionWorkCeiling::new(1_000), |_| {
+        .run(ExecutionWorkCeiling::new(Some(1_000)), |_| {
             called.store(true, Ordering::Relaxed);
         })
         .unwrap_err();
@@ -52,7 +52,7 @@ fn sealed_leased_request_projects_the_exact_callers_lease() {
         })
         .unwrap();
     let (same, _) = ExecutionRequest::leased(&lease)
-        .run(ExecutionWorkCeiling::new(1_000), |carried| {
+        .run(ExecutionWorkCeiling::new(Some(1_000)), |carried| {
             std::ptr::eq(
                 carried.expect("leased carriage cannot erase its proof"),
                 &lease,
@@ -69,7 +69,7 @@ fn serial_meter_preserves_counter_overflow() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, u64::MAX),
+        ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, Some(u64::MAX)),
     );
     let serial = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
     let identity = PartitionIdentity::new(1);
@@ -100,7 +100,7 @@ fn one_unit_policy() -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, 1),
+        ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, Some(1)),
     )
 }
 
@@ -168,7 +168,7 @@ fn leased_policy_work_ceiling_still_bounds_the_same_scan() {
 fn serial_computation_declared_work_ceiling_still_bounds_the_same_scan() {
     let request = SerialRequest::from_policy(&one_unit_policy(), CancellationToken::new(), None);
     let (result, report) = ExecutionRequest::serial(&request)
-        .run(ExecutionWorkCeiling::new(100), charged_scan)
+        .run(ExecutionWorkCeiling::new(Some(100)), charged_scan)
         .unwrap();
     assert_eq!(result, (false, 64));
     assert_eq!(report.charged_work(), 64);

@@ -51,7 +51,7 @@ impl KernelContext<'_, '_> {
                 .work
                 .checked_add(units)
                 .ok_or(KernelStop::WorkCounterOverflow)?;
-            if next > meter.limits.ceiling {
+            if meter.limits.ceiling.is_some_and(|ceiling| next > ceiling) {
                 return Err(KernelStop::WorkCeiling);
             }
             let span = meter

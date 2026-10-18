@@ -35,7 +35,11 @@ pub(crate) fn request(workers: usize, work: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 32 * 1024 * 1024, work),
+            ExecutionBudget::new(
+                NonZeroUsize::new(workers).unwrap(),
+                32 * 1024 * 1024,
+                Some(work),
+            ),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

@@ -142,6 +142,7 @@ impl WorthQueryApplicationOutputLineage {
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
         observation: &ProductBranchObservation,
         source_partition_identity: [u8; 32],
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<RetainedInputCutoffCandidate>, CompanionPreflightStop> {
         let source = SemanticSource {
@@ -158,6 +159,7 @@ impl WorthQueryApplicationOutputLineage {
         };
         loop {
             if let Some((generation, slot)) = self.partition_index.latest_admitted(
+                execution,
                 &source,
                 coordinate,
                 source_partition_identity,

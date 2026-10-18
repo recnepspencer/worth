@@ -70,7 +70,9 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         &mut result_buffer,
         false,
         None,
-        plan.controls.maximum_work().get(),
+        plan.controls
+            .maximum_work()
+            .map(std::num::NonZeroUsize::get),
         super::ReadInterruption::Query(plan.controls.request_scope()),
     )?;
     super::validate_cardinality_and_limit(
@@ -119,17 +121,22 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
         selection.root_path_source.as_ref(),
-        plan.controls
-            .maximum_work()
-            .get()
-            .saturating_sub(admitted_before_materialization),
+        plan.controls.maximum_work().map(|maximum| {
+            maximum
+                .get()
+                .saturating_sub(admitted_before_materialization)
+        }),
         collection_selection,
         super::ReadInterruption::Query(plan.controls.request_scope()),
         &mut result_buffer,
         None,
     )?;
     let actual_work = admitted_before_materialization.saturating_add(tree.work_units);
-    if actual_work > plan.controls.maximum_work().get() {
+    if plan
+        .controls
+        .maximum_work()
+        .is_some_and(|maximum| actual_work > maximum.get())
+    {
         return Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
             plan.query.name(),

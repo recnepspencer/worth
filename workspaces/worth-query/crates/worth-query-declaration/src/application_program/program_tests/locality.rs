@@ -27,7 +27,7 @@ impl ApplicationDerivedArtifact<TestSchema, FlatFeature> for TestArtifact {
         &[ApplicationArtifactDependency::new(FlatFeature::IDENTITY)];
     const REUSE_RULE: &'static str = "worth.query.tests.same-basis.v1";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(8, 4096);
+        ApplicationArtifactResourceCeiling::new(Some(8), 4096);
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.artifact-stopped.v1";
 }
 
@@ -48,7 +48,7 @@ impl ApplicationDerivedArtifact<TestSchema, FlatFeature> for DuplicateProducerAr
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] = TestArtifact::DEPENDENCIES;
     const REUSE_RULE: &'static str = "worth.query.tests.no-reuse.v1";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(8, 4096);
+        ApplicationArtifactResourceCeiling::new(Some(8), 4096);
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.duplicate-stopped.v1";
 }
 

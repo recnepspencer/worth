@@ -31,7 +31,7 @@ pub(crate) fn test_execution_lease() -> ExecutionResourceLease<'static> {
                 ExecutionBudget::new(
                     NonZeroUsize::new(4).expect("positive test worker count"),
                     32 * 1024 * 1024,
-                    1_000_000,
+                    Some(1_000_000),
                 ),
             ),
             deadline: None,

@@ -160,7 +160,7 @@ pub(crate) fn live_controls_for(
     request: WorthQueryRequestScope,
     buffer_capacity: usize,
 ) -> WorthQueryApplicationLiveControls {
-    WorthQueryApplicationLiveControls::bounded(request, buffer_capacity, 8, 2_048).unwrap()
+    WorthQueryApplicationLiveControls::bounded(request, buffer_capacity, 8, Some(2_048)).unwrap()
 }
 
 fn mutation_controls(key: &str) -> BankMutationControls {

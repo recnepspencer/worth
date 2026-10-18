@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::{
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     pub(super) fn retained_query_controls(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         retained: WorthQuerySelectedProductOperation<'runtime, Schema>,
         query_name: &str,
         controls: WorthQueryProductQueryControls<'runtime>,
@@ -31,8 +32,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let security = self
             .application()
             .product_runtime
-            .security_observation_for(self.product())
-            .map_err(|_| foreign_basis(query_name))?;
+            .security_observation_for(execution, self.product())
+            .map_err(|stop| super::selection_denial(stop, query_name))?;
         let (application, _current_security, _) = self.into_parts();
         let (retained_application, product, application_basis) = retained.into_parts();
         if !std::ptr::eq(application, retained_application) {
@@ -111,7 +112,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let execution = &request;
 
         let (application, controls) =
-            self.retained_query_controls(retained, query.name(), controls)?;
+            self.retained_query_controls(execution, retained, query.name(), controls)?;
         application.admit_governed_application_query(
             execution, query, access, capability, parameters, controls,
         )
@@ -133,6 +134,25 @@ mod tests {
     use crate::domain_computation::primary_graph::tests::fixture::{
         installed_authorization_world, live_scope,
     };
+
+    #[test]
+    fn retained_and_batch_selection_keep_original_interruption_causes() {
+        use crate::basis::WorthQueryProductBranchAdmissionDenial as Branch;
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Stop;
+        for (stop, expected) in [
+            (
+                Stop::Cancelled,
+                WorthQueryApplicationQueryAdmissionDenialKind::Cancelled,
+            ),
+            (
+                Stop::TimedOut,
+                WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded,
+            ),
+        ] {
+            let denial = super::super::selection_denial(Branch::Stopped(Err(stop)), "batch-stop");
+            assert_eq!(denial.kind(), expected);
+        }
+    }
 
     #[test]
     fn retained_query_rejects_security_from_a_sibling_branch() {
@@ -163,10 +183,17 @@ mod tests {
         let scope = live_scope();
         let controls = WorthQueryProductQueryControls::new(
             NonZeroUsize::new(1).unwrap(),
-            NonZeroUsize::new(64).unwrap(),
+            Some(NonZeroUsize::new(64).unwrap()),
             &scope,
         );
-        let denied = security.retained_query_controls(retained, "sibling", controls);
+        let denied = application
+            .with_host_advancement(|phase| {
+                let execution = phase
+                    .execution_request_for(&application.product_runtime)
+                    .unwrap();
+                security.retained_query_controls(&execution, retained, "sibling", controls)
+            })
+            .expect("original fixture host call");
         assert!(matches!(
             denied,
             Err(error)

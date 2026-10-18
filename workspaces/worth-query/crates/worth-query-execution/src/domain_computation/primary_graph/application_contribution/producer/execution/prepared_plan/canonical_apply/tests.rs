@@ -74,7 +74,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
         assert_eq!(*computed.lock().unwrap(), vec![0, 1, 2]);
         assert!(completed.borrow().is_empty());
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: 0,
+            maximum_work_visits: Some(0),
             maximum_preparation_bytes: 0,
         });
         let mut applied = Vec::new();

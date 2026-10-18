@@ -13,12 +13,10 @@ pub(crate) fn reserve(
 }
 
 pub(crate) fn checked(
-    work: &RetainedStoragePreparation,
+    _work: &RetainedStoragePreparation,
     count: Option<usize>,
 ) -> Result<usize, SignalError> {
-    count.ok_or(SignalError::ConditionalEvaluationWorkExhausted {
-        maximum_visits: work.maximum_visits(),
-    })
+    count.ok_or(SignalError::RetainedStorageChargeOverflow)
 }
 
 #[cfg(test)]
@@ -36,7 +34,7 @@ mod tests {
             SignalCheckpointDenial::WorkCeiling,
             SignalCheckpointDenial::NestedStopped,
         ] {
-            let mut work = RetainedStoragePreparation::new(1);
+            let mut work = RetainedStoragePreparation::new(Some(1));
             let mut checkpoint = |_| Err(RetainedStoragePreparationDenial::ExecutionStopped(cause));
             let mut observed = work.reborrow_with_checkpoint(&mut checkpoint);
             assert_eq!(

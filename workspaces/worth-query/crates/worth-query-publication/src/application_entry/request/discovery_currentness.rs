@@ -1,6 +1,5 @@
 //! Selected-image handoff for complete original discovery and output evidence.
 use super::super::*;
-use std::num::NonZeroUsize;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_execution::{
     facade::{
@@ -48,7 +47,7 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
         phase: &WorthQueryAdvancementPhase<'_>,
         settlements: impl IntoIterator<Item=&'d worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
         dependencies: &WorthQueryRetainedQueryDependencies,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         let selected = self
             .application
@@ -82,7 +81,7 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
     pub fn require_current_discovered_program_outputs<Q, D>(
         &self,
         settlement: &WorthQueryDiscoveredProgramOutputSettlement<Q, D>,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.application
             .with_application_advancement(self.scope, |phase| {
@@ -101,7 +100,7 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         settlement: &WorthQueryDiscoveredProgramOutputSettlement<Q, D>,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.require_current_required_set_in_advancement(
             phase,
@@ -114,7 +113,7 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         settlement: &WorthQueryApplicationProgramOutputSettlement<Q>,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         match settlement.dependencies.as_ref() {
             Some(dependencies) => self.require_current_required_set_in_advancement(

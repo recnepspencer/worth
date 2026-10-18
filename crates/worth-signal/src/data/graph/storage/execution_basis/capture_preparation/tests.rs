@@ -40,14 +40,14 @@ fn prove_both_fork_charges<T: RetainedStorageMeasurement + RetainedStorageForkPr
     // coverage below supplies nonempty overlays through native graph writes.
     for _ in 0..2 {
         let before = source
-            .retained_heap_charge(&mut Preparation::new(100_000))
+            .retained_heap_charge(&mut Preparation::new(Some(100_000)))
             .unwrap();
         let expected = source
-            .prepare_fork_charge(&mut Preparation::new(100_000))
+            .prepare_fork_charge(&mut Preparation::new(Some(100_000)))
             .unwrap();
         assert_eq!(
             source
-                .retained_heap_charge(&mut Preparation::new(100_000))
+                .retained_heap_charge(&mut Preparation::new(Some(100_000)))
                 .unwrap(),
             before,
             "preparation must not perform conversion"
@@ -55,13 +55,13 @@ fn prove_both_fork_charges<T: RetainedStorageMeasurement + RetainedStorageForkPr
         let retained = fork(source);
         assert_eq!(
             source
-                .retained_heap_charge(&mut Preparation::new(100_000))
+                .retained_heap_charge(&mut Preparation::new(Some(100_000)))
                 .unwrap(),
             before.checked_add(expected.source_growth).unwrap()
         );
         assert_eq!(
             retained
-                .retained_heap_charge(&mut Preparation::new(100_000))
+                .retained_heap_charge(&mut Preparation::new(Some(100_000)))
                 .unwrap(),
             expected.retained
         );
@@ -89,7 +89,7 @@ fn execution_basis_prospective_roots_charge_source_conversion_and_returned_stora
 fn execution_basis_capture_consumes_prospective_charge_without_another_preparation() {
     let (mut graph, _, _) = populated_graph();
     for first_capture in [true, false] {
-        let mut work = Preparation::new(100_000);
+        let mut work = Preparation::new(Some(100_000));
         let prepared = SignalExecutionBasis::prepare_capture(&mut graph, &mut work).unwrap();
         let charges = prepared.charges();
         assert_eq!(charges.source_growth.bytes() > 0, first_capture);
@@ -99,7 +99,7 @@ fn execution_basis_capture_consumes_prospective_charge_without_another_preparati
         assert_eq!(basis.retained_storage_charge(), charges.retained);
         assert_eq!(
             basis
-                .measure_seed_charge(&mut Preparation::new(100_000))
+                .measure_seed_charge(&mut Preparation::new(Some(100_000)))
                 .unwrap(),
             charges.retained
         );
@@ -110,15 +110,15 @@ fn execution_basis_capture_consumes_prospective_charge_without_another_preparati
 fn execution_basis_prospective_carrier_cost_ignores_source_history() {
     for graph in [SignalGraph::new(), populated_graph().0] {
         let source = &graph.observation.diagnostics;
-        let mut work = Preparation::new(100_000);
+        let mut work = Preparation::new(Some(100_000));
         let predicted = source.prepare_branch_carrier_charge(&mut work).unwrap();
         assert!(source
-            .prepare_branch_carrier_charge(&mut Preparation::new(work.visits() - 1))
+            .prepare_branch_carrier_charge(&mut Preparation::new(Some(work.visits() - 1)))
             .is_err());
         let carrier = source.fork_branch_carrier();
         assert_eq!(
             carrier
-                .retained_branch_carrier_charge(&mut Preparation::new(100_000))
+                .retained_branch_carrier_charge(&mut Preparation::new(Some(100_000)))
                 .unwrap(),
             predicted
         );
@@ -129,7 +129,7 @@ fn execution_basis_prospective_carrier_cost_ignores_source_history() {
 fn execution_basis_prospective_charge_covers_native_mutations_of_shared_roots() {
     let (mut graph, producer, consumer) = populated_graph();
     let retained =
-        SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(100_000)).unwrap();
+        SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(Some(100_000))).unwrap();
     let alternate = graph.node().output_identity().build();
     // Rewiring appends a segment and removes the inherited reverse membership.
     graph
@@ -155,10 +155,11 @@ fn execution_basis_prospective_charge_covers_native_mutations_of_shared_roots() 
     prove_both_fork_charges(&mut graph.arena.hot, |root| root.fork_persistent());
     prove_both_fork_charges(&mut graph.arena.cold, |root| root.fork_persistent());
     prove_both_fork_charges(&mut graph.cause_sets, |root| root.fork_persistent());
-    let basis = SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(100_000)).unwrap();
+    let basis =
+        SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(Some(100_000))).unwrap();
     assert_eq!(
         basis
-            .measure_seed_charge(&mut Preparation::new(100_000))
+            .measure_seed_charge(&mut Preparation::new(Some(100_000)))
             .unwrap(),
         basis.retained_storage_charge()
     );

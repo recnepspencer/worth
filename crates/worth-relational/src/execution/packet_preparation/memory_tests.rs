@@ -14,7 +14,7 @@ fn an_artifact_reserves_its_declared_allocation_once() {
         ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, bytes, 100_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, bytes, Some(100_000)),
         )
     };
     let request = |bytes| LeaseRequest {

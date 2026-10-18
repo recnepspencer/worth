@@ -105,14 +105,18 @@ where
         .into());
     }
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
-    let maximum_work = NonZeroUsize::new(
-        installed_limits
-            .maximum_work()
-            .get()
-            .min(limits.producer_work())
-            .min(admission.remaining_work()),
-    )
-    .ok_or_else(|| ready::ready_work_denial(Binding::IDENTITY))?;
+    let ceiling = installed_limits
+        .maximum_work()
+        .map(NonZeroUsize::get)
+        .into_iter()
+        .chain(limits.producer_work())
+        .chain(admission.remaining_work())
+        .min();
+    let maximum_work = ceiling
+        .map(|work| {
+            NonZeroUsize::new(work).ok_or_else(|| ready::ready_work_denial(Binding::IDENTITY))
+        })
+        .transpose()?;
     let (product, basis) = runtime
         .retain_selected_query_basis_admitted(shared, admission)
         .map_err(|stop| match stop {

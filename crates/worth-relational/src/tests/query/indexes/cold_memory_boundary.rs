@@ -91,9 +91,9 @@ fn reconstruct(n: usize, expected: Option<(u64, bool)>) -> u64 {
             index_ids: vec![index],
         },
         DerivedIndexMaintenanceBudget {
-            maximum_work_units: 100_000_000,
-            maximum_cold_record_slots: 1_000_000,
-            maximum_derived_rows: 1_000_000,
+            maximum_work_units: Some(100_000_000),
+            maximum_cold_record_slots: Some(1_000_000),
+            maximum_derived_rows: Some(1_000_000),
         },
     );
     let charged = crate::indexes::last_allocation_bytes();

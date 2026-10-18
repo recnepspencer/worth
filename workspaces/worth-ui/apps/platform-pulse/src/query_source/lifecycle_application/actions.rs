@@ -24,7 +24,7 @@ impl PlatformPulseQueryLifecycle {
         let execution = match self
             .owner
             .prepare_action(action, &scope)
-            .and_then(|original| original.advance(&scope, std::num::NonZeroUsize::MAX))
+            .and_then(|original| original.advance(&scope, None))
         {
             Ok(worth_ui::facade::query_binding::WorthUiStatusMutationResult::Action(
                 WorthUiStatusActionOutcome::Committed(execution),
@@ -77,7 +77,7 @@ impl PlatformPulseQueryLifecycle {
         match self
             .owner
             .prepare_action(action, &scope)
-            .and_then(|original| original.advance(&scope, std::num::NonZeroUsize::MAX))
+            .and_then(|original| original.advance(&scope, None))
         {
             Ok(worth_ui::facade::query_binding::WorthUiStatusMutationResult::Action(
                 WorthUiStatusActionOutcome::DeniedRevisionMismatch {

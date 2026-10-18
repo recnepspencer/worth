@@ -57,6 +57,7 @@ pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointIde
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn checkpoint_prior_outputs(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         occurrence: ProductBranchIncarnation,
@@ -126,7 +127,7 @@ impl WorthQueryApplicationOutputLineage {
             loop {
                 let remaining = admission.remaining_work();
                 let (partition_heads, work) = self
-                    .family_partition_heads_budgeted(source, coordinate, remaining)
+                    .family_partition_heads_budgeted(execution, source, coordinate, remaining)
                     .map_err(|stop| Denial::admission("partition head traversal", stop))?;
                 admission
                     .charge_external_work(

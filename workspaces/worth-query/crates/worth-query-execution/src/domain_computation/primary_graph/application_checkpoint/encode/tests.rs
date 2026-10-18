@@ -39,7 +39,7 @@ fn checkpoint_one_buffer_matches_independent_v10_grammar_and_sections() {
             source_partition: [2; 32],
             producer_dependency: Some([3; 32]),
             idempotency_key: [4; 32],
-            resources: Some(WorthQueryProducerDemandResources::new(4096, 8192)),
+            resources: Some(WorthQueryProducerDemandResources::new(Some(4096), 8192)),
             roles: (vec![
                 role(
                     "a",

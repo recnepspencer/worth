@@ -78,7 +78,7 @@ fn check(case: usize) {
             let controls = || {
                 WorthQueryProductQueryControls::new(
                     NonZeroUsize::new(10).unwrap(),
-                    NonZeroUsize::new(10000).unwrap(),
+                    Some(NonZeroUsize::new(10000).unwrap()),
                     &scope,
                 )
             };

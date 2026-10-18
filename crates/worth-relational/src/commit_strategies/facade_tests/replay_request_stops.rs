@@ -50,7 +50,7 @@ fn verification_memory_stop_has_no_serialized_mismatch_outcome() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Serial,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(std::num::NonZeroUsize::MIN, MEMORY, u64::MAX),
+                    ExecutionBudget::new(std::num::NonZeroUsize::MIN, MEMORY, None),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),

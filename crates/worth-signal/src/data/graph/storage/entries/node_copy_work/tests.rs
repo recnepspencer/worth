@@ -29,10 +29,10 @@ fn retained_node_payload_copy_is_admitted_before_mutation() {
     richer.warm_mut().output_identity =
         Some(crate::data::output::OutputIdentity::new(payload.repeat(4)));
     larger_runtime.runtime_artifact_state = Some(std::sync::Arc::new(richer));
-    let mut base_copy = Work::new(usize::MAX);
+    let mut base_copy = Work::new(None);
     warm.admit_clone_work(&mut EvaluationWork::Conditional(&mut base_copy))
         .unwrap();
-    let mut larger_copy = Work::new(usize::MAX);
+    let mut larger_copy = Work::new(None);
     larger_runtime
         .admit_clone_work(&mut EvaluationWork::Conditional(&mut larger_copy))
         .unwrap();
@@ -46,13 +46,13 @@ fn retained_node_payload_copy_is_admitted_before_mutation() {
             .as_ref()
             .unwrap(),
     ));
-    let mut exclusive = Work::new(0);
+    let mut exclusive = Work::new(Some(0));
     graph
         .admit_effect_node_copy_work(node, &mut EvaluationWork::Conditional(&mut exclusive))
         .unwrap();
     let _retained = SignalEvaluationPartition::retain_basis_storage(&mut graph);
     let previous = graph.arena.cold.fork_persistent();
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     graph
         .admit_effect_node_copy_work(node, &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
@@ -60,7 +60,7 @@ fn retained_node_payload_copy_is_admitted_before_mutation() {
     // Cold kind/key/value and the dirty scope path still require real copies.
     assert!(cost >= 4 * payload.len());
     for available in [cost - 1, cost] {
-        let mut work = Work::new(cost + 19);
+        let mut work = Work::new(Some(cost + 19));
         work.reserve_visits(cost + 19 - available).unwrap();
         let result =
             graph.admit_effect_node_copy_work(node, &mut EvaluationWork::Conditional(&mut work));

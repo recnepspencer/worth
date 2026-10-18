@@ -40,14 +40,14 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
             let (result, _) = execution
                 .execution_request()
                 .unwrap()
-                .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+                .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                     let cursor = CanonicalApplyCursor::compute(
                         CanonicalUniqueVec::try_from_sorted_unique(vec![0_usize, 1, 2]).unwrap(),
                         plans,
                         &execution,
                     );
                     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                        maximum_work_visits: 0,
+                        maximum_work_visits: Some(0),
                         maximum_preparation_bytes: 0,
                     });
                     cursor.apply(

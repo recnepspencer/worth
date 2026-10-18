@@ -97,7 +97,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
         relation_kind,
         anchor,
         direction,
-        maximum_work_units,
+        Some(maximum_work_units),
     )
     .map(|(relations, _)| relations)
 }
@@ -109,7 +109,7 @@ pub(super) fn observe_adjacency_with_work(
     relation_kind: KindId,
     anchor: EntityId,
     direction: WorthQueryApplicationAdjacencyDirection,
-    maximum_work_units: usize,
+    maximum_work_units: Option<usize>,
 ) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
     if let Err(stop) = execution.check_live() {
         return Err(match worth_relational::facade::mvcc::RelationalInterruptionEvent::from_request_stop(
@@ -130,8 +130,12 @@ pub(super) fn observe_adjacency_with_work(
         })?;
     let frontier = std::collections::BTreeSet::from([anchor]);
     let work = maximum_work_units
-        .checked_add(1)
-        .ok_or(AdjacencyObservationDenial::WorkBudgetExceeded)?;
+        .map(|maximum| {
+            maximum
+                .checked_add(1)
+                .ok_or(AdjacencyObservationDenial::WorkBudgetExceeded)
+        })
+        .transpose()?;
     let read =
         match direction {
             WorthQueryApplicationAdjacencyDirection::Outgoing => pin

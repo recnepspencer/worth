@@ -263,7 +263,7 @@ where
         };
         // The request's exhausted meter is replaced by the next advance.
         // A producer's declared-work refusal keeps its own terminal posture.
-        let stop = if admission.remaining_work() == 0
+        let stop = if admission.remaining_work() == Some(0)
             && stop.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
         {
             stop.with_recovery_posture(super::WorthQueryOutputDemandRecoveryPosture::Retryable)

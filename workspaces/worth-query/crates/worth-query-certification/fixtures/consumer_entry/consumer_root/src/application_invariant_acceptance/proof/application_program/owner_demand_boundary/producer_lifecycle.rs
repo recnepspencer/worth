@@ -44,7 +44,7 @@ pub(super) fn live_output_and_stale_head_selection(
                     &host_phase,
                     &exact.observed_sources()[0],
                     "planar",
-                    1,
+                    std::num::NonZeroUsize::new(1),
                 )
                 .expect_err("the live-output lookup must fit its declared work budget")
         })
@@ -75,7 +75,7 @@ pub(super) fn live_output_and_stale_head_selection(
                     &host_phase,
                     &stale.observed_sources()[0],
                     "planar",
-                    4_096,
+                    std::num::NonZeroUsize::new(4_096),
                 )
                 .expect_err(
                     "a moved head cannot grant output lifecycle authority from an old source",
@@ -172,7 +172,7 @@ fn selected_lifecycle(
                     &host_phase,
                     &disclosed.observed_sources()[0],
                     "planar",
-                    4_096,
+                    std::num::NonZeroUsize::new(4_096),
                 )
                 .expect("the installed producer selects for the real source")
                 .applicability()

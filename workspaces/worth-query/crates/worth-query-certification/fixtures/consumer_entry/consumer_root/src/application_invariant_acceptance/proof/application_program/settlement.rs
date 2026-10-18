@@ -254,12 +254,12 @@ pub(super) fn performed_source_settles_required_output(
     .expect("the installed profile admits positive source currentness work");
     request
         .at(&current_basis)
-        .require_current_program_output(&original_settlement, comparison_work)
+        .require_current_program_output(&original_settlement, Some((comparison_work).get()))
         .expect("every transitive output retains current Query source lineage");
     assert!(matches!(
         request.at(&current_basis).require_current_program_output(
             &original_settlement,
-            NonZeroUsize::new(1).unwrap(),
+            Some((NonZeroUsize::new(1).unwrap()).get()),
         ),
         Err(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial))
             if denial.kind()

@@ -17,7 +17,7 @@ fn successor_retention_denial_publishes_neither_patch_nor_basis() {
     let (mut measured_graph, _, _, _) = installed_graph();
     let prepared = SignalExecutionBasis::prepare_capture(
         &mut measured_graph,
-        &mut RetainedStoragePreparation::new(100_000),
+        &mut RetainedStoragePreparation::new(Some(100_000)),
     )
     .unwrap();
     let charges = prepared.charges();
@@ -33,7 +33,7 @@ fn successor_retention_denial_publishes_neither_patch_nor_basis() {
             SignalConditionalEvaluationBudget {
                 maximum_retained_slots: 1,
                 maximum_retained_bytes: exact_initial_bytes,
-                maximum_attempt_visits: 100_000,
+                maximum_attempt_visits: Some(100_000),
             },
         ),
     );

@@ -123,7 +123,12 @@ impl ApplicationProgramManifest {
                     )
                     .chain([
                         ("reuse", artifact.reuse_rule().to_owned()),
-                        ("work", resources.maximum_work().to_string()),
+                        (
+                            "work",
+                            resources
+                                .maximum_work()
+                                .map_or_else(|| "absent".to_owned(), |work| work.to_string()),
+                        ),
                         ("bytes", resources.maximum_retained_bytes().to_string()),
                         ("stopped", artifact.stopped_outcome().to_owned()),
                     ]),

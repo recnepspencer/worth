@@ -54,7 +54,7 @@ fn one_large_packet_observes_cancellation_mid_kernel_without_result() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1024 * 1024, 100_000),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1024 * 1024, Some(100_000)),
             ),
             deadline: None,
             cancellation: cancellation.token(),
@@ -125,7 +125,7 @@ fn sequential_packet_maps_share_a_commit_work_ceiling() {
                 policy: ExecutionRequestPolicy::new(
                     posture,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 1024 * 1024, 5),
+                    ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 1024 * 1024, Some(5)),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),

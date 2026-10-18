@@ -58,7 +58,7 @@ fn nested_execution_phases_share_one_work_ceiling() {
         bound(Some(ExecutionBudget::new(
             NonZeroUsize::MIN,
             1 << 20,
-            2 * UNITS,
+            Some(2 * UNITS),
         ))),
     );
     observation::advancement_requests_on_this_thread_for_test();
@@ -92,7 +92,11 @@ fn zero_work_refuses_before_the_advancement_body() {
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
-        bound(Some(ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, 0))),
+        bound(Some(ExecutionBudget::new(
+            NonZeroUsize::MIN,
+            1 << 20,
+            Some(0),
+        ))),
     );
     let result = request().run_advancement(None, None, |_| {
         panic!("a refused request cannot reach its reader")

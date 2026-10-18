@@ -72,14 +72,17 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
         .at(&current)
         .require_current_discovered_program_outputs(
             &settlement,
-            NonZeroUsize::new(
-                runtime
-                    .runtime()
-                    .output_demand_resource_profile()
-                    .limits()
-                    .source_currentness_work(),
-            )
-            .unwrap(),
+            Some(
+                (NonZeroUsize::new(
+                    runtime
+                        .runtime()
+                        .output_demand_resource_profile()
+                        .limits()
+                        .source_currentness_work(),
+                )
+                .unwrap())
+                .get(),
+            ),
         )
         .unwrap();
     let delivered = request

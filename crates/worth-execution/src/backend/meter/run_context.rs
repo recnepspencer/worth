@@ -45,7 +45,10 @@ impl RunLimits {
             tokens.extend(parent.limits.tokens.iter().cloned());
             (
                 parent.limits.deadline,
-                parent.limits.ceiling.saturating_sub(parent.work),
+                parent
+                    .limits
+                    .ceiling
+                    .map(|ceiling| ceiling.saturating_sub(parent.work)),
                 parent.limits.ceiling_owner,
                 Arc::clone(&parent.limits.worker_activity),
                 Arc::clone(&parent.limits.physical_activity),
@@ -63,7 +66,7 @@ impl RunLimits {
             };
             (
                 None,
-                u64::MAX,
+                None,
                 NestedStopOwner::Request,
                 Arc::new(WorkerActivity::default()),
                 physical,
@@ -93,7 +96,9 @@ impl RunLimits {
                 (None, child) => child,
             };
             let requested = lease.policy().budget().work_ceiling();
-            if requested <= limits.ceiling {
+            if requested
+                .is_some_and(|requested| limits.ceiling.is_none_or(|ceiling| requested <= ceiling))
+            {
                 limits.ceiling = requested;
                 limits.ceiling_owner = NestedStopOwner::Request;
             }
@@ -111,6 +116,13 @@ impl RunLimits {
             (Some(parent), Some(own)) => Some(parent.min(own)),
             (parent, own) => parent.or(own),
         };
+        if request
+            .work_ceiling
+            .is_some_and(|requested| self.ceiling.is_none_or(|ceiling| requested <= ceiling))
+        {
+            self.ceiling = request.work_ceiling;
+            self.ceiling_owner = NestedStopOwner::Request;
+        }
         self.serial_memory = Some(match self.serial_memory {
             Some(parent) => request.memory.within_parent(&parent),
             None => request.memory.clone(),
@@ -119,8 +131,10 @@ impl RunLimits {
     }
 
     /// Narrows the ceiling to a computation's declared work, never widening it.
-    pub(crate) fn within_work_ceiling(mut self, work_ceiling: u64) -> Self {
-        if work_ceiling < self.ceiling {
+    pub(crate) fn within_work_ceiling(mut self, work_ceiling: Option<u64>) -> Self {
+        if work_ceiling
+            .is_some_and(|requested| self.ceiling.is_none_or(|ceiling| requested < ceiling))
+        {
             self.ceiling = work_ceiling;
             self.ceiling_owner = NestedStopOwner::Computation(NestedComputationStop::WorkCeiling);
         }

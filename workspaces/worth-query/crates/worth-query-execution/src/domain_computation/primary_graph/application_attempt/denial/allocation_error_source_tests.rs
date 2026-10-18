@@ -11,7 +11,7 @@ fn allocation_cause_keeps_its_error_source_type() {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Serial,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 0, 1),
+                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 0, Some(1)),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),

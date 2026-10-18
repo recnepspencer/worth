@@ -44,7 +44,7 @@ fn mixed_replacement_batch_admits_before_release_and_slot_reuse() {
         (release, &incoming[1]),
         (PendingCauseSetId::EMPTY, &incoming[2]),
     ];
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     graph_store
         .admit_replacement_batch_work(
             producer,
@@ -55,7 +55,7 @@ fn mixed_replacement_batch_admits_before_release_and_slot_reuse() {
     let cost = measured.visits();
     assert!(cost >= scope.len());
     for available in [cost - 1, cost] {
-        let mut work = Work::new(cost + 17);
+        let mut work = Work::new(Some(cost + 17));
         work.reserve_visits(cost + 17 - available).unwrap();
         let result = graph_store.admit_replacement_batch_work(
             producer,

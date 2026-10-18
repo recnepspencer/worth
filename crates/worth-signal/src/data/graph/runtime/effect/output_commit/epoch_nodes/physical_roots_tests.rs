@@ -45,7 +45,7 @@ fn fixture(retained: bool) -> (SignalGraph, Vec<NodeId>) {
             SignalConditionalEvaluationBudget {
                 maximum_retained_slots: 8,
                 maximum_retained_bytes: 2 * 1024 * 1024 * 1024,
-                maximum_attempt_visits: usize::MAX,
+                maximum_attempt_visits: None,
             },
             SignalRuntimePolicy::development().conditional_temporal_budget,
         ));
@@ -54,7 +54,7 @@ fn fixture(retained: bool) -> (SignalGraph, Vec<NodeId>) {
 }
 
 fn fork_node_roots(graph: &mut SignalGraph) {
-    let mut work = Work::new(usize::MAX);
+    let mut work = Work::new(None);
     graph.arena.hot.prepare_retained_charge(&mut work).unwrap();
     graph.arena.warm.prepare_retained_charge(&mut work).unwrap();
     graph.arena.cold.prepare_retained_charge(&mut work).unwrap();
@@ -82,7 +82,7 @@ fn predispatch_owner_bytes(graph: &SignalGraph, ids: &[NodeId], retained: bool) 
     let producer = ids[0];
     let second_producer = ids[SELECTED / 2];
     let prior_producers = BTreeSet::from([producer]);
-    let mut work = Work::new(usize::MAX);
+    let mut work = Work::new(None);
     let mut budget = SignalPreparationBudget::new(u64::MAX);
     let root = graph
         .epoch_selected_node_root_growth_bound(
@@ -127,7 +127,7 @@ fn retained_mixed_role_node_roots_fit_the_actual_predispatch_owner_bound() {
                 ledger,
                 &selections,
                 Charge::capacity::<u8>(2 * 1024 * 1024 * 1024).unwrap(),
-                &mut Work::new(usize::MAX),
+                &mut Work::new(None),
                 |drafts, _| {
                     for draft in drafts {
                         match draft {
@@ -176,7 +176,7 @@ fn ordinary_peak(shared: bool) {
                     &ids[..SELECTED],
                     &BTreeSet::from([ids[0]]),
                     ids[SELECTED / 2],
-                    &mut Work::new(usize::MAX),
+                    &mut Work::new(None),
                     &mut SignalPreparationBudget::new(u64::MAX),
                 )
                 .unwrap(),

@@ -3,9 +3,9 @@ use crate::facade::indexes::{DerivedIndexEntries, DerivedIndexMaintenanceBudget}
 
 fn cold_budget() -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 100_000,
-        maximum_cold_record_slots: 1_000,
-        maximum_derived_rows: 1_000,
+        maximum_work_units: Some(100_000),
+        maximum_cold_record_slots: Some(1_000),
+        maximum_derived_rows: Some(1_000),
     }
 }
 

@@ -10,8 +10,9 @@ use super::super::RuntimeWorldOwnerRoot;
 
 pub(super) fn trace<D, I, E, Ctx, T>(
     owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     occurrence: ProductBranchIncarnation,
-    maximum: NonZeroUsize,
+    maximum: Option<NonZeroUsize>,
 ) -> Result<ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -31,13 +32,19 @@ where
     let branch_depth = usize::try_from(snapshot.reference_generation().get())
         .unwrap_or(usize::MAX)
         .saturating_add(1);
-    let limit = NonZeroUsize::new(maximum.get().min(branch_depth))
-        .expect("a nonzero request and live branch have a nonzero history limit");
+    let limit = maximum;
     let traversal = owner
         .state
         .history
-        .trace_ancestry_within(snapshot.selected_commit().clone(), limit, branch_depth)
-        .map_err(|_| RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable)?;
+        .trace_ancestry_within(
+            crate::history::HistoryTraversalControl::Request {
+                execution: *execution,
+                maximum: limit,
+            },
+            snapshot.selected_commit().clone(),
+            Some(branch_depth),
+        )
+        .map_err(history_denial)?;
     let remaining = branch_depth.saturating_sub(traversal.covered_generations());
     Ok(ProductBranchHistoryTraversal::owner_issued(
         snapshot.branch_identity().clone(),
@@ -50,8 +57,9 @@ where
 
 pub(super) fn continue_trace<D, I, E, Ctx, T>(
     owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     previous: &ProductBranchHistoryTraversal,
-    maximum: NonZeroUsize,
+    maximum: Option<NonZeroUsize>,
 ) -> Result<ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -67,9 +75,6 @@ where
         .branches
         .branch_cell_by_lifecycle(previous.occurrence())
         .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
-    let limit = previous
-        .continuation_limit(maximum)
-        .ok_or(RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable)?;
     let start = previous
         .next_parent()
         .cloned()
@@ -77,8 +82,15 @@ where
     let traversal = owner
         .state
         .history
-        .trace_ancestry_within(start, limit, previous.remaining_branch_commits())
-        .map_err(|_| RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable)?;
+        .trace_ancestry_within(
+            crate::history::HistoryTraversalControl::Request {
+                execution: *execution,
+                maximum,
+            },
+            start,
+            Some(previous.remaining_branch_commits()),
+        )
+        .map_err(history_denial)?;
     previous
         .continued(traversal)
         .ok_or(RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable)
@@ -149,4 +161,18 @@ where
         return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
     }
     Ok(())
+}
+
+fn history_denial(
+    denial: crate::history::CompositeHistoryCatalogDenial,
+) -> RuntimeWorldBranchAdmissionDenial {
+    match denial {
+        crate::history::CompositeHistoryCatalogDenial::Cancelled => {
+            RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect
+        }
+        crate::history::CompositeHistoryCatalogDenial::DeadlineElapsed => {
+            RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect
+        }
+        _ => RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,
+    }
 }

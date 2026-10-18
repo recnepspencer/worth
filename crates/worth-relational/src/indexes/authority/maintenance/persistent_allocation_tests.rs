@@ -30,9 +30,9 @@ fn full_bytes(n: usize) -> u64 {
 }
 fn budget() -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 1_000_000_000,
-        maximum_cold_record_slots: 1_000_000,
-        maximum_derived_rows: 1_000_000,
+        maximum_work_units: Some(1_000_000_000),
+        maximum_cold_record_slots: Some(1_000_000),
+        maximum_derived_rows: Some(1_000_000),
     }
 }
 fn edits(n: usize, insert: bool) -> BTreeMap<u64, Vec<PendingEdit<u64>>> {

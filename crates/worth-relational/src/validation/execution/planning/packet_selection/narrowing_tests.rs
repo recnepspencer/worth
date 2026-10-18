@@ -38,7 +38,7 @@ impl CustomInvariantRule for TinyRule {
             },
             display_name: Arc::from("Untouched tiny rule"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: NonZeroU64::new(1).unwrap(),
+                maximum_work_units: Some(NonZeroU64::new(1).unwrap()),
                 access: CustomInvariantAccessContract {
                     read_entity_kinds: vec![KindId(2)],
                     read_relation_kinds: vec![],
@@ -112,7 +112,7 @@ fn request(serial: bool) -> ExecutionResourceLease<'static> {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 16 * 1024 * 1024, 1_000_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, 16 * 1024 * 1024, Some(1_000_000)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,
@@ -153,7 +153,12 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
         );
         let view = InvariantRuntimeView::from_runtime(&runtime);
         let budget = CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
-        let selected = eligible_registrations(&view, &candidate, Some(&budget));
+        let selected = eligible_registrations(
+            &view,
+            ExecutionRequest::leased(&lease),
+            &candidate,
+            Some(&budget),
+        );
         assert_eq!(
             budget.stop(),
             None,
@@ -174,6 +179,7 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
             CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
         let planned = super::super::execution_plan::plan_invariant_execution_checked(
             &view,
+            ExecutionRequest::leased(&lease),
             &candidate,
             &lease,
             &evaluation_budget,
@@ -184,7 +190,11 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
             else {
                 panic!("untouched packet")
             };
-            crate::validation::execution::evaluate_invariant_packet(&view, &packet);
+            crate::validation::execution::evaluate_invariant_packet(
+                &view,
+                ExecutionRequest::leased(&lease),
+                &packet,
+            );
             assert_eq!(
                 work.charged_work(),
                 0,
@@ -198,7 +208,7 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
         )
         .unwrap();
         let (_, report) = ExecutionRequest::leased(&lease)
-            .run(ExecutionWorkCeiling::new(1_000_000), |_| {
+            .run(ExecutionWorkCeiling::new(Some(1_000_000)), |_| {
                 tx.commit(&ExecutionRequest::leased(&lease), &runtime)
                     .expect("untouched tiny rules accept the real commit")
             })
@@ -227,6 +237,7 @@ fn a_touched_rule_keeps_its_typed_local_ceiling() {
         let budget = CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
         eligible_registrations(
             &InvariantRuntimeView::from_runtime(&runtime),
+            ExecutionRequest::leased(&lease),
             &candidate,
             Some(&budget),
         );

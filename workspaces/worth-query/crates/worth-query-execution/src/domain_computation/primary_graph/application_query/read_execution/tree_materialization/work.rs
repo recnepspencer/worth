@@ -6,7 +6,7 @@ use super::{
 
 pub(super) struct ResultTreeWork<'a> {
     interruption: super::super::ReadInterruption<'a>,
-    maximum_work: usize,
+    maximum_work: Option<usize>,
     pub(super) projected_records: usize,
     pub(super) projected_fields: usize,
     pub(super) adjacency_lists_read: usize,
@@ -27,7 +27,7 @@ fn work_limit_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExe
 
 impl<'a> ResultTreeWork<'a> {
     pub(super) fn new(
-        maximum_work: usize,
+        maximum_work: Option<usize>,
         interruption: super::super::ReadInterruption<'a>,
         spent: Option<&'a OneShotReadWorkObservation<'a>>,
     ) -> Self {
@@ -118,7 +118,10 @@ impl<'a> ResultTreeWork<'a> {
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         self.checkpoint(subject)?;
-        if self.work_units.saturating_add(units) > self.maximum_work {
+        if self
+            .maximum_work
+            .is_some_and(|maximum| self.work_units.saturating_add(units) > maximum)
+        {
             return Err(work_limit_denial(subject));
         }
         if let Some(spent) = self.spent {
@@ -128,8 +131,9 @@ impl<'a> ResultTreeWork<'a> {
         Ok(())
     }
 
-    pub(super) fn remaining_work(&self) -> usize {
-        self.maximum_work.saturating_sub(self.work_units)
+    pub(super) fn remaining_work(&self) -> Option<usize> {
+        self.maximum_work
+            .map(|maximum| maximum.saturating_sub(self.work_units))
     }
 
     pub(super) fn checkpoint(

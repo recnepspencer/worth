@@ -12,7 +12,7 @@ use super::{
 };
 
 fn work() -> Preparation<'static> {
-    Preparation::new(100_000)
+    Preparation::new(Some(100_000))
 }
 
 fn assert_charge<K, V>(map: &PersistentOrdMap<K, V>)
@@ -100,14 +100,16 @@ fn raw_access_and_failed_measurement_never_expose_a_stale_fact() {
     map.prepare_retained_charge(&mut work()).unwrap();
     let old = map.prepared_retained_charge().unwrap();
     assert!(matches!(
-        map.edit_with_retained_charge(&1, &mut Preparation::new(0), |_| panic!("denied edit ran")),
+        map.edit_with_retained_charge(&1, &mut Preparation::new(Some(0)), |_| panic!(
+            "denied edit ran"
+        )),
         Err(MutationDenial::Accounting(Denial::WorkExhausted { .. }))
     ));
     assert_eq!(map.prepared_retained_charge().unwrap(), old);
     // Exclusive before-measurement visits map/key/value. No budget remains
     // after the edit: preserve its result and close accounting.
     match map
-        .edit_with_retained_charge(&1, &mut Preparation::new(3), |value| {
+        .edit_with_retained_charge(&1, &mut Preparation::new(Some(3)), |value| {
             value.push_str(" changed");
             Box::new(42)
         })
@@ -125,7 +127,7 @@ fn raw_access_and_failed_measurement_never_expose_a_stale_fact() {
         Err(MutationDenial::PreparationRequired)
     );
     assert!(map
-        .prepare_retained_charge(&mut Preparation::new(0))
+        .prepare_retained_charge(&mut Preparation::new(Some(0)))
         .is_err());
     map.prepare_retained_charge(&mut work()).unwrap();
     let result = catch_unwind(AssertUnwindSafe(|| {
@@ -216,7 +218,7 @@ fn accounting_traversal_depends_on_selected_payload_not_untouched_population() {
         let mut edit_work = work();
         accounted(map.edit_with_retained_charge(&0, &mut edit_work, |value| value.push('!')));
         visits.push(edit_work.visits());
-        let mut ready_work = Preparation::new(0);
+        let mut ready_work = Preparation::new(Some(0));
         for _ in 0..64 {
             map.prepare_retained_charge(&mut ready_work).unwrap();
         }

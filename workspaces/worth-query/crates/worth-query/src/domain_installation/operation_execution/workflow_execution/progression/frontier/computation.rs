@@ -89,7 +89,7 @@ impl PreparedWorkflowFrontier {
                 ))
             }
         };
-        let outcome = match request.run(ExecutionWorkCeiling::new(declared_work), |lease| {
+        let outcome = match request.run(ExecutionWorkCeiling::new(Some(declared_work)), |lease| {
             map.run_owned(lease, |task, meter| {
                 let computed = (self.compute)(task, meter);
                 if computed.failed() {

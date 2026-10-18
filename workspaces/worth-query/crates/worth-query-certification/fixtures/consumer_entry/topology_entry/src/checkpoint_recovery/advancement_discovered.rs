@@ -94,7 +94,11 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                 } else {
                     policy.charged_memory_bytes()
                 },
-                if memory { policy.work_ceiling() } else { 0 },
+                if memory {
+                    policy.work_ceiling()
+                } else {
+                    Some(0)
+                },
             )));
             let before_mutation = reads();
             let cause = request
@@ -162,7 +166,11 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                 } else {
                     policy.charged_memory_bytes()
                 },
-                if memory { policy.work_ceiling() } else { 0 },
+                if memory {
+                    policy.work_ceiling()
+                } else {
+                    Some(0)
+                },
             )));
             reports();
             let before = reads();

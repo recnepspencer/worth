@@ -11,6 +11,7 @@ use crate::validation::data::{
 use std::sync::Arc;
 
 pub struct CustomInvariantExecutionContext<'runtime> {
+    execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
     performance: crate::performance::PerformanceAccess<'runtime>,
     observation_kind: InvariantObservationKind,
     version_id: VersionId,
@@ -42,6 +43,7 @@ pub struct CustomInvariantProvenance {
 impl<'runtime> CustomInvariantExecutionContext<'runtime> {
     pub(crate) fn new(
         runtime: &InvariantRuntimeView<'runtime>,
+        execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
         observation: &'runtime InvariantObservation<'runtime>,
         version_id: VersionId,
         current_version_id: VersionId,
@@ -53,6 +55,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         work.try_charge(1);
         Self::from_prepared_scope(
             runtime,
+            execution,
             observation,
             version_id,
             current_version_id,
@@ -65,6 +68,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
 
     fn from_prepared_scope(
         runtime: &InvariantRuntimeView<'runtime>,
+        execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
         observation: &'runtime InvariantObservation<'runtime>,
         version_id: VersionId,
         current_version_id: VersionId,
@@ -106,6 +110,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         );
         let proposal_identity = observation.proposal_identity().cloned();
         Self {
+            execution,
             performance: runtime.performance_access(),
             observation_kind: observation.kind(),
             version_id,
@@ -129,6 +134,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
     /// Reporting an owner-proven skip executes no rule and spends no rule units.
     pub(crate) fn not_applicable_provenance(
         runtime: &InvariantRuntimeView<'runtime>,
+        execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
         observation: &'runtime InvariantObservation<'runtime>,
         version_id: VersionId,
         current_version_id: VersionId,
@@ -139,6 +145,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
     ) -> CustomInvariantProvenance {
         Self::from_prepared_scope(
             runtime,
+            execution,
             observation,
             version_id,
             current_version_id,
@@ -148,6 +155,11 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
             access,
         )
         .provenance()
+    }
+
+    /// Checks the original request without charging work or opening a scope.
+    pub fn check_live(&self) -> Result<(), super::CustomInvariantInterruption> {
+        super::interruption::check_live(self.execution)
     }
 
     pub fn observation_kind(&self) -> InvariantObservationKind {

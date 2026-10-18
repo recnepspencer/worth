@@ -14,7 +14,7 @@ fn planning_visits_claim_only_the_allocation_they_declare() {
                 policy: ExecutionRequestPolicy::new(
                     posture,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, 1024, 100),
+                    ExecutionBudget::new(NonZeroUsize::MIN, 1024, Some(100)),
                 ),
                 cancellation: CancellationToken::new(),
                 deadline: None,
@@ -46,14 +46,15 @@ fn authored_checkpoints_do_not_allocate_structural_nodes() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 1024, 100),
+                ExecutionBudget::new(NonZeroUsize::MIN, 1024, Some(100)),
             ),
             cancellation: CancellationToken::new(),
             deadline: None,
         })
         .unwrap();
     let budget = CustomPreparationBudget::new(lease.status(), Some(100), Some(0));
-    let work = CustomInvariantWorkMeter::new(NonZeroU64::new(100).unwrap()).with_lease(&budget);
+    let work =
+        CustomInvariantWorkMeter::new(Some(NonZeroU64::new(100).unwrap())).with_lease(&budget);
     assert!(
         work.checkpoint(20),
         "twenty authored arithmetic units have no heap allocation"

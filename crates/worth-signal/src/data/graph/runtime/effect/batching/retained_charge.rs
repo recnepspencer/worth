@@ -14,7 +14,7 @@ use super::{ApplyCommitPacket, PreparedParallelApplyCommitPacket};
 impl worth_execution::ChargedBytes for PreparedParallelApplyCommitPacket {
     fn additional_charged_bytes(&self) -> u64 {
         self.0
-            .retained_heap_charge(&mut Preparation::new(usize::MAX))
+            .retained_heap_charge(&mut Preparation::new(None))
             .map_or(u64::MAX, Charge::bytes)
     }
 }

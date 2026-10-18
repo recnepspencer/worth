@@ -25,7 +25,7 @@ impl CustomInvariantRule for NativeCheckpointRule {
             },
             display_name: Arc::from("Native Checkpoint Rule"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(u64::MAX).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(u64::MAX).unwrap()),
                 access: crate::validation::data::CustomInvariantAccessContract::default(),
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
@@ -202,7 +202,7 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
             execution,
             &std::collections::BTreeSet::from([source]),
             KindId(2),
-            4,
+            Some(4),
         )
         .expect("read request remains live")
         .unwrap()

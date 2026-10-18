@@ -135,11 +135,11 @@ fn read_stops_survive_a_failed_live_lease_termination() {
                     .unwrap();
                 execution
                     .run(
-                        worth_execution::ExecutionWorkCeiling::new(if mode == 2 {
+                        worth_execution::ExecutionWorkCeiling::new(Some(if mode == 2 {
                             0
                         } else {
                             100_000
-                        }),
+                        })),
                         |_| {
                             lease.next(
                                 &installed_phase,

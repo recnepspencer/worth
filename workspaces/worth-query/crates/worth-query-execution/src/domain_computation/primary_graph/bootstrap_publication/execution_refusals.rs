@@ -67,7 +67,7 @@ pub(in crate::domain_computation::primary_graph) fn request() -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, 1_000_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, Some(1_000_000)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,

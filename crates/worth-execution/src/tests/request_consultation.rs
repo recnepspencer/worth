@@ -64,7 +64,7 @@ fn check_work_consultation(serial_backing: bool, refuse_charge: bool) {
         0,
         0,
         true,
-        3,
+        Some(3),
         backing.is_none().then_some(&serial),
         |work| {
             work.checkpoint(2)?;
@@ -128,8 +128,14 @@ fn consultation_reads_inherited_cancellation_before_a_backing_deadline() {
         .clone()
         .with_cancellation(CancellationToken::new())
         .with_deadline(Some(Instant::now() - Duration::from_secs(1)));
-    let outcome =
-        crate::backend::run_scope_within::<(), (), _>(None, 0, 0, true, 3, Some(&parent), |work| {
+    let outcome = crate::backend::run_scope_within::<(), (), _>(
+        None,
+        0,
+        0,
+        true,
+        Some(3),
+        Some(&parent),
+        |work| {
             source.cancel();
             assert_eq!(
                 ExecutionRequest::serial(&child).consult(),
@@ -137,7 +143,8 @@ fn consultation_reads_inherited_cancellation_before_a_backing_deadline() {
             );
             assert_eq!(work.cost(), (0, 0));
             Ok(())
-        });
+        },
+    );
     assert_eq!(outcome.report.charged_work(), 0);
 }
 

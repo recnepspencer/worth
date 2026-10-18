@@ -78,7 +78,10 @@ fn discovered_currentness_all_native_retired_keeps_original_discovery() {
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
+        .require_current_discovered_program_outputs(
+            &aggregate,
+            Some((comparison_work(&world.application)).get()),
+        )
         .unwrap();
     link!(world, request, "anchor-a", "anchor-b", 10_216u64);
     let current = request.retain_current_read().unwrap();
@@ -87,7 +90,7 @@ fn discovered_currentness_all_native_retired_keeps_original_discovery() {
             .at(&current)
             .require_current_discovered_program_outputs(
                 &aggregate,
-                comparison_work(&world.application),
+                Some((comparison_work(&world.application)).get()),
             ),
     );
     assert_eq!(aggregate.superseded_roots().count(), 3);

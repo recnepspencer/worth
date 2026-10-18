@@ -1,19 +1,19 @@
-//! Per-attempt narrowing of native installed delivery ceilings.
+//! Optional caller-selected work restrictions for one native delivery attempt.
 use std::num::NonZeroUsize;
 
-/// Finite ceilings for one delivery attempt; none can enlarge installed native policy.
-#[derive(Clone, Copy, Debug)]
+/// Omitted work restrictions add no ceiling; native physical admission still applies.
+#[derive(Clone, Copy, Debug, Default)]
 pub struct WorthQueryOperationDeliveryPolicy {
-    pub(in crate::application_entry) currentness_work: NonZeroUsize,
+    pub(in crate::application_entry) currentness_work: Option<NonZeroUsize>,
     pub(super) batch_limits:
         Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryBatchLimits>,
     pub(in crate::application_entry) query_limits: Option<(NonZeroUsize, NonZeroUsize)>,
 }
 impl WorthQueryOperationDeliveryPolicy {
-    /// Narrows currentness work; the native installed ceiling still applies.
+    /// Narrows currentness work; any explicit native installed ceiling still applies.
     pub const fn currentness(maximum_work: NonZeroUsize) -> Self {
         Self {
-            currentness_work: maximum_work,
+            currentness_work: Some(maximum_work),
             query_limits: None,
             batch_limits: None,
         }

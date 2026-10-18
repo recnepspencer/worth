@@ -14,7 +14,7 @@ use crate::{
 /// The closure receives no kernel context: patterns stay the only way to
 /// charge work.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ExecutionWorkCeiling(u64);
+pub struct ExecutionWorkCeiling(Option<u64>);
 
 /// Why a computation under a declared ceiling returned no value.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -77,11 +77,11 @@ impl ExecutionWorkCeiling {
         self.run(&diagnostic, || computation(&diagnostic))
     }
 
-    pub const fn new(work_units: u64) -> Self {
+    pub const fn new(work_units: Option<u64>) -> Self {
         Self(work_units)
     }
 
-    pub const fn work_units(self) -> u64 {
+    pub const fn work_units(self) -> Option<u64> {
         self.0
     }
 

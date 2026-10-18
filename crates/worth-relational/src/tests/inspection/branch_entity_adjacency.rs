@@ -37,31 +37,31 @@ fn a_fork_view_reads_its_own_adjacency_after_its_parent_writes_again() {
 
     let fork = branch_view(execution, &runtime, &feature);
     let outgoing = fork
-        .bounded_outgoing_relations_of_kind(execution, source, RELATION_KIND, usize::MAX)
+        .bounded_outgoing_relations_of_kind(execution, source, RELATION_KIND, None)
         .expect("read request remains live")
         .expect("an unbounded read completes");
     let work_units = outgoing.work_units();
     assert_eq!(relation_ids(outgoing), vec![kept, forked]);
     let incoming = fork
-        .bounded_incoming_relations_of_kind(execution, other_target, RELATION_KIND, usize::MAX)
+        .bounded_incoming_relations_of_kind(execution, other_target, RELATION_KIND, None)
         .expect("read request remains live")
         .expect("an unbounded read completes");
     assert_eq!(relation_ids(incoming), vec![forked]);
 
     let main = branch_view(execution, &runtime, &BranchId("main".to_owned()));
     let outgoing = main
-        .bounded_outgoing_relations_of_kind(execution, source, RELATION_KIND, usize::MAX)
+        .bounded_outgoing_relations_of_kind(execution, source, RELATION_KIND, None)
         .expect("read request remains live")
         .expect("an unbounded read completes");
     assert_eq!(relation_ids(outgoing), vec![later]);
 
     let exact = fork
-        .bounded_outgoing_relations_of_kind(execution, source, RELATION_KIND, work_units)
+        .bounded_outgoing_relations_of_kind(execution, source, RELATION_KIND, Some(work_units))
         .expect("read request remains live")
         .expect("the read fits its own work");
     assert_eq!(exact.work_units(), work_units);
     let refused = fork
-        .bounded_outgoing_relations_of_kind(execution, source, RELATION_KIND, work_units - 1)
+        .bounded_outgoing_relations_of_kind(execution, source, RELATION_KIND, Some(work_units - 1))
         .expect("read request remains live")
         .expect_err("one unit short refuses before completing the fanout");
     assert_eq!(refused.consumed_work_units(), work_units - 1);

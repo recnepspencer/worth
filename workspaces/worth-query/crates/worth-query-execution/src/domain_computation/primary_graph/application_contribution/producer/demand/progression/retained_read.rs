@@ -75,14 +75,16 @@ where
         .prepare_shared_query_basis(request_admission)
         .map_err(|(_, stop)| resource_denial(stop))?;
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
-    let maximum_work = NonZeroUsize::new(
-        installed_limits
-            .maximum_work()
-            .get()
-            .min(limits.producer_work())
-            .min(request_admission.remaining_work()),
-    )
-    .ok_or_else(work_denial)?;
+    let ceiling = installed_limits
+        .maximum_work()
+        .map(NonZeroUsize::get)
+        .into_iter()
+        .chain(limits.producer_work())
+        .chain(request_admission.remaining_work())
+        .min();
+    let maximum_work = ceiling
+        .map(|work| NonZeroUsize::new(work).ok_or_else(work_denial))
+        .transpose()?;
     let (product, basis) = runtime
         .retain_selected_query_basis_admitted(&shared, request_admission)
         .map_err(|stop| match stop {

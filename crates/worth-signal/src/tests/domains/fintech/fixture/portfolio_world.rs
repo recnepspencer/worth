@@ -285,7 +285,7 @@ fn portfolio_lease(
         worth_foundational::ExecutionBudget::new(
             admission.policy.budget().max_workers(),
             64 * 1024 * 1024,
-            100_000_000,
+            Some(100_000_000),
         ),
     );
     authority()

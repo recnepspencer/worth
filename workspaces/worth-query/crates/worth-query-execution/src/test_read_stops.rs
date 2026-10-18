@@ -145,7 +145,7 @@ fn selected_consult_answers_under<T: Eq + Debug, E: Eq + Debug>(
                 }
             });
             let ((answer, answer_origins), report) = request
-                .run(ExecutionWorkCeiling::new(ceiling), |_| {
+                .run(ExecutionWorkCeiling::new(Some(ceiling)), |_| {
                     let answer = door(&request);
                     (answer, observation.stop_origins_for_test())
                 })
@@ -262,7 +262,7 @@ pub(crate) fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
                 64 * 1024 * 1024,
-                100_000,
+                Some(100_000),
             ),
         ));
         with_door(&|door| {

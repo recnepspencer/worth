@@ -48,7 +48,7 @@ pub(crate) fn settle<R, E>(
         }
         let identity = batch.identities()[index];
         let next = charged_work.checked_add(outcome.work);
-        if next.is_none_or(|sum| sum > limits.ceiling()) {
+        if next.is_none_or(|sum| limits.ceiling().is_some_and(|ceiling| sum > ceiling)) {
             if stop_owner != Some(NestedStopOwner::Request) {
                 stop_owner = Some(if next.is_none() {
                     NestedStopOwner::Request
@@ -56,7 +56,14 @@ pub(crate) fn settle<R, E>(
                     limits.work_stop_owner()
                 });
             }
-            stop = Some(BatchStop::WorkExhausted { identity });
+            stop = Some(if next.is_none() {
+                BatchStop::Failure {
+                    identity,
+                    cause: KernelFailure::Stop(KernelStop::WorkCounterOverflow),
+                }
+            } else {
+                BatchStop::WorkExhausted { identity }
+            });
             prefix_boundary = Some(identity);
             discarded_work = discarded_work.saturating_add(outcome.work);
             continue;

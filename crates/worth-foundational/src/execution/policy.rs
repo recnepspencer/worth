@@ -50,14 +50,14 @@ pub enum DeterminismContract {
 pub struct ExecutionBudget {
     max_workers: NonZeroUsize,
     charged_memory_bytes: u64,
-    work_ceiling: u64,
+    work_ceiling: Option<u64>,
 }
 
 impl ExecutionBudget {
     pub const fn new(
         max_workers: NonZeroUsize,
         charged_memory_bytes: u64,
-        work_ceiling: u64,
+        work_ceiling: Option<u64>,
     ) -> Self {
         Self {
             max_workers,
@@ -74,7 +74,7 @@ impl ExecutionBudget {
         self.charged_memory_bytes
     }
 
-    pub const fn work_ceiling(self) -> u64 {
+    pub const fn work_ceiling(self) -> Option<u64> {
         self.work_ceiling
     }
 }
@@ -122,7 +122,7 @@ mod tests {
 
     #[test]
     fn portable_request_preserves_independent_limits() {
-        let budget = ExecutionBudget::new(NonZeroUsize::new(3).unwrap(), 4096, 77);
+        let budget = ExecutionBudget::new(NonZeroUsize::new(3).unwrap(), 4096, Some(77));
         let policy = ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
@@ -130,7 +130,7 @@ mod tests {
         );
         assert_eq!(policy.budget().max_workers().get(), 3);
         assert_eq!(policy.budget().charged_memory_bytes(), 4096);
-        assert_eq!(policy.budget().work_ceiling(), 77);
+        assert_eq!(policy.budget().work_ceiling(), Some(77));
         assert_eq!(policy.determinism(), DeterminismContract::CanonicalBitwise);
     }
 }

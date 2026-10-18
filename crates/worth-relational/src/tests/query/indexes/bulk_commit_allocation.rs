@@ -86,9 +86,9 @@ fn bulk_commit(rows_per_key: usize) {
             &[index],
             Some(&first.snapshot),
             crate::facade::indexes::DerivedIndexMaintenanceBudget {
-                maximum_work_units: 4_000_000,
-                maximum_cold_record_slots: 0,
-                maximum_derived_rows: 100_000,
+                maximum_work_units: Some(4_000_000),
+                maximum_cold_record_slots: Some(0),
+                maximum_derived_rows: Some(100_000),
             },
             &execution,
         )

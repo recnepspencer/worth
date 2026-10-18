@@ -54,7 +54,7 @@ fn prepared_slots_follow_producer_release_consumer_release_free_tail_and_append(
     let free = source.insert_normalized(causes(3));
     source.release(free).unwrap();
     let mut store = source.fork_persistent();
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     let slots = prepare(&store, [producer, keep, release], &mut measured).unwrap();
     let reused = |id: PendingCauseSetId| PendingCauseSetId {
         index: id.index,
@@ -79,7 +79,7 @@ fn prepared_slots_follow_producer_release_consumer_release_free_tail_and_append(
         expected
     );
     for available in [0, measured.visits() - 1, measured.visits()] {
-        let mut work = Work::new(measured.visits() + 7);
+        let mut work = Work::new(Some(measured.visits() + 7));
         work.reserve_visits(measured.visits() + 7 - available)
             .unwrap();
         let result = prepare(&store, [producer, keep, release], &mut work);
@@ -211,7 +211,7 @@ fn ordinary_slot_preparation_keeps_single_owner_bookkeeping_inline() {
 fn epoch_virtual_transitions_match_sequential_slot_reuse_and_final_causes() {
     let mut source = CanonicalCauseSetStore::default();
     let producer = source.insert_normalized(causes(0));
-    let mut fork_work = Work::new(usize::MAX);
+    let mut fork_work = Work::new(None);
     source.prepare_fork_charge(&mut fork_work).unwrap();
     source.prepare_fork_growth(&mut fork_work).unwrap();
     let mut sequential = source.fork_persistent();
@@ -245,7 +245,7 @@ fn epoch_virtual_transitions_match_sequential_slot_reuse_and_final_causes() {
     assert_eq!(final_slot.handle(), consumer);
 
     let mut draft = source.fork_persistent();
-    let mut retained = Work::new(usize::MAX);
+    let mut retained = Work::new(None);
     draft
         .release_epoch_accounted(producer, &mut retained)
         .unwrap();
@@ -290,7 +290,7 @@ fn epoch_virtual_continuation_checks_work_before_touching_slot_state() {
             &mut EvaluationWork::Ordinary,
         )
         .unwrap();
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     let measured_slot = measured_cursor
         .epoch_replacement_after(
             first.handle(),
@@ -308,7 +308,7 @@ fn epoch_virtual_continuation_checks_work_before_touching_slot_state() {
             &mut EvaluationWork::Ordinary,
         )
         .unwrap();
-    let mut denied = Work::new(measured.visits() - 1);
+    let mut denied = Work::new(Some(measured.visits() - 1));
     assert!(denied_cursor
         .epoch_replacement_after(
             first.handle(),
@@ -320,7 +320,7 @@ fn epoch_virtual_continuation_checks_work_before_touching_slot_state() {
     assert!(denied_cursor
         .allocated
         .contains(first.handle().index.unwrap().get()));
-    let mut funded = Work::new(measured.visits());
+    let mut funded = Work::new(Some(measured.visits()));
     let retried_slot = denied_cursor
         .epoch_replacement_after(
             first.handle(),

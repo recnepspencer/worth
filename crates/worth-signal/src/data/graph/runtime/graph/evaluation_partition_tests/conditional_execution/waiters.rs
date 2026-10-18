@@ -39,11 +39,11 @@ fn waiting_consumer() -> (
 
 fn visits_before_application(execution: &str) -> usize {
     let (mut graph, contract, _) = waiting_consumer();
-    let mut work = RetainedStoragePreparation::new(usize::MAX);
+    let mut work = RetainedStoragePreparation::new(None);
     // Observe the production preparation cost at the provider boundary. The
     // intentionally failing provider does not claim any output application.
     graph.set_runtime_policy(
-        SignalRuntimePolicy::forensic().with_maximum_waiter_resolution_visits(100_000),
+        SignalRuntimePolicy::forensic().with_maximum_waiter_resolution_visits(Some(100_000)),
     );
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
     let draft = ConditionalEvaluationDraft::begin(&mut partition, &mut work).unwrap();
@@ -71,10 +71,10 @@ fn visits_before_application(execution: &str) -> usize {
 fn completed_retry_visits() -> usize {
     let (mut graph, contract, _) = waiting_consumer();
     graph.set_runtime_policy(
-        SignalRuntimePolicy::forensic().with_maximum_waiter_resolution_visits(100_000),
+        SignalRuntimePolicy::forensic().with_maximum_waiter_resolution_visits(Some(100_000)),
     );
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
-    let mut work = RetainedStoragePreparation::new(usize::MAX);
+    let mut work = RetainedStoragePreparation::new(None);
     let draft = ConditionalEvaluationDraft::begin(&mut partition, &mut work).unwrap();
     let outcome = draft
         .partition
@@ -120,11 +120,11 @@ fn conditional_output_preparation_cannot_reset_the_attempt_and_a_fresh_attempt_r
     let mut budget = graph
         .installed_runtime_policy()
         .conditional_evaluation_budget();
-    budget.maximum_attempt_visits = maximum;
+    budget.maximum_attempt_visits = Some(maximum);
     graph.set_runtime_policy(
         SignalRuntimePolicy::forensic()
             .with_conditional_evaluation_budget(budget)
-            .with_maximum_waiter_resolution_visits(100_000),
+            .with_maximum_waiter_resolution_visits(Some(100_000)),
     );
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
     let mut computes = 0;
@@ -259,7 +259,7 @@ fn conditional_waiter_local_limit_still_denies_under_a_generous_attempt_allowanc
     );
     let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    for maximum in [1, 100_000] {
+    for maximum in [Some(1), Some(100_000), None] {
         let (mut graph, contract, _) = waiting_consumer();
         graph.set_runtime_policy(
             SignalRuntimePolicy::forensic().with_maximum_waiter_resolution_visits(maximum),
@@ -287,7 +287,7 @@ fn conditional_waiter_local_limit_still_denies_under_a_generous_attempt_allowanc
             .unwrap()
             .into_parts();
         assert!(observation.unwrap().is_some());
-        if maximum == 1 {
+        if maximum == Some(1) {
             let failure = decision.err().expect("local waiter policy must still deny");
             assert_eq!(failure.counters().compute_contacts, 1);
             assert_eq!(

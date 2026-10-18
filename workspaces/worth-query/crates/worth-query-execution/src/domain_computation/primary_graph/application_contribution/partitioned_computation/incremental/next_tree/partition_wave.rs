@@ -86,7 +86,10 @@ where
                     match input.disposition {
                         Disposition::Carried(partition) => {
                             let units = partition.kernel_steps.units();
-                            if units <= context.remaining_work() {
+                            if context
+                                .remaining_work()
+                                .is_none_or(|remaining| units <= remaining)
+                            {
                                 context.checkpoint(units)?;
                             } else {
                                 // The full kernel's accepted steps run in its original

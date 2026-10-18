@@ -114,10 +114,8 @@ fn a_release_the_owner_could_not_admit_retires_at_the_next_release() {
     with_unmanaged_publications(request_execution, |owner, publish, live_rows| {
         let row = publish("open", "frozen", 31);
         // An admission with no work left stops the release before any edit.
-        let mut exhausted = owner.edit_admission();
-        exhausted
-            .charge_external_work(exhausted.remaining_work_amount())
-            .unwrap();
+        let mut exhausted = owner.edit_admission_with_work_limit(Some(1));
+        exhausted.charge_external_work(1).unwrap();
         assert!(owner
             .retire_released([Arc::clone(&row)], &mut exhausted)
             .is_empty());

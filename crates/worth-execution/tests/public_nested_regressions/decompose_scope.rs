@@ -12,7 +12,7 @@ fn a_real_decomposition_scope_keeps_the_reduction_interruption_request_owned() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 8_000, 100),
+        ExecutionBudget::new(NonZeroUsize::MIN, 8_000, Some(100)),
     );
     let parent = authority()
         .request_lease(LeaseRequest {

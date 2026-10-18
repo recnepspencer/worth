@@ -57,7 +57,7 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
                         .expect("fixture query parameter must encode"),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         NonZeroUsize::new(maximum_results).unwrap(),
-                        NonZeroUsize::new(maximum_work).unwrap(),
+                        Some(NonZeroUsize::new(maximum_work).unwrap()),
                         &request,
                     ),
                 )
@@ -67,7 +67,10 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
             let query_identity = first.query_identity().clone();
             let parameter_identity = *first.parameter_binding_identity();
             assert_eq!(first.controls().maximum_result_count().get(), 10);
-            assert_eq!(first.controls().maximum_work().get(), 10_000);
+            assert_eq!(
+                first.controls().maximum_work().map(NonZeroUsize::get),
+                Some(10_000)
+            );
             drop(first);
 
             let changed_controls = admit("open", 9, 9_999).unwrap();
@@ -78,7 +81,13 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
                 &parameter_identity
             );
             assert_eq!(changed_controls.controls().maximum_result_count().get(), 9);
-            assert_eq!(changed_controls.controls().maximum_work().get(), 9_999);
+            assert_eq!(
+                changed_controls
+                    .controls()
+                    .maximum_work()
+                    .map(NonZeroUsize::get),
+                Some(9_999)
+            );
             drop(changed_controls);
 
             let changed_parameter = admit("closed", 10, 10_000).unwrap();

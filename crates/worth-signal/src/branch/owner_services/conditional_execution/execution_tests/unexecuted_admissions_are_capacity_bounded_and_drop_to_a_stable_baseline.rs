@@ -10,7 +10,7 @@ fn unexecuted_admissions_are_capacity_bounded_and_drop_to_a_stable_baseline() {
             SignalConditionalEvaluationBudget {
                 maximum_retained_slots: 1,
                 maximum_retained_bytes: 512 * 1024 * 1024,
-                maximum_attempt_visits: 100_000,
+                maximum_attempt_visits: Some(100_000),
             },
         ),
     );

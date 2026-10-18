@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct ReadP
         &'a WorthQueryAdmittedApplicationQueryParameters,
     pub(in crate::domain_computation::primary_graph::application_query) governance:
         &'a WorthQueryApplicationQueryGovernance,
-    pub(in crate::domain_computation::primary_graph::application_query) maximum_work: usize,
+    pub(in crate::domain_computation::primary_graph::application_query) maximum_work: Option<usize>,
     pub(in crate::domain_computation::primary_graph::application_query) maximum_result_count: usize,
 }
 
@@ -41,7 +41,10 @@ impl<'a> ReadPlan<'a> {
             snapshot: plan.basis.snapshot_handle(),
             parameters: &plan.parameters,
             governance: &plan.governance,
-            maximum_work: plan.controls.maximum_work().get(),
+            maximum_work: plan
+                .controls
+                .maximum_work()
+                .map(std::num::NonZeroUsize::get),
             maximum_result_count: plan.controls.maximum_result_count().get(),
         }
     }

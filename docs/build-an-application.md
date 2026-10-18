@@ -2265,8 +2265,22 @@ observation, requires every settled output's native lineage at that observation,
 and executes the declared read there. Refusal retains settlement and original
 meaning for a later read; it does not perform the source or outputs again.
 `read_current_with_policy` accepts `WorthQueryOperationDeliveryPolicy` for one
-attempt: currentness work is capped by installed native policy, and query result
-and work ceilings must narrow the declared native query limits. Retry uses fresh
+attempt. Ordinary currentness, producer work and query work have no intrinsic
+operation-count ceiling. Any explicit finite host, declaration or attempt work
+limit still intersects the others; result and retained-byte limits remain physical
+admission. Omit `.operation_projection_work_budget(..)` to declare no decision-read
+work ceiling, and use `ApplicationArtifactResourceCeiling::new(None, bytes)` for
+uncapped producer work with retained-byte admission. At the demand boundary,
+`WorthQueryOutputDemandControls::default().producer_retained_bytes(bytes)` narrows
+producer custody without adding a work restriction; `.producer_work(work)`
+independently selects a finite producer-only allowance. Neither widens host policy.
+Signal runtime presets also leave waiter-resolution and upstream-dependency work
+absent. `with_maximum_waiter_resolution_visits(Some(n))` and
+`with_maximum_upstream_dependency_visits(Some(n))` are explicit finite choices;
+`None` keeps the original request and physical admission without a local work cap.
+The installed workflow fact-custody rule likewise checks every candidate on the
+original request without imposing a fixed candidate count.
+Retry uses fresh
 request authority on the same settled owner. Native consumed-fact movement
 returns `Stale`; unrelated progress does not itself make settlement stale.
 `read_historical` reads the original declared projection at the retained settlement
@@ -2274,7 +2288,9 @@ basis with fresh query authorization. Neither history nor close advances outputs
 For `ApplicationNoProjection`, `deliver_current` checks every settlement at one
 authentic observation and returns that observation without issuing a query.
 
-Start with a small finite attempt. This shape uses application-specific names;
+Use `WorthQueryOperationDeliveryPolicy::default()` for an attempt without an
+additional work ceiling. A caller may explicitly choose a finite attempt as below.
+This shape uses application-specific names;
 the real compiled consumer counterpart is
 [`fixed_delivery.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_delivery.rs).
 
@@ -2334,8 +2350,9 @@ fn read_inputs(input: &SourceAdjustment) -> [OutputRead; 2] {
 
 `settled.read_batch_current::<N>(&fresh_request)` checks every actual settlement
 and executes all items at that same authentic observation in one admitted phase.
-The installed binding and native host profile supply finite aggregate work and
-custody allowances. Each item still receives independent ordinary scope and
+The installed binding and native host profile supply physical custody allowances
+and any explicitly chosen aggregate work ceiling. Absent work remains absent
+through child reads and currentness checks. Each item still receives independent ordinary scope and
 disclosure authorization. The aggregate allowance covers read work and retained
 result/source custody; it does not claim to meter all authorization or
 application-authored selector work.
@@ -2671,6 +2688,38 @@ selecting a new source. On refusal, retain the returned owner and its original
 application context; retry lawful explicit discard on that owner. Dropping either
 phase is abandonment, and does not post a successful discard record. Preview
 liveness observation is not proof of cleanup or promotion.
+
+### Optional invariant work and original interruption
+
+The original execution policy also carries genuine absence:
+`ExecutionBudget::new(workers, charged_memory_bytes, None)`. Serial and leased
+requests retain that same optional ceiling through child scopes; a child cannot
+widen a finite parent. Charged counters and typed overflow remain. Signal's
+`SignalConditionalEvaluationBudget::development()` has no attempt-visit ceiling;
+its retained-slot and byte limits still apply. Explicit `Some` limits remain
+caller choices.
+
+Retained source-only delivery uses `owner.advance(&fresh_request, None)` for
+no additional history work ceiling. `Some(NonZeroUsize)` explicitly bounds an
+attempt. Both use the same original World history owner, physical protection and
+request interruption; refusal returns the same operation for a lawful fresh retry.
+
+`RelationalInvariantWorkBudget::new(None)` declares no local operation-count
+ceiling; `Some(NonZeroU64)` retains an explicit caller-selected ceiling. Installation,
+canonical identity and package archives preserve that distinction. Absence never
+removes receipt authority, physical allocation admission or graph validity.
+
+An application invariant's `Context::check_live()` and `ScopePlanner::check_live()`
+are pure observers of the original serial or leased request. They return the
+original native `CustomInvariantInterruption::{Cancelled, DeadlineElapsed}` through
+`worth_query_host::facade::application_invariants`. A numerical callback may borrow
+`|| context.check_live().is_err()` without charging work or creating a request. The
+engine checks the same original interruption before accepting an invariant result.
+
+Ordinary Fixed/discovered advancement returns genuine native progress or the same
+owned Pending state. The advanced `settle` convenience's per-call advancement
+quantum limits batching only: it returns the original Pending owner, never treats
+quantum exhaustion as a failed output, and does not limit total work or depth.
 
 ## 6. Author, publish, and run workflows
 

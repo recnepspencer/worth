@@ -146,7 +146,7 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
             .at(historical)
             .require_current_discovered_program_outputs(
                 &aggregate,
-                comparison_work(&world.application),
+                Some((comparison_work(&world.application)).get()),
             )
             .unwrap();
         let before = request
@@ -194,7 +194,10 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
         for (_, root) in aggregate.root_outputs() {
             request
                 .at(&current)
-                .require_current_output_demand(root, comparison_work(&world.application))
+                .require_current_output_demand(
+                    root,
+                    Some((comparison_work(&world.application)).get()),
+                )
                 .unwrap();
         }
         stale(
@@ -202,14 +205,14 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
                 .at(&current)
                 .require_current_discovered_program_outputs(
                     &aggregate,
-                    comparison_work(&world.application),
+                    Some((comparison_work(&world.application)).get()),
                 ),
         );
         request
             .at(historical)
             .require_current_discovered_program_outputs(
                 &aggregate,
-                comparison_work(&world.application),
+                Some((comparison_work(&world.application)).get()),
             )
             .unwrap();
         assert_eq!(
@@ -227,7 +230,10 @@ fn discovered_currentness_foreign_runtime_preserves_owner() {
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
+        .require_current_discovered_program_outputs(
+            &aggregate,
+            Some((comparison_work(&world.application)).get()),
+        )
         .unwrap();
     let other = membership::install();
     let adapter = authentication::admit(other.application.installed_schema());
@@ -243,7 +249,7 @@ fn discovered_currentness_foreign_runtime_preserves_owner() {
         .at(&other_read)
         .require_current_discovered_program_outputs(
             &aggregate,
-            comparison_work(&other.application),
+            Some((comparison_work(&other.application)).get()),
         );
     assert!(
         matches!(refused, Err(WorthQueryOutputCurrentnessDenial::Output(ref cause)) if cause.kind() == WorthQueryOutputDemandDenialKind::ForeignSettlement),
@@ -251,7 +257,10 @@ fn discovered_currentness_foreign_runtime_preserves_owner() {
     );
     request
         .at(&current)
-        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
+        .require_current_discovered_program_outputs(
+            &aggregate,
+            Some((comparison_work(&world.application)).get()),
+        )
         .unwrap();
     for (key, expected) in [("sibling-b", 22), ("sibling-c", 31), ("remote-b", 42)] {
         assert_eq!(

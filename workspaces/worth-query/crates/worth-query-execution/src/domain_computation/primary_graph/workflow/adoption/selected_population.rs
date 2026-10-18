@@ -23,7 +23,7 @@ pub(super) fn is_empty(
     // This is the caller's remaining selection allowance, not a new host
     // allowance. Its exact charge is returned and deducted before truth reads.
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: request.maximum_work_units as u64,
+        maximum_work_visits: Some(request.maximum_work_units as u64),
         maximum_preparation_bytes: request.maximum_preparation_bytes,
     });
     let lineage = &request.layout.lineage;
@@ -68,7 +68,7 @@ pub(super) fn is_empty(
         })?;
     Ok((
         empty,
-        request.maximum_work_units - admission.remaining_work(),
+        usize::try_from(admission.charged_work()).expect("selected work fits its native count"),
     ))
 }
 

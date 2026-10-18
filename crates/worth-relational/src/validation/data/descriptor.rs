@@ -103,7 +103,7 @@ impl SupportedExecutionPoints {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CustomInvariantOperationalMetadata {
-    pub maximum_work_units: std::num::NonZeroU64,
+    pub maximum_work_units: Option<std::num::NonZeroU64>,
     pub execution_point: InvariantExecutionPoint,
     pub groups: InvariantGroupSet,
     pub cost_class: InvariantCostClass,

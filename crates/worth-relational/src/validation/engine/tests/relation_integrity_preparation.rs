@@ -122,7 +122,7 @@ fn relation_scope_preparation_preserves_supplied_allocation_stop() {
                 worth_foundational::ExecutionBudget::new(
                     std::num::NonZeroUsize::new(1).unwrap(),
                     0,
-                    1,
+                    Some(1),
                 ),
             ),
             deadline: None,

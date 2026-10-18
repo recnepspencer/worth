@@ -10,7 +10,7 @@ use crate::data::retained_storage::{
 fn prepared_fork(count: usize) -> PersistentVector<String> {
     let mut values: PersistentVector<_> = (0..count).map(|_| "held".to_string()).collect();
     values
-        .prepare_retained_charge(&mut Work::new(count + 10))
+        .prepare_retained_charge(&mut Work::new(Some(count + 10)))
         .unwrap();
     values.fork_persistent()
 }
@@ -47,13 +47,13 @@ fn staged_capacity_edit_has_exact_bound_and_preserves_rejected_roots() {
     let mut independently_edited = values.clone();
     independently_edited[0] = "replacement".repeat(1_024);
     let expected = independently_edited
-        .retained_heap_charge(&mut Work::new(10_000))
+        .retained_heap_charge(&mut Work::new(Some(10_000)))
         .unwrap();
     let short = expected
         .checked_sub(Charge::capacity::<u8>(1).unwrap())
         .unwrap();
     let rejected = values
-        .edit_with_retained_capacity(0, short, &mut Work::new(10_000), |value| {
+        .edit_with_retained_capacity(0, short, &mut Work::new(Some(10_000)), |value| {
             *value = "replacement".repeat(1_024);
             7
         })
@@ -67,7 +67,7 @@ fn staged_capacity_edit_has_exact_bound_and_preserves_rejected_roots() {
     assert_eq!(values.prepared_retained_charge().unwrap(), before);
     assert!(values.shares_storage_with(&sibling));
     let installed = values
-        .edit_with_retained_capacity(0, expected, &mut Work::new(10_000), |value| {
+        .edit_with_retained_capacity(0, expected, &mut Work::new(Some(10_000)), |value| {
             *value = "replacement".repeat(1_024);
             8
         })
@@ -84,9 +84,11 @@ fn staged_capacity_edit_has_exact_bound_and_preserves_rejected_roots() {
 fn staging_denies_before_edit_without_prepared_forked_storage() {
     let maximum = Charge::capacity::<u8>(1_000_000).unwrap();
     let mut values: PersistentVector<_> = ["held".to_string()].into_iter().collect();
-    values.prepare_retained_charge(&mut Work::new(100)).unwrap();
+    values
+        .prepare_retained_charge(&mut Work::new(Some(100)))
+        .unwrap();
     assert!(matches!(
-        values.edit_with_retained_capacity(0, maximum, &mut Work::new(100), |_| panic!(
+        values.edit_with_retained_capacity(0, maximum, &mut Work::new(Some(100)), |_| panic!(
             "exclusive edit ran"
         )),
         Err(RetainedVectorStagingDenial::ForkPreparationRequired)
@@ -94,7 +96,7 @@ fn staging_denies_before_edit_without_prepared_forked_storage() {
     let mut fork = values.fork_persistent();
     fork[0].push_str(" changed");
     assert!(matches!(
-        fork.edit_with_retained_capacity(0, maximum, &mut Work::new(100), |_| panic!(
+        fork.edit_with_retained_capacity(0, maximum, &mut Work::new(Some(100)), |_| panic!(
             "unprepared edit ran"
         )),
         Err(RetainedVectorStagingDenial::Mutation(
@@ -112,7 +114,7 @@ fn staged_edit_work_scales_with_page_and_failure_preserves_original_storage() {
         let before = original.prepared_retained_charge().unwrap();
         let sibling = original.clone();
         let mut sample = original.clone();
-        let mut work = Work::new(1_000);
+        let mut work = Work::new(Some(1_000));
         let installed = sample
             .edit_with_retained_capacity(0, maximum, &mut work, |value| value.push_str(" updated"))
             .unwrap();
@@ -123,11 +125,16 @@ fn staged_edit_work_scales_with_page_and_failure_preserves_original_storage() {
         visits.push(work.visits());
         let mut ran = false;
         let result = original
-            .edit_with_retained_capacity(0, maximum, &mut Work::new(work.visits() - 1), |value| {
-                value.push_str(" updated");
-                ran = true;
-                9
-            })
+            .edit_with_retained_capacity(
+                0,
+                maximum,
+                &mut Work::new(Some(work.visits() - 1)),
+                |value| {
+                    value.push_str(" updated");
+                    ran = true;
+                    9
+                },
+            )
             .unwrap();
         assert!(ran);
         assert!(matches!(
@@ -142,11 +149,15 @@ fn staged_edit_work_scales_with_page_and_failure_preserves_original_storage() {
         assert_eq!(original.prepared_retained_charge().unwrap(), before);
         assert!(original.shares_storage_with(&sibling));
         let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _ =
-                original.edit_with_retained_capacity(0, maximum, &mut Work::new(1_000), |value| {
+            let _ = original.edit_with_retained_capacity(
+                0,
+                maximum,
+                &mut Work::new(Some(1_000)),
+                |value| {
                     value.push_str(" panic edit");
                     panic!("provider unwind");
-                });
+                },
+            );
         }));
         assert!(panic.is_err());
         assert_eq!(original[0], "held");

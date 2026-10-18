@@ -14,15 +14,15 @@ pub struct SignalConditionalEvaluationBudget {
     /// This is not an allocator or process-RSS limit.
     /// All live branches must agree on this owner-wide ceiling at sealing.
     pub maximum_retained_bytes: u64,
-    /// Per selected-definition attempt; never replenished by a storage writer.
-    pub maximum_attempt_visits: usize,
+    /// Optional caller bound per selected-definition attempt; never replenished by a writer.
+    pub maximum_attempt_visits: Option<usize>,
 }
 
 impl SignalConditionalEvaluationBudget {
     pub(super) const PRESET: Self = Self {
         maximum_retained_slots: 128,
         maximum_retained_bytes: 512 * 1024 * 1024,
-        maximum_attempt_visits: 8_000_000,
+        maximum_attempt_visits: None,
     };
 
     pub const fn development() -> Self {
@@ -32,7 +32,10 @@ impl SignalConditionalEvaluationBudget {
     pub(super) const fn is_valid(self) -> bool {
         self.maximum_retained_slots != 0
             && self.maximum_retained_bytes != 0
-            && self.maximum_attempt_visits != 0
+            && match self.maximum_attempt_visits {
+                None => true,
+                Some(maximum) => maximum != 0,
+            }
     }
 }
 

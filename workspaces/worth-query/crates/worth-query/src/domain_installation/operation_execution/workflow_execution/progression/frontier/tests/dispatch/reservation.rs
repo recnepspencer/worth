@@ -22,7 +22,7 @@ pub(super) fn start_reservation(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, 1024),
+                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, Some(1024)),
             ),
             cancellation: worth_execution::CancellationToken::new(),
             deadline: None,
@@ -52,9 +52,10 @@ pub(super) fn scoped_map_reservation(
         .in_scope(|lease| {
             let scope = framework(lease.expect("Query carries a lease"), 1);
             let (map, _) = request
-                .run(worth_execution::ExecutionWorkCeiling::new(0), |lease| {
-                    framework(lease.expect("Query carries a lease"), count) + storage
-                })
+                .run(
+                    worth_execution::ExecutionWorkCeiling::new(Some(0)),
+                    |lease| framework(lease.expect("Query carries a lease"), count) + storage,
+                )
                 .unwrap();
             (scope, map)
         })

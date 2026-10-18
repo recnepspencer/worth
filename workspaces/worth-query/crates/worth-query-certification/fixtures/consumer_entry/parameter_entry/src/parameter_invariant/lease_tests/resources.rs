@@ -59,7 +59,7 @@ pub(super) fn policy() -> worth_foundational::ExecutionRequestPolicy {
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             64 * 1024 * 1024,
-            8_000_000,
+            Some(8_000_000),
         ),
     )
 }

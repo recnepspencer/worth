@@ -12,15 +12,14 @@ use crate::basis::{
 impl WorthQueryProductRuntime {
     pub(crate) fn security_observation_for(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         current: &WorthQueryProductBranchLease,
     ) -> Result<WorthQueryProductObservationLease, WorthQueryProductBranchAdmissionDenial> {
         if current.relational_basis().materialization_is_complete() {
             return Ok(current.read_lease());
         }
-        let history = self.trace_product_history(
-            current.product_branch(),
-            NonZeroUsize::new(2).expect("two is nonzero"),
-        )?;
+        let history =
+            self.trace_product_history(execution, current.product_branch(), NonZeroUsize::new(2))?;
         if history.visited_count() != 2
             || history
                 .commits()
@@ -45,8 +44,9 @@ impl WorthQueryProductRuntime {
 
     pub(crate) fn trace_product_history(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: WorthQueryProductBranch,
-        maximum: NonZeroUsize,
+        maximum: Option<NonZeroUsize>,
     ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
         if branch.occurrence().owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
@@ -56,7 +56,7 @@ impl WorthQueryProductRuntime {
         let history = self
             .owner
             .observation_port()
-            .trace_product_branch_ancestry(branch.occurrence(), maximum)
+            .trace_product_branch_ancestry(execution, branch.occurrence(), maximum)
             .map_err(map_world_denial)?;
         let gate = self.activations.gate(history.branch_identity())?;
         gate.with_admission(|| Ok(history))
@@ -64,8 +64,9 @@ impl WorthQueryProductRuntime {
 
     pub(crate) fn continue_product_history(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         previous: &ProductBranchHistoryTraversal,
-        maximum: NonZeroUsize,
+        maximum: Option<NonZeroUsize>,
     ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
         if previous.lifecycle_incarnation().owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
@@ -76,7 +77,7 @@ impl WorthQueryProductRuntime {
         gate.with_admission(|| {
             self.owner
                 .observation_port()
-                .continue_product_branch_ancestry(previous, maximum)
+                .continue_product_branch_ancestry(execution, previous, maximum)
                 .map_err(map_world_denial)
         })
     }

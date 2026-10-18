@@ -19,7 +19,7 @@ pub(super) fn install(world: &World) -> Application {
     let declaration = Schema::declaration().unwrap();
     let limits = super::super::support::limits(
         32,
-        super::super::support::invalidation(128 * 1024 * 1024, 1_000_000, 32),
+        super::super::support::invalidation(128 * 1024 * 1024, Some(1_000_000), 32),
     );
     application_installation::in_memory_program(
         program,

@@ -26,7 +26,7 @@ pub(super) fn lease(host: &ExecutionAuthority, workers: usize) -> ExecutionResou
             ExecutionBudget::new(
                 NonZeroUsize::new(workers).unwrap(),
                 128 * 1024 * 1024,
-                100_000_000,
+                Some(100_000_000),
             ),
         ),
         deadline: None,

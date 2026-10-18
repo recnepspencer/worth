@@ -40,13 +40,10 @@ where
             .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         let selected_product = source_selection.selected_product();
         let limits = self.output_demand_resource_profile().constrain(limits);
-        std::num::NonZeroUsize::new(limits.source_currentness_work()).ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                Family::IDENTITY,
-            )
-            .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable)
-        })?;
+        if limits.source_currentness_work() == Some(0) {
+            return Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, Family::IDENTITY)
+                .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable));
+        }
         if retained_program_basis.is_some() {
             registry_admission.charge_external_work(1).map_err(|_| {
                 denial(

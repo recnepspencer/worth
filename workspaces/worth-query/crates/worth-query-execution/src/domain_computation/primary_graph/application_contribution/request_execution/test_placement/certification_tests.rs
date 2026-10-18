@@ -104,7 +104,7 @@ fn a_diagnostic_memory_reservation_cannot_refuse_the_request() {
         })
         .unwrap();
     let _held = lease.reserve_memory(1024).unwrap();
-    let (diagnostic, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+    let (diagnostic, _) = worth_execution::ExecutionWorkCeiling::new(None)
         .run_detached_for_test(&lease, |diagnostic| {
             diagnostic.reserve_memory(4096).map(|hold| hold.bytes())
         })

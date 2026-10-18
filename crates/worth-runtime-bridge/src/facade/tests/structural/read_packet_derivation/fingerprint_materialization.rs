@@ -25,7 +25,7 @@ fn runtime_materializes_structural_fingerprint_from_truth_view_read() {
 
     let fingerprint = execution
         .run(
-            worth_execution::ExecutionWorkCeiling::new(8_000_000),
+            worth_execution::ExecutionWorkCeiling::new(Some(8_000_000)),
             |_| {
                 runtime.materialize_structural_fingerprint(
                     &contract,

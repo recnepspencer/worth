@@ -103,7 +103,7 @@ fn a_fresh_build_admits_its_own_growth_and_ordered_navigation() {
     let whole = index_capacity::insertion_sequence_bytes::<usize, ()>(entries).unwrap();
     let build = |bytes| {
         let mut meter = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: u64::MAX,
+            maximum_work_visits: None,
             maximum_preparation_bytes: bytes,
         });
         let built = (0..entries).try_for_each(|length| meter.fresh_insert::<usize, ()>(length));

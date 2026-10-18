@@ -70,7 +70,7 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
                 policy: ExecutionRequestPolicy::new(
                     posture,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, 8 * 1024 * 1024, work),
+                    ExecutionBudget::new(NonZeroUsize::MIN, 8 * 1024 * 1024, Some(work)),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),

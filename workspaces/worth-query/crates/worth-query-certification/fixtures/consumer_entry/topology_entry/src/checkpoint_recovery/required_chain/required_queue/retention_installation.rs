@@ -41,7 +41,10 @@ pub(super) fn limited_application_seeded(
             );
     let invalidation = support::invalidation(
         invalidation_bytes,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         retained_positions,
     );
     let application = support::install_program_with_limits::<program::ChainProgram>(

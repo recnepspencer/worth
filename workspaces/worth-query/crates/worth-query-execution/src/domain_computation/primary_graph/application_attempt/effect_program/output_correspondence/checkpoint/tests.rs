@@ -14,7 +14,7 @@ fn reconstructed_roles_retain_their_payer_until_the_last_clone_and_refuse_withou
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 20, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 20, Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let execution = phase.execution_request();

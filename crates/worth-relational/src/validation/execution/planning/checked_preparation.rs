@@ -25,6 +25,7 @@ impl ChargedBytes for CheckedPlan<'_> {
 
 pub(crate) fn plan_checked_invariant_preparation<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     lease: &ExecutionResourceLease<'_>,
 ) -> Result<(PreparedInvariantExecution<'state>, u64, ExecutionReport), PacketExecutionStop> {
@@ -43,10 +44,10 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
                     context.checkpoint(0)?;
                     let meter = CustomPreparationBudget::new(
                         child_lease.status(),
-                        Some(child_lease.policy().budget().work_ceiling()),
+                        child_lease.policy().budget().work_ceiling(),
                         Some(ceiling),
                     );
-                    let plan = plan_invariant_execution_checked(runtime, request, child_lease, &meter);
+                    let plan = plan_invariant_execution_checked(runtime, execution, request, child_lease, &meter);
                     let work = meter.charged_work();
                     context.account_completed_work(work).map_err(MapKernelFailure::Stop)?;
                     if let Some(stop) = meter.stop() {

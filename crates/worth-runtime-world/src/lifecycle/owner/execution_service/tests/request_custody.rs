@@ -100,7 +100,7 @@ fn fully_spent_scope_still_publishes_when_no_charge_was_refused() {
     let identity = PartitionIdentity::new(1);
     let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, 1_u64)]).unwrap();
     let (performed, report) = request
-        .run(ExecutionWorkCeiling::new(1), |_| {
+        .run(ExecutionWorkCeiling::new(Some(1)), |_| {
             let charged = scan.run(None, 0_u64, 0, 0, 0, 0, |sum, item, work| {
                 work.checkpoint(1)?;
                 Ok::<_, MapKernelFailure<()>>((sum + item, ()))

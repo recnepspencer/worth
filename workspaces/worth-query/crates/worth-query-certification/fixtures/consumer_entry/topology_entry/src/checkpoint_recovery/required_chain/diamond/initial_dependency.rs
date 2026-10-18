@@ -36,7 +36,10 @@ fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
         profile,
         4096,
         128 * 1024 * 1024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -149,7 +152,10 @@ fn an_initial_consumer_finishes_the_requested_middle_before_its_own_decision() {
         profile,
         4096,
         128 * 1024 * 1024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         super::super::source_world::seed,
     );
     let (scope, principal) = authenticate(&application);

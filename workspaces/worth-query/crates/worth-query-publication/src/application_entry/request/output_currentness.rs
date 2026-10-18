@@ -1,6 +1,5 @@
 //! Current-output lineage admission at one caller-selected retained observation.
 use super::super::WorthQueryApplicationRetainedRequest;
-use std::num::NonZeroUsize;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 /// Why an output currentness check refused: the retained observation could not be
@@ -34,7 +33,7 @@ where
         settlement: &crate::application_entry::WorthQueryApplicationProgramOutputSettlement<
             RootQuery,
         >,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.application
             .with_application_advancement(self.scope, |phase| {
@@ -49,7 +48,7 @@ where
     pub fn require_current_output_demand<Query>(
         &self,
         settlement: &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<Query>,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.require_current_output_settlements([settlement.retained()], maximum_work)
     }
@@ -57,7 +56,7 @@ where
     fn require_current_output_settlements<'settlement>(
         &self,
         settlements: impl IntoIterator<Item = &'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.application
             .with_application_advancement(self.scope, |phase| {
@@ -77,7 +76,7 @@ where
             '_,
         >,
         settlements: impl IntoIterator<Item = &'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         let selected = self
             .application

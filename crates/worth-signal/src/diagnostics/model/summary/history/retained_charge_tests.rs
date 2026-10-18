@@ -60,8 +60,12 @@ fn recorded_history_charge_tracks_capacity_without_double_charging_inline_summar
         .unwrap()
         .artifact_family_basis = Some(ArtifactFamilyId::new(family));
     assert_eq!(small, large);
-    let small_charge = small.retained_heap_charge(&mut Work::new(1000)).unwrap();
-    let large_charge = large.retained_heap_charge(&mut Work::new(1000)).unwrap();
+    let small_charge = small
+        .retained_heap_charge(&mut Work::new(Some(1000)))
+        .unwrap();
+    let large_charge = large
+        .retained_heap_charge(&mut Work::new(Some(1000)))
+        .unwrap();
     assert_eq!(
         large_charge.bytes() - small_charge.bytes(),
         (vector_delta + cause_delta + family_delta) as u64
@@ -80,13 +84,15 @@ fn recorded_summary_append_admits_exact_bytes_and_work_then_evicts_with_live_cus
     let summary = recorded_summary();
     let original: DiagnosticHistory<_> = [summary.clone()].into_iter().collect();
     let old_charge = original
-        .prepare_retained_charge(&mut Work::new(1000))
+        .prepare_retained_charge(&mut Work::new(Some(1000)))
         .unwrap();
     let incoming = summary.clone();
-    let incoming_heap = incoming.retained_heap_charge(&mut Work::new(1000)).unwrap();
+    let incoming_heap = incoming
+        .retained_heap_charge(&mut Work::new(Some(1000)))
+        .unwrap();
     let exact = two_frame_charge(old_charge, &incoming);
     let mut admitted = original.clone();
-    let mut work = Work::new(1000);
+    let mut work = Work::new(Some(1000));
     admitted
         .append_with_retained_capacity(incoming, exact, &mut work)
         .unwrap();
@@ -95,7 +101,7 @@ fn recorded_summary_append_admits_exact_bytes_and_work_then_evicts_with_live_cus
     let incoming = summary.clone();
     let exact_candidate = two_frame_charge(old_charge, &incoming);
     exact_work
-        .append_with_retained_capacity(incoming, exact_candidate, &mut Work::new(visits))
+        .append_with_retained_capacity(incoming, exact_candidate, &mut Work::new(Some(visits)))
         .unwrap();
     assert_eq!(admitted, exact_work);
     assert_eq!(admitted.prepared_retained_charge().unwrap(), exact);
@@ -112,7 +118,7 @@ fn recorded_summary_append_admits_exact_bytes_and_work_then_evicts_with_live_cus
         };
         let node_allocation = incoming.nodes.as_ptr();
         let (returned, denial) = rejected
-            .append_with_retained_capacity(incoming, maximum, &mut Work::new(limit))
+            .append_with_retained_capacity(incoming, maximum, &mut Work::new(Some(limit)))
             .unwrap_err();
         assert_eq!(returned, summary);
         assert_eq!(returned.nodes.as_ptr(), node_allocation);
@@ -132,7 +138,7 @@ fn recorded_summary_append_admits_exact_bytes_and_work_then_evicts_with_live_cus
         assert_eq!(denial, expected_denial);
     }
     let removed = admitted
-        .evict_front_with_retained_charge(&mut Work::new(1000))
+        .evict_front_with_retained_charge(&mut Work::new(Some(1000)))
         .unwrap()
         .unwrap();
     assert!(std::ptr::eq(
@@ -161,6 +167,10 @@ fn two_frame_charge(old_charge: Charge, incoming: &ExecutionHistorySummary) -> C
         .unwrap()
         .checked_add(arc_allocation_charge::<ExecutionHistorySummary>().unwrap())
         .unwrap()
-        .checked_add(incoming.retained_heap_charge(&mut Work::new(1000)).unwrap())
+        .checked_add(
+            incoming
+                .retained_heap_charge(&mut Work::new(Some(1000)))
+                .unwrap(),
+        )
         .unwrap()
 }

@@ -26,7 +26,7 @@ fn selected_attempt_work_is_not_replenished_before_application_or_finalization()
         let mut budget = graph
             .installed_runtime_policy()
             .conditional_evaluation_budget();
-        budget.maximum_attempt_visits = maximum;
+        budget.maximum_attempt_visits = Some(maximum);
         graph.set_runtime_policy(
             SignalRuntimePolicy::forensic().with_conditional_evaluation_budget(budget),
         );
@@ -34,7 +34,7 @@ fn selected_attempt_work_is_not_replenished_before_application_or_finalization()
         // Use explicit bounded setup work; the installed attempt budget remains
         // the short allowance exercised below, including its one-visit twin.
         let mut setup_work =
-            crate::data::retained_storage::RetainedStoragePreparation::new(100_000);
+            crate::data::retained_storage::RetainedStoragePreparation::new(Some(100_000));
         let basis = crate::data::graph::storage::execution_basis::SignalExecutionBasis::capture(
             &mut graph,
             &mut setup_work,
@@ -130,7 +130,7 @@ fn selected_attempt_work_is_not_replenished_before_application_or_finalization()
 fn completed_attempt_visits() -> (usize, usize, usize) {
     let (mut graph, contract) = installed();
     graph.set_runtime_policy(SignalRuntimePolicy::forensic());
-    let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(1_000_000);
+    let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(Some(1_000_000));
     // Measure the retained storage representation used by the native twin.
     // Its immutable base plus overlay require different lookup work from an
     // exclusive graph, even when their logical dependency sets are identical.
@@ -169,4 +169,42 @@ fn completed_attempt_visits() -> (usize, usize, usize) {
         crate::data::conditional_execution::SignalConditionalAttemptOutcome::Completed(Ok(_))
     ));
     (draft_visits, engine, work.visits())
+}
+
+#[test]
+fn default_attempt_without_work_ceiling_publishes_real_conditional_output() {
+    let serial = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let (mut graph, contract) = installed();
+    assert_eq!(
+        graph
+            .installed_runtime_policy()
+            .conditional_evaluation_budget()
+            .maximum_attempt_visits,
+        None
+    );
+    let evidence = graph
+        .execute_installed_conditional(
+            worth_execution::ExecutionRequest::serial(&serial),
+            SignalConditionalExecutionRequest::new(&contract, "unbounded-work", "conditional", 1),
+            &mut NoPredicate,
+            &mut DefaultComparatorPolicyResolver::default(),
+            || Ok(output(9)),
+        )
+        .unwrap();
+    assert_eq!(
+        evidence.class(),
+        SignalConditionalDecisionClass::ComputedChanged
+    );
+    assert_eq!(
+        graph
+            .node_version_for_scope(contract.node(), Aspect::new(0), None)
+            .unwrap(),
+        9
+    );
 }

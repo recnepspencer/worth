@@ -17,7 +17,10 @@ pub(super) fn admit(
         )
     };
     let maximum_key_work = key_bytes.checked_mul(4).ok_or_else(exhausted)?;
-    if admission.remaining_work_amount() < maximum_key_work.saturating_add(3) {
+    if admission
+        .remaining_work_amount()
+        .is_some_and(|remaining| remaining < maximum_key_work.saturating_add(3))
+    {
         return Err(exhausted());
     }
     Ok(())
@@ -35,7 +38,7 @@ mod tests {
         // Four comparisons plus three visits cost 4294967299, above u32::MAX
         // and below the exact remainder 1099511627759 after the prior debit.
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: maximum,
+            maximum_work_visits: Some(maximum),
             maximum_preparation_bytes: 0,
         });
         admission.charge_external_work(17).unwrap();
@@ -45,7 +48,7 @@ mod tests {
         );
         assert_eq!(
             admission.remaining_work_amount(),
-            1_099_511_627_759,
+            Some(1_099_511_627_759),
             "the key-work comparison retains the exact u64 remainder"
         );
         assert_eq!(

@@ -22,9 +22,10 @@ pub struct WorthQueryInvariantProjectionWork {
 pub(super) struct WorthQueryInvariantProjectionWorkBudget {
     remaining: Option<usize>,
     exceeded: bool,
-    /// While one owner call of a partitioned computation holds the reader:
-    /// the least remaining work any of its preflights or charges left.
-    call_floor: Option<usize>,
+    overflowed: bool,
+    consumed: usize,
+    /// Start and maximum preflight demand of the current owner call.
+    call: Option<(usize, usize)>,
 }
 
 impl WorthQueryInvariantProjectionWork {
@@ -162,7 +163,9 @@ impl WorthQueryInvariantProjectionWorkBudget {
         Self {
             remaining: None,
             exceeded: false,
-            call_floor: None,
+            overflowed: false,
+            consumed: 0,
+            call: None,
         }
     }
 
@@ -170,12 +173,19 @@ impl WorthQueryInvariantProjectionWorkBudget {
         Self {
             remaining: Some(maximum),
             exceeded: false,
-            call_floor: None,
+            overflowed: false,
+            consumed: 0,
+            call: None,
         }
     }
 
     pub(super) fn can_afford(&mut self, maximum_work: usize) -> bool {
         if self.exceeded {
+            return false;
+        }
+        if self.consumed.checked_add(maximum_work).is_none() {
+            self.overflowed = true;
+            self.exceeded = true;
             return false;
         }
         if self
@@ -185,45 +195,48 @@ impl WorthQueryInvariantProjectionWorkBudget {
             self.exceeded = true;
             return false;
         }
-        // Either the remaining work covers the preflight, or nothing bounds it.
-        if let Some(left) = self.remaining().checked_sub(maximum_work) {
-            self.lower_call_floor(left);
+        self.record_call_demand(maximum_work);
+        true
+    }
+
+    #[must_use]
+    pub(super) fn consume(&mut self, actual_work: usize) -> bool {
+        if !self.can_afford(actual_work) {
+            return false;
+        }
+        self.consumed += actual_work;
+        if let Some(remaining) = self.remaining.as_mut() {
+            *remaining = remaining
+                .checked_sub(actual_work)
+                .expect("provider work was preflighted before execution");
         }
         true
     }
 
-    pub(super) fn consume(&mut self, actual_work: usize) {
-        let Some(remaining) = self.remaining.as_mut() else {
-            return;
-        };
-        *remaining = remaining
-            .checked_sub(actual_work)
-            .expect("provider work was preflighted before execution");
-        let left = *remaining;
-        self.lower_call_floor(left);
-    }
-
-    fn lower_call_floor(&mut self, left: usize) {
-        if let Some(floor) = &mut self.call_floor {
-            *floor = (*floor).min(left);
+    fn record_call_demand(&mut self, maximum_work: usize) {
+        if let Some((start, demand)) = &mut self.call {
+            let needed = self
+                .consumed
+                .checked_sub(*start)
+                .and_then(|spent| spent.checked_add(maximum_work));
+            if let Some(needed) = needed {
+                *demand = (*demand).max(needed);
+            } else {
+                // The call cannot be carried when its charge is unrepresentable.
+                self.call = None;
+            }
         }
     }
 
-    /// Begins one owner call: from here the budget remembers how low its
-    /// preflights and charges took the remaining work.
     pub(super) fn begin_call(&mut self) {
-        self.call_floor = Some(self.remaining());
+        self.call = Some((self.consumed, 0));
     }
 
-    /// Ends the call begun last, when it started with `remaining_at_start`.
-    /// Returns the work it needed remaining at its start to pass every
-    /// preflight, and the work it consumed.
-    pub(super) fn end_call(&mut self, remaining_at_start: usize) -> Option<(usize, usize)> {
-        let floor = self.call_floor.take()?;
-        Some((
-            remaining_at_start.checked_sub(floor)?,
-            remaining_at_start.checked_sub(self.remaining())?,
-        ))
+    /// Required finite allowance and actual charge, independent of whether
+    /// this execution selected a work ceiling.
+    pub(super) fn end_call(&mut self) -> Option<(usize, usize)> {
+        let (start, demand) = self.call.take()?;
+        Some((demand, self.consumed.checked_sub(start)?))
     }
 
     /// Charges a call an earlier run made over the same facts, as if it were
@@ -231,25 +244,59 @@ impl WorthQueryInvariantProjectionWorkBudget {
     /// what it consumed through the budget's one checked spend. False,
     /// charging nothing, when it would not pass.
     pub(super) fn carry(&mut self, demand: usize, consumed: usize) -> bool {
-        if self.exceeded || self.remaining() < demand || consumed > demand {
+        if self.exceeded
+            || self.remaining.is_some_and(|remaining| remaining < demand)
+            || consumed > demand
+        {
             return false;
         }
-        self.consume(consumed);
-        true
+        if self.consumed.checked_add(demand).is_none() {
+            self.overflowed = true;
+            self.exceeded = true;
+            return false;
+        }
+        self.consume(consumed)
+    }
+
+    pub(super) const fn overflowed(&self) -> bool {
+        self.overflowed
+    }
+
+    pub(super) fn mark_overflowed(&mut self) {
+        self.overflowed = true;
+        self.exceeded = true;
     }
 
     pub(super) fn mark_exceeded(&mut self) {
         self.exceeded = true;
     }
 
-    pub(super) const fn remaining(&self) -> usize {
-        match self.remaining {
-            Some(remaining) => remaining,
-            None => usize::MAX,
-        }
+    pub(super) const fn remaining(&self) -> Option<usize> {
+        self.remaining
     }
 
     pub(super) const fn exceeded(&self) -> bool {
         self.exceeded
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::WorthQueryInvariantProjectionWorkBudget as Budget;
+
+    #[test]
+    fn absent_projection_work_keeps_unrepresentable_charges_owned_and_refused() {
+        let mut work = Budget::unbounded();
+        assert!(work.consume(usize::MAX));
+        assert!(!work.consume(1));
+        assert_eq!(work.consumed, usize::MAX);
+        assert_eq!(work.remaining(), None);
+        assert!(work.exceeded());
+        assert!(work.overflowed());
+        let mut carried = Budget::unbounded();
+        assert!(carried.consume(usize::MAX));
+        assert!(!carried.carry(1, 1));
+        assert!(carried.overflowed());
+        assert_eq!(carried.consumed, usize::MAX);
     }
 }

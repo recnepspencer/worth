@@ -105,7 +105,7 @@ fn prove_shapes(shapes: impl IntoIterator<Item = (usize, usize)>) {
             }
         }
         let (paid, report) = execution
-            .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+            .run(ExecutionWorkCeiling::new(None), |_| {
                 runtime.index_authority().refresh_for_basis(
                     request.clone(),
                     &basis,
@@ -241,7 +241,7 @@ fn prove_commit_paths(
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let (prepared, report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime.index_authority().prepare_for_candidate(
                 &mut candidate,
                 &request.index_ids,
@@ -291,7 +291,7 @@ fn prove_commit_paths(
         }
     }
     let (reconstructed, report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime.index_authority().reconstruct_for_commit(
                 execution,
                 request.clone(),

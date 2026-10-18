@@ -123,7 +123,7 @@ fn native_region_retains_the_whole_admitted_enclosing_backing_charge() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), payload.len() as u64, 1),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), payload.len() as u64, Some(1)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

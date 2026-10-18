@@ -61,7 +61,7 @@ fn lease<'a>(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, ceiling),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, Some(ceiling)),
             ),
             deadline: None,
             cancellation,

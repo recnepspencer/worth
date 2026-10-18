@@ -12,7 +12,7 @@ pub(super) fn presentation_async_resources() -> runtime::WorthQueryConditionalEx
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
             maximum_retained_slots: SOURCE_GRAPH_RETAINED_SLOTS,
             maximum_retained_bytes: SOURCE_GRAPH_RETAINED_BYTES,
-            maximum_attempt_visits: SOURCE_GRAPH_CAPTURE_VISITS,
+            maximum_attempt_visits: Some(SOURCE_GRAPH_CAPTURE_VISITS),
         },
     )
 }

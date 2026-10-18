@@ -162,7 +162,7 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
         let limits = WorthQueryApplicationLiveLimits::bounded(
             controls.buffer_capacity(),
             controls.maximum_materialized_record_count().get(),
-            controls.maximum_work_per_delivery().get(),
+            Some(controls.maximum_work_per_delivery().get()),
         );
         let request = self
             .runtime

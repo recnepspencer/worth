@@ -114,10 +114,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
         let mut admission = self.dependency_retention_admission();
         for observed in std::iter::once(set.source()).chain(source.observed_sources()) {
-            execution
-                .allocation_policy()
-                .check_live()
-                .map_err(storage)?;
+            check_request(&execution)?;
             admit_descriptor(&mut admission, observed)?;
             self.validate_dependency(observed, true)?;
             let original = set.source();
@@ -134,9 +131,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             }
         }
         retain_descriptors(
-            std::iter::once(set.source()).chain(source.observed_sources()),
+            std::iter::once(std::iter::once(set.source()).chain(source.observed_sources())),
             count,
-            execution.allocation_policy(),
+            &execution,
         )
     }
 
@@ -156,10 +153,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .map_err(execution_denial)?;
         let mut admission = self.dependency_retention_admission();
         let count = parts.clone().try_fold(0usize, |count, part| {
-            execution
-                .allocation_policy()
-                .check_live()
-                .map_err(storage)?;
+            check_request(&execution)?;
             admission.charge_external_work(1).map_err(|_| {
                 source_denial(WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded)
             })?;
@@ -168,20 +162,14 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })
         })?;
         for part in parts.clone() {
+            check_request(&execution)?;
             for source in part.sources.elements() {
-                execution
-                    .allocation_policy()
-                    .check_live()
-                    .map_err(storage)?;
+                check_request(&execution)?;
                 admit_descriptor(&mut admission, source)?;
                 self.validate_dependency(source, false)?;
             }
         }
-        retain_descriptors(
-            parts.flat_map(|part| part.sources.elements()),
-            count,
-            execution.allocation_policy(),
-        )
+        retain_descriptors(parts.map(|part| part.sources.elements()), count, &execution)
     }
 
     fn dependency_retention_admission(&self) -> crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission{
@@ -191,10 +179,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .output_demand_resource_profile()
             .limits()
             .source_currentness_work();
-        self.request_admission(
-            std::num::NonZeroUsize::new(maximum)
-                .expect("installed positive finite comparison work"),
-        )
+        self.request_admission(maximum)
     }
 
     fn validate_dependency<Query>(
@@ -259,16 +244,35 @@ fn admit_descriptor<Query>(
 
 // Only validated native descriptors reach this storage owner. Original complete
 // owners stay borrowed throughout the exact allocation and each fallible move.
-fn retain_descriptors<'a, Query: 'a>(
-    sources: impl Iterator<Item = &'a WorthQueryObservedSource<Query>>,
+fn retain_descriptors<'a, Query: 'a, Part>(
+    parts: impl IntoIterator<Item = Part>,
     count: usize,
-    policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial> {
-    let mut array = ExecutionArrayBuilder::allocate(count, policy).map_err(storage)?;
-    for source in sources {
-        array.push(source.retyped()).map_err(storage)?;
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial>
+where
+    Part: IntoIterator<Item = &'a WorthQueryObservedSource<Query>>,
+{
+    check_request(execution)?;
+    let mut array =
+        ExecutionArrayBuilder::allocate(count, execution.allocation_policy()).map_err(storage)?;
+    for part in parts {
+        check_request(execution)?;
+        for source in part {
+            check_request(execution)?;
+            array.push(source.retyped()).map_err(storage)?;
+        }
     }
+    check_request(execution)?;
     Ok(WorthQueryRetainedQueryDependencies {
         sources: array.seal().map_err(storage)?,
     })
+}
+
+fn check_request(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
+    use crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_checkpoint_stop;
+    execution
+        .check_live()
+        .map_err(|cause| execution_denial(advancement_checkpoint_stop(cause)))
 }

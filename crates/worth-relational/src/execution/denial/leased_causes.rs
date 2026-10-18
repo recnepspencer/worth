@@ -17,7 +17,7 @@ fn request(
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             determinism,
-            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, work),
+            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, Some(work)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

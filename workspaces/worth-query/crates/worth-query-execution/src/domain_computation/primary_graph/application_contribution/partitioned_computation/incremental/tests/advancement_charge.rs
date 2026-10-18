@@ -68,7 +68,7 @@ fn a_public_nested_map_cost_cannot_be_retained_as_owner_steps() {
             Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
             &request,
             RuntimeWorldExecutionPlacement::Serial(policy),
-            Some(u64::MAX),
+            None,
         )
     };
     let plain = billed();

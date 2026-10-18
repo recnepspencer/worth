@@ -229,7 +229,7 @@ fn execute_result(
             ApplicationQueryParameterSet::<GovernedAccountOmissionQuery>::new(),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
-                NonZeroUsize::new(256).unwrap(),
+                Some(NonZeroUsize::new(256).unwrap()),
                 &request,
             ),
         )

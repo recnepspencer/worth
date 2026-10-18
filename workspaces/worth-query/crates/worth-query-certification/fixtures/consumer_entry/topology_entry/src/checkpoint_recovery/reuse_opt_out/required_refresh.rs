@@ -37,7 +37,7 @@ fn one_binding_with_both_postures_keeps_a_distinct_preserve_row() {
                 phase,
                 &source.observed_sources()[0],
                 "planar",
-                4096,
+                std::num::NonZeroUsize::new(4096),
             )
             .map_err(Box::new)
     })

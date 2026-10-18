@@ -150,7 +150,7 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
         WorthQueryProductWorldClock::start(),
         super::super::WorthQueryInvalidationResources::install(
             super::super::WorthQueryInvalidationResourceInstallation {
-                maximum_marking_work: 1_000_000,
+                maximum_marking_work: None,
                 maximum_preparation_bytes: 64 * 1_024 * 1_024,
                 maximum_retained_bytes: 128 * 1_024 * 1_024,
                 maximum_retained_positions: 128,
@@ -163,7 +163,7 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
                 64 * 1_024 * 1_024,
-                8_000_000,
+                Some(8_000_000),
             ),
         ),
     )

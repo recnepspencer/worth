@@ -160,7 +160,7 @@ fn ordinary_complete_tree_escapes_scope_resumes_reads_current_and_closes() {
             .at(&observation)
             .require_current_program_output(
                 settled.settlement(),
-                NonZeroUsize::new(1_000_000).unwrap(),
+                Some((NonZeroUsize::new(1_000_000).unwrap()).get()),
             )
             .unwrap();
         drop((read, observation));

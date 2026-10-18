@@ -7,7 +7,11 @@ pub(crate) fn with_bootstrap_request<R>(
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 128 * 1024 * 1024, 16_000_000),
+        ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            128 * 1024 * 1024,
+            Some(16_000_000),
+        ),
     );
     worth_query_host::facade::application_contribution::with_bootstrap_advancement(
         policy,

@@ -152,7 +152,7 @@ impl RealReferenceFixture {
                 worth_foundational::ExecutionBudget::new(
                     std::num::NonZeroUsize::MIN,
                     1 << 20,
-                    10_000,
+                    Some(10_000),
                 ),
             ),
         )

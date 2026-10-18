@@ -54,7 +54,7 @@ fn lease(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), MEMORY, work),
+                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), MEMORY, Some(work)),
             ),
             deadline: None,
             cancellation,

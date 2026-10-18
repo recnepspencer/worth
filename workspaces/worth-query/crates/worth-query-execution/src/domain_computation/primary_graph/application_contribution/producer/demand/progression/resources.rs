@@ -25,7 +25,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     producer_identity: &str,
     limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    if resources.work() > limits.producer_work() {
+    if limits
+        .producer_work()
+        .is_some_and(|maximum| resources.work().is_none_or(|work| work > maximum))
+    {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
             producer_identity.to_owned(),
@@ -53,16 +56,16 @@ mod tests {
     fn child_resource_admission_uses_producer_allowance_not_source_scan_allowance() {
         let child = WorthQueryOutputDemandResourceProfile::standard()
             .limits()
-            .for_artifact(7, 11);
+            .for_artifact(Some(7), 11);
         assert!(validate_retained_resources(
-            WorthQueryProducerDemandResources::new(7, 11),
+            WorthQueryProducerDemandResources::new(Some(7), 11),
             "child",
             child,
         )
         .is_ok());
         assert_eq!(
             validate_retained_resources(
-                WorthQueryProducerDemandResources::new(8, 11),
+                WorthQueryProducerDemandResources::new(Some(8), 11),
                 "child",
                 child,
             )
@@ -72,7 +75,7 @@ mod tests {
         );
         assert_eq!(
             validate_retained_resources(
-                WorthQueryProducerDemandResources::new(7, 12),
+                WorthQueryProducerDemandResources::new(Some(7), 12),
                 "child",
                 child,
             )
@@ -80,6 +83,6 @@ mod tests {
             .kind(),
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         );
-        assert_eq!(child.source_currentness_work(), 4_194_304);
+        assert_eq!(child.source_currentness_work(), None);
     }
 }

@@ -52,7 +52,7 @@ fn index_builds_use_the_memory_ceiling_of_their_request() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, 4096, 1_000_000),
+                    ExecutionBudget::new(NonZeroUsize::MIN, 4096, Some(1_000_000)),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),

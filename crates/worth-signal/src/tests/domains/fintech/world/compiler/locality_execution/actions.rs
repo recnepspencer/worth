@@ -206,7 +206,7 @@ impl CompiledFinancialLocalityWorld {
                 worth_foundational::ExecutionBudget::new(
                     admission.policy.budget().max_workers(),
                     self.resources.wave_memory_bytes,
-                    self.resources.maximum_work,
+                    Some(self.resources.maximum_work),
                 ),
             );
             let lease = authority()

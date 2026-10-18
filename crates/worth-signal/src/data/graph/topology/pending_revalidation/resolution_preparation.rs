@@ -279,12 +279,13 @@ impl ResolutionPreparation<'_, '_> {
         let Some(pending) = node.pending.as_mut() else {
             return Ok(false);
         };
-        self.work
-            .reserve_visits(pending.unresolved_producers().len().checked_mul(2).ok_or(
-                RetainedStoragePreparationDenial::WorkExhausted {
-                    maximum_visits: self.work.maximum_visits(),
-                },
-            )?)?;
+        self.work.reserve_visits(
+            pending
+                .unresolved_producers()
+                .len()
+                .checked_mul(2)
+                .ok_or(RetainedStoragePreparationDenial::ChargeOverflow)?,
+        )?;
         pending.resolve_producer(producer);
         if !pending.is_resolved() || pending.requires_structural_recompute() {
             return Ok(false);

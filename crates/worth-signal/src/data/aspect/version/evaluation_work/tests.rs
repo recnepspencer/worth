@@ -111,11 +111,11 @@ fn subtree_write_reaches_unseen_deep_leaf_and_survives_fork_and_json() {
 fn admission_counts_each_prefix_and_rejects_one_visit_short() {
     let regions = [ChangedRegion::exact(path(8, "leaf"))];
     let map = PartitionVersionOverrides::default();
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     map.admit_evaluation_work(&regions, &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
     let cost = measured.visits();
-    let mut short = Work::new(cost - 1);
+    let mut short = Work::new(Some(cost - 1));
     assert!(map
         .admit_evaluation_work(&regions, &mut EvaluationWork::Conditional(&mut short))
         .is_err());

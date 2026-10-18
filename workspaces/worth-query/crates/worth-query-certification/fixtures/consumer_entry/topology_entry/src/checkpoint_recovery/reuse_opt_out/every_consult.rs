@@ -43,7 +43,7 @@ fn whole_selection_preserves_cancellation_at_every_consult() {
                                 &phase,
                                 &source.observed_sources()[0],
                                 "planar-final",
-                                4096,
+                                std::num::NonZeroUsize::new(4096),
                             )
                             .map(|selected| selected.applicability().lifecycle())
                             .map_err(|denied| denied.kind())

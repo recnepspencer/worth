@@ -87,7 +87,7 @@ fn discovered_currentness_dependent_membership_empty_and_deep() {
             .at(aggregate.observation())
             .require_current_discovered_program_outputs(
                 &aggregate,
-                comparison_work(&world.application),
+                Some((comparison_work(&world.application)).get()),
             )
             .unwrap();
         let original_members = request
@@ -125,7 +125,10 @@ fn discovered_currentness_dependent_membership_empty_and_deep() {
         for (_, root) in aggregate.root_outputs() {
             request
                 .at(&current)
-                .require_current_output_demand(root, comparison_work(&world.application))
+                .require_current_output_demand(
+                    root,
+                    Some((comparison_work(&world.application)).get()),
+                )
                 .unwrap();
         }
         stale(
@@ -133,14 +136,14 @@ fn discovered_currentness_dependent_membership_empty_and_deep() {
                 .at(&current)
                 .require_current_discovered_program_outputs(
                     &aggregate,
-                    comparison_work(&world.application),
+                    Some((comparison_work(&world.application)).get()),
                 ),
         );
         request
             .at(aggregate.observation())
             .require_current_discovered_program_outputs(
                 &aggregate,
-                comparison_work(&world.application),
+                Some((comparison_work(&world.application)).get()),
             )
             .unwrap();
         assert_eq!(

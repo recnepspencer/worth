@@ -78,7 +78,7 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, 1024),
+                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, Some(1024)),
             ),
             cancellation: worth_execution::CancellationToken::new(),
             deadline: None,

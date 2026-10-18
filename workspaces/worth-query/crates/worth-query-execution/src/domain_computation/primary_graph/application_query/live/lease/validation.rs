@@ -75,7 +75,10 @@ fn validate_live_envelope_controls(
             subject,
         ));
     }
-    if controls.maximum_work_per_delivery().get() as u64 > installed_work {
+    if controls
+        .maximum_work_per_delivery()
+        .is_some_and(|work| work.get() as u64 > installed_work)
+    {
         return Err(open_denial(
             WorthQueryApplicationLiveOpenDenialKind::WorkLimitExceedsInstalled,
             subject,

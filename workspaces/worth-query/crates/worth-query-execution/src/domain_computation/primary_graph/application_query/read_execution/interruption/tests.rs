@@ -107,7 +107,7 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
                     ApplicationQueryParameterSet::new()
                         .bind(status_parameter(), "open".to_owned())
                         .unwrap(),
-                    WorthQueryProductQueryControls::new(nz(10), nz(10_000), &request),
+                    WorthQueryProductQueryControls::new(nz(10), Some(nz(10_000)), &request),
                 )
                 .unwrap()
         })
@@ -225,7 +225,7 @@ fn direct_query_admission_cannot_bypass_host_work_policy() {
                     ApplicationQueryParameterSet::new()
                         .bind(status_parameter(), "open".to_owned())
                         .unwrap(),
-                    WorthQueryProductQueryControls::new(nz(10), nz(101), &request),
+                    WorthQueryProductQueryControls::new(nz(10), Some(nz(101)), &request),
                 )
                 .err()
                 .expect("lower admission must enforce the host guard without front-door help")

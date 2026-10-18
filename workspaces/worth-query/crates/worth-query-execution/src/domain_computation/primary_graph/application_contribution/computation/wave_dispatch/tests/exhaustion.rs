@@ -37,9 +37,10 @@ fn request_exhaustion_reports_the_declared_prefix_at_every_width() {
             let (settled, report) = root
                 .execution_request()
                 .unwrap()
-                .run(worth_execution::ExecutionWorkCeiling::new(admitted), |_| {
-                    dispatch(&root, members)
-                })
+                .run(
+                    worth_execution::ExecutionWorkCeiling::new(Some(admitted)),
+                    |_| dispatch(&root, members),
+                )
                 .unwrap();
             assert_eq!(settled.len(), prefix + 1);
             assert!(matches!(&settled[prefix], Err(WorthQueryAdvancementDenial::Resource(

@@ -23,7 +23,7 @@ pub(super) fn select_root_path_union(
     result_buffer: &mut crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
     capture_result_set: bool,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: usize,
+    maximum_work: Option<usize>,
     interruption: super::super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
@@ -297,7 +297,7 @@ fn read_governed_root_guard(
     entity_kind: worth_relational::facade::identity::KindId,
     locator: &worth_foundational::facade::AspectFieldLocator,
     expected: &worth_foundational::facade::AspectValue,
-    maximum_work: usize,
+    maximum_work: Option<usize>,
 ) -> Result<
     worth_relational::facade::runtime::BoundedFrontierFieldEqualityTruthRead,
     worth_relational::facade::runtime::BoundedFrontierReadStop<

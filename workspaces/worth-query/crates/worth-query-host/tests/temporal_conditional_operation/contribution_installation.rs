@@ -73,7 +73,7 @@ impl ApplicationDerivedArtifact<TemporalHostSchema, TemporalInstallationFeature>
         )];
     const REUSE_RULE: &'static str = "worth.query.host.temporal-same-basis.v1";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(64, 1_024);
+        ApplicationArtifactResourceCeiling::new(Some(64), 1_024);
     const STOPPED_OUTCOME: &'static str = "worth.query.host.temporal-artifact-stopped.v1";
 }
 

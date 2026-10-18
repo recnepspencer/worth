@@ -39,7 +39,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             let mut entity_records_examined = 0_usize;
             for entity_id in entity_ids {
                 charge_frontier_field_work(
-                    maximum_work_units,
+                    Some(maximum_work_units),
                     entity_records_examined,
                     matching_entity_ids.len(),
                 )?;
@@ -57,7 +57,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     continue;
                 }
                 charge_frontier_field_work(
-                    maximum_work_units,
+                    Some(maximum_work_units),
                     entity_records_examined,
                     matching_entity_ids.len(),
                 )?;
@@ -117,11 +117,13 @@ impl FrontierFieldEqualityTruthReadLimitExceeded {
 }
 
 fn charge_frontier_field_work(
-    maximum_work_units: usize,
+    maximum_work_units: Option<usize>,
     entity_records_examined: usize,
     matching_entity_ids_reserved: usize,
 ) -> Result<(), FrontierFieldEqualityTruthReadLimitExceeded> {
-    if entity_records_examined.saturating_add(matching_entity_ids_reserved) >= maximum_work_units {
+    if maximum_work_units.is_some_and(|maximum| {
+        entity_records_examined.saturating_add(matching_entity_ids_reserved) >= maximum
+    }) {
         Err(FrontierFieldEqualityTruthReadLimitExceeded::new(
             entity_records_examined,
             matching_entity_ids_reserved,
@@ -142,7 +144,7 @@ impl ProjectionRecordReader<'_> {
         field_locator: &AspectFieldLocator,
         expected: &AspectValue,
         version_id: crate::identity::data::VersionId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         BoundedFrontierFieldEqualityTruthRead,
         BoundedFrontierReadStop<FrontierFieldEqualityTruthReadLimitExceeded, E>,

@@ -86,9 +86,10 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
         );
         let request = worth_execution::ExecutionRequest::serial(&host);
         let (answer, _) = request
-            .run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
-                port.observe(&request)
-            })
+            .run(
+                worth_execution::ExecutionWorkCeiling::new(Some(ceiling)),
+                |_| port.observe(&request),
+            )
             .unwrap();
         let graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) = answer else {
             panic!("clock answer")

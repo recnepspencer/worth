@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
-use std::{num::NonZeroUsize, sync::OnceLock};
+use std::sync::OnceLock;
 
 use super::*;
 use crate::domain_computation::primary_graph::{
@@ -47,7 +47,6 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
             native_output_witness: Some(account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity)),
             consumed_nothing: true,
             verification_requirement: None,
-            work: 0,
         };
         let recorded = || {
             matches!(
@@ -56,9 +55,11 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
             )
         };
         assert!(!recorded());
-        let least = (1..=owner.edit_admission().remaining_work())
+        // Search the smallest explicit caller restriction on the same row;
+        // the installed default has no finite upper bound.
+        let least = (1usize..)
             .find(|&work| {
-                let mut request = owner.edit_admission_within(NonZeroUsize::new(work).unwrap());
+                let mut request = owner.edit_admission_with_work_limit(Some(work));
                 selected
                     .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, &mut request)
                     .is_ok()
@@ -133,9 +134,11 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
             )
         };
         assert!(!recorded());
-        let least = (1..=owner.edit_admission().remaining_work())
+        // Search the smallest explicit caller restriction on the same row;
+        // the installed default has no finite upper bound.
+        let least = (1usize..)
             .find(|&work| {
-                let mut request = owner.edit_admission_within(NonZeroUsize::new(work).unwrap());
+                let mut request = owner.edit_admission_with_work_limit(Some(work));
                 verify(&mut request) == Ok(ConsumedOutputVerification::Current)
             })
             .expect("some meter verifies the output");
@@ -173,10 +176,8 @@ fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
         Some(FullVerificationReason::CheckpointRestore),
         Arc::new(head),
     );
-    let mut exhausted = owner.edit_admission();
-    exhausted
-        .charge_external_work(exhausted.remaining_work_amount())
-        .unwrap();
+    let mut exhausted = owner.edit_admission_with_work_limit(Some(1));
+    exhausted.charge_external_work(1).unwrap();
     assert_eq!(
         restored.establish_restored_before_commit(
             request_execution,

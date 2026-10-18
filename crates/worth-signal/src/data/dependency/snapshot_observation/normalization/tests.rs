@@ -93,14 +93,14 @@ fn normalization_uses_shared_work_before_copying_or_sorting() {
             source
         };
         let before = source.entries().to_vec();
-        let mut measured = Work::new(100_000_000);
+        let mut measured = Work::new(Some(100_000_000));
         let expected = source
             .clone()
             .canonicalize_with_work(&mut EvaluationWork::Conditional(&mut measured))
             .unwrap();
         let cost = measured.visits();
         for available in [cost - 1, cost] {
-            let mut work = Work::new(cost + 11);
+            let mut work = Work::new(Some(cost + 11));
             work.reserve_visits(cost + 11 - available).unwrap();
             let result = source
                 .clone()

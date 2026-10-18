@@ -31,7 +31,7 @@ fn conditional_shape_lookup_uses_exact_shared_work_on_retained_storage() {
         .execute(&mut graph, |selected| {
             let (_, id) = selected.node_dependency_ids(consumer).unwrap();
             let expected = selected.dependency_snapshot_shape_handle(id);
-            let mut measured = Work::new(100_000);
+            let mut measured = Work::new(Some(100_000));
             assert_eq!(
                 selected
                     .dependency_snapshot_shape_handle_for_evaluation(
@@ -43,7 +43,7 @@ fn conditional_shape_lookup_uses_exact_shared_work_on_retained_storage() {
             );
             let cost = measured.visits();
             for available in [cost - 1, cost] {
-                let mut work = Work::new(cost + 7);
+                let mut work = Work::new(Some(cost + 7));
                 work.reserve_visits(cost + 7 - available).unwrap();
                 let result = selected.dependency_snapshot_shape_handle_for_evaluation(
                     id,
@@ -72,7 +72,7 @@ fn conditional_shape_lookup_denies_missing_indexes_without_reconstructing() {
         let expected = graph
             .dependency_snapshot_shape_handle_for_evaluation(
                 id,
-                &mut EvaluationWork::Conditional(&mut Work::new(100_000)),
+                &mut EvaluationWork::Conditional(&mut Work::new(Some(100_000))),
             )
             .unwrap();
         // Native serde reconstitution deliberately omits derived indexes.
@@ -94,7 +94,7 @@ fn conditional_shape_lookup_denies_missing_indexes_without_reconstructing() {
         assert!(before.is_err());
         let result = graph.dependency_snapshot_shape_handle_for_evaluation(
             id,
-            &mut EvaluationWork::Conditional(&mut Work::new(100_000)),
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(100_000))),
         );
         assert_eq!(result, Err(SignalError::SnapshotIndexUnavailable));
         assert_eq!(

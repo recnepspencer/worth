@@ -69,7 +69,7 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
         let (settled, _) = root
             .execution_request()
             .unwrap()
-            .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+            .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                 wave_dispatch::dispatch(&root, members)
             })
             .unwrap();

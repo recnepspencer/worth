@@ -44,6 +44,7 @@ pub(in crate::history) use reachability::{
 pub(crate) use reservation::ReservedCompositeCommitCapacity;
 use support::{lock_state, prevalidate_candidate_prefix, remove_installed, validate_owner};
 pub use traversal::CompositeHistoryTraversal;
+pub(crate) use traversal::HistoryTraversalControl;
 
 /// Installed limits consumed by the immutable history owner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

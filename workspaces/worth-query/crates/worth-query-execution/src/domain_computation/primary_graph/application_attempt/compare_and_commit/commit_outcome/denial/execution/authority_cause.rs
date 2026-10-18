@@ -59,7 +59,7 @@ mod tests {
         world.application.with_application_advancement(&scope, |phase| {
             let observer = crate::test_read_stops::observe_consults_for_test(|_| {});
             let execution = phase.borrowed_request_for_test();
-            let (outcome, _) = execution.run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
+            let (outcome, _) = execution.run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
                 world.application.compare_and_commit_application_in_advancement(&phase, program, idempotency(202, 203), worth_execution::ExecutionAllocationPolicy::SystemAllocation)
             }).unwrap();
             let charges = crate::test_read_stops::charged_prefixes_for_test(&observer).into_iter().map(|(_, required)| required).collect();

@@ -129,7 +129,7 @@ macro_rules! retained_status {
             fn advance(
                 self,
                 request: &WorthQueryApplicationRequest<'_, '_, '_, WorthUiApplicationSchema>,
-                history: NonZeroUsize,
+                history: Option<NonZeroUsize>,
             ) -> (Self, Result<Step, WorthUiStatusMutationStop>) {
                 let Self::Pending(mut operation) = self else {
                     return match self {
@@ -202,7 +202,7 @@ impl NativeCustody {
     pub(super) fn advance(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, WorthUiApplicationSchema>,
-        history: NonZeroUsize,
+        history: Option<NonZeroUsize>,
     ) -> (Self, Result<Step, WorthUiStatusMutationStop>) {
         match self {
             Self::Source(state) => {

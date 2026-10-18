@@ -211,7 +211,12 @@ fn append_feature_outputs(
             ApplicationSemanticFamily::Resources,
             subject,
             framed_fields([
-                ("work", resources.maximum_work().to_string()),
+                (
+                    "work",
+                    resources
+                        .maximum_work()
+                        .map_or_else(|| "absent".to_owned(), |work| work.to_string()),
+                ),
                 ("bytes", resources.maximum_retained_bytes().to_string()),
             ]),
         ));

@@ -34,9 +34,7 @@ impl NodeArena {
         .and_then(|steps| steps.checked_mul(3))
         .and_then(|steps| steps.checked_mul(indices.len()))
         .ok_or(RetainedNodeEditDenial::Accounting(
-            RetainedStoragePreparationDenial::WorkExhausted {
-                maximum_visits: work.maximum_visits(),
-            },
+            RetainedStoragePreparationDenial::ChargeOverflow,
         ))?;
         work.reserve_visits(lookups)
             .map_err(RetainedNodeEditDenial::Accounting)?;

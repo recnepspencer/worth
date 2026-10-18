@@ -13,7 +13,11 @@ fn with_backings(mut run: impl FnMut(&ExecutionRequest<'_, '_>)) {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), MEMORY, 100_000),
+                ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(1).unwrap(),
+                    MEMORY,
+                    Some(100_000),
+                ),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

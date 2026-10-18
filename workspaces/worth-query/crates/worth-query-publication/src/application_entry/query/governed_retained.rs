@@ -87,7 +87,7 @@ where
             Some((results, work)) => self
                 .application
                 .resolve_application_query_limits(binding.limits())
-                .narrow(results, work)
+                .narrow(results, Some(work))
                 .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?,
             None => self
                 .application

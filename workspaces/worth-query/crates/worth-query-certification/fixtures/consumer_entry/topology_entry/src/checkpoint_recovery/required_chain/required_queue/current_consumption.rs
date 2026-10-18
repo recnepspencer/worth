@@ -13,7 +13,10 @@ fn a_current_caller_is_accepted_before_fresh_queue_handler_contact() {
             4096,
             support::invalidation(
                 128 * 1024 * 1024,
-                profile.limits().source_currentness_work() as u64,
+                profile
+                    .limits()
+                    .source_currentness_work()
+                    .map(|work| work as u64),
                 4096,
             ),
         ),

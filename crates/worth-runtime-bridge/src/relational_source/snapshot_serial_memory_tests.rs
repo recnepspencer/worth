@@ -21,7 +21,7 @@ fn snapshot_serial_memory_is_refused_after_scope_admission() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 4096, 1000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 4096, Some(1000)),
     );
     let serial = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
     let request = ExecutionRequest::serial(&serial);

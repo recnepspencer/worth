@@ -6,10 +6,9 @@ use worth_relational::facade::runtime::{
     AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection as NativeDirection,
 };
 
-// A relation-pair read has no declared traversal bound, so use a fixed small
-// ceiling, never a limit inferred from its matched pair count. A broader
-// outgoing revision may over-invalidate but covers pair presence and ABA.
-const MAXIMUM_PAIR_REBASE_WORK: usize = 64;
+// The native revision is one selected owner-index lookup; it does not walk
+// the adjacency population. It covers pair presence and ABA.
+const NATIVE_REVISION_LOOKUP_WORK: usize = 1;
 
 #[cfg(test)]
 pub(super) fn rebase_decision_adjacency(
@@ -17,7 +16,7 @@ pub(super) fn rebase_decision_adjacency(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: Fact,
-    admitted_work: usize,
+    admitted_work: Option<usize>,
 ) -> Fact {
     let endpoints = prepare_endpoints(&fact, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap();
     prepare_decision_adjacency(
@@ -37,12 +36,12 @@ pub(super) fn prepare_decision_adjacency(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: &Fact,
-    admitted_work: usize,
+    admitted_work: Option<usize>,
     prepared_endpoints: Option<
         crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
     >,
 ) -> Result<Option<Fact>, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
-    if admitted_work == 0 {
+    if admitted_work == Some(0) {
         return Ok(None);
     }
     let (relation_kind, anchor, direction, limit) = match fact {
@@ -54,7 +53,9 @@ pub(super) fn prepare_decision_adjacency(
             *relation_kind,
             *from,
             NativeDirection::Outgoing,
-            MAXIMUM_PAIR_REBASE_WORK.min(admitted_work),
+            admitted_work.map_or(NATIVE_REVISION_LOOKUP_WORK, |maximum| {
+                NATIVE_REVISION_LOOKUP_WORK.min(maximum)
+            }),
         ),
         Fact::Adjacency {
             relation_kind,
@@ -71,7 +72,9 @@ pub(super) fn prepare_decision_adjacency(
                 *relation_kind,
                 *anchor,
                 native_direction,
-                (*maximum_work_units).min(admitted_work),
+                admitted_work.map_or(*maximum_work_units, |maximum| {
+                    (*maximum_work_units).min(maximum)
+                }),
             )
         }
         _ => return Ok(None),
@@ -148,7 +151,7 @@ mod tests {
     fn admission(work: u64) -> crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission{
         crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: work,
+                maximum_work_visits: Some(work),
                 maximum_preparation_bytes: 1024 * 1024,
             },
         )
@@ -194,7 +197,7 @@ mod tests {
             let snapshot = selected.application_basis().snapshot_handle();
             let mut zero_work = admission(0);
             assert!(matches!(
-                rebase_decision_adjacency(&host_custody.borrowed_request_for_test(), runtime, snapshot, fact.clone(), 64),
+                rebase_decision_adjacency(&host_custody.borrowed_request_for_test(), runtime, snapshot, fact.clone(), Some(64)),
                 Fact::SourceAdjacencyRevision {
                     comparison_work_limit: 64,
                     native_revision: Some(_),
@@ -209,7 +212,7 @@ mod tests {
                         super::super::PreparedSourceFactRebase::admit(vec![fact], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
                         &std::collections::BTreeSet::new(),
                         true,
-                        0,
+                        Some(0),
                         &mut zero_work
                     ),
                     super::super::RebasedSourceFacts::VerificationRequired { .. }
@@ -233,7 +236,7 @@ mod tests {
                         .unwrap(),
                     &std::collections::BTreeSet::new(),
                     true,
-                    64,
+                    Some(64),
                     &mut producer_work,
                 ),
                 super::super::RebasedSourceFacts::VerificationRequired { .. }
@@ -246,7 +249,7 @@ mod tests {
                     .unwrap(),
                 &std::collections::BTreeSet::new(),
                 false,
-                64,
+                Some(64),
                 &mut ordinary_work,
             ) {
                 super::super::RebasedSourceFacts::Exact(facts) => {

@@ -118,7 +118,7 @@ fn cancelled_certification_does_not_clone_before_admission() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 1 << 20, 100),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 1 << 20, Some(100)),
             ),
             deadline: None,
             cancellation: cancellation.token(),

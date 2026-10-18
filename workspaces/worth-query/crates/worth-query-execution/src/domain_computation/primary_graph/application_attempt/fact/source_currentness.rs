@@ -96,12 +96,35 @@ impl WorthQueryApplicationObservedFact {
         if matches!(self, Self::Field { .. } | Self::AbsentField { .. }) {
             return Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable));
         }
+        if let Self::Relation {
+            relation_kind,
+            from,
+            to,
+            matching_relations,
+        } = self
+        {
+            return self.compare_relation(
+                runtime,
+                execution,
+                snapshot,
+                admission,
+                *relation_kind,
+                *from,
+                *to,
+                matching_relations,
+            );
+        }
         let most = self.most_comparison_work();
-        let reserved_work = most.unwrap_or(usize::MAX).min(admission.remaining_work());
-        let reserved = admission.reserve_external_work(
+        let reserved_work = match (most, admission.remaining_work()) {
+            (Some(fact), Some(request)) => Some(fact.min(request)),
+            (fact, request) => fact.or(request),
+        };
+        let reserved_work =
+            reserved_work.expect("non-relation facts carry their structural comparison bound");
+        let reserved = admission.reserve_external_work(Some(
             u64::try_from(reserved_work)
                 .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
-        )?;
+        ))?;
         if matches!(self, Self::IndexedEntitySelection { .. }) {
             let mut remaining = reserved_work;
             let comparison = super::indexed_entity_selection::currentness_with_remaining(
@@ -128,7 +151,7 @@ impl WorthQueryApplicationObservedFact {
                 }
             };
         }
-        let comparison = self.comparison(runtime, execution, snapshot, reserved_work);
+        let comparison = self.comparison(runtime, execution, snapshot, Some(reserved_work));
         match comparison {
             Ok((equal, work)) => {
                 reserved.settle(
@@ -147,6 +170,44 @@ impl WorthQueryApplicationObservedFact {
             }
         }
     }
+    #[allow(clippy::too_many_arguments)]
+    fn compare_relation(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        admission: &mut InvalidationEditAdmission,
+        kind: worth_relational::facade::identity::KindId,
+        from: worth_relational::facade::identity::EntityId,
+        to: worth_relational::facade::identity::EntityId,
+        expected: &[worth_relational::facade::identity::RelationId],
+    ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
+    {
+        let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+            return Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable));
+        };
+        admission.charge_external_work(1)?;
+        let mut stopped = None;
+        let read = view.bounded_outgoing_relations_of_kind_admitted(
+            execution, from, kind, None, |units| admission.charge_external_work(units)
+                .map_err(|stop| { stopped = Some(stop);
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted }),
+        );
+        if let Some(stop) = stopped {
+            return Err(stop);
+        }
+        let read = read
+            .map_err(CompanionPreflightStop::Execution)?
+            .expect("this scan's work is admitted by the original meter, with no second ceiling");
+        let records = read.into_records();
+        let actual = records
+            .iter()
+            .filter(|relation| relation.target == to)
+            .map(|relation| relation.relation_id);
+        Ok(Ok(FactMovement::from_equal(
+            actual.eq(expected.iter().copied()),
+        )))
+    }
 }
 
 #[cfg(test)]
@@ -162,8 +223,10 @@ impl WorthQueryApplicationObservedFact {
     ) -> Result<(FactMovement, usize), WorthQuerySourceCurrentnessFailure> {
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: u64::try_from(maximum_work)
-                    .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?,
+                maximum_work_visits: Some(
+                    u64::try_from(maximum_work)
+                        .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?,
+                ),
                 maximum_preparation_bytes: 0,
             },
         );
@@ -192,9 +255,11 @@ fn comparison_work_failure(
     admission: &InvalidationEditAdmission,
 ) -> Result<WorthQuerySourceCurrentnessFailure, CompanionPreflightStop> {
     if most.is_none_or(|most| reserved < most) {
-        let maximum = admission
-            .charged_work()
-            .saturating_add(admission.remaining_work_amount());
+        let maximum = admission.charged_work().saturating_add(
+            admission
+                .remaining_work_amount()
+                .expect("a refused request allowance is finite"),
+        );
         Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum })
     } else {
         Ok(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
@@ -238,19 +303,19 @@ mod tests {
         ] {
             let mut admission = InvalidationEditAdmission::new(
                 worth_relational::facade::mvcc::CompanionPreflightBudget {
-                    maximum_work_visits: maximum,
+                    maximum_work_visits: Some(maximum),
                     maximum_preparation_bytes: 0,
                 },
             );
             admission.charge_external_work(prior).unwrap();
             {
                 let _reservation = admission
-                    .reserve_external_work(u64::from(u32::MAX))
+                    .reserve_external_work(Some(u64::from(u32::MAX)))
                     .unwrap();
             }
             let paid = prior + u64::from(u32::MAX);
             assert_eq!(admission.charged_work(), paid);
-            assert_eq!(admission.remaining_work_amount(), maximum - paid);
+            assert_eq!(admission.remaining_work_amount(), Some(maximum - paid));
             if maximum > u64::from(u32::MAX) && prior == 0 {
                 assert!(
                     maximum - paid > u64::from(u32::MAX),

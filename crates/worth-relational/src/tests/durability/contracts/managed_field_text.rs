@@ -168,7 +168,7 @@ fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_i
                 worth_foundational::ExecutionBudget::new(
                     std::num::NonZeroUsize::new(1).unwrap(),
                     1,
-                    1_000_000,
+                    Some(1_000_000),
                 ),
             ),
             deadline: None,

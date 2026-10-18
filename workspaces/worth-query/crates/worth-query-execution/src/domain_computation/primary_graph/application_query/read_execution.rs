@@ -98,7 +98,7 @@ pub(super) fn read_bounded_root_rows<
     >,
     result_buffer: WorthQueryApplicationResultBufferReservation,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: usize,
+    maximum_work: Option<usize>,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     let read = read_plan::ReadPlan::of(plan);
     let pinned = pin_runtime_read(
@@ -128,7 +128,7 @@ pub(super) fn read_prepared_root_rows(
     plan: &read_plan::ReadPlan<'_>,
     mut result_buffer: WorthQueryApplicationResultBufferReservation,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: usize,
+    maximum_work: Option<usize>,
     interruption: ReadInterruption<'_>,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     entry_observation::record_kernel_entry(plan.root);
@@ -156,14 +156,14 @@ pub(super) fn read_prepared_root_rows(
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
         selection.root_path_source.as_ref(),
-        maximum_work.saturating_sub(selection.work_units),
+        maximum_work.map(|maximum| maximum.saturating_sub(selection.work_units)),
         ResultTreeCollectionSelection::Complete,
         interruption,
         &mut result_buffer,
         spent,
     )?;
     let actual_work = selection.work_units.saturating_add(tree.work_units);
-    if actual_work > maximum_work {
+    if maximum_work.is_some_and(|maximum| actual_work > maximum) {
         return Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
             plan.name,

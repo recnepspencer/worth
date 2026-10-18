@@ -26,7 +26,7 @@ fn charge_overflow_cannot_become_a_small_admissible_value() {
 
 fn charge<T: RetainedStorageMeasurement>(value: &T) -> u64 {
     value
-        .retained_heap_charge(&mut RetainedStoragePreparation::new(1000))
+        .retained_heap_charge(&mut RetainedStoragePreparation::new(Some(1000)))
         .unwrap()
         .bytes()
 }
@@ -58,10 +58,10 @@ fn retained_charge_sees_hidden_base_payloads_after_override_and_removal() {
 fn preparation_bounds_nested_work_and_never_returns_a_partial_charge() {
     let values: PersistentVector<Vec<String>> =
         [vec![String::from("payload")]].into_iter().collect();
-    let mut exact = RetainedStoragePreparation::new(4);
+    let mut exact = RetainedStoragePreparation::new(Some(4));
     assert!(values.retained_heap_charge(&mut exact).is_ok());
     assert_eq!(exact.visits(), 4);
-    let mut insufficient = RetainedStoragePreparation::new(3);
+    let mut insufficient = RetainedStoragePreparation::new(Some(3));
     assert_eq!(
         values.retained_heap_charge(&mut insufficient),
         Err(RetainedStoragePreparationDenial::WorkExhausted { maximum_visits: 3 })

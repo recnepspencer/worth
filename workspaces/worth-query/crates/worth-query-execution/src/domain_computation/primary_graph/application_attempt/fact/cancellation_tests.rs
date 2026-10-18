@@ -96,7 +96,7 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
                     relation_kind,
                     anchor,
                     direction,
-                    32,
+                    Some(32),
                 )
                 .unwrap_err(),
                 adjacency::observe_adjacency_checked(
@@ -241,7 +241,7 @@ fn source_currentness_keeps_a_stop_raised_inside_the_indexed_read() {
         let mut admission =
             crate::domain_computation::primary_graph::InvalidationEditAdmission::new(
                 worth_relational::facade::mvcc::CompanionPreflightBudget {
-                    maximum_work_visits: 1_000_000,
+                    maximum_work_visits: Some(1_000_000),
                     maximum_preparation_bytes: 64 << 20,
                 },
             );

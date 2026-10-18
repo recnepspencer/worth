@@ -26,7 +26,7 @@ impl CustomInvariantRule for ReadsSummary {
             },
             display_name: Arc::from(self.id),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
                 access: crate::validation::data::CustomInvariantAccessContract {
                     read_entity_kinds: if self.allow_read {
                         vec![KindId(1)]

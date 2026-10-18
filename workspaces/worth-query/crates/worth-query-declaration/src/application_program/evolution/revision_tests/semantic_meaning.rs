@@ -32,7 +32,7 @@ impl ApplicationDerivedArtifact<RevisionSchema, BoundedFeature> for MeaningArtif
         &[ApplicationArtifactDependency::new(BoundedFeature::IDENTITY)];
     const REUSE_RULE: &'static str = "worth.query.tests.semantic-meaning-reuse.v1";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(8, 4_096);
+        ApplicationArtifactResourceCeiling::new(Some(8), 4_096);
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.semantic-meaning-stopped.v1";
 }
 

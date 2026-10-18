@@ -25,7 +25,7 @@ fn request(width: usize) -> ExecutionResourceLease<'static> {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), MEMORY, 100),
+                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), MEMORY, Some(100)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

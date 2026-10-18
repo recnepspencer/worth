@@ -12,8 +12,6 @@
 //! its history and holds none of it, so a retired commit's replay still
 //! returns its receipt and never runs the request again.
 
-use std::num::NonZeroUsize;
-
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationHistorySelectionDenial, WorthQueryApplicationMutationOutcome,
     WorthQueryApplicationReadObservation, WorthQueryApplicationRequestExt,
@@ -32,8 +30,6 @@ use super::document_retention_model::retention_entry::{DocumentRetentionRead, DO
 use super::document_retention_model::schema::DocumentRetentionSchema;
 
 type Runtime = WorthQueryPrimaryGraphApplicationRuntime<DocumentRetentionSchema>;
-
-const WORK: NonZeroUsize = NonZeroUsize::new(64).unwrap();
 
 /// The settled head and the parent the settling request's basis still held.
 const SETTLED_WINDOW: usize = 2;
@@ -54,8 +50,8 @@ fn commit(
 /// that history still reaches the branch's first commit.
 fn retained_history(runtime: &Runtime, branch: WorthQueryProductBranch) -> (usize, bool) {
     let history = runtime
-        .branches()
-        .history(branch, WORK)
+        .with_host_advancement(|phase| runtime.branches().history(&phase, branch, None))
+        .expect("the installed host supplies fresh history authority")
         .expect("a live branch exposes its history");
     (history.visited_count(), history.is_complete())
 }
@@ -92,7 +88,7 @@ fn read_at_commit(
             runtime
                 .request(&principal, &scope)
                 .on_branch(branch)
-                .at_commit(&host_phase, receipt, WORK)
+                .at_commit(&host_phase, receipt, None)
                 .expect("a held receipt keeps its commit selectable")
                 .query(DocumentRetentionRead {
                     identity: DOCUMENT_IDENTITY.to_owned(),
@@ -117,7 +113,7 @@ fn selectable(
             runtime
                 .request(&principal, &scope)
                 .on_branch(branch)
-                .at_commit(&host_phase, receipt, WORK)
+                .at_commit(&host_phase, receipt, None)
         })
         .expect("installed host call opens")
     {

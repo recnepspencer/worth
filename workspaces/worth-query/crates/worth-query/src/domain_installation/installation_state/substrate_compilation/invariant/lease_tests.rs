@@ -149,7 +149,7 @@ fn commit(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, MEMORY_BYTES, UNBOUNDED_WORK),
+                ExecutionBudget::new(NonZeroUsize::MIN, MEMORY_BYTES, Some(UNBOUNDED_WORK)),
             ),
             deadline: None,
             cancellation: cancellation.token(),
@@ -166,7 +166,7 @@ fn commit(
         ExecutionRequest::serial(&serial)
     };
     let (result, report) = request
-        .run(ExecutionWorkCeiling::new(ceiling), |_| {
+        .run(ExecutionWorkCeiling::new(Some(ceiling)), |_| {
             if cancel {
                 cancellation.cancel();
             }

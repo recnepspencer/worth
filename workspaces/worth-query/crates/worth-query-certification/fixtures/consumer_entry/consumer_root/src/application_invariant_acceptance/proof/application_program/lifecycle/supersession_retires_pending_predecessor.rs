@@ -82,7 +82,7 @@ pub(in super::super) fn supersession_retires_pending_predecessor(
         .expect("installed host call opens");
     request
         .at(&previous_basis)
-        .require_current_program_output(&settled, comparison_work)
+        .require_current_program_output(&settled, Some((comparison_work).get()))
         .expect("settled output is current at its retained product basis");
     let _changed_source = perform(&request, &world.application, "anchor-a", 6, 10_111);
     let current_basis = world
@@ -92,13 +92,13 @@ pub(in super::super) fn supersession_retires_pending_predecessor(
     assert!(matches!(
         request.at(&current_basis).require_current_program_output(
             &settled,
-            comparison_work,
+            Some((comparison_work).get()),
         ),
         Err(WorthQueryOutputCurrentnessDenial::Output(denial))
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
     request
         .at(&previous_basis)
-        .require_current_program_output(&settled, comparison_work)
+        .require_current_program_output(&settled, Some((comparison_work).get()))
         .expect("a later source edit cannot rewrite a retained prior basis");
 }

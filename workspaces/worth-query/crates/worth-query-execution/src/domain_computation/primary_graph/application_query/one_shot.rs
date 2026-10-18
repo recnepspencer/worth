@@ -179,7 +179,14 @@ where
                     plan,
                     result_buffer,
                     spent,
-                    maximum_work.unwrap_or(plan.controls.maximum_work().get()),
+                    maximum_work
+                        .into_iter()
+                        .chain(
+                            plan.controls
+                                .maximum_work()
+                                .map(std::num::NonZeroUsize::get),
+                        )
+                        .min(),
                 )
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;

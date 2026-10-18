@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentity
     DependencyCanonicalizationRejected,
     MissingSourcePartition,
     LineageLookupBudgetExceeded,
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     LineageCanonicalizationRejected,
 }
 
@@ -26,6 +27,7 @@ impl<Schema, Operation, Input, Scope>
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,
         >,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         declared_key: [u8; 32],
         successor_of: Option<[u8; 32]>,
         request_admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
@@ -69,17 +71,20 @@ impl<Schema, Operation, Input, Scope>
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let head = request_admission
-            .reserved_read(|maximum_work| {
-                lineage.producer_head::<OutputBinding>(
-                    self.read_set.admission.operation_scope_binding(),
-                    self.read_set.lease.product().observation(),
-                    partition,
-                    maximum_work,
-                )
-            })
-            .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?
-            .map_err(|()| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
+        let head = lineage
+            .producer_head::<OutputBinding>(
+                self.read_set.admission.operation_scope_binding(),
+                self.read_set.lease.product().observation(),
+                partition,
+                execution,
+                request_admission,
+            )
+            .map_err(|stop| match stop {
+                worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) => {
+                    WorthQueryProducerIdentityDenial::Execution(cause)
+                }
+                _ => WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded,
+            })?;
         drop(lineage);
         let force_successor = successor_of.is_some_and(|stale_key| {
             head.as_ref()

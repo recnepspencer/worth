@@ -56,7 +56,7 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
-    assert_eq!(operation.contracts().projection_work_budget(), 32);
+    assert_eq!(operation.contracts().projection_work_budget(), Some(32));
     let admission = world
         .application
         .with_host_advancement(|phase| {

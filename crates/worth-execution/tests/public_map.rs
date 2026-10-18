@@ -16,7 +16,7 @@ fn empty_public_map_uses_no_worker_and_uninstalled_equivalence_is_denied() {
         charged_memory_bytes: Some(32),
     })
     .unwrap();
-    let budget = ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 32, 10);
+    let budget = ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 32, Some(10));
     let request = |determinism| LeaseRequest {
         policy: ExecutionRequestPolicy::new(ExecutionPosture::Automatic, determinism, budget),
         deadline: None,

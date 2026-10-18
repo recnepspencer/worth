@@ -24,7 +24,7 @@ pub(super) fn assert_closures_share_the_meter(
 ) {
     let meter = |work, bytes| {
         InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: work,
+            maximum_work_visits: Some(work),
             maximum_preparation_bytes: bytes,
         })
     };
@@ -91,9 +91,8 @@ pub(super) fn assert_carried_native_verification(
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>,
 ) {
     let retained_before = owner.resources.retained_capacity_bytes();
-    let mut request = owner.edit_admission_within(
-        std::num::NonZeroUsize::new(usize::try_from(two_closures_work + 12).unwrap()).unwrap(),
-    );
+    let mut request = owner
+        .edit_admission_with_work_limit(Some(usize::try_from(two_closures_work + 12).unwrap()));
     request.charge_external_work(5).unwrap();
     let mut publication = request
         .carry_for_publication(owner)
@@ -119,7 +118,7 @@ pub(super) fn assert_carried_native_verification(
     ));
     assert_eq!(
         request.remaining_work(),
-        0,
+        Some(0),
         "later preparation cannot remint the spent allowance"
     );
     drop(publication);
@@ -144,7 +143,7 @@ pub(super) fn assert_backing_paid_by_the_request(
     assert!(work > 0, "the request's meter pays the backing");
     let meter = |work| {
         InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: work,
+            maximum_work_visits: Some(work),
             maximum_preparation_bytes: bytes,
         })
     };

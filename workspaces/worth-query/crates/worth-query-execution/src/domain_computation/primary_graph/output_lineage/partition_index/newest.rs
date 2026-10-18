@@ -8,15 +8,15 @@ impl OutputPartitionIndex {
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         partition: [u8; 32],
-        maximum_work: usize,
+        maximum_work: Option<usize>,
     ) -> Result<(Option<(u64, usize)>, usize), ()> {
         let Some(generations) = self.generations(source, coordinate, partition) else {
-            return (maximum_work != 0).then_some((None, 1)).ok_or(());
+            return (maximum_work != Some(0)).then_some((None, 1)).ok_or(());
         };
         let mut work = 0usize;
         for (generation, slot) in generations.range(..=coordinate.generation).rev() {
             work = work.checked_add(1).ok_or(())?;
-            if work > maximum_work {
+            if maximum_work.is_some_and(|maximum| work > maximum) {
                 return Err(());
             }
             if let Some(slot) = slot.get() {
@@ -26,7 +26,9 @@ impl OutputPartitionIndex {
         if work == 0 {
             work = 1;
         }
-        (work <= maximum_work).then_some((None, work)).ok_or(())
+        (maximum_work.is_none_or(|maximum| work <= maximum))
+            .then_some((None, work))
+            .ok_or(())
     }
 
     /// The newest published generation at or below `coordinate`, for owners

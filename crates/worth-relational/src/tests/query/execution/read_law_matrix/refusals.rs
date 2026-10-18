@@ -20,7 +20,11 @@ fn admitted_lease(token: CancellationToken) -> worth_execution::ExecutionResourc
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), MEMORY, 100_000),
+                ExecutionBudget::new(
+                    std::num::NonZeroUsize::new(1).unwrap(),
+                    MEMORY,
+                    Some(100_000),
+                ),
             ),
             deadline: None,
             cancellation: token,
@@ -48,7 +52,7 @@ fn runtime_read_law_plan_absence_and_stopped_request() {
         };
         for plan in [unavailable.clone(), absent.clone()] {
             let (answer, report) = request
-                .run(ExecutionWorkCeiling::new(100_000), |_| {
+                .run(ExecutionWorkCeiling::new(Some(100_000)), |_| {
                     world
                         .runtime
                         .read_truth()
@@ -141,7 +145,7 @@ fn runtime_read_law_bounded_index_refusal_values() {
             )
             .unwrap();
             let (denial, report) = execution
-                .run(ExecutionWorkCeiling::new(100_000), |_| {
+                .run(ExecutionWorkCeiling::new(Some(100_000)), |_| {
                     world
                         .runtime
                         .index_access()

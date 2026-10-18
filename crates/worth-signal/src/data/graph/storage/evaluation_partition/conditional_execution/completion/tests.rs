@@ -50,7 +50,7 @@ fn conditional_finalizer_retains_affinity_denial_when_foreign_session_cleanup_pa
         &mut NoPredicate,
         &mut DefaultComparatorPolicyResolver::default(),
         || Err(SignalError::invalid_input("compute declined")),
-        &mut crate::data::retained_storage::RetainedStoragePreparation::new(100_000),
+        &mut crate::data::retained_storage::RetainedStoragePreparation::new(Some(100_000)),
     );
     let mut foreign = SignalGraph::new();
     let observation = foreign
@@ -72,7 +72,7 @@ fn conditional_finalizer_retains_affinity_denial_when_foreign_session_cleanup_pa
         &graph,
         observation,
         attempt,
-        &mut crate::data::retained_storage::RetainedStoragePreparation::new(100_000),
+        &mut crate::data::retained_storage::RetainedStoragePreparation::new(Some(100_000)),
     )
     else {
         panic!("cleanup must be the first panic")

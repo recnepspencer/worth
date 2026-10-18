@@ -3,7 +3,9 @@ use super::*;
 #[test]
 fn prepared_bound_covers_shared_page_clone_and_override_growth() {
     let mut values: PersistentVector<String, 8> = (0..16).map(|_| "base".to_owned()).collect();
-    values.prepare_retained_charge(&mut Work::new(100)).unwrap();
+    values
+        .prepare_retained_charge(&mut Work::new(Some(100)))
+        .unwrap();
     let base = values.fork_persistent();
     for index in 0..16 {
         // Sharing a partially populated page forces its Arc vectors to clone
@@ -13,7 +15,7 @@ fn prepared_bound_covers_shared_page_clone_and_override_growth() {
         let input = "replacement".repeat(200);
         let pointer = input.as_ptr();
         let prepared = values
-            .prepare_retained_replacement(index, input, &mut Work::new(100_000))
+            .prepare_retained_replacement(index, input, &mut Work::new(Some(100_000)))
             .unwrap();
         let required = prepared.required_charge();
         let short = required
@@ -31,7 +33,7 @@ fn prepared_bound_covers_shared_page_clone_and_override_growth() {
         assert!(values.shares_storage_with(&sibling));
         assert_eq!(values.prepared_retained_charge().unwrap(), before);
         let prepared = values
-            .prepare_retained_replacement(index, input, &mut Work::new(100_000))
+            .prepare_retained_replacement(index, input, &mut Work::new(Some(100_000)))
             .unwrap();
         assert_eq!(prepared.required_charge(), required);
         let actual = prepared.publish(required).unwrap();
@@ -40,7 +42,7 @@ fn prepared_bound_covers_shared_page_clone_and_override_growth() {
         assert_eq!(
             actual,
             values
-                .retained_heap_charge(&mut Work::new(100_000))
+                .retained_heap_charge(&mut Work::new(Some(100_000)))
                 .unwrap()
         );
         assert_eq!(sibling[index], "base");
@@ -70,10 +72,12 @@ fn preparation_and_capacity_denial_allocate_no_replacement_storage() {
         return;
     }
     let mut values: PersistentVector<String> = ["base".into()].into_iter().collect();
-    values.prepare_retained_charge(&mut Work::new(100)).unwrap();
+    values
+        .prepare_retained_charge(&mut Work::new(Some(100)))
+        .unwrap();
     let _retained = values.fork_persistent();
     let input = "replacement".repeat(200);
-    let mut work = Work::new(100_000);
+    let mut work = Work::new(Some(100_000));
     let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
     let prepared = values
         .prepare_retained_replacement(0, input, &mut work)

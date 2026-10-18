@@ -130,7 +130,7 @@ fn leased_hierarchy_candidates_match_current_edges_after_scope_replacement() {
                     |_, _, work| {
                         let mut budget = SignalPreparationBudget::for_request(4 * 1024 * 1024, Some(&lease))
                             .map_err(MapKernelFailure::Domain)?;
-                        let mut retained = crate::data::retained_storage::RetainedStoragePreparation::new(usize::MAX);
+                        let mut retained = crate::data::retained_storage::RetainedStoragePreparation::new(None);
                         let mut checkpoint = |units: usize| work.checkpoint(units as u64)
                             .map_err(|stop| crate::data::retained_storage::RetainedStoragePreparationDenial::ExecutionStopped(stop.into()));
                         let mut observed = retained.reborrow_with_checkpoint(&mut checkpoint);

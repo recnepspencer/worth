@@ -12,7 +12,7 @@ fn serial(bytes: u64) -> SerialRequest {
         &ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, bytes, 10_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, bytes, Some(10_000)),
         ),
         CancellationToken::new(),
         None,

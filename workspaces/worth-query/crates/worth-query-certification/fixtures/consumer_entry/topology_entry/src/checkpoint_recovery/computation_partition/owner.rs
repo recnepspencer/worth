@@ -205,7 +205,7 @@ pub(super) fn with_totals<Binding: RegionTotalsBinding>(
         Default::default(),
         32,
         128 * 1_024 * 1_024,
-        1_000_000,
+        Some(1_000_000),
         |graph| {
             support::seed_cycle(graph);
             facts::seed(graph, sets);

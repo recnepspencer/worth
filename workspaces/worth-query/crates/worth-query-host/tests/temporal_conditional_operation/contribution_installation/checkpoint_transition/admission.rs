@@ -25,7 +25,7 @@ fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, 1),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, Some(1)),
         ),
         deadline: None,
         cancellation,

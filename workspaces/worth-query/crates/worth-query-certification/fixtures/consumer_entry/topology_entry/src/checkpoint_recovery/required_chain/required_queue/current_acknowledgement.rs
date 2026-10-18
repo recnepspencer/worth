@@ -13,7 +13,10 @@ fn a_current_queue_root_is_acknowledged_before_a_later_publication_exhausts_work
             4096,
             support::invalidation(
                 128 * 1024 * 1024,
-                profile.limits().source_currentness_work() as u64,
+                profile
+                    .limits()
+                    .source_currentness_work()
+                    .map(|work| work as u64),
                 4096,
             ),
         ),

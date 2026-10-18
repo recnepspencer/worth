@@ -14,7 +14,7 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 20, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 20, Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let execution = phase.execution_request();

@@ -49,7 +49,7 @@ fn wave_and_member_descendants_share_the_advancements_work_ceiling() {
             bound(Some(ExecutionBudget::new(
                 NonZeroUsize::new(4).unwrap(),
                 1 << 20,
-                2 * UNITS,
+                Some(2 * UNITS),
             ))),
         );
         observation::advancement_requests_on_this_thread_for_test();
