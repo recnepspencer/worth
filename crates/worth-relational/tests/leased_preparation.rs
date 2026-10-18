@@ -5,6 +5,8 @@ mod leased_preparation_declared_index_ceiling;
 mod leased_preparation_denial_causes;
 #[path = "leased_preparation/index_budget.rs"]
 mod leased_preparation_index_budget;
+#[path = "leased_preparation/preimage.rs"]
+mod preimage;
 #[path = "../examples/support.rs"]
 mod support;
 
