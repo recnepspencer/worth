@@ -125,6 +125,7 @@ pub(super) fn prepare_commit_publication_execution(
             PreparePublicationPhaseInput {
                 required_output_publication,
                 created_entities: &created_entities,
+                created_relations: &created_relations,
                 commit_log,
                 working_state,
                 record_allocations,

@@ -4,6 +4,7 @@ mod destination_admission;
 mod fences;
 mod fixture;
 mod publication_custody;
+mod related;
 mod settlement;
 mod source_head_admission;
 use crate::durability::authority::{

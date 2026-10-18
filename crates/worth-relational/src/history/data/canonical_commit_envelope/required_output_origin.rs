@@ -7,7 +7,9 @@ use crate::identity::data::EntityId;
 use crate::transactions::data::{RecordRef, TransactionCommitError};
 
 mod payload_coverage;
+mod relations;
 use payload_coverage::{validate_created_output_payload, OutputPayloadCoverageFailure};
+use relations::CanonicalRequiredOutputRelation;
 
 /// Descriptive predecessor material, readmitted only against performed canonical
 /// ancestry, exact native operations and the current physical payload.
@@ -18,6 +20,8 @@ pub(crate) struct CanonicalRequiredOutputOrigin {
     pub(crate) producer: String,
     pub(crate) dependency_identity: [u8; 32],
     pub(crate) outputs: Vec<EntityId>,
+    // Strict current format: absence is not converted into relation authority.
+    pub(crate) relations: Vec<CanonicalRequiredOutputRelation>,
     #[serde(skip)]
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -29,17 +33,20 @@ impl PartialEq for CanonicalRequiredOutputOrigin {
             && self.producer == other.producer
             && self.dependency_identity == other.dependency_identity
             && self.outputs == other.outputs
+            && self.relations == other.relations
     }
 }
 impl Eq for CanonicalRequiredOutputOrigin {}
 
 impl CanonicalCommitEnvelope {
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn install_required_output_origin(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::runtime::RelationalPreparationRuntime,
         basis: &AdmittedRelationalBranchBasis,
         created: &crate::transactions::data::CommitCreatedEntityBindings,
+        created_relations: &crate::transactions::data::CommitCreatedRelationBindings,
         state: &crate::storage::overlay::WorkingState,
         admission: crate::mvcc::RequiredOutputPublicationAdmission,
     ) -> Result<(), TransactionCommitError> {
@@ -48,7 +55,14 @@ impl CanonicalCommitEnvelope {
                 worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                     .run_with_checkpoint(lease, None, |context| {
                         self.install_metered(
-                            runtime, basis, created, state, admission, lease, context,
+                            runtime,
+                            basis,
+                            created,
+                            created_relations,
+                            state,
+                            admission,
+                            lease,
+                            context,
                         )
                     })
             })
@@ -59,11 +73,13 @@ impl CanonicalCommitEnvelope {
         result
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn install_metered(
         &mut self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
         basis: &AdmittedRelationalBranchBasis,
         created: &crate::transactions::data::CommitCreatedEntityBindings,
+        created_relations: &crate::transactions::data::CommitCreatedRelationBindings,
         state: &crate::storage::overlay::WorkingState,
         admission: crate::mvcc::RequiredOutputPublicationAdmission,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
@@ -90,7 +106,13 @@ impl CanonicalCommitEnvelope {
                 "required-output publication installation changed before native preparation",
             ));
         }
-        let bytes = origin_retention_bytes(self, basis, proof.producer().len(), targets.len())?;
+        let bytes = origin_retention_bytes(
+            self,
+            basis,
+            proof.producer().len(),
+            targets.len(),
+            created_relations.iter().len(),
+        )?;
         context.checkpoint(bytes).map_err(origin_request)?;
         let memory = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
             .map_err(|denial| origin_request(crate::execution::denial::lease_denial(denial)))?;
@@ -164,6 +186,15 @@ impl CanonicalCommitEnvelope {
         context.checkpoint(sort_work).map_err(origin_request)?;
         outputs.sort_unstable();
         outputs.dedup();
+        let relations = relations::capture_created_relations(
+            self,
+            created,
+            created_relations,
+            state,
+            &outputs,
+            lease,
+            context,
+        )?;
         self.required_output_origin = (!outputs.is_empty()).then(|| {
             std::sync::Arc::new(CanonicalRequiredOutputOrigin {
                 commit: self.commit.clone(),
@@ -171,6 +202,7 @@ impl CanonicalCommitEnvelope {
                 producer: proof.producer().to_owned(),
                 dependency_identity: *proof.dependency_identity(),
                 outputs,
+                relations,
                 _funding: Some(memory),
             })
         });
@@ -266,6 +298,7 @@ fn origin_retention_bytes(
     basis: &AdmittedRelationalBranchBasis,
     producer_bytes: usize,
     targets: usize,
+    relations: usize,
 ) -> Result<u64, TransactionCommitError> {
     let parent_bytes = basis
         .reference()
@@ -290,6 +323,11 @@ fn origin_retention_bytes(
         })
         .and_then(|bytes| bytes.checked_add(parent_bytes?))
         .and_then(|bytes| bytes.checked_add(targets.checked_mul(std::mem::size_of::<EntityId>())?))
+        .and_then(|bytes| {
+            bytes.checked_add(
+                relations.checked_mul(std::mem::size_of::<CanonicalRequiredOutputRelation>())?,
+            )
+        })
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or_else(|| {
             origin_request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)

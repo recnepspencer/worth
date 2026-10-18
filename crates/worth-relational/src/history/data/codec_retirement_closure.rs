@@ -2,19 +2,25 @@
 
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::identity::data::{EntityId, KindId};
+use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::{CodecFieldLocus, RelationalRuntime};
 use crate::transactions::data::RecordRef;
+
+mod relations;
+
+type OutputOrigin = (
+    EntityId,
+    KindId,
+    std::sync::Arc<super::canonical_commit_envelope::CanonicalRequiredOutputOrigin>,
+);
 
 #[derive(Debug)]
 pub(crate) struct OwnedCodecRetirementClosure {
     pub(crate) entities: Vec<EntityId>,
-    origins: Vec<(
-        EntityId,
-        KindId,
-        std::sync::Arc<super::canonical_commit_envelope::CanonicalRequiredOutputOrigin>,
-    )>,
+    pub(crate) relations: Vec<RelationId>,
+    origins: Vec<OutputOrigin>,
     _memory: worth_execution::ExecutionMemoryReservation,
+    _relation_memory: worth_execution::ExecutionMemoryReservation,
 }
 
 impl OwnedCodecRetirementClosure {
@@ -172,7 +178,6 @@ fn derive_metered(
             }
         }
     }
-    refuse_incident_relations(root, &affected, context)?;
     let mut remaining = affected.clone();
     let mut visited = Vec::with_capacity(history_bound);
     let mut next = root.commit_id();
@@ -257,18 +262,20 @@ fn derive_metered(
         .len()
         .checked_mul((usize::BITS - affected.len().leading_zeros()) as usize + 1)
         .and_then(|work| work.checked_mul(2))
-        .ok_or_else(|| {
-            CodecRetirementClosureStop::Request(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
-            )
-        })?;
+        .ok_or(CodecRetirementClosureStop::Request(
+            crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+        ))?;
     charge(context, sort_work)?;
     affected.sort_unstable();
     origins.sort_unstable_by_key(|(entity, _, _)| *entity);
+    let (relations, relation_memory) =
+        relations::derive_closed_relations(runtime, root, &origins, context, lease)?;
     Ok(OwnedCodecRetirementClosure {
         entities: affected,
+        relations,
         origins,
         _memory: memory,
+        _relation_memory: relation_memory,
     })
 }
 
@@ -292,39 +299,6 @@ fn require_linear_history(envelope: &CanonicalCommitEnvelope) -> Result<(), Stri
         || !envelope.merge_base_commits.is_empty()
     {
         return Err("codec provenance does not admit merged physical output ownership".into());
-    }
-    Ok(())
-}
-
-fn refuse_incident_relations(
-    root: &crate::branch::RelationalBranchRoot,
-    closure: &[EntityId],
-    context: &mut worth_execution::MapKernelContext<'_, '_>,
-) -> Result<(), CodecRetirementClosureStop> {
-    for partition_id in root.partition_ids_iter() {
-        let partition = root
-            .partition_state(partition_id)
-            .ok_or("native relation partition missing")?;
-        for slot in partition.relation_arena.occupied_slots_iter() {
-            charge(
-                context,
-                1_usize.saturating_add(closure.len().saturating_mul(2)),
-            )?;
-            let record = partition
-                .relation_arena
-                .get_slot(slot)
-                .ok_or("native relation disappeared")?;
-            if !record.is_live() {
-                continue;
-            }
-            if record.extra().endpoints.as_ref().is_some_and(|endpoints| {
-                closure.contains(&endpoints.source) || closure.contains(&endpoints.target)
-            }) {
-                return Err(
-                    "codec retirement has unsupported incident relation consequences".into(),
-                );
-            }
-        }
     }
     Ok(())
 }

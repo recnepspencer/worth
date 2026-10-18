@@ -123,6 +123,7 @@ impl PreparedPublicationPhase {
 pub(super) struct PreparePublicationPhaseInput<'a> {
     pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
+    pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
     pub(super) commit_log: &'a mut CommitLog,
     pub(super) working_state: crate::storage::overlay::WorkingState,
     pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
@@ -146,6 +147,7 @@ pub(super) fn prepare_publication_phase(
     let PreparePublicationPhaseInput {
         required_output_publication,
         created_entities,
+        created_relations,
         commit_log,
         working_state,
         record_allocations,
@@ -175,6 +177,7 @@ pub(super) fn prepare_publication_phase(
             runtime,
             &branch_basis,
             created_entities,
+            created_relations,
             &working_state,
             admission,
         )?;

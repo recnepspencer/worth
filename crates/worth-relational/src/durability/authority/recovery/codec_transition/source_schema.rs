@@ -5,6 +5,9 @@ use crate::runtime::{CodecFieldLocus, RelationalRuntime};
 use crate::schema::data::RelationalSchemaRegistry;
 use worth_foundational::FoundationalBranchTarget;
 
+mod relation_consequences;
+pub(super) use relation_consequences::admit_retired_relation_consequences;
+
 pub(super) fn readmit_current_source_schema(
     checkpoint: &DurableCheckpoint,
     main_branch: &crate::history::data::BranchId,
@@ -62,9 +65,18 @@ pub(super) fn admit_supported_consequences<'a>(
     }
     for index in indexes {
         let unsupported = match &index.kind {
-            DerivedIndexKind::RelatedEntityOrdering { child_kind, .. } => {
-                changes.iter().any(|change| change.kind_id == *child_kind)
-            }
+            DerivedIndexKind::RelatedEntityOrdering {
+                child_kind,
+                ordering,
+                ..
+            } => changes.iter().any(|change| {
+                change.kind_id == *child_kind
+                    && ordering.iter().any(|field| {
+                        let locator = field.locator();
+                        locator.aspect().aspect_key() == &change.aspect_key
+                            && locator.field_path().fields().first() == Some(&change.field_key)
+                    })
+            }),
             DerivedIndexKind::RelationJoin(join) => changes.iter().any(|change| {
                 change.kind_id == join.shared_entity_kind()
                     || change.kind_id == join.left().external_entity_kind()

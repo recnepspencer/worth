@@ -11,8 +11,8 @@ use crate::runtime::{
     RelationalSchemaTransitionAdmissionDenialKind as Kind,
 };
 use crate::transactions::data::{
-    AspectFieldPatch, DeleteEntityIntent, EntityMutationIntent, MutationIntent,
-    UpdateEntityFieldsIntent, WorkerIntentBatch,
+    AspectFieldPatch, DeleteEntityIntent, DeleteRelationIntent, EntityMutationIntent,
+    MutationIntent, RelationMutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
 };
 
 impl DurabilityRecoveryAuthority<'_> {
@@ -140,6 +140,12 @@ impl DurabilityRecoveryAuthority<'_> {
                 deny(Kind::CodecClosureRejected, detail)
             }
         })?;
+        super::source_schema::admit_retired_relation_consequences(
+            execution,
+            self.runtime,
+            basis,
+            &retirement,
+        )?;
         let intent =
             RelationalTransactionIntent::ordinary().with_schema_transition(transition, None);
         let mut transaction = self
@@ -158,6 +164,13 @@ impl DurabilityRecoveryAuthority<'_> {
             ),
         );
         let mut batch = WorkerIntentBatch::new("recovered-derived-codec-retirement");
+        for relation_id in &retirement.relations {
+            batch = batch.push(MutationIntent::Relation(RelationMutationIntent::Delete(
+                DeleteRelationIntent {
+                    relation_id: *relation_id,
+                },
+            )));
+        }
         for entity_id in &retirement.entities {
             batch = batch.push(MutationIntent::Entity(EntityMutationIntent::Delete(
                 DeleteEntityIntent {

@@ -1,5 +1,5 @@
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::identity::data::EntityId;
+use crate::identity::data::{EntityId, RelationId};
 use crate::publication::patch::data::{
     PublishedAuthoritativePatchOperation as Operation, PublishedAuthoritativePatchValue as Value,
     RecordStructuralChange,
@@ -31,22 +31,57 @@ pub(super) fn validate_created_output_payload(
     payload: &AuthoritativeRecordAspectState,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), OutputPayloadCoverageFailure> {
+    validate_created_payload(envelope, &RecordRef::Entity(id), Some(payload), context)
+}
+
+pub(super) fn validate_created_relation_payload(
+    envelope: &CanonicalCommitEnvelope,
+    id: RelationId,
+    payload: Option<&AuthoritativeRecordAspectState>,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<(), OutputPayloadCoverageFailure> {
+    charge(context, envelope.record_allocations.len())?;
+    if envelope
+        .record_allocations
+        .iter()
+        .filter(|allocation| allocation.record() == &RecordRef::Relation(id))
+        .count()
+        != 1
+    {
+        return Err("required relation has no unique native allocation".into());
+    }
+    validate_created_payload(envelope, &RecordRef::Relation(id), payload, context)
+}
+
+fn validate_created_payload(
+    envelope: &CanonicalCommitEnvelope,
+    target: &RecordRef,
+    payload: Option<&AuthoritativeRecordAspectState>,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<(), OutputPayloadCoverageFailure> {
     charge(context, envelope.patch.authoritative_record_patches.len())?;
     let mut records = envelope
         .patch
         .authoritative_record_patches
         .iter()
-        .filter(|record| record.target == RecordRef::Entity(id));
+        .filter(|record| &record.target == target);
     let record = records
         .next()
         .ok_or("required output has no native create publication")?;
     if records.next().is_some() || record.structural_change != RecordStructuralChange::Created {
         return Err("required output lacks one complete native create publication".into());
     }
-    if record.contains_opaque_aspect || payload.aspects().is_empty() {
+    if record.contains_opaque_aspect {
         return Err(OutputPayloadCoverageFailure::Unsupported);
     }
     let operations = record.authoritative_patch.full_grammar_operations();
+    let Some(payload) = payload.filter(|payload| !payload.aspects().is_empty()) else {
+        return if matches!(target, RecordRef::Relation(_)) && operations.is_empty() {
+            Ok(())
+        } else {
+            Err(OutputPayloadCoverageFailure::Unsupported)
+        };
+    };
     for (_, present) in payload.aspects().entries() {
         let mut selected = None;
         for operation in operations {
@@ -69,6 +104,7 @@ pub(super) fn validate_created_output_payload(
         covered_value(
             present,
             selected.ok_or("required output present cell has no actual native operation")?,
+            target,
             context,
         )?;
     }
@@ -78,6 +114,7 @@ pub(super) fn validate_created_output_payload(
 fn covered_value(
     present: &ContractValidatedAspectValue,
     operation: &Operation,
+    target: &RecordRef,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), OutputPayloadCoverageFailure> {
     charge(context, 1)?;
@@ -104,7 +141,19 @@ fn covered_value(
     if identity != present.contract_identity() || revision != present.contract_revision() {
         return Err("required output operation and present contract identity differ".into());
     }
-    if !matches!(binding, AspectBinding::EntityField { .. }) {
+    if !matches!(
+        (target, binding),
+        (RecordRef::Entity(_), AspectBinding::EntityField { .. })
+            | (RecordRef::Relation(_), AspectBinding::RelationField { .. })
+            | (
+                RecordRef::Relation(_),
+                AspectBinding::RelationSourceEndpoint
+            )
+            | (
+                RecordRef::Relation(_),
+                AspectBinding::RelationTargetEndpoint
+            )
+    ) {
         return Err(OutputPayloadCoverageFailure::Unsupported);
     }
     let equal = match (operation, present.view()) {

@@ -32,6 +32,12 @@ pub(crate) struct CommitCreatedRelationBindings {
 }
 
 impl CommitCreatedRelationBindings {
+    /// Borrow the correspondence minted by native allocation, without a
+    /// caller-selected lookup or reconstruction from client keys.
+    pub(crate) fn iter(&self) -> impl ExactSizeIterator<Item = (&CreatedRelationRef, &RelationId)> {
+        self.by_exact_reference.iter()
+    }
+
     pub(crate) fn from_owner_map(
         by_create_reference: BTreeMap<CreatedRelationRef, RelationId>,
         symbols: &StringInterner,

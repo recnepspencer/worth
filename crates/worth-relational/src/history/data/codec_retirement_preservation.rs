@@ -3,16 +3,18 @@ use worth_foundational::facade::{
     AuthoritativeRecordAspectState, ContractValidatedAspectValueView,
 };
 
-use super::codec_retirement_closure::{charge, request, CodecRetirementClosureStop};
+use super::codec_retirement_closure::{
+    charge, request, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+};
 use crate::branch::RelationalBranchRoot;
-use crate::identity::data::EntityId;
+use crate::identity::data::{EntityId, RelationId};
 use crate::runtime::RecoveredCheckpointProgramActivationUpdate;
 
 pub(crate) fn validate_retired_codec_closure(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     before: &RelationalBranchRoot,
     after: &RelationalBranchRoot,
-    closure: &[EntityId],
+    closure: &OwnedCodecRetirementClosure,
     activation: &RecoveredCheckpointProgramActivationUpdate,
 ) -> Result<(), CodecRetirementClosureStop> {
     let result = execution
@@ -32,7 +34,7 @@ pub(crate) fn validate_retired_codec_closure(
 fn validate_metered(
     before: &RelationalBranchRoot,
     after: &RelationalBranchRoot,
-    closure: &[EntityId],
+    closure: &OwnedCodecRetirementClosure,
     activation: &RecoveredCheckpointProgramActivationUpdate,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<(), CodecRetirementClosureStop> {
@@ -64,7 +66,7 @@ fn validate_metered(
             return Err("codec retirement changed protected entity roster".into());
         }
         for slot in old.entity_arena.occupied_slots_iter() {
-            charge(context, 1_usize.saturating_add(closure.len()))?;
+            charge(context, 1_usize.saturating_add(closure.entities.len()))?;
             let old = old
                 .entity_arena
                 .get_slot(slot)
@@ -88,7 +90,7 @@ fn validate_metered(
                     charge(context, value.semantic_byte_width())?;
                 }
             }
-            if closure.contains(&id) {
+            if closure.entities.contains(&id) {
                 if !old.is_live()
                     || new.lifecycle()
                         != crate::storage::data::RecordLifecycleState::DeletedRetained
@@ -132,7 +134,7 @@ fn validate_metered(
             return Err("codec retirement changed protected relation roster".into());
         }
         for slot in old.relation_arena.occupied_slots_iter() {
-            charge(context, 1)?;
+            charge(context, 1_usize.saturating_add(closure.relations.len()))?;
             let old = old
                 .relation_arena
                 .get_slot(slot)
@@ -152,9 +154,18 @@ fn validate_metered(
                     charge(context, value.semantic_byte_width())?;
                 }
             }
+            let id = RelationId::new(partition_id, slot as u64, old.generation());
+            let retired = closure.relations.contains(&id);
+            if retired
+                && (!old.is_live()
+                    || new.lifecycle()
+                        != crate::storage::data::RecordLifecycleState::DeletedRetained)
+            {
+                return Err("codec retirement did not delete its exact proven relation".into());
+            }
             if old.generation() != new.generation()
                 || old.kind_id() != new.kind_id()
-                || old.lifecycle() != new.lifecycle()
+                || (!retired && old.lifecycle() != new.lifecycle())
                 || old.extra().endpoints != new.extra().endpoints
                 || old.extra().authoritative_aspect_state != new.extra().authoritative_aspect_state
             {
