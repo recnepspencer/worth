@@ -71,6 +71,18 @@ enum Form<'a> {
 }
 
 impl<'a> QueryRequestExecution<'a> {
+    /// The actual current lease funds new persistent cells; the policy is
+    /// borrowed for allocation only and is never stored in retained state.
+    pub(in crate::domain_computation::primary_graph) fn allocation_policy(
+        &self,
+    ) -> Result<worth_execution::ExecutionAllocationPolicy<'_, 'a>, Resource> {
+        match &self.form {
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
+                .as_ref()
+                .map(worth_execution::ExecutionAllocationPolicy::Execution)
+                .map_err(|e| lease_denial(*e)),
+        }
+    }
     /// The request's execution under `placement`. The request's cancellation
     /// is the one every lease and serial run observes, and its deadline is
     /// theirs.

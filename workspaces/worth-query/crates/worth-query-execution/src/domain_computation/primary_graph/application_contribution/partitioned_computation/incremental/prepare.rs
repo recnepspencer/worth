@@ -12,7 +12,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::super::request_execution::{QueryMemoryReservation, QueryRequestExecution};
+use super::super::super::request_execution::QueryRequestExecution;
 use super::super::compute::Denial;
 use super::super::gather_memory::GatheredMemory;
 use super::super::items::{item_digests, planned_items, route_item};
@@ -79,6 +79,16 @@ where
             PartitionResult = Reduced,
         >,
     {
+        if let Some(prepared) = self.prepare_rekeys(
+            owner,
+            reader,
+            execution,
+            input,
+            remaining_work,
+            declared_bytes,
+        )? {
+            return Ok(Some(prepared));
+        }
         if self.can_prepare_ranges(reader, remaining_work) {
             return self
                 .prepare_ranges(
@@ -141,13 +151,14 @@ where
         let changed = |item: &PartitionItemId| retained.digests.get(item) != digests.get(item);
         let rekeyed = |item: &PartitionItemId| changed(item) || self.moved_items.contains(item);
         let mut copy = None;
-        let mut routing_memory = execution.reserve(0).map_err(resource)?;
+        let routing_memory = execution.reserve(0).map_err(resource)?;
+        let allocation_policy = execution.allocation_policy().map_err(resource)?;
         // The routing is copied, without the items routed again, before the
         // first route changes it: a run that routes nothing again shares it.
-        let copied = |routing_memory: &mut QueryMemoryReservation| {
-            retained.routing.kept(
+        let copied = || {
+            retained.routing.kept_in(
                 |item| items.contains_key(&item) && !rekeyed(&item),
-                |bound| routing_memory.resize(bound),
+                allocation_policy,
             )
         };
         let mut item_keys = BTreeMap::new();
@@ -179,13 +190,13 @@ where
             let before = remaining_work;
             let routing = match &mut copy {
                 Some(routing) => routing,
-                None => copy.insert(copied(&mut routing_memory).map_err(resource)?),
+                None => copy.insert(copied()?),
             };
             let routed = route_item(
                 *item,
                 &key,
                 routing,
-                &mut routing_memory,
+                execution,
                 &mut remaining_work,
                 declared_bytes,
             );
@@ -229,7 +240,7 @@ where
             removed = true;
         }
         if removed && copy.is_none() {
-            copy = Some(copied(&mut routing_memory).map_err(resource)?);
+            copy = Some(copied()?);
         }
         let (routing, routing_memory) = match copy {
             Some(copy) => (Arc::new(copy), Some(routing_memory)),
@@ -245,6 +256,8 @@ where
                 .collect(),
         )
         .expect("changed routing identities remain canonical");
+        let item_calls = super::item_bounds::retain_calls(&item_keys, allocation_policy)
+            .map_err(WorthQueryPartitionedComputationDenial::from_ordered)?;
         let mut prepared = PreparedIncremental::new(
             remaining_work,
             declared_bytes,
@@ -256,8 +269,8 @@ where
                 digests,
                 membership: membership.filter(|_| measured),
                 item_bytes: super::item_bounds::items(&items),
-                item_call_bytes: super::item_bounds::calls(&item_keys),
-                item_keys: Arc::new(item_keys),
+                item_call_bytes: Some(item_calls.retained_bytes()),
+                item_keys: item_calls,
                 routing: Arc::clone(&routing),
                 routing_memory,
                 carried_membership,

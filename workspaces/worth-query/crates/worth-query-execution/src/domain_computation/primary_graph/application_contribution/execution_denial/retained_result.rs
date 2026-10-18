@@ -3,6 +3,26 @@ use super::*;
 use worth_execution::{ExecutionAllocationDenialClass, RetainedMapDenial, RetainedReduceDenial};
 
 impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
+    pub(in super::super) fn from_call_sequence(
+        cause: crate::domain_computation::primary_graph::invariant_projection::CallSequenceDenial,
+    ) -> Self {
+        match cause {
+            crate::domain_computation::primary_graph::invariant_projection::CallSequenceDenial::Resource(cause)=>Self::Resource(cause),
+            crate::domain_computation::primary_graph::invariant_projection::CallSequenceDenial::Storage(cause)=>Self::from_ordered(cause),
+        }
+    }
+    pub(in super::super) fn from_ordered(
+        denial: worth_execution::ExecutionOrderedMapDenial,
+    ) -> Self {
+        match denial {
+            worth_execution::ExecutionOrderedMapDenial::CapacityOverflow => {
+                Self::Resource(Resource::CapacityOverflow)
+            }
+            worth_execution::ExecutionOrderedMapDenial::Allocation(cause) => {
+                Self::from_retained_map(RetainedMapDenial::Allocation(cause))
+            }
+        }
+    }
     pub(in super::super) fn from_retained_run(denial: worth_execution::RetainedRunDenial) -> Self {
         use worth_execution::RetainedRunDenial as Denial;
         match denial {

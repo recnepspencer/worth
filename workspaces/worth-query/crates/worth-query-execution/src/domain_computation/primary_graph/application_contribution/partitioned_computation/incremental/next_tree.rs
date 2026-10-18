@@ -3,6 +3,10 @@
 
 mod call_recording;
 mod partition_wave;
+mod partitioning;
+pub(in super::super) use partitioning::ComputedIncremental;
+pub(super) use partitioning::NextPartitioning;
+use partitioning::Recomputed;
 mod preparation;
 mod transport;
 
@@ -39,33 +43,6 @@ use super::{CompletedComputationRetention, PriorAbsence};
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 
-/// One marked partition, gathered again for its kernel.
-struct Recomputed<Key, Gathered> {
-    value: GatheredComputationPartition<Key, Gathered>,
-    key: Arc<Key>,
-    key_bytes: u64,
-    gather: Option<ComputationCallCharge>,
-    /// The request memory keeps gathered data held while the wave borrows it.
-    memory: GatheredMemory,
-}
-
-/// The run's items, keys and routes, carried or made again.
-pub(super) struct NextPartitioning<Item> {
-    pub(super) items: Items<Item>,
-    pub(super) digests: ItemDigests,
-    /// `None` when the membership or an item's key was made again and its
-    /// charge did not measure: the run cannot be carried again.
-    pub(super) membership: Option<RetainedCall>,
-    pub(super) item_keys: Arc<BTreeMap<PartitionItemId, RetainedCall>>,
-    pub(super) item_bytes: Option<u64>,
-    pub(super) item_call_bytes: Option<u64>,
-    pub(super) routing: Arc<ComputationPartitionRouting>,
-    /// The request memory a routing the run built holds.
-    pub(super) routing_memory: Option<QueryMemoryReservation>,
-    pub(super) carried_membership: bool,
-    pub(super) carried_items: super::retained::CarriedItems,
-}
-
 /// An incremental run after `prepare`: every partition carried or gathered
 /// again, what is left of the declared work, and the prior run it carries
 /// from.
@@ -78,17 +55,10 @@ pub(in super::super) struct PreparedIncremental<Key, Item, Reduced, Gathered> {
     basis: RetainedBasis,
     prior: TypedPrior<Key, Item, Reduced>,
     validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
+    rekeyed: worth_execution::ExecutionOrderedMap<PartitionItemId, ()>,
     ranges: Option<
         Arc<crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage>,
     >,
-}
-
-/// What computing an incremental run produced.
-pub(in super::super) struct ComputedIncremental<Reduced> {
-    pub(in super::super) reduced: Reduced,
-    /// The kernels' and the combines' work, as a full run charges it.
-    pub(in super::super) computed_work: u64,
-    pub(in super::super) completed: CompletedComputationRetention,
 }
 
 impl<Key, Item, Reduced, Gathered> PreparedIncremental<Key, Item, Reduced, Gathered>
@@ -140,6 +110,7 @@ where
             prior,
             validated_at,
             ranges,
+            rekeyed,
         } = self;
         let retained = prior.typed();
         let mut remaining = remaining_work;
@@ -193,27 +164,37 @@ where
                 retained
                     .call_sequence
                     .patched(
-                        recomputed.iter().filter_map(|(id, marked)| {
-                            marked
-                                .gather
-                                .as_ref()
-                                .map(|charge| (ComputationRead::Partition(*id), charge, 0))
-                        }),
+                        rekeyed
+                            .keys()
+                            .map(|item| {
+                                let call = &next.item_keys[item];
+                                (
+                                    ComputationRead::ItemKey(*item),
+                                    &call.charge,
+                                    call.declared_units,
+                                )
+                            })
+                            .chain(recomputed.iter().filter_map(|(id, marked)| {
+                                marked
+                                    .gather
+                                    .as_ref()
+                                    .map(|charge| (ComputationRead::Partition(*id), charge, 0))
+                            })),
                         execution,
                     )
-                    .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
+                    .map_err(WorthQueryPartitionedComputationDenial::from_call_sequence)?,
             )
         } else {
             None
         };
-        let mut partitions = retained
-            .partitions
-            .fork(execution)
+        let allocation_policy = execution
+            .allocation_policy()
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+        let mut partitions = retained.partitions.fork();
         for &id in removed.as_slice() {
             partitions
-                .remove(id)
-                .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+                .remove(id, allocation_policy)
+                .map_err(WorthQueryPartitionedComputationDenial::from_ordered)?;
         }
         let mut results_held = 0_u64;
         for (identity, marked) in recomputed {
@@ -253,8 +234,8 @@ where
                         gather,
                     };
                     partitions
-                        .put(identity, partition)
-                        .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+                        .put(identity, partition, allocation_policy)
+                        .map_err(WorthQueryPartitionedComputationDenial::from_ordered)?;
                 }
                 None => gathers_measured = false,
             }
@@ -349,8 +330,7 @@ where
             patched_calls,
             gathers_measured,
             execution,
-        )
-        .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+        )?;
         let typed = next
             .membership
             .filter(|_| gathers_measured)

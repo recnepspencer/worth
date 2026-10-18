@@ -19,7 +19,7 @@ mod decision_reads;
 mod prior_output;
 
 pub(in crate::domain_computation::primary_graph) use computation_calls::{
-    CallShape, CallVisit, ComputationCallCharge, ComputationCallSequence,
+    CallSequenceDenial, CallShape, CallVisit, ComputationCallCharge, ComputationCallSequence,
 };
 pub use current_output::{
     WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,

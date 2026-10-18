@@ -8,6 +8,7 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
         let Self {
             validated_at: _,
             ranges: _,
+            rekeyed: _,
             remaining_work: _,
             declared_bytes: _,
             partitions,
@@ -44,7 +45,7 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
             items,
             digests,
             membership,
-            item_keys,
+            item_keys: _,
             routing: _,
             routing_memory: _,
             carried_membership,
@@ -71,15 +72,8 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
                     .map_or(0, |call| call.charge.additional_bytes().unwrap_or(u64::MAX)),
             );
         }
-        if !Arc::ptr_eq(item_keys, &retained.item_keys) {
-            for (item, call) in item_keys.iter() {
-                bytes = bytes.saturating_add(size_of::<(PartitionItemId, RetainedCall)>() as u64);
-                if !carried_items.contains(item) {
-                    bytes =
-                        bytes.saturating_add(call.charge.additional_bytes().unwrap_or(u64::MAX));
-                }
-            }
-        }
+        // The persistent call map owns each changed path's direct grant.
+        // Transport borrows its root; copying no entries requires no full walk.
         let explicit = match carried_items {
             super::super::retained::CarriedItems::Selected(items) => items.len(),
             super::super::retained::CarriedItems::All(_) => 0,

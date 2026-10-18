@@ -31,6 +31,11 @@ pub enum PartitionUpdateDenial {
 /// A stable item identity, independent of the partition it routes to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PartitionItemId(pub u64);
+impl crate::ChargedBytes for PartitionItemId {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
+}
 
 /// Structural work in one update. Counts exclude BTree lookup comparisons.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

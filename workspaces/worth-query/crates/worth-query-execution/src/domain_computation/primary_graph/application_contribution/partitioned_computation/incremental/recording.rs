@@ -117,7 +117,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// The completed run keeps native kernel cost receipts and its reduced tree.
     /// A context-dependent or nested kernel leaves no reusable receipt.
     /// `tree_memory` holds the tree until it is charged.
-    pub(in super::super) fn complete<Reduced>(
+    pub(in super::super) fn complete<Reduced, Stopped>(
         self,
         results: Option<worth_execution::ExecutionRetainedRun<Reduced>>,
         tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
@@ -127,7 +127,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
         report: ExecutionReport,
     ) -> Result<
         CompletedComputationRetention,
-        super::super::super::WorthQueryManagedComputationResourceDenial,
+        super::super::WorthQueryPartitionedComputationDenial<Stopped>,
     >
     where
         Item: Send + Sync + ChargedBytes + 'static,
@@ -180,13 +180,19 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                 )
             },
             execution,
-        )?;
+        )
+        .map_err(super::super::WorthQueryPartitionedComputationDenial::from_call_sequence)?;
         let item_bytes = super::item_bounds::items(&membership.1);
-        let item_call_bytes = super::item_bounds::calls(&self.item_keys);
-        let partitions = Some(super::partition_metadata::PartitionMetadata::from_recorded(
-            self.partitions,
-            execution,
-        )?);
+        let policy = execution
+            .allocation_policy()
+            .map_err(super::super::WorthQueryPartitionedComputationDenial::Resource)?;
+        let item_keys = super::item_bounds::retain_calls(&self.item_keys, policy)
+            .map_err(super::super::WorthQueryPartitionedComputationDenial::from_ordered)?;
+        let item_call_bytes = Some(item_keys.retained_bytes());
+        let partitions = Some(
+            super::partition_metadata::PartitionMetadata::from_recorded(self.partitions, policy)
+                .map_err(super::super::WorthQueryPartitionedComputationDenial::from_ordered)?,
+        );
         let (routing, routing_memory) = self.routing.unzip();
         let typed = match (self.membership, routing, partitions) {
             (Some((membership, items, digests)), Some(routing), Some(partitions))
@@ -196,7 +202,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                     items,
                     digests,
                     membership,
-                    item_keys: Arc::new(self.item_keys),
+                    item_keys,
                     item_bytes,
                     item_call_bytes,
                     call_sequence: Arc::clone(&call_sequence),

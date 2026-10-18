@@ -126,7 +126,7 @@ fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
                 )
             })
             .collect(),
-        &execution,
+        execution.allocation_policy().unwrap(),
     )
     .unwrap();
     Retained {

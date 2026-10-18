@@ -313,3 +313,22 @@ authority. Query still processes provider/session, effects and source publicatio
 metadata; membership/key changes keep full preparation, and membership changes
 and explicit tree rebuilds still construct a full shape plan.
 Native sparse advancement does not make those remaining Query paths sparse.
+
+## Funded ordered storage
+
+`ExecutionOrderedMap<K, V>` stores platform-owner metadata in canonical `K: Ord`
+order. `Clone` shares the root without allocation. `insert_cloned_in(&key,
+&value, policy)` and `remove_in(&key, policy)` admit new entries and path nodes
+before copying; refusal leaves the old root usable. Keys and values implement
+`Clone + ChargedBytes`: their cloned owned heap must fit the reported bound.
+
+Each entry/node owns its native memory reservation. Shared views keep those
+grants until their final drop, without retaining predecessor roots. The cached
+`retained_bytes()` describes complete reachable storage; it is not a charge to
+reserve again when sharing a root. `get`, `first_at_or_after` and canonical
+`iter`/`keys`/`values` borrow that backing. Storage identity confers no source,
+session, installation or successful-result authority.
+
+`KeyedPartitioner::upsert_in`, `remove_in` and explicit full `kept_in` use this
+same storage with the current allocation policy. A changed member group funds
+its copy before allocation; unchanged groups retain their original grants.

@@ -54,6 +54,25 @@ impl GatheredMemory {
             .map_err(WorthQueryPartitionedComputationDenial::Resource)
     }
 
+    /// A newly routed group admits its known member slice before collecting it.
+    pub(super) fn before_members<Stopped>(
+        &mut self,
+        execution: &QueryRequestExecution<'_>,
+        count: usize,
+    ) -> Result<(), WorthQueryPartitionedComputationDenial<Stopped>> {
+        self.before_gather(execution)?;
+        let bytes = count
+            .checked_mul(size_of::<worth_execution::PartitionItemId>())
+            .and_then(|n| n.checked_add(2 * size_of::<usize>()))
+            .and_then(|n| u64::try_from(n).ok())
+            .and_then(|n| n.checked_add(self.held.bytes()))
+            .ok_or(WorthQueryManagedComputationResourceDenial::CapacityOverflow)
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+        self.held
+            .resize(bytes)
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)
+    }
+
     /// After one gather: the partition's own bytes in place of the declared
     /// ones.
     pub(super) fn after_gather<Key, Gathered: ChargedBytes, Stopped>(

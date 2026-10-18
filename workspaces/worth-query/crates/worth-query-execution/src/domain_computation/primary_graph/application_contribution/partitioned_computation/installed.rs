@@ -240,7 +240,7 @@ where
             }
         }
         let mut routing = ComputationPartitionRouting::default();
-        let mut routing_memory = execution
+        let routing_memory = execution
             .reserve(0)
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let mut keys = BTreeMap::new();
@@ -254,7 +254,7 @@ where
                 *item,
                 &key,
                 &mut routing,
-                &mut routing_memory,
+                execution,
                 &mut remaining_work,
                 declared_bytes,
             )?;

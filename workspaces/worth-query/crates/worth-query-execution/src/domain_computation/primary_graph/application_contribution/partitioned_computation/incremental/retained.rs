@@ -8,7 +8,7 @@
 //! handle. The comparator alone decides whether its calls can be carried.
 
 use std::any::Any;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
@@ -179,6 +179,27 @@ pub(super) struct RetainedCall {
     pub(super) declared_units: u64,
 }
 
+impl worth_execution::ChargedBytes for RetainedCall {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.charge.additional_bytes().unwrap_or(u64::MAX)
+    }
+}
+impl<Key> Clone for RetainedPartition<Key> {
+    fn clone(&self) -> Self {
+        Self {
+            key: Arc::clone(&self.key),
+            key_bytes: self.key_bytes,
+            gather: self.gather.clone(),
+        }
+    }
+}
+impl<Key> worth_execution::ChargedBytes for RetainedPartition<Key> {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.key_bytes
+            .saturating_add(self.gather.additional_bytes().unwrap_or(u64::MAX))
+    }
+}
+
 /// One partition of a run.
 pub(super) struct RetainedPartition<Key> {
     pub(super) key: Arc<Key>,
@@ -195,7 +216,7 @@ pub(super) struct RetainedPartitions<Key, Item, Reduced> {
     pub(super) digests: ItemDigests,
     /// The membership's call, and the declared work its items' digests spent.
     pub(super) membership: RetainedCall,
-    pub(super) item_keys: Arc<BTreeMap<PartitionItemId, RetainedCall>>,
+    pub(super) item_keys: Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
     pub(super) item_bytes: Option<u64>,
     pub(super) item_call_bytes: Option<u64>,
     pub(super) call_sequence: Arc<
@@ -291,7 +312,7 @@ pub(super) struct CarriedCalls {
 
 pub(super) enum CarriedItems {
     Selected(BTreeSet<PartitionItemId>),
-    All(Arc<BTreeMap<PartitionItemId, RetainedCall>>),
+    All(Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>),
 }
 impl CarriedItems {
     pub(super) fn contains(&self, item: &PartitionItemId) -> bool {

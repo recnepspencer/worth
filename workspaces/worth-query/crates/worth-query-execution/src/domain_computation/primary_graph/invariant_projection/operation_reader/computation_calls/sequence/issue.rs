@@ -4,7 +4,7 @@ impl ComputationCallSequence {
     pub(in crate::domain_computation::primary_graph) fn build<'a, I>(
         calls: impl Fn() -> I,
         execution: &QueryRequestExecution<'_>,
-    ) -> Result<Arc<Self>, Resource>
+    ) -> Result<Arc<Self>, CallSequenceDenial>
     where
         I: Iterator<Item = (ComputationRead, &'a ComputationCallCharge, u64)>,
     {
@@ -28,11 +28,7 @@ impl ComputationCallSequence {
         let scratch = (count as u64)
             .checked_mul((4 * size_of::<(ComputationRead, Call)>()) as u64)
             .ok_or(Resource::CapacityOverflow)?;
-        let mut memory = execution.reserve(
-            bound(count, pairs, pairs, payload)
-                .and_then(|bytes| bytes.checked_add(scratch))
-                .ok_or(Resource::CapacityOverflow)?,
-        )?;
+        let mut memory = execution.reserve(scratch)?;
         let mut entries = Vec::new();
         let (mut count, mut pairs, mut payload) = (0_usize, 0_usize, 0_u64);
         for (read, charge, declared) in calls() {
@@ -52,9 +48,7 @@ impl ComputationCallSequence {
             let scratch = (count as u64)
                 .checked_mul((4 * size_of::<(ComputationRead, Call)>()) as u64)
                 .ok_or(Resource::CapacityOverflow)?;
-            let need = bound(count, pairs, pairs, payload)
-                .and_then(|bytes| bytes.checked_add(scratch))
-                .ok_or(Resource::CapacityOverflow)?;
+            let need = scratch;
             if need > memory.bytes() {
                 memory.resize(need)?;
             }
@@ -83,20 +77,23 @@ impl ComputationCallSequence {
                 .take_while(|(read, _)| !matches!(read, ComputationRead::Partition(_)))
                 .count(),
         });
-        let mut reached = im::OrdMap::<EntityId, im::OrdSet<usize>>::new();
+        let mut reached = ReachedCalls::default();
+        let policy = execution.allocation_policy()?;
         for (ordinal, (_, (charge, _))) in entries.iter().enumerate() {
             for entity in charge.reached.iter() {
                 observed::computation_call_reach();
-                reached.entry(*entity).or_default().insert(ordinal);
+                reached.insert(*entity, ordinal, policy)?;
             }
         }
-        let root = build(0, &entries);
-        let bytes =
-            bound(count, reached.len(), pairs, payload).ok_or(Resource::CapacityOverflow)?;
+        let root = build(0, &entries, execution)?;
         drop(entries);
-        memory.resize(bytes)?;
-        let bytes = bytes
+        drop(memory);
+        let memory = execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64)?;
+        let bytes = memory
+            .bytes()
             .checked_add(shape_bytes)
+            .and_then(|v| v.checked_add(root.as_ref().map_or(0, |n| n.bytes)))
+            .and_then(|v| v.checked_add(reached.bytes()))
             .ok_or(Resource::CapacityOverflow)?;
         Ok(Arc::new(Self {
             shape,

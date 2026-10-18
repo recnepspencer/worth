@@ -116,19 +116,12 @@ impl ComputationFactAttribution {
                 fresh.entry(read).or_default().push(key);
             }
         }
-        for read in &self.fresh_calls {
-            control.check_live()?;
-            if !prior
-                .index
-                .keys(*read)
-                .eq(fresh.get(read).into_iter().flatten().copied())
-            {
-                observation::native_completion_decline("fresh-call-keys");
-                return Ok(None);
-            }
-        }
+        let Some(prior) = prior.reattribute(&self.fresh_calls, &fresh, control)? else {
+            observation::native_completion_decline("fresh-call-key-universe");
+            return Ok(None);
+        };
         Ok(Some(NativeReadRefresh {
-            prior: prior.clone(),
+            prior,
             layout: Arc::clone(layout),
             _custody: native.clone(),
         }))

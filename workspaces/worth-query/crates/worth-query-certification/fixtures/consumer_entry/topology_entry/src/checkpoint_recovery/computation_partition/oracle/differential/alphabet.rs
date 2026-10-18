@@ -94,6 +94,7 @@ pub(in super::super) const KINDS: [Kind; 20] = [
 ];
 
 pub(in super::super) struct Lcg(pub(in super::super) u64);
+mod group_move;
 mod values;
 
 #[derive(Clone, Copy)]

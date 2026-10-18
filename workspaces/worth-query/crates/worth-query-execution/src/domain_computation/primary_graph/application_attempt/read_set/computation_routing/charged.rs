@@ -94,28 +94,16 @@ impl SealedComputationFacts {
     }
 
     pub(super) fn calculate_charged_bytes(&self) -> Option<u64> {
-        let entry = u64::try_from(
-            std::mem::size_of::<WorthQueryApplicationFactKey>()
-                + std::mem::size_of::<SealedComputationFact>(),
-        )
-        .ok()?;
         let backing = self.original.retained_resident_bytes()?.checked_add(
             self.content
                 .as_ref()
                 .map_or(Some(0), |content| content.charged_bytes())?,
         )?;
-        self.metadata.iter().try_fold(
-            self.index
-                .charged_bytes()?
-                .checked_add(backing)?
-                .checked_add(self.layout.charged_bytes()?)?
-                .checked_add(self.projection.as_ref().map_or(0, |p| p.bytes()))?,
-            |sum, (key, sealed)| {
-                super::super::super::super::fact_verification_observation::completion_metadata();
-                sum.checked_add(entry)?
-                    .checked_add(key.additional_charged_bytes())?
-                    .checked_add(sealed.additional_charged_bytes())
-            },
-        )
+        self.index
+            .charged_bytes()?
+            .checked_add(backing)?
+            .checked_add(self.layout.charged_bytes()?)?
+            .checked_add(self.projection.as_ref().map_or(0, |p| p.bytes()))?
+            .checked_add(self.metadata.retained_bytes())
     }
 }

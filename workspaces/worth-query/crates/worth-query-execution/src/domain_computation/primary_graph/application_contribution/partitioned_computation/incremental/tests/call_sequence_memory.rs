@@ -1,7 +1,6 @@
 //! Actual measured call custody funds each persistent view and exact reach index.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy;
-use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 #[test]
 fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
     let _observation = QueryObservation::install_on_this_thread();
@@ -56,7 +55,7 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
     );
     assert!(matches!(
         sequence.patched(change(), &narrow),
-        Err(Resource::MemoryLimit { .. })
+        Err(crate::domain_computation::primary_graph::invariant_projection::CallSequenceDenial::Storage(worth_execution::ExecutionOrderedMapDenial::Allocation(_)))
     ));
     assert_eq!(sequence.bytes(), before);
     let fresh = QueryRequestExecution::open(

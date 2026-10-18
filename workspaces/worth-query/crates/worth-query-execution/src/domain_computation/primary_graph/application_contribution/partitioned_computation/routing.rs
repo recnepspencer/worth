@@ -1,8 +1,10 @@
 //! Routes items to partitions by key digest, through `worth-execution`'s
 //! keyed partitioner.
 
+#[cfg(test)]
+use worth_execution::KeyedDenial;
 use worth_execution::{
-    KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId, PartitionWork,
+    KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId, PartitionWork,
 };
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_operation::ApplicationComputationPartitionIdentity;
@@ -10,6 +12,7 @@ use worth_query_declaration::facade::application_operation::ApplicationComputati
 use super::super::WorthQueryManagedComputationResourceDenial;
 
 /// Why an item has no partition.
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum ComputationPartitionRoutingDenial {
     /// The request's memory refused what the partitioner would retain.
@@ -21,17 +24,64 @@ pub(super) enum ComputationPartitionRoutingDenial {
 /// The partitioner's key is the 32-byte digest of a partition key's canonical
 /// encoding, so two keys are one partition exactly when their digests are
 /// equal, and two digests that share a partition identity are a collision.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(super) struct ComputationPartitionRouting {
     partitioner: KeyedPartitioner<[u8; 32]>,
 }
 
 impl ComputationPartitionRouting {
+    pub(super) fn route_in<Stopped>(
+        &mut self,
+        item: PartitionItemId,
+        digest: [u8; 32],
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        (PartitionIdentity, PartitionWork),
+        super::WorthQueryPartitionedComputationDenial<Stopped>,
+    > {
+        use super::WorthQueryPartitionedComputationDenial as Denial;
+        let partition = ApplicationComputationPartitionIdentity::partition_of(&digest);
+        let mut next = self.partitioner.clone();
+        next.remove_in(item, policy).map_err(Denial::from_ordered)?;
+        let work = next
+            .upsert_in(
+                &KeyedItem {
+                    item,
+                    key: digest,
+                    partition,
+                },
+                policy,
+            )
+            .map_err(|reason| match reason {
+                KeyedEditDenial::Admission(cause) => Denial::from_ordered(cause),
+                KeyedEditDenial::BoundOverflow => {
+                    Denial::Resource(WorthQueryManagedComputationResourceDenial::CapacityOverflow)
+                }
+                KeyedEditDenial::Keyed(_) => Denial::PartitionIdentityCollision { partition },
+            })?;
+        self.partitioner = next;
+        Ok((partition, work))
+    }
+    pub(super) fn kept_in<Stopped>(
+        &self,
+        keep: impl FnMut(PartitionItemId) -> bool,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, super::WorthQueryPartitionedComputationDenial<Stopped>> {
+        use super::WorthQueryPartitionedComputationDenial as Denial;
+        self.partitioner
+            .kept_in(keep, policy)
+            .map(|partitioner| Self { partitioner })
+            .map_err(|why| match why {
+                KeyedEditDenial::Admission(cause) => Denial::from_ordered(cause),
+                _ => Denial::Resource(WorthQueryManagedComputationResourceDenial::CapacityOverflow),
+            })
+    }
     /// Routes one item and returns its partition with the work of routing it
     /// into a partitioner that did not hold it: an item routed again leaves
     /// its last partition first, uncharged, so every route charges what a
     /// fresh build's route of it charges. Before the partitioner grows,
     /// `admit` is offered all it would retain.
+    #[cfg(test)]
     pub(super) fn route(
         &mut self,
         item: PartitionItemId,
@@ -66,24 +116,6 @@ impl ComputationPartitionRouting {
                 KeyedEditDenial::BoundOverflow => ComputationPartitionRoutingDenial::Resource(
                     WorthQueryManagedComputationResourceDenial::CapacityOverflow,
                 ),
-            })
-    }
-
-    /// A copy holding only the items `keep` names, in their partitions,
-    /// after `admit` takes what the copy retains.
-    pub(super) fn kept(
-        &self,
-        keep: impl FnMut(PartitionItemId) -> bool,
-        admit: impl FnOnce(u64) -> Result<(), WorthQueryManagedComputationResourceDenial>,
-    ) -> Result<Self, WorthQueryManagedComputationResourceDenial> {
-        self.partitioner
-            .kept(keep, admit)
-            .map(|partitioner| Self { partitioner })
-            .map_err(|denial| match denial {
-                KeyedEditDenial::Admission(denial) => denial,
-                KeyedEditDenial::Keyed(_) | KeyedEditDenial::BoundOverflow => {
-                    WorthQueryManagedComputationResourceDenial::CapacityOverflow
-                }
             })
     }
 

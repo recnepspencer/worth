@@ -9,7 +9,9 @@ use std::sync::Arc;
 pub(in crate::domain_computation::primary_graph::application_attempt::read_set) struct PreparedComputationFacts
 {
     index: Arc<ComputationFactIndex>,
-    metadata: Arc<BTreeMap<WorthQueryApplicationFactKey, SealedComputationFact>>,
+    metadata: Arc<
+        worth_execution::ExecutionOrderedMap<WorthQueryApplicationFactKey, SealedComputationFact>,
+    >,
     handlers: Option<BTreeMap<WorthQueryApplicationFactKey, usize>>,
     decision_count: usize,
     calls: BTreeSet<ComputationRead>,
@@ -33,7 +35,9 @@ impl SealedComputationFacts {
     >(
         attribution: ComputationFactAttribution,
         ordered: impl Iterator<Item = &'a WorthQueryApplicationFactKey>,
-    ) -> PreparedComputationFacts {
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<PreparedComputationFacts, super::super::super::retained_decision_facts::StoreDenial>
+    {
         let mut readers = attribution.readers;
         let mut handler = attribution.handler.map(|handler| {
             Arc::try_unwrap(handler)
@@ -65,14 +69,20 @@ impl SealedComputationFacts {
             "seal observed every handler key"
         );
         assert!(readers.is_empty(), "seal observed every owner key");
-        let index = Arc::new(ComputationFactIndex::build(&metadata));
-        PreparedComputationFacts {
+        let index = Arc::new(ComputationFactIndex::build(&metadata, policy)?);
+        let mut retained_metadata = worth_execution::ExecutionOrderedMap::default();
+        for (key, value) in &metadata {
+            retained_metadata
+                .insert_cloned_in(key, value, policy)
+                .map_err(super::reattribution::storage_denial)?;
+        }
+        Ok(PreparedComputationFacts {
             index,
-            metadata: Arc::new(metadata),
+            metadata: Arc::new(retained_metadata),
             handlers: handler.map(|_| handlers),
             decision_count,
             calls: attribution.calls,
-        }
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn fact(

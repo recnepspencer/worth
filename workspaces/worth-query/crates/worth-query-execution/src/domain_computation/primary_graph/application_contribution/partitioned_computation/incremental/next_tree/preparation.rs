@@ -24,7 +24,14 @@ where
             prior,
             validated_at,
             ranges: None,
+            rekeyed: Default::default(),
         }
+    }
+    pub(in super::super) fn rekeyed(
+        &mut self,
+        calls: worth_execution::ExecutionOrderedMap<worth_execution::PartitionItemId, ()>,
+    ) {
+        self.rekeyed = calls;
     }
     pub(in super::super) fn ranges(
         &mut self,

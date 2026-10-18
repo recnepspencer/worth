@@ -128,8 +128,12 @@ impl<Schema, Operation, Input, Scope, Phase>
                     },
                 ), self.admission.operation(),
             ))?;
-        let computation_facts =
-            attribution.map(|reads| SealedComputationFacts::prepare(reads, self.facts.keys()));
+        let computation_facts = attribution
+            .map(|reads| {
+                SealedComputationFacts::prepare(reads, self.facts.keys(), allocation_policy)
+            })
+            .transpose()
+            .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?;
         let handler_fact_count = self.facts.len() + self.source_facts.handler_len();
         let operation = self.admission.operation();
         let fact_count = self
