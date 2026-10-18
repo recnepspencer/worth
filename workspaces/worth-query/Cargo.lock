@@ -694,6 +694,7 @@ dependencies = [
  "worth-harness",
  "worth-proof",
  "worth-query-admission",
+ "worth-query-decl",
  "worth-query-declaration",
  "worth-query-installation",
  "worth-relational",

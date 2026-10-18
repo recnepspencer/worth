@@ -91,13 +91,15 @@ impl RequiredOutputPublicationAdmission {
 impl crate::runtime::RelationalRuntime {
     /// Funded cold admission when the recovered selector does not cover its
     /// canonical prefix. A complete warm image uses only its reached route.
+    /// `None` means the route has a publication and requires exact predecessor
+    /// custody; it is never permission to begin another ownership birth.
     pub fn readmit_required_output_route_absence(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
         basis: &AdmittedRelationalBranchBasis,
         meaning: &RequiredOutputPublicationMeaning,
-    ) -> Result<RelationalRequiredOutputRouteAbsence, TransactionCommitError> {
+    ) -> Result<Option<RelationalRequiredOutputRouteAbsence>, TransactionCommitError> {
         if installed.runtime_instance_id != self.runtime_instance_id()
             || basis.descriptor().runtime_instance_id() != self.runtime_instance_id()
             || !basis.is_current()
@@ -124,11 +126,7 @@ impl crate::runtime::RelationalRuntime {
                         None => None,
                     };
                     let retirement = match selected {
-                        Some(Position::Published(_)) => {
-                            return Err(origin_denial(
-                                "Birth route already has a complete native publication",
-                            ))
-                        }
+                        Some(Position::Published(_)) => return Ok(None),
                         Some(Position::CodecRetired(commit)) => Some(commit),
                         None => None,
                     };
@@ -143,13 +141,13 @@ impl crate::runtime::RelationalRuntime {
                                 stop,
                             ))
                         })?;
-                    Ok(RelationalRequiredOutputRouteAbsence {
+                    Ok(Some(RelationalRequiredOutputRouteAbsence {
                         installed: installed.authority.clone(),
                         basis: basis.clone(),
                         meaning: meaning.clone(),
                         retirement,
                         _funding: funding,
-                    })
+                    }))
                 },
             )
         });

@@ -108,6 +108,7 @@ impl SourceInvalidationOwner {
             registration,
             RegistrationReadBasis::CurrentOnly,
             None,
+            None,
             admission,
         )?;
         Ok(PreparedCurrentSettlementRegistration {
@@ -141,6 +142,7 @@ impl SourceInvalidationOwner {
                 registration,
                 RegistrationReadBasis::CurrentOnly,
                 Some(&equality),
+                equality.partition(),
                 admission,
             )
             .inspect_err(|stop| {

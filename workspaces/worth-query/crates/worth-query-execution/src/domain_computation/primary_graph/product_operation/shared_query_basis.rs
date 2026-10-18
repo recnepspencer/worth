@@ -12,7 +12,7 @@ pub(in crate::domain_computation) struct SharedSelectedProductOperation<'runtime
     selected: WorthQuerySelectedProductOperation<'runtime, Schema>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum SelectedQueryBasisRetentionStop {
     Basis,
     Admission(CompanionPreflightStop),

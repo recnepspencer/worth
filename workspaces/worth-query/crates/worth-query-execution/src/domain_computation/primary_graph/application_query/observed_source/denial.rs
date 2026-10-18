@@ -63,6 +63,16 @@ impl WorthQuerySourceExpectationDenial {
             retention_denial: Some(denial),
         }
     }
+    pub(in crate::domain_computation::primary_graph) fn retention_interruption(
+        &self,
+    ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
+    {
+        match &self.retention_denial {
+            Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop),
+            _ => None,
+        }
+    }
+
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         match &self.retention_denial {
             Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial), _ => None,
@@ -99,3 +109,15 @@ impl std::fmt::Display for WorthQuerySourceExpectationDenial {
 }
 
 impl std::error::Error for WorthQuerySourceExpectationDenial {}
+
+impl worth_execution::ChargedBytes for WorthQuerySourceExpectationDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        // A native retained-source storage refusal has no resident-error quote.
+        // It may be returned, but may not be retained as an underfunded computation error.
+        if self.retention_denial.is_some() {
+            u64::MAX
+        } else {
+            self.subject.capacity() as u64
+        }
+    }
+}

@@ -3,6 +3,7 @@ use super::CompanionPreflightStop;
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum InputCutoffVerificationStop {
     Admission(CompanionPreflightStop),
+    OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     WorkExhausted,
     CapacityExhausted,

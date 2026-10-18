@@ -11,22 +11,8 @@ pub use planar_operation::{
     PlanarMutationDenial, PlanarOperation, PlanarVertex,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
-pub struct PositiveLength(u64);
-
-impl PositiveLength {
-    pub const fn new(value: u64) -> Option<Self> {
-        if value == 0 {
-            None
-        } else {
-            Some(Self(value))
-        }
-    }
-
-    pub const fn get(value: &Self) -> u64 {
-        value.0
-    }
-}
+mod positive_length;
+pub use positive_length::PositiveLength;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PositiveCount(u64);

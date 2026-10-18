@@ -88,6 +88,24 @@ impl WorthQueryGraphReadOwnerPort {
             .source
             .with_runtime_mut(execution, |runtime| read(runtime, &self.layout)))
     }
+
+    /// A decision projection already owns this runtime borrow. The port still
+    /// checks its original installation and actual native runtime; it neither
+    /// reacquires the mutex nor accepts a caller-described runtime identity.
+    pub(super) fn execute_borrowed<T>(
+        &self,
+        binding: &ApplicationSchemaBindingIdentity,
+        runtime: &mut RelationalRuntime,
+        read: impl FnOnce(&mut RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
+    ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
+        if &self.binding != binding
+            || runtime.main_branch_identity().runtime_instance_id()
+                != self.source.runtime_instance_id
+        {
+            return Err(WorthQueryGraphReadOwnerPortDenial::ForeignGraph);
+        }
+        Ok(read(runtime, &self.layout))
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

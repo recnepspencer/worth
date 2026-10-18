@@ -33,11 +33,51 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
+        self.execute_application_query_one_shot_admitted_with_native_access(
+            execution,
+            plan,
+            admission,
+            &mut super::super::ApplicationQueryNativeAccess::acquire(),
+        )
+        .map(|completed| completed.read)
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn execute_application_query_one_shot_admitted_with_native_access<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        plan: WorthQueryAdmittedApplicationQueryPlan<
+            '_,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        admission: &mut InvalidationEditAdmission,
+        native: &mut super::super::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        super::outcome::CompletedOneShotRead<Query, QueryResult>,
+        WorthQueryAdmittedOneShotStop,
+    >
+    where
+        QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+    {
         let spent = OneShotReadWorkObservation::new();
         let mut plan = plan;
         admit_one_shot_entry(&plan, admission)?;
-        validate_one_shot_plan(execution, self, &plan)
-            .map_err(WorthQueryAdmittedOneShotStop::Execution)?;
+        super::plan_admission::validate_one_shot_plan_with_native_access(
+            execution, self, &plan, native,
+        )
+        .map_err(WorthQueryAdmittedOneShotStop::Execution)?;
         let result_buffer = reserve_one_shot_result_buffer(self, &plan)
             .map_err(WorthQueryAdmittedOneShotStop::Execution)?;
         let custody = custody_work::RetainedCustodyWork::of(
@@ -49,7 +89,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         .and_then(custody_work::RetainedCustodyWork::total)
         .ok_or(WorthQueryAdmittedOneShotStop::WorkCounterOverflow)?;
         let (raw, authorization_work, read_proof, reservation) =
-            match execute_selected_authorized_read(
+            match super::super::authorized_read::execute_selected_authorized_read_with_native_access(
                 execution,
                 self,
                 &mut plan,
@@ -57,6 +97,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 result_buffer,
                 &spent,
                 custody,
+                native,
             ) {
                 Ok(read) => read,
                 Err(SelectedAuthorizedReadStop::Read {
@@ -71,7 +112,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 }
                 Err(stop) => return Err(map_selected_read_stop(stop, plan.query.name())),
             };
-        let result = finalize_one_shot(
+        let result = super::outcome::complete_one_shot(
             execution,
             self,
             plan,
@@ -140,10 +181,11 @@ fn settle_admitted_read<Query, QueryResult>(
     reservation: ReservedExternalWork<'_>,
     spent: &OneShotReadWorkObservation,
     result: Result<
-        WorthQueryApplicationOneShotResult<Query, QueryResult>,
+        super::outcome::CompletedOneShotRead<Query, QueryResult>,
         WorthQueryApplicationOneShotDenial,
     >,
-) -> Result<WorthQueryApplicationOneShotResult<Query, QueryResult>, WorthQueryAdmittedOneShotStop> {
+) -> Result<super::outcome::CompletedOneShotRead<Query, QueryResult>, WorthQueryAdmittedOneShotStop>
+{
     let observed = spent
         .total()
         .ok_or(WorthQueryAdmittedOneShotStop::WorkCounterOverflow)?;
@@ -153,7 +195,7 @@ fn settle_admitted_read<Query, QueryResult>(
         let read_work = spent
             .read()
             .ok_or(WorthQueryAdmittedOneShotStop::WorkCounterOverflow)?;
-        if read.receipt().work().total_work_units() != read_work {
+        if read.read.receipt().work().total_work_units() != read_work {
             return Err(WorthQueryAdmittedOneShotStop::WorkAccountingMismatch);
         }
     }

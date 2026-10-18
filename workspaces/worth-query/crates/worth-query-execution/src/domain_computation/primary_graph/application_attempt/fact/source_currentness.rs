@@ -12,6 +12,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnes
     WorkBudgetExceeded,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Unavailable,
+    OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
 }
 
 impl WorthQueryApplicationObservedFact {
@@ -21,6 +22,7 @@ impl WorthQueryApplicationObservedFact {
     /// only the meter bounds it (`None`).
     fn most_comparison_work(&self) -> Option<usize> {
         Some(match self {
+            Self::SourcePublication { .. } => return None,
             Self::RetiredOutputEntity { .. }
             | Self::SourceEntity { .. }
             | Self::Entity { .. }
@@ -116,6 +118,9 @@ impl WorthQueryApplicationObservedFact {
                     .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
             )?;
             return match comparison {
+                Err(stop @ WorthQuerySourceCurrentnessFailure::OutputObservation(_)) => {
+                    Ok(Err(stop))
+                }
                 Ok(equal) => Ok(Ok(FactMovement::from_equal(equal))),
                 Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
                     comparison_work_failure(most, reserved_work, admission).map(Err)
@@ -130,6 +135,7 @@ impl WorthQueryApplicationObservedFact {
         }
         let comparison = self.comparison(runtime, execution, snapshot, reserved_work);
         match comparison {
+            Err(stop @ WorthQuerySourceCurrentnessFailure::OutputObservation(_)) => Ok(Err(stop)),
             Ok((equal, work)) => {
                 reserved.settle(
                     u64::try_from(work).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,

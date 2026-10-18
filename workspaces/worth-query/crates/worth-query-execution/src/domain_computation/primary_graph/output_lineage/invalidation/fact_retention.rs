@@ -70,7 +70,8 @@ pub(super) fn fact_payload_bytes(
     crate::domain_computation::primary_graph::fact_verification_observation::retained_fact_size();
     use WorthQueryApplicationObservedFact as Fact;
     match fact {
-        Fact::SourceEntity { .. }
+        Fact::SourcePublication { .. }
+        | Fact::SourceEntity { .. }
         | Fact::Entity { .. }
         | Fact::WorkflowDefinitionPredecessor { .. }
         | Fact::WorkflowDefinitionCurrent { .. } => Ok(0),
@@ -191,9 +192,7 @@ fn checked_add(left: u64, right: u64) -> Result<u64, CompanionPreflightStop> {
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)
 }
 
-pub(in crate::domain_computation::primary_graph::output_lineage) fn arc_slice_bytes<T>(
-    len: usize,
-) -> Option<u64> {
+pub(in crate::domain_computation::primary_graph) fn arc_slice_bytes<T>(len: usize) -> Option<u64> {
     let alignment = align_of::<T>().max(align_of::<usize>());
     let header = size_of::<usize>().checked_mul(2)?;
     let offset = header.checked_add(alignment - 1)? / alignment * alignment;

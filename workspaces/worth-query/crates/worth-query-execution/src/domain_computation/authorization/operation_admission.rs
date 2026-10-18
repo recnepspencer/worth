@@ -63,7 +63,7 @@ pub(in crate::domain_computation::authorization) use authorization_basis::WorthQ
 static NEXT_OPERATION_ADMISSION_IDENTITY: AtomicU64 = AtomicU64::new(1);
 const RESOURCE_LABEL: &str = "worth-query-application-admission:";
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) struct WorthQueryOperationAdmissionIdentity(u64);
 
 impl WorthQueryOperationAdmissionIdentity {

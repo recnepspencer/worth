@@ -50,6 +50,10 @@ pub(super) fn require_current_facts(
         admission,
     ) {
         Ok(None) => Ok(()),
+        Err(RetainedFactStop::OutputObservation(stop)) => Err(output_reuse::verification_denial(
+            stop,
+            "settled source observation",
+        )),
         Ok(Some(moved)) => Err(denial_subject(
             WorthQueryOutputDemandDenialKind::Superseded,
             moved.locator_identity(),

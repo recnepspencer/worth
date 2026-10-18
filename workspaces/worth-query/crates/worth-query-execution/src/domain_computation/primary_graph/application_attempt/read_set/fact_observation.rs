@@ -21,6 +21,7 @@ use crate::domain_computation::primary_graph::{
 /// neighborhood, which no key declares a bound for.
 pub(super) fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Option<u64> {
     match key {
+        WorthQueryApplicationFactKey::SourcePublication(_) => None,
         WorthQueryApplicationFactKey::Entity { .. }
         | WorthQueryApplicationFactKey::Field { .. } => Some(1),
         WorthQueryApplicationFactKey::Relation { .. } => None,
@@ -64,6 +65,10 @@ fn observe_fact_inner(
     admitted: bool,
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
     match key {
+        WorthQueryApplicationFactKey::SourcePublication(_) => Err(denial(
+            WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
+            "fresh source-query read required",
+        )),
         WorthQueryApplicationFactKey::Entity { entity, entity_id } => {
             let kind = layout.entity_kind(entity).ok_or_else(|| {
                 denial(

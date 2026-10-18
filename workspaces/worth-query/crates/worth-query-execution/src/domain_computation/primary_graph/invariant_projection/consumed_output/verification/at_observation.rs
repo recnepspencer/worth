@@ -66,7 +66,7 @@ impl ConsumedOutputEvidence {
         if let Some(output_facts) = output_facts {
             for fact in output_facts {
                 if !fact_is_current(execution, fact, runtime, snapshot, admission)? {
-                    return Ok(Some(ConsumedOutputVerification::ChangedUpstream));
+                    return Ok(Some(ConsumedOutputVerification::ChangedOutput));
                 }
             }
         } else if let Some(witness) = witness {
@@ -77,7 +77,7 @@ impl ConsumedOutputEvidence {
                 .unchanged_in(runtime, snapshot, admission)
                 .map_err(map_admission_stop)?
             {
-                return Ok(Some(ConsumedOutputVerification::ChangedUpstream));
+                return Ok(Some(ConsumedOutputVerification::ChangedOutput));
             }
         }
         Ok(None)
@@ -140,7 +140,36 @@ impl ConsumedOutputEvidence {
         selected: &PositionedRelationalSnapshot,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        let marked = Self::verify_candidate_at(
+        Self::observe_at_observation(
+            execution,
+            identity,
+            source_facts,
+            upstream,
+            verification_requirement,
+            native_output_witness,
+            owner,
+            runtime,
+            snapshot,
+            selected,
+            admission,
+        )?
+        .driving()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn observe_at_observation(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        identity: &Arc<RecordedSettlementIdentity>,
+        source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
+        upstream: &[ConsumedOutputEvidence],
+        verification_requirement: Option<FullVerificationReason>,
+        native_output_witness: &Arc<OnceLock<SealedNativeOutputWitness>>,
+        owner: &SourceInvalidationOwner,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        selected: &PositionedRelationalSnapshot,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
+        let marked = Self::observe_candidate_at(
             execution,
             identity,
             source_facts,
@@ -197,7 +226,7 @@ impl ConsumedOutputEvidence {
             }
             visited.insert(Arc::clone(evidence.identity));
             if !reads_at_or_after(selected, evidence.selected_native_root) {
-                return Ok(ConsumedOutputVerification::ChangedUpstream);
+                return Ok(ConsumedOutputVerification::Unaligned);
             }
             let changed =
                 Self::compare_own(execution, evidence, direct, runtime, snapshot, admission)?;

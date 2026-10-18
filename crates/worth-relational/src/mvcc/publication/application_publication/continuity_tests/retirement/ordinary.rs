@@ -84,17 +84,17 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
             .native_checkpoint(execution.allocation_policy())
             .unwrap();
         let basis = test_owner_main_basis(&cold).unwrap();
-        let denied = cold
+        let absence = cold
             .readmit_required_output_route_absence(
                 execution,
                 &installed,
                 &basis,
                 &crate::mvcc::native_meaning_fixture("delete-does-not-vacate"),
             )
-            .unwrap_err();
+            .unwrap();
         assert!(
-            format!("{denied:?}").contains("route already has a complete native publication"),
-            "{denied:?}"
+            absence.is_none(),
+            "ordinary deletion cannot authorize a new birth"
         );
         assert_eq!(
             cold.durability_authority()

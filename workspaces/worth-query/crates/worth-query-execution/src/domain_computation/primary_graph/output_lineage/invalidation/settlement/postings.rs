@@ -42,9 +42,22 @@ struct PostingGroup {
 
 /// This sizes only scratch backing. The semantic projection remains the sole
 /// `fact_keys::visit` below, so an unsupported native address is still Full.
-fn maximum_keys(fact: &WorthQueryApplicationObservedFact) -> Option<usize> {
+fn maximum_keys(
+    fact: &WorthQueryApplicationObservedFact,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<Option<usize>, CompanionPreflightStop> {
     use WorthQueryApplicationObservedFact as Fact;
-    match fact {
+    Ok(match fact {
+        Fact::SourcePublication { observation } => {
+            let mut total = Some(1usize);
+            for fact in observation.posting_facts() {
+                admission.work(1)?;
+                total = total
+                    .zip(maximum_keys(fact, admission)?)
+                    .and_then(|(sum, count)| sum.checked_add(count));
+            }
+            total
+        }
         Fact::SourceEntity { .. } | Fact::Entity { .. } => Some(1),
         Fact::SourceAspectRevision { .. }
         | Fact::SourceFieldRevision { .. }
@@ -52,14 +65,17 @@ fn maximum_keys(fact: &WorthQueryApplicationObservedFact) -> Option<usize> {
         | Fact::AbsentField { .. } => Some(3),
         Fact::SourceAdjacencyRevision { endpoints, .. } => endpoints.len().checked_add(2),
         Fact::Relation { .. } => Some(3),
-        Fact::Adjacency { relations, .. } => relations.len().checked_mul(2)?.checked_add(2),
+        Fact::Adjacency { relations, .. } => relations
+            .len()
+            .checked_mul(2)
+            .and_then(|count| count.checked_add(2)),
         Fact::IndexedEntitySelection { candidates, .. } => candidates.len().checked_add(2),
         Fact::RetiredOutputEntity { .. }
         | Fact::WorkflowDefinitionPredecessor { .. }
         | Fact::WorkflowDefinitionCurrent { .. }
         | Fact::WorkflowInstanceCapacity { .. }
         | Fact::WorkflowHistoryBasis { .. } => Some(0),
-    }
+    })
 }
 
 impl PreparedPostingOrdinals {
@@ -81,7 +97,7 @@ impl PreparedPostingOrdinals {
             crate::domain_computation::primary_graph::fact_verification_observation::posting_fact();
             maximum = maximum
                 .checked_add(
-                    maximum_keys(fact)
+                    maximum_keys(fact, admission)?
                         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
                 )
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;

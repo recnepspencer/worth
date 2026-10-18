@@ -8,6 +8,11 @@ use std::sync::{
 use std::time::Duration;
 
 mod caller_pass;
+mod source_publication;
+pub use source_publication::{
+    WorthQuerySourceFactComparisonPauseForTest, WorthQuerySourcePublicationHeadForTest,
+    WorthQuerySourcePublicationImageForTest, WorthQuerySourcePublicationValidationPauseForTest,
+};
 
 #[derive(Clone, Default)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptOperationControl
@@ -16,6 +21,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
         Arc<caller_pass::CallerPassControl>,
     pending_registration: Arc<PendingAttemptPause>,
     pending_candidate: Arc<PendingAttemptPause>,
+    pending_source_validation: Arc<PendingAttemptPause>,
+    pending_source_comparison: Arc<PendingAttemptPause>,
+    source_validation_observations: Arc<Mutex<Vec<WorthQuerySourcePublicationImageForTest>>>,
 }
 
 #[derive(Default)]

@@ -5,7 +5,7 @@ use std::num::NonZeroUsize;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::{execute_graph_read_with_snapshot, validate_selected_authorization_currentness};
+use super::validate_selected_authorization_currentness;
 use crate::domain_computation::primary_graph::{
     application_query::{
         read_execution::{
@@ -36,7 +36,7 @@ pub(in crate::domain_computation::primary_graph::application_query) enum Selecte
     },
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) fn execute_selected_authorized_read<
+pub(in crate::domain_computation::primary_graph::application_query) fn execute_selected_authorized_read_with_native_access<
     'a,
     Schema,
     Query,
@@ -62,6 +62,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_s
     result_buffer: WorthQueryApplicationResultBufferReservation,
     spent: &OneShotReadWorkObservation,
     retained_custody_work: usize,
+    native: &mut super::super::ApplicationQueryNativeAccess<'_>,
 ) -> Result<
     (
         RawNonLiveKernelOutcome,
@@ -79,67 +80,70 @@ where
         return Err(SelectedAuthorizedReadStop::StaleSecurity);
     };
     let security = application
-        .admit_matching_head_query_prepared_read_security_basis(
+        .admit_matching_head_query_prepared_read_security_basis_with_native_access(
             execution,
             &plan.security_product,
             &plan.basis,
             prepared,
             admission,
+            native,
         )
         .map_err(SelectedAuthorizedReadStop::Security)?
         .ok_or(SelectedAuthorizedReadStop::StaleSecurity)?;
-    let ((raw, authorization_work, reservation), proof) = execute_graph_read_with_snapshot(
-        execution,
-        &plan.graph_work,
-        &plan.basis,
-        security.snapshot_handle(),
-        || SelectedAuthorizedReadStop::Session,
-        (),
-        |runtime, layout, security, ()| {
-            validate_selected_authorization_currentness(
-                execution,
-                application,
-                runtime,
-                security,
-                plan,
-                admission,
-            )
-            .map_err(SelectedAuthorizedReadStop::Currentness)?;
-            // The read's own work stays under the Query's declared limit;
-            // its retained custody copies are reserved beside it.
-            let (maximum, reserved) = selected_read_reservation(
-                plan.controls().maximum_work().get(),
-                admission.remaining_work_amount(),
-                retained_custody_work,
-            )?;
-            let reservation = admission
-                .reserve_external_work(reserved)
-                .map_err(SelectedAuthorizedReadStop::Admission)?;
-            let raw = match read_bounded_root_rows(
-                runtime,
-                execution,
-                layout,
-                plan,
-                result_buffer,
-                Some(spent),
-                maximum.get(),
-            ) {
-                Ok(raw) => raw,
-                Err(denial) => {
-                    return Err(SelectedAuthorizedReadStop::Read {
-                        denial,
-                        reservation,
-                    });
-                }
-            };
-            Ok((
-                raw,
-                plan.authorization_work
-                    .with_execution_security_product_resolution(),
-                reservation,
-            ))
-        },
-    )?;
+    let ((raw, authorization_work, reservation), proof) =
+        super::execute_graph_read_with_snapshot_with_native_access(
+            execution,
+            &plan.graph_work,
+            &plan.basis,
+            security.snapshot_handle(),
+            || SelectedAuthorizedReadStop::Session,
+            (),
+            native,
+            |runtime, layout, security, ()| {
+                validate_selected_authorization_currentness(
+                    execution,
+                    application,
+                    runtime,
+                    security,
+                    plan,
+                    admission,
+                )
+                .map_err(SelectedAuthorizedReadStop::Currentness)?;
+                // The read's own work stays under the Query's declared limit;
+                // its retained custody copies are reserved beside it.
+                let (maximum, reserved) = selected_read_reservation(
+                    plan.controls().maximum_work().get(),
+                    admission.remaining_work_amount(),
+                    retained_custody_work,
+                )?;
+                let reservation = admission
+                    .reserve_external_work(reserved)
+                    .map_err(SelectedAuthorizedReadStop::Admission)?;
+                let raw = match read_bounded_root_rows(
+                    runtime,
+                    execution,
+                    layout,
+                    plan,
+                    result_buffer,
+                    Some(spent),
+                    maximum.get(),
+                ) {
+                    Ok(raw) => raw,
+                    Err(denial) => {
+                        return Err(SelectedAuthorizedReadStop::Read {
+                            denial,
+                            reservation,
+                        });
+                    }
+                };
+                Ok((
+                    raw,
+                    plan.authorization_work
+                        .with_execution_security_product_resolution(),
+                    reservation,
+                ))
+            },
+        )?;
     Ok((raw, authorization_work, proof, reservation))
 }
 

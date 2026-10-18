@@ -4,7 +4,7 @@ use super::{
     WorthQueryCurrentOutputCandidate, WorthQueryCurrentOutputFamilyResolution,
 };
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::{collections::BTreeSet, sync::Arc};
+use std::collections::BTreeSet;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 mod checkpoint_priors;
 mod publication_heads;
@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph) use checkpoint_priors::NativePr
 pub(in crate::domain_computation::primary_graph) use checkpoint_priors::{
     CheckpointPriorSelectionDenial, CheckpointPriorStructure,
 };
-use publication_heads::PublicationHeads;
+pub(super) use publication_heads::PublicationHeads;
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn checkpoint_family_role(
@@ -135,23 +135,7 @@ impl WorthQueryApplicationOutputLineage {
         let candidates = heads
             .into_iter()
             .filter_map(|(output_role, recorded)| {
-                recorded
-                    .observed_source_facts()
-                    .map(|facts| WorthQueryCurrentOutputCandidate {
-                        consumed_outputs: Arc::clone(&recorded.consumed_outputs),
-                        verification_requirement: recorded.verification_requirement(),
-                        settlement_identity: Arc::clone(&recorded.settlement_identity),
-                        correspondence: Arc::clone(&recorded.correspondence),
-                        output_role: output_role.to_owned(),
-                        observed_source_facts: facts,
-                        native_output_witness: recorded
-                            .performed_origin
-                            .as_ref()
-                            .and_then(|origin| origin.get())
-                            .unwrap_or(recorded)
-                            .native_output_witness_cell()
-                            .map(Arc::clone),
-                    })
+                WorthQueryCurrentOutputCandidate::from_recorded(recorded, output_role)
             })
             .collect();
         Ok(WorthQueryCurrentOutputFamilyResolution {

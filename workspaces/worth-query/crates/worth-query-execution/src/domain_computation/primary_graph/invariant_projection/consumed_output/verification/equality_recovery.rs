@@ -46,7 +46,7 @@ impl ConsumedOutputEvidence {
             }
             visited.insert(Arc::clone(&row.identity));
             if !at_observation::reads_at_or_after(selected, &row.read_basis) {
-                return Ok(ConsumedOutputVerification::ChangedUpstream);
+                return Ok(ConsumedOutputVerification::Unaligned);
             }
             let Some(facts) = row.facts.for_comparison() else {
                 return Ok(ConsumedOutputVerification::ChangedUpstream);

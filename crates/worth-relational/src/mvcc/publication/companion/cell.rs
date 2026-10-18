@@ -1,3 +1,5 @@
+mod read_condition;
+pub(in crate::mvcc) use read_condition::CompanionReadCondition;
 use std::any::Any;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};

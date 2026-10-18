@@ -49,8 +49,29 @@ pub(super) fn visit<E>(
     admit: impl FnMut(usize, usize) -> Result<(), E>,
     emit: impl FnMut(Key) -> Result<(), E>,
 ) -> Result<(), FactKeyProjectionStop<E>> {
-    let mut projection = Projection { admit, emit };
+    visit_projected(fact, &mut Projection { admit, emit })
+}
+
+fn visit_projected<E, A, F>(
+    fact: &Fact,
+    projection: &mut Projection<A, F>,
+) -> Result<(), FactKeyProjectionStop<E>>
+where
+    A: FnMut(usize, usize) -> Result<(), E>,
+    F: FnMut(Key) -> Result<(), E>,
+{
     match fact {
+        Fact::SourcePublication { observation } => {
+            projection.key(1, 0, || Key::SourcePublication(observation.address()))?;
+            for fact in observation.posting_facts() {
+                visit_projected(fact, projection)?;
+            }
+            // Completion and source-change wake are indexed. General observation
+            // continuity is deliberately not certified by physical postings.
+            return Err(FactKeyProjectionStop::FullVerificationRequired(
+                FullVerificationReason::UnsupportedFact,
+            ));
+        }
         Fact::SourceEntity { entity_id } => {
             projection.key(1, 0, || Key::EntityLifecycle(*entity_id))?;
         }
@@ -68,7 +89,7 @@ pub(super) fn visit<E>(
             entity_id, locator, ..
         } => {
             projection.key(1, 0, || Key::EntityLifecycle(*entity_id))?;
-            field_addresses(*entity_id, locator, &mut projection)?;
+            field_addresses(*entity_id, locator, projection)?;
         }
         Fact::SourceAdjacencyRevision {
             relation_kind,
@@ -103,7 +124,7 @@ pub(super) fn visit<E>(
             locator,
         } => {
             projection.key(1, 0, || Key::EntityLifecycle(*entity_id))?;
-            field_addresses(*entity_id, locator, &mut projection)?;
+            field_addresses(*entity_id, locator, projection)?;
         }
         Fact::Relation {
             relation_kind,
@@ -152,7 +173,7 @@ pub(super) fn visit<E>(
                 .ok_or(FactKeyProjectionStop::FullVerificationRequired(
                     FullVerificationReason::UnsupportedFact,
                 ))?;
-            let (aspect, path, path_bytes) = locator_parts(locator, &mut projection)?;
+            let (aspect, path, path_bytes) = locator_parts(locator, projection)?;
             let owned = key_bytes
                 .checked_add(path_bytes)
                 .and_then(|bytes| bytes.checked_add(aspect.owned_allocation_capacity_bytes()))

@@ -64,7 +64,8 @@ pub use partitioned_computation::{
 };
 pub(in crate::domain_computation::primary_graph) use producer::{
     install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,
-    PendingOutputReadiness, TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
+    OutputSourceAddress, PendingOutputReadiness, QualifiedOutputSource,
+    TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
     WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
 };
 pub use producer::{

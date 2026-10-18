@@ -113,7 +113,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) application_readiness_schema_token: String,
     publication: WorthQueryPrimaryGraphPublication,
     checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
-    pub(in crate::domain_computation) authorization: WorthQueryInstalledAuthorizationRegistry,
+    pub(in crate::domain_computation) authorization: Arc<WorthQueryInstalledAuthorizationRegistry>,
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
     authentication_clock: WorthQueryAuthenticationClock,
     pub(super) relational_branch_identity:
@@ -388,3 +388,7 @@ mod candidate_input_observation;
 
 mod operation_input_capture;
 pub use operation_input_capture::WorthQueryOperationInputCaptureDenial;
+
+pub(in crate::domain_computation::primary_graph) use operation_control::{
+    WorthQuerySourcePublicationHeadForTest, WorthQuerySourcePublicationImageForTest,
+};

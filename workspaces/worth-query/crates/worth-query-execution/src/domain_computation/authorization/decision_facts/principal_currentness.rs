@@ -52,6 +52,16 @@ impl WorthQueryPrincipalCurrentnessDependency {
         }
     }
 
+    pub(super) fn source_query_facts(
+        &self,
+        admission: &mut crate::domain_computation::primary_graph::InvalidationEditAdmission,
+    ) -> Result<
+        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+        worth_relational::facade::mvcc::CompanionPreflightStop,
+    > {
+        self.freshness.source_query_facts(&self.layout, admission)
+    }
+
     pub(in crate::domain_computation) fn remains_current_in(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

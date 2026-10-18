@@ -129,9 +129,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     {
         return Err(request_authority_stop(identity, authority));
     }
-    // A companion with no room for this commit met a budget of the advance
-    // that ran it; the producer did not fail, and its row stays claimable.
-    if let Some(kind) = refused_budget(&outcome) {
+    // A stopped native companion preflight belongs to this advance. A budget
+    // refusal or replaced selected image leaves the original producer claimable.
+    if let Some(kind) = refused_preflight(&outcome) {
         return Err(denial(kind, identity.to_owned()));
     }
     match outcome {
@@ -266,9 +266,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     }
 }
 
-/// The budget a publication companion had no room in when it refused the
-/// commit: the request's work, or what the index and its preparation retain.
-fn refused_budget(
+/// Native preflight refuses this advance before effects. Preserve original
+/// budgets and a replaced selected image as retryable owner outcomes.
+fn refused_preflight(
     outcome: &WorthQueryApplicationCommitOutcome,
 ) -> Option<WorthQueryOutputDemandDenialKind> {
     use graph::WorthQueryApplicationCommitDeferredKind as Deferred;
@@ -300,6 +300,7 @@ fn refused_budget(
         | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
     };
     match stop {
+        Stop::SelectedSourceMismatch => Some(WorthQueryOutputDemandDenialKind::PublicationStale),
         Stop::WorkExhausted { .. }
         | Stop::WorkExhaustedWithoutRequirement { .. }
         | Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),

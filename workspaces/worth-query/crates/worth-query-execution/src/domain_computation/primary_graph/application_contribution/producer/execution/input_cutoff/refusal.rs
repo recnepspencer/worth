@@ -8,6 +8,12 @@ pub(super) fn cutoff_basis_denial(
 ) -> WorthQueryOutputDemandDenial {
     use worth_relational::facade::mvcc::CompanionPreflightStop as Admission;
     let kind = match stop {
+        InputCutoffVerificationStop::OutputObservation(stop) => {
+            return crate::domain_computation::primary_graph::output_reuse::verification_denial(
+                stop,
+                "producer input cutoff",
+            )
+        }
         InputCutoffVerificationStop::Admission(
             Admission::WorkExhausted { .. }
             | Admission::WorkExhaustedWithoutRequirement { .. }
@@ -54,6 +60,7 @@ pub(super) fn cutoff_admission_denial(
 
 pub(super) fn cutoff_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDemandDenial {
     match stop {
+        InputCutoffVerificationStop::OutputObservation(stop) => crate::domain_computation::primary_graph::output_reuse::verification_denial(stop, "producer input cutoff"),
         InputCutoffVerificationStop::Execution(cause) => crate::domain_computation::primary_graph::output_reuse::read_denial(cause),
         InputCutoffVerificationStop::Admission(stop) => cutoff_admission_denial(stop),
         InputCutoffVerificationStop::CapacityExhausted => denial(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded, String::new()),

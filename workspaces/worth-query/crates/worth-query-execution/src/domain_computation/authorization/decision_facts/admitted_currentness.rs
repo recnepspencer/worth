@@ -17,6 +17,16 @@ impl From<CompanionPreflightStop> for AuthorizationCurrentnessStop {
 }
 
 impl WorthQueryRetainedAuthorizationDecisionFacts {
+    pub(in crate::domain_computation) fn source_query_principal_facts(
+        &self,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<
+        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+        CompanionPreflightStop,
+    > {
+        super::principal(self).source_query_facts(admission)
+    }
+
     /// The selected-access proof separately authenticates the principal on
     /// this issued root. This owner rechecks every mutable conventional
     /// authorization decision; capability facts require their own admitted

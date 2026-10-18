@@ -54,7 +54,7 @@ impl<Query> WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
-    pub(in crate::domain_computation::primary_graph::application_query::observed_source) fn admit_fact_materialization(
+    pub(in crate::domain_computation::primary_graph::application_query) fn admit_fact_materialization(
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
         admission: &mut InvalidationEditAdmission,

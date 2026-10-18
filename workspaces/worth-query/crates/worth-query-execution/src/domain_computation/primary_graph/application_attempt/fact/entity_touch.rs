@@ -4,6 +4,9 @@ use super::WorthQueryApplicationObservedFact;
 
 pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: EntityId) -> bool {
     match fact {
+        WorthQueryApplicationObservedFact::SourcePublication { observation } => {
+            observation.touches_entity(candidate)
+        }
         WorthQueryApplicationObservedFact::RetiredOutputEntity { entity_id, .. } => {
             *entity_id == candidate
         }

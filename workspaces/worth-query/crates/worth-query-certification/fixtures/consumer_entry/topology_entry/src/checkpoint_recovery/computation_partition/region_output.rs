@@ -6,15 +6,15 @@
 use std::marker::PhantomData;
 use std::sync::{Mutex, PoisonError};
 
-use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
+use super::fixture_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
+use super::runtime_api::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
+    WorthQueryDecisionPlan, WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
+};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
     worth_query_operation_writes, worth_query_structured_value_binding,
-};
-use worth_query_host::facade::primary_graph::{
-    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryDecisionPlan, WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
 };
 
 use super::facts::{
@@ -49,6 +49,7 @@ worth_query_operation_writes!(TotalRegionOutput => [Length, EntryValueBits, Body
 worth_query_operation_creates!(TotalRegionOutput => [Body]);
 worth_query_operation_links!(TotalRegionOutput => [PlanarSuccessor]);
 
+#[path = "region_output/generated_ring.rs"]
 mod generated_ring;
 
 pub(super) struct RegionOutputBinding<Schema>(PhantomData<fn() -> Schema>);

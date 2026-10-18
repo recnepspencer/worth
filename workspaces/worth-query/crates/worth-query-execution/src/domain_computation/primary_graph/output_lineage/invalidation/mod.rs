@@ -41,7 +41,11 @@ pub use marking_observation::{
     WorthQueryNativeMarkingForTest,
 };
 mod mark_state;
+mod output_availability;
+pub(in crate::domain_computation::primary_graph) use output_availability::SourcePublicationReadFence;
 mod output_facts;
+pub(in crate::domain_computation) use output_availability::ObservedSourcePublication;
+pub(in crate::domain_computation::primary_graph) use output_facts::RegisteredOutputFacts;
 mod output_witness_capacity;
 mod owner;
 mod publication;
@@ -72,7 +76,7 @@ pub(in crate::domain_computation) use edit_admission::InvalidationEditAdmission;
 pub(in crate::domain_computation::primary_graph) use edit_admission::{
     CarriedRequestInvalidationAdmission, ReservedExternalWork,
 };
-pub(in crate::domain_computation::primary_graph::output_lineage) use fact_retention::arc_slice_bytes;
+pub(in crate::domain_computation::primary_graph) use fact_retention::arc_slice_bytes;
 
 pub(in crate::domain_computation::primary_graph) fn retained_fact_payload_bytes(
     fact: &crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,

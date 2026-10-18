@@ -2,13 +2,18 @@
 
 pub(in crate::domain_computation) use invalidation::HeadCellRegistrationStop;
 mod source_facts;
+mod source_publication;
 pub(in crate::domain_computation::primary_graph) use source_facts::{
     ComparableSourceFacts, RetainedSourceFacts,
+};
+pub(in crate::domain_computation::primary_graph) use source_publication::{
+    CoveredSourcePublication, SourcePublication,
 };
 mod computation_source;
 pub(in crate::domain_computation::primary_graph) use computation_source::{
     ComputationSourceEvidence, CurrentComputation,
 };
+mod current_candidate;
 mod current_output;
 pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;
 mod denial;
@@ -49,6 +54,8 @@ mod retention;
 mod settlement_identity;
 pub(in crate::domain_computation) use invalidation::InvalidationEditAdmission;
 pub(in crate::domain_computation) use invalidation::SourceInvalidationOwner;
+#[cfg(test)]
+mod ownership_oracle;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) mod registry_fixture;
 #[cfg(test)]
@@ -109,6 +116,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
     cancelled_slots: Option<Box<prepared_slot::CancelledLineageSlot>>,
     output_families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
     retention: retained_capacity::LineageRetentionLedger,
+    source_publication_coverage: source_publication::SourcePublicationCoverage,
 }
 
 type RecordedGeneration = Vec<Arc<OnceLock<RecordedOutput>>>;
@@ -177,6 +185,7 @@ impl WorthQueryApplicationOutputLineage {
     ) {
         assert!(self.output_families.is_empty());
         self.output_families.extend(families);
+        self.source_publication_coverage.install();
     }
 
     pub(in crate::domain_computation::primary_graph) fn install_lineage_retention(

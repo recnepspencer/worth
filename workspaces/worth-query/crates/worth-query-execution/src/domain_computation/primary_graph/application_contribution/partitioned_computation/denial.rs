@@ -1,3 +1,4 @@
+mod error_chain;
 mod storage;
 // Why a partitioned computation has no result.
 

@@ -133,6 +133,10 @@ pub(super) struct EqualOutputLink {
 
 #[derive(Clone, Debug)]
 pub(super) struct MarkState {
+    pub(super) source_publications: OrdMap<Arc<crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress>, Arc<super::output_availability::SourcePublicationState>>,
+    pub(super) source_publication_postings: OrdMap<super::output_availability::PublicationSourceKey, OrdSet<Arc<crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress>>>,
+    pub(super) source_publication_posting_count: usize,
+    pub(super) source_publication_head_count: usize,
     pub(super) retained_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
     pub(super) posting_count: usize,
     pub(super) key_payload_bytes: u64,
@@ -166,6 +170,10 @@ pub(super) enum SettlementCurrentness<'state> {
 impl MarkState {
     pub(super) fn initial() -> Self {
         Self {
+            source_publications: OrdMap::new(),
+            source_publication_postings: OrdMap::new(),
+            source_publication_posting_count: 0,
+            source_publication_head_count: 0,
             retained_capacity: None,
             posting_count: 0,
             key_payload_bytes: 0,

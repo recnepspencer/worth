@@ -129,7 +129,9 @@ where
     let plan = super::super::post_authorization::prepare_authorized::<Schema, Binding>(
         phase,
         runtime,
-        shared.selected(),
+        shared,
+        principal,
+        request_scope,
         prepared.principal.principal(),
         prepared.operation,
         required_output,

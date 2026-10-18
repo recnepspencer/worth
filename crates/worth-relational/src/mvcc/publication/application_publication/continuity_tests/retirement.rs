@@ -251,10 +251,13 @@ fn cold_replacement(
         format!("{denied:?}").contains("cold route-absence readmission"),
         "{denied:?}"
     );
-    let denied = runtime
+    let absence = runtime
         .readmit_required_output_route_absence(execution, &installed, &basis, &meaning)
-        .unwrap_err();
-    assert!(format!("{denied:?}").contains("route already has a complete native publication"));
+        .unwrap();
+    assert!(
+        absence.is_none(),
+        "a published route requires its exact predecessor"
+    );
     assert_eq!(
         runtime
             .durability_authority()
@@ -304,11 +307,10 @@ fn cold_replacement(
         absence, meaning, ..
     } = &mut birth
     {
-        *absence = Some(
-            runtime
-                .readmit_required_output_route_absence(execution, &installed, &basis, meaning)
-                .unwrap(),
-        );
+        *absence = runtime
+            .readmit_required_output_route_absence(execution, &installed, &basis, meaning)
+            .unwrap();
+        assert!(absence.is_some());
     }
     let born = publish(&runtime, execution, &installed, batch, birth).unwrap();
     assert_eq!(born.changed_records.len(), 2);

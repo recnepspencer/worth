@@ -2,7 +2,9 @@
 
 use std::collections::BTreeMap;
 use std::mem::{align_of, size_of};
-use std::sync::{Arc, Mutex, MutexGuard, Weak};
+use std::sync::{Arc, Mutex, MutexGuard, TryLockError, Weak};
+mod contention;
+pub use contention::WorthQueryApplicationBranchCommitContentionForTest;
 
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_runtime_world::facade::{ProductBranchIncarnation, ProductBranchObservation};
@@ -10,11 +12,13 @@ use worth_runtime_world::facade::{ProductBranchIncarnation, ProductBranchObserva
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 
 pub(super) struct WorthQueryApplicationBranchCommitCoordinator {
+    contention: Arc<contention::ContentionControl>,
     lanes: Mutex<BTreeMap<ProductBranchIncarnation, LaneEntry>>,
     capacity: Arc<Mutex<CoordinationCapacity>>,
 }
 
 pub(crate) struct WorthQueryApplicationBranchCommitLane {
+    contention: Arc<contention::ContentionControl>,
     occurrence: ProductBranchIncarnation,
     transition: Mutex<()>,
     _ticket: Arc<LaneTicket>,
@@ -85,12 +89,19 @@ pub(crate) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
 impl WorthQueryApplicationBranchCommitCoordinator {
     pub(super) fn new(maximum_retained_bytes: usize) -> Self {
         Self {
+            contention: Arc::new(contention::ContentionControl::default()),
             lanes: Mutex::new(BTreeMap::new()),
             capacity: Arc::new(Mutex::new(CoordinationCapacity {
                 maximum: maximum_retained_bytes,
                 retained: 0,
             })),
         }
+    }
+
+    pub(super) fn observe_contention_for_test(
+        &self,
+    ) -> WorthQueryApplicationBranchCommitContentionForTest {
+        self.contention.arm()
     }
 
     /// The stable-output path pays for the same lane lookup and construction
@@ -167,6 +178,7 @@ impl WorthQueryApplicationBranchCommitCoordinator {
             None => self.reserve(bytes)?,
         };
         let lane = Arc::new(WorthQueryApplicationBranchCommitLane {
+            contention: Arc::clone(&self.contention),
             occurrence,
             transition: Mutex::new(()),
             _ticket: Arc::clone(&ticket),
@@ -322,12 +334,27 @@ fn arc_bytes<T>() -> Result<usize, WorthQueryBranchCommitLaneDenial> {
 
 impl WorthQueryApplicationBranchCommitLane {
     pub(crate) fn enter(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
+        // Ordinary entry is the same blocking mutex. The receiver's armed
+        // certification recorder only reports an actual native contention.
+        let guard = if self.contention.armed() {
+            match self.transition.try_lock() {
+                Ok(guard) => guard,
+                Err(TryLockError::Poisoned(error)) => error.into_inner(),
+                Err(TryLockError::WouldBlock) => {
+                    self.contention.observe(self.occurrence);
+                    self.transition
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                }
+            }
+        } else {
+            self.transition
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+        };
         WorthQueryApplicationBranchCommitCoordination {
             occurrence: self.occurrence,
-            _guard: self
-                .transition
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
+            _guard: guard,
         }
     }
 }

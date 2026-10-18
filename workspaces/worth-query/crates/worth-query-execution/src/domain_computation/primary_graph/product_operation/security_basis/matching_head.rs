@@ -34,7 +34,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// Consume the second exact selected-index check before sealing this same
     /// issued Product/Query basis against the current World head. A moved head
     /// or different Native basis cannot authorize the graph read.
-    pub(in crate::domain_computation::primary_graph) fn admit_matching_head_query_prepared_read_security_basis<
+    pub(in crate::domain_computation::primary_graph) fn admit_matching_head_query_prepared_read_security_basis_with_native_access<
         'basis,
     >(
         &self,
@@ -43,6 +43,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
         prepared: &PreparedSelectedReadIndexes,
         admission: &mut InvalidationEditAdmission,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<Option<SelectedPreparedReadSecurityBasis<'basis>>, SelectedPermissionSecurityStop>
     {
         admission
@@ -51,12 +52,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if !prepared.matches_basis(product.relational_basis()) {
             return Ok(None);
         }
-        self.admit_matching_head_query_permission_basis(execution, product, query_basis, admission)
-            .map(|sealed| {
-                sealed.map(|permission| SelectedPreparedReadSecurityBasis {
-                    basis: permission.basis,
-                })
+        self.admit_matching_head_query_permission_basis_with_native_access(
+            execution,
+            product,
+            query_basis,
+            admission,
+            native,
+        )
+        .map(|sealed| {
+            sealed.map(|permission| SelectedPreparedReadSecurityBasis {
+                basis: permission.basis,
             })
+        })
     }
 
     /// Bind the selected Product and already inspected Query snapshot to the
@@ -70,6 +77,25 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         product: &crate::basis::WorthQueryProductObservationLease,
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
         admission: &mut InvalidationEditAdmission,
+    ) -> Result<
+        Option<WorthQuerySelectedPermissionSecurityBasis<'basis>>,
+        SelectedPermissionSecurityStop,
+    > {
+        self.admit_matching_head_query_permission_basis_with_native_access(
+            execution, product, query_basis, admission,
+            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire(),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn admit_matching_head_query_permission_basis_with_native_access<
+        'basis,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: &crate::basis::WorthQueryProductObservationLease,
+        query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
+        admission: &mut InvalidationEditAdmission,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<
         Option<WorthQuerySelectedPermissionSecurityBasis<'basis>>,
         SelectedPermissionSecurityStop,
@@ -97,8 +123,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .is_none_or(|guard| guard == expected);
         if expected.owner_identity() != self.product_runtime.owner.owner_identity()
             || !guard_matches
-            || !query_basis.can_reuse_security_snapshot_at(execution, expected)
         {
+            return Ok(None);
+        }
+        let graph = self
+            .runtime
+            .primary_graph()
+            .ok_or(SelectedPermissionSecurityStop::World)?;
+        let reusable = native.with_runtime_mut(
+            graph,
+            execution,
+            || SelectedPermissionSecurityStop::World,
+            |runtime| Ok(query_basis.can_reuse_security_snapshot_at_native(expected, runtime)),
+        )?;
+        if !reusable {
             return Ok(None);
         }
         let Some(snapshot) = query_basis.reusable_permission_snapshot() else {

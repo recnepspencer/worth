@@ -123,6 +123,7 @@ impl WorthQueryApplicationOutputLineage {
         computation_source: super::ComputationSourceEvidence,
         checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
     ) -> Option<RestoredRecord> {
+        self.invalidate_source_publication_coverage();
         let observed_source_facts = observed_source_facts.into();
         let source = SemanticSource {
             runtime_authority,

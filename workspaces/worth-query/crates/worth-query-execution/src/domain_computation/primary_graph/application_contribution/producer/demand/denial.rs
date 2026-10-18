@@ -313,3 +313,26 @@ impl PartialEq for WorthQueryOutputDemandDenial {
     }
 }
 impl Eq for WorthQueryOutputDemandDenial {}
+
+impl worth_execution::ChargedBytes for WorthQueryOutputDemandDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        use WorthQueryOutputDemandDenialKind as Kind;
+        if self.evidence.is_some()
+            || self.cleanup.is_some()
+            || matches!(
+                self.kind.as_ref(),
+                Kind::ManagedCleanupRequired(_)
+                    | Kind::ProductDelivery(_)
+                    | Kind::CorrespondenceDelivery(_)
+                    | Kind::BridgeConditional(_)
+            )
+        {
+            return u64::MAX;
+        }
+        let text = match &self.subject {
+            std::borrow::Cow::Borrowed(_) => 0,
+            std::borrow::Cow::Owned(text) => text.capacity() as u64,
+        };
+        (std::mem::size_of_val(self.kind.as_ref()) as u64).saturating_add(text)
+    }
+}

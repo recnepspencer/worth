@@ -126,6 +126,8 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldLifecyclePort>,
 }
 
+pub use branch_commit_coordination::WorthQueryApplicationBranchCommitContentionForTest;
+
 pub(crate) use branch_commit_coordination::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryApplicationBranchCommitLane,
     WorthQueryBranchCommitLaneDenial,
@@ -231,6 +233,13 @@ impl WorthQueryPrimaryGraphProvider {
             batch = batch.push(intent.clone());
         }
         Ok((batch, pending.map(|(_, pending)| pending)))
+    }
+
+    pub(super) fn observe_branch_commit_contention_for_test(
+        &self,
+    ) -> WorthQueryApplicationBranchCommitContentionForTest {
+        self.branch_commit_coordination
+            .observe_contention_for_test()
     }
 
     pub(in crate::domain_computation) fn application_branch_commit_lane(

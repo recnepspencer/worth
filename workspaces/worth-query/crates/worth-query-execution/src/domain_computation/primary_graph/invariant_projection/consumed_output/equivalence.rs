@@ -45,6 +45,13 @@ pub(super) fn check<'evidence>(
     });
     match compare(marked, full) {
         EquivalenceComparison::Equivalent => marked,
+        // The full oracle cannot discharge a native pending obligation.
+        // Preserve that non-current semantic result without claiming equivalence.
+        EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::PendingUpstream)
+            if marked == Ok(ConsumedOutputVerification::PendingUpstream) =>
+        {
+            marked
+        }
         EquivalenceComparison::Inconclusive(stop) => Err(stop),
         EquivalenceComparison::Mismatch { marked, full } => {
             panic!("invalidation equivalence mismatch: marking={marked:?}, full={full:?}")
@@ -60,8 +67,15 @@ fn compare(
         Ok(ConsumedOutputVerification::Current) => DecisiveMeaning::Current,
         Ok(
             ConsumedOutputVerification::ChangedDirectFact(_)
-            | ConsumedOutputVerification::ChangedUpstream,
+            | ConsumedOutputVerification::ChangedUpstream
+            | ConsumedOutputVerification::ChangedOutput
+            | ConsumedOutputVerification::Unaligned,
         ) => DecisiveMeaning::Changed,
+        Ok(ConsumedOutputVerification::PendingUpstream) => {
+            return EquivalenceComparison::Inconclusive(
+                ConsumedOutputVerificationStop::PendingUpstream,
+            )
+        }
         Err(stop) => return EquivalenceComparison::Inconclusive(stop),
     };
     let full = match full {

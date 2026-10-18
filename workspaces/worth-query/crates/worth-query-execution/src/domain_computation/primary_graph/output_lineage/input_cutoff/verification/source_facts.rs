@@ -50,6 +50,9 @@ fn fact_is_current(
     admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, InputCutoffVerificationStop> {
     match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
+        Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => {
+            Err(InputCutoffVerificationStop::OutputObservation(stop))
+        }
         Ok(movement) => Ok(movement.movement() == Movement::Unmoved),
         Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
             Err(InputCutoffVerificationStop::Execution(cause))

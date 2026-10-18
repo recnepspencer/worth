@@ -12,6 +12,8 @@ mod movement;
 mod retirement_equality;
 mod source_currentness;
 mod source_merge;
+mod source_publication_read;
+pub(in crate::domain_computation::primary_graph) use source_publication_read::SourcePublicationRead;
 mod workflow_definition_predecessor;
 mod workflow_history_basis;
 mod workflow_instance_capacity;
@@ -44,6 +46,7 @@ pub(in crate::domain_computation) struct WorthQueryApplicationObservedRelation {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactKey {
+    SourcePublication(SourcePublicationRead),
     Entity {
         entity: String,
         entity_id: EntityId,
@@ -68,6 +71,12 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
+    /// Owner-issued non-driving publication observation. The native slot and
+    /// image custody remain live; descriptive state alone cannot create this.
+    SourcePublication {
+        observation:
+            std::sync::Arc<super::super::output_lineage::invalidation::ObservedSourcePublication>,
+    },
     /// Postcondition of a committed, declared output retirement. The original
     /// read locator remains covered; the exact entity generation must stay retired.
     RetiredOutputEntity {
@@ -196,7 +205,10 @@ impl WorthQueryApplicationObservedFact {
         locator_identity::encode(self)
     }
 
-    pub(super) fn touches_entity(&self, candidate: EntityId) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn touches_entity(
+        &self,
+        candidate: EntityId,
+    ) -> bool {
         entity_touch::evaluate(self, candidate)
     }
 }

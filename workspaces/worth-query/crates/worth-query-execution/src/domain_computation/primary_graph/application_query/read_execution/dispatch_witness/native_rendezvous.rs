@@ -1,6 +1,19 @@
 //! Two distinct roots hold a native read open using only observed events.
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::ReadLockProbeForTest;
+// Worker Send proofs stop at this test event boundary. Only the concrete owner
+// below retains the runtime/snapshots; construction checks its Send + Sync once.
+pub(super) trait NativeReadRendezvousControl: Send + Sync {
+    fn enter(&self, root: EntityId);
+    fn exit(&self, root: EntityId);
+    fn while_owner_locked(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        read: &mut dyn FnMut(),
+    );
+    fn release_snapshot(&self);
+}
+
 pub(super) struct NativeReadRendezvous {
     roots: [EntityId; 2],
     owner: ReadLockProbeForTest,
@@ -24,7 +37,7 @@ struct NativeState {
 pub(in crate::domain_computation::primary_graph) struct NativeReadRendezvousGuardForTest {
     witness: Arc<DispatchWitness>,
     gate: Arc<NativeReadRendezvous>,
-    previous: Option<Arc<NativeReadRendezvous>>,
+    previous: Option<Arc<dyn NativeReadRendezvousControl>>,
 }
 impl DispatchWitness {
     pub(in crate::domain_computation::primary_graph) fn hold_native_reads_for_test(
@@ -45,7 +58,8 @@ impl DispatchWitness {
             ready: Condvar::new(),
             read_snapshot: Mutex::new(snapshots),
         });
-        let previous = self.native_reads.lock().unwrap().replace(Arc::clone(&gate));
+        let carried: Arc<dyn NativeReadRendezvousControl> = gate.clone();
+        let previous = self.native_reads.lock().unwrap().replace(carried);
         NativeReadRendezvousGuardForTest {
             witness: Arc::clone(self),
             gate,
@@ -59,15 +73,20 @@ impl DispatchWitness {
     ) -> T {
         let gate = self.native_reads.lock().unwrap().clone();
         match gate {
-            Some(gate) => gate.owner.with_owner_lock_for_test(request, read),
+            Some(gate) => {
+                let mut read = Some(read);
+                let mut result = None;
+                gate.while_owner_locked(request, &mut || {
+                    result = Some(read.take().expect("the owner executes its closure once")());
+                });
+                result.expect("the owner executed its closure")
+            }
             None => read(),
         }
     }
     pub(in crate::domain_computation::primary_graph) fn release_native_snapshot_for_test(&self) {
-        if let Some(gate) = self.native_reads.lock().unwrap().clone()
-            && let Some(snapshot) = gate.read_snapshot.lock().unwrap().pop()
-        {
-            gate.owner.release_snapshot_for_test(&snapshot);
+        if let Some(gate) = self.native_reads.lock().unwrap().clone() {
+            gate.release_snapshot();
         }
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn native_read_exit(
@@ -88,7 +107,21 @@ impl DispatchWitness {
         }
     }
 }
-impl NativeReadRendezvous {
+impl NativeReadRendezvousControl for NativeReadRendezvous {
+    fn while_owner_locked(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        read: &mut dyn FnMut(),
+    ) {
+        self.owner.with_owner_lock_for_test(request, read);
+    }
+
+    fn release_snapshot(&self) {
+        if let Some(snapshot) = self.read_snapshot.lock().unwrap().pop() {
+            self.owner.release_snapshot_for_test(&snapshot);
+        }
+    }
+
     fn exit(&self, root: EntityId) {
         let mut state = self.state.lock().unwrap();
         if self.roots.contains(&root) {

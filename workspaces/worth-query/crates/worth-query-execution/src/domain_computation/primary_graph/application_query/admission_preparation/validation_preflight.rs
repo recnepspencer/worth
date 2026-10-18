@@ -61,14 +61,16 @@ pub(super) fn admit_source_readmission_validation<
     Ok(())
 }
 
-fn work_denial() -> WorthQueryApplicationQueryAdmissionDenial {
+pub(super) fn work_denial() -> WorthQueryApplicationQueryAdmissionDenial {
     WorthQueryApplicationQueryAdmissionDenial::new(
         WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
         String::new(),
     )
 }
 
-fn resource_denial(stop: CompanionPreflightStop) -> WorthQueryApplicationQueryAdmissionDenial {
+pub(super) fn resource_denial(
+    stop: CompanionPreflightStop,
+) -> WorthQueryApplicationQueryAdmissionDenial {
     let kind = match stop {
         CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow => {

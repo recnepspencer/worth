@@ -17,10 +17,9 @@ pub(super) fn execute_authorized<Schema, Binding>(
     phase: &WorthQueryAdvancementPhase<'_>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
-        '_,
-        Schema,
-    >,
+    shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
+    external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request_scope: &WorthQueryRequestScope,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         Schema,
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Principal,
@@ -66,7 +65,9 @@ where
     let plan = prepare_authorized::<Schema, Binding>(
         phase,
         runtime,
-        selected,
+        shared,
+        external_principal,
+        request_scope,
         principal,
         admission,
         required_output,

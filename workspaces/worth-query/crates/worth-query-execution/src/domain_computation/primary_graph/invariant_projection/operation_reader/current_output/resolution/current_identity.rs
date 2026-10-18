@@ -10,7 +10,9 @@ impl<'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn live_current_identity<Entity>(
+    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn live_current_identity<
+        Entity,
+    >(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         role: &str,

@@ -79,6 +79,9 @@ pub struct WorthQueryProviderSessionFailure {
     counters: WorthQueryProviderSessionProtocolCounters,
     allocation: Option<worth_execution::ExecutionAllocationDenial>,
     native_preparation: Option<std::sync::Arc<native_preparation::NativePreparationFailure>>,
+    source_query_authorization: Option<
+        Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
+    >,
     checked_read: Option<
         Box<
             Result<
@@ -105,6 +108,7 @@ impl WorthQueryProviderSessionFailure {
             allocation: None,
             native_preparation: None,
             checked_read: None,
+            source_query_authorization: None,
         }
     }
 
@@ -136,6 +140,22 @@ impl WorthQueryProviderSessionFailure {
         >,
     > {
         self.checked_read.as_deref().copied()
+    }
+
+    /// Exact source-query permission refusal retained through precommit custody.
+    pub fn source_query_authorization_stop(
+        &self,
+    ) -> Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>
+    {
+        self.source_query_authorization.as_deref().copied()
+    }
+
+    pub(in crate::domain_computation) fn with_source_query_authorization_stop(
+        mut self,
+        stop: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ) -> Self {
+        self.source_query_authorization = Some(Box::new(stop));
+        self
     }
 
     pub(in crate::domain_computation) fn allocation_denied(

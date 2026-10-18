@@ -38,6 +38,25 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     {
+        self.resolve_encoded_entity_admitted_with_native_access(
+            execution, entity, field, encoded, request, index, layout, admission,
+            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire(),
+        )
+    }
+
+    pub(super) fn resolve_encoded_entity_admitted_with_native_access<Entity>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: &str,
+        field: &str,
+        encoded: AspectValue,
+        request: &WorthQueryRequestScope,
+        index: DerivedIndexId,
+        layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryFieldLayout,
+        admission: &mut InvalidationEditAdmission,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
+    {
         // Context retention copies its Arc and 80-byte schema binding identity.
         admission
             .charge_external_work(82)
@@ -50,80 +69,94 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             )
         })?;
         let installed = graph.retain_entity_resolution_context();
-        let lookup = graph.with_runtime_mut(execution, |relational| {
-            selected_index_is_current_admitted(
-                relational,
-                self.product().relational_basis(),
-                index,
-                admission,
-            )
-            .map_err(|stop| admission_denial(stop, field))?
-            .then_some(())
-            .ok_or_else(|| {
+        let lookup = native.with_runtime_mut(
+            graph,
+            execution,
+            || {
                 entity_denial(
-                    Kind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                    Kind::Refused(ResolutionRefusal::ForeignResolutionTruth),
                     field,
                 )
-            })?;
-            let view = relational
-                .read_truth()
-                .project_snapshot_admitted(
-                    self.application_basis().snapshot_handle(),
-                    execution,
-                    |work, bytes| {
-                        admission.admit_read_scratch(bytes)?;
-                        admission.charge_external_work(work)
-                    },
+            },
+            |relational| {
+                selected_index_is_current_admitted(
+                    relational,
+                    self.product().relational_basis(),
+                    index,
+                    admission,
                 )
-                .map_err(|stop| match stop {
-                    RelationalSnapshotProjectionAdmissionStop::Execution(cause) => entity_denial(
-                        native_denial_kind(BoundedEntityFieldLookupDenialKind::Execution(cause)),
-                        field,
-                    ),
-                    RelationalSnapshotProjectionAdmissionStop::Admission(stop) => {
-                        admission_denial(stop, field)
-                    }
-                    RelationalSnapshotProjectionAdmissionStop::AccountingOverflow => {
-                        entity_denial(Kind::Stopped(NativeReadStop::WorkCounterOverflow), field)
-                    }
-                })?
+                .map_err(|stop| admission_denial(stop, field))?
+                .then_some(())
                 .ok_or_else(|| {
                     entity_denial(
-                        Kind::Refused(ResolutionRefusal::ForeignResolutionTruth),
+                        Kind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
                         field,
                     )
                 })?;
-            relational
-                .index_access()
-                .execute_bounded_entity_field_lookup(
-                    worth_relational::facade::indexes::BoundedEntityFieldSelectedLookup::new(
-                        &view,
-                        index,
-                        layout.entity_kind,
-                        &layout.locator,
-                        &encoded,
-                        2,
-                        |work, bytes| admission.charge_selected_index_read(work, bytes),
-                    ),
-                    BoundedIndexParityMode::Production,
-                    execution,
-                )
-                .map_err(|stop| match stop {
-                    BoundedEntityFieldLookupAdmissionStop::Lookup(denial) => {
-                        entity_denial(native_denial_kind(denial.kind()), field)
-                    }
-                    BoundedEntityFieldLookupAdmissionStop::Admission(stop) => {
-                        admission_denial(stop, field)
-                    }
-                    BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => {
-                        entity_denial(Kind::Stopped(NativeReadStop::WorkCounterOverflow), field)
-                    }
-                    BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => entity_denial(
-                        Kind::Refused(ResolutionRefusal::ForeignResolutionTruth),
-                        field,
-                    ),
-                })
-        })?;
+                let view = relational
+                    .read_truth()
+                    .project_snapshot_admitted(
+                        self.application_basis().snapshot_handle(),
+                        execution,
+                        |work, bytes| {
+                            admission.admit_read_scratch(bytes)?;
+                            admission.charge_external_work(work)
+                        },
+                    )
+                    .map_err(|stop| match stop {
+                        RelationalSnapshotProjectionAdmissionStop::Execution(cause) => {
+                            entity_denial(
+                                native_denial_kind(BoundedEntityFieldLookupDenialKind::Execution(
+                                    cause,
+                                )),
+                                field,
+                            )
+                        }
+                        RelationalSnapshotProjectionAdmissionStop::Admission(stop) => {
+                            admission_denial(stop, field)
+                        }
+                        RelationalSnapshotProjectionAdmissionStop::AccountingOverflow => {
+                            entity_denial(Kind::Stopped(NativeReadStop::WorkCounterOverflow), field)
+                        }
+                    })?
+                    .ok_or_else(|| {
+                        entity_denial(
+                            Kind::Refused(ResolutionRefusal::ForeignResolutionTruth),
+                            field,
+                        )
+                    })?;
+                relational
+                    .index_access()
+                    .execute_bounded_entity_field_lookup(
+                        worth_relational::facade::indexes::BoundedEntityFieldSelectedLookup::new(
+                            &view,
+                            index,
+                            layout.entity_kind,
+                            &layout.locator,
+                            &encoded,
+                            2,
+                            |work, bytes| admission.charge_selected_index_read(work, bytes),
+                        ),
+                        BoundedIndexParityMode::Production,
+                        execution,
+                    )
+                    .map_err(|stop| match stop {
+                        BoundedEntityFieldLookupAdmissionStop::Lookup(denial) => {
+                            entity_denial(native_denial_kind(denial.kind()), field)
+                        }
+                        BoundedEntityFieldLookupAdmissionStop::Admission(stop) => {
+                            admission_denial(stop, field)
+                        }
+                        BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => {
+                            entity_denial(Kind::Stopped(NativeReadStop::WorkCounterOverflow), field)
+                        }
+                        BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => entity_denial(
+                            Kind::Refused(ResolutionRefusal::ForeignResolutionTruth),
+                            field,
+                        ),
+                    })
+            },
+        )?;
         if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
             return Err(entity_denial(
                 Kind::Refused(ResolutionRefusal::AmbiguousEntity),

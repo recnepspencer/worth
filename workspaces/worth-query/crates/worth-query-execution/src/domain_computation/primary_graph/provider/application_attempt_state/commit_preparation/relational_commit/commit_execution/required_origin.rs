@@ -61,12 +61,12 @@ pub(super) fn bind(
         Ok(())
     })?;
     let scope = attempt.affinity().operation_scope();
-    let (family, prior) = provider
+    let (family, head) = provider
         .graph
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .required_publication_predecessor(
+        .required_publication_head(
             required.native_publication_family(),
             attempt.output_binding_type().ok_or_else(overflow)?,
             scope,
@@ -104,12 +104,14 @@ pub(super) fn bind(
         .charge_external_work(bytes as u64 + targets.len() as u64)
         .map_err(native_output_witness_stop)?;
     let mut roles = Vec::with_capacity(targets.len());
+    let mut all_created = true;
     for (role, posture, name, target) in targets {
         let kind = provider
             .graph
             .layout
             .entity_kind(name)
             .ok_or_else(overflow)?;
+        all_created &= posture == Posture::Create;
         roles.push(RequiredOutputRoleTarget {
             role: role.to_owned(),
             entity_name: name.to_owned(),
@@ -133,15 +135,11 @@ pub(super) fn bind(
         source_partition: partition,
         source_epoch,
     };
-    let running = publisher.owner.admit_required_output(producer, dependency);
-    let publication = if prior.is_none() {
-        if roles
-            .iter()
-            .any(|role| role.posture != RequiredOutputRolePosture::Create)
-        {
-            return Err(mismatch());
-        }
-        let absence = provider
+    let warm = head.as_ref().and_then(|head| head.warm_publication());
+    let absence = if warm.is_some() {
+        None
+    } else {
+        provider
             .graph
             .with_runtime(execution, |runtime| {
                 runtime.readmit_required_output_route_absence(
@@ -151,7 +149,17 @@ pub(super) fn bind(
                     &meaning,
                 )
             })
-            .map_err(transaction_commit_stop)?;
+            .map_err(transaction_commit_stop)?
+    };
+    if absence.is_some() && !all_created {
+        // An ordinary producer may preserve an authored carrier without ever
+        // owning its birth. Native has established that this route has no
+        // publication to succeed. Keep the whole operation ordinary: neither
+        // existing roles nor any created companions acquire ownership here.
+        return Ok(proposal);
+    }
+    let running = publisher.owner.admit_required_output(producer, dependency);
+    let publication = if let Some(absence) = absence {
         RequiredOutputPublication::Birth {
             admission: running,
             absence: Some(absence),
@@ -159,10 +167,13 @@ pub(super) fn bind(
             roles,
         }
     } else {
-        let prior = prior.ok_or_else(mismatch)?;
-        let predecessor = if let Some(native) = prior.native {
+        let predecessor = if let Some(native) = warm {
             native
         } else {
+            let prior = head
+                .ok_or_else(mismatch)?
+                .cold_predecessor(admission)
+                .map_err(native_output_witness_stop)?;
             let views = prior.correspondence.native_witness_roles();
             let width = views
                 .len()
@@ -198,8 +209,13 @@ pub(super) fn bind(
                     target: EntityReference::Existing(id),
                 });
             }
-            // The family clone's backing is included in predecessor admission;
-            // this is the performed epoch, not the new demand's source epoch.
+            admission
+                .admit_read_scratch(meaning.family.len() as u64)
+                .map_err(native_output_witness_stop)?;
+            admission
+                .charge_external_work(meaning.family.len() as u64)
+                .map_err(native_output_witness_stop)?;
+            // This is the performed epoch, not the new demand's source epoch.
             let prior_meaning = RequiredOutputPublicationMeaning {
                 family: meaning.family.clone(),
                 source_epoch: prior.source_epoch,

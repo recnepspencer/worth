@@ -2,18 +2,11 @@
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
-pub(in crate::domain_computation::primary_graph) struct RequiredPublicationPredecessor {
-    pub(in crate::domain_computation::primary_graph) correspondence:
-        Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub(in crate::domain_computation::primary_graph) native:
-        Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
-    pub(in crate::domain_computation::primary_graph) producer: String,
-    pub(in crate::domain_computation::primary_graph) dependency: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) source_epoch: [u8; 32],
-}
+mod head;
+use head::SelectedRequiredPublicationHead;
 
 impl WorthQueryApplicationOutputLineage {
-    pub(in crate::domain_computation::primary_graph) fn required_publication_predecessor(
+    pub(in crate::domain_computation::primary_graph) fn required_publication_head(
         &self,
         family: &str,
         binding: TypeId,
@@ -23,7 +16,7 @@ impl WorthQueryApplicationOutputLineage {
         partition: [u8; 32],
         admission: &mut InvalidationEditAdmission,
     ) -> Result<
-        (String, Option<RequiredPublicationPredecessor>),
+        (String, Option<SelectedRequiredPublicationHead>),
         worth_relational::facade::mvcc::CompanionPreflightStop,
     > {
         use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
@@ -40,7 +33,7 @@ impl WorthQueryApplicationOutputLineage {
         if !bindings.iter().any(|(candidate, _)| *candidate == binding) {
             return Err(Stop::SelectedSourceMismatch);
         }
-        let mut selected: Option<(usize, u64, &RecordedOutput)> = None;
+        let mut selected: Option<(usize, u64, &Arc<OnceLock<RecordedOutput>>)> = None;
         for (binding, _) in bindings {
             let source = SemanticSource {
                 runtime_authority: scope.runtime_authority(),
@@ -56,8 +49,8 @@ impl WorthQueryApplicationOutputLineage {
             };
             let mut depth = 0;
             loop {
-                let (recorded, work) = self
-                    .latest_output_in_partition_budgeted(
+                let (cell, work) = self
+                    .latest_cell_in_partition_budgeted(
                         &source,
                         coordinate,
                         partition,
@@ -67,16 +60,18 @@ impl WorthQueryApplicationOutputLineage {
                         maximum: admission.remaining_work() as u64,
                     })?;
                 admission.charge_external_work(work as u64)?;
-                if let Some(row) = recorded {
+                if let Some(cell) = cell {
+                    let row = cell.get().ok_or(Stop::SelectedSourceMismatch)?;
                     let row_generation = row.settlement_identity.coordinate().generation;
                     if selected.is_none_or(|(old_depth, old_generation, _)| {
                         depth < old_depth || (depth == old_depth && row_generation > old_generation)
                     }) {
-                        selected = Some((depth, row_generation, row));
+                        selected = Some((depth, row_generation, cell));
                     } else if selected.is_some_and(|(old_depth, old_generation, old)| {
                         depth == old_depth
                             && row_generation == old_generation
-                            && old.settlement_identity != row.settlement_identity
+                            && old.get().map(|old| &old.settlement_identity)
+                                != Some(&row.settlement_identity)
                     }) {
                         return Err(Stop::SelectedSourceMismatch);
                     }
@@ -92,31 +87,12 @@ impl WorthQueryApplicationOutputLineage {
         }
         admission.admit_read_scratch(family.len() as u64)?;
         admission.charge_external_work(family.len() as u64)?;
-        let Some((_, _, row)) = selected else {
+        let Some((_, _, cell)) = selected else {
             return Ok((family.to_owned(), None));
         };
-        let origin = row
-            .performed_origin
-            .as_ref()
-            .and_then(|cell| cell.get())
-            .unwrap_or(row);
-        let locator = origin
-            .native_prior_checkpoint
-            .as_ref()
-            .ok_or(Stop::SelectedSourceMismatch)?;
-        admission.admit_read_scratch((family.len() + locator.producer().len()) as u64)?;
-        admission.charge_external_work((family.len() + locator.producer().len()) as u64)?;
         Ok((
             family.to_owned(),
-            Some(RequiredPublicationPredecessor {
-                correspondence: Arc::clone(&origin.correspondence),
-                native: origin.required_publication.clone(),
-                producer: locator.producer().to_owned(),
-                source_epoch: locator.source(),
-                dependency: origin
-                    .producer_dependency_identity
-                    .ok_or(Stop::SelectedSourceMismatch)?,
-            }),
+            Some(SelectedRequiredPublicationHead::retain(cell)?),
         ))
     }
 }

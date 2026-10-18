@@ -59,6 +59,21 @@ impl WorthQueryApplicationQueryBasisCustody {
             .then(|| self.application_basis.snapshot_handle())
     }
 
+    pub(in crate::domain_computation::primary_graph) fn can_reuse_security_snapshot_at_native(
+        &self,
+        current: &worth_runtime_world::facade::ProductBranchObservation,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> bool {
+        self.product.observation() == current
+            && self.application_basis.identity().runtime_instance_id()
+                == current
+                    .basis()
+                    .relational_basis()
+                    .identity()
+                    .runtime_instance_id()
+            && self.application_basis.is_live_at(runtime)
+    }
+
     /// Permission can reuse the source selection's snapshot when the exact
     /// Product basis already completed its own program-inspection phase.
     pub(in crate::domain_computation::primary_graph) fn reusable_permission_snapshot(
@@ -92,6 +107,13 @@ impl WorthQueryApplicationQueryBasisCustody {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> bool {
         self.application_basis.is_live(execution)
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn is_live_at(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> bool {
+        self.application_basis.is_live_at(runtime)
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn release(

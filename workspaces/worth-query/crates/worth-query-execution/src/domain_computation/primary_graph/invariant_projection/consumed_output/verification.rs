@@ -10,6 +10,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use super::ConsumedOutputEvidence;
 
 mod at_observation;
+mod candidate;
 mod capacity_stop;
 mod equality_recovery;
 mod marked_walk;
@@ -29,8 +30,9 @@ use crate::domain_computation::primary_graph::{
     SourceInvalidationOwner,
 };
 pub(in crate::domain_computation::primary_graph) use capacity_stop::VerificationCapacityStop;
-pub(in crate::domain_computation::primary_graph::invariant_projection) use work_budget::map_admission_stop;
-use work_budget::{charge_external, fact_is_current, map_verification_stop, reserve_pending};
+pub(in crate::domain_computation::primary_graph) use work_budget::map_admission_stop;
+pub(in crate::domain_computation::primary_graph) use work_budget::reserve_pending;
+use work_budget::{charge_external, fact_is_current, map_verification_stop};
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct EvidenceView<'a> {
@@ -90,11 +92,29 @@ pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerification
     Current,
     ChangedDirectFact(usize),
     ChangedUpstream,
+    /// Native pending state, prior to ordinary driving-policy translation.
+    PendingUpstream,
+    /// A recorded output witness moved, not merely its input source facts.
+    ChangedOutput,
+    /// Evidence is from a different or later native source position.
+    Unaligned,
+}
+impl ConsumedOutputVerification {
+    fn driving(self) -> Result<Self, ConsumedOutputVerificationStop> {
+        match self {
+            Self::PendingUpstream => Err(ConsumedOutputVerificationStop::PendingUpstream),
+            Self::ChangedOutput | Self::Unaligned => Ok(Self::ChangedUpstream),
+            other => Ok(other),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerificationStop {
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    SourceQueryAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
     Unavailable,
     CapacityExhausted(VerificationCapacityStop),
     PendingUpstream,
@@ -106,74 +126,6 @@ pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerification
 }
 
 impl ConsumedOutputEvidence {
-    /// The source owner decides whether this settlement is clean, which exact
-    /// fact ordinals are dirty, or whether retained evidence must be verified.
-    /// Every actor lookup and fact comparison is paid from the caller's meter.
-    /// The iterative worklist visits each exact settlement at most once.
-    pub(in crate::domain_computation::primary_graph::invariant_projection) fn verify_candidate_at(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        identity: &Arc<RecordedSettlementIdentity>,
-        source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
-        upstream: &[ConsumedOutputEvidence],
-        verification_requirement: Option<FullVerificationReason>,
-        native_output_witness: &Arc<OnceLock<SealedNativeOutputWitness>>,
-        observed: &PositionedRelationalSnapshot,
-        owner: &SourceInvalidationOwner,
-        runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
-        selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        Self::verify_views(
-            execution,
-            std::iter::once(EvidenceView {
-                identity,
-                source_facts,
-                upstream,
-                verification_requirement,
-                native_output_witness: Some(native_output_witness),
-                selected_native_root: observed,
-            }),
-            owner,
-            runtime,
-            snapshot,
-            selected,
-            admission,
-        )
-    }
-
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn verify_candidate_with_admission(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        identity: &Arc<RecordedSettlementIdentity>,
-        source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
-        upstream: &[ConsumedOutputEvidence],
-        verification_requirement: Option<FullVerificationReason>,
-        observed: &PositionedRelationalSnapshot,
-        owner: &SourceInvalidationOwner,
-        runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
-        selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        Self::verify_views(
-            execution,
-            std::iter::once(EvidenceView {
-                identity,
-                source_facts,
-                upstream,
-                verification_requirement,
-                native_output_witness: None,
-                selected_native_root: observed,
-            }),
-            owner,
-            runtime,
-            snapshot,
-            selected,
-            admission,
-        )
-    }
-
     pub(in crate::domain_computation::primary_graph) fn verify_many_with_admission(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: &[Self],
@@ -195,6 +147,21 @@ impl ConsumedOutputEvidence {
     }
 
     fn verify_views<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
+        owner: &SourceInvalidationOwner,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        selected: &PositionedRelationalSnapshot,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
+        Self::observe_views(
+            execution, roots, owner, runtime, snapshot, selected, admission,
+        )?
+        .driving()
+    }
+
+    fn observe_views<'a>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
         owner: &SourceInvalidationOwner,
@@ -317,3 +284,10 @@ impl ConsumedOutputEvidence {
         result
     }
 }
+
+impl std::fmt::Display for ConsumedOutputVerificationStop {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "native output verification: {self:?}")
+    }
+}
+impl std::error::Error for ConsumedOutputVerificationStop {}

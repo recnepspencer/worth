@@ -202,16 +202,10 @@ pub(super) fn produce(
         absence, meaning, ..
     } = &mut publication
     {
-        *absence = Some(
-            runtime
-                .readmit_required_output_route_absence(
-                    execution,
-                    &installed,
-                    &basis(runtime),
-                    meaning,
-                )
-                .unwrap(),
-        );
+        *absence = runtime
+            .readmit_required_output_route_absence(execution, &installed, &basis(runtime), meaning)
+            .unwrap();
+        assert!(absence.is_some());
     }
     let proposal = transaction
         .validate(execution, runtime)

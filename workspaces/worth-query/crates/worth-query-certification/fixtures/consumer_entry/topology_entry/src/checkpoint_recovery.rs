@@ -45,6 +45,7 @@ mod support;
 use support::{authenticate, install, length};
 
 mod observation_scope;
+mod output_availability;
 use observation_scope::checkpoint_recovery_test_guard;
 
 worth_query_application! {

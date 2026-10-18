@@ -31,6 +31,51 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
+        self.prepare_mutation_handler_plan_with_source_access::<Binding>(
+            phase,
+            identities,
+            principal_identity,
+            None,
+            admission,
+            on_contact,
+            allocation_policy,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation::primary_graph) fn prepare_mutation_handler_plan_with_source_access<
+        'advance: 'authority,
+        'authority,
+        Binding,
+    >(
+        &self,
+        phase: &'advance WorthQueryAdvancementPhase<'advance>,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        principal_identity: &Binding::PrincipalIdentity,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                Schema,
+            >,
+        >,
+        admission: WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        on_contact: impl FnOnce(),
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
+    ) -> Result<
+        PreparedMutationHandler<'advance, 'authority, Schema, Binding>,
+        WorthQueryMutationHandlerExecutionReport<
+            WorthQueryCompletedMutationCandidate<Schema, Binding>,
+            Binding::Denial,
+        >,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
         let execution = match phase.execution_for(&self.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
@@ -92,7 +137,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let projected = {
             self.mutation_projection
-                .project_admitted_operation_with_request(
+                .project_admitted_operation_with_source_access(
                     &phase_request,
                     &admission,
                     |reader, scope| {
@@ -111,6 +156,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         handler.prepare_decision(input, &mut decision_reader)
                     },
                     allocation_control.policy(),
+                    source_query,
+                    Some(&context_use),
                 )
         };
         let projected = match projected {

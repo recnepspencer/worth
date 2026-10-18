@@ -89,6 +89,9 @@ pub(super) fn rebound(
         rebound.push(replacement.unwrap_or(root).clone());
     }
     match ConsumedOutputEvidence::admit_backing(&mut rebound, owner, admission) {
+        Err(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => {
+            return Err(InputCutoffVerificationStop::OutputObservation(stop))
+        }
         Ok(()) => {}
         // Unavailable evidence cannot mint an equality witness. It is Fresh,
         // not an allocation refusal.

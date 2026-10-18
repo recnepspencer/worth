@@ -30,6 +30,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         // The selected candidate may itself be an alias. This sealed relation
         // names that exact predecessor, never just the performed origin.
         let equality = StableEqualityConsequence {
+            partition: Some(self.address.partition),
             predecessor: Arc::clone(self.address.verified.candidate.settlement_identity()),
             successor: Arc::clone(&self.address.identity),
             selected,
@@ -55,6 +56,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
 
 /// Minted only by a verified stable publication at its exact selected source.
 pub(in crate::domain_computation::primary_graph) struct StableEqualityConsequence<'selected> {
+    partition: Option<[u8; 32]>,
     predecessor: Arc<RecordedSettlementIdentity>,
     successor: Arc<RecordedSettlementIdentity>,
     selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,
@@ -68,6 +70,7 @@ impl<'selected> StableEqualityConsequence<'selected> {
         selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,
     ) -> Self {
         Self {
+            partition: None,
             predecessor,
             successor,
             selected,
@@ -78,6 +81,12 @@ impl<'selected> StableEqualityConsequence<'selected> {
         &self,
     ) -> &Arc<RecordedSettlementIdentity> {
         &self.predecessor
+    }
+
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn partition(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.partition
     }
 
     pub(in crate::domain_computation::primary_graph::output_lineage) fn successor(

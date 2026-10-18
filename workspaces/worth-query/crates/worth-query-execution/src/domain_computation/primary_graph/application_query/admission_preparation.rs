@@ -21,6 +21,7 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Inva
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
+mod fresh_source;
 mod validation_preflight;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

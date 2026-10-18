@@ -26,6 +26,8 @@ fn canonical<T>(values: &CanonicalUniqueVec<T>) -> u64 {
 impl ChargedBytes for WorthQueryApplicationFactKey {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
+            // The native read retains its own actual backing and custody.
+            Self::SourcePublication(_) => 0,
             Self::Entity { entity, .. } => bytes(entity.capacity()),
             Self::Field {
                 entity, locator, ..
@@ -65,7 +67,8 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
                 .saturating_add(bytes(value.owned_allocation_capacity_bytes()))
                 .saturating_add(list(candidates)),
             Self::WorkflowInstanceCapacity { instances, .. } => list(instances),
-            Self::SourceEntity { .. }
+            Self::SourcePublication { .. }
+            | Self::SourceEntity { .. }
             | Self::Entity { .. }
             | Self::WorkflowDefinitionPredecessor { .. }
             | Self::WorkflowDefinitionCurrent { .. }

@@ -93,10 +93,15 @@ where
             request_scope,
         )
         .map_err(|error| request_authority_denied(Binding::IDENTITY, error))?;
+    let shared = selected
+        .prepare_shared_query_basis(request_admission)
+        .map_err(|(_, stop)| source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?;
     post_authorization::execute_authorized::<Schema, Binding>(
         phase,
         runtime,
-        &selected,
+        &shared,
+        external_principal,
+        request_scope,
         &principal,
         admission,
         required_output,

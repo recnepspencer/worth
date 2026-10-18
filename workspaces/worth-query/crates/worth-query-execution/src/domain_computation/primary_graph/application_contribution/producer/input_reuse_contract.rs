@@ -30,6 +30,12 @@ impl WorthQueryDecisionContextDependencies {
 
 /// Static, producer-specific eligibility declaration for exact input reuse.
 /// It does not authorize reuse without an exactly completed handler read.
+///
+/// Admission still calls the provider's `demand_resources`, `operation_input`
+/// and `idempotency_key` to prepare current canonical input under fresh authority.
+/// An accepted cutoff skips handler-plan preparation, including its gather and
+/// kernels. Native execution contacts count that skipped handler preparation;
+/// prerequisite provider callbacks and their work remain separate.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryProducerInputReuseContract {
     determinism: DeterminismContract,

@@ -12,7 +12,7 @@ thread_local! { static ACTIVE: RefCell<Option<Arc<DispatchWitness>>> = const { R
 pub(in crate::domain_computation::primary_graph) struct DispatchWitness {
     state: Mutex<State>,
     finished: Condvar,
-    native_reads: Mutex<Option<Arc<native_rendezvous::NativeReadRendezvous>>>,
+    native_reads: Mutex<Option<Arc<dyn native_rendezvous::NativeReadRendezvousControl>>>,
 }
 #[derive(Default)]
 struct State {

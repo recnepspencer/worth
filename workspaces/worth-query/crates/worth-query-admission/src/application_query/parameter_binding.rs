@@ -1,3 +1,9 @@
+mod layout_validation;
+use layout_validation::validate_parameter_layout;
+mod preparation;
+pub use preparation::{
+    admit_application_query_parameters_admitted, WorthQueryParameterPreparationStop,
+};
 use worth_foundational::facade::{AspectValue, CanonicalDigestDerivationDenial, CanonicalDigestId};
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
@@ -349,37 +355,6 @@ fn basis_copy_and_comparison_visits(
     }
     // The comparator clones both bases, then visits the selected entries.
     u64::try_from(initialized.checked_mul(3)?).ok()
-}
-
-fn validate_parameter_layout<Schema, Query, Parameters, QueryResult, Scope>(
-    query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
-    bindings: &[(&'static str, AspectValue)],
-) -> Result<(), WorthQueryApplicationQueryParameterDenial> {
-    if bindings.len() != query.parameters().len() {
-        return Err(WorthQueryApplicationQueryParameterDenial::new(
-            WorthQueryApplicationQueryParameterDenialKind::ParameterSetMismatch,
-            query.name(),
-        ));
-    }
-    for declared in query.parameters() {
-        let Some((_, value)) = bindings
-            .binary_search_by(|(name, _)| name.cmp(&declared.name()))
-            .ok()
-            .and_then(|index| bindings.get(index))
-        else {
-            return Err(WorthQueryApplicationQueryParameterDenial::new(
-                WorthQueryApplicationQueryParameterDenialKind::ParameterSetMismatch,
-                declared.name(),
-            ));
-        };
-        if value.value_family() != declared.scalar_family() {
-            return Err(WorthQueryApplicationQueryParameterDenial::new(
-                WorthQueryApplicationQueryParameterDenialKind::ParameterTypeMismatch,
-                declared.name(),
-            ));
-        }
-    }
-    Ok(())
 }
 
 fn canonical_work_denial(

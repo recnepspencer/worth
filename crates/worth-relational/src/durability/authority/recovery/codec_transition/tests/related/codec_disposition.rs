@@ -149,7 +149,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             );
             assert_eq!(capture(&cold), before);
         } else {
-            eligibility.unwrap();
+            assert!(eligibility.unwrap().is_some());
             assert!(!basis(&cold)
                 .inner
                 .root
