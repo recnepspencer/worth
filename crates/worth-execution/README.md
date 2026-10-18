@@ -326,9 +326,18 @@ Each entry/node owns its native memory reservation. Shared views keep those
 grants until their final drop, without retaining predecessor roots. The cached
 `retained_bytes()` describes complete reachable storage; it is not a charge to
 reserve again when sharing a root. `get`, `first_at_or_after` and canonical
-`iter`/`keys`/`values` borrow that backing. Storage identity confers no source,
+`iter`/`keys`/`values` borrow that backing. `rank_of(&key)` and
+`entry_at(rank)` navigate cached subtree counts without enumerating a prefix. Storage identity confers no source,
 session, installation or successful-result authority.
 
 `KeyedPartitioner::upsert_in`, `remove_in` and explicit full `kept_in` use this
 same storage with the current allocation policy. A changed member group funds
 its copy before allocation; unchanged groups retain their original grants.
+
+`ReductionTree::checked_full_build_cost_after_edits(&removed, &inserted, policy)`
+borrows native shape and uses the existing Cartesian edit traversal. It admits
+only temporary changed-path metadata, invokes no reducer and copies no retained
+values. Its returned work/span predicts a cold full build; it grants no result,
+source or currentness authority. `ReductionShapeCostDenial` preserves allocation
+and interruption, rejects invalid identities and reports arithmetic overflow.
+The caller still owns ordinary full-run ceiling and first-stop execution.

@@ -27,7 +27,8 @@ use crate::domain_computation::primary_graph::invariant_projection::WorthQueryIn
 mod ranges;
 mod sequence;
 pub(in crate::domain_computation::primary_graph) use sequence::{
-    CallSequenceDenial, CallShape, CallSummary, CallVisit, ComputationCallSequence,
+    CallSequenceDenial, CallShape, CallShapeTransition, CallSummary, CallVisit,
+    ComputationCallSequence,
 };
 
 /// The work one owner call charged and the entities it reached.

@@ -78,3 +78,33 @@ fn same_count_substitution_and_lost_last_reader_require_the_full_path() {
         [&key(2)]
     );
 }
+
+#[test]
+fn retired_and_inserted_calls_transfer_exact_keys_without_replacing_original_ordinals() {
+    let prior = sealed();
+    let (one, two) = (key(1), key(2));
+    let calls = BTreeSet::from([partition(7), partition(9), partition(11)]);
+    let fresh = BTreeMap::from([(partition(7), vec![&one]), (partition(11), vec![&two])]);
+    let next = prior
+        .reattribute(&calls, &fresh, control())
+        .unwrap()
+        .unwrap();
+    assert!(next.index.keys(partition(9)).next().is_none());
+    assert!(!next.index.calls.contains_key(&partition(9)));
+    assert_eq!(next.index.keys(partition(11)).collect::<Vec<_>>(), [&two]);
+    for key in [&one, &two] {
+        assert_eq!(next.metadata[key].ordinal, prior.metadata[key].ordinal);
+    }
+    assert_eq!(
+        next.metadata[&two].readers.partitions(),
+        [PartitionIdentity::new(11)]
+    );
+    assert!(next.original.same_backing(&prior.original));
+    assert_eq!(prior.index.keys(partition(9)).collect::<Vec<_>>(), [&two]);
+    let wrong = key(3);
+    let substituted = BTreeMap::from([(partition(7), vec![&one]), (partition(11), vec![&wrong])]);
+    assert!(prior
+        .reattribute(&calls, &substituted, control())
+        .unwrap()
+        .is_none());
+}

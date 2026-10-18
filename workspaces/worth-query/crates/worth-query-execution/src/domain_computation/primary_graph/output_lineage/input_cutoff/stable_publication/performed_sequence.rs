@@ -1,62 +1,28 @@
-//! The inverse of a stable record's fact composition.
-
-use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
-use std::{mem::size_of, sync::Arc};
-
-use super::stable_record::charge_initialized_clone;
+//! Remove only the selected alias's checked witness span for republication.
+use super::StableFactSpans;
 use crate::domain_computation::primary_graph::{
+    application_attempt::retained_decision_facts::StorageControl,
+    application_checkpoint::facts::FactPayload,
     output_lineage::{
-        invalidation::{arc_slice_bytes, retained_fact_payload_bytes, InvalidationEditAdmission},
+        invalidation::InvalidationEditAdmission,
         retained_capacity::{LineageRetentionLedger, RetainedLineageCapacity},
-        SealedNativeOutputWitness,
     },
-    WorthQueryApplicationObservedFact as Fact,
 };
 
-/// A stable alias holds its origin's handler prefix, then that origin's
-/// performed output projected as facts, then the alias's own source suffix.
-/// A row that seals a witness of its own holds the performed sequence: the
-/// prefix and the source suffix. Every allocation and the retained custody
-/// are admitted before a fact is copied; `None` means the alias does not hold
-/// that composition or the copy was not admitted.
 pub(in crate::domain_computation::primary_graph::output_lineage) fn performed_fact_sequence(
-    alias_facts: &(impl FactSequence + ?Sized),
+    alias_facts: &FactPayload,
+    spans: &StableFactSpans,
     prefix_count: usize,
-    origin_witness: &SealedNativeOutputWitness,
     retention: &LineageRetentionLedger,
     admission: &mut InvalidationEditAdmission,
-) -> Option<(Arc<[Fact]>, RetainedLineageCapacity)> {
-    let projected = origin_witness
-        .prepare_fact_projection(admission)
-        .ok()??
-        .count();
-    let suffix_start = prefix_count.checked_add(projected)?;
-    if suffix_start > alias_facts.len() {
-        return None;
-    }
-    let prefix = alias_facts.iter().take(prefix_count);
-    let suffix = alias_facts.iter().skip(suffix_start);
-    let total = prefix_count.checked_add(alias_facts.len() - suffix_start)?;
-    let mut payload = 0u64;
-    for fact in prefix.clone().chain(suffix.clone()) {
-        admission.charge_external_work(1).ok()?;
-        payload = payload.checked_add(retained_fact_payload_bytes(fact, admission).ok()?)?;
-        charge_initialized_clone(fact, admission).ok()?;
-    }
-    // Building the flat Vec initializes every row; Arc conversion copies
-    // every initialized row again.
-    let count = u64::try_from(total).ok()?;
-    admission
-        .charge_external_work(count.checked_mul(2)?.checked_add(5)?)
+    control: StorageControl<'_, '_>,
+) -> Option<(FactPayload, RetainedLineageCapacity)> {
+    admission.charge_external_work(3).ok()?;
+    let facts = spans
+        .performed_sequence(alias_facts, prefix_count, control)
         .ok()?;
-    let vec_bytes = u64::try_from(total.checked_mul(size_of::<Fact>())?).ok()?;
-    let arc_bytes = arc_slice_bytes::<Fact>(total)?;
-    admission
-        .admit_read_scratch(vec_bytes.checked_add(arc_bytes)?.checked_add(payload)?)
-        .ok()?;
-    let capacity = retention.reserve(arc_bytes.checked_add(payload)?).ok()?;
-    let mut facts = Vec::with_capacity(total);
-    facts.extend(prefix.cloned());
-    facts.extend(suffix.cloned());
-    Some((Arc::from(facts.into_boxed_slice()), capacity))
+    // Retention policy counts complete held backing; this cached descriptor
+    // neither copies the prefix nor reserves a second native heap allocation.
+    let capacity = retention.reserve(facts.retained_resident_bytes()?).ok()?;
+    Some((facts, capacity))
 }

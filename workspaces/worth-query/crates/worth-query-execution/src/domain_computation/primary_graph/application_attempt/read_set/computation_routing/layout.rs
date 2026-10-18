@@ -11,16 +11,19 @@ pub(super) enum SealedReadLayout {
     OwnerFixture,
 }
 
-#[derive(Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph::application_attempt::read_set) struct CheckedReadLayout
 {
     pub(super) contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
     pub(super) scopes:
         crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
-    pub(super) handlers: BTreeMap<WorthQueryApplicationFactKey, usize>,
+    pub(super) handlers: Arc<BTreeMap<WorthQueryApplicationFactKey, usize>>,
     pub(super) root: EntityId,
     pub(super) decision_count: usize,
-    pub(super) calls: BTreeSet<ComputationRead>,
+    pub(super) calls: worth_execution::ExecutionOrderedMap<ComputationRead, ()>,
+    fixed_bytes: Option<u64>,
+    bound_shape:
+        Option<Arc<crate::domain_computation::primary_graph::invariant_projection::CallShape>>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub(super) computation_ordinals: Arc<[usize]>,
 }
 impl CheckedReadLayout {
@@ -30,7 +33,7 @@ impl CheckedReadLayout {
         handlers: BTreeMap<WorthQueryApplicationFactKey, usize>,
         root: EntityId,
         decision_count: usize,
-        calls: BTreeSet<ComputationRead>,
+        calls: worth_execution::ExecutionOrderedMap<ComputationRead, ()>,
         computation_ordinals: Arc<[usize]>,
     ) -> Self {
         assert!(
@@ -42,10 +45,31 @@ impl CheckedReadLayout {
             decision_count,
             "completed scopes cover every decision ordinal"
         );
+        use worth_execution::ChargedBytes;
+        let fixed_bytes = handlers
+            .keys()
+            .try_fold(
+                (size_of::<Self>() + 2 * size_of::<usize>()) as u64,
+                |sum, key| {
+                    sum.checked_add(
+                        (11 * size_of::<(WorthQueryApplicationFactKey, usize)>()
+                            + 16 * size_of::<usize>()) as u64,
+                    )?
+                    .checked_add(key.additional_charged_bytes())
+                },
+            )
+            .and_then(|n| n.checked_add(scopes.backing_bytes()?))
+            .and_then(|n| {
+                n.checked_add((computation_ordinals.len().checked_mul(size_of::<usize>())?) as u64)
+            })
+            .and_then(|n| n.checked_add(4 * size_of::<usize>() as u64));
         Self {
+            fixed_bytes,
+            bound_shape: None,
+            _memory: None,
             contracts,
             scopes,
-            handlers,
+            handlers: Arc::new(handlers),
             root,
             decision_count,
             calls,
@@ -64,34 +88,9 @@ impl SealedReadLayout {
     }
     pub(super) fn charged_bytes(&self) -> Option<u64> {
         match self {
-            Self::Checked(layout) => {
-                use worth_execution::ChargedBytes;
-                let base = (size_of::<CheckedReadLayout>() + 2 * size_of::<usize>()) as u64;
-                layout.handlers.keys().try_fold(
-                    base.checked_add(layout.scopes.backing_bytes()?)?
-                        .checked_add(
-                            (layout.calls.len().checked_mul(
-                                11 * size_of::<ComputationRead>() + 16 * size_of::<usize>(),
-                            )?) as u64,
-                        )?
-                        .checked_add(
-                            (layout
-                                .computation_ordinals
-                                .len()
-                                .checked_mul(size_of::<usize>())?)
-                                as u64,
-                        )?
-                        .checked_add(2 * size_of::<usize>() as u64)?,
-                    |sum, key| {
-                        super::super::super::super::fact_verification_observation::completion_metadata();
-                        sum.checked_add(
-                            (11 * size_of::<(WorthQueryApplicationFactKey, usize)>()
-                                + 16 * size_of::<usize>()) as u64,
-                        )?
-                        .checked_add(key.additional_charged_bytes())
-                    },
-                )
-            }
+            Self::Checked(layout) => layout
+                .fixed_bytes?
+                .checked_add(layout.calls.retained_bytes()),
             #[cfg(test)]
             Self::OwnerFixture => Some(0),
         }
@@ -127,12 +126,22 @@ impl SealedComputationFacts {
         {
             return Some(previous.clone());
         }
+        if layout
+            .bound_shape
+            .as_ref()
+            .is_some_and(|bound| Arc::ptr_eq(bound, shape))
+        {
+            return Some(CheckedCallShape {
+                shape: Arc::clone(shape),
+                layout: Arc::clone(layout),
+            });
+        }
         if !shape
             .calls()
             .inspect(|_| {
                 super::super::super::super::fact_verification_observation::completion_call_roster()
             })
-            .eq(layout.calls.iter().copied())
+            .eq(layout.calls.keys().copied())
         {
             return None;
         }
@@ -148,5 +157,74 @@ impl SealedComputationFacts {
         self.layout
             .checked()
             .is_some_and(|layout| Arc::ptr_eq(layout, &binding.layout))
+    }
+}
+
+impl PartialEq for CheckedReadLayout {
+    fn eq(&self, other: &Self) -> bool {
+        self.contracts == other.contracts
+            && self.scopes == other.scopes
+            && self.handlers == other.handlers
+            && self.root == other.root
+            && self.decision_count == other.decision_count
+            && self.calls == other.calls
+            && self.computation_ordinals == other.computation_ordinals
+    }
+}
+impl Eq for CheckedReadLayout {}
+impl CheckedReadLayout {
+    // Only after successful native closure and exact total-key reattribution.
+    pub(super) fn after_transition(
+        &self,
+        transition: &crate::domain_computation::primary_graph::invariant_projection::CallShapeTransition,
+        control: super::super::super::retained_decision_facts::StorageControl<'_, '_>,
+    ) -> Result<Arc<Self>, super::super::super::retained_decision_facts::StoreDenial> {
+        use super::reattribution::storage_denial;
+        control.check_live()?;
+        let memory = control
+            .policy()
+            .reserve_memory((size_of::<Self>() + 2 * size_of::<usize>()) as u64);
+        control.check_live()?;
+        let memory = memory?;
+        let mut calls = self.calls.clone();
+        for read in transition.retired() {
+            assert!(
+                calls
+                    .remove_in(&read, control.policy())
+                    .map_err(storage_denial)?,
+                "native prior contains retired call"
+            );
+        }
+        for read in transition.inserted() {
+            assert!(
+                !calls.contains_key(&read),
+                "native prior excludes inserted call"
+            );
+            calls
+                .insert_cloned_in(&read, &(), control.policy())
+                .map_err(storage_denial)?;
+        }
+        Ok(Arc::new(Self {
+            contracts: Arc::clone(&self.contracts),
+            scopes: self.scopes.clone(),
+            handlers: Arc::clone(&self.handlers),
+            root: self.root,
+            decision_count: self.decision_count,
+            calls,
+            fixed_bytes: self.fixed_bytes,
+            bound_shape: Some(Arc::clone(transition.target())),
+            computation_ordinals: Arc::clone(&self.computation_ordinals),
+            _memory: memory,
+        }))
+    }
+}
+
+impl std::fmt::Debug for CheckedReadLayout {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CheckedReadLayout")
+            .field("root", &self.root)
+            .field("decision_count", &self.decision_count)
+            .field("call_count", &self.calls.len())
+            .finish_non_exhaustive()
     }
 }

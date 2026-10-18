@@ -69,7 +69,7 @@ impl ComputationFactAttribution {
                 .calls
                 .iter()
                 .inspect(|_| observation::completion_call_roster())
-                .eq(layout.calls.iter())
+                .eq(layout.calls.keys())
         {
             observation::native_completion_decline("call-roster");
             return Ok(None);
@@ -103,6 +103,16 @@ impl ComputationFactAttribution {
                 .zip(count)
                 .and_then(|(sum, count)| sum.checked_add(per.checked_mul(count)?));
         }
+        let replaced_count = self.fresh_calls.len().checked_add(
+            ranges
+                .and_then(|ranges| ranges.transition())
+                .map_or(0, |edit| edit.retired().count()),
+        );
+        quote = quote.zip(replaced_count).and_then(|(sum, count)| {
+            sum.checked_add((count as u64).checked_mul(
+                (11 * size_of::<ComputationRead>() + 16 * size_of::<usize>()) as u64,
+            )?)
+        });
         let funding = control
             .policy()
             .reserve_memory(quote.ok_or(StoreDenial::Representability)?);
@@ -116,13 +126,31 @@ impl ComputationFactAttribution {
                 fresh.entry(read).or_default().push(key);
             }
         }
-        let Some(prior) = prior.reattribute(&self.fresh_calls, &fresh, control)? else {
+        let transition = ranges.and_then(|ranges| ranges.transition());
+        let mut replaced = self.fresh_calls.clone();
+        if let Some(transition) = transition {
+            replaced.extend(transition.retired());
+        }
+        let Some(mut prior) = prior.reattribute(&replaced, &fresh, control)? else {
             observation::native_completion_decline("fresh-call-key-universe");
             return Ok(None);
         };
+        let layout = match transition.filter(|_| ranges.is_some_and(|r| r.changes_shape())) {
+            Some(transition) => layout.after_transition(transition, control)?,
+            None => Arc::clone(layout),
+        };
+        prior.charged = prior
+            .charged
+            .and_then(|n| n.checked_sub(prior.layout.charged_bytes()?))
+            .and_then(|n| {
+                n.checked_add(
+                    layout::SealedReadLayout::Checked(Arc::clone(&layout)).charged_bytes()?,
+                )
+            });
+        prior.layout = layout::SealedReadLayout::Checked(Arc::clone(&layout));
         Ok(Some(NativeReadRefresh {
             prior,
-            layout: Arc::clone(layout),
+            layout,
             _custody: native.clone(),
         }))
     }

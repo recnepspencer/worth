@@ -66,8 +66,8 @@ pub use operation_projection_denial::{
 };
 pub(in crate::domain_computation::primary_graph) use operation_reader::WorthQueryPriorOutputRead;
 pub(in crate::domain_computation::primary_graph) use operation_reader::{
-    CallSequenceDenial, CallShape, CallVisit, ComputationCallCharge, ComputationCallSequence,
-    ExpectedFactKeys, ObservedComputationInputs, PreparedCurrentInputs,
+    CallSequenceDenial, CallShape, CallShapeTransition, CallVisit, ComputationCallCharge,
+    ComputationCallSequence, ExpectedFactKeys, ObservedComputationInputs, PreparedCurrentInputs,
 };
 pub use operation_reader::{
     WorthQueryApplicationOperationInvariantProjectionReader,

@@ -46,6 +46,7 @@ pub(super) struct RecordedOutputMutable {
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     >,
     pub(super) resources: Option<WorthQueryProducerDemandResources>,
+    stable_fact_spans: Option<super::input_cutoff::stable_publication::StableFactSpans>,
     /// What the partitioned computation of the attempt that published this
     /// record retained for the producer's next run.
     pub(super) computation: super::retained_computation::RecordedComputation,
@@ -68,11 +69,30 @@ impl RecordedOutputMutable {
             verification_requirement,
             observed_source_facts: facts.map(|facts| facts.postconditions().clone()),
             resources,
+            stable_fact_spans: None,
             computation,
         }
     }
     pub(super) fn replace_retained_facts(&mut self, facts: super::RetainedSourceFacts) {
+        self.stable_fact_spans = None;
         self.observed_source_facts = Some(facts.postconditions().clone());
+    }
+    pub(super) fn with_stable_fact_spans(
+        mut self,
+        spans: super::input_cutoff::stable_publication::StableFactSpans,
+    ) -> Self {
+        self.set_stable_fact_spans(spans);
+        self
+    }
+    pub(super) fn set_stable_fact_spans(
+        &mut self,
+        spans: super::input_cutoff::stable_publication::StableFactSpans,
+    ) {
+        assert!(self
+            .observed_source_facts
+            .as_ref()
+            .is_some_and(|body| spans.matches(body)));
+        self.stable_fact_spans = Some(spans);
     }
     /// Match immutable qualified custody while holding the row's mutable fence.
     pub(super) fn same_qualified_facts(
@@ -128,6 +148,23 @@ impl RecordedOutput {
             .map(|facts| facts.facts().clone())
     }
 
+    pub(super) fn stable_fact_spans(
+        &self,
+        body: &crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    ) -> Option<super::input_cutoff::stable_publication::StableFactSpans> {
+        let row = self
+            .mutable
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        row.observed_source_facts
+            .as_ref()
+            .filter(|observed| observed.same_backing(body))?;
+        row.stable_fact_spans
+            .as_ref()
+            .filter(|spans| spans.matches(body))
+            .cloned()
+    }
+
     pub(super) fn resources(&self) -> Option<WorthQueryProducerDemandResources> {
         self.mutable
             .lock()
@@ -150,6 +187,7 @@ impl RecordedOutput {
             .mutable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        row.stable_fact_spans = None;
         row.observed_source_facts = Some(facts);
         row.verification_requirement = Some(FullVerificationReason::CheckpointRestore);
         // A restored row's computation state is not the one its facts carry.
@@ -171,3 +209,6 @@ impl RecordedOutput {
             .verification_requirement = Some(reason);
     }
 }
+
+#[cfg(test)]
+mod span_tests;

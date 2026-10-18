@@ -6,6 +6,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryOutputSettlementPosture,
 };
 
+mod alias_spans;
 mod checkpoint_polling;
 mod unrebased_settlement;
 

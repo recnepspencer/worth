@@ -14,7 +14,7 @@ pub(super) struct NativeFactChunk {
     _replacement_heaps: Option<ExecutionArray<OnceLock<ExecutionMemoryReservation>>>,
 }
 impl FactPayload {
-    pub(super) fn copied_native(
+    pub(in crate::domain_computation::primary_graph) fn copied_native(
         facts: ExecutionArray<Fact>,
         copied_heaps: Option<ExecutionMemoryReservation>,
         replacement_heaps: Option<ExecutionArray<OnceLock<ExecutionMemoryReservation>>>,

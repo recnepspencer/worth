@@ -1,16 +1,18 @@
 //! Metered composition of an original handler prefix and a fresh source suffix.
 
-use std::{mem::size_of, sync::Arc};
+use std::sync::Arc;
 
 use worth_foundational::facade::AspectFieldLocator;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::{PreparedStableLineageAddress, PreparedStableLineagePublication};
+use super::{PreparedStableLineageAddress, PreparedStableLineagePublication, StableFactSpans};
 use crate::domain_computation::primary_graph::{
+    application_attempt::retained_decision_facts::StorageControl,
+    application_checkpoint::facts::FactPayload,
     application_query::BoundStableObservedSourceFacts,
     output_lineage::{
-        invalidation::{arc_slice_bytes, retained_fact_payload_bytes, InvalidationEditAdmission},
-        RecordedOutput, RecordedOutputMutable, RecordedSourceIdentity,
+        invalidation::InvalidationEditAdmission, RecordedOutput, RecordedOutputMutable,
+        RecordedSourceIdentity,
     },
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationObservedFact as Fact,
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind,
@@ -19,7 +21,8 @@ use crate::domain_computation::primary_graph::{
 
 impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
     /// All allocation and retained custody is admitted before copying the
-    /// verified handler facts or consuming the fresh source fact carrier.
+    /// fresh suffix facts or consuming the exact source binding. Shared
+    /// handler facts are never flattened or deep-copied.
     pub(in crate::domain_computation::primary_graph) fn prepare_record<
         Schema,
         Operation,
@@ -30,12 +33,18 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         fresh: BoundStableObservedSourceFacts,
         operation: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         resources: WorthQueryProducerDemandResources,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedStableLineagePublication<'lane, 'selected>, WorthQueryOutputDemandDenial>
     {
         if !fresh.matches_operation(operation) {
             return Err(denial(Kind::ForeignSource));
         }
+        let control = StorageControl::new(
+            execution.allocation_policy(),
+            Some(operation.publication_request()),
+        );
+        control.check_live().map_err(super::storage_denial)?;
         let fresh_key = self
             .verified
             .fresh_key
@@ -60,74 +69,44 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             .prepare_fact_projection(admission)
             .map_err(work_denial)?
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
-        let suffix = fresh.source_facts();
-        let total = prefix_count
-            .checked_add(witness_facts.count())
-            .and_then(|count| count.checked_add(suffix.len()))
-            .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?;
+        let witness_count = witness_facts.count();
         if fresh.bound_source().partition_identity() != self.partition {
             return Err(denial(Kind::ForeignSource));
         }
-
-        let mut retained_payload = witness_facts.retained_payload_bytes();
-        let mut cloned_payload = retained_payload;
-        for fact in &prefix {
+        prefix_count
+            .checked_add(witness_count)
+            .and_then(|count| count.checked_add(fresh.source_facts().len()))
+            .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?;
+        // Only genuinely new suffix facts are copied. The verified handler
+        // prefix keeps its native/decoded backing and all existing grants.
+        for fact in fresh.source_facts() {
             admission.charge_external_work(1).map_err(work_denial)?;
-            let payload = retained_fact_payload_bytes(fact, admission).map_err(footprint_denial)?;
-            retained_payload = retained_payload
-                .checked_add(payload)
-                .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-            cloned_payload = cloned_payload
-                .checked_add(payload)
-                .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
             charge_initialized_clone(fact, admission).map_err(work_denial)?;
         }
-        for fact in suffix {
-            admission.charge_external_work(1).map_err(work_denial)?;
-            retained_payload = retained_payload
-                .checked_add(
-                    retained_fact_payload_bytes(fact, admission).map_err(footprint_denial)?,
-                )
-                .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-        }
-        let count = u64::try_from(total).map_err(|_| denial(Kind::WorkBudgetExceeded))?;
-        // Building the flat Vec initializes every row (including the cloned
-        // prefix); Arc conversion copies every initialized row again.
-        admission
-            .charge_external_work(
-                count
-                    .checked_mul(2)
-                    .and_then(|units| units.checked_add(5))
-                    .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
-            )
-            .map_err(work_denial)?;
-        let vec_bytes = total
-            .checked_mul(size_of::<Fact>())
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-        let arc_bytes =
-            arc_slice_bytes::<Fact>(total).ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-        let peak = vec_bytes
-            .checked_add(arc_bytes)
-            .and_then(|bytes| bytes.checked_add(cloned_payload))
-            .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-        admission.admit_read_scratch(peak).map_err(memory_denial)?;
+        let suffix = FactPayload::copy_funded(fresh.source_facts(), control)
+            .map_err(super::storage_denial)?;
+        let witness = witness_facts
+            .retain_payload(control)
+            .map_err(super::storage_denial)?;
+        let facts = prefix
+            .append_completed(witness, control)
+            .and_then(|body| body.append_completed(suffix, control))
+            .map_err(super::storage_denial)?;
+        let spans = StableFactSpans::new(facts.clone(), prefix_count, witness_count)
+            .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
+        // This is the installed aggregate retention policy's complete cached
+        // descriptor, not an allocation quote for a new copy of shared facts.
         self.retained_capacity
             .as_mut()
             .expect("prepared stable address retains capacity")
             .reserve_additional(
-                arc_bytes
-                    .checked_add(retained_payload)
+                facts
+                    .retained_resident_bytes()
                     .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?,
             )?;
-
-        let mut combined = Vec::with_capacity(total);
-        combined.extend(prefix.iter().cloned());
-        witness_facts.append_into(&mut combined);
         let bound = fresh
-            .append_into_stable_facts(operation, &mut combined)
+            .finish_stable(operation)
             .map_err(|_| denial(Kind::ForeignSource))?;
-        let facts: Arc<[Fact]> = Arc::from(combined.into_boxed_slice());
         let performed_origin = origin_cell(candidate);
         let recorded = RecordedOutput {
             required_publication: origin.required_publication.clone(),
@@ -152,18 +131,20 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             source_partition_identity: Some(bound.partition_identity()),
             producer_dependency_identity: origin.producer_dependency_identity,
             idempotency_key_identity: origin.idempotency_key_identity,
-            mutable: std::sync::Mutex::new(RecordedOutputMutable::new(
-                None,
-                (Some(Arc::clone(&facts)))
-                    .map(|facts| selected_row.computation_source.retain_facts(facts)),
-                Some(resources),
-                selected_row
-                    .mutable
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .computation
-                    .shared(),
-            )),
+            mutable: std::sync::Mutex::new(
+                RecordedOutputMutable::new(
+                    None,
+                    Some(selected_row.computation_source.retain_facts(facts.clone())),
+                    Some(resources),
+                    selected_row
+                        .mutable
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .computation
+                        .shared(),
+                )
+                .with_stable_fact_spans(spans),
+            ),
         };
         Ok(PreparedStableLineagePublication {
             address: self,
@@ -247,19 +228,6 @@ fn initialized(count: usize) -> Result<u64, CompanionPreflightStop> {
 
 fn work_denial(_: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
     denial(Kind::WorkBudgetExceeded)
-}
-
-fn footprint_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
-    match stop {
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-        | CompanionPreflightStop::WorkCounterOverflow => denial(Kind::WorkBudgetExceeded),
-        _ => denial(Kind::RetentionBudgetExceeded),
-    }
-}
-
-fn memory_denial(_: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
-    denial(Kind::RetentionBudgetExceeded)
 }
 
 fn denial(kind: Kind) -> WorthQueryOutputDemandDenial {

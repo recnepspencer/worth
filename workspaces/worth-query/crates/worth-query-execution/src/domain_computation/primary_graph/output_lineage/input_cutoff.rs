@@ -3,7 +3,7 @@
 mod generation_append;
 mod selected_basis;
 mod stable_cutover;
-mod stable_publication;
+pub(super) mod stable_publication;
 mod verification;
 pub(in crate::domain_computation::primary_graph) use stable_cutover::{
     PublishedStableLineage, StablePublicationStop,

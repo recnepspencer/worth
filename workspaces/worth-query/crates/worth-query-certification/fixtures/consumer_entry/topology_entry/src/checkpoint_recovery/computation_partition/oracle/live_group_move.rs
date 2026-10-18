@@ -8,6 +8,13 @@ use worth_query_host::facade::application_contribution::WorthQueryPartitionedCom
 use worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test as verification;
 #[test]
 fn equal_total_live_group_moves_publish_new_attribution_without_unrelated_preparation() {
+    moves([3, 1]);
+}
+#[test]
+fn new_and_last_group_moves_publish_checked_shape_and_latest_readers_without_unrelated_work() {
+    moves([5, 1]);
+}
+fn moves(destinations: [u32; 2]) {
     let _guard = checkpoint_recovery_test_guard();
     let mut receipts = Vec::new();
     for unrelated in [1, 10, 100] {
@@ -20,7 +27,7 @@ fn equal_total_live_group_moves_publish_new_attribution_without_unrelated_prepar
         let mut total = initial[0].outcome.as_ref().unwrap().0;
         reference.demanded(None);
         let mut command = 0x29_0000;
-        for destination in [3, 1] {
+        for destination in destinations {
             let change = model.move_first_to(destination);
             reference.edit(&change);
             command += 1;
@@ -38,8 +45,16 @@ fn equal_total_live_group_moves_publish_new_attribution_without_unrelated_prepar
                 OwnerCalls {
                     plans: 0,
                     keys: 1,
-                    gathers: 2,
-                    kernels: 2
+                    gathers: if destinations[0] == 5 && destination == 1 {
+                        1
+                    } else {
+                        2
+                    },
+                    kernels: if destinations[0] == 5 && destination == 1 {
+                        1
+                    } else {
+                        2
+                    }
                 }
             );
             assert_eq!(moved[0].runs, [Run::Incremental]);
@@ -56,7 +71,7 @@ fn equal_total_live_group_moves_publish_new_attribution_without_unrelated_prepar
             assert_eq!(moved[0].outcome, fresh[0].outcome);
             assert_published_state(&moved, &fresh);
             reference.demanded(None);
-            let value = if destination == 3 { 2.5 } else { 2.0 };
+            let value = if destination != 1 { 2.5 } else { 2.0 };
             let change = model.set_first_value(value);
             reference.edit(&change);
             command += 1;
@@ -85,8 +100,14 @@ fn equal_total_live_group_moves_publish_new_attribution_without_unrelated_prepar
             receipts.push((unrelated, destination, move_work, value_work));
         }
     }
-    let first = receipts[0].2;
-    for (population, _, moved, _) in &receipts {
+    for (population, destination, moved, value) in &receipts {
+        let first = receipts
+            .iter()
+            .find(|(_, target, _, _)| target == destination)
+            .unwrap()
+            .2;
+        assert_eq!(value.completion_call_roster_visits, 0);
+        assert_eq!(value.sealed_computation_index_visits, 0);
         assert_eq!(moved.completion_call_roster_visits, 0);
         assert_eq!(moved.sealed_computation_index_visits, 0);
         assert_eq!(moved.fallback_carried_metadata_visits, 0);
@@ -96,7 +117,7 @@ fn equal_total_live_group_moves_publish_new_attribution_without_unrelated_prepar
         assert_eq!(
             moved.computation_prepared_partition_visits,
             first.computation_prepared_partition_visits,
-            "{population}: only the two affected groups enter preparation"
+            "{population}: only affected surviving groups enter preparation"
         );
         assert_eq!(
             moved.completion_fresh_key_visits, first.completion_fresh_key_visits,
@@ -111,7 +132,7 @@ fn equal_total_live_group_moves_publish_new_attribution_without_unrelated_prepar
             "{population}: installation and predecessor retirement remain sparse"
         );
     }
-    eprintln!("live-group equal-result publication and destination-only value edits at1/10/100: {receipts:?}");
+    eprintln!("group{destinations:?} equal-result publication and destination-only value edits at1/10/100: {receipts:?}");
 }
 
 fn performed(request: &Request<'_, '_, '_>, app: &Application<true>) -> (usize, Vec<OracleRun>) {

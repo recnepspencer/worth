@@ -148,11 +148,10 @@ impl ComputationFactAttribution {
         read: ComputationRead,
     ) {
         self.calls.insert(read);
-        if self.fresh_calls.insert(read)
-            && let Some(progress) = &mut self.range_progress
-        {
+        if let Some(progress) = &mut self.range_progress {
             progress.fresh(read);
         }
+        self.fresh_calls.insert(read);
     }
     pub(in crate::domain_computation::primary_graph) fn begin_native(
         &mut self,
@@ -276,7 +275,15 @@ impl ComputationFactAttribution {
         read: ComputationRead,
     ) {
         super::super::super::fact_verification_observation::fresh_read_key_record();
-        self.begin_fresh(read);
+        if self.range_progress.is_some() {
+            assert!(
+                self.fresh_calls.contains(&read),
+                "range-attributed fact belongs to an actually entered fresh call"
+            );
+        } else {
+            self.calls.insert(read);
+            self.fresh_calls.insert(read);
+        }
         self.readers.entry(key).or_default().record(read);
     }
 

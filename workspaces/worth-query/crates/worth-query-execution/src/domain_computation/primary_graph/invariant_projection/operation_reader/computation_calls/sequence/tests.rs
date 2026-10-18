@@ -1,6 +1,6 @@
 //! Arithmetic/prefix oracles, not native result or source-custody issuance.
 use super::*;
-fn calls() -> Vec<(ComputationRead, Call)> {
+pub(super) fn calls() -> Vec<(ComputationRead, Call)> {
     [(9, 2), (1, 1), (8, 3), (2, 2), (11, 1), (3, 2)]
         .into_iter()
         .enumerate()

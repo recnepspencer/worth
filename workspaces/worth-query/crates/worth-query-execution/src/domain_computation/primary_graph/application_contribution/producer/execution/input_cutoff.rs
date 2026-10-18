@@ -308,6 +308,7 @@ where
                 stable_apply::publish::<Schema, Binding, _, _, _>(
                     runtime,
                     current.product().observation(),
+                    &execution,
                     operation,
                     fresh,
                     verified,

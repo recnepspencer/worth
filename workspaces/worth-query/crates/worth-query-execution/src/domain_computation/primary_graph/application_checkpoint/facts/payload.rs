@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::retained_deci
 use worth_execution::{ExecutionAllocationPolicy, ExecutionMemoryReservation, MemoryLimitLevel};
 mod chunk;
 mod concatenation;
+mod copied;
 mod iteration;
 mod native;
 mod patch;

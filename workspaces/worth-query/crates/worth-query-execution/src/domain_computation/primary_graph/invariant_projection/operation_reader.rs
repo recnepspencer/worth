@@ -25,7 +25,8 @@ pub use output_availability::{
 mod prior_output;
 
 pub(in crate::domain_computation::primary_graph) use computation_calls::{
-    CallSequenceDenial, CallShape, CallVisit, ComputationCallCharge, ComputationCallSequence,
+    CallSequenceDenial, CallShape, CallShapeTransition, CallVisit, ComputationCallCharge,
+    ComputationCallSequence,
 };
 pub use current_output::{
     WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,

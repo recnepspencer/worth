@@ -127,3 +127,50 @@ fn refused_append_keeps_old_owner_and_releases_all_partial_join_funding() {
     })
     .unwrap();
 }
+
+#[test]
+fn replacing_alias_suffix_releases_obsolete_aggregate_roots_and_suffix_grants() {
+    let policy = ExecutionRequestPolicy::new(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 24, 1_000_000),
+    );
+    with_bootstrap_advancement(policy, |phase| {
+        let execution = phase.execution_request();
+        let control = StorageControl::new(execution.allocation_policy(), None);
+        let prefix = native(100, control);
+        let mut body = prefix
+            .append_completed(native(3, control), control)
+            .unwrap();
+        for _ in 0..100 {
+            let FactStorage::Joined { children } = &body.storage else {
+                panic!("joined alias")
+            };
+            let old_root = Arc::downgrade(children);
+            let tail = FactPayload::copy_funded(&[fact(0)], control).unwrap();
+            let FactStorage::Native(chunk) = &tail.storage else {
+                panic!("fresh leaf")
+            };
+            let tail_lifetime = Arc::downgrade(chunk);
+            body = body
+                .slice(0..prefix.len())
+                .append_completed(tail, control)
+                .unwrap();
+            assert!(
+                old_root.upgrade().is_none(),
+                "no retained old aggregate/root chain"
+            );
+            let replacement = native(1, control);
+            body = body
+                .slice(0..prefix.len())
+                .append_completed(replacement, control)
+                .unwrap();
+            assert!(
+                tail_lifetime.upgrade().is_none(),
+                "obsolete suffix and its grants release"
+            );
+            assert!(std::ptr::eq(prefix.get(99).unwrap(), body.get(99).unwrap()));
+        }
+    })
+    .unwrap();
+}

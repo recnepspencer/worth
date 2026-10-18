@@ -11,6 +11,8 @@ mod denial;
 use denial::{failure, pure_denial};
 mod edit;
 mod full_cost;
+mod shape_cost;
+pub use shape_cost::ReductionShapeCostDenial;
 mod memory;
 mod recombine;
 mod retained_run;

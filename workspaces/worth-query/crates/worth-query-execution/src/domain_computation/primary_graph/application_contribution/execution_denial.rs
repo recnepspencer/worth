@@ -208,33 +208,36 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
     pub(super) fn from_reduction(failure: ReductionRunFailure<MapKernelStop>) -> Self {
         match failure.reason {
             ReductionRunStop::Hook(stop) => Self::from_kernel_stop(stop),
-            ReductionRunStop::Panic | ReductionRunStop::Denial(ReductionDenial::ReducerPanic) => {
-                Self::ReducerPanicked
-            }
-            ReductionRunStop::ResultCapacityExceeded
-            | ReductionRunStop::Denial(ReductionDenial::ResultCapacityExceeded) => {
+            ReductionRunStop::Panic => Self::ReducerPanicked,
+            ReductionRunStop::ResultCapacityExceeded => {
                 Self::Resource(Resource::ResultCapacityExceeded)
             }
-            ReductionRunStop::WorkCounterOverflow
-            | ReductionRunStop::Denial(ReductionDenial::WorkCounterOverflow) => {
-                Self::Resource(Resource::WorkCounterOverflow)
+            ReductionRunStop::WorkCounterOverflow => Self::Resource(Resource::WorkCounterOverflow),
+            ReductionRunStop::Denial(cause) => Self::from_reduction_denial(cause),
+        }
+    }
+    /// Structural refusal has no fabricated native execution or metrics.
+    pub(super) fn from_reduction_denial(cause: ReductionDenial) -> Self {
+        match cause {
+            ReductionDenial::ReducerPanic => Self::ReducerPanicked,
+            ReductionDenial::ResultCapacityExceeded => {
+                Self::Resource(Resource::ResultCapacityExceeded)
             }
-            ReductionRunStop::Denial(ReductionDenial::InvalidCanonicalEncoding) => {
-                Self::ReducedEncodingInvalid
-            }
-            ReductionRunStop::Denial(ReductionDenial::IdentitiesNotCanonical) => {
+            ReductionDenial::WorkCounterOverflow => Self::Resource(Resource::WorkCounterOverflow),
+            ReductionDenial::InvalidCanonicalEncoding => Self::ReducedEncodingInvalid,
+            ReductionDenial::IdentitiesNotCanonical => {
                 Self::ReductionInputInvalid(ReductionInput::IdentitiesNotCanonical)
             }
-            ReductionRunStop::Denial(ReductionDenial::ValueCountMismatch) => {
+            ReductionDenial::ValueCountMismatch => {
                 Self::ReductionInputInvalid(ReductionInput::ValueCountMismatch)
             }
-            ReductionRunStop::Denial(ReductionDenial::CoverageMismatch) => {
+            ReductionDenial::CoverageMismatch => {
                 Self::ReductionInputInvalid(ReductionInput::CoverageMismatch)
             }
-            ReductionRunStop::Denial(ReductionDenial::UnknownIdentity(partition)) => {
+            ReductionDenial::UnknownIdentity(partition) => {
                 Self::ReductionInputInvalid(ReductionInput::UnknownPartition { partition })
             }
-            ReductionRunStop::Denial(ReductionDenial::IdentityAlreadyPresent(partition)) => {
+            ReductionDenial::IdentityAlreadyPresent(partition) => {
                 Self::ReductionInputInvalid(ReductionInput::PartitionAlreadyPresent { partition })
             }
         }

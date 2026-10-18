@@ -40,7 +40,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 computation: None,
                 work_membership,
                 identity: Arc::clone(&self.address.identity),
-                facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::retain(self.address.verified.candidate.recorded().computation_source, Arc::clone(&self.facts)),
+                facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::retain(self.address.verified.candidate.recorded().computation_source, self.facts.clone()),
                 output_facts: None,
                 read_basis: selected.clone(),
                 stale_at_read_basis: im::OrdSet::new(),

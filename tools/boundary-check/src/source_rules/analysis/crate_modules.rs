@@ -9,7 +9,9 @@ use super::module_source::{
     all_path_selectors, child_module_dir, directory_after_loading_file, path_attribute_dir,
     resolve_child_sources,
 };
-use crate::cargo_graph::normalize_path;
+mod source_location;
+
+use source_location::relative_source_path;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -236,7 +238,7 @@ pub(super) fn parse_module_tree(
     .map_err(|e| format!("read {}: {e}", source_path.display()))?;
     let file = crate::source_syntax::parse_named(source_path, &text)
         .map_err(|e| format!("parse {}: {e}", source_path.display()))?;
-    let relative_source = relative_under_crate(crate_root, source_path)?;
+    let relative_source = relative_source_path(crate_root, source_path)?;
 
     let mut child_mods = Vec::new();
     for item in &file.items {
@@ -288,7 +290,7 @@ fn load_child_module(
     let child_dir = child_module_dir(parent_dir, file_name);
 
     if let Some((_, items)) = &item_mod.content {
-        let relative_source = relative_under_crate(crate_root, parent_source)?;
+        let relative_source = relative_source_path(crate_root, parent_source)?;
         let mut nested = Vec::new();
         for item in items {
             if let Item::Mod(nested_mod) = item {
@@ -374,13 +376,6 @@ fn merge_module_node(
             },
         );
     }
-}
-
-fn relative_under_crate(crate_root: &Path, source_path: &Path) -> Result<String, String> {
-    let relative = source_path
-        .strip_prefix(crate_root)
-        .map_err(|e| format!("strip crate root from {}: {e}", source_path.display()))?;
-    Ok(normalize_path(relative))
 }
 
 pub(super) fn is_public_visibility(vis: &Visibility) -> bool {
