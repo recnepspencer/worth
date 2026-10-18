@@ -70,7 +70,7 @@ impl ApplicationFixedActionDelivery<CanonicalSchema, edit::EditBinding> for Deri
 }
 impl ApplicationProgramDefinition<CanonicalSchema> for Program {
     type Contributions = (CanonicalContribution,);
-    type Outputs = ApplicationProgramOutputs<Root>;
+    type Outputs = ApplicationProgramOutputs<(Root, super::companion::program::Root)>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("canonical-transition.program.v1");
@@ -88,6 +88,10 @@ impl ApplicationProgramDefinition<CanonicalSchema> for Program {
             ApplicationFeatureSpec::root::<CanonicalSchema, DerivedFeature>()
                 .conditional_operation::<producer::Produce>()
                 .conditional_operation::<producer::preserve::Preserve>()
+                .finish(),
+            ApplicationFeatureSpec::root::<CanonicalSchema, super::companion::program::Feature>()
+                .conditional_operation::<super::companion::producer::CreateCompanion>()
+                .conditional_operation::<super::companion::producer::preserve::PreserveCompanion>()
                 .finish(),
         ]
     }

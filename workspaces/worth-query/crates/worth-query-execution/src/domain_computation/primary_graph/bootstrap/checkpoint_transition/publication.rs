@@ -31,7 +31,7 @@ pub(in crate::domain_computation::primary_graph) struct InstalledCheckpointTarge
     pub(in crate::domain_computation::primary_graph) producers: &'a crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,
 }
 
-fn prepare_transition<Schema: ApplicationSchema>(
+fn prepare_transition<Schema: ApplicationSchema + 'static>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     _phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -40,7 +40,10 @@ fn prepare_transition<Schema: ApplicationSchema>(
     cell: &WorthQueryProgramActivationCell,
     transition: CheckpointTransition<'_, '_, Schema>,
 ) -> Result<
-    worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
+    (
+        worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
+        super::preserved_outputs::PreservedOutputs,
+    ),
     WorthQueryInMemoryApplicationDenial,
 > {
     let installed = target.schema;
@@ -99,14 +102,19 @@ fn prepare_transition<Schema: ApplicationSchema>(
         },
     )
     .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
-    if codec_pending {
+    let preserved_outputs = if codec_pending {
         target
             .producers
             .validate_codec_transition_output_origins(execution, &recovered, &layout)
             .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
-        super::output_retirement::retire(execution, &recovered, checkpoint)
-            .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
-    }
+        super::output_disposition::classify(
+            execution, graph, &recovered, &basis, target, checkpoint,
+        )
+        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?
+    } else {
+        super::preserved_outputs::PreservedOutputs::retain(&checkpoint.accepted_outputs, execution)
+            .map_err(|e| WorthQueryInMemoryApplicationDenial::Graph(e.into_installation_denial()))?
+    };
     let mut writer = WorthQueryCheckpointMigrationWriter::new(graph, transition.resources);
     let authored = (transition.author)(&mut writer, installed);
     execution.consult().map_err(|cause| {
@@ -192,11 +200,11 @@ fn prepare_transition<Schema: ApplicationSchema>(
         })
         .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
     match successor {
-        Ok(acknowledged) => Ok(acknowledged.into_parts().1),
+        Ok(acknowledged) => Ok((acknowledged.into_parts().1, preserved_outputs)),
         Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::DurabilityDeferred(deferred)) => {
             let publication = graph.recovered_publication.clone().expect("native checkpoint bootstrap publication was readmitted before transition");
             Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionDeferred(Box::new(
-                WorthQueryCheckpointTransitionRecovery::new(graph.graph.integration_handle(), publication, *deferred),
+                WorthQueryCheckpointTransitionRecovery::new(graph.graph.integration_handle(), publication, *deferred, preserved_outputs),
             )))
         }
         Err(worth_relational::facade::durability::RecoveredCheckpointTransitionError::Refused(refusal)) => Err(WorthQueryInMemoryApplicationDenial::Graph(super::codec::map_refusal(refusal.denial()))),
@@ -205,7 +213,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
 }
 
 pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
-    Schema: ApplicationSchema,
+    Schema: ApplicationSchema + 'static,
 >(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -222,7 +230,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
         .recovered_relational_authority
         .as_ref()
         .is_some_and(|authority| authority.codec_transition_pending());
-    let successor = prepare_transition(
+    let (successor, preserved_outputs) = prepare_transition(
         execution, phase, graph, checkpoint, &target, cell, transition,
     )?;
     let publication = graph
@@ -236,6 +244,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
                     graph.graph.integration_handle(),
                     publication,
                     successor,
+                    preserved_outputs,
                     cause,
                 ),
             )),
@@ -255,7 +264,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
             crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint::encode(
                 native,
                 &publication,
-                &[],
+                preserved_outputs.rows(),
                 capture_policy,
             )
             .map(|(checkpoint, _)| checkpoint)
@@ -268,6 +277,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
                         graph.graph.integration_handle(),
                         publication,
                         successor,
+                        preserved_outputs,
                         error,
                     ),
                 )),

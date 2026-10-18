@@ -23,6 +23,7 @@ pub struct WorthQueryCheckpointTransitionRecovery {
     graph: WorthQueryPrimaryGraphIntegrationHandle,
     publication: WorthQueryPrimaryGraphPublication,
     settlement: Option<Settlement>,
+    outputs: super::preserved_outputs::PreservedOutputs,
     detail: String,
     capture_denial: Option<WorthQueryCheckpointCaptureDenial>,
     finalization_denial: Option<
@@ -44,12 +45,14 @@ impl WorthQueryCheckpointTransitionRecovery {
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         publication: WorthQueryPrimaryGraphPublication,
         authority: RecoveredRelationalRuntimeAuthority,
+        outputs: super::preserved_outputs::PreservedOutputs,
         denial: WorthQueryCheckpointCaptureDenial,
     ) -> Self {
         Self {
             graph,
             publication,
             settlement: Some(Settlement::Acknowledged(authority)),
+            outputs,
             detail: format!("acknowledged target checkpoint capture stopped: {denial:?}"),
             capture_denial: Some(denial),
             finalization_denial: None,
@@ -60,12 +63,14 @@ impl WorthQueryCheckpointTransitionRecovery {
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         publication: WorthQueryPrimaryGraphPublication,
         deferred: DeferredRecoveredCheckpointTransition,
+        outputs: super::preserved_outputs::PreservedOutputs,
     ) -> Self {
         let detail = format!("{:?}", deferred.cause());
         Self {
             graph,
             publication,
             settlement: Some(Settlement::Deferred(deferred)),
+            outputs,
             detail,
             capture_denial: None,
             finalization_denial: None,
@@ -80,12 +85,14 @@ impl WorthQueryCheckpointTransitionRecovery {
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         publication: WorthQueryPrimaryGraphPublication,
         authority: RecoveredRelationalRuntimeAuthority,
+        outputs: super::preserved_outputs::PreservedOutputs,
         cause: crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
     ) -> Self {
         Self {
             graph,
             publication,
             settlement: Some(Settlement::Acknowledged(authority)),
+            outputs,
             detail: format!("acknowledged target finalization stopped: {cause:?}"),
             capture_denial: None,
             finalization_denial: Some(Box::new(cause)),
@@ -155,8 +162,13 @@ impl WorthQueryCheckpointTransitionRecovery {
                     .map_err(WorthQueryCheckpointCaptureDenial::from)
             })
             .and_then(|native| {
-                WorthQueryApplicationCheckpoint::encode(native, &self.publication, &[], policy)
-                    .map(|(checkpoint, _)| checkpoint)
+                WorthQueryApplicationCheckpoint::encode(
+                    native,
+                    &self.publication,
+                    self.outputs.rows(),
+                    policy,
+                )
+                .map(|(checkpoint, _)| checkpoint)
             }) {
             Ok(checkpoint) => Ok(checkpoint),
             Err(error) => {

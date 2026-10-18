@@ -3,6 +3,7 @@ mod activation_admission;
 mod destination_admission;
 mod fences;
 mod fixture;
+mod output_correspondence;
 mod publication_custody;
 mod related;
 mod settlement;

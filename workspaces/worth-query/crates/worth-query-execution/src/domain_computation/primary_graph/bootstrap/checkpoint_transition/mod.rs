@@ -1,7 +1,8 @@
 //! Native program transition before any World or ordinary writer exists.
 mod authoring;
 pub(super) mod codec;
-mod output_retirement;
+mod output_disposition;
+mod preserved_outputs;
 mod publication;
 mod repair;
 mod selection;

@@ -97,7 +97,13 @@ are selected with the same bounded native reads as entities and rejudged through
 `RelationMutationIntent::Revalidate(RevalidateRelationIntent { relation_id })`.
 This native read demand schedules installed rules against the actual preimage;
 it changes no endpoint, field, record version or lineage and claims no write or
-rollback restoration. Rules that overlap retired relations remain refused.
+rollback restoration. Rules that overlap retired relations remain refused. Independently produced
+surviving output requires complete native original association and exact present
+identity/kind/payload plus compatible installed roles. It retains historical
+correspondence without readiness facts, through normal capture and the same
+funded deferred/acknowledged repair capsule. Every disposition first validates complete original native publication membership,
+including present optional outputs. Mixed or incomplete outputs refuse;
+only real installed producer publication can establish target currentness.
 An existing continuation resumes
 through its original runtime and retained index generation, while a new target
 request reads only genuinely regenerated target output. See the

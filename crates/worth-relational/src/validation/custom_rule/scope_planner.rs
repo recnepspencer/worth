@@ -11,6 +11,7 @@ use crate::validation::data::{StructuralCountView, TouchedStructuralSet};
 use std::sync::Arc;
 
 mod claim_nested;
+mod relation_endpoints;
 
 #[derive(Clone)]
 pub(crate) struct PreparedCustomInvariantScope {
@@ -114,26 +115,26 @@ impl PreparedCustomInvariantScope {
                     .iter()
                     .copied()
                     .filter(|id| {
-                        state
-                            .entity_metadata(*id)
-                            .or_else(|| {
-                                work.try_charge_work(1)
-                                    .then(|| committed.entity_metadata(*id))
-                                    .flatten()
-                            })
-                            .is_some_and(|metadata| access.affects_entity(metadata.kind_id))
+                        relation_endpoints::retains_entity(
+                            *id,
+                            &self.touched,
+                            state,
+                            committed,
+                            access,
+                            work,
+                        )
                     }),
             ),
             claim_nested::retain_rows(self.touched.visible_entity_ids().iter().copied().filter(
                 |id| {
-                    state
-                        .entity_metadata(*id)
-                        .or_else(|| {
-                            work.try_charge_work(1)
-                                .then(|| committed.entity_metadata(*id))
-                                .flatten()
-                        })
-                        .is_some_and(|metadata| access.affects_entity(metadata.kind_id))
+                    relation_endpoints::retains_entity(
+                        *id,
+                        &self.touched,
+                        state,
+                        committed,
+                        access,
+                        work,
+                    )
                 },
             )),
             claim_nested::retain_rows(self.touched.visible_relation_ids().iter().copied().filter(

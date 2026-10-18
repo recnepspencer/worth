@@ -45,6 +45,20 @@ impl CustomInvariantRule for RelationLabelRule {
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
         for id in context.touched().visible_relation_ids() {
             let relation = context.relations().relation(*id).map_err(read_error)?;
+            assert!(
+                context
+                    .touched()
+                    .direct_visible_entity_ids()
+                    .contains(&relation.source),
+                "a relation-only rule retains its actual source endpoint"
+            );
+            assert!(
+                context
+                    .touched()
+                    .direct_visible_entity_ids()
+                    .contains(&relation.target),
+                "a relation-only rule retains its actual target endpoint"
+            );
             let states = context.aspect_states();
             let source = states
                 .entity_aspect_state(relation.source)

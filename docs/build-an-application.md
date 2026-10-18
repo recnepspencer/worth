@@ -1523,8 +1523,16 @@ For a derived-only codec change, use that same entry point with the target schem
 and program and an empty author callback (`|_, _| Ok(())`). Native recovery must
 first establish each affected present field's actual producer publication and
 complete payload coverage. The target must install that producer with a Create
-role for the same native output kind. Every accepted output role must belong to
-the native retirement closure; a partially classified correspondence refuses.
+role for the same native output kind. Before any disposition, each accepted output must match the complete original
+native publication; an optional role cannot be omitted when its native output
+is present. Each accepted output must then either retire completely or survive
+completely.
+A survivor must match live exact native identities, kinds and present payload,
+its original performed producer association and the complete installed output
+role meaning. A mixed or incomplete correspondence refuses. Surviving output
+metadata retains historical locators with no producer facts; it cannot establish
+target readiness. The installed producer must genuinely publish before that
+output can become current.
 An empty callback, a role declaration, a revision advance, or a copied producer
 description grants no retirement permission.
 
@@ -1538,7 +1546,12 @@ entities. Related ordering indexes are prepared before publication and require
 unchanged ordering-key codecs. External or rewritten relations, ordinary or
 subsequently overwritten payload, affected custom invariants, changed ordering
 keys, join consequences and multiple current branch heads remain refused.
-Codec cutover cannot append authored rows.
+Codec cutover cannot append authored rows. Unaffected surviving relations are
+rejudged by the target program's actual installed rules before publication.
+Normal transition capture and the existing deferred/acknowledged recovery capsule
+retain the same funded historical output roster. Capture refusal returns that
+same unpublished capsule for funded repair; repair does not reauthor or copy
+predecessor currentness.
 
 Historical roots and the original checkpoint keep their old meaning. Demand
 output through the installed target producer after installation, then use

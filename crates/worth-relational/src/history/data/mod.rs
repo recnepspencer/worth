@@ -5,7 +5,8 @@ mod canonical_commit_envelope;
 mod codec_retirement_closure;
 mod codec_retirement_preservation;
 pub(crate) use codec_retirement_closure::{
-    derive_codec_retirement_closure, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+    derive_codec_retirement_closure, validate_codec_output_correspondence,
+    CodecRetirementClosureStop, OwnedCodecRetirementClosure,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 mod canonical_record_allocation;
