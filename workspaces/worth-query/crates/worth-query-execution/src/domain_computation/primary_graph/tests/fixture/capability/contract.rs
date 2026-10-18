@@ -22,7 +22,8 @@ use worth_query_declaration::facade::{
 };
 
 use super::super::{
-    Account, AccountLabel, AccountOwner, AccountStatus, IdentityExecutionSchema, Principal,
+    Account, AccountIdentity, AccountLabel, AccountOwner, AccountStatus, IdentityExecutionSchema,
+    Principal,
 };
 use super::declaration::*;
 
@@ -174,6 +175,10 @@ fn install_capability_operations(
         .operation_projection_work_budget(CapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             CapabilityTouchOperation::reference(),
+            AccountIdentity::reference(),
+        )
+        .operation_read_field(
+            CapabilityTouchOperation::reference(),
             AccountLabel::reference(),
         )
         .operation_write(
@@ -188,6 +193,14 @@ fn install_capability_operations(
                 .finish(),
         )
         .operation_projection_work_budget(ComposedCapabilityTouchOperation::reference(), 32)
+        .operation_read_field(
+            ComposedCapabilityTouchOperation::reference(),
+            AccountIdentity::reference(),
+        )
+        .operation_read_field(
+            ComposedCapabilityTouchOperation::reference(),
+            CapabilityActionRecordIdentity::reference(),
+        )
         .operation_read_field(
             ComposedCapabilityTouchOperation::reference(),
             AccountLabel::reference(),
@@ -324,8 +337,7 @@ fn capability_composition() -> ApplicationCapabilityComposition {
         ),
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
-            ApplicationCapabilityDistinctActorRule::not_applicable(),
-        ),
+            ApplicationCapabilityDistinctActorRule::not_applicable(), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         capability_propagation(),
     )
 }
@@ -371,8 +383,7 @@ fn composed_capability_composition() -> ApplicationCapabilityComposition {
         ),
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::when(anchored_graph(request_actor)),
-            ApplicationCapabilityDistinctActorRule::when(anchored_graph(prior_actor)),
-        ),
+            ApplicationCapabilityDistinctActorRule::when(anchored_graph(prior_actor)), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         capability_propagation(),
     )
 }

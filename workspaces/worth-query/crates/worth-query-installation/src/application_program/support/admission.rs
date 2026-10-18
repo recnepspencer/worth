@@ -25,7 +25,13 @@ use crate::facade::WorthQueryInstalledApplicationSchema;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramSupportDenial {
     /// A program that declares no feature governs nothing.
-    EmptyProgram { program: ApplicationProgramIdentity },
+    UnsupportedAdoptionAuthorization {
+        program: ApplicationProgramIdentity,
+        subject: String,
+    },
+    EmptyProgram {
+        program: ApplicationProgramIdentity,
+    },
     /// The program declares an invariant contract this host has not installed.
     UnsupportedRuleContract {
         program: ApplicationProgramIdentity,
@@ -39,7 +45,9 @@ pub enum WorthQueryProgramSupportDenial {
     },
     /// An installed rule no rostered program declares would be enforced by a
     /// host where nothing understands it.
-    UndeclaredInstalledRule { rule: WorthQueryProgramRuleKey },
+    UndeclaredInstalledRule {
+        rule: WorthQueryProgramRuleKey,
+    },
     /// The same canonical revision was already admitted into this roster.
     DuplicateProgram {
         program: ApplicationProgramIdentity,
@@ -60,6 +68,11 @@ pub enum WorthQueryProgramSupportDenial {
 impl std::fmt::Display for WorthQueryProgramSupportDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::UnsupportedAdoptionAuthorization { program, subject } => write!(
+                formatter,
+                "unsupported adoption authorization for {}: {subject}",
+                program.as_str()
+            ),
             Self::EmptyProgram { program } => {
                 write!(
                     formatter,
@@ -150,6 +163,7 @@ where
                 revision: *program.revision(),
             });
         }
+        super::super::adoption_authorization::validate::<Schema, Program>(self.installed_schema)?;
         require_governed_composition(program)?;
         let rules = self.require_supported_rules(program)?;
         self.require_supported_actions(program)?;

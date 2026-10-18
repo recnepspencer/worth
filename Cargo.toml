@@ -1,9 +1,20 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 # Road 1 sub-workspaces under workspaces own their own package membership.
 # Keep them out of the root workspace so whole-world orchestration must route
 # through explicit --manifest-path calls rather than silent root ownership.
-exclude = ["workspaces/*"]
+# Cargo does not expand globs in `exclude`, so "workspaces/*" alone excluded
+# nothing: every sub-workspace crate a root member depends on silently became a
+# root member, built with the root's lints and dependency table. The explicit
+# entries are what keep them out; the glob remains for the boundary check.
+exclude = [
+    "workspaces/*",
+    "workspaces/worth-contracts",
+    "workspaces/worth-query",
+    "workspaces/worth-query-bank-world",
+    "workspaces/worth-store",
+    "workspaces/worth-ui",
+]
 members = [
     "crates/worth-harness",
     "crates/worth-runtime-bridge",
@@ -27,7 +38,7 @@ boundary_check_config = "tools/boundary-check/config/road1.toml"
 
 [workspace.package]
 rust-version = "1.94"
-edition = "2021"
+edition = "2024"
 version = "0.1.0"
 license = "BUSL-1.1"
 
@@ -53,22 +64,9 @@ worth-runtime-world = { path = "crates/worth-runtime-world" }
 # Testing
 trybuild = "1.0"
 
-# Observability
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
-notify   = "8.2.0"
-wgpu     = "24"
-winit    = "0.30"
-pollster = "0.3"
-glam     = "0.29"
-
 # Serialization
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
-sha2 = "=0.10.9"
-indexmap = { version = "2", features = ["serde"] }
-smallvec = "1"
 rayon = "1"
 allocator-api2 = "=0.2.21"
 
@@ -101,14 +99,33 @@ wrong_self_convention = "allow"
 opt-level = 0
 debug = "line-tables-only"
 
-[profile.dev.package."*"]
-opt-level = 2
+[profile.dev.package]
+"*".opt-level = 2
+# First-party crates owned by other workspaces arrive here as path dependencies,
+# which "*" would optimize. They stay on the member profile so every workspace
+# compiles them identically and editing one never pays an optimizing rebuild.
+worth-query.opt-level = 0
+worth-query-admission.opt-level = 0
+worth-query-declaration.opt-level = 0
+worth-query-execution.opt-level = 0
+worth-query-host.opt-level = 0
+worth-query-installation.opt-level = 0
+worth-query-publication.opt-level = 0
+worth-schema-graph.opt-level = 0
 
 [profile.test]
 opt-level = 0
 
-[profile.test.package."*"]
-opt-level = 2
+[profile.test.package]
+"*".opt-level = 2
+worth-query.opt-level = 0
+worth-query-admission.opt-level = 0
+worth-query-declaration.opt-level = 0
+worth-query-execution.opt-level = 0
+worth-query-host.opt-level = 0
+worth-query-installation.opt-level = 0
+worth-query-publication.opt-level = 0
+worth-schema-graph.opt-level = 0
 
 [profile.perf]
 inherits = "dev"

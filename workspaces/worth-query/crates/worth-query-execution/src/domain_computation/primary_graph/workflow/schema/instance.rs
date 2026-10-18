@@ -25,6 +25,8 @@ pub(super) fn lower_instance(
     let identity_field = planned_field_locator(INSTANCE_ASPECT, "identity")?;
     let protocol_version = planned_field_locator(INSTANCE_ASPECT, "protocol-version")?;
     let branch_occurrence = planned_field_locator(INSTANCE_ASPECT, "branch-occurrence")?;
+    let started_program_revision =
+        planned_field_locator(INSTANCE_ASPECT, "started-program-revision")?;
     let program_revision = planned_field_locator(INSTANCE_ASPECT, "program-revision")?;
     let definition_content_identity =
         planned_field_locator(INSTANCE_ASPECT, "definition-content-identity")?;
@@ -39,12 +41,19 @@ pub(super) fn lower_instance(
     let deadline = planned_field_locator(INSTANCE_ASPECT, "deadline")?;
     let inherited_evidence_bytes =
         planned_field_locator(INSTANCE_ASPECT, "inherited-evidence-bytes")?;
+    let start_advancer = super::super::actor::record::WorkflowActorFields::planned(
+        INSTANCE_ASPECT,
+        "start-advancer",
+    )?;
+    let end_advancer =
+        super::super::actor::record::WorkflowActorFields::planned(INSTANCE_ASPECT, "end-advancer")?;
     let shape = aspects()
         .struct_fields()
         .required("identity", ScalarAspectType::String)
         .required("protocol-version", ScalarAspectType::UInt64)
         .required("branch-occurrence", ScalarAspectType::UInt64)
         .required("program-revision", ScalarAspectType::String)
+        .required("started-program-revision", ScalarAspectType::String)
         .required("definition-content-identity", ScalarAspectType::String)
         // Protocol 2 retains the exact coordinates; protocol 3 uses the
         // native relation to a subject created in the same candidate.
@@ -58,6 +67,12 @@ pub(super) fn lower_instance(
         .optional("inherited-steps", ScalarAspectType::UInt64)
         .optional("deadline", ScalarAspectType::UInt64)
         .optional("inherited-evidence-bytes", ScalarAspectType::UInt64)
+        .required("start-advancer-partition", ScalarAspectType::UInt64)
+        .required("start-advancer-slot", ScalarAspectType::UInt64)
+        .required("start-advancer-generation", ScalarAspectType::UInt64)
+        .optional("end-advancer-partition", ScalarAspectType::UInt64)
+        .optional("end-advancer-slot", ScalarAspectType::UInt64)
+        .optional("end-advancer-generation", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(INSTANCE_ASPECT))?;
     let registry = register_platform_entity_at_revision(
@@ -74,11 +89,15 @@ pub(super) fn lower_instance(
     Ok((
         registry,
         WorkflowInstanceLayout {
+            start_advancer,
+            end_advancer,
+
             entity_kind: kind,
             identity: identity_field,
             protocol_version,
             branch_occurrence,
             program_revision,
+            started_program_revision,
             definition_content_identity,
             subject_partition,
             subject_slot,

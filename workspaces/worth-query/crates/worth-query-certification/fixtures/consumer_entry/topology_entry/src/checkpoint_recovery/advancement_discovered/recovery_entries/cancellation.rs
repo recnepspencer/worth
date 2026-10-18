@@ -57,6 +57,7 @@ fn cancellation_in_recovery_authorization_uses_the_opening_spelling() {
         };
         let mutation = application
             .request(&principal, &scope)
+            .advanced()
             .mutate(intent)
             .expect_source(source)
             .idempotency(&9140_u64);

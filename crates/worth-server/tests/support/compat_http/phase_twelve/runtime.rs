@@ -11,7 +11,7 @@ use worth_server::{
     WorthServerQueryHandoffConfig, WorthServerRequestContextConfig,
 };
 
-use crate::query_handoff_runtime::TestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::TestWorkspaceProvider;
 
 pub(crate) fn build_phase_twelve_server() -> WorthServer {
     build_server_with_max_diagnostics(DiagnosticRichnessProfile::Forensic)

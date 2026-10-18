@@ -8,7 +8,7 @@ use worth_server::{
     WorthServerRequestContextConfig, WorthServerStreamSelection, WorthServerStreamingResponse,
 };
 
-use crate::query_handoff_runtime::TestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::TestWorkspaceProvider;
 
 use super::StreamingDatasetWorkspaceProvider;
 

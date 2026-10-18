@@ -6,6 +6,8 @@ use sha2::{Digest, Sha256};
 mod backing;
 #[path = "tests/fact_versions.rs"]
 mod fact_versions;
+#[path = "tests/readmission_resources.rs"]
+mod readmission_resources;
 
 use super::{
     merge_accepted_outputs, WorthQueryApplicationCheckpoint, BODY_PREFIX_BYTES, CHECKSUM_BYTES,
@@ -20,7 +22,7 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
         .scope();
     let checkpoint = |source, partition| {
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
-            producer: "producer".to_owned(),
+            producer: ("producer".to_owned()).into(),
             posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source,
             scope,
@@ -28,10 +30,11 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
             producer_dependency: None,
             idempotency_key: source,
             resources: None,
-            roles: Vec::new(),
+            roles: (Vec::new()).into(),
             producer_facts: None,
             producer_fact_wire_version: 0,
-        }
+ metadata: None,
+}
     };
     let stale = checkpoint([1; 32], [7; 32]);
     let sibling = checkpoint([2; 32], [8; 32]);
@@ -204,6 +207,8 @@ fn trailing_and_truncated_payloads_are_rejected() {
 fn checkpoint_body(accepted_count: u64, accepted: Vec<u8>) -> Vec<u8> {
     let mut body = Vec::with_capacity(BODY_PREFIX_BYTES + accepted.len());
     body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
+    body.extend_from_slice(&super::WORKFLOW_FACTS.to_be_bytes());
+    body.extend_from_slice(&super::WORKFLOW_INSTANCES.to_be_bytes());
     body.extend_from_slice(&1_u64.to_be_bytes());
     body.extend_from_slice(&0_u64.to_be_bytes());
     body.extend_from_slice(&accepted_count.to_be_bytes());
@@ -227,7 +232,7 @@ fn accepted_prefix(producer: &[u8], dependency_posture: u8, dependency: [u8; 32]
 }
 
 #[test]
-fn producer_resource_profile_roundtrips_and_legacy_is_refused() {
+fn producer_resource_profile_roundtrips() {
     let mut accepted = accepted_prefix(b"producer", 0, [0; 32]);
     accepted.truncate(accepted.len() - 17);
     accepted.extend_from_slice(&super::resources::encode_profile(
@@ -241,14 +246,6 @@ fn producer_resource_profile_roundtrips_and_legacy_is_refused() {
         .expect("current resource evidence decodes");
     let profile = decoded.accepted_outputs[0].resources.unwrap();
     assert_eq!((profile.work(), profile.retained_bytes()), (4_096, 8_192));
-
-    let mut legacy = accepted_prefix(b"producer", 0, [0; 32]);
-    legacy.remove(8 + b"producer".len());
-    legacy.truncate(legacy.len() - 17);
-    legacy.extend_from_slice(&0_u64.to_be_bytes());
-    let mut body = checkpoint_body(1, legacy);
-    body[..2].copy_from_slice(&3_u16.to_be_bytes());
-    assert_denied(body, "Query application checkpoint format 3 is unsupported");
 }
 
 #[test]

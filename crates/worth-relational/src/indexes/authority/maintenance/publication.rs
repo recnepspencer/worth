@@ -1,4 +1,4 @@
-use super::super::{publish_prepared_generation, IndexGenerationPublicationBasis};
+use super::super::IndexGenerationPublicationBasis;
 use super::work::MaintenanceWork;
 use crate::indexes::data::{DerivedIndexEntries, DerivedIndexGeneration, DerivedIndexId};
 use crate::indexes::data::{
@@ -11,13 +11,6 @@ pub(super) struct PreparedRefresh {
 }
 
 impl PreparedRefresh {
-    pub(super) fn prepare_publication(&self, work: &mut MaintenanceWork) -> Result<(), Denial> {
-        work.array::<DerivedIndexGeneration>(self.entries.len() + self.reused.len())?;
-        work.prepare(
-            0,
-            (self.publication.branch_id.0.len() * 2 * self.entries.len()) as u64,
-        )
-    }
     pub(super) fn publish_admitted(
         self,
         runtime: &crate::runtime::RelationalRuntime,
@@ -75,17 +68,5 @@ impl PreparedRefresh {
         generations.extend(self.reused);
         generations.sort_unstable_by_key(|generation| generation.index_id);
         Ok(generations)
-    }
-    pub(super) fn publish(
-        self,
-        runtime: &crate::runtime::RelationalRuntime,
-    ) -> Vec<DerivedIndexGeneration> {
-        let mut generations = Vec::with_capacity(self.reused.len() + self.entries.len());
-        generations.extend(self.reused);
-        generations.extend(self.entries.into_iter().map(|(index_id, entries)| {
-            publish_prepared_generation(runtime, &self.publication, index_id, entries)
-        }));
-        generations.sort_by_key(|generation| generation.index_id);
-        generations
     }
 }

@@ -86,7 +86,7 @@ RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Sche
         }
     }
 
-    fn start_required_outputs_in_advancement<'application, 'principal, 'scope>(
+    pub(in crate::application_entry) fn start_required_outputs_in_advancement<'application, 'principal, 'scope>(
         self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,

@@ -1,5 +1,0 @@
-error[E0451]: field `id` of struct `AdmittedCapability` is private
- --> tests/ui/facade/support/construction/admitted_capability_not_publicly_mintable.rs:5:42
-  |
-5 |     let _admitted = AdmittedCapability { id };
-  |                                          ^^ private field

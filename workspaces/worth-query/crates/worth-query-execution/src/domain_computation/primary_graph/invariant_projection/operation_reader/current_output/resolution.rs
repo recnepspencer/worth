@@ -268,7 +268,7 @@ where
                         if stop == ConsumedOutputVerificationStop::WorkExhausted {
                             self.reader.work_budget.mark_exceeded();
                         }
-                        self.reader.retention_exhausted |= stop == ConsumedOutputVerificationStop::CapacityExhausted;
+                        self.reader.retention_exhausted |= matches!(stop, ConsumedOutputVerificationStop::CapacityExhausted(_));
                         verification_denial::from_stop(stop, Family::IDENTITY)
                     })?;
                     let evidence = ConsumedOutputEvidence::new(

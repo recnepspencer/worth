@@ -1,11 +1,11 @@
 #[path = "support/compat_http/phase_six_assertions.rs"]
 mod compat_http_phase_six_assertions;
-#[path = "support/compat_http/phase_six_runtime.rs"]
-mod compat_http_phase_six_runtime;
-#[path = "support/query_handoff/runtime.rs"]
-mod query_handoff_runtime;
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_compat_http_phase_six_runtime as compat_http_phase_six_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 #[path = "compat_http_phase_six/cleanup_receipts.rs"]
 mod cleanup_receipts;

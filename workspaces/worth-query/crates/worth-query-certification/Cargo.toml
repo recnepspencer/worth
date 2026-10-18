@@ -2,6 +2,7 @@
 name = "worth-query-certification"
 autotests = false
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Bounded hostile and replay certification for WORTH Query."
@@ -15,6 +16,7 @@ worth-query-replay.workspace = true
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-harness = { path = "../../../../crates/worth-harness" }
 serde.workspace = true
+sha2.workspace = true
 worth-foundational.workspace = true
 worth-query.workspace = true
 worth-query-decl.workspace = true
@@ -58,6 +60,12 @@ harness = false
 [[example]]
 name = "advanced_product_branching"
 path = "examples/advanced_product_branching.rs"
+test = true
+harness = false
+
+[[example]]
+name = "observable_workflow"
+path = "examples/observable_workflow.rs"
 test = true
 harness = false
 

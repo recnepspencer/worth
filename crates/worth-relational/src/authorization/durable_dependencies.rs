@@ -13,15 +13,19 @@ use super::{
 
 mod capture;
 mod currentness;
+mod storage;
 mod wire;
+use std::sync::Arc;
+pub use wire::RelationalAuthorizationDependencyWire;
 
 pub const MAXIMUM_AUTHORIZATION_DEPENDENCIES: usize = 4_096;
 pub const MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES: usize = 65_536;
 const DURABLE_DEPENDENCY_VERSION: u8 = 1;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RelationalAuthorizationDependencyDenial {
     Execution(crate::execution::RelationalExecutionDenialCause),
+    Allocation(worth_execution::ExecutionAllocationDenial),
     ForeignRuntime,
     SnapshotUnavailable,
     InexactSnapshot,
@@ -34,13 +38,51 @@ pub enum RelationalAuthorizationDependencyDenial {
     UnsupportedVersion,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+/// Issued/decoded native description with shared deep-storage custody.
+/// Context-free deserialization cannot construct this owning value.
+///
+/// ```compile_fail
+/// use worth_relational::facade::authorization::RelationalAuthorizationDurableDependencies;
+/// fn unpaid(bytes: &[u8]) -> RelationalAuthorizationDurableDependencies {
+///     rmp_serde::from_slice(bytes).unwrap()
+/// }
+/// ```
+///
+/// ```
+/// use worth_relational::facade::authorization::{RelationalAuthorizationDurableDependencies,
+///     RelationalAuthorizationDependencyDenial};
+/// fn admitted(execution: &worth_execution::ExecutionRequest<'_, '_>, wire: &str)
+///     -> Result<RelationalAuthorizationDurableDependencies, RelationalAuthorizationDependencyDenial> {
+///     RelationalAuthorizationDurableDependencies::from_wire(execution, wire)
+/// }
+/// ```
+#[derive(Clone, Debug)]
 pub struct RelationalAuthorizationDurableDependencies {
+    owned: Arc<OwnedDependencies>,
+}
+#[derive(Debug)]
+struct OwnedDependencies {
+    data: DependencyData,
+    _storage: storage::DependencyStorage,
+}
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DependencyData {
     version: u8,
     principal: EntityDependency,
     scope: EntityDependency,
     paths: Vec<PathDependencies>,
+}
+impl PartialEq for RelationalAuthorizationDurableDependencies {
+    fn eq(&self, other: &Self) -> bool {
+        self.owned.data == other.owned.data
+    }
+}
+impl Eq for RelationalAuthorizationDurableDependencies {}
+impl Serialize for RelationalAuthorizationDurableDependencies {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.owned.data.serialize(serializer)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -105,7 +147,7 @@ enum FieldLocatorAuthority {
 impl RelationalAuthorizationDurableDependencies {
     /// Equality is meaningful only against a fresh Relational-owned capture.
     pub fn matches(&self, fresh: &Self) -> bool {
-        self == fresh && self.version == DURABLE_DEPENDENCY_VERSION
+        self == fresh && self.owned.data.version == DURABLE_DEPENDENCY_VERSION
     }
 }
 

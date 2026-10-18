@@ -2,6 +2,11 @@
 //! cancellation, migration or program adoption disposes of it before the
 //! owner settles.
 
+#![allow(
+    clippy::result_large_err,
+    reason = "Custody courts retain the original native workflow refusal and cleanup owner"
+)]
+
 use bank_external_rail::test_control::FaultScript;
 use bank_server::{BankApplicationP1, BankApprovedPaymentWorkflowError};
 use worth_query_host::facade::application_entry::{
@@ -11,7 +16,6 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationUncommitted,
-    WorthQueryWorkflowInstanceCustody,
 };
 
 use super::assertions::key;
@@ -60,7 +64,8 @@ fn owner_remains_pending(ready: &ReadyPaymentWorld, command_key: &str) {
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
     let denied = workflow
-        .accept_applied(
+        .advanced()
+        .accept_native_effect(
             ready.instance.clone(),
             &ready.operation,
             ready.authority.clone(),
@@ -204,17 +209,11 @@ fn adoption_leaves_a_payment_the_rail_holds_with_no_disposition() {
         .on_branch(runtime.current_branch())
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
-    let inventory = programs
-        .adopt(&requirements)
-        .workflow_inventory(4_096)
-        .expect("the workflow inventory reads");
-    let payment = inventory
-        .instance(ready.instance.entity_id())
-        .expect("the payment workflow is inventoried");
-    assert_eq!(
-        payment.custody(),
-        &WorthQueryWorkflowInstanceCustody::OperationInOwnerCustody,
-        "the rail owner settles the payment under the source program",
-    );
-    assert!(payment.legal_dispositions().is_empty());
+    let denied = programs.adopt(&requirements)
+        .expect("declared program adoption permission admits")
+        .workflow(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()).prepare(4_096);
+    assert!(matches!(denied,
+        Err(worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+            worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))),
+        "the actual rail custody forbids adoption without disclosing the private inventory");
 }

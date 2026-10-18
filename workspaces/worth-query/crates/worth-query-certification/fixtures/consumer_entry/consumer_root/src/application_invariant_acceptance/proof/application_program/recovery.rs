@@ -53,6 +53,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         replacement_y: length(2),
     };
     let outcome = request
+        .advanced()
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&10_002)
@@ -67,6 +68,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
     let source_receipt = performed.receipt().clone();
     drop(performed);
     let replay = request
+        .advanced()
         .mutate(intent)
         .expect_source(source)
         .idempotency(&10_002)
@@ -93,6 +95,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         "caller disposal preserves the exact source carrier"
     );
     let truncated_recovery = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerTruncatedProgramRoot>(
             &world.application,
             replay_receipt,
@@ -134,6 +137,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .observed_sources()[0]
         .clone();
     request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation: PlanarOperation::CreateCycle(vec![
@@ -162,6 +166,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         )
         .expect("an intervening ordinary commit lands on the same branch");
     let recovered_once = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             replay_receipt,
@@ -178,6 +183,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
     );
     drop(recovered_once);
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
@@ -200,6 +206,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .expect("the recovered transitive result remains readable");
     assert_eq!(row.rows()[0].value, length(4));
     let completed = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
@@ -238,6 +245,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
             replacement_y: length(2),
@@ -262,6 +270,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         .observed_sources()[0]
         .clone();
     let changed = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
             replacement_y: length(5),
@@ -280,6 +289,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
     drop(changed);
 
     let denial = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
@@ -312,6 +322,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
     );
     drop(
         request
+            .advanced()
             .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
                 &world.application,
                 &changed_receipt,

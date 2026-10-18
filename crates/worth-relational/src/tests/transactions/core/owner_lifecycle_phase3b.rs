@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use std::sync::mpsc::{sync_channel, RecvTimeoutError};
 use std::sync::{Arc, Barrier};
 use std::time::{Duration, Instant};
@@ -177,9 +178,10 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
     let replaced_instance_id = runtime.runtime_instance_id();
     assert_eq!(port.runtime_instance_id(), replaced_instance_id);
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     runtime
         .durability_recovery()
         .recover(execution, plan)

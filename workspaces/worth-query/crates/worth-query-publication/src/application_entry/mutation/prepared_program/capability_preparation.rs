@@ -16,7 +16,7 @@ use worth_query_declaration::facade::{
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation> WorthQueryApplicationMutationRequestWithIdempotency<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
+    Intent: ApplicationMutationIntent<Schema>,
     Intent::Binding: ApplicationCapabilityMutationBinding<Schema>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync + ApplicationCapabilityRequest<Schema, <Intent::Binding as ApplicationCapabilityMutationBinding<Schema>>::Capability, Scope = <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding: ApplicationMutationScopeResolution<Schema, <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity>,

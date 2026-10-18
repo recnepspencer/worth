@@ -24,6 +24,7 @@ use worth_query_execution::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 #[derive(Clone, Debug, Eq, PartialEq)]
+/// A refused exact handoff. No native succession slot is consumed on refusal.
 pub enum WorthQueryWorkflowSuccessionBindingDenial {
     RuntimeMismatch,
     RequirementMismatch,

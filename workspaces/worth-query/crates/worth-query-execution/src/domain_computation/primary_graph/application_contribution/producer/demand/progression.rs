@@ -271,12 +271,20 @@ where
             stop
         };
         let stop = self.caller_custody_stop(demand, stop, &mut admission);
+        if stop.has_read_cleanup() {
+            let diagnostic = stop.clone();
+            demand.terminal_caller_denial = Some(stop);
+            caller_pass_observation::observe_request_work(&admission);
+            return Err(diagnostic);
+        }
         if matches!(
             stop.kind(),
             WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
         ) && stop.recovery_posture() == super::WorthQueryOutputDemandRecoveryPosture::Terminal
         {
-            demand.terminal_caller_denial = Some(stop.clone());
+            demand
+                .terminal_caller_denial
+                .get_or_insert_with(|| stop.clone());
         }
         caller_pass_observation::observe_request_work(&admission);
         Err(stop)

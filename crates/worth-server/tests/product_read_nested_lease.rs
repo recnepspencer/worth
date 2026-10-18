@@ -1,9 +1,9 @@
-#[path = "support/product_adapter_phase_nine/fixture.rs"]
-mod fixture;
+#[allow(unused_imports)]
+use crate::shared_support_product_adapter_phase_nine_fixture as fixture;
 #[path = "../../worth-relational/examples/support.rs"]
 mod relational_support;
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use std::{
     num::NonZeroUsize,

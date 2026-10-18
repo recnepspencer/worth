@@ -28,10 +28,10 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
             .map(|binding| binding.operation_name())
             .collect();
         for member in schema.installed_declaration().members() {
-            if let ApplicationSchemaMember::OperationBody { operation, .. } = member {
-                if !covered.contains(operation.as_str()) {
-                    return Err(denial(DenialKind::OperationBodyUnavailable, operation));
-                }
+            if let ApplicationSchemaMember::OperationBody { operation, .. } = member
+                && !covered.contains(operation.as_str())
+            {
+                return Err(denial(DenialKind::OperationBodyUnavailable, operation));
             }
         }
         Ok(())

@@ -199,3 +199,77 @@ fn zero_foreign_and_overflow_plans_refuse_without_funding_another_runtime() {
         Err(Resource::ForeignPlan)
     ));
 }
+
+#[test]
+fn installed_narrowing_freezes_slots_and_refuses_after_real_custody() {
+    let world = CourtroomWorld::publish("ready");
+    let application = &world.application;
+    let binding = application
+        .installed_schema()
+        .installed_query_binding::<TemporalIntentCurrentReadBinding>()
+        .unwrap();
+    let make = || {
+        application
+            .application_query_batch_from_installed_reads(&[application
+                .plan_application_query_batch_reads(&binding, 2)
+                .unwrap()])
+            .unwrap()
+    };
+    let batch = make();
+    let cap = limits(1, 32);
+    let overflow = make();
+    let initial = overflow.observe();
+    assert!(matches!(
+        overflow.claim_publication_memory(usize::MAX),
+        Err(Resource::CounterOverflow)
+    ));
+    assert_eq!(overflow.observe(), initial);
+    assert_eq!(
+        overflow.narrow_and_freeze_planned_reads(cap),
+        Err(Resource::PlanningFrozen),
+        "a failed quote still starts custody admission"
+    );
+    let zero = make();
+    let claim = zero.claim_memory(0).unwrap();
+    assert_eq!(zero.observe(), initial);
+    assert_eq!(
+        zero.narrow_and_freeze_planned_reads(cap),
+        Err(Resource::PlanningFrozen),
+        "an issued zero-byte claim closes pre-claim narrowing"
+    );
+    drop(claim);
+    assert_eq!(zero.observe(), initial);
+    assert_eq!(
+        zero.narrow_and_freeze_planned_reads(cap),
+        Err(Resource::PlanningFrozen)
+    );
+    batch.narrow_and_freeze_planned_reads(cap).unwrap();
+    assert_eq!(
+        batch.narrow_and_freeze_planned_reads(cap),
+        Err(Resource::PlanningFrozen)
+    );
+    assert_eq!(
+        application.extend_application_query_batch_once(&batch, &[]),
+        Err(Resource::PlanningFrozen)
+    );
+    batch.admit_items(2).unwrap();
+    assert!(matches!(
+        batch.claim_publication_memory(33),
+        Err(Resource::MemoryLimit { maximum: 32, .. })
+    ));
+    assert_eq!(batch.observe().retained_bytes(), 0);
+    let started = make();
+    let claim = started.claim_memory(1).unwrap();
+    let prior = started.observe();
+    assert_eq!(
+        started.narrow_and_freeze_planned_reads(cap),
+        Err(Resource::PlanningFrozen)
+    );
+    assert_eq!(started.observe(), prior);
+    drop(claim);
+    assert_eq!(
+        started.narrow_and_freeze_planned_reads(cap),
+        Err(Resource::PlanningFrozen),
+        "released custody does not reset historical accounting"
+    );
+}

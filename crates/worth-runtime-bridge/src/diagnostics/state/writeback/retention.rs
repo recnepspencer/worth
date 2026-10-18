@@ -166,15 +166,14 @@ impl BridgeDiagnosticsState {
                     self.latest_writeback_execution_by_record_identity
                         .remove(evicted.record_identity().as_str());
                 }
-                if let Some(candidate_digest) = evicted.candidate_digest() {
-                    if self
+                if let Some(candidate_digest) = evicted.candidate_digest()
+                    && self
                         .latest_writeback_execution_by_candidate_digest
                         .get(candidate_digest)
                         .is_some_and(|current| Arc::ptr_eq(current, &evicted))
-                    {
-                        self.latest_writeback_execution_by_candidate_digest
-                            .remove(candidate_digest);
-                    }
+                {
+                    self.latest_writeback_execution_by_candidate_digest
+                        .remove(candidate_digest);
                 }
             }
         }
@@ -190,17 +189,16 @@ impl BridgeDiagnosticsState {
         let previous_record = previous_record.as_ref().clone();
         self.latest_writeback_execution_by_record_identity
             .remove(previous_record.record_identity().as_str());
-        if let Some(candidate_digest) = previous_record.candidate_digest() {
-            if self
+        if let Some(candidate_digest) = previous_record.candidate_digest()
+            && self
                 .latest_writeback_execution_by_candidate_digest
                 .get(candidate_digest)
                 .is_some_and(|current| {
                     current.record_identity() == previous_record.record_identity()
                 })
-            {
-                self.latest_writeback_execution_by_candidate_digest
-                    .remove(candidate_digest);
-            }
+        {
+            self.latest_writeback_execution_by_candidate_digest
+                .remove(candidate_digest);
         }
 
         let updated_record =
@@ -228,15 +226,14 @@ impl BridgeDiagnosticsState {
         );
         self.writeback_replay_records.push_back(record);
         while self.writeback_replay_records.len() > limit.max(1) {
-            if let Some(evicted) = self.writeback_replay_records.pop_front() {
-                if self
+            if let Some(evicted) = self.writeback_replay_records.pop_front()
+                && self
                     .latest_writeback_replay_by_record_identity
                     .get(evicted.record_identity().as_str())
                     .is_some_and(|current| Arc::ptr_eq(current, &evicted))
-                {
-                    self.latest_writeback_replay_by_record_identity
-                        .remove(evicted.record_identity().as_str());
-                }
+            {
+                self.latest_writeback_replay_by_record_identity
+                    .remove(evicted.record_identity().as_str());
             }
         }
     }

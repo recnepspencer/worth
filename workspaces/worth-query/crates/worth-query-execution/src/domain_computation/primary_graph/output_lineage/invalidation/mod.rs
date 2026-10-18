@@ -24,7 +24,9 @@ pub(in crate::domain_computation::primary_graph) use full_verification::{
 mod head_cell;
 pub(in crate::domain_computation) use head_cell::HeadCellRegistrationStop;
 mod index_capacity;
-pub(in crate::domain_computation::primary_graph) use index_capacity::arc_bytes;
+pub(in crate::domain_computation::primary_graph) use index_capacity::{
+    arc_bytes, insertion_sequence_bytes, ordered_navigation_work,
+};
 mod equivalence_control;
 mod logical_marking;
 mod marking_observation;
@@ -54,7 +56,7 @@ mod verified_current;
 mod native_journey_tests;
 
 pub(in crate::domain_computation::primary_graph) use commit_touches::{
-    CommitTouchInterest, CommitTouchesStop, TouchedCommits,
+    CommitTouchEntities, CommitTouchInterest, CommitTouchesStop, TouchedCommits,
 };
 pub(in crate::domain_computation::primary_graph) use consumed_capacity::RetainedConsumedOutputCapacity;
 pub(in crate::domain_computation::primary_graph) use derived::{

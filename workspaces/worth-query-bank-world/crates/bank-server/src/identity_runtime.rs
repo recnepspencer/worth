@@ -1,5 +1,7 @@
 mod advancement;
+mod workflow_binding;
 use std::collections::BTreeSet;
+pub use workflow_binding::BankIdentityRuntimeWorkflowBinding;
 
 #[path = "identity_runtime/certification_controls.rs"]
 mod certification_controls;
@@ -70,20 +72,22 @@ impl BankAuthenticationConfiguration {
     }
 }
 
+type InstalledBankPrincipalBinding = WorthQueryInstalledPrincipalBinding<
+    BankSchema,
+    BankPrincipalBinding,
+    ExternalPrincipalMapping,
+    Principal,
+    BankPrincipalId,
+    BankPrincipalIdBinding,
+>;
+
 pub struct BankIdentityRuntime {
     runtime: WorthQueryWorkflowApplicationRuntime<
         BankSchema,
         ApprovedBusinessPaymentWorkflow,
         BankApplication,
     >,
-    binding: WorthQueryInstalledPrincipalBinding<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    >,
+    binding: InstalledBankPrincipalBinding,
     invariant_projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
     approval_authentication: BankApprovalAuthenticationOwner,
 }
@@ -278,7 +282,7 @@ impl BankIdentityRuntime {
             .map_err(BankApplicationQueryDenial::ExecutionRequest)?
     }
 
-    pub(crate) const fn application_runtime(
+    pub(crate) fn application_runtime(
         &self,
     ) -> &WorthQueryPrimaryGraphApplicationRuntime<BankSchema> {
         self.runtime.program_runtime().runtime()
@@ -317,12 +321,13 @@ struct BankGraphSeed {
     owners: Vec<BankBusinessOwnerSeed>,
     employees: Vec<BankEmployeeAssignmentSeed>,
     estate: Option<BankEstateWorld>,
+    deployment_grants: Vec<crate::BankProgramDeploymentGrantSeed>,
 }
 
 fn prepare_world(
     seed: BankWorldSeed,
 ) -> Result<(Vec<PreparedBankPrincipalSeed>, BankGraphSeed), BankIdentityRuntimeBuildError> {
-    let (snapshot, principals, owners, employees, estate) = seed.into_parts();
+    let (snapshot, principals, owners, employees, estate, deployment_grants) = seed.into_parts();
     let principals = prepare_seeds(principals)?;
     validate_world_principals(&snapshot, &principals)?;
     Ok((
@@ -332,6 +337,7 @@ fn prepare_world(
             owners,
             employees,
             estate,
+            deployment_grants,
         },
     ))
 }

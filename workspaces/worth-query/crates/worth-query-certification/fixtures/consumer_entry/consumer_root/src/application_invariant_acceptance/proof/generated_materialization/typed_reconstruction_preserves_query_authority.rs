@@ -9,6 +9,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     scope: &WorthQueryRequestScope,
 ) {
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
             replacement_y: length(2),

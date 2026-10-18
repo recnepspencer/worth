@@ -67,22 +67,22 @@ impl CustomInvariantRule for CheckedCounterRule {
         planner: &mut CustomInvariantScopePlanner<'_>,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<Result<Self::Scope, CustomInvariantPreparationError>> {
-        if let Some(target) = self.target.as_ref().and_then(|target| target.get()) {
-            if let Err(error) = planner.relations().entity_kind(*target) {
-                return Some(Err(CustomInvariantPreparationError::new(format!(
-                    "checked structural read: {error:?}"
-                ))));
-            }
+        if let Some(target) = self.target.as_ref().and_then(|target| target.get())
+            && let Err(error) = planner.relations().entity_kind(*target)
+        {
+            return Some(Err(CustomInvariantPreparationError::new(format!(
+                "checked structural read: {error:?}"
+            ))));
         }
         for _ in 0..self.preparation_steps {
             if !budget.checkpoint(1) {
                 break;
             }
             let visits = self.preparation_visits.fetch_add(1, Ordering::SeqCst);
-            if visits == 1 {
-                if let Some(cancellation) = &self.cancellation {
-                    cancellation.cancel();
-                }
+            if visits == 1
+                && let Some(cancellation) = &self.cancellation
+            {
+                cancellation.cancel();
             }
         }
         let _ = budget.claim_scratch(self.preparation_scratch_bytes);
@@ -111,10 +111,11 @@ impl CustomInvariantRule for CheckedCounterRule {
                 break;
             }
             let visits = self.visits.fetch_add(1, Ordering::SeqCst);
-            if visits == 1 && self.preparation_steps == 0 {
-                if let Some(cancellation) = &self.cancellation {
-                    cancellation.cancel();
-                }
+            if visits == 1
+                && self.preparation_steps == 0
+                && let Some(cancellation) = &self.cancellation
+            {
+                cancellation.cancel();
             }
         }
         // The worker must propagate a failed meter claim even when a custom

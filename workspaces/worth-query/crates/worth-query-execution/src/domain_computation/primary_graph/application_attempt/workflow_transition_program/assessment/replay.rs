@@ -19,6 +19,7 @@ where
     ) -> worth_relational::facade::identity::EntityId {
         match self {
             Self::Transition { instance, .. }
+            | Self::AwaitingProposal { instance, .. }
             | Self::AwaitingEvidence { instance, .. }
             | Self::AwaitingApproval { instance, .. }
             | Self::ReplayOnly { instance, .. } => *instance,
@@ -80,6 +81,12 @@ where
                 assessment_identity_locator,
             ),
             Self::AwaitingEvidence {
+                read_set,
+                transition_identity_locator,
+                assessment_identity_locator,
+                ..
+            }
+            | Self::AwaitingProposal {
                 read_set,
                 transition_identity_locator,
                 assessment_identity_locator,

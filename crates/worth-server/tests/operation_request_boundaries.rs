@@ -1,14 +1,14 @@
-#[path = "support/compat_http/phase_three_runtime.rs"]
-mod compat_http_phase_three_runtime;
-#[path = "support/query_handoff/runtime.rs"]
-mod query_handoff_runtime;
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_compat_http_phase_three_runtime as compat_http_phase_three_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-#[path = "support/worth_native/assertions.rs"]
-mod worth_native_assertions;
-#[path = "support/worth_native/runtime.rs"]
-mod worth_native_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_worth_native_assertions as worth_native_assertions;
+#[allow(unused_imports)]
+use crate::shared_support_worth_native_runtime as worth_native_runtime;
 
 use worth_proof::TransitionOutcome;
 use worth_server::{

@@ -19,10 +19,10 @@ fn validate_inbound_cardinality(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     let mut operations = BTreeSet::new();
     for member in members {
-        if let ApplicationSchemaMember::OperationInboundOccurrence { operation, .. } = member {
-            if !operations.insert(operation.as_str()) {
-                return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
-            }
+        if let ApplicationSchemaMember::OperationInboundOccurrence { operation, .. } = member
+            && !operations.insert(operation.as_str())
+        {
+            return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
         }
     }
     Ok(())
@@ -33,10 +33,10 @@ fn validate_external_effect_cardinality(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     let mut operations = BTreeSet::new();
     for member in members {
-        if let ApplicationSchemaMember::OperationExternalEffect { operation, .. } = member {
-            if !operations.insert(operation.as_str()) {
-                return Err(ApplicationSchemaDeclarationDenial::DuplicateOperationExternalEffect);
-            }
+        if let ApplicationSchemaMember::OperationExternalEffect { operation, .. } = member
+            && !operations.insert(operation.as_str())
+        {
+            return Err(ApplicationSchemaDeclarationDenial::DuplicateOperationExternalEffect);
         }
     }
     Ok(())
@@ -47,10 +47,10 @@ fn validate_aftermath_cardinality(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     let mut operations = BTreeSet::new();
     for member in members {
-        if let ApplicationSchemaMember::OperationAftermath { operation, .. } = member {
-            if !operations.insert(operation.as_str()) {
-                return Err(ApplicationSchemaDeclarationDenial::DuplicateOperationAftermath);
-            }
+        if let ApplicationSchemaMember::OperationAftermath { operation, .. } = member
+            && !operations.insert(operation.as_str())
+        {
+            return Err(ApplicationSchemaDeclarationDenial::DuplicateOperationAftermath);
         }
     }
     Ok(())

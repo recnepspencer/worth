@@ -7,7 +7,7 @@ use worth_foundational::{
 use worth_proof::TransitionOutcome;
 
 use super::json_lowering_fixtures::{scalar_input, source_for, task_summary_contract};
-use crate::foundational_vocabulary::{field, key};
+use crate::certification::foundational_vocabulary::{field, key};
 
 #[test]
 fn json_lowering_matches_native_authoritative_state_for_equivalent_struct_truth() {
@@ -69,9 +69,12 @@ fn json_lowering_admits_unambiguous_scalar_wrapper_shapes() {
 
 #[test]
 fn json_lowering_keeps_bytes_and_content_ref_scalar_families_distinct() {
-    let bytes_contract =
-        crate::foundational_vocabulary::scalar_contract("blob.bytes", 1, ScalarAspectType::Bytes);
-    let content_contract = crate::foundational_vocabulary::scalar_contract(
+    let bytes_contract = crate::certification::foundational_vocabulary::scalar_contract(
+        "blob.bytes",
+        1,
+        ScalarAspectType::Bytes,
+    );
+    let content_contract = crate::certification::foundational_vocabulary::scalar_contract(
         "blob.content_ref",
         1,
         ScalarAspectType::ContentRef,

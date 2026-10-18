@@ -53,7 +53,8 @@ fn production_schema_installation_failure_is_typed_before_mutation() {
 
 #[test]
 fn production_transaction_failure_is_typed_before_handle_binding() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut program = court_program();
@@ -72,7 +73,8 @@ fn production_transaction_failure_is_typed_before_handle_binding() {
 
 #[test]
 fn missing_owner_binding_is_typed_and_cannot_fall_back_to_a_raw_id() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let program = court_program();
@@ -103,7 +105,8 @@ fn missing_owner_binding_is_typed_and_cannot_fall_back_to_a_raw_id() {
 
 #[test]
 fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let program = court_program();
@@ -150,7 +153,8 @@ fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
 
 #[test]
 fn relation_binding_rejects_a_snapshot_from_another_runtime() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let program = court_program();
@@ -180,7 +184,8 @@ fn relation_binding_rejects_a_snapshot_from_another_runtime() {
 
 #[test]
 fn oracle_failure_is_distinct_from_production_observation_and_comparison() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut world =
@@ -203,7 +208,8 @@ fn oracle_failure_is_distinct_from_production_observation_and_comparison() {
 
 #[test]
 fn comparison_failure_is_distinct_after_an_oracle_only_value_drift() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut world =
@@ -240,7 +246,8 @@ fn declaration_failure_remains_distinct_from_runtime_failures() {
 
 #[test]
 fn publication_budget_failure_is_typed_and_happens_before_handle_binding() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let error = match compile_supply_chain_baseline_with_budget(execution, court_program(), 1) {
@@ -255,7 +262,8 @@ fn publication_budget_failure_is_typed_and_happens_before_handle_binding() {
 
 #[test]
 fn semantic_relation_binding_rejects_wrong_kind_and_endpoint_intent() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let original = court_program();
@@ -312,7 +320,8 @@ fn semantic_relation_binding_rejects_wrong_kind_and_endpoint_intent() {
 
 #[test]
 fn semantic_relation_binding_rejects_incomplete_correspondence() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let original = court_program();
@@ -343,7 +352,8 @@ fn semantic_relation_binding_rejects_incomplete_correspondence() {
 
 #[test]
 fn semantic_relation_binding_rejects_duplicate_correspondence() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let original = court_program();

@@ -1,5 +1,6 @@
 use super::*;
 use crate::durability::data::RecoveryFailureClass;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::facade::mvcc::WorkerIntentBatch;
 use crate::facade::transactions::{BulkEntityCreateIntent, CreateIntent, MutationIntent};
 use crate::history::data::BranchId;
@@ -15,7 +16,7 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
     let source = persisted_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &source, "reuse-root-mirror");
     release_test_commit_snapshot(&source, &committed);
-    let checkpoint = source.durability_authority().checkpoint().unwrap();
+    let checkpoint = source.durability_authority().checkpoint(execution).unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 1);
     assert_eq!(
         checkpoint.branch_roots[0].partition_images,
@@ -64,9 +65,10 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
         native.captured_sections().unwrap().envelopes
             > grown.captured_sections().unwrap().envelopes
     );
-    let decoded = crate::durability::log::native_file_codec::decode_checkpoint(native.bytes())
-        .unwrap()
-        .checkpoint;
+    let decoded =
+        crate::durability::log::native_file_codec::decode_checkpoint(execution, native.bytes())
+            .unwrap()
+            .checkpoint;
     let mut recovered = persisted_runtime_with_test_schema();
     let outcome = recovered
         .durability_recovery()
@@ -121,10 +123,11 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
 
     let source = persisted_runtime_with_test_schema();
     create_entity(execution, &source, "reuse-reader-seed");
-    source.durability_authority().checkpoint().unwrap();
-    let plan = source.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    source.durability_authority().checkpoint(execution).unwrap();
+    let plan = source
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -170,7 +173,7 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     release_test_commit_snapshot(&source, &sibling_commit);
     let main_commit = create_entity_outcome(execution, &source, "reuse-main-only");
     release_test_commit_snapshot(&source, &main_commit);
-    let checkpoint = source.durability_authority().checkpoint().unwrap();
+    let checkpoint = source.durability_authority().checkpoint(execution).unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 2);
 
     let mut restored = persisted_runtime_with_test_schema();
@@ -185,9 +188,10 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     assert!(shares_first_generation(&mirror, main_root));
     assert!(!shares_first_generation(&mirror, sibling_root));
 
-    let mut plan = source.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = source
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     plan.checkpoint = Some(checkpoint);
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
@@ -245,7 +249,7 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
         "cross-partition",
         PartitionId(31),
     );
-    let mut checkpoint = source.durability_authority().checkpoint().unwrap();
+    let mut checkpoint = source.durability_authority().checkpoint(execution).unwrap();
     let main_image = checkpoint
         .partition_images
         .iter_mut()
@@ -287,11 +291,12 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
     release_test_commit_snapshot(&source, &sibling_commit);
     let main_commit = create_entity_outcome(execution, &source, "catalog-relink-main");
     release_test_commit_snapshot(&source, &main_commit);
-    source.durability_authority().checkpoint().unwrap();
+    source.durability_authority().checkpoint(execution).unwrap();
 
-    let plan = source.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = source
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -321,7 +326,7 @@ fn equal_image_cannot_bypass_global_contract_readmission() {
 
     let source = persisted_runtime_with_test_schema();
     create_entity(execution, &source, "reuse-contract-corruption");
-    let mut checkpoint = source.durability_authority().checkpoint().unwrap();
+    let mut checkpoint = source.durability_authority().checkpoint(execution).unwrap();
     assert_eq!(
         checkpoint.branch_roots[0].partition_images,
         checkpoint.partition_images

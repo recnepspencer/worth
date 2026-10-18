@@ -212,9 +212,8 @@ where
             Err(denial) => {
                 if matches!(action, WorkflowRequestedAction::Advance)
                     && <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::QUERY_IDENTIFIER.is_none()
-                {
-                    if let WorthQueryApplicationRequestMutationDenial::Authorization(actor_denial) = &denial {
-                        if instance.branch() == self.product_branch() {
+                    && let WorthQueryApplicationRequestMutationDenial::Authorization(actor_denial) = &denial
+                        && instance.branch() == self.product_branch() {
                             let actor = WorthQueryWorkflowAdvanceAdapter::redacted_awaiting_actor::<
                                     <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
                                     MutationOperation<Schema, Intent>,
@@ -226,8 +225,6 @@ where
                                 return Err(WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(actor));
                             }
                         }
-                    }
-                }
                 return Err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission(denial));
             }
         };
@@ -348,3 +345,5 @@ where
         )
     }
 }
+
+mod ordinary;

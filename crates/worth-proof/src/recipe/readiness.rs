@@ -37,19 +37,17 @@ mod tests {
     use crate::assumption::{AssumptionBasis, CurrentValidity, FreshnessScopedBasis};
     use crate::recipe::{ExecutionReadyRecipe, Lowered, Recipe};
 
-    #[test]
-    fn execution_ready_recipe_is_size_honest_for_lowered_representation() {
+    const _: () = {
         type LoweredRecipe =
             Recipe<Lowered, u64, FreshnessScopedBasis<CurrentValidity, AssumptionBasis<u8>>>;
 
-        assert_eq!(
+        assert!(
             size_of::<
                 ExecutionReadyRecipe<
                     u64,
                     FreshnessScopedBasis<CurrentValidity, AssumptionBasis<u8>>,
                 >,
-            >(),
-            size_of::<LoweredRecipe>()
+            >() == size_of::<LoweredRecipe>()
         );
-    }
+    };
 }

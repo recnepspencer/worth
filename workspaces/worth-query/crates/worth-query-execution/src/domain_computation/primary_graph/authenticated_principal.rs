@@ -14,7 +14,9 @@ use super::freshness::WorthQueryPrincipalFreshnessEvidence;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
 mod admitted_mint;
+mod command_pin;
 pub(super) use admitted_mint::PrincipalMintAdmissionStop;
+pub use command_pin::WorthQueryCommandPrincipalPin;
 
 /// Opaque identity of one application principal in an installed primary graph.
 ///

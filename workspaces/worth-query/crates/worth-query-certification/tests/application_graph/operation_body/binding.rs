@@ -17,6 +17,9 @@ pub struct BodyBinding<const DESTINATION: u64>;
 impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<DESTINATION>>
     for BodyBinding<DESTINATION>
 {
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
     type Input = SetRetentionInput;
     type InputBinding = BodyInputBinding<DESTINATION>;
     type Result = ();
@@ -116,6 +119,9 @@ pub struct SourceBinding<const DESTINATION: u64>;
 impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<DESTINATION>>
     for SourceBinding<DESTINATION>
 {
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
     type Input = SetRetentionInput;
     type InputBinding = BodyInputBinding<DESTINATION>;
     type Result = ();

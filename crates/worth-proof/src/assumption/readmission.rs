@@ -172,13 +172,9 @@ mod tests {
     struct ReadmissionAuthority;
     impl AuthorityMarker for ReadmissionAuthority {}
 
-    #[test]
-    fn boundary_bridged_wrapper_is_size_honest_for_weakened_basis() {
-        assert_eq!(
-            size_of::<BoundaryBridged<AssumptionBasis<u8>>>(),
-            size_of::<AssumptionBasis<u8>>()
-        );
-    }
+    const _: () = assert!(
+        size_of::<BoundaryBridged<AssumptionBasis<u8>>>() == size_of::<AssumptionBasis<u8>>()
+    );
 
     #[test]
     fn artifact_trust_boundary_bridge_and_readmission_preserve_payload_and_proofs() {

@@ -19,6 +19,9 @@ mod evidence_readiness;
 mod operation;
 #[path = "publication/required_assessment.rs"]
 mod required_assessment;
+#[path = "publication/required_proposal.rs"]
+mod required_proposal;
+pub use required_proposal::RequiredWorkflowProposal;
 #[path = "publication/transition_replay.rs"]
 mod transition_replay;
 pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
@@ -60,6 +63,16 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
     AwaitingAssessment(PreparedWorkflowAssessment<Schema, Operation, Input, Scope>),
     AwaitingCondition(PreparedWorkflowCondition<Schema, Operation, Input, Scope>),
     AwaitingOperation(PreparedWorkflowOperation<Schema, Operation, Input, Scope>),
+    AwaitingProposal {
+        read_set: super::super::WorthQueryCompleteApplicationReadSet<
+            Schema, Operation, Input, Scope, super::super::WorthQueryProjectedApplicationMutation,
+        >,
+        transition_identity_locator: worth_foundational::facade::AspectFieldLocator,
+        assessment_identity_locator: worth_foundational::facade::AspectFieldLocator,
+        instance: worth_relational::facade::identity::EntityId,
+        required: RequiredWorkflowProposal,
+        replays: PreparedWorkflowTransitionReplays,
+    },
     AwaitingEvidence {
         read_set: super::super::WorthQueryCompleteApplicationReadSet<
             Schema,
@@ -347,6 +360,7 @@ impl PerformedWorkflowTransition {
 /// nothing landed, or why a landed commit could not be projected.
 #[derive(Debug)]
 pub enum WorkflowProgressOutcome {
+    AwaitingProposal(RequiredWorkflowProposal),
     AwaitingActor(RequiredWorkflowActor),
     AwaitingAssessment(RequiredWorkflowAssessment),
     AwaitingCondition(RequiredWorkflowCondition),

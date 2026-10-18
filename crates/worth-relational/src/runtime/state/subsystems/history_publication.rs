@@ -75,12 +75,6 @@ impl PreparedRecoveredVersionedArtifactPublication {
     fn into_prepared(self) -> PreparedVersionedArtifactPublication {
         self.prepared
     }
-
-    pub(crate) fn reconstructed_branch_checkpoint(
-        &self,
-    ) -> crate::branch::RelationalBranchCellCheckpoint {
-        self.prepared.next_cell.checkpoint()
-    }
 }
 
 impl HistorySubsystem {

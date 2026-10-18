@@ -156,6 +156,10 @@ pub(in crate::domain_computation::primary_graph) struct ProgramRequiredSiblingBi
 type Sibling = ProgramRequiredMutationBinding;
 
 impl ApplicationMutationBinding<IdentityExecutionSchema> for ProgramRequiredSiblingBinding {
+    fn workflow_execution_requirements() -> worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements{
+        worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::Input;
     type InputBinding =
         <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::InputBinding;

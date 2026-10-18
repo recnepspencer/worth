@@ -92,10 +92,9 @@ impl SigningLifecycleClosure {
                     role: Role::Subject,
                     ..
                 } = field
+                    && !rule.subjects.contains(source)
                 {
-                    if !rule.subjects.contains(source) {
-                        rule.subjects.push(source.clone());
-                    }
+                    rule.subjects.push(source.clone());
                 }
             }
         }

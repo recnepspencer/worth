@@ -47,6 +47,7 @@ fn installed_large_parent_allowance_composes_with_small_child_artifact() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut output = request
+        .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
             &application,
             PlanarOutputDemand::new("anchor-a"),
@@ -169,7 +170,8 @@ pub(super) fn feature_specs_with_final_output(
     vec![
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>()
-            .mutation::<PlanarEditBinding<CheckpointSchema>>()
+            .native_action::<PlanarEditBinding<CheckpointSchema>>()
+            .finish_action()
             .finish(),
         output,
         final_output,
@@ -218,6 +220,7 @@ fn installed_child_excess_is_denied_without_publishing_the_child() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut output = request
+        .advanced()
         .start_program_outputs::<InsufficientChildProgram, CheckpointRoot>(
             &application,
             PlanarOutputDemand::new("anchor-a"),

@@ -2,9 +2,11 @@
 name = "worth-query-consumer-root"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
+serde.workspace = true
 worth-execution = { path = "../../../../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../../../../crates/worth-foundational" }
 worth-query-consumer-values.workspace = true

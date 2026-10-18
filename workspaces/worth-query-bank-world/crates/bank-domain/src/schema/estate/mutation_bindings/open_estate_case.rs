@@ -45,6 +45,12 @@ impl OpenEstateCase {
 pub struct OpenEstateCaseMutationBinding;
 
 impl ApplicationMutationBinding<BankSchema> for OpenEstateCaseMutationBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EstateAction;
     type InputBinding = super::super::EstateActionInputBinding;
     type Result = EstateMutationResult;
@@ -121,5 +127,25 @@ impl ApplicationMutationIntent<BankSchema> for OpenEstateCase {
         &self,
     ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
         ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
+    }
+}
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+    for OpenEstateCaseMutationBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            OpenEstateCaseCapability,
+        >;
+}
+
+impl TryFrom<EstateAction> for OpenEstateCase {
+    type Error = EstateAction;
+    fn try_from(action: EstateAction) -> Result<Self, Self::Error> {
+        match action {
+            EstateAction::OpenEstateCase { estate, notice } => Ok(Self::new(estate, notice)),
+            original => Err(original),
+        }
     }
 }

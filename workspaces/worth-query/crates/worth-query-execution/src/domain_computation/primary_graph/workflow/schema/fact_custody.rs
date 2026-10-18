@@ -17,9 +17,11 @@ use worth_relational::facade::transactions::EntityReference;
 
 use super::WorthQueryWorkflowLayout;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct WorkflowFactCustody {
     entity_kinds: [KindId; 3],
+    instance_kind: KindId,
+    started_revision: worth_foundational::facade::AspectFieldLocator,
     relation_kinds: [KindId; 11],
     /// `(new source kind, relation kind)` pairs that may attach to an
     /// existing fact. Every other existing-endpoint attachment is forbidden.
@@ -46,6 +48,8 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
     layout: &WorthQueryWorkflowLayout,
 ) -> Result<CustomInvariantRegistration, String> {
     CustomInvariantRegistration::new(WorkflowFactCustody {
+        instance_kind: layout.instance.entity_kind,
+        started_revision: layout.instance.started_program_revision.clone(),
         entity_kinds: [
             layout.node.entity_kind,
             layout.connection.entity_kind,
@@ -109,14 +113,23 @@ impl CustomInvariantRule for WorkflowFactCustody {
                 cost_class: InvariantCostClass::Touched,
                 failure_effect: InvariantFailureEffect::BlockCommit,
                 access: CustomInvariantAccessContract {
-                    read_entity_kinds: self.entity_kinds.to_vec(),
+                    read_entity_kinds: self
+                        .entity_kinds
+                        .into_iter()
+                        .chain([self.instance_kind])
+                        .collect(),
                     read_relation_kinds: self.relation_kinds.to_vec(),
-                    affected_entity_kinds: self.entity_kinds.to_vec(),
+                    affected_entity_kinds: self
+                        .entity_kinds
+                        .into_iter()
+                        .chain([self.instance_kind])
+                        .collect(),
                     affected_relation_kinds: self.relation_kinds.to_vec(),
                     // History links may share a member endpoint without
                     // changing that member or a protected relation kind.
                     include_relation_endpoint_entity_touches: false,
-                },
+                }
+                .canonicalize(),
             },
         }
     }
@@ -203,7 +216,15 @@ impl WorkflowFactCustody {
                 .aspect_states()
                 .entity_aspect_state(*entity)
                 .map_err(read_failure)?;
-            if before != after {
+            if before
+                .get(self.started_revision.aspect().aspect_key())
+                .is_some()
+            {
+                let before = self.provenance_value(before);
+                if before.is_none() || before != self.provenance_value(after) {
+                    return Ok(CustomInvariantVerdict::Violation);
+                }
+            } else if before != after {
                 return Ok(CustomInvariantVerdict::Violation);
             }
         }
@@ -246,6 +267,20 @@ impl WorkflowFactCustody {
         }
         Ok(CustomInvariantVerdict::Pass)
     }
+    fn provenance_value<'a>(
+        &self,
+        state: &'a worth_foundational::facade::AuthoritativeRecordAspectState,
+    ) -> Option<&'a worth_foundational::facade::AspectValue> {
+        use worth_foundational::facade::ContractValidatedAspectValueView as View;
+        let View::Struct(value) = state
+            .get(self.started_revision.aspect().aspect_key())?
+            .view()
+        else {
+            return None;
+        };
+        value.get(self.started_revision.field_path().fields().first()?)
+    }
+
     fn allows_relation_create(
         &self,
         kind: KindId,
@@ -296,6 +331,13 @@ mod tests {
     #[test]
     fn only_a_new_approval_or_successor_may_link_to_an_existing_fact() {
         let rule = WorkflowFactCustody {
+            instance_kind: KindId(20),
+            started_revision:
+                crate::domain_computation::primary_graph::schema_layout::planned_field_locator(
+                    "workflow-instance",
+                    "started-program-revision",
+                )
+                .unwrap(),
             entity_kinds: [KindId(1), KindId(2), KindId(3)],
             relation_kinds: [
                 KindId(4),
@@ -308,12 +350,14 @@ mod tests {
                 KindId(11),
                 KindId(12),
                 KindId(13),
+                KindId(14),
             ],
             existing_target_links: [
                 (KindId(3), KindId(10)),
                 (KindId(3), KindId(11)),
                 (KindId(20), KindId(12)),
                 (KindId(20), KindId(13)),
+                (KindId(20), KindId(14)),
             ],
         };
         let created = |kind_id| {
@@ -333,6 +377,9 @@ mod tests {
         assert!(!rule.allows_relation_create(KindId(10), &existing, &existing));
         assert!(rule.allows_relation_create(KindId(12), &created(KindId(20)), &existing));
         assert!(rule.allows_relation_create(KindId(13), &created(KindId(20)), &existing));
+        assert!(rule.allows_relation_create(KindId(14), &created(KindId(20)), &existing));
+        assert!(!rule.allows_relation_create(KindId(14), &created(KindId(3)), &existing));
+        assert!(!rule.allows_relation_create(KindId(14), &existing, &existing));
         assert!(!rule.allows_relation_create(KindId(13), &created(KindId(3)), &existing));
         assert!(!rule.allows_relation_create(KindId(10), &created(KindId(20)), &existing));
         assert!(!rule.allows_relation_create(KindId(13), &existing, &existing));

@@ -5,6 +5,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+#[path = "../query_ordinary_entry_fixture/mod.rs"]
+mod query_ordinary_entry_fixture;
+
 /// A documented engine whose items the audience leaf facades re-export, so
 /// the facade documentation ratchet resolves every leaf name.
 const STUB_ENGINE: &str = r#"//! Stub Query engine.
@@ -46,6 +49,14 @@ impl LegacyReferenceTestRepository {
 
     /// Assemble the canonical thin-orchestrator layout, config, and snapshot body.
     pub fn assemble_canonical_layout(&self, snapshot_body: &str) {
+        self.write_file(
+            "tools/boundary-check/config/consumer-docs.toml",
+            "documents = []\ndoctests = []\n",
+        );
+        self.write_file(
+            "tools/boundary-check/snapshots/consumer-doc-fence-debt.toml",
+            "documents = []\n",
+        );
         self.write_file(
             ".boundary-check-mock-root",
             "Declared boundary-check mock root.\n",
@@ -99,6 +110,7 @@ publish = false
 
     /// Minimal production-shaped Query audience leaves for BC3003 contract checks.
     fn write_query_audience_leaf_facades(&self) {
+        query_ordinary_entry_fixture::write(&self.root);
         self.write_file(
             "crates/worth-query/Cargo.toml",
             r#"[package]

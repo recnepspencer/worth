@@ -5,7 +5,9 @@ runtimes that install and execute Query behavior.
 
 Use:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::{admission, domain, primary_graph, publication, runtime};
 ```
 
@@ -16,7 +18,7 @@ internals.
 **Writing an application?** Start with
 [Build an Application](../../../../docs/build-an-application.md). It shows the real calls, in order: install
 the application graph (`application_installation::in_memory_program`), run
-program-owned actions (`execute_in_program`), install a workflow vocabulary
+program-owned actions (`retain_operation`, then fresh-request `advance`), install a workflow vocabulary
 and publish, start, and advance workflows, and adopt a new program on a
 branch. This README covers the host's deeper contracts.
 
@@ -37,7 +39,7 @@ The [public consumer fixture](../worth-query-certification/fixtures/consumer_ent
 checks separately compiled contributions and static program validation. The
 [ordinary product workflow](../worth-query-certification/examples/ordinary_product_workflow.rs)
 installs a validated program with `application_installation::in_memory_program`,
-commits a typed mutation through `execute_in_program`, reads the
+advances a declared source-only owning action, reads the
 successor, and closes conditional resources. Its source is the executable host
 entry example.
 
@@ -73,32 +75,97 @@ reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
 admission or a selected World between executions.
 
-An ordinary mutation that returns `ProductUnpublished` retains actual
-owner effects without a published product successor. Keep its recovery handle
-and the original intent, idempotency key and preconditions. A freshly authenticated
-request can call `recover_unpublished_in_program(&recovery, &program)`; the current
-selected program must still own that action. Recovery reuses the retained owner
-effects rather than preparing a candidate or invoking its handler. A source-bound
-request must also supply its original checked row or result-set observation;
-a different source binding cannot replace it. The retained attempt
-owns the original source facts. Workflow and required/discovered output-source
-recovery still require their own owners and are not accepted by this entrance.
-Keep a `Performed` recovery outcome even when its receipt read, publication or
-cleanup reports a failure: the publication already took effect. A fresh
-`resolve_idempotency_in_program(&program)` request reads the original keyed outcome
-without executing a mutation. Both entrances preserve typed authorization,
-interruption, identity and owner failures.
+## Owning fixed and source-only actions
 
-Discovered output sources have a separate move-only partial owner. A genuine
-`execute_performed_discovered` publication failure returns `ProductUnpublished`
-with its original preparation and typed discovery. Keep that owner and the exact
-original request, including its source observation when required. A fresh request
-can call `recover_unpublished_discovered_in_program`; after native performance,
-`promote_recovered_discovered_outputs` reads the exact original key and transfers
-the original performed carrier into an output handle once. Refused promotion
-returns the owner. Successful promotion also returns the raw performed recovery
-and all prior cleanup failures: starting outputs does not discharge those
-independent obligations. No original handler or candidate is executed again.
+Install a program and declare the exact typed action occurrence and its delivery.
+`request.mutate(intent)` returns `WorthQueryOperationBuilder`; it exposes original
+source preparation, preconditions and fallible `idempotency_owned(key)`, followed by
+`retain_operation::<Program, Action>(&runtime)`. Fixed and source-only callers
+cannot execute, prepare or recover through that builder or its borrowed-key view.
+The selected action carries composition instance, feature, binding and delivery;
+a binding label alone cannot select its contract.
+
+Declare each ordinary action with `.action::<Binding, Delivery>()`, its applicable
+metadata clauses, and `.finish_action()`. Metadata cannot be overwritten and
+must not be split into another action to attach delivery. The sealed
+`ApplicationActionReference` selects the exact occurrence; Installation resolves
+the full actual action, including metadata, for later comparison.
+
+Fixed, discovered and SourceOnly owners retain the authentic installed runtime
+allocation. Fixed/discovered returned owners have no construction-runtime
+lifetime and can be stored after the constructing borrow ends or handle is
+dropped. Keep a separate genuine runtime handle to create fresh requests;
+operations expose no runtime accessor or `Deref` as an admission entrance.
+Native source/output/cleanup obligations remain move-only.
+
+Bind workflow vocabulary and other unique-runtime configuration before cloning
+handles or retaining operations. Every `retain_workflow_spec` refusal preserves
+the original runtime, installed spec and signing owner in
+`WorthQueryWorkflowRuntimeBindingRefusal`; inspect `denial()` and consume
+`into_parts()` to recover them plus the denial. `support_workflow_spec` returns
+`Err((original_spec, denial))` while its borrowed runtime remains owned by the
+caller. Runtime close refuses `RuntimeKeepaliveRetained` while another genuine
+handle or operation retains the allocation. Release those keepalives before
+retrying configuration or runtime close; successful operation close releases its
+own keepalive, while refused close retains the whole owner.
+
+Capture the original meaning once. Supply a fresh authenticated ordinary request
+for every `advance`, delivery and close. Native admission checks current authority
+and the original runtime/branch/program affinity. The descriptor is not a grant.
+Recovery promotes the original native carrier; registered replay rejoins its
+original outputs without running the source handler. Recovered evidence does not
+manufacture the original handler result.
+
+A fixed settled owner borrows its complete settlement for `read_current` or a
+finite `read_current_with_policy`; the currentness check and declared query share
+one observation and one native phase. Read refusal retains the owner. Stale
+settlement supports `read_historical` and `close`, never output advancement.
+No-projection delivery uses `deliver_current` without a dummy query. Source-only
+completion is distinct from required-output settlement; retained delivery selects
+the action's authentic original commit observation.
+
+Completion and delivery retain independent cleanup. `close` returns the complete
+owner with a typed denial when cleanup refuses. Drop is abandonment, not external
+cleanup or crash durability. Only existing native checkpoint/recovery contracts
+survive process loss.
+
+The [compiled original descriptor capture](../../../../docs/build-an-application.md#capture-complete-original-meaning) is exercised by the real
+public result-set court.
+
+The real result-set court calls the compiled capture with nondefault preconditions before
+an actual post-effect append failure. It reads the resulting source and outputs
+independently after native recovery. No original intent clone is required per pump.
+
+### Owning discovered delivery and deliberate native control
+
+Ordinary discovered actions use the same `retain_operation::<Program, Action>`
+entry with a declared discovered delivery. Keep the returned move-only operation
+on progress and refusal and supply fresh authority on each `advance`. Native
+partial recovery, committed-retention retry, registration and fanout stay inside
+that owner. A settled owner checks all original discovery facts and every output
+settlement at the same retained observation and phase as the declared scalar or
+batch read. Explicit no-projection delivery has no query selector.
+
+Current delivery refusal preserves the settlement, original descriptor and
+cleanup. Historical reads use its original declared selector and retained basis
+with fresh authorization; they never claim Current. Fresh handler results remain
+distinct from recovered native evidence, and registered replay never reconstructs
+a result. Terminal custody has no advance entrance and cannot abandon unresolved
+native obligations through a successful close.
+
+For independent native custody tests, select `request.advanced().mutate(intent)`
+before `execute_performed_discovered`, unpublished recovery or promotion.
+Registered native recovery also starts at `request.advanced()`. These controls
+preserve actual partial/source owners and return them on refusal; they are not
+ordinary business retry helpers. See [owning discovered actions](../worth-query/docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
+
+### Advanced fixed publication and recovery
+
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed actions.
+The current native builder lives under `application_entry::advanced` and is reached
+with `request.advanced().mutate(intent)`. Manual output start and registered fixed
+recovery require `request.advanced()` as well.
+
 Fixed required roots use `execute_performed`, which now owns its original
 preparation independently of the starting request and runtime borrow. Start and
 advance it with an explicit program runtime and fresh request. A genuine
@@ -119,6 +186,11 @@ Both output-source lanes retain unsupported `SettlementDeferred` and
 `Indeterminate` outcomes with their original preparation in non-actionable
 `Blocked` custody. They are not no-effect outcomes or evidence that recovery
 finished. Workflow recovery remains outside these entrances.
+
+> **Ordinary owning actions.** Fixed, discovered, source-only and guarded workflow actions use
+> `retain_operation` and fresh-request advancement, delivery and close. Deliberate
+> native custody controls require `advanced()`. Guarded workflow actions retain
+> their original issued requirement in an ordinary owning operation.
 
 A native candidate-preparation refusal before product publication is a typed
 `Denied` outcome, with its original native error available through
@@ -229,7 +301,9 @@ marker, the action (`WorthQueryPreserveOutput`, `WorthQueryCreateOutput` or
 the contract lists in `ROLES`. A role belongs to its contract, so one marker
 serves every binding whose `Output` is that contract:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 pub struct CreatedAccountOutput;
 
 impl WorthQueryApplicationOutputRole for CreatedAccountOutput {
@@ -358,7 +432,9 @@ One host may roster multiple validated application programs over the same
 installed native contracts. A request enters the public path with
 `application.request(&principal, &scope).on_branch(branch).programs()`:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let programs = application
     .request(&principal, &scope)
     .on_branch(branch)
@@ -444,7 +520,9 @@ and calls `read.execute(plan)` before those local borrows end. Query keeps the
 result, executes both branches on the calling thread, and holds their native
 loan claims through link/source validation and projection:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let execution_request = phase.checked_execution_request_for(runtime.product_runtime())?;
 let keys = runtime.reconstruct_managed_derived_collection_pair_dependent_in_batch(
     execution_request,
@@ -550,7 +628,9 @@ then exposes the complete contract through
 
 Application callers use the binding indirectly through its typed intent:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 
 let request = application.request(&external_principal, &request_scope);
@@ -581,7 +661,9 @@ or aggregate-memory measurement.
 
 Callers can request narrower resolved ceilings before execution:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let published = request
     .query(AccountActivityRequest::new(account_id))
     .limits(maximum_results, maximum_work)
@@ -633,24 +715,9 @@ Host code may:
   progress owner-issued branch coverage, recover unpublished adoption, and
   retire unused program support through typed custody inventories.
 
-Host code must not:
+Host constraints are maintained in the
+[canonical consumer prohibitions](../../../../docs/capability-index.md#consumer-prohibitions).
 
-- create a second operating-world or application-authority root;
-- call operation executors directly;
-- expose raw Relational, Bridge, or Signal handles to application code;
-- reconstruct Query authority from receipts, reports, projections, or digests;
-- import certification replay through the host facade;
-- construct lineage outcomes or promoted graph identities from raw identity
-  material.
-- treat acknowledgement, timeout, disconnect, or lost response as external
-  completion;
-- serialize a recovery handle or treat its opaque wire identity as live
-  authority;
-- teach `facade::provisional_aftermath` as accepted undo/redo support.
-- schedule temporal work locally, return raw Signal decisions, or invoke a
-  conditional operation directly.
-- invent a host-local temporal binding or idempotency hash, or derive either
-  again during commit.
 
 ## Application Readiness For Editors
 
@@ -658,7 +725,9 @@ An editor or transport host that owns an installed primary-graph application
 may inspect its current descriptive basis before presenting or submitting
 work:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let readiness = application.inspect_application_readiness()?;
 let optimistic_basis = readiness.basis_token();
 ```
@@ -676,7 +745,8 @@ admission, and currentness checks.
 - [Programs And Adoption](../worth-query/docs/foundations/programs-and-adoption.md)
 - [Workflows](../worth-query/docs/foundations/workflows.md)
 - [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
-- [WORTH Query Orientation](../worth-query/docs/AI_README.md)
+- [Capability Index](../../../../docs/capability-index.md): find the facade call for a task
+- [Query Engine Architecture Map](../worth-query/docs/AI_README.md): engine-internal, for Query maintainers
 - [Application Authorization And Emergency Elevation](../worth-query/docs/capabilities/application-authorization-and-emergency-elevation.md)
 - [Runtime-Installed Domains And Operations](../worth-query/docs/domain-capabilities/runtime-installed-domains.md)
 - [Canonical Graph Obligation Progression](../worth-query/docs/domain-capabilities/canonical-graph-obligation-progression.md)
@@ -685,3 +755,31 @@ admission, and currentness checks.
 - [Typed Stops And Remediation Guidance](../worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md)
 - [Installed Operation Lineage And Promotion](../worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
 - [Application Aftermath, External Effects, And Recovery](../worth-query/docs/execution/application-aftermath-and-recovery.md)
+
+Input capture uses the initiating request's native resources before moving any
+original fields. Its refusal returns `(original_builder, owned_key,
+WorthQueryOperationInputCaptureDenial)`; keep all three for retry. Success admits
+one typed payload and shares its backing/charge through native input consumers.
+Nested caller Clone heaps and allocator/Arc metadata retain their existing
+contracts; this payload quote does not describe total heap or grant permission.
+
+### Owning native capability commands
+
+`application_entry` exposes `WorthQueryCapabilityCommand` from
+`request.retain_capability_delegation_in_program(..)` and
+`retain_capability_revocation_in_program(..)`. Move the original input and key
+once; keep capture-refusal custody. Supply fresh requests to `advance` and
+`close`, retain same-owner refusals, and use completed `close_with_evidence` to
+transfer native Fresh/Recovered receipt evidence after cleanup. Commands are
+not domain mutations and have no public execute/recover or clone escape.
+See [owning capability commands](../worth-query/docs/foundations/workflows.md#owning-capability-commands)
+for native replay and authority distinctions.
+
+## Mixed workflow consumer
+
+The [observable workflow journey](../../../../docs/build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
+uses this facade for ordinary owning operations, current retained reads,
+original-start reacquisition, independent history audit and native live marks.
+`retain_current_read()` and subscription `close()` take no phase/request argument.
+The first retains data; the second releases subscription custody. Neither grants
+execution permission or settles operation cleanup.

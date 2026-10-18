@@ -1,3 +1,8 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Authorization courts preserve complete native workflow refusal evidence"
+)]
+
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 #[path = "business_authorization/fixture.rs"]
 mod business_authorization_fixture;
@@ -11,7 +16,7 @@ use bank_domain::schema::{
 };
 use bank_server::{
     mutations, BankApprovedPaymentWorkflowError, BankBusinessOwnerSeed, BankEmployeeAssignmentSeed,
-    BankMutationControls, BankPaymentInitiationOutcome, BankPrincipalSeed, BankWorldSeed,
+    BankMutationControls, BankPrincipalSeed, BankWorldSeed,
 };
 use worth_query_host::facade::application_entry::{
     WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
@@ -198,9 +203,24 @@ fn revoked_approver_membership_is_absent_from_current_authorization_graph() {
 fn runtime_initiation_grants_its_workflow_to_every_source_approver_at_the_ceiling() {
     let approvers = u64::try_from(MAX_PAYMENT_APPROVAL_GRANTEES).unwrap();
     let (world, identities, initiated) = crowded_initiation(approvers);
-    let Some(pending) = initiated.continuation() else {
-        panic!("an initiation within the approver ceiling commits: {initiated:?}");
+    let actor = authenticate(&world, &identities[0]);
+    let scope = request_scope();
+    let request = world.runtime.request(&actor, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
+        initiated.advance(&request)
+    else {
+        panic!("within ceiling completes")
     };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        result,
+        ..
+    } = done.evidence()
+    else {
+        panic!("fresh result")
+    };
+    let pending = bank_server::BankPendingPaymentContinuation::from_payment_id(result.payment);
+    done.close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("initiation close: {cause:?}"));
     for principal in 3..3 + approvers {
         let identity = &identities[usize::try_from(principal - 1).unwrap()];
         let published = publish(
@@ -231,21 +251,23 @@ fn runtime_initiation_grants_its_workflow_to_every_source_approver_at_the_ceilin
 #[test]
 fn runtime_initiation_past_the_approver_ceiling_is_domain_denied() {
     let approvers = u64::try_from(MAX_PAYMENT_APPROVAL_GRANTEES).unwrap() + 1;
-    let (_world, _identities, initiated) = crowded_initiation(approvers);
-    assert!(
-        initiated.continuation().is_none(),
-        "a refused initiation leaves no payment to continue"
-    );
-    assert!(
-        matches!(
-            initiated.execution(),
-            Ok(WorthQueryApplicationMutationOutcome::DomainDenied(
-                BankProposalDenial::TooManyPaymentApprovers
-            ))
-        ),
-        "one approver past the ceiling refuses the initiation: {:?}",
-        initiated.execution()
-    );
+    let (world, identities, initiated) = crowded_initiation(approvers);
+    let actor = authenticate(&world, &identities[0]);
+    let scope = request_scope();
+    let request = world.runtime.request(&actor, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(done) =
+        initiated.advance(&request)
+    else {
+        panic!("over ceiling domain denial")
+    };
+    assert!(matches!(
+        done.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::DomainDenied(
+            BankProposalDenial::TooManyPaymentApprovers
+        ))
+    ));
+    done.close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("denied close: {cause:?}"));
 }
 
 fn crowded_initiation(
@@ -253,7 +275,13 @@ fn crowded_initiation(
 ) -> (
     TestIdentityWorld,
     Vec<DynamicIdentity>,
-    BankPaymentInitiationOutcome,
+    worth_query_host::facade::application_entry::WorthQuerySourceOnlyOperation<
+        bank_domain::schema::BankSchema,
+        InitiateBusinessPayment,
+        bank_server::BankApplication,
+        bank_server::PaymentInitiationAction,
+        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+    >,
 ) {
     let (snapshot, source) = approver_crowded_world(approvers);
     let identities = (1..=2 + approvers)
@@ -287,7 +315,8 @@ fn crowded_initiation(
             request_scope(),
             key("crowded-initiation"),
         ))
-        .execute();
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("declared initiation: {cause:?}"));
     (world, identities, initiated)
 }
 

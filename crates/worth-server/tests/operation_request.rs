@@ -1,5 +1,5 @@
-#[path = "support/operation_request/runtime.rs"]
-mod operation_request_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_operation_request_runtime as operation_request_runtime;
 
 use serde_json::json;
 use worth_server::{

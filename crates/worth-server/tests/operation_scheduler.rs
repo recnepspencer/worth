@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 use worth_server::{
     request_context::DiagnosticRichnessProfile, WorthServer, WorthServerLoweredOperationPlan,
     WorthServerOperationPlannerInput, WorthServerOperationRequestInput,
@@ -11,8 +11,8 @@ use worth_server::{
 
 #[path = "support/operation_scheduler/runtime.rs"]
 mod operation_scheduler_runtime;
-#[path = "support/query_handoff/fixture.rs"]
-mod query_handoff_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_fixture as query_handoff_fixture;
 
 use operation_scheduler_runtime::{
     SchedulerWorkspaceProvider, SelectiveSharedReadWorkspaceProvider,

@@ -7,6 +7,9 @@ pub(super) enum Rejection {
 }
 
 pub(super) fn reviewed_document_definition_with_policy<
+    Spec: worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+        Schema = DocumentRetentionSchema,
+    >,
     Binding: worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding<
         DocumentRetentionSchema,
     >,
@@ -15,12 +18,10 @@ pub(super) fn reviewed_document_definition_with_policy<
     join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
     rejection: Rejection,
     limits: ApplicationWorkflowDefinitionLimits,
-) -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
-    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
-        "reviewed-document",
-        limits,
-    )
-    .expect("the workflow identity is valid");
+) -> ValidatedWorkflowDefinition<Spec> {
+    let mut builder =
+        ApplicationWorkflowDefinitionBuilder::<Spec>::new("reviewed-document", limits)
+            .expect("the workflow identity is valid");
     let propose = builder
         .operation::<WorkflowDefinitionAuthoringOperation>("propose", false)
         .expect("the proposal node is valid");

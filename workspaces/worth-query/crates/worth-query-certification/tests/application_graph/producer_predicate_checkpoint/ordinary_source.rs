@@ -1,12 +1,16 @@
 //! Reuse the installed assessment owners with an ordinary required-output source.
 use super::program::{AssessmentFeature, AssessmentProgram, RetentionInput, RetentionOutput};
 use crate::document_retention_model::{
-    assessment_output::{AssessmentOutput, RetentionAssessmentDemand, RetentionAssessmentOutputs},
+    assessment_output::{
+        AssessmentOutput, PublishRetentionAssessment, RetentionAssessmentDemand,
+        RetentionAssessmentOutputs,
+    },
     host::publish,
     operator_identity::{authenticate_operator, request_scope},
-    programs::{validated_second_program, DocumentRetentionFeature},
+    programs::{validated_second_program, DocumentRetentionFeature, RetentionCompletion},
     retention_entry::{
-        DocumentRetentionRead, SetRetentionBinding, SetRetentionIntent, DOCUMENT_IDENTITY,
+        DocumentRetentionRead, ReviewedSetRetentionBinding, SetRetentionBinding,
+        SetRetentionIntent, DOCUMENT_IDENTITY,
     },
     schema::{DocumentRetentionSchema, SetRetentionInput},
 };
@@ -68,6 +72,20 @@ impl WorthQueryApplicationRequiredOutputSource<DocumentRetentionSchema, Ordinary
         >>::demand_from_source(source)
     }
 }
+struct OrdinaryAssessmentDelivery;
+impl ApplicationActionDelivery<DocumentRetentionSchema, SetRetentionBinding>
+    for OrdinaryAssessmentDelivery
+{
+    type Mode = ApplicationFixedDeliveryMode<OrdinaryRoot, ApplicationNoProjection>;
+    const IDENTITY: &'static str = "ordinary-assessment.required-completion.v1";
+}
+impl ApplicationFixedActionDelivery<DocumentRetentionSchema, SetRetentionBinding>
+    for OrdinaryAssessmentDelivery
+{
+    type Root = OrdinaryRoot;
+    type Projection = ApplicationNoProjection;
+}
+
 impl ApplicationProgramDefinition<DocumentRetentionSchema> for OrdinaryAssessmentProgram {
     type Contributions =
         <AssessmentProgram as ApplicationProgramDefinition<DocumentRetentionSchema>>::Contributions;
@@ -77,8 +95,18 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for OrdinaryAssessmen
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.ordinary-assessment.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        <AssessmentProgram as ApplicationProgramDefinition<DocumentRetentionSchema>>::feature_specs(
-        )
+        vec![
+            ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
+                .provides::<RetentionOutput>()
+                .action::<SetRetentionBinding, OrdinaryAssessmentDelivery>()
+                .finish_action()
+                .action::<ReviewedSetRetentionBinding, RetentionCompletion>()
+                .finish_action()
+                .finish(),
+            ApplicationFeatureSpec::root::<DocumentRetentionSchema, AssessmentFeature>()
+                .conditional_operation::<PublishRetentionAssessment>()
+                .finish(),
+        ]
     }
 }
 
@@ -98,6 +126,7 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let request = runtime.request(&principal, &scope);
     let report = request
+        .advanced()
         .mutate(SetRetentionIntent {
             input: SetRetentionInput {
                 identity: DOCUMENT_IDENTITY.into(),
@@ -139,6 +168,7 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         std::num::NonZeroUsize::new(8192).unwrap(),
     );
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<OrdinaryAssessmentProgram, OrdinaryRoot>(
             &host,
             &receipt,
@@ -203,3 +233,6 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
 
 #[path = "ordinary_source/unpublished.rs"]
 mod unpublished;
+
+#[path = "ordinary_source/terminal_unavailable.rs"]
+mod terminal_unavailable;

@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_are_tampered() {
@@ -102,7 +103,10 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         .expect("test staging stays within configured resource budgets");
         txn.commit(execution, &runtime).unwrap()
     };
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     let start_lineage = runtime
         .lineage_access()
@@ -141,9 +145,10 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
     let replay_counters = runtime.performance_access().counters();
     assert!(replay_counters.replay_digest_parity_checks > 0);
 
-    let recovery_plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
     recovered
@@ -248,7 +253,10 @@ fn hostile_commit_replay_equivalence_test() {
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
     );
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     let anchor_lineage = runtime
         .lineage_access()
@@ -295,9 +303,10 @@ fn hostile_commit_replay_equivalence_test() {
         .history()
         .branch_head(&BranchId("feature".to_string()));
 
-    let recovery_plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(

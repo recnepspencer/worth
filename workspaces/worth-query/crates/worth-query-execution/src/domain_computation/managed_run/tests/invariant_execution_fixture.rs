@@ -276,13 +276,14 @@ fn retained_verdict(
     admission: WorthQueryInvariantVerdictAdmission,
     evidence: WorthQueryInvariantVerdictEvidence,
 ) -> Result<WorthQueryInvariantProviderVerdict, WorthQueryInvariantExecutionFailure> {
-    if let Some(retained) = state.retained_invariant_admission.take() {
-        retained.passed(evidence)
-    } else {
-        state.retained_invariant_admission = Some(admission);
-        Err(WorthQueryInvariantExecutionFailure::new(
-            WorthQueryInvariantExecutionDenialKind::ProviderRejected,
-            "fixture retained the first verdict admission",
-        ))
+    match state.retained_invariant_admission.take() {
+        Some(retained) => retained.passed(evidence),
+        _ => {
+            state.retained_invariant_admission = Some(admission);
+            Err(WorthQueryInvariantExecutionFailure::new(
+                WorthQueryInvariantExecutionDenialKind::ProviderRejected,
+                "fixture retained the first verdict admission",
+            ))
+        }
     }
 }

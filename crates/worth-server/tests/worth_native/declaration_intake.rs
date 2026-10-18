@@ -8,7 +8,7 @@ use worth_server::{
     WorthServerDirectViewShape, WorthServerQueryWorkspaceBindingTarget,
 };
 
-use crate::worth_native_runtime::{
+use crate::shared_support_worth_native_runtime::{
     build_server, build_server_with_capturing_workspace_provider,
     build_server_with_profiled_workspace, worth_native_session_input_builder,
 };

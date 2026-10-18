@@ -1,12 +1,4 @@
-error: cannot construct `WorthUiPreparedApplicationAuthority` with struct literal syntax due to private fields
- --> tests/ui/runtime_authority/fail/prepared_application_authority_fields_not_public.rs:4:13
-  |
-4 |     let _ = WorthUiPreparedApplicationAuthority {};
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private fields that were not provided
-help: you might have meant to use the `seal` associated function
-  |
-4 -     let _ = WorthUiPreparedApplicationAuthority {};
-4 +     let _ = WorthUiPreparedApplicationAuthority::seal(_);
-  |
+error[E0432]: unresolved import `worth_ui::facade::app::WorthUiPreparedApplicationAuthority`
+ --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/prepared_application_authority_fields_not_public.rs
+ help: a similar name exists in the module
+ help: consider importing this struct instead

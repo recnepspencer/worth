@@ -78,6 +78,7 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),

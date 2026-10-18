@@ -1,6 +1,13 @@
 //! Descriptive durable approval inputs, never an authorization permit by themselves.
 
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+pub(in crate::domain_computation) mod decoding;
+mod lineage_inventory;
+use crate::domain_computation::primary_graph::workflow::actor::{
+    fund_actor_codec, ActorCodecFunding,
+};
+use decoding::{DecodedApprovalLineage, DecodedApprovalPrincipal};
 use worth_relational::facade::identity::EntityId;
 
 use super::{
@@ -12,14 +19,19 @@ use crate::domain_computation::primary_graph::WorthQueryDurablePrincipalCurrentn
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct PortableApprovalSupport {
-    request: String,
+struct PortableApprovalSupport<
+    Request = String,
+    Identity = String,
+    Lineage = super::WorthQueryDurableCapabilityLineage,
+    Timeline = String,
+> {
+    request: Request,
     grant: EntityId,
-    capability_authority_identity: String,
+    capability_authority_identity: Identity,
     posture: PortableSupportPosture,
     role: PortableSupportRole,
-    lineage: super::WorthQueryDurableCapabilityLineage,
-    timeline: String,
+    lineage: Lineage,
+    timeline: Timeline,
     expiry: u64,
 }
 
@@ -39,6 +51,9 @@ enum PortableSupportRole {
 
 #[derive(Clone)]
 pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalSupportBasis {
+    data: Arc<ApprovalSupportData>,
+}
+struct ApprovalSupportData {
     request: WorthQueryRetainedCapabilityRequest,
     grant: EntityId,
     capability_authority_identity: String,
@@ -47,52 +62,70 @@ pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalSupportBasis 
     lineage: super::WorthQueryDurableCapabilityLineage,
     timeline: worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline,
     expiry: u64,
+    // Keep the payload admission until all decoded fields have been dropped.
+    _text_funding: Arc<ActorCodecFunding>,
+    _node_funding: Arc<ActorCodecFunding>,
 }
 
 impl WorthQueryWorkflowApprovalSupportBasis {
     pub(super) fn request(&self) -> &WorthQueryRetainedCapabilityRequest {
-        &self.request
+        &self.data.request
     }
 
-    pub(super) const fn grant(&self) -> EntityId {
-        self.grant
+    pub(super) fn grant(&self) -> EntityId {
+        self.data.grant
     }
 
     pub(super) fn capability_authority_identity(&self) -> &str {
-        &self.capability_authority_identity
+        &self.data.capability_authority_identity
     }
 
-    pub(super) const fn posture(&self) -> WorthQueryCapabilityObservationPosture {
-        self.posture
+    pub(super) fn posture(&self) -> WorthQueryCapabilityObservationPosture {
+        self.data.posture
     }
 
-    pub(super) const fn role(&self) -> super::WorthQueryCapabilitySupportRole {
-        self.role
+    pub(super) fn role(&self) -> super::WorthQueryCapabilitySupportRole {
+        self.data.role
     }
 
     pub(super) fn lineage(&self) -> &super::WorthQueryDurableCapabilityLineage {
-        &self.lineage
+        &self.data.lineage
     }
 
-    pub(super) const fn timeline(&self) -> worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline{
-        self.timeline
+    pub(super) fn timeline(&self) -> worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline{
+        self.data.timeline
     }
 
-    pub(super) const fn expiry(&self) -> u64 {
-        self.expiry
+    pub(super) fn expiry(&self) -> u64 {
+        self.data.expiry
     }
 }
 
 pub(in crate::domain_computation) fn encode_workflow_approval_support(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     authorization: &WorthQueryRetainedCapabilityAuthorization,
-) -> Result<String, WorkflowApprovalRequestEncodingDenial> {
+) -> Result<
+    crate::domain_computation::primary_graph::workflow::actor::encoding::FundedActorText,
+    WorkflowApprovalRequestEncodingDenial,
+> {
+    let request = authorization
+        .supporting()
+        .map(|support| {
+            support
+                .request()
+                .encode_workflow_approval_request(execution)
+        })
+        .transpose()?;
     let portable = authorization
         .supporting()
         .map(|support| {
             Ok(PortableApprovalSupport {
-                request: support.request().encode_workflow_approval_request()?,
+                request: request
+                    .as_ref()
+                    .expect("support request encoded above")
+                    .as_str(),
                 grant: support.grant(),
-                capability_authority_identity: support.capability_authority_identity().to_owned(),
+                capability_authority_identity: support.capability_authority_identity(),
                 posture: match support.posture() {
                     WorthQueryCapabilityObservationPosture::Active => {
                         PortableSupportPosture::Active
@@ -109,8 +142,8 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
                         PortableSupportRole::ElevationUpperBound
                     }
                 },
-                lineage: support.decision().durable_lineage(),
-                timeline: support.timeline().canonical_name().to_owned(),
+                lineage: support.decision().durable_lineage_view(),
+                timeline: support.timeline().canonical_name(),
                 expiry: match support.expiry() {
                     worth_foundational::facade::AspectValue::UInt64(value) => *value,
                     _ => return Err(WorkflowApprovalRequestEncodingDenial::InvalidRequest),
@@ -118,29 +151,49 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
             })
         })
         .transpose()?;
-    let encoded = serde_json::to_string(&portable)
-        .map_err(|_| WorkflowApprovalRequestEncodingDenial::InvalidRequest)?;
-    (encoded.len() <= MAXIMUM_PORTABLE_BYTES)
-        .then_some(encoded)
-        .ok_or(WorkflowApprovalRequestEncodingDenial::TooLarge)
+    crate::domain_computation::primary_graph::workflow::actor::encoding::encode(
+        execution,
+        &portable,
+        MAXIMUM_PORTABLE_BYTES,
+    )
 }
 
 pub(in crate::domain_computation) fn decode_workflow_approval_support(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     encoded: &str,
-) -> Result<Option<WorthQueryWorkflowApprovalSupportBasis>, ()> {
+) -> Result<
+    Option<WorthQueryWorkflowApprovalSupportBasis>,
+    super::retained_capability_request::WorkflowApprovalRequestDecodingDenial,
+> {
     if encoded.len() > MAXIMUM_PORTABLE_BYTES {
-        return Err(());
+        return Err(().into());
     }
+    // serde unescape scratch <2*input and retained owned text <=input.
+    let text_funding = fund_actor_codec(execution, encoded.len().checked_mul(3).ok_or(())?)?;
+    type Ignored = serde::de::IgnoredAny;
+    let inventory: Option<
+        PortableApprovalSupport<Ignored, Ignored, lineage_inventory::LineageCount, Ignored>,
+    > = serde_json::from_str(encoded).map_err(|_| ())?;
+    let nodes = inventory.as_ref().map_or(0, |support| support.lineage.0);
+    let node_funding = fund_actor_codec(
+        execution,
+        nodes
+            .checked_mul(std::mem::size_of::<super::WorthQueryDurableCapabilityLineage>())
+            .ok_or(())?,
+    )?;
     let portable: Option<PortableApprovalSupport> =
         serde_json::from_str(encoded).map_err(|_| ())?;
+    crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
     portable
         .map(|support| {
             if support.capability_authority_identity.is_empty() {
-                return Err(());
+                return Err(().into());
             }
-            Ok(WorthQueryWorkflowApprovalSupportBasis {
+            Ok(WorthQueryWorkflowApprovalSupportBasis { data: Arc::new(ApprovalSupportData {
+                _text_funding: Arc::clone(&text_funding),
+                _node_funding: Arc::clone(&node_funding),
                 request: WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
-                    &support.request,
+                    execution, &support.request,
                 )?,
                 grant: support.grant,
                 capability_authority_identity: support.capability_authority_identity,
@@ -160,21 +213,24 @@ pub(in crate::domain_computation) fn decode_workflow_approval_support(
                 timeline: match support.timeline.as_str() {
                     "unix-epoch-seconds" => worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
                     "unix-epoch-milliseconds" => worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds,
-                    _ => return Err(()),
+                    _ => return Err(().into()),
                 },
                 expiry: support.expiry,
-            })
+            }) })
         })
         .transpose()
 }
 
 #[derive(Clone)]
 pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalAuthorityBasis {
+    data: Arc<ApprovalAuthorityData>,
+}
+struct ApprovalAuthorityData {
     request: WorthQueryRetainedCapabilityRequest,
-    principal: WorthQueryDurablePrincipalCurrentness,
+    principal: DecodedApprovalPrincipal,
     grant: EntityId,
     capability_authority_identity: String,
-    lineage: super::WorthQueryDurableCapabilityLineage,
+    lineage: DecodedApprovalLineage,
     support: Option<WorthQueryWorkflowApprovalSupportBasis>,
     dependencies: super::WorthQueryWorkflowApprovalDependencies,
     timeline: worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline,
@@ -184,63 +240,65 @@ pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalAuthorityBasi
 impl WorthQueryWorkflowApprovalAuthorityBasis {
     pub(in crate::domain_computation) fn from_retained_approval(
         request: WorthQueryRetainedCapabilityRequest,
-        principal: WorthQueryDurablePrincipalCurrentness,
+        principal: DecodedApprovalPrincipal,
         grant: EntityId,
         capability_authority_identity: String,
-        lineage: super::WorthQueryDurableCapabilityLineage,
+        lineage: DecodedApprovalLineage,
         support: Option<WorthQueryWorkflowApprovalSupportBasis>,
         dependencies: super::WorthQueryWorkflowApprovalDependencies,
         timeline: worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline,
         expiry: u64,
     ) -> Self {
         Self {
-            request,
-            principal,
-            grant,
-            capability_authority_identity,
-            lineage,
-            support,
-            dependencies,
-            timeline,
-            expiry,
+            data: Arc::new(ApprovalAuthorityData {
+                request,
+                principal,
+                grant,
+                capability_authority_identity,
+                lineage,
+                support,
+                dependencies,
+                timeline,
+                expiry,
+            }),
         }
     }
 
     pub(super) fn request(&self) -> &WorthQueryRetainedCapabilityRequest {
-        &self.request
+        &self.data.request
     }
 
     pub(super) fn principal(&self) -> &WorthQueryDurablePrincipalCurrentness {
-        &self.principal
+        self.data.principal.value()
     }
 
-    pub(super) const fn grant(&self) -> EntityId {
-        self.grant
+    pub(super) fn grant(&self) -> EntityId {
+        self.data.grant
     }
 
     pub(super) fn capability_authority_identity(&self) -> &str {
-        &self.capability_authority_identity
+        &self.data.capability_authority_identity
     }
 
     pub(super) fn lineage(&self) -> &super::WorthQueryDurableCapabilityLineage {
-        &self.lineage
+        self.data.lineage.value()
     }
 
     pub(super) fn support(&self) -> Option<&WorthQueryWorkflowApprovalSupportBasis> {
-        self.support.as_ref()
+        self.data.support.as_ref()
     }
 
     pub(super) fn dependencies(&self) -> &super::WorthQueryWorkflowApprovalDependencies {
-        &self.dependencies
+        &self.data.dependencies
     }
 
-    pub(super) const fn timeline(
+    pub(super) fn timeline(
         &self,
     ) -> worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline{
-        self.timeline
+        self.data.timeline
     }
 
-    pub(super) const fn expiry(&self) -> u64 {
-        self.expiry
+    pub(super) fn expiry(&self) -> u64 {
+        self.data.expiry
     }
 }

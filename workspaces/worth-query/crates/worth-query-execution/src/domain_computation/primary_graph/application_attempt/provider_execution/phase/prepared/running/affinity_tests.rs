@@ -301,6 +301,7 @@ fn finish_uncommitted(
             running,
             WorthQueryManagedRunTerminalKind::Failed,
             lease.release_custody(),
+            false,
         )
         .expect("affinity probe must release managed-run resources");
 }

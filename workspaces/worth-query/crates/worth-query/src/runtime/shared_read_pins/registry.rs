@@ -146,10 +146,10 @@ impl WorthQuerySharedReadPinRegistryState {
                 .clone();
         }
 
-        if let Some(current) = self.current_generation_ordinal {
-            if let Some(entry) = self.generations.get(&current) {
-                entry.retire();
-            }
+        if let Some(current) = self.current_generation_ordinal
+            && let Some(entry) = self.generations.get(&current)
+        {
+            entry.retire();
         }
 
         self.next_generation_ordinal += 1;

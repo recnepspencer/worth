@@ -16,6 +16,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Workf
 {
     Advance,
     Close,
+    ReadOnly,
 }
 
 /// Leave to write one step, granted only by
@@ -49,6 +50,12 @@ impl ObservedWorkflowInstance {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn ensure_step_left(
         &self,
     ) -> Result<WorkflowStepAllowance, WorthQueryApplicationAttemptDenial> {
+        if self.purpose == WorkflowInstanceObservationPurpose::ReadOnly {
+            return Err(WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
+                "read-only observation cannot issue a workflow step",
+            ));
+        }
         let lineage_steps = usize::try_from(self.lineage_steps()).unwrap_or(usize::MAX);
         if self.live_membership.is_some()
             && self.purpose == WorkflowInstanceObservationPurpose::Advance
@@ -74,5 +81,6 @@ pub(super) fn history_basis(
             inherited_steps: usize::try_from(inherited_steps).unwrap_or(usize::MAX),
         },
         (true, WorkflowInstanceObservationPurpose::Close) => HistoryBasis::Close,
+        (true, WorkflowInstanceObservationPurpose::ReadOnly) => HistoryBasis::ReadOnly,
     }
 }

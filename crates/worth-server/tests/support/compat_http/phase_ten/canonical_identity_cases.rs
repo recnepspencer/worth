@@ -2,14 +2,14 @@ use worth_foundational::facade::DiagnosticRichnessProfile;
 use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
 use worth_server::WorthServerBinaryDownloadRequest;
 
-use crate::compat_http_phase_ten_assertions::assert_same_canonical_file_identity;
-use crate::compat_http_phase_ten_runtime::{
+use crate::shared_support_compat_http_phase_ten_assertions::assert_same_canonical_file_identity;
+use crate::shared_support_compat_http_phase_ten_runtime::{
     build_phase_ten_server_with_workspace_provider, canonical_upload,
     compat_download_execution_input, compat_download_success, compat_inspection_execution_input,
     compat_inspection_success, compat_read_execution_input, compat_read_success,
     compat_upload_execution_input, compat_upload_success, reordered_canonical_upload,
 };
-use crate::query_handoff_runtime::ProfiledTestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::ProfiledTestWorkspaceProvider;
 
 #[test]
 fn compat_http_phase_ten_keeps_one_canonical_external_file_identity_across_lanes() {

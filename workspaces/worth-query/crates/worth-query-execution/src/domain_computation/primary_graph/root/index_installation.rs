@@ -115,6 +115,11 @@ pub(super) fn register_primary_graph_indexes(
     super::super::workflow::schema::register_indexes(layout.workflow_mut(), |definition| {
         installation.install(definition)
     })?;
+    let read_indexes = super::super::application_discovery::WorkflowReadIndexes::install(
+        layout.workflow(),
+        |definition| installation.install(definition),
+    )?;
+    layout.set_workflow_reads(read_indexes);
     Ok(())
 }
 

@@ -1,6 +1,6 @@
 mod approval;
 mod close;
-mod delegation;
+pub(crate) mod delegation;
 mod denial;
 mod disburse_estate;
 mod elevation_lifecycle;
@@ -8,7 +8,6 @@ pub(crate) mod freeze_account;
 mod lifecycle_facts;
 pub(crate) mod notify_death;
 pub(crate) mod open_estate_case;
-mod program_outcome;
 mod progression_failure;
 mod projection_denial;
 pub(crate) mod recognize_executor;
@@ -21,6 +20,8 @@ mod review;
 
 pub use delegation::{
     BankCapabilityDelegationProjectionDenial, BankCapabilityRevocationProjectionDenial,
+    BankDelegationCaptureFailure, BankDelegationCommand, BankDelegationPreparation,
+    BankRevocationCaptureFailure, BankRevocationCommand, BankRevocationPreparation,
 };
 pub use denial::{
     BankEstateIdempotencyResolutionDenial, BankEstateLifecycleProjectionDenial,
@@ -43,9 +44,10 @@ pub use projection_denial::{
 };
 pub use recognize_executor::BankExecutorRecognitionProjectionDenial;
 pub use recovery_types::{
-    BankCommitRecoveryHandle, BankRecoveryClaimStatus, BankRecoveryDurability,
-    BankRecoveryExpiryDecision, BankRecoveryExpiryEvaluation, BankRecoveryIdempotencyResolution,
-    BankRecoveryInspection, BankRecoveryPosture, BankRecoverySafeRetryDenial,
-    BankRecoverySafeRetryReceipt, BankRecoverySupportTruth, BankRecoveryTransitionReceipt,
+    BankCommitRecoveryHandle, BankRecoveryClaimStatus, BankRecoveryDisposalDenial,
+    BankRecoveryDisposalReceipt, BankRecoveryDurability, BankRecoveryExpiryDecision,
+    BankRecoveryExpiryEvaluation, BankRecoveryIdempotencyResolution, BankRecoveryInspection,
+    BankRecoveryPosture, BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt,
+    BankRecoverySupportTruth, BankRecoveryTransitionReceipt,
 };
 pub use release_estate::BankEstateReleaseProjectionDenial;

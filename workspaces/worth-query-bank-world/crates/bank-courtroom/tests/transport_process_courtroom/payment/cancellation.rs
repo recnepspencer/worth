@@ -47,7 +47,8 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
         court
             .runtime
             .approved_business_payment(&court.approver, &scope)
-            .perform_apply(
+            .advanced()
+            .execute_operation(
                 instance.clone(),
                 &operation,
                 authority.clone(),
@@ -65,15 +66,14 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
     court.proxy.release_first();
     let terminal = tokio::time::timeout(Duration::from_secs(25), async {
         loop {
-            if let Some(terminal) = court.bank.observe_rail_completion(token) {
-                if inquire_completion_delivery_posture(court.rail.local_addr(), TIMEOUT)
+            if let Some(terminal) = court.bank.observe_rail_completion(token)
+                && inquire_completion_delivery_posture(court.rail.local_addr(), TIMEOUT)
                     .await
                     .expect("rail reports callback custody")
                     .pending
                     == 0
-                {
-                    break terminal;
-                }
+            {
+                break terminal;
             }
             tokio::time::sleep(Duration::from_millis(25)).await;
         }
@@ -97,7 +97,7 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
             .approved_business_payment(&court.approver, &scope);
         require_completed(
             tokio::task::block_in_place(|| {
-                workflow.accept_applied(
+                workflow.advanced().accept_native_effect(
                     instance.clone(),
                     &operation,
                     authority.clone(),

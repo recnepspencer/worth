@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-authority"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Canonical Store authority records and artifact identity contracts."

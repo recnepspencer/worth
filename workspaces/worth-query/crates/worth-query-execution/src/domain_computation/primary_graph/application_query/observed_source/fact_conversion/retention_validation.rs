@@ -32,10 +32,9 @@ impl<Query> WorthQueryObservedSource<Query> {
             if let Some(previous) = fields.insert(
                 (field.entity, &field.aspect, &field.field),
                 field.native_revision,
-            ) {
-                if previous != field.native_revision {
-                    return Err(changed(expected));
-                }
+            ) && previous != field.native_revision
+            {
+                return Err(changed(expected));
             }
         }
         let mut adjacencies = BTreeMap::new();
@@ -51,10 +50,10 @@ impl<Query> WorthQueryObservedSource<Query> {
                 adjacency.relation_kind,
                 super::super::adjacency_direction_rank(adjacency.direction),
             );
-            if let Some(previous) = adjacencies.insert(key, adjacency.native_revision) {
-                if previous != adjacency.native_revision {
-                    return Err(changed(expected));
-                }
+            if let Some(previous) = adjacencies.insert(key, adjacency.native_revision)
+                && previous != adjacency.native_revision
+            {
+                return Err(changed(expected));
             }
         }
         check_request(request, expected)

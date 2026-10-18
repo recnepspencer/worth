@@ -51,13 +51,13 @@ impl std::error::Error for WorthQueryWorkflowDispositionDenial {}
 /// Built from one inventory and bound to its digest, so preparation refuses
 /// the choices if owner truth moved after the caller decided.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryWorkflowDispositions {
+pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowDispositions {
     pub(super) digest: [u8; 32],
     pub(super) definitions: BTreeMap<EntityId, WorthQueryWorkflowDefinitionDisposition>,
     pub(super) instances: BTreeMap<EntityId, WorthQueryWorkflowInstanceDisposition>,
 }
 
-impl WorthQueryWorkflowDispositions {
+impl AdmittedWorkflowDispositions {
     /// The digest of the inventory these choices decide, not of the choices.
     pub const fn inventory_digest(&self) -> &[u8; 32] {
         &self.digest
@@ -119,8 +119,8 @@ impl WorthQueryWorkflowDispositions {
 
 impl WorthQueryWorkflowAdoptionInventory {
     /// Empty choices bound to this inventory's digest.
-    pub fn dispositions(&self) -> WorthQueryWorkflowDispositions {
-        WorthQueryWorkflowDispositions {
+    pub fn dispositions(&self) -> AdmittedWorkflowDispositions {
+        AdmittedWorkflowDispositions {
             digest: self.digest,
             definitions: BTreeMap::new(),
             instances: BTreeMap::new(),
@@ -131,7 +131,7 @@ impl WorthQueryWorkflowAdoptionInventory {
     /// target cannot carry.
     pub fn carry_compatible(
         &self,
-    ) -> Result<WorthQueryWorkflowDispositions, WorthQueryWorkflowDispositionDenial> {
+    ) -> Result<AdmittedWorkflowDispositions, WorthQueryWorkflowDispositionDenial> {
         let mut choices = self.dispositions();
         for definition in self.definitions() {
             choices =
@@ -146,7 +146,7 @@ impl WorthQueryWorkflowAdoptionInventory {
     /// Checks that `choices` decide exactly this inventory, each legally.
     pub(in crate::domain_computation::primary_graph) fn admit(
         &self,
-        choices: &WorthQueryWorkflowDispositions,
+        choices: &AdmittedWorkflowDispositions,
     ) -> Result<(), WorthQueryWorkflowDispositionDenial> {
         for (&definition, &disposition) in &choices.definitions {
             let occurrence = self

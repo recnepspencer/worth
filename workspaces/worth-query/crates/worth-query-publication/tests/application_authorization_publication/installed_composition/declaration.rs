@@ -70,6 +70,8 @@ worth_query_application_schema! {
                 )
 
                 .operation_projection_work_budget(PublicationOperation::reference(), 16)
+                .operation_read_field(PublicationOperation::reference(), ResourceIdentityField::reference())
+                .operation_read_field(PublicationOperation::reference(), ActionRecordIdentityField::reference())
                 .operation_read_field(PublicationOperation::reference(), ResourceLabelField::reference())
                 .operation_write(PublicationOperation::reference(), ResourceLabelField::reference());
             super::contract::install(schema)
@@ -130,7 +132,7 @@ worth_query_declaration::worth_query_portable_type!(PublicationInput => "worth.q
 worth_query_declaration::worth_query_structured_value_binding!(pub PublicationInputBinding for PublicationInput { identity: "worth.query.test.publication.input.v1" });
 
 worth_query_operation!(pub PublicationOperation for PublicationAuthorizationSchema, input PublicationInputBinding);
-worth_query_operation_reads!(PublicationOperation => [ResourceLabelField]);
+worth_query_operation_reads!(PublicationOperation => [ResourceLabelField, ResourceIdentityField, ActionRecordIdentityField]);
 worth_query_operation_writes!(PublicationOperation => [ResourceLabelField]);
 
 impl ApplicationCapabilityRequest<PublicationAuthorizationSchema, PublicationCapability>

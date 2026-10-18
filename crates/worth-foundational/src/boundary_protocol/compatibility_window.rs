@@ -75,13 +75,13 @@ impl BoundaryProtocolCompatibilityWindow {
                 BoundaryProtocolUnsupportedVersionPosture::ExceedsWindow,
             ));
         }
-        if let Some(retired_before) = self.retired_before {
-            if produced.get() < retired_before.get() {
-                return Err(BoundaryProtocolUnsupportedVersion::new(
-                    produced,
-                    BoundaryProtocolUnsupportedVersionPosture::Retired,
-                ));
-            }
+        if let Some(retired_before) = self.retired_before
+            && produced.get() < retired_before.get()
+        {
+            return Err(BoundaryProtocolUnsupportedVersion::new(
+                produced,
+                BoundaryProtocolUnsupportedVersionPosture::Retired,
+            ));
         }
         Ok(produced)
     }

@@ -72,7 +72,6 @@ pub(super) fn create_connection(
             text(
                 operation
                     .workflow_execution_requirements()
-                    .expect("validated Back evidence floor")
                     .persistence_identity(),
             ),
         );

@@ -90,10 +90,9 @@ fn map_failed_candidate(
             },
             ..
         }
-    ) {
-        if let Some(interruption) = control.relational().interruption() {
-            return super::super::invariant_execution_failure::request_interruption(interruption);
-        }
+    ) && let Some(interruption) = control.relational().interruption()
+    {
+        return super::super::invariant_execution_failure::request_interruption(interruption);
     }
     map_validation_failure(failure)
 }

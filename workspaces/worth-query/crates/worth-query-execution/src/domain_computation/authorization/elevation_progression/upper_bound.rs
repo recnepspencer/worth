@@ -59,23 +59,23 @@ impl WorthQueryElevationUpperBound {
         self.grant
     }
 
-    pub(in crate::domain_computation) const fn action(&self) -> &AspectValue {
+    pub(in crate::domain_computation) fn action(&self) -> &AspectValue {
         self.request.action()
     }
 
-    pub(in crate::domain_computation) const fn purpose(&self) -> &AspectValue {
+    pub(in crate::domain_computation) fn purpose(&self) -> &AspectValue {
         self.request.purpose()
     }
 
-    pub(in crate::domain_computation) const fn field(&self) -> Option<&AspectValue> {
+    pub(in crate::domain_computation) fn field(&self) -> Option<&AspectValue> {
         self.request.field()
     }
 
-    pub(in crate::domain_computation) const fn magnitude(&self) -> Option<&AspectValue> {
+    pub(in crate::domain_computation) fn magnitude(&self) -> Option<&AspectValue> {
         self.request.magnitude()
     }
 
-    pub(in crate::domain_computation) const fn cardinality(&self) -> u32 {
+    pub(in crate::domain_computation) fn cardinality(&self) -> u32 {
         self.request.cardinality()
     }
 

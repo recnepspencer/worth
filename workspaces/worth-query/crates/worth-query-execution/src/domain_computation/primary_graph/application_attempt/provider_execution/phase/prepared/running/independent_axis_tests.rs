@@ -246,6 +246,7 @@ fn finish(
             running,
             WorthQueryManagedRunTerminalKind::Failed,
             lease.release_custody(),
+            false,
         )
         .unwrap();
 }

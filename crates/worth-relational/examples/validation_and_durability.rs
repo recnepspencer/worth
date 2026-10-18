@@ -21,7 +21,11 @@ fn main() {
         .expect("invariant fixture request");
     let recovery_plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .expect("original request admits native recovery input");
 
     println!(
         "validation_results={} blocking_violation={} durable_log_len={} recovery_segments={}",

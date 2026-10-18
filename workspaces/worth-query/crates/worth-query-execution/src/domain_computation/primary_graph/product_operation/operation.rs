@@ -33,6 +33,28 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         WorthQueryOperationAuthorizationDenial,
     > {
+        self.authorize_borrowed_operation(
+            phase,
+            principal,
+            scope,
+            operation,
+            &preconditions,
+            request,
+        )
+    }
+
+    pub fn authorize_borrowed_operation<Principal, PrincipalIdentity, Operation, Input, Scope>(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+        scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: &TypedMutationPreconditions<Schema, Operation, Scope>,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        WorthQueryOperationAuthorizationDenial,
+    > {
         let execution = phase.execution_request_for(&self.application().product_runtime)
             .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), operation.operation()))?;
         self.authorize_operation_with_request(
@@ -57,7 +79,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-        preconditions: TypedMutationPreconditions<Schema, Operation, Scope>,
+        preconditions: impl std::borrow::Borrow<TypedMutationPreconditions<Schema, Operation, Scope>>,
         request: &WorthQueryRequestScope,
     ) -> Result<
         WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -152,6 +174,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
         input: ApplicationEncodedInput<Operation::InputBinding>,
         request: &WorthQueryRequestScope,
+        workflow_actor: Option<&crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext>,
     ) -> Result<
         WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         WorthQueryOperationAuthorizationDenial,
@@ -170,6 +193,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             capability,
             input,
             request,
+            workflow_actor,
         )
     }
 
@@ -187,6 +211,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
         input: ApplicationEncodedInput<Operation::InputBinding>,
         request: &WorthQueryRequestScope,
+        workflow_actor: Option<&crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext>,
     ) -> Result<
         WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         WorthQueryOperationAuthorizationDenial,
@@ -204,6 +229,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             capability,
             input,
             request,
+            workflow_actor,
         )
     }
 

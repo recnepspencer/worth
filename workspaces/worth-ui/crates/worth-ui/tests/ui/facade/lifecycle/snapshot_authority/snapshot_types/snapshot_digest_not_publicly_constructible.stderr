@@ -1,5 +1,0 @@
-error[E0451]: field `value` of struct `CapabilitySnapshotDigest` is private
- --> tests/ui/facade/lifecycle/snapshot_authority/snapshot_types/snapshot_digest_not_publicly_constructible.rs:4:40
-  |
-4 |     let _ = CapabilitySnapshotDigest { value: 0 };
-  |                                        ^^^^^ private field

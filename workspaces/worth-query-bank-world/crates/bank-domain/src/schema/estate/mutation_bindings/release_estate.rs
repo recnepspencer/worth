@@ -55,6 +55,12 @@ impl ReleaseEstate {
 pub struct ReleaseEstateMutationBinding;
 
 impl ApplicationMutationBinding<BankSchema> for ReleaseEstateMutationBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EstateAction;
     type InputBinding = super::super::EstateActionInputBinding;
     type Result = EstateMutationResult;
@@ -131,5 +137,30 @@ impl ApplicationMutationIntent<BankSchema> for ReleaseEstate {
         &self,
     ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
         ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
+    }
+}
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+    for ReleaseEstateMutationBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            ReleaseEstateCapability,
+        >;
+}
+
+impl TryFrom<EstateAction> for ReleaseEstate {
+    type Error = EstateAction;
+    fn try_from(action: EstateAction) -> Result<Self, Self::Error> {
+        match action {
+            EstateAction::ReleaseEstate {
+                estate,
+                executor,
+                authority,
+                review,
+            } => Ok(Self::new(estate, executor, authority, review)),
+            original => Err(original),
+        }
     }
 }

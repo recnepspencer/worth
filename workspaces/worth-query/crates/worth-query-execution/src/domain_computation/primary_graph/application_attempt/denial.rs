@@ -79,6 +79,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowDefinitionIntentIdentityUnavailable,
     WorkflowLineageUnavailable,
     WorkflowDefinitionCompilationUnavailable,
+    /// Stored guarded operation meaning lacks exactly one input source.
+    WorkflowDefinitionMissingOperationInput,
     /// A start named a definition its branch has since superseded. A retry
     /// of a recorded start still replays.
     WorkflowDefinitionSuperseded,
@@ -170,6 +172,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 #[derive(Debug)]
 enum AttemptDenialCause {
     None,
+    RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
     Expression(Box<worth_foundational::expression_api::ExpressionDenial>),
@@ -180,6 +183,15 @@ enum AttemptDenialCause {
 }
 
 impl WorthQueryApplicationAttemptDenial {
+    pub(in crate::domain_computation) fn relational_execution_cause(
+        &self,
+    ) -> Option<worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        match self.cause {
+            AttemptDenialCause::RelationalExecution(cause) => Some(cause),
+            _ => None,
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn new(
         kind: WorthQueryApplicationAttemptDenialKind,
         subject: impl Into<String>,
@@ -225,6 +237,17 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn authorization_denied(
+        kind: WorthQueryApplicationAttemptDenialKind,
+        denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self {
+            kind,
+            subject: denial.subject().to_owned(),
+            cause: AttemptDenialCause::RequestAuthority(Box::new(denial)),
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn allocation_denied(
         subject: impl Into<String>,
         denial: worth_execution::ExecutionAllocationDenial,
@@ -265,6 +288,7 @@ impl WorthQueryApplicationAttemptDenial {
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         match &self.cause {
             AttemptDenialCause::Allocation(denial) => Some(denial.as_ref()),
+            AttemptDenialCause::RelationalExecution(_) => None,
             AttemptDenialCause::RetainedSource(denial) => match denial.as_ref() {
                 super::retained_decision_facts::StoreDenial::Allocation(denial) => Some(denial),
                 _ => None,
@@ -310,8 +334,8 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
-    /// The request's own stop behind `CurrentAuthorityDenied`, when the
-    /// request rather than the attempt lost its authority.
+    /// The original authorization denial behind request-authority loss or
+    /// approval readmission, including any retained native actor-source cause.
     pub const fn request_authority(
         &self,
     ) -> Option<&crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
@@ -339,6 +363,8 @@ impl std::error::Error for WorthQueryApplicationAttemptDenial {
             AttemptDenialCause::NativeQueryRead(stop) => Some(stop.as_ref()),
             AttemptDenialCause::RetainedSource(denial) => Some(denial.as_ref()),
             AttemptDenialCause::Allocation(denial) => Some(denial.as_ref()),
+            AttemptDenialCause::RequestAuthority(denial) => Some(denial.as_ref()),
+            AttemptDenialCause::RelationalExecution(_) => None,
             _ => None,
         }
     }
@@ -351,3 +377,5 @@ mod allocation_error_source_tests;
 mod native_query_cause;
 
 mod request_read;
+
+mod capacity;

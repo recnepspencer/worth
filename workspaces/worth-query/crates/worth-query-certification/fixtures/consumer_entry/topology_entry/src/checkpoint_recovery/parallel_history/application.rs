@@ -100,7 +100,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         vec![ApplicationFeatureSpec::root::<Schema, Feature>()
             .derived_artifact::<Artifact>()
             .managed_computation::<computation::Computation>()
-            .mutation::<operation::Binding<Schema>>()
+            .native_action::<operation::Binding<Schema>>()
+            .finish_action()
             .finish()]
     }
 }

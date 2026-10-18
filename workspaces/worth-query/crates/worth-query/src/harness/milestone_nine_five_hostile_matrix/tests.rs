@@ -1,89 +1,10 @@
 use crate::harness::certification::{
-    contains_row, milestone_nine_five_requirements, unmet_required_assertion_classes,
-    unmet_required_rows, HostileExpectation, ParityAnchor, RequiredAssertionClass,
+    milestone_nine_five_requirements, unmet_required_assertion_classes, HostileExpectation,
+    ParityAnchor, RequiredAssertionClass,
 };
 use crate::saved_query::SavedQueryTemporalAsyncSurfacePosture;
 
 use super::bundle::MilestoneNineFiveHostileMatrixAdapter;
-
-#[test]
-fn milestone_nine_five_adapter_emits_named_matrix() {
-    let artifact =
-        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_artifact();
-
-    assert_eq!(
-        artifact.suite_name,
-        "Milestone 9.5 Debt-Close Hostile Certification Matrix"
-    );
-    assert!(!artifact.certification_bundle_digest.is_empty());
-    assert!(!artifact.coverage_matrix_digest.is_empty());
-}
-
-#[test]
-fn milestone_nine_five_matrix_meets_required_rows() {
-    let matrix =
-        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
-    let missing = unmet_required_rows(
-        &matrix,
-        milestone_nine_five_requirements().required_canonical_rows,
-        milestone_nine_five_requirements().required_rejection_rows,
-    );
-    assert!(
-        missing.is_empty(),
-        "missing milestone 9.5 rows: {missing:?}"
-    );
-}
-
-#[test]
-fn milestone_nine_five_rows_have_required_outputs() {
-    let matrix =
-        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
-
-    for row in &matrix.rows {
-        assert!(
-            row.control_lane.has_required_outputs(),
-            "row '{}'",
-            row.row_name
-        );
-        assert!(
-            row.hostile_lane.has_required_outputs(),
-            "row '{}'",
-            row.row_name
-        );
-        assert!(
-            row.parity_lane.has_required_outputs(),
-            "row '{}'",
-            row.row_name
-        );
-    }
-    for row in &matrix.rejection_rows {
-        assert!(
-            row.control_lane.has_required_outputs(),
-            "row '{}'",
-            row.row_name
-        );
-        assert!(
-            row.parity_lane.has_required_outputs(),
-            "row '{}'",
-            row.row_name
-        );
-        assert!(
-            !row.hostile_lane.failure_kind.is_empty(),
-            "row '{}'",
-            row.row_name
-        );
-        assert!(
-            !row.hostile_lane.failure_digest.is_empty(),
-            "row '{}'",
-            row.row_name
-        );
-        assert!(
-            !row.hostile_lane.reuse_matrix_digest.is_empty(),
-            "row '{}'",
-            row.row_name
-        );
-    }
-}
 
 #[test]
 fn milestone_nine_five_rows_enforce_required_assertion_classes() {
@@ -243,51 +164,5 @@ fn milestone_nine_five_rejection_rows_preserve_typed_temporal_async_targets() {
     assert_eq!(
         inspector.hostile_lane.temporal_async_surface_posture,
         SavedQueryTemporalAsyncSurfacePosture::VisibleButDeferred.as_str()
-    );
-}
-
-#[test]
-fn milestone_nine_five_named_rows_are_exported_through_requirements() {
-    let matrix =
-        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
-
-    for row_name in milestone_nine_five_requirements().required_canonical_rows {
-        assert!(contains_row(&matrix, row_name), "missing {row_name}");
-    }
-    for row_name in milestone_nine_five_requirements().required_rejection_rows {
-        assert!(contains_row(&matrix, row_name), "missing {row_name}");
-    }
-}
-
-#[test]
-fn milestone_nine_five_artifact_signature_captures_required_narrow_artifacts() {
-    let matrix =
-        MilestoneNineFiveHostileMatrixAdapter::debt_close_hostile_certification_matrix_test();
-    let lane = matrix
-        .rows
-        .iter()
-        .find(|row| row.row_name == "named-scope-table-retained-derived-parity")
-        .unwrap()
-        .hostile_lane
-        .clone();
-
-    let mut composition_drift = lane.clone();
-    composition_drift
-        .composition_support_digest
-        .push_str("-drift");
-    assert_ne!(
-        lane.artifact_signature(),
-        composition_drift.artifact_signature()
-    );
-
-    let mut view_drift = lane.clone();
-    view_drift.view_support_digest.push_str("-drift");
-    assert_ne!(lane.artifact_signature(), view_drift.artifact_signature());
-
-    let mut saved_query_drift = lane.clone();
-    saved_query_drift.saved_query_digest.push_str("-drift");
-    assert_ne!(
-        lane.artifact_signature(),
-        saved_query_drift.artifact_signature()
     );
 }

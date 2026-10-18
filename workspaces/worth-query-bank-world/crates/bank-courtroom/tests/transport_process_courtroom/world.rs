@@ -186,6 +186,7 @@ impl TransportProcessWorld {
         AuthentikAdministration::new(
             self.endpoints.authentik_origin(),
             self.fixture.bootstrap_token().to_owned(),
+            self.endpoints.trusted_root_pem().as_bytes(),
         )
         .expect("Authentik administration should configure")
         .set_access_token_validity(self.fixture.slug(), validity)
@@ -352,7 +353,7 @@ pub(super) fn server_configuration(
                 }
             }
         },
-        "cold_certification": true
+        "cold_certification": { "trusted_root_pem": endpoints.trusted_root_pem() }
     })
 }
 
@@ -371,7 +372,7 @@ pub(super) fn node_configuration(
         "bank_server_origin": format!("http://{server}/"),
         "maximum_request_concurrency": 1,
         "maximum_live_streams": 1,
-        "cold_certification": true,
+        "cold_certification": { "trusted_root_pem": endpoints.trusted_root_pem() },
         "external_redirect_url": redirect_url
     })
 }

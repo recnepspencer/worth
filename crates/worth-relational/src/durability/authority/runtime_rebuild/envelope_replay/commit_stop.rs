@@ -17,8 +17,15 @@ pub(crate) fn replay_commit_stop(
                 crate::mvcc::RelationalOperationInterruption::TimedOut => Cause::DeadlineElapsed,
             })
         }
-        TransactionCommitError::Conflict { .. }
-        | TransactionCommitError::Publication { .. }
+        TransactionCommitError::Conflict { error, .. } => match error.allocation_denial() {
+            Some(denial) => crate::symbols::data::field_text_recovery_stop(
+                crate::symbols::data::RelationalFieldTextAdmissionDenial::Allocation(
+                    denial.clone(),
+                ),
+            ),
+            None => DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into(),
+        },
+        TransactionCommitError::Publication { .. }
         | TransactionCommitError::Preparation { .. }
         | TransactionCommitError::PublicationDenied { .. }
         | TransactionCommitError::PublicationDeferred { .. }

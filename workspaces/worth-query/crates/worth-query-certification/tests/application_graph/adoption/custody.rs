@@ -43,13 +43,36 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
             requirement.kind() == WorthQueryProgramCustodyInventoryKind::OperationContinuation
         })
         .collect::<Vec<_>>();
-    assert_eq!(removed_operations.len(), 2);
+    use crate::document_retention_model::{
+        retention_entry::{
+            ExplicitReviewedSetRetentionBinding, OccurrenceSetRetentionBinding,
+            ReviewedSetRetentionBinding, SetRetentionBinding,
+        },
+        schema::DocumentRetentionSchema,
+    };
+    use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
+    let removed_bindings = [
+        <SetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
+        <ReviewedSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
+        <OccurrenceSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
+        <ExplicitReviewedSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
+    ];
+    assert_eq!(removed_operations.len(), removed_bindings.len());
+    for binding in removed_bindings {
+        assert!(
+            removed_operations
+                .iter()
+                .any(|requirement| requirement.subject().contains(binding)),
+            "the removal target retires {binding}"
+        );
+    }
     assert!(removed_operations
         .iter()
         .all(|requirement| requirement.change() == ApplicationSemanticChangeKind::Removed));
 
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("execution derives the disposition from installed owner truth");
     let expected_custody = prepared.custody().clone();
@@ -66,7 +89,13 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
         );
     }
 
-    let performed = match prepared.publish() {
+    let performed = match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }
@@ -113,6 +142,7 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
 
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("changed operation has an owner-derived disposition");
     assert!(prepared.custody().dispositions().iter().any(|disposition| {
@@ -120,7 +150,7 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
             && disposition.kind() == WorthQueryProgramCustodyDispositionKind::FreshCurrentAdmission
     }));
     assert!(matches!(
-        prepared.publish(),
+        prepared.publish(host.runtime(), &principal, &scope),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
 
@@ -173,6 +203,7 @@ fn changed_resource_ceiling_derives_exact_source_reservation_disposition() {
 
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the resource owner supplies an exact-source disposition");
     assert!(prepared.custody().dispositions().iter().any(|disposition| {
@@ -180,7 +211,7 @@ fn changed_resource_ceiling_derives_exact_source_reservation_disposition() {
             && disposition.kind()
                 == WorthQueryProgramCustodyDispositionKind::RetainExactSourceReservation
     }));
-    let performed = prepared.publish();
+    let performed = prepared.publish(host.runtime(), &principal, &scope);
     assert!(matches!(
         performed,
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)

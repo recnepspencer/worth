@@ -33,13 +33,16 @@ build, chunk and command. The exit code is 0 only when every suite is green.
 import argparse
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
 import time
+import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+from query_gate_artifacts import test_binaries
+from query_gate_diagnostics import failed_tests, report_failed_command
 
 ROOT = Path(__file__).resolve().parents[2]
 QUERY = "workspaces/worth-query/Cargo.toml"
@@ -50,7 +53,6 @@ FIXTURE = (
 BANK = "workspaces/worth-query-bank-world/Cargo.toml"
 UI = "workspaces/worth-ui/Cargo.toml"
 BOUNDARY = "tools/boundary-check/Cargo.toml"
-
 
 def packages(*names):
     return [part for name in names for part in ("-p", name)]
@@ -68,20 +70,22 @@ FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
 ROOT_TESTS = [
     *packages("worth-relational", "worth-signal", "worth-execution",
               "worth-signal-wasm", "worth-server"),
-    "--lib", "--test", "operation_scheduler_phase_eight",
+    "--lib", "--tests",
 ]
 GROUPS = {
     "root": ROOT_TESTS,
     "query": ["--manifest-path", QUERY, "--workspace", "--lib", "--tests"],
     "bank": ["--manifest-path", BANK, "--workspace", "--lib", "--bins", "--tests"],
-    "fixture": ["--manifest-path", FIXTURE, "-p", "worth-query-topology-entry", "--lib"],
+    "fixture": ["--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES), "--lib", "--bins"],
     "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
 }
-
 
 def lib_of(*names):
     return lambda binary: binary["package"] in names and binary["lib"]
 
+
+def package_of(*names):
+    return lambda binary: binary["package"] in names
 
 def everything(_binary):
     return True
@@ -89,16 +93,15 @@ def everything(_binary):
 
 # suite -> (group, which binaries, tests per process, processes at once)
 TEST_SUITES = {
-    "relational": ("root", lib_of("worth-relational"), 150, 4),
-    "signal": ("root", lib_of("worth-signal", "worth-signal-wasm"), 150, 4),
-    "execution": ("root", lib_of("worth-execution"), 150, 2),
+    "relational": ("root", package_of("worth-relational"), 150, 4),
+    "signal": ("root", package_of("worth-signal", "worth-signal-wasm"), 150, 4),
+    "execution": ("root", package_of("worth-execution"), 150, 2),
     "query-execution": ("query", lib_of("worth-query-execution"), 80, 4),
     "query-rest": (
         "query", lambda binary: not lib_of("worth-query-execution")(binary), 150, 1,
     ),
-    # The fixture's tests each start child processes; small chunks keep one
-    # process from running for many minutes.
-    "fixture": ("fixture", everything, 4, 6),
+    # Topology cases get individual processes; other fixture owners use normal chunks.
+    "fixture": ("fixture", everything, 150, 16),
     "ui": ("ui", everything, 100, 2),
     "bank": ("bank", everything, 150, 1),
 }
@@ -118,15 +121,38 @@ PROCESS_WIDE_PROBES = (
     "tests::application_attempt::predecode_admission::",
 )
 
+FIXTURE_CPU_EXCLUSIVE = (
+    "checkpoint_recovery::parallel_history::matrix::table::required_wave_full_declared_matrix"
+)
 
 def clippy(*selection):
     return ["cargo", "clippy", *selection, "--all-targets", "--", "-D", "warnings"]
-
 
 def bash():
     # On Windows a bare `bash` can resolve to the WSL launcher.
     git_bash = Path("C:/Program Files/Git/bin/bash.exe")
     return str(git_bash) if git_bash.exists() else (shutil.which("bash") or "bash")
+
+def consumer_doctest_commands():
+    configuration = tomllib.loads(
+        (ROOT / "tools/boundary-check/config/consumer-docs.toml").read_text(encoding="utf-8")
+    )
+    return [
+        ("doc-" + Path(selection["manifest"]).parent.name,
+         ["cargo", "test", "--doc", "--no-fail-fast", "--jobs", "8",
+          "--manifest-path", selection["manifest"], *packages(*selection["packages"])])
+        for selection in configuration["doctests"]
+    ] + [
+        ("doc-owning-fixtures", ["cargo", "test", "--manifest-path", FIXTURE,
+         "-p", "worth-query-consumer-root", "-p", "worth-query-topology-entry",
+         "--bins", "--lib", "--jobs", "8", "--no-fail-fast", "--",
+         "compiled_examples_match_consumer_documents"]),
+        ("doc-owning-examples", ["cargo", "test", "--manifest-path", QUERY,
+         *packages("worth-query-declaration", "worth-query-execution", "worth-query-publication",
+                   "worth-query-host", "worth-query-certification"),
+         "--example", "authored_workflow", "--example", "ordinary_product_workflow",
+         "--jobs", "8", "--no-fail-fast"]),
+    ]
 
 
 # suite -> [(label, command)], one command at a time
@@ -153,12 +179,10 @@ COMMAND_SUITES = {
          clippy("--manifest-path", UI, *packages("worth-ui-query-binding"))),
     ],
     # Compiled doc examples: no other suite builds them.
-    "doc": [
+    "doc-lower": [
         ("doc-root", ["cargo", "test", "--doc", "--no-fail-fast", *packages(*LOWER)]),
-        ("doc-query",
-         ["cargo", "test", "--doc", "--no-fail-fast", "--manifest-path", QUERY,
-          *packages(*QUERY_PUBLIC, "worth-query-installation")]),
     ],
+    "doc": consumer_doctest_commands(),
     "wasm": [
         ("wasm-check", ["cargo", "check", "-p", "worth-signal-wasm", "--all-targets"]),
     ],
@@ -188,8 +212,7 @@ COMMAND_SUITES = {
 
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "query-execution", "query-rest",
-         "fixture", "ui", "bank", "doc", "wasm", "boundary", "extra"]
-
+         "fixture", "ui", "bank", "doc-lower", "doc", "wasm", "boundary", "extra"]
 
 def environment():
     env = dict(os.environ)
@@ -202,12 +225,6 @@ def environment():
             del env["CARGO_INCREMENTAL"]
         env["RUSTC_WRAPPER"] = "sccache"
     return env
-
-
-def package_name(manifest):
-    found = re.search(r'(?m)^name\s*=\s*"([^"]+)"', manifest.read_text(encoding="utf-8"))
-    return found.group(1) if found else manifest.parent.name
-
 
 class Gate:
     def __init__(self, out):
@@ -223,6 +240,8 @@ class Gate:
                 argv, cwd=ROOT, env=self.env, stdout=sink, stderr=subprocess.STDOUT
             ).returncode
         text = log.read_text(encoding="utf-8", errors="replace").splitlines()
+        if code != 0:
+            report_failed_command(label, code, log, text)
         return {
             "name": label, "exit": code, "seconds": round(time.time() - started),
             "results": [line for line in text if line.startswith("test result")],
@@ -241,22 +260,9 @@ class Gate:
                 cwd=ROOT, env=self.env, stdout=subprocess.PIPE, stderr=sink, text=True,
                 encoding="utf-8", errors="replace",
             )
-        binaries = []
-        for line in done.stdout.splitlines():
-            if not line.startswith("{"):
-                continue
-            record = json.loads(line)
-            if record.get("reason") != "compiler-artifact":
-                continue
-            if not (record.get("executable") and record.get("profile", {}).get("test")):
-                continue
-            manifest = Path(record["manifest_path"])
-            kinds = record["target"]["kind"]
-            binaries.append({
-                "package": package_name(manifest), "target": record["target"]["name"],
-                "lib": any(k in ("lib", "rlib", "cdylib", "proc-macro") for k in kinds),
-                "exe": record["executable"], "cwd": str(manifest.parent),
-            })
+        # Preserve JSON compiler diagnostics even when no test binary was produced.
+        log.with_suffix(".jsonl").write_text(done.stdout, encoding="utf-8")
+        binaries = test_binaries(done.stdout)
         ok = done.returncode == 0 and binaries
         self.built[group] = (binaries if ok else None, round(time.time() - started), log.name)
         return self.built[group]
@@ -267,7 +273,8 @@ class Gate:
         started = time.time()
         with open(log, "w", encoding="utf-8", errors="replace") as sink:
             code = subprocess.run(
-                [binary["exe"], "--exact", *names, *extra], cwd=binary["cwd"], env=env,
+                [binary["exe"], *(("--exact", *names, *extra) if binary["harness"] else ())],
+                cwd=binary["cwd"], env=env,
                 stdout=sink, stderr=subprocess.STDOUT,
             ).returncode
         text = log.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -289,8 +296,12 @@ class Gate:
         binaries, build_seconds, build_log = self.build(group)
         if binaries is None:
             return {"suite": suite, "build": "FAILED", "log": build_log, "ok": False}
-        shared, alone, whole, listing, total = [], [], [], [], 0
+        shared, alone, whole, exclusive, listing, total = [], [], [], [], [], 0
         for binary in filter(want, binaries):
+            if not binary["harness"]:
+                listing.append((binary["package"], binary["target"], 0))
+                whole.append(binary)
+                continue
             env = dict(self.env, CARGO_MANIFEST_DIR=binary["cwd"])
             listed = subprocess.run(
                 [binary["exe"], "--list", "--format", "terse"], cwd=binary["cwd"],
@@ -300,19 +311,23 @@ class Gate:
             names = sorted(line[: -len(": test")] for line in listed.splitlines()
                            if line.endswith(": test"))
             listing.append((binary["package"], binary["target"], len(names)))
-            if not names:
-                # A target with its own `main` (harness = false) lists nothing:
-                # it runs whole and its exit code is the result.
-                whole.append(binary)
-                continue
             total += len(names)
+            if suite == "fixture" and binary["package"] == "worth-query-topology-entry":
+                # Every case can touch process-global providers, counters or ledgers.
+                shared += [(binary, [name], ()) for name in names
+                           if name != FIXTURE_CPU_EXCLUSIVE]
+                if FIXTURE_CPU_EXCLUSIVE in names:
+                    exclusive.append((binary, [FIXTURE_CPU_EXCLUSIVE], ()))
+                continue
             probes = [n for n in names if any(mark in n for mark in PROCESS_WIDE_PROBES)]
             rest = [n for n in names if n not in set(probes)]
             shared += [(binary, rest[at:at + size], ()) for at in range(0, len(rest), size)]
             if probes:
                 alone.append((binary, probes, ("--test-threads=1",)))
             # (the probes run after every shared chunk has ended)
-        jobs = list(enumerate(shared + alone + [(binary, [], ()) for binary in whole]))
+        jobs = list(enumerate(
+            shared + alone + [(binary, [], ()) for binary in whole] + exclusive
+        ))
         started = time.time()
 
         def go(item):
@@ -349,12 +364,6 @@ class Gate:
         (self.out / f"{suite}.json").write_text(json.dumps(result, indent=1),
                                                 encoding="utf-8")
         return result
-
-
-def failed_tests(lines):
-    return sorted({line.split()[1] for line in lines
-                   if line.startswith("test ") and line.rstrip().endswith("FAILED")})
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])

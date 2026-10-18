@@ -1,4 +1,7 @@
 //! Public primary-graph contract aggregation. Semantic owners remain in their modules.
+pub use super::provider::publication_fault_control::{
+    WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial,
+};
 
 pub use super::application_attempt::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
@@ -11,15 +14,16 @@ pub use super::application_attempt::{
     PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart, WorkflowApprovalDecision,
-    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
-    WorkflowDefinitionRetirementOutcome, WorkflowInstanceBindingDenial,
-    WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorkflowInstanceStartOutcome, WorkflowLocalActionKind, WorkflowOperationAuthority,
-    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowProposalBindingDenial,
-    WorkflowProposalOutcome, WorkflowProposalPreparationDenial, WorkflowTransitionBindingDenial,
-    WorkflowTransitionPreparationDenial, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitAuthorityBinding,
+    RequiredWorkflowProposal, RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart,
+    WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
+    WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
+    WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
+    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowLocalActionKind,
+    WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
+    WorkflowProposalBindingDenial, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
+    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationCleanupRequired, WorthQueryApplicationCommitAuthorityBinding,
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
@@ -30,7 +34,7 @@ pub use super::application_attempt::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind,
+    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationManagedCleanup,
     WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationOutputEntity,
     WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
@@ -52,7 +56,8 @@ pub use super::application_attempt::{
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
     WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
     WorthQueryRequestedElevation, WorthQueryReviewedElevation, WorthQueryWorkflowAdvanceAdapter,
-    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowProposalAdapter,
+    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
+    WorthQueryWorkflowProposalAdapter,
 };
 pub use super::application_checkpoint::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
@@ -96,6 +101,7 @@ pub use super::application_contribution::{
     WorthQueryManagedComputationResourceDenial, WorthQueryMemberExecution,
     WorthQueryMemoryLimitLevel, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
+    WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
     WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
     WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
@@ -116,6 +122,7 @@ pub use super::application_output_demand::{
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
 };
 pub use super::application_output_demand::{
+    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
     WorthQueryOutputReadinessDeliveryEvidence, WorthQueryOutputSettlementPosture,
 };
@@ -308,15 +315,15 @@ pub use super::product_operation::{
     WorthQueryPreparedBranchAdoption, WorthQueryPreparedBranchSetAdoption,
     WorthQueryPreparedProgramMigration, WorthQueryProductEntry, WorthQueryProductHistory,
     WorthQueryProductHistoryEntry, WorthQueryProductQueryControls, WorthQueryProductTransaction,
-    WorthQueryProductTransactionCommitError, WorthQueryProgramAdoptionCoverage,
-    WorthQueryProgramAdoptionCoverageDenial, WorthQueryProgramCustodyDisposition,
-    WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
-    WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
-    WorthQueryReconstructedOutputEntity, WorthQueryRestoredGeneratedOutput,
-    WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQuerySelectedProductOperation, WorthQueryStoppedBranchSetAdoption,
-    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedBranchAdoption,
-    WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryProductTransactionCommitError, WorthQueryProgramAdoptionAuthorizationDenial,
+    WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial,
+    WorthQueryProgramCustodyDisposition, WorthQueryProgramCustodyDispositionInventory,
+    WorthQueryProgramCustodyDispositionKind, WorthQueryProgramMigrationDescription,
+    WorthQueryProgramMigrationPreparationDenial, WorthQueryReconstructedOutputEntity,
+    WorthQueryRestoredGeneratedOutput, WorthQueryRetainedBatchQueryAdmissionDenial,
+    WorthQueryRetainedGeneratedOutputEntity, WorthQuerySelectedProductOperation,
+    WorthQueryStoppedBranchSetAdoption, WorthQuerySuspendedGeneratedOutput,
+    WorthQueryUnpublishedBranchAdoption, WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 pub use super::provider::{
     WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
@@ -342,12 +349,8 @@ pub use super::workflow::{
     WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,
 };
 pub use super::workflow::{
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
-    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,
-    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
-    WorthQueryWorkflowInstanceProgressCounters,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceProgressCounters,
 };
 pub use crate::basis::{
     WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
@@ -386,10 +389,12 @@ pub use crate::domain_computation::primary_graph::application_query::{
 };
 pub use worth_execution::ExecutionRequest;
 
-pub use super::operation_body::{
-    WorthQueryCurrentBodyRequirementAssessment, WorthQueryOperationBodyAssessmentDenial,
-    WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,
-    WorthQueryOperationBodyRequirementFinding, WorthQueryOperationBodyRequirementStatus,
-    WorthQueryOperationBodyRequirementTarget,
-};
+mod operation_body;
 pub use super::output_lineage::invalidation::carried_read_basis_custody_for_test;
+pub use operation_body::*;
+
+pub use super::provider::{
+    WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
+    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
+    WorthQueryRecoveredProgramSourceDeliveryForTest,
+};

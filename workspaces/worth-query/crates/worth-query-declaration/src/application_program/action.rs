@@ -1,3 +1,28 @@
+mod authoring;
+mod conditional_mutation;
+pub use authoring::ApplicationActionSpecBuilder;
+mod output_delivery;
+pub use output_delivery::ApplicationOutputActionDeliveryDeclaration;
+mod discovered_delivery;
+pub use discovered_delivery::{
+    ApplicationDiscoveredActionDelivery, ApplicationDiscoveredQueryDelivery,
+};
+mod discovered_batch_delivery;
+pub use discovered_batch_delivery::ApplicationDiscoveredBatchDelivery;
+mod batch_delivery;
+mod delivery;
+pub use batch_delivery::ApplicationFixedBatchDelivery;
+mod projection;
+pub use projection::{
+    ApplicationNoProjection, ApplicationOutputProjection, ApplicationQueryBatchProjection,
+    ApplicationQueryProjection,
+};
+mod delivery_attachment;
+mod delivery_contract;
+mod reference;
+pub use delivery::{ApplicationFixedActionDelivery, ApplicationFixedQueryDelivery};
+pub use delivery_contract::*;
+pub use reference::{ApplicationAction, ApplicationActionReference, ApplicationActionSelector};
 use std::any::TypeId;
 use std::marker::PhantomData;
 
@@ -99,13 +124,14 @@ pub struct ApplicationActionDeclaration {
     operation_input_identity: WorthQueryPortableTypeIdentity,
     conditional_only: bool,
     required_output_source: bool,
+    delivery: Option<ApplicationActionDeliveryDeclaration>,
     correspondence: Option<ApplicationActionCorrespondenceDeclaration>,
     evaluated_requirement: Option<ApplicationActionEvaluatedRequirementDeclaration>,
     external_input: Option<ApplicationActionExternalInputDeclaration>,
     locality: Option<ApplicationLocalityDeclaration>,
     change_shape: Option<ApplicationChangeShapeDeclaration>,
     workflow_execution_requirements:
-        Option<crate::application_operation::ApplicationWorkflowExecutionRequirements>,
+        crate::application_operation::ApplicationWorkflowExecutionRequirements,
 }
 
 impl ApplicationActionDeclaration {
@@ -127,8 +153,8 @@ impl ApplicationActionDeclaration {
     }
     pub fn workflow_execution_requirements(
         &self,
-    ) -> Option<&crate::application_operation::ApplicationWorkflowExecutionRequirements> {
-        self.workflow_execution_requirements.as_ref()
+    ) -> &crate::application_operation::ApplicationWorkflowExecutionRequirements {
+        &self.workflow_execution_requirements
     }
     pub const fn composition_instance(&self) -> &'static str {
         self.composition_instance
@@ -157,24 +183,6 @@ impl ApplicationActionDeclaration {
         } else {
             self.mutation_binding_type
         }
-    }
-
-    pub(crate) fn conditional_mutation_identity(&self) -> Option<&'static str> {
-        (self.conditional_only && self.mutation_binding_type.is_some()).then_some(self.binding)
-    }
-
-    pub(in crate::application_program) fn conditional_mutation<Schema, Instance, Feature, Binding>(
-    ) -> Self
-    where
-        Schema: ApplicationSchema,
-        Instance: ApplicationCompositionInstance,
-        Feature: ApplicationFeature<Schema>,
-        Binding: ApplicationMutationBinding<Schema>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.conditional_only = true;
-        action
     }
 
     pub const fn operation_type(&self) -> TypeId {
@@ -298,6 +306,7 @@ where
                 <Binding::InputBinding as ApplicationStructuredValueBinding>::IDENTITY,
             conditional_only: false,
             required_output_source: false,
+            delivery: None,
             correspondence: None,
             evaluated_requirement: None,
             external_input: None,
@@ -326,7 +335,7 @@ where
             binding: Operation::IDENTIFIER,
             action_type: TypeId::of::<Operation>(),
             mutation_binding_type: None,
-            workflow_execution_requirements: None,
+            workflow_execution_requirements: crate::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
             operation_type: TypeId::of::<Operation>(),
             operation_identifier: Operation::IDENTIFIER,
             operation_body: None,
@@ -336,6 +345,7 @@ where
             operation_input_identity: Operation::InputBinding::IDENTITY,
             conditional_only: false,
             required_output_source: false,
+            delivery: None,
             correspondence: None,
             evaluated_requirement: None,
             external_input: None,

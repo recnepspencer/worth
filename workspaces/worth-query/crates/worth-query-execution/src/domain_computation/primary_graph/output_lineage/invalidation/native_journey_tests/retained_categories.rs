@@ -201,8 +201,37 @@ fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_be
     owner
         .register_settlement(registration(Arc::clone(&second), 1), &mut admission)
         .unwrap();
-    assert!(admission.charged_bytes() > admission.charged_index_bytes());
+    // Preparation and retained index storage are separate reservations, so
+    // neither total orders the other. Preparation covers the new state and
+    // root objects, which are never index storage. The replacing image
+    // reserves the replaced version's reservation plus what this edit copied
+    // into the retained index, never more than its whole index.
+    let capacity = super::super::index_capacity::arc_bytes::<
+        crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity,
+    >()
+    .unwrap();
+    let reserved = |state: &super::super::mark_state::MarkState| {
+        state.retained_capacity.as_ref().unwrap().bytes() - capacity
+    };
+    assert!(
+        admission.charged_bytes()
+            >= super::super::index_capacity::arc_bytes::<super::super::mark_state::MarkState>()
+                .unwrap()
+                + super::super::index_capacity::arc_bytes::<
+                    super::super::source_alignment::BranchMarkRoot,
+                >()
+                .unwrap()
+    );
+    let copied = admission.charged_index_bytes();
+    assert!(copied > 0);
     let current = cell.read_image();
+    let whole = super::super::retention::state_bound(&current.payload().current).unwrap();
+    let (own, replaced) = (
+        reserved(&current.payload().current),
+        reserved(&prior.payload().current),
+    );
+    assert_eq!(own, (replaced + copied).min(whole));
+    assert!(own > replaced);
     assert_eq!(current.payload().current.settlements.len(), 2);
     assert_eq!(prior.payload().current.settlements.len(), 1);
     assert_eq!(

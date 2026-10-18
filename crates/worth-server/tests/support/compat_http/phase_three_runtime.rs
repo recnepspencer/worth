@@ -38,11 +38,11 @@ use worth_server::{
     WorthServerQueryWorkspaceProvider, WorthServerRequestContextConfig,
 };
 
-use crate::query_handoff_runtime::runtime_aspect_contracts::query_handoff_aspect_contracts;
+use crate::shared_support_query_handoff_runtime::runtime_aspect_contracts::query_handoff_aspect_contracts;
 
 pub(crate) fn build_phase_three_server() -> WorthServer {
     build_phase_three_server_with_workspace_provider(
-        crate::query_handoff_runtime::TestWorkspaceProvider,
+        crate::shared_support_query_handoff_runtime::TestWorkspaceProvider,
     )
 }
 
@@ -223,7 +223,7 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        crate::test_bootstrap_policy::with_bootstrap(|request_execution| {
+        crate::shared_support_test_bootstrap_policy::with_bootstrap(|request_execution| {
             let workspace_id = request
                 .resolved_request_context()
                 .request_context()

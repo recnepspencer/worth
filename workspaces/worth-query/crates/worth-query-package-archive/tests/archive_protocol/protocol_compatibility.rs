@@ -37,10 +37,8 @@ fn current_reader_profile_is_derived_from_every_public_version_constant() {
         profile.application_program_description_window(),
         WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION,
     );
-    // Version-1 drafts still read: their conditions readmit as expressions.
-    assert_window(
+    assert_exact_window(
         profile.workflow_definition_draft_window(),
-        WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION,
         WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
     );
 }
@@ -209,10 +207,7 @@ fn supported_window(layer: WorthQueryPackageArchiveProtocolLayer) -> (u16, u16) 
             WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION
         }
         WorthQueryPackageArchiveProtocolLayer::WorkflowDefinitionDraft => {
-            return (
-                WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION,
-                WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
-            )
+            WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION
         }
     };
     (current, current)

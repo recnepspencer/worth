@@ -306,14 +306,22 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let feature =
             ApplicationFeatureSpec::root::<DocumentRetentionSchema<DESTINATION>, BodyFeature>()
-                .mutation::<BodyBinding<DESTINATION>>()
-                .mutation::<SourceBinding<DESTINATION>>()
-                .mutation::<DraftBinding<DESTINATION, SetDraftNote>>()
-                .mutation::<DraftBinding<DESTINATION, ClearDraftNote>>()
-                .mutation::<DraftBinding<DESTINATION, RequireDraftNote>>()
-                .mutation::<super::requirement_control::UnlinkBinding<DESTINATION>>();
+                .native_action::<BodyBinding<DESTINATION>>()
+                .finish_action()
+                .native_action::<SourceBinding<DESTINATION>>()
+                .finish_action()
+                .native_action::<DraftBinding<DESTINATION, SetDraftNote>>()
+                .finish_action()
+                .native_action::<DraftBinding<DESTINATION, ClearDraftNote>>()
+                .finish_action()
+                .native_action::<DraftBinding<DESTINATION, RequireDraftNote>>()
+                .finish_action()
+                .native_action::<super::requirement_control::UnlinkBinding<DESTINATION>>()
+                .finish_action();
         let feature = if matches!(DESTINATION, 30 | 31) {
-            feature.mutation::<super::genesis::binding::CreateBinding<DESTINATION>>()
+            feature
+                .native_action::<super::genesis::binding::CreateBinding<DESTINATION>>()
+                .finish_action()
         } else {
             feature
         };

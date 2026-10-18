@@ -15,12 +15,15 @@ pub(in crate::application_operation) struct WorthQueryApplicationCandidateDemand
 
 // Query owns this sidecar capacity. It does not enlarge a product handler's
 // declared writer reservation; it bounds one local workflow settlement.
-const WORKFLOW_SETTLEMENT_ITEMS: u64 = 13;
 const WORKFLOW_SETTLEMENT_RETAINED_BYTES: u64 = 65_536;
 
 fn workflow_settlement_ceiling() -> ApplicationCandidateRequirements {
     ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(1, 0, 2, 1, 9, 0),
+        // transition: seven structural fields, advancer/executor triplets,
+        // receipt identity; instance: state and the ending actor for Terminated.
+        // The producer is
+        // workflow/instance/transition/settlement::visit_transition_facts_from_basis.
+        ApplicationCandidateCardinalityCeiling::fixed(1, 0, 2, 1, 7 + 3 + 3 + 1 + 1 + 3, 0),
         ApplicationCandidateResourceCeiling::representation_bytes(
             WORKFLOW_SETTLEMENT_RETAINED_BYTES as usize,
         ),
@@ -37,9 +40,10 @@ impl WorthQueryApplicationCandidateDemand {
                 return Err(());
             }
             // A fresh existing-subject instance, its three native links and the
-            // protected predecessor link, nine fields and optional deadline.
+            // protected predecessor link, nine identity/subject fields, start
+            // revision, admitted actor triplet and optional deadline.
             self.workflow_settlement_ceiling = Some(ApplicationCandidateRequirements::fixed_shape(
-                ApplicationCandidateCardinalityCeiling::fixed(1, 0, 4, 0, 10, 0),
+                ApplicationCandidateCardinalityCeiling::fixed(1, 0, 4, 0, 14, 0),
                 ApplicationCandidateResourceCeiling::representation_bytes(65_536),
             ));
             self.include_platform_ceiling()?;
@@ -55,10 +59,10 @@ impl WorthQueryApplicationCandidateDemand {
                 return Err(());
             }
             // One fresh instance, four endpoint links, six identity/state
-            // fields and an optional native deadline. Never broadens the
+            // fields, start revision, admitted actor and optional native deadline. Never broadens the
             // business handler's independently admitted writer reservation.
             self.workflow_settlement_ceiling = Some(ApplicationCandidateRequirements::fixed_shape(
-                ApplicationCandidateCardinalityCeiling::fixed(1, 0, 4, 0, 7, 0),
+                ApplicationCandidateCardinalityCeiling::fixed(1, 0, 4, 0, 11, 0),
                 ApplicationCandidateResourceCeiling::representation_bytes(65_536),
             ));
             self.include_platform_ceiling()?;
@@ -100,7 +104,7 @@ impl WorthQueryApplicationCandidateDemand {
                 Ok(Self {
                     candidate_items: candidate_items
                         .checked_add(if workflow_settlement {
-                            WORKFLOW_SETTLEMENT_ITEMS
+                            cardinality_items(workflow_settlement_ceiling().cardinality())?
                         } else {
                             0
                         })
@@ -320,7 +324,7 @@ mod tests {
                 workflow_settlement_ceiling: Some(workflow_settlement_ceiling()),
             };
             demand.include_platform_ceiling().unwrap();
-            assert_eq!(demand.candidate_items(), 31);
+            assert_eq!(demand.candidate_items(), 40);
             assert_eq!(demand.retained_representation_bytes(), 65_600);
         }
         #[cfg(target_pointer_width = "64")]

@@ -144,12 +144,12 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             .predecessor_artifact(predecessor_stage)
             .and_then(|handle| handle.lease_for_transfer(&admission, lease_role))
             .map(WorthQueryWorkflowValue::TransferredArtifact);
-        if input.is_ok() {
-            if let Some(index) = self.receipt_index.get(predecessor_stage).copied() {
-                self.receipts[index].set_artifact_disposition(
-                    crate::domain_installation::WorthQueryArtifactDisposition::Leased,
-                );
-            }
+        if input.is_ok()
+            && let Some(index) = self.receipt_index.get(predecessor_stage).copied()
+        {
+            self.receipts[index].set_artifact_disposition(
+                crate::domain_installation::WorthQueryArtifactDisposition::Leased,
+            );
         }
         match input {
             Ok(input) => {

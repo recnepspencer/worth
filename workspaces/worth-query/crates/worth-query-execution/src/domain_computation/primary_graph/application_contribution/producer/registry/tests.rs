@@ -124,7 +124,7 @@ fn checkpoint_may_omit_only_an_at_most_one_installed_role() {
     ];
     let checkpoint_of = |names: &[&str]| {
         let mut checkpoint = checkpoint(names.iter().map(|name| role(name)).collect());
-        for role in &mut checkpoint.roles {
+        for role in std::sync::Arc::get_mut(&mut checkpoint.roles).expect("unique fixture roles") {
             role.entity_name = Account::IDENTIFIER.into();
         }
         checkpoint
@@ -150,7 +150,8 @@ fn checkpoint_cannot_underfill_an_installed_role_family() {
     let mut installed = declared(TypeId::of::<InstalledProducer>());
     installed.output_role_families = vec![<Member as DeclaredFamily>::DESCRIPTOR];
     let mut checkpoint = checkpoint(vec![role("member.one")]);
-    checkpoint.roles[0].entity_name = Account::IDENTIFIER.into();
+    std::sync::Arc::get_mut(&mut checkpoint.roles).expect("unique fixture roles")[0].entity_name =
+        Account::IDENTIFIER.into();
 
     assert!(validate_checkpoint_output_meaning(&installed, &checkpoint)
         .unwrap_err()
@@ -163,7 +164,7 @@ fn checkpoint(
     >,
 ) -> crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity{
     crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
-        producer: "producer".into(),
+        producer: ("producer".to_owned()).into(),
         posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source: [0; 32],
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
@@ -175,10 +176,11 @@ fn checkpoint(
         producer_dependency: None,
         idempotency_key: [0; 32],
         resources: None,
-        roles,
+        roles: roles.into(),
             producer_facts: None,
             producer_fact_wire_version: 0,
-    }
+ metadata: None,
+}
 }
 
 fn role(

@@ -1,3 +1,5 @@
+mod transitions;
+
 use super::*;
 
 use crate::speculation::{
@@ -185,97 +187,6 @@ impl RuntimeBridge {
         self.diagnostics
             .record_preview_execution(execution_record.clone());
         Ok((active, execution_record))
-    }
-
-    /// Discards an active preview session with explicit residue classification.
-    pub fn discard_preview_session(
-        &self,
-        session: BridgePreviewSession<PreviewActive>,
-        execution_record: &BridgePreviewExecutionRecord,
-        residue_classes: Vec<BridgePreviewResidueClass>,
-    ) -> Result<
-        (
-            BridgePreviewSession<PreviewDiscarded>,
-            BridgePreviewDiscardRecord,
-        ),
-        BridgeSpeculationError,
-    > {
-        self.ensure_execution_record_matches_active_session(&session, execution_record)?;
-        self.ensure_session_not_terminal(session.session_identity())?;
-
-        let residue_report = BridgePreviewResidueReport::new(residue_classes);
-        if residue_report.authoritative_residue_count() > 0 {
-            return Err(BridgeSpeculationError::new(
-                BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch,
-                format!(
-                    "Preview session `{}` cannot discard while residue report `{}` still contains authoritative residue.",
-                    session.session_identity().as_str(),
-                    residue_report.digest(),
-                ),
-            ));
-        }
-
-        let counters = BridgeSpeculationCounters::for_discard(
-            residue_report.destroyable_residue_count(),
-            residue_report.destroyable_residue_count(),
-            residue_report.retained_non_authoritative_count(),
-        );
-        let discard_record = BridgePreviewDiscardRecord::from_active_session(
-            &session,
-            execution_record,
-            residue_report,
-            counters,
-        );
-        let discarded = session.discard();
-        self.diagnostics
-            .record_preview_discard(discard_record.clone());
-        Ok((discarded, discard_record))
-    }
-
-    /// Promotes an active preview session with an aspect-native admissibility proof.
-    pub fn promote_preview_session(
-        &self,
-        session: BridgePreviewSession<PreviewActive>,
-        execution_record: &BridgePreviewExecutionRecord,
-        proof: &BridgePromotionAdmissibilityProof,
-    ) -> Result<
-        (
-            BridgePreviewSession<PreviewPromoted>,
-            BridgePreviewPromotionRecord,
-        ),
-        BridgeSpeculationError,
-    > {
-        self.ensure_execution_record_matches_active_session(&session, execution_record)?;
-        self.ensure_session_not_terminal(session.session_identity())?;
-
-        if !proof.matches_active_session(&session) {
-            return Err(BridgeSpeculationError::new(
-                BridgeSpeculationErrorKind::PromotionAdmissibilityMismatch,
-                format!(
-                    "Promotion proof `{}` did not match active preview session `{}`.",
-                    proof.proof_identity().as_str(),
-                    session.session_identity().as_str(),
-                ),
-            ));
-        }
-
-        let authority_basis = BridgePreviewPromotionAuthorityBasis::from_active_session(
-            &session,
-            execution_record,
-            proof,
-        )?;
-        let counters = BridgeSpeculationCounters::for_promotion(9, 1, 2);
-        let promotion_record = BridgePreviewPromotionRecord::from_active_session(
-            &session,
-            execution_record,
-            proof,
-            &authority_basis,
-            counters,
-        );
-        let promoted = session.promote(proof)?;
-        self.diagnostics
-            .record_preview_promotion(promotion_record.clone());
-        Ok((promoted, promotion_record))
     }
 
     /// Replays the retained preview bundle for one preview session identity.

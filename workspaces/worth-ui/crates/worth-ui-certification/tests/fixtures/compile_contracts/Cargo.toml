@@ -1,6 +1,7 @@
 [package]
 name = "worth-ui-compile-contract-fixture"
-edition = "2021"
+edition = "2024"
+rust-version = "1.94"
 version = "0.0.0"
 publish = false
 autobins = false
@@ -487,3 +488,12 @@ path = "../../../../worth-ui/tests/ui/facade/service/fail/scroll_presentation_ca
 [[bin]]
 name = "product-scroll-settle-asked-for-by-declaring"
 path = "../../../../worth-ui/tests/ui/facade/service/pass/scroll_settle_is_asked_for_by_declaring_one.rs"
+[[bin]]
+name = "product-prepared-authority-fields-private"
+path = "../../../../worth-ui/tests/ui/runtime_authority/fail/prepared_application_authority_fields_not_public.rs"
+[[bin]]
+name = "product-prepared-generation-not-mintable"
+path = "../../../../worth-ui/tests/ui/runtime_authority/fail/prepared_application_generation_identity_not_publicly_mintable.rs"
+[[bin]]
+name = "product-host-session-identity-not-mintable"
+path = "../../../../worth-ui/tests/ui/runtime_authority/fail/host_session_identity_not_publicly_mintable.rs"

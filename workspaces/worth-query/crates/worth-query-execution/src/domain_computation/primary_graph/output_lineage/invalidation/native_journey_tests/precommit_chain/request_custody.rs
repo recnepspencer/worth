@@ -6,6 +6,7 @@ use super::{
     ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
     InvalidationEditAdmission,
 };
+use crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
 
 /// The least meter on which two closures both answer exceeds the least on
@@ -43,19 +44,28 @@ pub(super) fn assert_closures_share_the_meter(
     let (one_work, two_work) = (least_work(1), least_work(2));
     let (one_bytes, two_bytes) = (least_bytes(1), least_bytes(2));
     assert!(two_work > one_work && two_bytes > one_bytes);
-    for (mut short, stop) in [
-        (
-            meter(two_work - 1, two_closures_bytes),
-            ConsumedOutputVerificationStop::WorkExhausted,
+    let mut short = meter(two_work - 1, two_closures_bytes);
+    assert_eq!(verify(&mut short), Ok(ConsumedOutputVerification::Current));
+    assert_eq!(
+        verify(&mut short),
+        Err(ConsumedOutputVerificationStop::WorkExhausted)
+    );
+    // The scratch stop is the meter's own, with its cumulative requirement.
+    let scratch_maximum = two_bytes - 1;
+    let mut short = meter(two_closures_work, scratch_maximum);
+    assert_eq!(verify(&mut short), Ok(ConsumedOutputVerification::Current));
+    let stop = verify(&mut short);
+    assert!(
+        matches!(
+            stop,
+            Err(ConsumedOutputVerificationStop::CapacityExhausted(
+                VerificationCapacityStop::Meter(
+                    CompanionPreflightStop::PreparationMemoryExhausted { required, maximum }
+                )
+            )) if maximum == scratch_maximum && required > maximum
         ),
-        (
-            meter(two_closures_work, two_bytes - 1),
-            ConsumedOutputVerificationStop::CapacityExhausted,
-        ),
-    ] {
-        assert_eq!(verify(&mut short), Ok(ConsumedOutputVerification::Current));
-        assert_eq!(verify(&mut short), Err(stop));
-    }
+        "{stop:?}"
+    );
 }
 
 /// The least of `1..=maximum` that `answers`, which only more can satisfy.

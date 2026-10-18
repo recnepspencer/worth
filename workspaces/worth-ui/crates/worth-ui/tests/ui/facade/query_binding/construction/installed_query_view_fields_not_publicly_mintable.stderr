@@ -1,9 +1,0 @@
-error[E0451]: fields `installed_domain` and `definition` of struct `WorthUiInstalledQueryView` are private
- --> tests/ui/facade/query_binding/construction/installed_query_view_fields_not_publicly_mintable.rs:5:9
-  |
-4 |     let _view = WorthUiInstalledQueryView {
-  |                 ------------------------- in this type
-5 |         installed_domain: domain,
-  |         ^^^^^^^^^^^^^^^^ private field
-6 |         definition: worth_ui::facade::query_binding::WorthUiQueryViewDefinition::measurement_snapshot(
-  |         ^^^^^^^^^^ private field

@@ -52,15 +52,12 @@ mod tests {
         AssumptionBasis, CurrentValidity, FreshnessScopedBasis, StaleReadable,
     };
 
-    #[test]
-    fn freshness_scoped_basis_is_size_honest_for_underlying_basis() {
-        assert_eq!(
-            size_of::<FreshnessScopedBasis<CurrentValidity, AssumptionBasis<u8>>>(),
-            size_of::<AssumptionBasis<u8>>()
-        );
-        assert_eq!(
-            size_of::<FreshnessScopedBasis<StaleReadable, AssumptionBasis<u8>>>(),
-            size_of::<AssumptionBasis<u8>>()
-        );
-    }
+    const _: () = assert!(
+        size_of::<FreshnessScopedBasis<CurrentValidity, AssumptionBasis<u8>>>()
+            == size_of::<AssumptionBasis<u8>>()
+    );
+    const _: () = assert!(
+        size_of::<FreshnessScopedBasis<StaleReadable, AssumptionBasis<u8>>>()
+            == size_of::<AssumptionBasis<u8>>()
+    );
 }

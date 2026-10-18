@@ -64,6 +64,7 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     let outcome = app
         .runtime
         .request(&actor, &scope)
+        .advanced()
         .mutate(amendment("leased-amendment", 2))
         .without_source()
         .idempotency(&0x91766b_u64)

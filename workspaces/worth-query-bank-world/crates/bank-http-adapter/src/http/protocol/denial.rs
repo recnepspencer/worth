@@ -15,6 +15,7 @@ pub enum BankHttpDenialKind {
     ResourceExhausted,
     Saturated,
     InternalDenied,
+    ManagedCleanupRequired,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]

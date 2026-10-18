@@ -172,8 +172,8 @@ impl RelationalHeadRetirementReservation {
                 .expect("retirement reservation accounting remains balanced");
             entry.reservations == 0 && !entry.retired
         };
-        if removable {
-            if let Some((_, entry)) =
+        if removable
+            && let Some((_, entry)) =
                 self.owner
                     .retired_roots
                     .remove_if(&self.root_key, |_, entry| {
@@ -181,18 +181,17 @@ impl RelationalHeadRetirementReservation {
                             && entry.reservations == 0
                             && !entry.retired
                     })
+        {
+            if let Some(root) = entry.root
+                && let Some(commit_id) = root.commit_id()
             {
-                if let Some(root) = entry.root {
-                    if let Some(commit_id) = root.commit_id() {
-                        self.owner
-                            .retired_roots_by_commit
-                            .remove_if(&commit_id, |_, indexed| {
-                                *indexed == (self.root_key, self.generation)
-                            });
-                    }
-                }
-                release_retirement_slot(&self.owner);
+                self.owner
+                    .retired_roots_by_commit
+                    .remove_if(&commit_id, |_, indexed| {
+                        *indexed == (self.root_key, self.generation)
+                    });
             }
+            release_retirement_slot(&self.owner);
         }
     }
 }

@@ -10,8 +10,8 @@ use worth_server::{
     WorthServerProductSessionLifecycle,
 };
 
-#[path = "support/product_session_phase_ten/fixture.rs"]
-pub mod fixture;
+#[allow(unused_imports)]
+pub use crate::shared_support_product_session_phase_ten_fixture as fixture;
 
 use fixture::{
     apply_payload, build_server_with_clock, direct_session, preview_payload,

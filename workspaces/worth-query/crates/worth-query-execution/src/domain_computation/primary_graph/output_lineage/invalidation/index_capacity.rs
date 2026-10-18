@@ -51,6 +51,35 @@ pub(super) fn retained_forest_bytes<K, V>(entries: usize, roots: usize) -> Optio
     ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
 }
 
+/// Every Arc node ever allocated while one tree value, never cloned during
+/// the sequence, reaches `entries` by insertions and replacements alone. It
+/// may start empty (`new` allocates its root) or from P0 nodes shared with a
+/// predecessor. im copies a node only while it is shared and edits it in
+/// place once unique, so each of the P0 nodes, held by one parent slot, is
+/// copied at most once. A split's two halves replace the split node and a
+/// root split also allocates the new root. With S nonroot and R root splits,
+/// A = copies + 2S + 3R and F = P0 + S + 2R, so A <= 2F - P0 - R <= 2F - 1.
+/// Every nonroot owns at least 31 keys, so F fits the retained bound. A
+/// removal can merge into a fresh node, which this bound does not cover.
+pub(in crate::domain_computation::primary_graph) fn insertion_sequence_bytes<K, V>(
+    entries: usize,
+) -> Option<u64> {
+    let nodes = 1usize.checked_add(entries.saturating_sub(1) / 31)?;
+    let allocations = nodes.checked_mul(2)?.checked_sub(1)?;
+    ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(allocations).ok()?)
+}
+
+/// What one insertion at `entries` adds to a tree created empty: its root on
+/// the first, then two nodes for each further 31 entries. The sum over that
+/// build is [`insertion_sequence_bytes`] of its final length.
+pub(super) fn fresh_insert_bytes<K, V>(entries: usize) -> Option<u64> {
+    let built = match entries {
+        0 => 0,
+        entries => insertion_sequence_bytes::<K, V>(entries)?,
+    };
+    insertion_sequence_bytes::<K, V>(entries.checked_add(1)?)?.checked_sub(built)
+}
+
 /// All newly allocated Arc nodes beside a retained predecessor. Insertion
 /// copies one path and can allocate two split children at each level, then
 /// one root. Deletion can copy a child and donor and materialize a replacement
@@ -85,7 +114,9 @@ fn ordered_height(entries: usize) -> Option<usize> {
 
 /// Binary search within at most 64 initialized entries plus navigation at
 /// each level. Key comparison payload work is admitted by the key owner.
-pub(super) fn ordered_navigation_work(entries: usize) -> Option<u64> {
+pub(in crate::domain_computation::primary_graph) fn ordered_navigation_work(
+    entries: usize,
+) -> Option<u64> {
     // Pinned im 15.1 splits into 32-key children; removal can leave 31.
     // A nonroot node therefore has at least 31 keys and 32 children. With
     // a one-key root, a height h needs at least 2 * 32^(h - 1) - 1 keys.

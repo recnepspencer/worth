@@ -17,10 +17,11 @@ pub(in crate::domain_computation) struct WorthQueryPrincipalCurrentnessDependenc
 }
 
 impl WorthQueryPrincipalCurrentnessDependency {
-    pub(in crate::domain_computation) fn durable(
-        &self,
-    ) -> crate::domain_computation::primary_graph::WorthQueryDurablePrincipalCurrentness {
-        self.freshness.durable(&self.binding)
+    pub(in crate::domain_computation) fn durable_is_portable(&self) -> bool {
+        self.freshness.durable_view(&self.binding).is_portable()
+    }
+    pub(in crate::domain_computation) fn durable_view(&self) -> impl serde::Serialize + '_ {
+        self.freshness.durable_view(&self.binding)
     }
     pub(in crate::domain_computation) fn capture<Schema, Principal, PrincipalIdentity>(
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,

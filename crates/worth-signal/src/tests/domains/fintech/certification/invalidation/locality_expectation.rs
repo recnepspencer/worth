@@ -9,8 +9,6 @@ use crate::tests::domains::fintech::world::{
 mod candidates;
 mod counter_contract;
 #[cfg(test)]
-mod independence;
-#[cfg(test)]
 mod recovery_assertions;
 #[cfg(test)]
 mod scenario_tests;
@@ -67,13 +65,6 @@ pub(in crate::tests::domains::fintech) struct ExpectedDependencyCause {
     pub(in crate::tests::domains::fintech) changed_scopes: Vec<LocalityScope>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(in crate::tests::domains::fintech) enum ExpectedWorkOrigin {
-    SourceRecompute,
-    DependencyCommit,
-    StructuralRecompute,
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(in crate::tests::domains::fintech) enum ExpectedSealedOriginBinding {
     SourceRecompute {
@@ -86,14 +77,6 @@ pub(in crate::tests::domains::fintech) enum ExpectedSealedOriginBinding {
     StructuralRecompute {
         structural_generation: u64,
     },
-}
-
-impl ExpectedWorkOrigin {
-    pub(super) const ALL: [Self; 3] = [
-        Self::SourceRecompute,
-        Self::DependencyCommit,
-        Self::StructuralRecompute,
-    ];
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

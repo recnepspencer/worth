@@ -15,6 +15,7 @@ pub enum WorthQueryManagedRunCleanupDisposition {
     RecoveryRequired,
 }
 
+/// The native managed-run owner that refused cleanup; the typed failure retains its exact terminal custody.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedRunCleanupFailureKind {
     ProviderMemoryRetained,

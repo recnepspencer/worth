@@ -1,5 +1,19 @@
 # Execution Resource Admission And Managed Runs
 
+Ordinary fixed, discovered, source-only and guarded workflow actions use the [owning entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
+Each advance accepts fresh authority and delegates one admitted native phase.
+Provider managed runs remain the resource/execution owners; application ownership
+adds no polling, budgets or second scheduler. Delivery and cleanup remain separate;
+refusal retains custody. Guarded no-output workflows retain their original issued
+operation with `for_workflow_operation(..)?.retain_operation(..)` and advance
+under fresh authority. Assessment owns a separate admitted demand. Native workflow
+execution is explicit advanced control.
+
+`WorthQueryOperationDeliveryPolicy` only narrows installed host ceilings, including
+`source_currentness_work`; it cannot enlarge them or supply an unlimited fallback.
+Omitting a narrower policy still uses the installed finite ceiling.
+
+
 ## What This Feature Is
 
 Execution resource admission and managed runs let Query govern domain work that
@@ -106,7 +120,9 @@ answering from partial proof.
 
 The trusted host enters repair through the runtime-issued verifier handle:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let complete = application.repair_completed_inbound_index(
     &installed_source,
     world_page,
@@ -167,7 +183,9 @@ fixture constants cannot satisfy this proof.
   heap reservation. Provider demand estimates are not aggregate memory proof.
   Managed reservations retain their consuming lifecycle.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 const LIMITS: ApplicationQueryBindingLimits =
     ApplicationQueryBindingLimits::results(1);
 
@@ -300,7 +318,9 @@ the authority needed to retry or recover; it does not hide behind `Drop`.
 
 ## Small Example
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let resource_attempt = runtime.start_direct_resource_attempt(
     &operation,
     admitted_plan,
@@ -319,7 +339,9 @@ work.
 
 ## Real Example
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let active = running.begin_graph_execution(&graph, graph_request)?;
 
 match active.advance() {

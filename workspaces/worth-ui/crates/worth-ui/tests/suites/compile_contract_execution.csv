@@ -85,3 +85,6 @@ pass,tests/ui/facade/service/pass/scroll_settle_is_asked_for_by_declaring_one.rs
 pass,tests/ui/facade/service/pass/smooth_scroll_policy_authoring.rs,facade_compile.rs
 fail,tests/ui/facade/appearance/fail/resolved_appearance_is_not_a_gate_one_facade.rs,appearance_contract_baseline
 pass,tests/ui/facade/appearance/pass/gate_one_appearance_contract.rs,appearance_contract_baseline
+fail,tests/ui/runtime_authority/fail/prepared_application_authority_fields_not_public.rs,runtime_authority_facade_compile.rs
+fail,tests/ui/runtime_authority/fail/prepared_application_generation_identity_not_publicly_mintable.rs,runtime_authority_facade_compile.rs
+fail,tests/ui/runtime_authority/fail/host_session_identity_not_publicly_mintable.rs,runtime_authority_facade_compile.rs

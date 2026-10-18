@@ -29,6 +29,9 @@ pub struct CreateBinding<const MODE: u64>;
 impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     for CreateBinding<MODE>
 {
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
     type Input = CreateInput;
     type InputBinding = CreateInputBinding;
     type Result = ();

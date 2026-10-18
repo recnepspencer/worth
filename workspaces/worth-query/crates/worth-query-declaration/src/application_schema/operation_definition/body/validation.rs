@@ -109,18 +109,16 @@ pub(crate) fn validate_operation_bodies(
                     presence: ApplicationFieldPresence::Required,
                     ..
                 } = member
+                    && entity == creation.entity()
+                    && !initialized.iter().any(|locus| {
+                        locus.entity() == entity
+                            && locus.aspect() == aspect
+                            && locus.field() == field
+                    })
                 {
-                    if entity == creation.entity()
-                        && !initialized.iter().any(|locus| {
-                            locus.entity() == entity
-                                && locus.aspect() == aspect
-                                && locus.field() == field
-                        })
-                    {
-                        return Err(
-                            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
-                        );
-                    }
+                    return Err(
+                        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
+                    );
                 }
             }
         }
@@ -173,16 +171,14 @@ pub(crate) fn validate_operation_bodies(
                     ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency,
                 );
             }
-            if let Some(write) = step.write_target() {
-                if !members.iter().any(|member| {
+            if let Some(write) = step.write_target()
+                && !members.iter().any(|member| {
                     matches!(member,
                     ApplicationSchemaMember::OperationProgram { operation: candidate, target }
                         if candidate == operation && target == &write)
-                }) {
-                    return Err(
-                        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
-                    );
-                }
+                })
+            {
+                return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
             }
         }
     }

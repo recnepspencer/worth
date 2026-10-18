@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::NativeCapabilityRegistry`
- --> tests/ui/facade/native_capability/facade/native_capability_registry_type_not_publicly_importable.rs:1:5
-  |
-1 | use worth_ui::facade::NativeCapabilityRegistry;
-  |     ^^^^^^^^^^^^^^^^^^------------------------
-  |     |                 |
-  |     |                 help: a similar name exists in the module: `NativeCapabilityFamily`
-  |     no `NativeCapabilityRegistry` in `facade`

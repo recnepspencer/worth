@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn structural_identity_comparison_only_uses_fingerprint_truth() {
@@ -272,7 +273,10 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
         Some(StructuralFingerprint::new(Symbol(51), 1002)),
         Some(LineageId(502)),
     ));
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let expected_left = runtime
         .inspect_what_happened()
         .structural_identity(
@@ -294,9 +298,10 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
         )
         .expect("read request remains live");
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -337,7 +342,10 @@ fn inspection_truth_bundle_recovery_parity_holds_for_current_and_historical_surf
     let created = create_entity_outcome(execution, &runtime, "bundle");
     let entity = changed_entities(&created)[0];
     let _relation = create_relation(execution, &runtime, entity, entity, "self");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     let expected = capture_inspection_truth_bundle(
         execution,
@@ -346,9 +354,10 @@ fn inspection_truth_bundle_recovery_parity_holds_for_current_and_historical_surf
         entity,
         created.version_id,
     );
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()

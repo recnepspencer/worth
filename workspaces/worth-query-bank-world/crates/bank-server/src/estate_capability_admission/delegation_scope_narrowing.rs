@@ -101,15 +101,14 @@ fn related_amount_and_validity_bounds_cannot_widen() {
 }
 
 fn assert_denied(fixture: CapabilityFixture, action: EstateAction, seed: u8) {
-    let denial = fixture
-        .runtime
-        .delegate_estate_capability_with_key(
-            &fixture.authenticate(),
-            action,
-            &BankIdempotencyKey::new(format!("delegation-scope-{seed}")).unwrap(),
-            &request_scope(),
-        )
-        .expect_err("a widened or substituted parent must mint no child authority");
+    let denial = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &fixture.authenticate(),
+        action,
+        &BankIdempotencyKey::new(format!("delegation-scope-{seed}")).unwrap(),
+        &request_scope(),
+    )
+    .expect_err("a widened or substituted parent must mint no child authority");
     let BankEstateProgressionDenial::Authorization(denial) = denial else {
         panic!("scope narrowing must deny at Query delegation authorization: {denial:#?}");
     };

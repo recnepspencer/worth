@@ -102,12 +102,16 @@ fn tail_rejects_same_commit_root_descriptor_substitution() {
     create_entity_outcome(execution, &runtime, "tail-descriptor-checkpoint");
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("production checkpoint succeeds");
     let tail_commit = create_entity_outcome(execution, &runtime, "tail-descriptor-commit");
     let mut plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let checkpoint = plan
         .tail_log
         .iter_mut()
@@ -139,7 +143,11 @@ fn tail_replay_reconstructs_the_owner_content_root() {
     let expected = current_main_descriptor(&runtime);
     let plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
 
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
@@ -175,11 +183,15 @@ fn checkpoint_recovery_plan(
     create_entity_outcome(execution, &runtime, label);
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("production checkpoint succeeds");
     runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap()
 }
 
 fn selected_root_image(
@@ -216,7 +228,7 @@ fn install_fingerprint_image(plan: &mut RecoveryPlan, symbol: crate::symbols::da
     checkpoint
         .symbol_table
         .entries
-        .push((symbol, "durability.fingerprint.family".to_owned()));
+        .push((symbol, "durability.fingerprint.family".into()));
     let root = checkpoint
         .branch_roots
         .first_mut()

@@ -87,8 +87,7 @@ pub(super) fn decode(
         tag @ 19..=22 => authorization::decode(tag, input, budget),
         tag @ 23..=24 => vocabulary::decode(tag, input),
         27 => invariant::decode(input, budget),
-        28 => mutation_description::decode(input, budget, false),
-        31 => mutation_description::decode(input, budget, true),
+        31 => mutation_description::decode(input, budget),
         32 => Ok(ApplicationSchemaMember::OperationBody {
             operation: input.text()?.to_owned(),
             body: super::super::operation_body::decode(input, budget)?,
@@ -99,9 +98,7 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
-        ApplicationSchemaMember::ApplicationMutation { description }
-            if description.parts().workflow_execution_requirements.is_some() => 31,
-        ApplicationSchemaMember::ApplicationMutation { .. } => 28,
+        ApplicationSchemaMember::ApplicationMutation { .. } => 31,
         ApplicationSchemaMember::ApplicationInvariant { .. } => 27,
         ApplicationSchemaMember::Entity { .. } => 1,
         ApplicationSchemaMember::Aspect { .. } => 2,

@@ -30,6 +30,10 @@ pub(super) async fn disburse(
     response(state.recovery.disburse(admitted).await)
 }
 
+#[allow(
+    clippy::result_large_err,
+    reason = "Admission preserves the by-value protocol refusal without a wrapper allocation"
+)]
 fn admit_disbursement(
     request: BankHttpEstateDisbursementRequest,
     maximum_deadline: Duration,
@@ -93,7 +97,9 @@ fn response(
     outcome: BankHttpEstateDisbursementOutcome,
 ) -> (StatusCode, Json<BankHttpEstateDisbursementOutcome>) {
     let status = match &outcome {
-        BankHttpEstateDisbursementOutcome::Applied { .. } => StatusCode::OK,
+        BankHttpEstateDisbursementOutcome::Owning { outcome } => {
+            super::mutation_routes::mutation_status(outcome)
+        }
         BankHttpEstateDisbursementOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))

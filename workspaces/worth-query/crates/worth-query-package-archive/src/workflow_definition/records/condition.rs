@@ -1,10 +1,6 @@
-//! The condition node record. Version 2 carries the expression's encoded
-//! draft and its operands in name order; version 1 named one Bool query and
-//! decodes as that query read under the migrated operand.
+//! Current condition node record: encoded expression and named operands.
 
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowCondition, MIGRATED_WORKFLOW_CONDITION_OPERAND,
-};
+use worth_query_declaration::facade::application_program::ApplicationWorkflowCondition;
 
 use super::{nonempty_text, text};
 use crate::binary_input::BinaryInput;
@@ -71,14 +67,6 @@ pub(super) fn decode_condition(input: &mut BinaryInput<'_>) -> Result<DraftCondi
         draft: draft.into(),
         operands: operands.into_boxed_slice(),
     })
-}
-
-/// A version-1 record: the query alone, read as the whole decision.
-pub(super) fn decode_version_1_condition(
-    input: &mut BinaryInput<'_>,
-) -> Result<DraftCondition, Denial> {
-    decode_operand(input, MIGRATED_WORKFLOW_CONDITION_OPERAND.to_owned())
-        .map(DraftCondition::Migrated)
 }
 
 fn decode_operand(

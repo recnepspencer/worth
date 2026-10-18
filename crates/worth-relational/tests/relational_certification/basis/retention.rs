@@ -9,7 +9,8 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn external_component_pin_is_the_last_readmission_obligation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -52,7 +53,8 @@ fn external_component_pin_is_the_last_readmission_obligation() {
 
 #[test]
 fn foreign_release_denial_preserves_the_owner_obligation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -116,7 +118,8 @@ fn foreign_release_denial_preserves_the_owner_obligation() {
 
 #[test]
 fn dropping_external_retention_uses_the_same_terminal_accounting_path() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());

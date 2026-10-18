@@ -6,7 +6,8 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn supply_chain_world_compiles_causally_through_public_facades() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let program =
@@ -69,7 +70,8 @@ fn empty_scale() -> SupplyChainScale {
 
 #[test]
 fn supply_chain_named_handles_are_owner_issued_and_complete() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
@@ -128,7 +130,8 @@ fn supply_chain_named_handles_are_owner_issued_and_complete() {
 
 #[test]
 fn standard_supply_chain_baseline_matches_oracle_and_forks_without_copying() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::standard())

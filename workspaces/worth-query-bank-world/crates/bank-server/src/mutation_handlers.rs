@@ -9,6 +9,8 @@ mod journal;
 mod notify_estate_death;
 mod open_estate_case;
 mod payment_approval_grant;
+mod program_deployment_revocation;
+pub(crate) use program_deployment_revocation::ProgramDeploymentRevocationHandler;
 mod payment_decision;
 mod payment_workflow_assessment;
 mod recognize_estate_executor;

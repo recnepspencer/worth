@@ -1,4 +1,8 @@
 //! Compare-and-commit receipt and outcome surface.
+mod cleanup_required;
+pub use cleanup_required::{
+    WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
+};
 
 mod commit_deferred;
 mod commit_outcome;

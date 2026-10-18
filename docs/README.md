@@ -19,6 +19,7 @@ Read these in order the first time. Keep the Glossary open as a reference while 
 | 4 | [Glossary](glossary.md) | What exactly does a term such as *basis*, *admission*, *performed*, or *settled* mean? |
 | 5 | [Build an Application](build-an-application.md) | What exactly do I call to declare features and a program, install the application graph, author and run workflows, and adopt a new program? |
 | 6 | [API Map](api.md) | Which crate do I import for my job? Where is the reference documentation? |
+| 7 | [Capability Index](capability-index.md) | Is this supported, and what is the one way to do it? What are the known gaps? |
 
 ## Find a document by task
 
@@ -27,6 +28,7 @@ Read these in order the first time. Keep the Glossary open as a reference while 
 | Understand the platform in five minutes | [Platform README](../README.md) |
 | Understand the reasons behind a rule | [Philosophy](philosophy.md) |
 | Build an application on WORTH | [Build an Application](build-an-application.md) |
+| Check whether a capability exists before building one | [Capability Index](capability-index.md) |
 | Declare features and a program | [Build an Application §3](build-an-application.md#3-declare-features-and-the-program) |
 | Install the application graph | [Build an Application §4](build-an-application.md#4-install-the-application-graph) |
 | Author, publish, and run workflows | [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows) |
@@ -64,8 +66,15 @@ The engineering laws that bind every change to the platform:
 - Treat [Philosophy](philosophy.md) and [How WORTH Works](how-it-works.md) as
   the platform's mental model. Crate guides add API detail but do not change
   that model.
-- Every Rust name in these documents exists in the current source. If a name
-  you need is not on an audience facade listed in the [API Map](api.md), do not
+- Before you conclude that the platform lacks a capability, follow the
+  procedure in the [Capability Index](capability-index.md). Do not build a
+  second way to do something the platform already does.
+- Rust names in these documents are checked by review. Only the code blocks
+  marked `<!-- compiled: X -->` in
+  [Build an Application](build-an-application.md) are compiled and checked in
+  CI. When a document and the source disagree, the source wins; see
+  [Which source wins](capability-index.md#which-source-wins). If a name you
+  need is not on an audience facade listed in the [API Map](api.md), do not
   import it.
 - Definitions in the [Glossary](glossary.md) are normative. When a crate guide
   and the glossary disagree, report the disagreement.

@@ -37,10 +37,14 @@ impl InstalledIdentityWorld {
         let configuration = configuration(&endpoints, &fixture, &callback)?;
         let seeds = principal_seeds(&endpoints, &fixture)?;
         require_ordinary_tls_rejection(configuration.clone(), &scope).await?;
-        let identity =
-            cold_certification_for_test::install_identity_for_test(configuration, seeds, &scope)
-                .await
-                .map_err(|error| format!("bank identity installation failed: {error}"))?;
+        let identity = cold_certification_for_test::install_identity_for_test(
+            configuration,
+            seeds,
+            Some(endpoints.trusted_root_pem().as_bytes()),
+            &scope,
+        )
+        .await
+        .map_err(|error| format!("bank identity installation failed: {error}"))?;
         Ok(Self {
             callback,
             fixture,

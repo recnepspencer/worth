@@ -1,5 +1,4 @@
 mod builders;
-mod closeout;
 #[cfg(test)]
 mod tests;
 mod transcript_maintainer;
@@ -12,20 +11,6 @@ use crate::runtime::{
     WorthQueryAspectTouch, WorthQueryRuntimeFacadeFamily, WorthQueryRuntimeFamilySupportStatus,
 };
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath, FieldKey};
-
-use closeout::RuntimeApiStabilizationCloseout;
-
-pub const RUNTIME_API_STABILIZATION_REQUIRED_CANONICAL_ROW_NAMES: &[&str] = &[
-    "workflow-editor-golden-transcript",
-    "geometry-kernel-golden-transcript",
-    "table-spreadsheet-golden-transcript",
-    "composed-runtime-adversarial-transcript",
-];
-
-pub const RUNTIME_API_STABILIZATION_REQUIRED_REJECTION_ROW_NAMES: &[&str] = &[
-    "store-backed-parity-deferred-gate",
-    "durable-restart-deferred-gate",
-];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum RuntimeApiStabilizationPerturbationClass {
@@ -70,25 +55,6 @@ pub struct RuntimeApiStabilizationBundle {
 }
 
 impl RuntimeApiStabilizationBundle {
-    pub(super) fn has_required_outputs(&self) -> bool {
-        !self.public_api_surface_digest.is_empty()
-            && !self.public_api_naming_contract_digest.is_empty()
-            && !self.golden_transcript_digest.is_empty()
-            && !self.executable_transcript_digest.is_empty()
-            && !self.handle_contract_digest.is_empty()
-            && !self.state_contract_digest.is_empty()
-            && !self.aspect_contract_digest.is_empty()
-            && !self.authority_lane_digest.is_empty()
-            && !self.inspection_contract_digest.is_empty()
-            && !self.support_matrix_digest.is_empty()
-            && !self.deferred_temporal_async_gate_digest.is_empty()
-            && !self.failure_digest.is_empty()
-            && !self.counter_snapshot.is_empty()
-            && !self.compile_fail_boundary_digest.is_empty()
-            && !self.transcript_family.is_empty()
-            && self.support_gated_neighbor_denial_count >= 1
-    }
-
     pub(super) fn semantic_signature(&self) -> String {
         digest_parts(&[
             format!("surface:{}", self.public_api_surface_digest),
@@ -128,38 +94,9 @@ pub type RuntimeApiStabilizationCertificationMatrix = CertificationMatrix<
     RuntimeApiStabilizationRejectionBundle,
 >;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RuntimeApiStabilizationArtifact {
-    pub suite_name: &'static str,
-    pub certification_bundle_digest: String,
-    pub coverage_matrix_digest: String,
-    pub closeout: RuntimeApiStabilizationCloseout,
-    pub matrix: RuntimeApiStabilizationCertificationMatrix,
-}
-
-impl RuntimeApiStabilizationCertificationMatrix {
-    pub fn into_runtime_api_stabilization_artifact(self) -> RuntimeApiStabilizationArtifact {
-        let closeout = RuntimeApiStabilizationCloseout::from_matrix(&self);
-        RuntimeApiStabilizationArtifact {
-            suite_name: self.suite_name,
-            certification_bundle_digest: digest_parts(&builders::bundle_digest_parts(&self)),
-            coverage_matrix_digest: digest_parts(&builders::coverage_digest_parts(&self)),
-            closeout,
-            matrix: self,
-        }
-    }
-}
-
 pub struct RuntimeApiStabilizationAdapter;
 
 impl RuntimeApiStabilizationAdapter {
-    pub fn runtime_api_golden_dx_and_async_safe_facade_artifact(
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> RuntimeApiStabilizationArtifact {
-        Self::runtime_api_golden_dx_and_async_safe_facade_test(request_execution)
-            .into_runtime_api_stabilization_artifact()
-    }
-
     pub fn runtime_api_golden_dx_and_async_safe_facade_test(
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> RuntimeApiStabilizationCertificationMatrix {

@@ -67,6 +67,7 @@ impl WorthQueryProductUnpublishedRecovery {
 /// Why releasing an unpublished product's recovery record was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductUnpublishedRecoveryReleaseDenial {
+    Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// Runtime World refused to inspect or release the record.
     World(RuntimeWorldRecoveryDenial),
     /// A managed recovery or another release owns this exact provider partial.

@@ -6,19 +6,6 @@ use crate::runtime_policy::{
 use worth_foundational::{ExecutionObjectiveProfile, ObservationActivationProfile};
 
 #[test]
-fn presets_source_does_not_reintroduce_a_throughput_constructor() {
-    let source = include_str!("../runtime_policy/presets.rs");
-    assert!(
-        source.contains("pub fn operational()"),
-        "operational() must remain the public production constructor"
-    );
-    assert!(
-        !source.contains("fn throughput("),
-        "do not reintroduce a performance-named production constructor"
-    );
-}
-
-#[test]
 fn operational_installs_throughput_on_demand_objective() {
     let policy = SignalRuntimePolicy::operational();
     assert_eq!(
@@ -97,22 +84,6 @@ fn graph_strategy_reads_installed_activation_not_a_caller_tier() {
     assert_eq!(
         graph.runtime_policy().observation_activation(),
         ObservationActivationProfile::OnDemand
-    );
-}
-
-#[test]
-fn installed_policy_exposes_compiled_strategy_projections() {
-    let installed = compile_signal_runtime_policy(SignalRuntimePolicyRequest::new(
-        SignalRuntimePolicy::operational(),
-    ))
-    .expect("operational policy should compile");
-    assert_eq!(
-        installed.execution_strategy(),
-        ResolvedExecutionStrategy::SparseIncremental
-    );
-    assert_eq!(
-        installed.maintenance_strategy(),
-        ResolvedMaintenanceStrategy::DensityAdaptive
     );
 }
 

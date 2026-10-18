@@ -28,7 +28,7 @@ fn close_fences_new_work_but_releases_an_already_admitted_operation() {
             let result = mutation
                 .advance_exact(
                     worth_execution::ExecutionRequest::serial(
-                        &crate::execution_custody::operational_serial_request(),
+                        &crate::signal_owner_services::execution_custody::operational_serial_request(),
                     ),
                     &basis,
                     &mut (),
@@ -49,7 +49,7 @@ fn close_fences_new_work_but_releases_an_already_admitted_operation() {
 
         let late = world.mutation.advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.root_basis,
             &mut (),
@@ -92,7 +92,7 @@ fn dropping_a_public_pause_is_a_release_guard() {
             let result = mutation
                 .advance_exact(
                     worth_execution::ExecutionRequest::serial(
-                        &crate::execution_custody::operational_serial_request(),
+                        &crate::signal_owner_services::execution_custody::operational_serial_request(),
                     ),
                     &basis,
                     &mut (),
@@ -134,7 +134,7 @@ fn close_batch_pause_is_releasable_and_cannot_admit_new_work() {
         );
         let late = world.mutation.advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.root_basis,
             &mut (),

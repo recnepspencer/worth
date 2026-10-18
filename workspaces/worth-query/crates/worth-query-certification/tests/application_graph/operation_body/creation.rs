@@ -34,6 +34,7 @@ fn move_audit_source<const DESTINATION: u64>(
     let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
     let outcome = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(binding::SourceIntent(SetRetentionInput {
             identity: DOCUMENT_IDENTITY.to_owned(),
             retention_days: 99,
@@ -88,6 +89,7 @@ fn stale_prepared_creation_cannot_publish_an_extra_audit() {
     let key = 202_u64;
     let mut request = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(binding::BodyIntent(SetRetentionInput {
             identity: DOCUMENT_IDENTITY.to_owned(),
             retention_days: 99,
@@ -120,6 +122,7 @@ fn only_the_created_field_source_dependency_stales_the_prepared_candidate() {
     let key = 204_u64;
     let mut request = with_source
         .request(&principal, &scope)
+        .advanced()
         .mutate(binding::BodyIntent(SetRetentionInput {
             identity: DOCUMENT_IDENTITY.to_owned(),
             retention_days: 99,
@@ -156,6 +159,7 @@ fn only_the_created_field_source_dependency_stales_the_prepared_candidate() {
     let key = 206_u64;
     let mut request = without_source
         .request(&principal, &scope)
+        .advanced()
         .mutate(binding::BodyIntent(SetRetentionInput {
             identity: DOCUMENT_IDENTITY.to_owned(),
             retention_days: 99,

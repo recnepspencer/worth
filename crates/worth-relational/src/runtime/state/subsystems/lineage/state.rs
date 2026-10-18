@@ -108,7 +108,7 @@ impl LineageState {
     pub(crate) fn branch_events(
         &self,
         branch_id: &BranchId,
-    ) -> impl Iterator<Item = &LineageEventRecord> {
+    ) -> impl Iterator<Item = &LineageEventRecord> + use<'_> {
         self.resolution_indexes
             .branch_event_positions(branch_id)
             .iter()
@@ -215,7 +215,9 @@ impl LineageState {
         self.rebuild_derived_indexes();
     }
 
-    pub(crate) fn drain_events(&mut self) -> impl Iterator<Item = (LineageEventRecord, CommitId)> {
+    pub(crate) fn drain_events(
+        &mut self,
+    ) -> impl Iterator<Item = (LineageEventRecord, CommitId)> + use<> {
         self.published_event_ids.clear();
         std::mem::take(&mut self.published_events)
             .into_iter()

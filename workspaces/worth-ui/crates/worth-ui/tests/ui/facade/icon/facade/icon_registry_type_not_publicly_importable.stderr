@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::IconRegistry`
- --> tests/ui/facade/icon/facade/icon_registry_type_not_publicly_importable.rs:1:5
-  |
-1 | use worth_ui::facade::IconRegistry;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `IconRegistry` in `facade`

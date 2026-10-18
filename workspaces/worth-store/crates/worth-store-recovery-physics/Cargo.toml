@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-recovery-physics"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Pure C.8 WAL, checkpoint, LSN, source-precedence, and recovery planning laws."

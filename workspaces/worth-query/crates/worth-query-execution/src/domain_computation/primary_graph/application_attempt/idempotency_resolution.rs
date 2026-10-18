@@ -80,6 +80,7 @@ where
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         binding: WorthQueryApplicationIdempotencyBinding,
         transition_identity: &[u8; 32],
+        completed: Option<&WorthQueryApplicationCommitReceipt>,
     ) -> Result<
         WorthQueryGuardedWorkflowOperationCustody,
         WorthQueryApplicationIdempotencyResolutionDenial,
@@ -99,12 +100,43 @@ where
         ) {
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
+        let scope = admission.operation_scope_binding();
+        let original_scope = if let Some(receipt) = completed {
+            let original = receipt.principal_scope();
+            // Completed custody keeps its actual executor. The fresh actor
+            // must independently admit the same installed operation/subject,
+            // but cannot rewrite the original effect's principal-bound key.
+            if receipt.runtime_authority() != self.runtime.authority_identity()
+                || receipt.installed_operation() != admission.installed_operation_identity_bytes()
+                || original.binding_identity() != scope.binding_identity()
+                || original.operation_authority_identity() != scope.operation_authority_identity()
+                || original.scope() != scope.scope()
+                || receipt.product_branch()
+                    != admission
+                        .graph_work()
+                        .mutation_product()
+                        .ok_or_else(
+                            WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission,
+                        )?
+                        .product_branch()
+            {
+                return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
+            }
+            original
+        } else {
+            scope
+        };
         let bound = binding
             .bind_operation(admission.operation_definition_identity())
-            .bind_operation_scope(admission.operation_scope_binding())
+            .bind_operation_scope(original_scope)
             .bind_preconditions(admission.mutation_preconditions().identity())
             .bind_governed_input(admission.governed_input_identity())
             .bind_governed_proposal(admission.governed_proposal_identity());
+        if completed
+            .is_some_and(|receipt| receipt.authority_binding().idempotency_binding() != bound)
+        {
+            return Ok(WorthQueryGuardedWorkflowOperationCustody::IntentDrift);
+        }
         let product = admission
             .graph_work()
             .mutation_product()
@@ -147,13 +179,23 @@ where
                         WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable(),
                     ));
                 };
+                let authority = match completed {
+                    Some(original) => original.authority_binding().clone(),
+                    None => WorthQueryApplicationCommitAuthorityBinding::from_admission(
+                        admission, bound,
+                    ),
+                };
                 let receipt = WorthQueryApplicationCommitReceipt::from_idempotency_read(
                     WorthQueryIdempotencyReadCommitReceiptPermit::mint(),
                     projection,
                     recover_equivalent_commit_evidence(admission.mutation_preconditions()),
                     admission.canonical_work(),
-                    WorthQueryApplicationCommitAuthorityBinding::from_admission(admission, bound),
+                    authority,
                 );
+                if completed.is_some_and(|original| !receipt.is_same_authoritative_commit(original))
+                {
+                    return Ok(WorthQueryGuardedWorkflowOperationCustody::IntentDrift);
+                }
                 if receipt
                     .dispatch_outbox()
                     .and_then(|record| record.inbound())

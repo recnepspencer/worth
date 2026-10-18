@@ -9,7 +9,7 @@ Lower-runtime capability routing is Query’s **declared path for contacting** r
 ## Why You Use It
 
 - route live, subscription, write-authority, and signal invalidation through boundary receipts
-- inspect closeout and boundary summaries for agents (`inspect_lower_runtime_boundary`)
+- inspect closeout and boundary summaries for agents (`inspect_lower_runtime_closeout`, `summarize_lower_runtime_boundary`)
 - stay on certification-tested public inventory rows
 - avoid bypassing envelopes to call `worth-relational` / `worth-signal` from domain modules
 
@@ -19,12 +19,13 @@ Lower-runtime capability routing is Query’s **declared path for contacting** r
 
 | Piece | Role |
 |-------|------|
-| `plans/` / `protocol/` | Route plans and protocol shapes |
+| `plans/` / `protocol.rs` | Route plans and protocol shapes |
 | `envelopes/` | `WorthQueryLowerRuntimeBoundaryEnvelope`, cost/failure topology |
 | `eligibility/` | Capability eligibility and posture |
 | `receipts/` | Boundary receipts (live, subscription, write authority, signal) |
+| `inventory/` | Crossing inventory and closeout registry that the support matrix is built from |
 | `support/` | `worth_query_lower_runtime_support_matrix()` |
-| `dx/` | `inspect_lower_runtime_boundary`, `summarize_lower_runtime_boundary` |
+| `dx.rs` | `inspect_lower_runtime_closeout`, `summarize_lower_runtime_boundary` |
 
 This is the **execution contact** layer; [declaration bridge continuation routing](declaration-bridge-continuation-routing.md) covers declaration-entry continuation—link both, do not merge.
 
@@ -40,11 +41,11 @@ Domain declaration (no lower imports)
 Public exports (`lower_runtime_routing/mod.rs`):
 
 - Adapters: `LiveViewDeclarationAdmissionBoundaryReceipt`, `SubscriptionActivationBoundaryReceipt`, `WriteAuthorityExecutionReceipt`, `SignalInvalidationBoundaryReceipt`
-- DX: `inspect_lower_runtime_boundary`, `WorthQueryLowerRuntimeRoutingInspection`, `WorthQueryLowerRuntimeBoundarySummary`
+- DX: `inspect_lower_runtime_closeout`, `summarize_lower_runtime_boundary`, `WorthQueryLowerRuntimeRoutingInspection`, `WorthQueryLowerRuntimeBoundarySummary`
 - Support: `worth_query_lower_runtime_support_matrix()`
 - Certification suite types (for harness/CI, not app hot path)
 
-Tests: `lower_runtime_routing/certification/tests.rs`, UI `tests/ui/lower_runtime_routing/`.
+Tests: `lower_runtime_routing/certification/tests.rs` and `lower_runtime_routing/certification/tests/`.
 
 ## Typical Flow
 
@@ -52,7 +53,7 @@ Tests: `lower_runtime_routing/certification/tests.rs`, UI `tests/ui/lower_runtim
 2. Build route plan with boundary envelope category and cost posture.
 3. Execute through boundary receipt (live view, subscription activation, or write authority).
 4. On failure, read failure topology from envelope—do not bypass to raw runtime APIs.
-5. For diagnostics: `inspect_lower_runtime_boundary` / `summarize_lower_runtime_boundary`.
+5. For diagnostics: `summarize_lower_runtime_boundary` / `inspect_lower_runtime_closeout`.
 
 ## How It Relates
 
@@ -76,7 +77,7 @@ Tests: `lower_runtime_routing/certification/tests.rs`, UI `tests/ui/lower_runtim
 
 ## Current Limits
 
-From `worth_query_lower_runtime_support_matrix()` (see `lower_runtime_routing/support.rs` for full rows):
+From `worth_query_lower_runtime_support_matrix()` (`lower_runtime_routing/support/matrix.rs` builds its rows from `inventory/crossings.rs` and `inventory/closeout.rs`):
 
 | Neighbor / concern | Status |
 |--------------------|--------|

@@ -212,21 +212,19 @@ where
         if matches!(
             &pass,
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure
-        ) {
-            if let Some(advance) = required_wave::advance_required_before_caller(
-                execution,
-                phase,
-                self,
-                demand,
-                principal,
-                request_scope,
-                delivery_branch,
-                &commit_authority,
-                performed,
-                request_admission,
-            )? {
-                return Ok(AdvancePassProgress::Answer(advance));
-            }
+        ) && let Some(advance) = required_wave::advance_required_before_caller(
+            execution,
+            phase,
+            self,
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            &commit_authority,
+            performed,
+            request_admission,
+        )? {
+            return Ok(AdvancePassProgress::Answer(advance));
         }
         let final_disclosure = matches!(&pass, AdvancePass::RetryDisclosure);
         let requested_authority = commit_authority.clone();

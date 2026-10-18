@@ -127,43 +127,6 @@ pub struct SubscriptionLifecycleCertificationBundle {
 }
 
 impl SubscriptionLifecycleCertificationBundle {
-    pub(super) fn has_required_outputs(&self) -> bool {
-        !self.query_digest.is_empty()
-            && !self.subscription_family_digest.is_empty()
-            && !self.subscription_declaration_digest.is_empty()
-            && !self.subscription_equivalence_digest.is_empty()
-            && !self.active_lane_digest.is_empty()
-            && !self.active_lane_handle_digest.is_empty()
-            && !self.active_lane_lookup_class_digest.is_empty()
-            && !self.subscription_budget_digest.is_empty()
-            && !self.subscription_performance_receipt_digest.is_empty()
-            && !self.consumer_attachment_digest.is_empty()
-            && !self.acknowledgement_frontier_digest.is_empty()
-            && !self.delivery_window_digest.is_empty()
-            && !self.maintenance_delta_digest.is_empty()
-            && !self.active_delivery_work_packet_digest.is_empty()
-            && !self.active_delivery_density_posture_digest.is_empty()
-            && !self.allocation_posture_digest.is_empty()
-            && !self.delivery_batch_digest.is_empty()
-            && !self.patch_group_digest.is_empty()
-            && !self.delivery_receipt_digest.is_empty()
-            && !self.continuation_digest.is_empty()
-            && !self.preview_isolation_digest.is_empty()
-            && !self.preview_residue_digest.is_empty()
-            && !self.policy_digest.is_empty()
-            && !self.tenant_basis_digest.is_empty()
-            && !self.relationship_proof_digest.is_empty()
-            && !self.view_shape_digest.is_empty()
-            && !self.basis_digest.is_empty()
-            && !self.bridge_declaration_digest.is_empty()
-            && !self.signal_strategy_digest.is_empty()
-            && !self.counter_snapshot.is_empty()
-            && !self.counter_evidence.is_empty()
-            && !self.subscription_lifecycle_scale_slope_digest.is_empty()
-            && !self.compile_fail_boundary_digest.is_empty()
-            && !self.support_matrix_digest.is_empty()
-    }
-
     pub(super) fn lifecycle_signature(&self) -> String {
         digest_parts(&[
             format!("subscription:{}", self.subscription_equivalence_digest),
@@ -213,36 +176,9 @@ pub type MilestoneNineTwoCertificationMatrix = CertificationMatrix<
     MilestoneNineTwoRejectionBundle,
 >;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MilestoneNineTwoCertificationArtifact {
-    pub suite_name: &'static str,
-    pub certification_bundle_digest: String,
-    pub coverage_matrix_digest: String,
-    pub matrix: MilestoneNineTwoCertificationMatrix,
-}
-
-impl MilestoneNineTwoCertificationMatrix {
-    pub fn into_milestone_nine_two_artifact(self) -> MilestoneNineTwoCertificationArtifact {
-        MilestoneNineTwoCertificationArtifact {
-            suite_name: self.suite_name,
-            certification_bundle_digest: digest_parts(&bundle_projection::bundle_digest_parts(
-                &self,
-            )),
-            coverage_matrix_digest: digest_parts(&bundle_projection::coverage_digest_parts(&self)),
-            matrix: self,
-        }
-    }
-}
-
 pub struct MilestoneNineTwoCertificationAdapter;
 
 impl MilestoneNineTwoCertificationAdapter {
-    pub fn subscription_lifecycle_sharing_and_preview_certification_artifact(
-    ) -> MilestoneNineTwoCertificationArtifact {
-        Self::subscription_lifecycle_sharing_and_preview_parity_test()
-            .into_milestone_nine_two_artifact()
-    }
-
     pub fn subscription_lifecycle_sharing_and_preview_parity_test(
     ) -> MilestoneNineTwoCertificationMatrix {
         MilestoneNineTwoCertificationMatrix {

@@ -55,15 +55,3 @@ pub const FRONTIER_REJECTION_ROW_SPECS: &[FrontierRejectionRowSpec] = &[
         failure_class: FrontierFailureClass::MixedBasisBundleDenied,
     },
 ];
-
-pub const FRONTIER_REQUIRED_CANONICAL_ROW_NAMES: &[&str] = &[
-    "frontier-serial-control",
-    "serial-fallback-parity",
-    "exact-basis-bundle-parity",
-];
-
-pub const FRONTIER_REQUIRED_REJECTION_ROW_NAMES: &[&str] = &[
-    "unsupported-frontier-family",
-    "unsupported-bundle-composition",
-    "mixed-basis-bundle-denied",
-];

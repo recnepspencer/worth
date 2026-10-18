@@ -5,7 +5,7 @@ use worth_foundational::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::foundational_vocabulary::{identity, key, revision};
+use crate::certification::foundational_vocabulary::{identity, key, revision};
 
 #[test]
 fn scalar_contract_validation_returns_proof_bearing_artifact() {
@@ -62,7 +62,7 @@ fn struct_contract_validation_denies_missing_required_field() {
     let outcome = validate_aspect_value(
         &contract,
         StructAspectValue::new([(
-            crate::foundational_vocabulary::field("title"),
+            crate::certification::foundational_vocabulary::field("title"),
             AspectValue::String("Ship it".into()),
         )])
         .expect("unique fields")
@@ -72,7 +72,7 @@ fn struct_contract_validation_denies_missing_required_field() {
     assert_eq!(
         outcome,
         TransitionOutcome::Denied(ContractValidationDenial::MissingRequiredField(
-            crate::foundational_vocabulary::field("done")
+            crate::certification::foundational_vocabulary::field("done")
         ))
     );
 }
@@ -85,11 +85,11 @@ fn struct_contract_validation_denies_field_type_mismatch() {
         &contract,
         StructAspectValue::new([
             (
-                crate::foundational_vocabulary::field("title"),
+                crate::certification::foundational_vocabulary::field("title"),
                 AspectValue::String("Ship it".into()),
             ),
             (
-                crate::foundational_vocabulary::field("done"),
+                crate::certification::foundational_vocabulary::field("done"),
                 AspectValue::String("no".into()),
             ),
         ])
@@ -100,7 +100,7 @@ fn struct_contract_validation_denies_field_type_mismatch() {
     assert_eq!(
         outcome,
         TransitionOutcome::Denied(ContractValidationDenial::FieldTypeMismatch {
-            field: crate::foundational_vocabulary::field("done"),
+            field: crate::certification::foundational_vocabulary::field("done"),
             expected: ScalarAspectType::Bool,
             found: ScalarAspectType::String,
         })
@@ -182,7 +182,7 @@ fn scalar_contracts_reject_struct_inputs_before_shape_interpretation() {
 fn task_summary_contract() -> AspectContract {
     let shape = StructAspectShape::new([
         FieldDeclaration::new(
-            crate::foundational_vocabulary::field("title"),
+            crate::certification::foundational_vocabulary::field("title"),
             ScalarAspectType::String,
             FieldRequirement::Required,
             AbsenceLaw::Required,
@@ -190,7 +190,7 @@ fn task_summary_contract() -> AspectContract {
         )
         .expect("coherent field law"),
         FieldDeclaration::new(
-            crate::foundational_vocabulary::field("done"),
+            crate::certification::foundational_vocabulary::field("done"),
             ScalarAspectType::Bool,
             FieldRequirement::Required,
             AbsenceLaw::Required,

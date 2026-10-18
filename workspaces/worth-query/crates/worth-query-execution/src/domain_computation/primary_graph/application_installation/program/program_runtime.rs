@@ -18,7 +18,31 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 pub use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportRetirementReceipt;
 
 /// Runtime paired with the exact validated program that governed installation.
+/// Cloning retains this exact installed allocation; it creates no installation or admission proof.
+/// Private backing cannot be replaced with a counterfeit runtime.
+/// ```compile_fail,E0451
+/// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+/// fn counterfeit<S, P>() -> WorthQueryProgramApplicationRuntime<S, P> {
+///     WorthQueryProgramApplicationRuntime { backing: todo!() }
+/// }
+/// ```
+/// Retaining the actual runtime needs no cloned schema or program meaning.
+/// ```
+/// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+/// fn keepalive<S, P>(runtime: &WorthQueryProgramApplicationRuntime<S, P>) -> WorthQueryProgramApplicationRuntime<S, P> {
+///     runtime.clone()
+/// }
+/// ```
 pub struct WorthQueryProgramApplicationRuntime<Schema, Program> {
+    pub(in crate::domain_computation::primary_graph) backing:
+        std::sync::Arc<WorthQueryProgramRuntimeBacking<Schema, Program>>,
+}
+
+/// One installed allocation shared by dependent operation custody.
+pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramRuntimeBacking<
+    Schema,
+    Program,
+> {
     pub(in crate::domain_computation::primary_graph) runtime:
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     pub(in crate::domain_computation::primary_graph) program:
@@ -32,18 +56,18 @@ pub struct WorthQueryProgramApplicationRuntime<Schema, Program> {
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
-    pub const fn runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        &self.runtime
+    pub fn runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        &self.backing.runtime
     }
 
-    pub const fn installed_program(
-        &self,
-    ) -> &WorthQueryInstalledApplicationProgram<Schema, Program> {
-        &self.program
+    pub fn installed_program(&self) -> &WorthQueryInstalledApplicationProgram<Schema, Program> {
+        &self.backing.program
     }
 
     pub(crate) fn contains_connection_type<Connection: 'static>(&self) -> bool {
-        self.connection_types.contains(&TypeId::of::<Connection>())
+        self.backing
+            .connection_types
+            .contains(&TypeId::of::<Connection>())
     }
 
     pub fn contains_output_connection<Connection: 'static>(
@@ -58,25 +82,27 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
         Root: ApplicationOutputGraphShape<Schema>,
     {
-        self.root_graph_types.contains(&TypeId::of::<Root>())
+        self.backing
+            .root_graph_types
+            .contains(&TypeId::of::<Root>())
     }
 
     pub fn contains_action<Binding: 'static>(&self) -> bool {
-        self.program.contains_action_type::<Binding>()
+        self.backing.program.contains_action_type::<Binding>()
     }
 
     pub(in crate::domain_computation::primary_graph) fn declares_action_binding(
         &self,
         binding: TypeId,
     ) -> bool {
-        self.action_bindings.contains(&binding)
+        self.backing.action_bindings.contains(&binding)
     }
 
     pub(in crate::domain_computation::primary_graph) fn requires_output_source(
         &self,
         binding: TypeId,
     ) -> bool {
-        self.output_source_bindings.contains(&binding)
+        self.backing.output_source_bindings.contains(&binding)
     }
 
     /// Resolves this host's initial program against its own support roster.
@@ -87,9 +113,10 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
     pub(in crate::domain_computation::primary_graph) fn presented_program(
         &self,
     ) -> Option<WorthQueryPresentedProgram<'_>> {
-        self.runtime
+        self.backing
+            .runtime
             .installed_program_support()?
-            .present(self.program.revision())
+            .present(self.backing.program.revision())
     }
 
     /// Names one other program this host rostered by its authoring type.
@@ -104,13 +131,15 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         Supported: ApplicationProgramDefinition<Schema> + 'static,
     {
         let record = self
+            .backing
             .supported
             .iter()
             .find(|record| record.answers_to(TypeId::of::<Supported>()))?;
-        self.runtime
+        self.backing
+            .runtime
             .installed_program_support()?
             .present(record.revision())?;
-        WorthQuerySupportedProgramHandle::rostered(&self.runtime, record)
+        WorthQuerySupportedProgramHandle::rostered(&self.backing.runtime, record)
     }
 
     /// Removes one rostered program from ordinary host service only after
@@ -128,7 +157,8 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         use worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial as Denial;
 
         let support =
-            self.runtime
+            self.backing
+                .runtime
                 .installed_program_support()
                 .ok_or(Denial::UnrosteredProgram {
                     revision: *revision,
@@ -141,6 +171,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         let retained_program_bytes = entry.retained_bytes();
         let retirement = support.lifecycle().begin_retirement(revision)?;
         let barrier = match self
+            .backing
             .runtime
             .product_runtime
             .activations
@@ -153,7 +184,13 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     .into())
             }
         };
-        let occurrences = match self.runtime.product_runtime.activations.live_occurrences() {
+        let occurrences = match self
+            .backing
+            .runtime
+            .product_runtime
+            .activations
+            .live_occurrences()
+        {
             Ok(occurrences) => occurrences,
             Err(_) => {
                 return Err(retirement
@@ -164,6 +201,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         let mut current_branches = 0usize;
         for occurrence in occurrences.iter().copied() {
             let selected = match self
+                .backing
                 .runtime
                 .product_runtime
                 .admit_product_occurrence(occurrence)
@@ -208,7 +246,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 }
             };
             let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
-                    &self.runtime,
+                    &self.backing.runtime,
                     selected.relational_basis(),
                 ) {
                     Ok(inspection) => inspection,
@@ -239,7 +277,7 @@ impl<Schema, Program> std::ops::Deref for WorthQueryProgramApplicationRuntime<Sc
     type Target = WorthQueryPrimaryGraphApplicationRuntime<Schema>;
 
     fn deref(&self) -> &Self::Target {
-        &self.runtime
+        &self.backing.runtime
     }
 }
 
@@ -254,7 +292,13 @@ where
         crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInspection,
         crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        self.runtime.close_conditional_runtime()
+        let backing = std::sync::Arc::get_mut(&mut self.backing).ok_or_else(|| {
+            crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained,
+                "installed program runtime remains retained by another handle",
+            )
+        })?;
+        backing.runtime.close_conditional_runtime()
     }
 }
 
@@ -278,5 +322,13 @@ impl From<worth_query_installation::facade::WorthQueryProgramSupportRetirementDe
         denial: worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial,
     ) -> Self {
         Self::Policy(denial)
+    }
+}
+
+impl<Schema, Program> Clone for WorthQueryProgramApplicationRuntime<Schema, Program> {
+    fn clone(&self) -> Self {
+        Self {
+            backing: std::sync::Arc::clone(&self.backing),
+        }
     }
 }

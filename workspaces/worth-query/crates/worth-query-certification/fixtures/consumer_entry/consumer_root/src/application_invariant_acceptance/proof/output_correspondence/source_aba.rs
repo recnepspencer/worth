@@ -7,6 +7,7 @@ pub(super) fn require_aspect_aba_denial(request: &Request<'_>, application: &Pro
     assert_eq!(read_y(request, "anchor-a"), 2);
     require_source_changed(
         request
+            .advanced()
             .mutate(replacement(
                 "replacement-b",
                 "aspect-aba-must-not-publish",
@@ -43,6 +44,7 @@ pub(super) fn require_child_aspect_aba_denial(
     assert_eq!(read_y(request, "replacement-b"), 1);
     require_source_changed(
         request
+            .advanced()
             .mutate(replacement(
                 "replacement-b",
                 "child-aspect-aba-must-not-publish",
@@ -69,6 +71,7 @@ pub(super) fn require_nested_aspect_aba_denial(
     assert_eq!(read_y(request, "anchor-c"), 10);
     require_source_changed(
         request
+            .advanced()
             .mutate(replacement(
                 "replacement-b",
                 "nested-aspect-aba-must-not-publish",
@@ -120,6 +123,7 @@ pub(super) fn require_adjacency_aba_denial(
     );
     require_source_changed(
         request
+            .advanced()
             .mutate(replacement(
                 "replacement-b",
                 "adjacency-aba-must-not-publish",

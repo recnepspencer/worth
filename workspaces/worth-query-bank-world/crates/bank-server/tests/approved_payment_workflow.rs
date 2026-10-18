@@ -18,6 +18,8 @@ mod authentication;
 mod fixture;
 #[path = "approved_payment_workflow/journey.rs"]
 mod journey;
+#[path = "approved_payment_workflow/operation_authorization.rs"]
+mod operation_authorization;
 #[path = "approved_payment_workflow/owner_custody.rs"]
 mod owner_custody;
 #[path = "approved_payment_workflow/postures.rs"]
@@ -58,7 +60,7 @@ use assertions::{key, require_completed};
 use rail_transport::{spawn_rail, BankEstateRailTransport};
 
 #[test]
-fn approved_business_payment_runs_through_query_and_commits_the_real_payment_operation() {
+fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
     let fixture = ordinary_read_world_with_approval_authentication(
         "approved-payment-workflow",
         authentication::approval_configuration(),
@@ -87,7 +89,8 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
 
     let (instance, operation) = journey::prepare_approved_payment_operation(&workflow, &authority);
     let performed = workflow
-        .perform_apply(
+        .advanced()
+        .execute_operation(
             instance.clone(),
             &operation,
             authority.clone(),
@@ -104,7 +107,8 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         Some(WorthQueryExternalDispatchPostureKind::Unresolved)
     );
     let replayed = workflow
-        .perform_apply(
+        .advanced()
+        .execute_operation(
             instance.clone(),
             &operation,
             authority.clone(),
@@ -127,7 +131,8 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
     // Acceptance and recovery reconstruct custody from the owner after the
     // original effect response and its retry receipt have both been lost.
     let unresolved = workflow
-        .accept_applied(
+        .advanced()
+        .accept_native_effect(
             instance.clone(),
             &operation,
             authority.clone(),
@@ -158,7 +163,8 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         operation.transition_identity()
     );
     let mismatched_recovery = workflow
-        .prepare_apply_recovery(
+        .advanced()
+        .prepare_native_effect_recovery(
             &still_required,
             authority.clone(),
             &key("approved-payment:operation:foreign-recovery"),
@@ -172,7 +178,8 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
             ))
     ));
     let prepared_recovery = workflow
-        .prepare_apply_recovery(
+        .advanced()
+        .prepare_native_effect_recovery(
             &still_required,
             authority.clone(),
             &key("approved-payment:operation:perform"),
@@ -185,7 +192,8 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         .expect("fixture retry owns its host call")
         .expect("fresh recovery authority re-dispatches the committed outbox");
     let denied = workflow
-        .accept_recovered_applied(
+        .advanced()
+        .accept_native_recovered_effect(
             instance.clone(),
             &still_required,
             authority.clone(),
@@ -225,3 +233,6 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         Some(principal_id(APPROVER))
     );
 }
+
+#[path = "approved_payment_workflow/owning.rs"]
+mod owning;

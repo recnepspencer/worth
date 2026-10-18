@@ -6,22 +6,63 @@ use worth_query_declaration::facade::{
 };
 
 #[test]
-fn mutation_archive_preserves_explicit_empty_workflow_evidence_without_reinterpreting_legacy() {
-    let legacy = mutation_member(
+fn mutation_archive_preserves_each_explicit_workflow_requirement() {
+    let baseline = mutation_member(
         ApplicationMutationScopeResolutionMode::InputField,
         ApplicationMutationOutputRoleCardinality::ExactlyOne,
     );
-    let ApplicationSchemaMember::ApplicationMutation { description } = legacy.clone() else {
+    let ApplicationSchemaMember::ApplicationMutation { description } = baseline else {
         unreachable!()
     };
-    let mut parts = description.into_parts();
-    parts.workflow_execution_requirements = Some(ApplicationWorkflowExecutionRequirements::new());
-    let explicit = ApplicationSchemaMember::ApplicationMutation {
-        description: ApplicationMutationDescription::from_untrusted_parts(parts),
-    };
-    assert_ne!(encode_member(&legacy), encode_member(&explicit));
-    assert_eq!(decode_member(&encode_member(&legacy)), legacy);
-    assert_eq!(decode_member(&encode_member(&explicit)), explicit);
+    let mut encodings = Vec::new();
+    for requirements in [
+        ApplicationWorkflowExecutionRequirements::not_applicable(),
+        ApplicationWorkflowExecutionRequirements::occurrence_only(),
+        ApplicationWorkflowExecutionRequirements::Approval {
+            capability: "review".to_owned(),
+            identity: "review.v1".to_owned(),
+        },
+    ] {
+        let mut parts = description.clone().into_parts();
+        parts.workflow_execution_requirements = requirements;
+        let member = ApplicationSchemaMember::ApplicationMutation {
+            description: ApplicationMutationDescription::from_untrusted_parts(parts),
+        };
+        let encoded = encode_member(&member);
+        assert_eq!(decode_member(&encoded), member);
+        assert!(encodings.iter().all(|prior| prior != &encoded));
+        encodings.push(encoded);
+    }
+}
+
+#[test]
+fn current_mutation_archive_refuses_omitted_or_displaced_requirements() {
+    let member = mutation_member(
+        ApplicationMutationScopeResolutionMode::InputField,
+        ApplicationMutationOutputRoleCardinality::ExactlyOne,
+    );
+    let current = encode_member(&member);
+    let requirement_bytes = "2:not-applicable".len();
+    let mut prefix = current[..current.len() - 4 - requirement_bytes].to_vec();
+    assert_eq!(
+        try_decode_member(&prefix).unwrap_err().kind(),
+        WorthQueryPackageArchiveDenialKind::Truncated
+    );
+    for displaced in ["", "1:none", "1:approval:6:9:reviewreview.v1"] {
+        let mut bytes = prefix.clone();
+        bytes.extend_from_slice(&(displaced.len() as u32).to_be_bytes());
+        bytes.extend_from_slice(displaced.as_bytes());
+        assert_eq!(
+            try_decode_member(&bytes).unwrap_err().kind(),
+            WorthQueryPackageArchiveDenialKind::UnsupportedRecordVariant
+        );
+    }
+    // Hostile current payload with a retired member tag, not a predecessor fixture.
+    prefix[..2].copy_from_slice(&28u16.to_be_bytes());
+    assert_eq!(
+        try_decode_member(&prefix).unwrap_err().kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVariant
+    );
 }
 
 #[test]
@@ -112,7 +153,7 @@ fn mutation_member(
     ApplicationSchemaMember::ApplicationMutation {
         description: ApplicationMutationDescription::from_untrusted_parts(
             ApplicationMutationDescriptionParts {
-                workflow_execution_requirements: None,
+                workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
                 binding_identity: identity("worth.archive.mutation.v1"),
                 operation: "Publish".to_owned(),
                 input_identity: identity("worth.archive.input.v1"),

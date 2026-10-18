@@ -67,16 +67,18 @@ fn revocation_refuses_before_its_admitted_principal_reader() {
             }
             reports();
             let before = reads();
-            let outcome = fixture.runtime.revoke_estate_capability_with_key(
-                &principal,
-                revocation_action(),
-                &idempotency(131),
-                &request_scope(),
-            );
+            let outcome =
+                crate::estate_progression::delegation::command_courts::complete_revocation(
+                    &fixture.runtime,
+                    &principal,
+                    revocation_action(),
+                    &idempotency(131),
+                    &request_scope(),
+                );
             assert_eq!(
                 reports().len(),
-                1,
-                "one executing public call owns one request"
+                if refusal.is_some() { 1 } else { 3 },
+                "capture, native command advance and lawful close each own their request"
             );
             match refusal {
                 Some(memory) => {

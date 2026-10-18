@@ -69,7 +69,8 @@ where
             || enrollment.role() != role.name()
             || creation.entity() != role.entity()
             || Binding::workflow_execution_requirements()
-                .is_some_and(|requirements| requirements.approval().is_some())
+                .approval()
+                .is_some()
         {
             return Err(denied());
         }

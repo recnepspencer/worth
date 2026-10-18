@@ -5,8 +5,8 @@ use worth_server::{
     WorthServer, WorthServerProductOperationInput, WorthServerProductOperationPayload,
 };
 
-#[path = "../product_adapter_phase_nine/fixture.rs"]
-mod product_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_product_adapter_phase_nine_fixture as product_fixture;
 
 pub fn build_server() -> WorthServer {
     let structured_read =

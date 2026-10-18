@@ -1,5 +1,10 @@
 # Query Engine Architecture Map
 
+> **Building an application on WORTH?** Start at
+> [Build an Application](../../../../../docs/build-an-application.md) and the
+> [Capability Index](../../../../../docs/capability-index.md). This document is
+> engine-internal and names types you must not import.
+
 > **Internal engine surface.** This page maps the internal Query engine for platform maintainers: the owner crates behind `worth-query-decl` and `worth-query-host`, and the Workspace engine surface (`WorthQueryWorkspace`, `worth_query::facade`) that `worth-ui-query-binding`, `worth-server`, and `worth-query-replay` use. Application code uses `worth-query-decl` and `worth-query-host`; start with the [API Map](../../../../../docs/api.md).
 
 ## Who This Is For
@@ -129,10 +134,11 @@ exposes it. Read the linked section for the behavior; change the owner crate.
 | Candidate check and touched graph | [§9.6](../../../../../docs/how-it-works.md#96-candidate-check), [§10](../../../../../docs/how-it-works.md#10-the-touched-graph) | `worth-query-installation` for the declared ceiling; `worth-query-execution` for candidate touch admission and commit-sealed records | `domain`, `primary_graph` |
 | Commit | [§9.7](../../../../../docs/how-it-works.md#97-commit), [§7](../../../../../docs/how-it-works.md#7-one-change-through-the-whole-stack) | `worth-query-execution` over Relational and Runtime World | `primary_graph` |
 | Publication, live reads, output demand | [§9.8](../../../../../docs/how-it-works.md#98-publication-live-reads-and-output-demand) | `worth-query-publication` | `publication`, `application_entry` |
-| Resources and budgets | [§9.9](../../../../../docs/how-it-works.md#99-resources-and-budgets) | Each owner enforces its own bounds | All |
+| Resources and budgets | [§9.9](../../../../../docs/how-it-works.md#99-resources-execution-and-cost) | Each owner enforces its own bounds | All |
 | Outcomes | [§11](../../../../../docs/how-it-works.md#11-outcomes-every-way-a-request-can-end) | `worth-query-publication` (`WorthQueryApplicationMutationOutcome`); `worth-query-execution` (`WorthQueryApplicationCommitOutcome`) | `application_entry`, `primary_graph` |
 | Branches, programs, adoption | [§12](../../../../../docs/how-it-works.md#12-branches-programs-and-adoption); calls in [Build an Application §7](../../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch); full guide [foundations/programs-and-adoption.md](foundations/programs-and-adoption.md) | `worth-query-execution` for rosters, activation, and adoption publication; `worth-query-publication` for `programs()` and branch-set requests | `application_entry`, `application_installation`, `product`, `primary_graph` |
 | Workflows | [§13](../../../../../docs/how-it-works.md#13-workflows); calls in [Build an Application §6](../../../../../docs/build-an-application.md#6-author-publish-and-run-workflows); full guide [foundations/workflows.md](foundations/workflows.md) | `worth-query-declaration` for specs, builders, and node kinds; `worth-query-installation` for vocabulary installation and resource ceilings; `worth-query-execution` for the workflow kernel, runtime, outcomes, discovery, and adoption inventory; `worth-query-publication` for workflow requests and their preparation denials | `application_program`, `domain`, `application_installation`, `application_discovery`, `application_entry`, `primary_graph` |
+| Workflow-bound operation checks (operation authorization, occurrence authority, approval evidence) | [workflows guide, Operations](foundations/workflows.md#operations); summary in [three independent checks](#three-independent-checks) | `worth-query-declaration` for `workflow_authority` and `ApplicationWorkflowExecutionRequirements`; `worth-query-execution` for admission, authority issue, and commit rechecks; `worth-query-publication` for `for_workflow_operation` | `worth_query_decl::facade::application_operation`; `declaration`, `application_entry`, `primary_graph` |
 | Aftermath and recovery | [§14](../../../../../docs/how-it-works.md#14-aftermath-and-recovery) | `worth-query-execution` for recovery and provisional aftermath; `worth-query-publication` for published aftermath | `primary_graph`, `publication`, `provisional_aftermath` |
 
 ## Engine Laws
@@ -311,16 +317,39 @@ these relationships. `worth_query_feature_spec!` removes builder plumbing but
 still produces the canonical `ApplicationFeatureSpec` and creates no registry;
 see [Feature Capsule Authoring](./authoring/feature-capsule-authoring.md).
 
-**Action attachments.** An authored action may attach one repeated-row
-correspondence, one evaluated requirement, one external-input provider, and a
-required-output-source posture. These are parts of the installed action
-contract, not parallel registries. `repeated_optional_member` preserves
-`Unchanged`, `Set`, and `Clear` and carries the required source observation.
-`evaluated_requirement` returns the same rule evaluation used for input guidance
-and submission enforcement, so a consumer never keeps a second callability
-predicate. `external_input_provider` resolves a typed selection into values,
-revision, and provenance, and requires revision validation before the captured
-input is admitted. Capture never grants mutation authority.
+**Action attachments.** `.action::<Binding, Delivery>()` begins one complete
+ordinary action. Consuming `.locality_and_change`, `.correspondence`,
+`.evaluated_requirement` and `.external_input` attach each optional contract
+once; `.finish_action()` returns its feature parent. The feature macro's
+`action(Binding, Delivery) { ... };` block delegates to that same progression.
+Delivery derives required-output-source meaning. Specialized native declarations
+use `.native_action::<Binding>()` without delivery or an output-source toggle;
+ordinary products do not move manual execution/retry under that spelling.
+
+Delivery/locality/change belong to the exact action occurrence. Correspondence
+lookup is binding-scoped and preserves `Unchanged`, `Set` and `Clear`.
+Rule/provider capabilities remain operation-plus-rule/provider scoped across
+actions. The installed evaluator's result supplies guidance and submission
+enforcement; declaring a rule creates no unbypassable authorization gate.
+External input resolves values, revision and provenance; explicit admission
+checks that revision before the captured values enter the mutation. No clause
+creates permission or a second capability registry.
+
+The sealed five-part `ApplicationActionReference` returns an
+`ApplicationActionSelector`, not a full declaration. Installation resolves the
+complete actual action, including metadata, and fresh progression compares that
+meaning. Duplicate native type or portable occurrence/feature/binding keys are
+rejected by the existing definition validator.
+
+**Retained operations.** Fixed/discovered owners retain the authentic runtime
+allocation and actual installed action through pending, refused, settled and
+terminal states; the construction borrow ends at return. Applications retain
+an independent genuine runtime handle for fresh requests and configure initial
+workflow vocabulary before cloning handles or retaining operations. Consuming
+vocabulary refusal preserves runtime, installed spec and signing owner;
+borrowed support refusal returns the original spec with its denial. Keepalive
+is custody, not permission, cleanup or durable continuation. Close and every
+business handoff retain their native fresh-authority and refusal contracts.
 
 **Derived artifacts.** `ApplicationProgramDefinition::DERIVED_ARTIFACT_GOVERNANCE`
 selects the posture. `Compatible` admits a program with no artifact meaning.
@@ -378,13 +407,23 @@ derives a deterministic, sorted diagnostic description from validated meaning.
 It holds owned strings only, no type identity, handle, or authority, and it
 never participates in validation or installation.
 
-**Installation lanes.** `application_installation::in_memory_program` returns
-`WorthQueryProgramApplicationRuntime<Schema, Program>`. Program-owned actions
-execute through `.execute_in_program(&application)`; capability-owned actions
-through `.execute_capability_in_program(&application)`. A program-owned action
-on the weaker `.execute()` path returns `ApplicationProgramRequired`, and a
-runtime from another host returns `ApplicationProgramMismatch`. The lane commits
-under the program that the request's branch runs.
+**Installation and ordinary actions.** `in_memory_program` installs canonical
+program/action/delivery meaning. `request.mutate` captures original meaning into
+an owned descriptor and `retain_operation::<Program, Action>` resolves the exact
+occurrence. Fixed, discovered, source-only and guarded workflow owners accept fresh
+ordinary requests for advancement, delivery where supported, and close. They retain
+no principal or grant.
+Capability admission follows the binding at every relevant native handoff.
+The [host contract fences](../../worth-query-host/src/ordinary_contract.rs) reject
+manual execution through ordinary receivers.
+
+#### Advanced native execution
+
+Use the [ordinary owning entry](foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for fixed, discovered, source-only and guarded workflow actions. Deliberate manual
+execution, two-phase prepare and recovery select `request.advanced()`; native types are exported under
+`application_entry::advanced`. Current native allocation/admission rules remain
+unchanged. The ordinary builder cannot prepare or execute a manual mutation.
 
 **Rosters and adoption.** One host may roster several validated revisions. The
 revision and its codec describe meaning; they do not select current meaning.
@@ -543,7 +582,9 @@ validator is not optional host guidance.
 read and a write. The projection observes the exact value or lawful absence,
 and `write_optional_field` authors presence or absence:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let note = reader.decision_field(projected, DraftNote::reference())?;
 let quantity = reader.decision_field(projected, DraftQuantity::reference())?;
 
@@ -775,6 +816,66 @@ See the descendant-scope example in the authorization guide below.
 
 See [Application Authorization And Emergency Elevation](./capabilities/application-authorization-and-emergency-elevation.md)
 and [Policy, Tenant, And Relationship-Proof Narrowing](./foundations/policy-tenant-and-relationship-proof-narrowing.md).
+
+#### Workflow-bound operations
+
+Retain the original guarded no-output operation through
+`for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
+Every `advance(&fresh_request)` rechecks current action/binding authority. Native
+unpublished and dispatch custody stay in the same owner, without retaining a
+principal or prepared admission. Completed effect cleanup is retained separately
+from workflow acceptance; an assessment owns its actual admitted demand.
+
+##### Advanced native workflow execution
+
+Use the ordinary owner above for application operations. Deliberate native controls
+use the [borrowed native chain](foundations/workflows.md#advanced-native-workflow-execution).
+
+##### Three independent checks
+
+A workflow-bound business operation passes up to three checks. They answer
+different questions, are declared in different places, and none grants another.
+
+| Check | Question it answers | Declared by | Checked when |
+|---|---|---|---|
+| Operation authorization | May this principal perform this business operation on this scope? | The operation's capability or policy binding | Ordinary mutation admission, on every execution, including workflow-bound ones |
+| Workflow occurrence authority | Is this exactly the operation, input, and branch the instance is waiting for now, and not already spent? | `workflow_authority required` on the mutation binding | Issued by an advance that reaches a guarded Operation node (`AwaitingOperation`); bound by `for_workflow_operation`; rechecked at commit |
+| Required approval evidence | Must a current signed Approve decision also exist? | The binding's `workflow_requirements` plus any `approval_authority` edge authored in the definition | Resolved by the advance before authority is issued; the approver's grant is rechecked at commit |
+
+Decision procedure:
+
+1. An unguarded business mutation needs check 1 only.
+2. A guarded mutation (`workflow_authority required`) needs checks 1 and 2,
+   always.
+3. It also needs check 3 when the installed requirement asks for an approval,
+   or when the definition wires an `approval_authority` edge to the operation.
+4. Approving needs the approval capability plus a fresh signature. Advancing
+   needs the advance capability. Neither satisfies check 1. Permission to pump
+   an instance is not permission to execute the business operations in it.
+5. An approval is evidence, not permission. Workflow authority is a binding to
+   one occurrence, not permission.
+
+The installed requirement (`workflow_requirements` inside
+`worth_query_mutation_binding!`):
+
+| Declared | Meaning |
+|---|---|
+| Guarded requirement omitted | Compile refusal; manual bindings must implement the requirement method explicitly. |
+| `ApplicationWorkflowExecutionRequirements::not_applicable()` | Explicit non-workflow applicability; refused for a guarded binding. |
+| `ApplicationWorkflowExecutionRequirements::occurrence_only()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
+
+Guarded bindings explicitly declare `occurrence_only()` or a mandatory approval
+capability; omission is a compile refusal. A definition cannot weaken the installed evidence floor. Execute
+through fallible `idempotency_owned`, `for_workflow_operation`, the installed
+action's `retain_operation`, and fresh owning `advance`/`close`.
+Do not invent signed/unsigned authorization modes, dummy approvals, host permit
+flags, or a parallel state machine to bridge it.
+
+The full contract is in the
+[workflows guide, Operations](foundations/workflows.md#operations); the
+[information-gathering example](../../worth-query-certification/examples/authored_workflow/information.rs)
+executes a guarded binding declared with `new()`, without signing.
 
 ### Emergency elevation
 
@@ -1041,15 +1142,8 @@ and [Signal Orchestration](./domain-capabilities/signal-compatibility-orchestrat
 
 ### Continuations and managed runs
 
-For native workflow business operations, ordinary capability admission and exact
-current-occurrence binding are both required. Additional approval evidence belongs
-to the installed supplier binding and the authored data connections; it is not a
-universal execution prerequisite. `ApplicationWorkflowExecutionRequirements::new()`
-explicitly declares no additional evidence on a new guarded binding. The absent
-declaration retains legacy required approval, and a definition cannot weaken the
-installed evidence floor. Use the existing `for_workflow_operation` plus
-`execute_in_program` funnel. Do not invent signed/unsigned authorization modes,
-dummy approvals, host permit flags, or a parallel state machine to bridge it.
+The checks a workflow-bound business operation passes are in
+[Workflow-bound operations: three independent checks](#three-independent-checks).
 
 Business lifecycle actions use this same native funnel: attach an explicit prior
 route with `back_action::<Binding, _, _>` or one definition-wide ending with
@@ -1150,7 +1244,7 @@ and [Bound Projection Sharing And Invalidation](./domain-capabilities/bound-proj
 The application-facing outcome families are in How WORTH Works
 [§11](../../../../../docs/how-it-works.md#11-outcomes-every-way-a-request-can-end),
 and resource bounds in
-[§9.9](../../../../../docs/how-it-works.md#99-resources-and-budgets). Engine
+[§9.9](../../../../../docs/how-it-works.md#99-resources-execution-and-cost). Engine
 code also keeps these distinctions typed: skipped versus suppressed, pending
 versus terminal, published versus internally completed, partial effect versus
 indeterminate, and live recovery authority versus published recovery support.
@@ -1289,6 +1383,12 @@ Do not:
   success or failure flag;
 - treat Relational rollback as an application-level authority transition;
 - retry an application mutation or merge after a settlement-deferred outcome;
+- keep a caller-held intent, idempotency key, and preconditions to hand-roll a
+  retry or continuation wrapper for a performed or required-output mutation.
+  [Milestone 9.17.6.4](../../../../../plans/WORTH-query/milestone-9.17.6.4.md)
+  (planned) makes Query own the ordinary application's operation continuation;
+  until it lands, use the existing documented recovery entrances and report
+  any gap instead of building a wrapper;
 - expose, serialize, or repair from a raw `DeferredPublicationSettlement`
   instead of the audience facade's opaque typed carrier;
 - let an opaque prepared Relational candidate publish itself or be reused after

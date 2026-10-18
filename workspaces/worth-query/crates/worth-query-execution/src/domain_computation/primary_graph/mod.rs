@@ -4,7 +4,7 @@ mod aggregate_projection;
 pub(crate) mod application_attempt;
 mod application_branch;
 mod application_checkpoint;
-mod application_contribution;
+pub(in crate::domain_computation) mod application_contribution;
 pub(in crate::domain_computation) use application_contribution::{
     ComputationPrior, SealedComputationRetention,
 };
@@ -21,7 +21,7 @@ pub(in crate::domain_computation) use application_output_demand::{
 mod application_program;
 pub(crate) mod application_query;
 mod application_runtime;
-mod authenticated_principal;
+pub(crate) mod authenticated_principal;
 mod authentication_clock;
 mod bootstrap;
 mod bootstrap_publication;
@@ -40,7 +40,7 @@ mod granular_invalidation;
 mod handler;
 pub(in crate::domain_computation) use handler::DecisionContextUse;
 mod index_currency;
-mod index_maintenance_budget;
+pub(in crate::domain_computation) mod index_maintenance_budget;
 mod index_refresh;
 mod initial_schema_denial;
 mod invariant_installation;
@@ -77,9 +77,9 @@ mod resolution;
 mod resolution_denial;
 mod root;
 mod schema_layout;
-mod settlement_repair;
+pub(crate) mod settlement_repair;
 mod typed_bootstrap;
-mod workflow;
+pub(in crate::domain_computation) mod workflow;
 
 #[cfg(test)]
 pub(in crate::domain_computation) mod tests;
@@ -171,3 +171,6 @@ pub use crate::domain_computation::execution_runtime::product_world::installed_s
 pub(crate) use tests::fixture::AdvancementHost;
 
 pub use observations::principal_target_reads_on_this_thread_for_test;
+
+pub use application_runtime::WorthQueryOperationInputCaptureDenial;
+pub(in crate::domain_computation) mod selected_read_indexes;

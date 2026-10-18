@@ -28,14 +28,14 @@ where
                 wake_id.get()
             )));
         };
-        if let TemporalWakeOwner::Node(node) = owner {
-            if !self.graph.is_alive(node) {
-                return Err(SignalError::invalid_input(format!(
-                    "cannot grant previous-value access from wake {} owned by non-live node {}",
-                    wake_id.get(),
-                    node
-                )));
-            }
+        if let TemporalWakeOwner::Node(node) = owner
+            && !self.graph.is_alive(node)
+        {
+            return Err(SignalError::invalid_input(format!(
+                "cannot grant previous-value access from wake {} owned by non-live node {}",
+                wake_id.get(),
+                node
+            )));
         }
         self.temporal
             .grant_previous_value_access(self.graph.current_branch().id, wake_id)
@@ -133,27 +133,27 @@ where
         };
         if let Some(active_wake_id) = self.temporal.active_wake_for_owner(owner) {
             let Some(active) = self.temporal.scheduled_wake(active_wake_id) else {
-                if let Some(ready) = self.temporal.ready_wake_for_owner(owner) {
-                    if ready.condition() != &condition {
-                        let supersession = self.temporal.supersede_wake_with_condition(
-                            active_wake_id,
-                            condition,
-                            due_tick,
-                            self.telemetry
-                                .as_deref_mut()
-                                .map(|telemetry| &mut telemetry.temporal),
-                        )?;
-                        self.scratch
-                            .temporal
-                            .record_rescheduled_wake(supersession.clone());
-                        self.scratch
-                            .temporal
-                            .record_retired_wake(supersession.retired().clone());
-                        self.scratch
-                            .temporal
-                            .record_scheduled_wake(supersession.scheduled().clone());
-                        return Ok(Some(supersession.scheduled().clone()));
-                    }
+                if let Some(ready) = self.temporal.ready_wake_for_owner(owner)
+                    && ready.condition() != &condition
+                {
+                    let supersession = self.temporal.supersede_wake_with_condition(
+                        active_wake_id,
+                        condition,
+                        due_tick,
+                        self.telemetry
+                            .as_deref_mut()
+                            .map(|telemetry| &mut telemetry.temporal),
+                    )?;
+                    self.scratch
+                        .temporal
+                        .record_rescheduled_wake(supersession.clone());
+                    self.scratch
+                        .temporal
+                        .record_retired_wake(supersession.retired().clone());
+                    self.scratch
+                        .temporal
+                        .record_scheduled_wake(supersession.scheduled().clone());
+                    return Ok(Some(supersession.scheduled().clone()));
                 }
                 return Ok(None);
             };

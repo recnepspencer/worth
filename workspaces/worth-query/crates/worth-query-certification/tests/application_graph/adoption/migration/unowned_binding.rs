@@ -32,6 +32,12 @@ impl
         crate::document_retention_model::schema::DocumentRetentionSchema,
     > for UnownedMigrationBinding
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = SetRetentionInput;
     type InputBinding = crate::document_retention_model::schema::SetRetentionInputBinding;
     type Result = DocumentRetentionWritten;
@@ -126,13 +132,13 @@ fn target_program_must_own_the_exact_migration_binding() {
         .owned_revision();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let denial = host
-        .runtime()
-        .with_application_advancement(&scope, |phase| {
-            host.runtime()
+    let denial =
+        host.runtime()
+            .with_application_advancement(&scope, |phase| {
+                host.runtime()
                 .request(&principal, &scope)
                 .on_branch(branch)
-                .mutate(UnownedMigrationIntent {
+                .advanced().mutate(UnownedMigrationIntent {
                     input: SetRetentionInput {
                         identity: DOCUMENT_IDENTITY.to_owned(),
                         retention_days: 15,
@@ -147,8 +153,8 @@ fn target_program_must_own_the_exact_migration_binding() {
                 )
                 .err()
                 .expect("operation identity cannot substitute for exact binding ownership")
-        })
-        .expect("the installed host admits migration preparation");
+            })
+            .expect("the installed host admits migration preparation");
     assert!(matches!(
         denial,
         WorthQueryApplicationProgramMigrationPreparationDenial::Migration(

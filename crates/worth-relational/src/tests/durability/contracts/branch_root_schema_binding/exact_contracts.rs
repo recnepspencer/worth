@@ -70,11 +70,15 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
     );
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("checkpoint retains both exact root schema carriers");
     let plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
 
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(v2_registry)

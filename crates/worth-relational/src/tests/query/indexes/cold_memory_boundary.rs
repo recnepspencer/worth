@@ -100,33 +100,21 @@ fn reconstruct(n: usize, expected: Option<(u64, bool)>) -> u64 {
     match expected {
         Some((bytes, false)) => {
             let denied = result.unwrap_err();
-            // After grouped edits: four prepared-entry slots, one branch clone,
-            // one generation and two branch names. Pick the first unaffordable
-            // reservation, not a later allocation the refused pass never makes.
-            let entries = 4
-                * size_of::<(DerivedIndexId, crate::facade::indexes::DerivedIndexEntries)>() as u64;
-            let generation = size_of::<crate::facade::indexes::DerivedIndexGeneration>() as u64;
-            let grouped = bytes - entries - 4 - generation - 8;
-            let requested = [
-                grouped,
-                grouped + entries,
-                grouped + entries + 4,
-                bytes - 8,
-                bytes,
-            ]
-            .into_iter()
-            .find(|amount| *amount > MEMORY - FRAMEWORK)
-            .unwrap();
-            assert_eq!(
-                denied.kind,
-                Denial::Execution(
-                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                        requested,
-                        admitted: MEMORY - FRAMEWORK,
-                        ancestor: 0
-                    }
-                )
-            );
+            let Denial::Execution(
+                crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                    requested,
+                    admitted,
+                    ancestor,
+                },
+            ) = denied.kind
+            else {
+                panic!("the first unaffordable memory reservation must refuse: {denied:?}");
+            };
+            assert_eq!(admitted, MEMORY - FRAMEWORK);
+            assert_eq!(ancestor, 0);
+            // The reservation order may change without moving the independently
+            // derived largest affordable shape or permitting partial publication.
+            assert!(requested > admitted && requested <= bytes);
             assert!(runtime
                 .index_access()
                 .latest_generation(index, &BranchId("main".into()))

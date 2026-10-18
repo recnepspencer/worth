@@ -1,12 +1,10 @@
 # Workflow Guides
 
-> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
+> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`.
 
-These guides show how real Query tasks fit together across multiple public
-surfaces.
+For ordinary workflow operation and assessment owners, start with [Operations](../../foundations/workflows.md#operations).
 
-Use this section when you already know the feature pages exist, but you want a
-short path for one job instead of reading each surface in isolation.
+These guides show how real Query tasks fit together across multiple public surfaces.
 
 ## Table Of Contents
 

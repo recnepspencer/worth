@@ -57,9 +57,6 @@ async fn complete_browser_authorization_with_delivery(
         .add_arg("--no-sandbox")
         .map_err(|error| format!("sandbox capability failed: {error}"))?;
     capabilities
-        .add_arg("--ignore-certificate-errors")
-        .map_err(|error| format!("certificate capability failed: {error}"))?;
-    capabilities
         .set_browser_log_level(LoggingPrefsLogLevel::Warning)
         .map_err(|error| format!("browser logging capability failed: {error}"))?;
     let driver = WebDriver::new(webdriver_url, capabilities)

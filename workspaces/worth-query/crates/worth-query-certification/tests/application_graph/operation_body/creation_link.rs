@@ -18,6 +18,7 @@ fn ordinary_created_to_scope_link_is_traversable_and_exact_replay_keeps_it() {
     });
     let first = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(command.clone())
         .without_source()
         .idempotency(&320)
@@ -36,6 +37,7 @@ fn ordinary_created_to_scope_link_is_traversable_and_exact_replay_keeps_it() {
     );
     let replay = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(command)
         .without_source()
         .idempotency(&320)

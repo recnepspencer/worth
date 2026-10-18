@@ -12,9 +12,7 @@ use super::{
 /// Program operations on one branch: compare, inspect, adopt and recover.
 pub struct WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope, Schema> {
     pub(super) application: &'application worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    // Principal-specific adoption authorization enters with Batch 3 custody.
-    // Retain the authenticated request binding now so that surface does not drift.
-    pub(super) _principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    pub(super) principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(super) scope: &'scope WorthQueryRequestScope,
     pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
 }
@@ -69,7 +67,7 @@ where
     ) -> Self {
         Self {
             application,
-            _principal: principal,
+            principal,
             scope,
             branch,
         }
@@ -86,11 +84,12 @@ where
         let runtime = self.application;
         runtime.with_application_advancement(&request_scope, |phase| {
 
-        self.application
+        let selected = self.application
             .on_branch(self.branch)
             .select(&phase, )
-            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
-            .branch_adoption_requirements(target)
+            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?;
+        selected.authorize_program_adoption(&phase, self.principal, self.scope, target).map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Authorization)?;
+        selected.branch_adoption_requirements(target)
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
 
         }).map_err(|cause| WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause)))?
@@ -127,19 +126,47 @@ where
     pub fn adopt<'requirements>(
         self,
         requirements: &'requirements WorthQueryProgramAdoptionRequirements,
-    ) -> WorthQueryApplicationProgramAdoptionRequest<
-        'application,
-        'principal,
-        'scope,
-        'requirements,
-        Schema,
+    ) -> Result<
+        WorthQueryApplicationProgramAdoptionRequest<
+            'application,
+            'principal,
+            'scope,
+            'requirements,
+            Schema,
+        >,
+        WorthQueryApplicationProgramAdoptionPreparationDenial,
     > {
-        WorthQueryApplicationProgramAdoptionRequest {
+        self.admit_adoption_request(requirements.target())?;
+        Ok(WorthQueryApplicationProgramAdoptionRequest {
             programs: self,
             requirements,
             migration: None,
             workflow: None,
+        })
+    }
+
+    fn admit_adoption_request(
+        &self,
+        target: &ApplicationProgramRevision,
+    ) -> Result<(), WorthQueryApplicationProgramAdoptionPreparationDenial> {
+        self.application.with_application_advancement(self.scope, |phase| {
+            let selected = self.application.on_branch(self.branch).select(&phase).map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?;
+            selected.authorize_program_adoption(&phase, self.principal, self.scope, target).map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Authorization)
+        }).map_err(|cause| WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause)))?
+    }
+
+    /// Publishes the exact prepared branch with this fresh authenticated context.
+    pub fn publish(
+        self,
+        prepared: worth_query_execution::facade::primary_graph::WorthQueryPreparedBranchAdoption,
+    ) -> worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome
+    {
+        if self.branch != prepared.branch() {
+            return worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied {
+                cause: worth_query_execution::facade::primary_graph::WorthQueryProgramAdoptionAuthorizationDenial::ForeignBranch { expected: prepared.branch(), requested: self.branch }, prepared,
+            };
         }
+        prepared.publish(self.application, self.principal, self.scope)
     }
 
     /// Continues only domain custody returned by an unpublished adoption.
@@ -183,6 +210,7 @@ where
         match self.application.integration_recover_branch_adoption(
             self.branch,
             recovery,
+            self.principal,
             self.scope,
         ) {
             Ok(outcome) => {

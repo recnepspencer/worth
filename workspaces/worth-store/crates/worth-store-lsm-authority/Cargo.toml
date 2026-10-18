@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-lsm-authority"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "LSM durable-membership, compaction-publication, and replay authority."

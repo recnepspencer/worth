@@ -19,6 +19,7 @@ mod expiry;
 mod grant_selection;
 mod path_preparation;
 mod projection_validation;
+mod recorded_actor;
 mod upper_bound;
 pub(super) use upper_bound::observe_upper_bound_policy;
 
@@ -164,6 +165,7 @@ pub(super) fn observe_capability_policy(
     sample: &WorthQueryRuntimeTimeSample,
     exact_grant: Option<worth_relational::facade::identity::EntityId>,
 ) -> Result<WorthQueryObservedCapabilityDecision, WorthQueryOperationAuthorizationDenial> {
+    let recorded = recorded_actor::observe(execution, relational, &snapshot, request)?;
     projection_validation::validate_projection_shape(
         installed,
         request,
@@ -189,7 +191,8 @@ pub(super) fn observe_capability_policy(
         request,
         paths,
     )?;
-    let bridge_evidence = evaluate_exact_policy(bridge, installed, request, &evidence)?;
+    let bridge_evidence =
+        evaluate_exact_policy(bridge, installed, request, &evidence, recorded.as_deref())?;
     let grant = extract_exact_grant(installed, &evidence)?;
     if exact_grant != grant {
         return Err(WorthQueryOperationAuthorizationDenial::new(
@@ -209,15 +212,8 @@ pub(super) fn observe_capability_policy(
             relational,
             evidence,
             bridge_evidence,
-        )
-        .map_err(|()| {
-            WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::InconsistentDecision,
-                ),
-                installed.contract().name(),
-            )
-        })?
+            recorded,
+        )?
         .with_preparatory_relational_work(preparatory_relational_work),
         grant,
         capability_authority_identity: std::sync::Arc::clone(
@@ -291,16 +287,20 @@ fn evaluate_exact_policy(
     installed: &WorthQueryInstalledCapabilityPlan,
     request: &WorthQueryRetainedCapabilityRequest,
     evidence: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
+    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
 ) -> Result<
     worth_runtime_bridge::facade::BridgeAuthorizationDecisionEvidence,
     WorthQueryOperationAuthorizationDenial,
 > {
-    let dependency_identity = *evidence.observation_identity().bytes();
+    let dependency_identity = recorded.map_or(*evidence.observation_identity().bytes(), |actor| {
+        actor.combined_identity(evidence.observation_identity().bytes())
+    });
     let bridge_observation = bridge_observation::lower_bridge_observation(
         installed,
         request,
         evidence,
         dependency_identity,
+        recorded,
     )?;
     let bridge_evidence = bridge.evaluate(bridge_observation).map_err(|_| {
         WorthQueryOperationAuthorizationDenial::new(
@@ -325,6 +325,7 @@ fn evaluate_exact_policy(
             installed.decision_rules(),
             &bridge_evidence,
             decision_denial::elevation_denial_kind(installed, evidence),
+            recorded,
         )?;
         return Err(WorthQueryOperationAuthorizationDenial::from_ordered_causes(
             causes,

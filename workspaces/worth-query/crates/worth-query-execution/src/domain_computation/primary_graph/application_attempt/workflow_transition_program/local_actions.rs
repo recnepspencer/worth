@@ -156,7 +156,9 @@ where
         .with_deadline(deadline);
         let required = RequiredWorkflowOperation::from_selected(
             branch,
-            admitted.instance(),
+            runtime_authority,
+            instance,
+            None,
             admitted.node_path().to_owned(),
             admitted.identity().to_owned(),
             *admitted.identity_bytes(),

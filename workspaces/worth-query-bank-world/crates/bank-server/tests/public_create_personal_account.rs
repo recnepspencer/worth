@@ -63,6 +63,7 @@ fn assert_public_creation(display_name: &str) {
         display_name: AccountName::new(display_name).expect("the name should be valid"),
     };
     let omitted_program = request
+        .advanced()
         .mutate(input.clone())
         .idempotency(&key)
         .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
@@ -78,66 +79,84 @@ fn assert_public_creation(display_name: &str) {
             .mutate(mutations::create_personal_account(input))
             .as_principal(&actor)
             .controls(BankMutationControls::new(scope.clone(), key.clone()))
-            .execute()
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("declared personal action: {cause:?}"))
     };
-    let first = create(input.clone()).expect("the public mutation request should execute");
-    let WorthQueryApplicationMutationOutcome::Committed {
-        receipt: mut first_receipt,
-        result,
-    } = first
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(first) =
+        create(input.clone()).advance(&request)
     else {
-        panic!("the first mutation must publish an actual World commit: {first:?}");
+        panic!("fresh creation completes")
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        receipt: first_receipt,
+        result,
+        ..
+    } = first.evidence()
+    else {
+        panic!("fresh handler result")
     };
     let account = result.account;
     assert!(account.canonical_text().starts_with("operation:"));
     assert_eq!(account.canonical_text().len(), 76);
     let created_entity = first_receipt
         .outputs_of::<CreatePersonalAccountOutputs>()
-        .expect("the creation commits under the personal account contract")
+        .unwrap()
         .entity::<CreatedPersonalAccountOutput>()
-        .expect("the declared created-account output must resolve")
+        .unwrap()
         .entity_id();
-    assert!(first_receipt
-        .take_performed_relational_product_change()
-        .is_some());
-
     let detail = request
         .query(queries::account_detail(account))
         .execute()
-        .expect("the new account should be readable on the same request");
+        .unwrap();
     let [detail] = detail.rows() else {
-        panic!("account detail must return the created account");
+        panic!("one created account")
     };
     assert_eq!(detail.summary().id(), account);
     assert_eq!(detail.summary().display_name(), &input.display_name);
     assert_eq!(detail.institution(), institution);
     assert_eq!(detail.personal_owner(), Some(actor_id));
-
-    let retry = create(input.clone()).expect("the identical retry should execute");
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(mut retry_receipt) = retry else {
-        panic!("the identical retry must recover the prior commit");
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(retry) =
+        create(input.clone()).advance(&request)
+    else {
+        panic!("keyed recovery completes")
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered {
+        receipt: retry_receipt,
+        ..
+    } = retry.evidence()
+    else {
+        panic!("replay never invents a result")
     };
     let recovered_entity = retry_receipt
         .outputs_of::<CreatePersonalAccountOutputs>()
-        .expect("the recovered commit keeps the personal account contract")
+        .unwrap()
         .entity::<CreatedPersonalAccountOutput>()
-        .expect("the recovered output correspondence must remain complete")
+        .unwrap()
         .entity_id();
     assert_eq!(recovered_entity, created_entity);
-    assert!(retry_receipt.is_same_authoritative_commit(&first_receipt));
-    assert!(retry_receipt
-        .take_performed_relational_product_change()
-        .is_none());
-
-    let changed = create(CreatePersonalAccount {
-        display_name: AccountName::new("Changed account").expect("the name should be valid"),
-        ..input
-    })
-    .expect("the changed retry should resolve idempotency");
+    assert!(retry_receipt.is_same_authoritative_commit(first_receipt));
+    retry
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("retry close: {cause:?}"));
+    first
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("creation close: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(changed) =
+        create(CreatePersonalAccount {
+            display_name: AccountName::new("Changed account").unwrap(),
+            ..input
+        })
+        .advance(&request)
+    else {
+        panic!("changed key meaning terminal")
+    };
     assert!(matches!(
-        changed,
-        WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
+        changed.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
     ));
+    changed
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("drift close: {cause:?}"));
 }
 
 fn id<T>(constructor: impl FnOnce(u64) -> Option<T>, value: u64) -> T {

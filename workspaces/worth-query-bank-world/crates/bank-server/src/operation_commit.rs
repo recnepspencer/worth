@@ -1,5 +1,8 @@
 //! Bank adaptation of Query application commits.
 
+mod managed_cleanup;
+pub use managed_cleanup::{BankManagedCleanup, BankReleasedManagedCleanup};
+
 mod commit_denial;
 mod commit_outcome;
 mod preparation_denial;

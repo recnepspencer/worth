@@ -2,7 +2,10 @@
 
 use super::{width, Stop};
 
-pub(super) fn btree_navigation_work<E>(entries: usize, text_bytes: usize) -> Result<u64, Stop<E>> {
+pub(in crate::indexes::access) fn btree_navigation_work<E>(
+    entries: usize,
+    text_bytes: usize,
+) -> Result<u64, Stop<E>> {
     let levels = usize::BITS
         .checked_sub(entries.leading_zeros())
         .ok_or(Stop::AccountingOverflow)?;
@@ -16,7 +19,9 @@ pub(super) fn btree_navigation_work<E>(entries: usize, text_bytes: usize) -> Res
         .ok_or(Stop::AccountingOverflow)
 }
 
-pub(super) fn ordered_navigation_work<E>(entries: usize) -> Result<u64, Stop<E>> {
+pub(in crate::indexes::access) fn ordered_navigation_work<E>(
+    entries: usize,
+) -> Result<u64, Stop<E>> {
     let mut levels = 1_usize;
     let mut threshold = 63_usize;
     while entries >= threshold {

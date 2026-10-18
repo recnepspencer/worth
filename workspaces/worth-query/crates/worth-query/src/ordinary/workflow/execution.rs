@@ -53,12 +53,10 @@ impl WorthQueryWorkflowRequest {
             .expect("promotion context must carry its admitted preview basis");
         let (command, _) = mutation.into_parts();
         let materialize_inspection = inspection_policy.materializes_rich_inspection();
-        if materialize_inspection {
-            if let Err(error) = workspace.admit_ordinary_rich_inspection() {
-                return WorthQueryWorkflowOutcome::Stopped(
-                    WorthQueryWorkflowStop::inspection_unavailable(error, counters),
-                );
-            }
+        if materialize_inspection && let Err(error) = workspace.admit_ordinary_rich_inspection() {
+            return WorthQueryWorkflowOutcome::Stopped(
+                WorthQueryWorkflowStop::inspection_unavailable(error, counters),
+            );
         }
         let counters = counters.execution_attempted();
         let execution = match workspace.execute_ordinary_preview_promotion(

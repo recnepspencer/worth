@@ -207,7 +207,7 @@ impl WorthQueryApplicationObservedFact {
                 instances,
             )?,
             Self::WorkflowHistoryBasis {
-                maximum_transitions,
+                requirement,
                 transition_count,
                 snapshot: observed,
                 ..
@@ -215,7 +215,7 @@ impl WorthQueryApplicationObservedFact {
                 runtime,
                 snapshot,
                 observed,
-                *maximum_transitions,
+                *requirement,
                 *transition_count,
             ),
         };

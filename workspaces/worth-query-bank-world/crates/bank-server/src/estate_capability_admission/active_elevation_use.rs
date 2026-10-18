@@ -240,18 +240,28 @@ fn real_approved_elevation_cannot_enter_the_bank_disbursement_operation() {
             AuthorizationRefusal::ElevationNotApplicable
         )
     );
-    let ordinary = fixture.runtime.disburse_estate_with_key(
-        &requester,
-        action,
-        &bank_domain::proposals::BankIdempotencyKey::new("elevated-disbursement-denied").unwrap(),
-        &request_scope(),
-    );
-    assert!(matches!(
-        ordinary,
-        Err(crate::BankEstateProgressionDenial::ApplicationEntry(
-            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(_)
-        ))
-    ));
+    let ordinary = {
+        let source_actor = &requester;
+        let source_scope = &request_scope();
+        let source_key =
+            &bank_domain::proposals::BankIdempotencyKey::new("elevated-disbursement-denied")
+                .unwrap();
+        let source_intent = bank_domain::schema::DisburseEstate::try_from(action)
+            .expect("typed estate command preserves the exact variant");
+        let source_request = fixture.runtime.request(source_actor, source_scope);
+        let source_operation = fixture
+            .runtime
+            .mutate(crate::mutations::disburse_estate(source_intent))
+            .as_principal(source_actor)
+            .controls(crate::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+        source_operation.advance(&source_request)
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: _ordinary_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(_)) } = ordinary else { panic!("approved elevation cannot substitute ordinary disbursement capability") };
 }
 
 fn disbursement_action() -> EstateAction {

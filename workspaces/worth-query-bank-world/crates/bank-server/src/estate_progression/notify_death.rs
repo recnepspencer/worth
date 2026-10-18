@@ -1,7 +1,6 @@
 use bank_domain::{
     estate::{DeathNoticeId, DeathNoticeStatus, EstateAction, EstateCaseId},
     model::BankPrincipalId,
-    proposals::BankIdempotencyKey,
     schema::{
         BankSchema, DeathNoticeIdentityField, DeathNoticeStatusField, DeathNoticeSubject,
         EstateCase, EstateDeathNotice, EstateDeceased, NotifyDeathEstateCapability,
@@ -20,7 +19,7 @@ use worth_query_host::facade::{
 };
 
 use super::BankEstateProgressionDenial;
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
+use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
 
 type AdmittedNotificationOperation = WorthQueryAdmittedApplicationOperation<
     BankSchema,
@@ -47,42 +46,6 @@ pub enum BankDeathNotificationProjectionDenial {
     Traversal(crate::BankInvariantProjectionTraversalDenial),
 }
 impl BankIdentityRuntime {
-    pub fn notify_estate_death_with_key(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        key: &BankIdempotencyKey,
-        request: &WorthQueryRequestScope,
-    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let EstateAction::NotifyDeath {
-            estate,
-            notice,
-            subject,
-        } = action
-        else {
-            return Err(BankEstateProgressionDenial::CommandInput(
-                "NotifyDeathEstateOperation",
-            ));
-        };
-        super::program_outcome::program_outcome(
-            self.request(principal, request)
-                .mutate(bank_domain::schema::NotifyEstateDeath::new(
-                    estate, notice, subject,
-                ))
-                .idempotency(key)
-                .execute_capability_in_program(
-                    self.application_program(),
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                ),
-            "NotifyDeathEstateOperation",
-            |denial| {
-                denial
-                    .downcast::<BankDeathNotificationProjectionDenial>()
-                    .map(BankEstateProgressionDenial::DeathNotificationProjection)
-            },
-        )
-    }
-
     pub(crate) fn admit_notification_operation(
         &self,
         phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,

@@ -1,20 +1,9 @@
+use super::source_completion::ConsumerSourceCompletion;
 use super::*;
 
-pub(super) fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
+fn consumer_specs_with_source(source: ApplicationFeatureSpec) -> Vec<ApplicationFeatureSpec> {
     vec![
-        ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
-            .provides::<PlanarBodyOutput>()
-            .repeated_optional_member_with_external_input::<
-                PlanarEditBinding<ConsumerSchema>,
-                correspondence::OptionalAdjustmentCorrespondence,
-                external_input::NeutralExternalProvider,
-            >()
-            .mutation::<PriorCycleAdjustmentBinding<ConsumerSchema>>()
-            .mutation_with_external_input::<
-                VertexReplacementBinding<ConsumerSchema>,
-                external_input::NeutralExternalProvider,
-            >()
-            .finish(),
+        source,
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>()
             .provides::<PlanarDerivedBodyOutput>()
             .conditional_operation::<MutatePlanar>()
@@ -81,4 +70,76 @@ pub(super) fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
             .provides::<PlanarFinalBodyOutput>()
             .finish(),
     ]
+}
+
+pub(super) fn source_builder(
+) -> worth_query_decl::facade::application_program::ApplicationFeatureSpecBuilder<
+    ConsumerSchema,
+    ApplicationRootComposition,
+    PlanarSourceFeature,
+> {
+    ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
+        .provides::<PlanarBodyOutput>()
+        .action::<PlanarEditBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+        .correspondence::<correspondence::OptionalAdjustmentCorrespondence>()
+        .external_input::<external_input::NeutralExternalProvider>()
+        .finish_action()
+        .action::<PriorCycleAdjustmentBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+        .finish_action()
+        .action::<VertexReplacementBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+        .external_input::<external_input::NeutralExternalProvider>()
+        .finish_action()
+}
+
+pub(super) fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
+    consumer_specs_with_source(source_builder().finish())
+}
+
+pub(super) fn consumer_fixed_feature_specs() -> Vec<ApplicationFeatureSpec> {
+    consumer_specs_with_source(composed_action::source_feature_spec())
+}
+
+#[cfg(test)]
+pub(super) fn source_delivery_specs<D>() -> Vec<ApplicationFeatureSpec>
+where
+    D: worth_query_decl::facade::application_program::ApplicationActionDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    >,
+{
+    consumer_specs_with_source(
+        source_builder()
+            .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, D>()
+            .finish_action()
+            .finish(),
+    )
+}
+
+/// The same delivery under a changed declared locality/change contract.
+#[cfg(test)]
+pub(super) fn changed_source_delivery_specs<D>() -> Vec<ApplicationFeatureSpec>
+where
+    D: worth_query_decl::facade::application_program::ApplicationActionDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    >,
+{
+    use composed_action::{ChangedSourceChange, SourceLocality};
+    consumer_specs_with_source(
+        source_builder()
+            .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, D>()
+            .locality_and_change::<SourceLocality, ChangedSourceChange>()
+            .finish_action()
+            .finish(),
+    )
+}
+
+#[cfg(test)]
+pub(super) fn consumer_changed_fixed_feature_specs() -> Vec<ApplicationFeatureSpec> {
+    consumer_specs_with_source(source_builder()
+        .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, ConsumerFixedDelivery>()
+        .locality_and_change::<composed_action::SourceLocality, composed_action::ChangedSourceChange>()
+        .evaluated_requirement::<composed_action::CatalogInputRequirement>()
+        .external_input::<external_input::NeutralExternalProvider>()
+        .finish_action().finish())
 }

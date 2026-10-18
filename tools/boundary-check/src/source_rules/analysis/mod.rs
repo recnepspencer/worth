@@ -27,6 +27,7 @@ mod callable_surface;
 mod canonical_order;
 mod commit_consults;
 mod compiled_library_surface;
+mod compiled_target;
 mod crate_modules;
 mod dependency_authority;
 pub(super) mod exported_ceremony_macro;
@@ -62,6 +63,7 @@ use crate::snapshots::FacadeVocabularyAuthority;
 use std::path::Path;
 
 pub(crate) use compiled_library_surface::observe_compiled_library_surface;
+pub(crate) use compiled_target::parse_compiled_target_where;
 pub(crate) use crate_modules::{parse_crate_modules_where, GovernedCrate, ModuleGraph};
 pub(crate) use path_dependencies::path_backed_dependency_roots;
 pub(crate) use raw_geometry::enforce_raw_geometry_denials;

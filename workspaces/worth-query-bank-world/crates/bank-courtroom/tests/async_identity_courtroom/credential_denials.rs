@@ -88,6 +88,7 @@ pub async fn prove_real_wrong_audience_denial(
             BankPrincipalId::new(2).expect("bank principal id should admit"),
             external_identity,
         )],
+        Some(endpoints.trusted_root_pem().as_bytes()),
         scope,
     )
     .await
@@ -161,6 +162,7 @@ async fn prove_real_wrong_issuer_denial(
             BankPrincipalId::new(3).expect("bank principal id should admit"),
             external_identity,
         )],
+        Some(endpoints.trusted_root_pem().as_bytes()),
         scope,
     )
     .await

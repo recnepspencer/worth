@@ -187,10 +187,10 @@ impl ProductBranchRegistry {
         lifecycle: ProductBranchIncarnation,
         mut prepare: Option<&mut dyn FnMut(u64) -> bool>,
     ) -> Result<Option<ProductBranchReferenceCell>, ProductBranchCurrentnessLookupStop> {
-        if let Some(prepare) = prepare.as_mut() {
-            if !prepare(1) {
-                return Err(ProductBranchCurrentnessLookupStop::AdmissionRefused);
-            }
+        if let Some(prepare) = prepare.as_mut()
+            && !prepare(1)
+        {
+            return Err(ProductBranchCurrentnessLookupStop::AdmissionRefused);
         }
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         // HashMap::capacity is a live-entry capacity, not a bucket count. Two

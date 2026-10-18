@@ -25,13 +25,14 @@ where
         SourceValue<Schema, Demand>: 'static,
         SourceQuery<Schema, Demand>: 'static,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
-        self.runtime
+        self.backing
+            .runtime
             .advance_program_output_demand(
                 execution,
                 phase,
@@ -41,6 +42,12 @@ where
                 delivery_branch,
                 disclosure,
             )
+            .map_err(|mut denial| {
+                if let Some(cleanup) = demand.admitted.take_read_cleanup() {
+                    denial = denial.with_read_cleanup(cleanup);
+                }
+                denial
+            })
             .map(|progress| match progress {
                 WorthQueryOutputDemandAdvance::Pending => WorthQueryProgramOutputAdvance::Pending,
                 WorthQueryOutputDemandAdvance::Settled(retained) => {

@@ -1,6 +1,8 @@
 [package]
 name = "worth-signal"
+autotests = false
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 description = "Generic deterministic reactive computation runtime"
 readme = "README.md"
@@ -17,7 +19,6 @@ profile-extended = []
 test-peak-allocation = []
 
 [dependencies]
-tracing = "0.1"
 serde = { version = "1", features = ["derive", "rc"] }
 smallvec = { version = "1", features = ["serde"] }
 serde_json = "1"
@@ -34,8 +35,6 @@ serde_json = { version = "1", features = ["arbitrary_precision"] }
 stats_alloc = "0.1"
 tracking-allocator = { version = "0.4", default-features = false }
 trybuild = "1"
-quote = "1"
-syn = { version = "2", features = ["full", "visit"] }
 
 # The documented owner workflow is evidence, not decoration: `cargo test` must
 # run it, not merely build it. `harness = false` keeps `fn main` the single
@@ -52,3 +51,15 @@ js-sys = "0.3"
 wasm-bindgen = "0.2"
 [lints]
 workspace = true
+
+[[test]]
+name = "signal_contracts"
+path = "tests/signal_contracts.rs"
+
+[[test]]
+name = "candidate_ticket_contention"
+path = "tests/isolated/candidate_ticket_contention.rs"
+
+[[test]]
+name = "request_differential"
+path = "tests/isolated/request_differential.rs"

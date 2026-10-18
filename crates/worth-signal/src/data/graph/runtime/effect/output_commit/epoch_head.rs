@@ -27,10 +27,10 @@ impl SignalGraph {
             budget.claim_vec::<ProducedAspectChange>(delta.changes.as_slice().len())?;
         }
         for change in delta.changes.as_slice() {
-            if !change.changed_scopes.is_empty() {
-                if let Some(budget) = preparation.as_deref_mut() {
-                    budget.claim_vec::<PartitionSubscription>(change.changed_scopes.len())?;
-                }
+            if !change.changed_scopes.is_empty()
+                && let Some(budget) = preparation.as_deref_mut()
+            {
+                budget.claim_vec::<PartitionSubscription>(change.changed_scopes.len())?;
             }
             for scope in change.changed_scopes.as_slice() {
                 let depth = scope.path().depth();

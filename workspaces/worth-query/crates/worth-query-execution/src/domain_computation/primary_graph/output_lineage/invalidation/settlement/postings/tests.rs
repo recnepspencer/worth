@@ -1,5 +1,7 @@
 //! Exact local posting grouping and reverse-index witnesses.
 
+mod bounded_ordering;
+
 use std::sync::Arc;
 
 use worth_relational::facade::{
@@ -161,6 +163,20 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
                 .unwrap();
         let installed = admission.charged_index_bytes() - before_index;
         assert!(installed > 0 && installed <= whole);
-        assert!(admission.charged_bytes() - before_preparation > installed);
+        // Preparation covers what survives, and stays within what each
+        // tree's insertions can allocate together, however many paths ran.
+        let prepared = admission.charged_bytes() - before_preparation;
+        let sequences = index_capacity::insertion_sequence_bytes::<
+            Arc<FactPostingKey>,
+            im::OrdSet<super::super::super::mark_state::FactPosting>,
+        >(keys)
+        .unwrap()
+            + keys as u64
+                * index_capacity::insertion_sequence_bytes::<
+                    super::super::super::mark_state::FactPosting,
+                    (),
+                >(copies)
+                .unwrap();
+        assert!(prepared >= installed && prepared <= sequences);
     }
 }

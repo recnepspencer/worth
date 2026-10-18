@@ -19,7 +19,6 @@ pub(super) fn encode(actions: &[ApplicationWorkflowGlobalAction]) -> String {
                     operation.binding().expect("validated global binding").0,
                     operation
                         .workflow_execution_requirements()
-                        .expect("validated global floor")
                         .persistence_identity()
                 ])
             })
@@ -87,7 +86,7 @@ mod tests {
             "End",
             "end-input",
             "end-binding",
-            ApplicationWorkflowExecutionRequirements::new().persistence_identity()
+            ApplicationWorkflowExecutionRequirements::occurrence_only().persistence_identity()
         ]);
         let valid = serde_json::json!([1, [record.clone()]]);
         let encoded = valid.to_string();

@@ -1,9 +1,6 @@
 //! One row per cause pins the deliberate HTTP remedy change from HEAD.
 use super::*;
-use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationMutationOutcome as Mutation,
-    WorthQueryApplicationRequestMutationDenialKind as Request,
-};
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind as Request;
 use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Session;
 
 #[test]
@@ -88,12 +85,11 @@ fn preparation_and_pending_execution_next_actions_are_explicit_per_cause() {
         ),
     ];
     for (cause, resource, expected) in resources {
-        let (_, preparation) =
-            commit_denial(WorthQueryApplicationCommitDenialKind::ExecutionResource {
-                denial: resource,
-                partition_identity: Some(7),
-                policy_ancestor: None,
-            });
+        let preparation = commit_denial(WorthQueryApplicationCommitDenialKind::ExecutionResource {
+            denial: resource,
+            partition_identity: Some(7),
+            policy_ancestor: None,
+        });
         let pending = super::super::denial::pending_execution_denial(Session::ExecutionResource {
             denial: resource,
             partition_identity: Some(7),
@@ -156,7 +152,7 @@ fn preparation_and_pending_execution_next_actions_are_explicit_per_cause() {
     ];
     for (cause, application, session, expected) in faults {
         assert_eq!(
-            commit_denial(application).1.next_action,
+            commit_denial(application).next_action,
             expected,
             "preparation {cause}"
         );
@@ -168,14 +164,9 @@ fn preparation_and_pending_execution_next_actions_are_explicit_per_cause() {
     }
     // HTTP's wide metadata carrier is deferred. Preparation/pending controls
     // still use HEAD's ProviderRejected/Unavailable projection and keep Retry.
-    for (cause, outcome) in [
-        ("Cancelled", Mutation::Cancelled),
-        ("DeadlineElapsed", Mutation::DeadlineExceeded),
-    ] {
+    for cause in ["Cancelled", "DeadlineElapsed"] {
         assert_eq!(
-            commit_denial(WorthQueryApplicationCommitDenialKind::ProviderRejected)
-                .1
-                .next_action,
+            commit_denial(WorthQueryApplicationCommitDenialKind::ProviderRejected).next_action,
             Retry,
             "preparation {cause}"
         );
@@ -185,10 +176,5 @@ fn preparation_and_pending_execution_next_actions_are_explicit_per_cause() {
             Retry,
             "pending {cause}"
         );
-        let observed = super::super::describe_outcome(cause.into(), Ok(outcome));
-        let super::super::BankHttpMutationOutcome::NotApplied { denial, .. } = observed else {
-            panic!("control stop unexpectedly applied");
-        };
-        assert_eq!(denial.next_action, Retry, "{cause}");
     }
 }

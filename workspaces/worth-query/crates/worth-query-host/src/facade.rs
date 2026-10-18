@@ -1,5 +1,11 @@
 //! Host-audience view over the production Query authority graph.
 //!
+//! Ordinary action owners retain the authentic installed runtime and complete
+//! installed action beyond construction. Applications keep their own genuine
+//! runtime handle for fresh requests; operation keepalive grants no admission
+//! or cleanup. Bind initial workflow vocabulary before retaining handles, and
+//! preserve runtime/spec/signing custody when configuration refuses.
+//!
 //! Program-output publication custody is deliberately absent from this facade;
 //! the workspace boundary checker reserves its issuer to the publication owner.
 

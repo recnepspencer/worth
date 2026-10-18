@@ -5,6 +5,8 @@
 
 mod application_invariant_acceptance;
 mod application_program;
+mod program_deployment;
+use program_deployment::ConsumerProgramDeployment;
 
 pub use application_program::{
     ConsumerDiscoveredProgramRoot, ConsumerProgram, ConsumerProgramRoot,
@@ -33,7 +35,7 @@ worth_query_application! {
     pub ConsumerSchema {
         owner: "worth.query.certification.consumer",
         version: (1, 1),
-        contributions: [TopologyContribution, ParameterContribution],
+        contributions: [TopologyContribution, ParameterContribution, ConsumerProgramDeployment],
     }
 }
 
@@ -55,9 +57,9 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
     let declaration = ConsumerSchema::declaration()
         .expect("the root-owned contributions form one closed schema declaration");
 
-    assert_eq!(declaration.contributions().len(), 2);
-    // Seven declarations add the no-source recovery operation to the 122-member schema.
-    assert_eq!(declaration.erased().members().len(), 129);
+    assert_eq!(declaration.contributions().len(), 3);
+    // Native deployment contributes 23 declarations beyond the 130-member source schema.
+    assert_eq!(declaration.erased().members().len(), 153);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY
@@ -97,7 +99,7 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
 
 fn run() {
     let installed = installed_schema();
-    assert_eq!(installed.contributions().len(), 2);
+    assert_eq!(installed.contributions().len(), 3);
     assert!(installed
         .contributions()
         .get("worth.query.certification.topology.v2")

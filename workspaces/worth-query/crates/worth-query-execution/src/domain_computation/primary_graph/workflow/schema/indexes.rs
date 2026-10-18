@@ -7,6 +7,7 @@ pub(in crate::domain_computation::primary_graph) fn register_indexes(
     layout: &mut WorthQueryWorkflowLayout,
     mut install: impl FnMut(DerivedIndexDefinition) -> Result<DerivedIndexDefinition, String>,
 ) -> Result<(), String> {
+    let layout = layout.installation_fields_mut();
     let installed = install(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "worth-query-workflow.lineage-identity".to_owned(),

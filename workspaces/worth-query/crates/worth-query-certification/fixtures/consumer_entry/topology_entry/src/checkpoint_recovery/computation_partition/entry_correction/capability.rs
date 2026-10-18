@@ -140,5 +140,5 @@ impl<Schema: TopologySchemaBinding>
         ))
     }
 }
-mod contract;
+pub(super) mod contract;
 pub(in super::super) use contract::declare;

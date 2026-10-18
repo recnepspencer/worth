@@ -95,7 +95,7 @@ pub struct ApplicationMutationBindingDescriptor {
     requires_application_program: bool,
     requires_workflow_authority: bool,
     workflow_control: bool,
-    workflow_execution_requirements: Option<super::ApplicationWorkflowExecutionRequirements>,
+    workflow_execution_requirements: super::ApplicationWorkflowExecutionRequirements,
 }
 
 impl ApplicationMutationBindingDescriptor {
@@ -123,7 +123,7 @@ impl ApplicationMutationBindingDescriptor {
         requires_application_program: bool,
         requires_workflow_authority: bool,
         workflow_control: bool,
-        workflow_execution_requirements: Option<super::ApplicationWorkflowExecutionRequirements>,
+        workflow_execution_requirements: super::ApplicationWorkflowExecutionRequirements,
     ) -> Self
     where
         Binding: 'static,
@@ -309,7 +309,7 @@ impl ApplicationMutationBindingDescriptor {
 
     pub fn workflow_execution_requirements(
         &self,
-    ) -> Option<&super::ApplicationWorkflowExecutionRequirements> {
-        self.workflow_execution_requirements.as_ref()
+    ) -> &super::ApplicationWorkflowExecutionRequirements {
+        &self.workflow_execution_requirements
     }
 }

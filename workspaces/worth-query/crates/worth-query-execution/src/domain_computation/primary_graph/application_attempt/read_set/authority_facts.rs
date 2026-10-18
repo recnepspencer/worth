@@ -30,7 +30,10 @@ impl<Schema, Operation, Input, Scope>
                 if !fact.remains_equal_in(runtime, execution, self.lease.snapshot())? {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                        &format!("workflow authority observation changed: {}", fact.locator_identity()),
+                        format!(
+                            "workflow authority observation changed: {}",
+                            fact.locator_identity()
+                        ),
                     ));
                 }
             }

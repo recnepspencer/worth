@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use worth_query::facade::runtime::{
     WorthQueryRuntimeFacadeFamily, WorthQueryRuntimeFamilySupport, WorthQueryRuntimeSupportProfile,
@@ -12,16 +12,16 @@ use worth_server::{
     WorthServerTransportClass,
 };
 
-#[path = "support/compat_http/phase_two_runtime.rs"]
-mod compat_http_phase_two_runtime;
-#[path = "support/query_handoff/fixture.rs"]
-mod query_handoff_fixture;
-#[path = "support/query_handoff/runtime.rs"]
-mod query_handoff_runtime;
-#[path = "support/worth_native/assertions.rs"]
-mod worth_native_assertions;
-#[path = "support/worth_native/runtime.rs"]
-mod worth_native_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_fixture as query_handoff_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_worth_native_assertions as worth_native_assertions;
+#[allow(unused_imports)]
+use crate::shared_support_worth_native_runtime as worth_native_runtime;
 
 use compat_http_phase_two_runtime::{
     build_phase_two_server, compat_execution_input, worth_native_named_read,

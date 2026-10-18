@@ -13,6 +13,6 @@ pub(crate) use installation::{
     PlatformPulseQueryInstallationDenial,
 };
 pub(crate) use lifecycle_application::{
-    PlatformPulseQueryActionOutcome, PlatformPulseQueryLifecycle,
+    PlatformPulseQueryActionOutcome, PlatformPulseQueryContinuation, PlatformPulseQueryLifecycle,
     PlatformPulseQueryLifecycleDenial, PlatformPulseQueryShutdownReceipt,
 };

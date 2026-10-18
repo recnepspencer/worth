@@ -373,3 +373,6 @@ fn guarded_code_naming_a_workflow_lane_item_is_refused() {
         "{found:?}"
     );
 }
+
+#[path = "resolution_cases.rs"]
+mod resolution_cases;

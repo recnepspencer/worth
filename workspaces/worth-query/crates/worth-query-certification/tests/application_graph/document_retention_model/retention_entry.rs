@@ -40,10 +40,13 @@ use super::schema::{
 #[path = "retention_entry/candidate_tracking.rs"]
 mod candidate_tracking;
 pub use candidate_tracking::{
-    candidate_count, decision_count, ordinary_counts, reset_candidate_count, reset_decision_count,
-    reset_ordinary_counts,
+    assessment_counts, candidate_count, decision_count, ordinary_counts, reset_candidate_count,
+    reset_decision_count, reset_ordinary_counts,
 };
-pub(super) use candidate_tracking::{record_ordinary_candidate, record_ordinary_decision};
+pub(super) use candidate_tracking::{
+    record_assessment_candidate, record_assessment_decision, record_ordinary_candidate,
+    record_ordinary_decision,
+};
 #[path = "retention_entry/occurrence_write.rs"]
 mod occurrence_write;
 #[path = "retention_entry/reviewed_write.rs"]
@@ -55,6 +58,9 @@ pub use required_write::{ExplicitReviewedSetRetentionBinding, ExplicitReviewedSe
 pub use reviewed_write::{
     ReviewedSetRetentionBinding, ReviewedSetRetentionHandler, ReviewedSetRetentionIntent,
 };
+#[path = "retention_entry/set_retention_handler.rs"]
+mod set_retention_handler;
+pub use set_retention_handler::SetRetentionHandler;
 
 /// The one document every host in this court seeds and both programs act on.
 pub const DOCUMENT_IDENTITY: &str = "document-1";
@@ -225,6 +231,15 @@ worth_query_structured_value_binding!(pub SetRetentionDenialBinding for SetReten
 
 pub struct SetRetentionBinding;
 
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for SetRetentionBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
+}
+
 type SetRetentionScope = ApplicationMutationFieldScope<
     DocumentRetentionSchema,
     Document,
@@ -236,6 +251,12 @@ type SetRetentionScope = ApplicationMutationFieldScope<
 >;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for SetRetentionBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = SetRetentionInput;
     type InputBinding = SetRetentionInputBinding;
     type Result = DocumentRetentionWritten;
@@ -302,71 +323,6 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for SetRetentionIntent {
             DocumentIdentityField::reference(),
             self.input.identity.clone(),
         )
-    }
-}
-
-pub struct SetRetentionHandler;
-
-impl OperationHandler<DocumentRetentionSchema, SetRetentionBinding> for SetRetentionHandler {
-    fn decide(
-        &self,
-        input: &SetRetentionInput,
-        reader: &mut DecisionReader<'_, '_, '_, DocumentRetentionSchema, SetRetentionBinding>,
-    ) -> HandlerResult<
-        WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
-        SetRetentionDenial,
-    > {
-        candidate_tracking::record_decision(input.retention_days);
-        let document = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
-            Ok(document) => document,
-            Err(error) => return HandlerResult::ExecutionDenied(error),
-        };
-        match reader.field(&document, DocumentRetentionField::reference()) {
-            Ok(Some(current)) if current == input.retention_days => {
-                return HandlerResult::DomainDenied(SetRetentionDenial::RetentionUnchanged)
-            }
-            Ok(_) => {}
-            Err(error) => return HandlerResult::ExecutionDenied(error),
-        }
-        match reader.mutation_target(&document) {
-            Ok(target) => HandlerResult::Completed(target),
-            Err(error) => HandlerResult::ExecutionDenied(error),
-        }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &SetRetentionInput,
-        _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
-    ) -> ApplicationCandidateRequirements {
-        SetRetentionBinding::CANDIDATES
-    }
-
-    fn build_candidate(
-        &self,
-        input: &SetRetentionInput,
-        target: WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
-        writer: &mut CandidateWriter<'_, DocumentRetentionSchema, SetRetentionBinding>,
-    ) -> HandlerResult<DocumentRetentionWritten, SetRetentionDenial> {
-        candidate_tracking::record_candidate(input.retention_days);
-        let document = match writer.projected_entity(&target) {
-            Ok(document) => document,
-            Err(error) => {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
-            }
-        };
-        if let Err(error) = writer.write_field(
-            &document,
-            DocumentRetentionField::reference(),
-            input.retention_days,
-        ) {
-            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-        }
-        HandlerResult::Completed(DocumentRetentionWritten {
-            retention_days: input.retention_days,
-        })
     }
 }
 

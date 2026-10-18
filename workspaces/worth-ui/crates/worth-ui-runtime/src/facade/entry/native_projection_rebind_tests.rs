@@ -98,6 +98,7 @@ fn authored_application_scalar_reaches_native_publication_and_returns_its_exact_
         .publish_source(
             worth_ui_query_binding::WorthUiScalarProjectionSourceRecord::new("ONLINE", 1)
                 .expect("accepted source record"),
+            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
         )
         .expect("source edit commits and publishes through the authored Query program")
         .into_projection_observation()

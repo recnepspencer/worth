@@ -148,7 +148,7 @@ impl DetachedRelationalTransactionOverlay {
     pub(crate) fn created_entity(
         &self,
         entity: &CreatedEntityRef,
-    ) -> Option<impl ExactSizeIterator<Item = &CreateIntent>> {
+    ) -> Option<impl ExactSizeIterator<Item = &CreateIntent> + use<'_>> {
         let rows = self.entity_creates(entity);
         (rows.len() > 0).then(|| {
             rows.map(|row| match self.intent(row.location) {
@@ -160,7 +160,7 @@ impl DetachedRelationalTransactionOverlay {
     pub(crate) fn created_relation(
         &self,
         relation: &CreatedRelationRef,
-    ) -> Option<impl ExactSizeIterator<Item = &CreateIntent>> {
+    ) -> Option<impl ExactSizeIterator<Item = &CreateIntent> + use<'_>> {
         let rows = self.relation_creates(relation);
         (rows.len() > 0).then(|| {
             rows.map(|row| match self.intent(row.location) {

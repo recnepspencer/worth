@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::obligations::UiObligationSelectionBoundary`
- --> tests/ui/obligation_selection/external_callers_cannot_import_selection_boundary.rs:1:5
-  |
-1 | use worth_ui::facade::obligations::UiObligationSelectionBoundary;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-----------------------------
-  |     |                              |
-  |     |                              help: a similar name exists in the module: `UiObligationSelectionHandoff`
-  |     no `UiObligationSelectionBoundary` in `facade::obligations`

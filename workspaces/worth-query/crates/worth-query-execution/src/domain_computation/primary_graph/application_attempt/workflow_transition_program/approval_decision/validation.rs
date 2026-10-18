@@ -50,7 +50,7 @@ where
     Ok(())
 }
 
-pub(super) fn validate_requirement_definition(
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn validate_requirement_definition(
     compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
     required: &RequiredWorkflowApproval,
 ) -> Result<worth_relational::facade::identity::EntityId, WorthQueryApplicationAttemptDenial> {

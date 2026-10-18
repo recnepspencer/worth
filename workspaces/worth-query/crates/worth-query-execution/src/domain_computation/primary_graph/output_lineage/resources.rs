@@ -11,7 +11,7 @@ impl WorthQueryApplicationOutputLineage {
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Option<(
-        std::sync::Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         &super::SealedNativeOutputWitness,
     )> {
         let output_binding = receipt.output_correspondence().binding_type()?;

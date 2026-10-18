@@ -86,20 +86,20 @@ impl ManagedUnpublishedAttempt {
         };
         let scope = self.attempt.affinity().operation_scope();
         let partition = self.attempt.idempotency().source_partition_identity();
-        if let Some(existing) = self.prepared_lineage_slot.as_ref() {
-            if existing.matches_planned_successor(
+        if let Some(existing) = self.prepared_lineage_slot.as_ref()
+            && existing.matches_planned_successor(
                 scope,
                 binding,
                 partition,
                 planned,
                 &mut self.publication_admission,
-            )? {
-                assert!(self.lineage_metadata.is_none());
-                assert!(self.required_prerequisites.as_ref().is_none_or(|required| {
-                    required.retains_reserved_identity(existing.identity())
-                }));
-                return Ok(());
-            }
+            )?
+        {
+            assert!(self.lineage_metadata.is_none());
+            assert!(self.required_prerequisites.as_ref().is_none_or(|required| {
+                required.retains_reserved_identity(existing.identity())
+            }));
+            return Ok(());
         }
         let mut slot =
             crate::domain_computation::primary_graph::output_lineage::prepare_output_lineage_slot(

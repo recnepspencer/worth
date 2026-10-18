@@ -64,15 +64,6 @@ mod tests {
     impl AuthorityProves<JoinedProof> for JoinAuthority {}
 
     #[test]
-    fn join_inputs_preserve_explicit_positions() {
-        let inputs = JoinInputs2::new("left", "right");
-
-        assert_eq!(inputs.left(), &"left");
-        assert_eq!(inputs.right(), &"right");
-        assert_eq!(inputs.into_parts(), ("left", "right"));
-    }
-
-    #[test]
     fn artifact_join_requires_explicit_output_state() {
         let left = Artifact::<LoweredPhase, _, _, _>::with_state(
             3_u8,
@@ -100,8 +91,5 @@ mod tests {
         let _: &Proof<JoinedProof, JoinAuthority> = joined.proofs();
     }
 
-    #[test]
-    fn join_inputs_are_size_honest() {
-        assert_eq!(size_of::<JoinInputs2<u64, u16>>(), size_of::<(u64, u16)>());
-    }
+    const _: () = assert!(size_of::<JoinInputs2<u64, u16>>() == size_of::<(u64, u16)>());
 }

@@ -76,7 +76,21 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
         {
             return Err(unreadable);
         }
+        if layout
+            .instance
+            .start_advancer
+            .read_adoption(&record, execution, instance)?
+            .is_none()
+            || layout
+                .instance
+                .end_advancer
+                .read_adoption(&record, execution, instance)?
+                .is_some()
+        {
+            return Err(unreadable);
+        }
         record.text(execution, &layout.instance.program_revision)?;
+        record.required_symbol(execution, &layout.instance.started_program_revision)?;
         let owner_custody = record.optional_text(execution, &layout.instance.owner_custody)?;
         if protocol == WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION {
             for locator in [
@@ -140,6 +154,20 @@ fn read_transition(
     let receipted = record
         .optional_text(execution, &layout.transition.operation_receipt_identity)?
         .is_some();
+    if layout
+        .transition
+        .advancer
+        .read_adoption(&record, execution, transition)?
+        .is_none()
+        || layout
+            .transition
+            .executor
+            .read_adoption(&record, execution, transition)?
+            .is_some()
+            != receipted
+    {
+        return Err(unreadable);
+    }
     let node = truth.single_target(execution, transition, layout.transition_node_relation)?;
     Ok(ReadTransition {
         inventoried: WorkflowInventoriedTransition {

@@ -1,13 +1,13 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use worth_server::{
     WorthServerProductIdempotencyKey, WorthServerProductOperationInput,
     WorthServerProductOperationOutcome, WorthServerProductOperationSurfaceDenialCode,
 };
 
-#[path = "support/product_operation_phase_thirteen/fixture.rs"]
-mod fixture;
+#[allow(unused_imports)]
+use crate::shared_support_product_operation_phase_thirteen_fixture as fixture;
 
 use fixture::{
     actions_payload, apply_payload, build_server, direct_mutation, direct_read, direct_session,

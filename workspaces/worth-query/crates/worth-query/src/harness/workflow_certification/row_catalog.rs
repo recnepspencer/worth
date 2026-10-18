@@ -146,34 +146,3 @@ pub const WORKFLOW_REJECTION_ROW_SPECS: &[WorkflowRejectionRowSpec] = &[
         failure_class: WorkflowFailureClass::PostMergeOutcomeForbidden,
     },
 ];
-
-pub const WORKFLOW_REQUIRED_CANONICAL_ROW_NAMES: &[&str] = &[
-    "workflow-declaration-family-explicitness",
-    "workflow-basis-family-explicitness",
-    "workflow-authority-target-explicitness",
-    "workflow-preview-foundation-no-rediscovery",
-    "workflow-budget-class-explicitness",
-    "query-authored-mutation-lowering-parity",
-    "query-authored-merge-lowering-parity",
-    "query-triggered-writeback-lowering-parity",
-    "conflict-inspection-explicitness",
-    "unsupported-deletion-topology-merge-class",
-    "post-merge-inspection-explicitness",
-    "workflow-freshness-explicitness",
-    "workflow-prediction-width-explicitness",
-    "workflow-realized-width-explicitness",
-    "workflow-rediscovery-zero-parity",
-];
-
-pub const WORKFLOW_REQUIRED_REJECTION_ROW_NAMES: &[&str] = &[
-    "unsupported-workflow-family",
-    "invalid-basis-pairing",
-    "preview-read-only-authority-request-forbidden",
-    "unsupported-authority-target",
-    "forbidden-workflow-broadening",
-    "unsupported-merge-family",
-    "unsupported-writeback-family",
-    "stale-workflow-denied",
-    "explicit-rebind-required",
-    "post-merge-non-authoritative-outcome-forbidden",
-];

@@ -117,7 +117,7 @@ where
                 self.reader.work_budget.mark_exceeded();
             }
             self.reader.retention_exhausted |=
-                stop == ConsumedOutputVerificationStop::CapacityExhausted;
+                matches!(stop, ConsumedOutputVerificationStop::CapacityExhausted(_));
             let mut denial = super::verification_denial::from_stop(stop, subject);
             if stop == ConsumedOutputVerificationStop::PendingUpstream {
                 match self.retain_requested_output(candidate, selected, subject) {
@@ -169,7 +169,7 @@ where
             if stop == ConsumedOutputVerificationStop::WorkExhausted {
                 self.reader.work_budget.mark_exceeded();
             }
-            self.reader.retention_exhausted |= stop == ConsumedOutputVerificationStop::CapacityExhausted;
+            self.reader.retention_exhausted |= matches!(stop, ConsumedOutputVerificationStop::CapacityExhausted(_));
             super::verification_denial::from_stop(stop, subject)
         })?;
         Ok(RequestedOutputRead::new(

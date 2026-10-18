@@ -121,26 +121,23 @@ impl ResourceRuntimeState {
             None => ResourceRequestIntent::new(node),
         };
         let request_intent_digest = request_intent.canonical_digest();
-        if let Some(active_request_id) = self.active_request_by_node.get(&node).copied() {
-            if let Some(active_in_flight) = self.in_flight_by_request.get(&active_request_id) {
-                if active_in_flight.status() == ResourceInFlightStatus::Active
-                    && active_in_flight.lifecycle() == ResourceLifecycleClass::Pending
-                    && active_in_flight.request_intent_digest() == &request_intent_digest
-                    && active_in_flight
-                        .revalidation_freshness_decision()
-                        .as_ref()
-                        .is_some_and(|existing| {
-                            existing.class() == freshness_decision.class()
-                                && existing.freshness_digest()
-                                    == freshness_decision.freshness_digest()
-                        })
-                {
-                    return ResourceRevalidationAdmissionPreview::Coalesce {
-                        descriptor_id,
-                        active_request_id,
-                    };
-                }
-            }
+        if let Some(active_request_id) = self.active_request_by_node.get(&node).copied()
+            && let Some(active_in_flight) = self.in_flight_by_request.get(&active_request_id)
+            && active_in_flight.status() == ResourceInFlightStatus::Active
+            && active_in_flight.lifecycle() == ResourceLifecycleClass::Pending
+            && active_in_flight.request_intent_digest() == &request_intent_digest
+            && active_in_flight
+                .revalidation_freshness_decision()
+                .as_ref()
+                .is_some_and(|existing| {
+                    existing.class() == freshness_decision.class()
+                        && existing.freshness_digest() == freshness_decision.freshness_digest()
+                })
+        {
+            return ResourceRevalidationAdmissionPreview::Coalesce {
+                descriptor_id,
+                active_request_id,
+            };
         }
 
         self.validate_resource_revalidation_intent(intent)

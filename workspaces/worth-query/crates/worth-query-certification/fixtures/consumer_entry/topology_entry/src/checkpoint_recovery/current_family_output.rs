@@ -60,6 +60,7 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: support::length(9),
@@ -133,6 +134,7 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
             .execute()
             .unwrap();
         request
+            .advanced()
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: "anchor-a".into(),
                 operation: PlanarOperation::VerifyFinalCurrentOutputs(vec![
@@ -163,6 +165,7 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".into(),
             operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {

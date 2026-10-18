@@ -61,16 +61,15 @@ fn include_relation_scope(
     relation_id: crate::identity::data::RelationId,
 ) {
     touched.insert(relation_id.partition_id);
-    if let Some(partition) = current_state.get_partition(relation_id.partition_id) {
-        if let Some(endpoints) = partition
+    if let Some(partition) = current_state.get_partition(relation_id.partition_id)
+        && let Some(endpoints) = partition
             .relation_arena
             .extra
             .get(relation_id.slot_index())
             .and_then(|extra| extra.endpoints.as_ref())
-        {
-            touched.insert(endpoints.source.partition_id);
-            touched.insert(endpoints.target.partition_id);
-        }
+    {
+        touched.insert(endpoints.source.partition_id);
+        touched.insert(endpoints.target.partition_id);
     }
 }
 

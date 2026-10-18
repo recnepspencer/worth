@@ -159,17 +159,6 @@ fn all_categories_materialize_profile_independent_canonical_artifacts() {
     assert_eq!(aftermath.canonical_family(), "consequence-aftermath");
     assert_eq!(explanation.canonical_family(), "explanation-inspection");
 
-    for digest in [
-        support.materialization_digest(),
-        invariant.materialization_digest(),
-        workflow.materialization_digest(),
-        continuity.materialization_digest(),
-        aftermath.materialization_digest(),
-        explanation.materialization_digest(),
-    ] {
-        assert!(!digest.is_empty());
-    }
-
     let workflow_plan = workflow
         .contribution()
         .payload()

@@ -86,6 +86,20 @@ where
         (self.performed, self.denial)
     }
 
+    /// Retains the refused start and every native field under the same binding.
+    #[cfg(test)]
+    pub(in crate::application_entry) fn into_same_binding_intent<Original>(
+        self,
+    ) -> WorthQueryDiscoveredOutputStartFailure<Schema, Original, Program, Root>
+    where
+        Original: ApplicationMutationIntent<Schema, Binding = Intent::Binding>,
+    {
+        WorthQueryDiscoveredOutputStartFailure {
+            performed: self.performed.into_same_binding_intent(),
+            denial: self.denial,
+        }
+    }
+
     pub const fn denial(&self) -> &WorthQueryRequiredOutputPreparationDenial {
         &self.denial
     }
@@ -146,7 +160,7 @@ where
         }
     }
 
-    fn start_required_outputs_in_advancement(
+    pub(in crate::application_entry) fn start_required_outputs_in_advancement(
         self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
             '_,

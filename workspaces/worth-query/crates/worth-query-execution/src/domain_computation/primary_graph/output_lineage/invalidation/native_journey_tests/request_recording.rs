@@ -44,7 +44,7 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
             _computation: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).certify_current().unwrap(),
             identity: Arc::clone(&identity),
             facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([])).for_comparison().unwrap(),
-            native_output_witness: Some(account_witness(&world, runtime, snapshot, entity)),
+            native_output_witness: Some(account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity)),
             consumed_nothing: true,
             verification_requirement: None,
             work: 0,
@@ -95,7 +95,7 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime(request_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let positioned = runtime.read_truth().positioned_snapshot(snapshot).unwrap();
-        let witness = account_witness(&world, runtime, snapshot, entity);
+        let witness = account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity);
         let facts: Arc<[WorthQueryApplicationObservedFact]> = Arc::from([]);
         owner
             .register_settlement(
@@ -203,6 +203,7 @@ fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
 
 /// The account's sealed native output witness at `snapshot`.
 pub(super) fn account_witness(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
@@ -230,14 +231,15 @@ pub(super) fn account_witness(
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),
-        std::collections::BTreeSet::new(),
-        vec![WorthQueryCheckpointOutputRole {
+        std::iter::empty(),
+        &[WorthQueryCheckpointOutputRole {
             role: "account".to_owned(),
             posture: WorthQueryApplicationOutputPosture::Preserve,
             entity_name: "Account".to_owned(),
             entity,
         }],
         |_| Some(TypeId::of::<()>()),
+        execution,
     )
     .unwrap();
     SealedNativeOutputWitness::from_checkpoint_facts(

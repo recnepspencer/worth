@@ -169,7 +169,8 @@ fn terminal_outcome(
             Err(_) => panic!("oscillation policy fixture iteration must start"),
         }
     };
-    let outcome = {
+
+    {
         let fixture_phase_result = {
             let fixture_target = started;
             let installed_fixture_phase = fixture_target.fixture_phase(execution);
@@ -179,6 +180,5 @@ fn terminal_outcome(
             WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
             _ => panic!("oscillation policy fixture provider must complete and rejoin its epoch"),
         }
-    };
-    outcome
+    }
 }

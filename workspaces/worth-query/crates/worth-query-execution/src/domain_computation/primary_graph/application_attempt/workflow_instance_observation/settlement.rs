@@ -1,3 +1,4 @@
+mod approval_text;
 mod membership;
 pub(in crate::domain_computation::primary_graph) use membership::recover_settled_live_membership;
 use worth_foundational::facade::AspectValue;
@@ -28,17 +29,57 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use approv
 pub(in crate::domain_computation::primary_graph::application_attempt) use dependency::observe_evidence_dependencies;
 pub(in crate::domain_computation::primary_graph::application_attempt) use proposal::observe_retained_workflow_proposal_identity;
 pub(in crate::domain_computation::primary_graph::application_attempt) use retained_evidence::observe_retained_assessment_evidence;
-use value::{
-    observed_bool, observed_optional_text, observed_text, observed_u64, optional_identity,
-};
+use value::{observed_bool, observed_text, observed_u64, optional_identity};
 
-pub(super) fn observe_settled_transition(
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum TransitionReadPurpose {
+    Command,
+    ReadOnly,
+}
+pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_settled_transition(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     transition: EntityId,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    observe_transition(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        transition,
+        facts,
+        TransitionReadPurpose::Command,
+    )
+}
+pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_transition_state(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    observe_transition(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        transition,
+        facts,
+        TransitionReadPurpose::ReadOnly,
+    )
+}
+fn observe_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+    purpose: TransitionReadPurpose,
 ) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
     let kind = layout.transition.entity_kind;
     facts.push(WorthQueryApplicationObservedFact::Entity {
@@ -84,6 +125,17 @@ pub(super) fn observe_settled_transition(
         &layout.transition.operation_receipt_identity,
         facts,
     )?;
+    if purpose == TransitionReadPurpose::Command {
+        super::transition_roles::observe(
+            execution,
+            runtime,
+            snapshot,
+            layout,
+            transition,
+            operation_receipt_identity.is_some(),
+            facts,
+        )?;
+    }
     let nodes = adjacency_with_kind(
         execution,
         runtime,
@@ -211,7 +263,7 @@ pub(super) fn observe_assessment_evidence(
         &layout.assessment_evidence.output_content_identity,
         facts,
     )?;
-    let program_revision = observed_optional_text(
+    let program_revision = observed_text(
         execution,
         runtime,
         snapshot,

@@ -10,7 +10,7 @@ mod condition;
 mod definition;
 mod instance;
 mod navigation;
-mod operation;
+pub(in crate::application_entry) mod operation;
 mod ordinary;
 mod progress;
 mod proposal;
@@ -19,10 +19,12 @@ pub use approval::WorthQueryWorkflowApprovalSigningRequest;
 pub use condition::WorthQueryWorkflowConditionAcceptance;
 
 pub use assessment::{
-    WorthQueryWorkflowAssessmentDemandHandle, WorthQueryWorkflowAssessmentDemandPreparationDenial,
+    WorthQueryAdvancedAssessmentObservation, WorthQueryAdvancedAssessmentRequest,
+    WorthQueryClosedAssessmentObservation, WorthQueryWorkflowAssessmentDemandHandle,
+    WorthQueryWorkflowAssessmentDemandPreparationDenial,
     WorthQueryWorkflowAssessmentDemandPreparationDenialKind,
     WorthQueryWorkflowAssessmentDemandProgress, WorthQueryWorkflowAssessmentDemandRequest,
-    WorthQueryWorkflowAssessmentDemandSettlement,
+    WorthQueryWorkflowAssessmentDemandSettlement, WorthQueryWorkflowAssessmentOperation,
 };
 pub use definition::{
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
@@ -38,6 +40,7 @@ pub use instance::{
 };
 pub use navigation::WorthQueryWorkflowNavigateBackRequest;
 pub use operation::{
+    WorthQueryAdvancedWorkflowOperation, WorthQueryBoundWorkflowOperation,
     WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowOperationAcceptanceDenial,
     WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
     WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryDenial,
@@ -64,8 +67,8 @@ pub use worth_query_execution::publication_boundary::workflow_advance::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    WorkflowApprovalDecision, WorkflowConditionOperand, WorkflowProgressOutcome,
-    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    RequiredWorkflowProposal, WorkflowApprovalDecision, WorkflowConditionOperand,
+    WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
 };
 pub use worth_query_execution::publication_boundary::workflow_definition_publication::{
     PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
@@ -81,7 +84,7 @@ pub use worth_query_execution::publication_boundary::workflow_instance::{
     PublishedWorkflowInstanceRef, RetiredWorkflowDefinitionStart,
     SupersededWorkflowDefinitionStart, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorkflowInstanceStartOutcome,
+    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceDiscoveryIntent,
 };
 pub use worth_query_execution::publication_boundary::workflow_proposal::{
     PerformedWorkflowProposal, PublishedWorkflowProposalRef, WorkflowProposalBindingDenial,

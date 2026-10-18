@@ -58,11 +58,13 @@ impl WorthQueryRuntimeTimeSource for CertificationTrustedTime {
 
 /// Publishes the P0-initial host with P1 rostered, on the given trusted time.
 pub fn publish_on_first_program_with_trusted_time(
-    time: CertificationTrustedTime,
+    time: impl WorthQueryRuntimeTimeSource + 'static,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
     in_memory_rostered_program_with_authorization_time_source(
         validated_first_program(),
-        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+        WorthQueryApplicationProgramRoster::new()
+            .support(validated_second_program())
+            .support(super::super::actor_generation::validated_actor_program()),
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         host_limits(),

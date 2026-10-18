@@ -116,7 +116,8 @@ impl<E: Example> ApplicationProgramDefinition<S> for Program<E> {
         // The fixture also declares the operations that serve its output graph.
         let final_output = demand_policy::final_output_feature::<A>()
             .managed_computation::<E::Computation>()
-            .mutation::<B>()
+            .native_action::<B>()
+            .finish_action()
             .finish();
         assert_eq!(
             final_output.feature(),
@@ -153,6 +154,7 @@ fn first_run<E: Example>() -> Reduced {
         .execute()
         .expect("the mutation source is readable");
     let outcome = request
+        .advanced()
         .mutate(RegionTotalsDemand {
             scope_key: "anchor-a".to_owned(),
             entries: "example".to_owned(),

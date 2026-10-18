@@ -7,27 +7,27 @@ use crate::transactions::data::{
 pub(crate) fn detect_conflicting_updates(intents: &[MutationIntent]) -> Result<(), CommitConflict> {
     let mut seen_updates = BTreeSet::new();
     for intent in intents {
-        if let Some(target) = intent.existing_record_target() {
-            if !seen_updates.insert(target) {
-                let detail = match target {
-                    ExistingRecordTarget::Entity(entity_id) => {
-                        format!(
-                            "conflicting entity intent for slot {}",
-                            entity_id.local_slot.0
-                        )
-                    }
-                    ExistingRecordTarget::Relation(relation_id) => {
-                        format!(
-                            "conflicting relation intent for slot {}",
-                            relation_id.local_slot.0
-                        )
-                    }
-                };
-                let _ = detail;
-                return Err(CommitConflict::new(ConflictClass::ConflictingIntent {
-                    target,
-                }));
-            }
+        if let Some(target) = intent.existing_record_target()
+            && !seen_updates.insert(target)
+        {
+            let detail = match target {
+                ExistingRecordTarget::Entity(entity_id) => {
+                    format!(
+                        "conflicting entity intent for slot {}",
+                        entity_id.local_slot.0
+                    )
+                }
+                ExistingRecordTarget::Relation(relation_id) => {
+                    format!(
+                        "conflicting relation intent for slot {}",
+                        relation_id.local_slot.0
+                    )
+                }
+            };
+            let _ = detail;
+            return Err(CommitConflict::new(ConflictClass::ConflictingIntent {
+                target,
+            }));
         }
     }
 

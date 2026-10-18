@@ -1,6 +1,7 @@
 /// Why a mutation with required program outputs was refused before its commit.
 #[derive(Debug)]
 pub enum WorthQueryPerformedMutationExecutionDenial {
+    Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     ForeignProgram,
     UndeclaredOutputRoot,
     MissingConnection,
@@ -19,6 +20,8 @@ pub enum WorthQueryRequiredOutputPreparationDenial {
     MissingConnection,
     MissingPerformedDelivery,
     MissingSource,
+    /// Complete original discovery could not be retained or combined.
+    Dependencies(worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial),
     SourceQuery(crate::application_entry::WorthQueryApplicationRequestQueryDenial),
     ReadObservation(
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
@@ -57,5 +60,35 @@ impl WorthQueryRequiredOutputPreparationDenial {
         Self::Demand(
             crate::application_entry::WorthQueryApplicationOutputDemandDenial::advancement(cause),
         )
+    }
+}
+
+impl WorthQueryRequiredOutputPreparationDenial {
+    pub(in crate::application_entry) fn take_managed_cleanup(
+        &mut self,
+    ) -> Option<
+        Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationCleanupRequired>,
+    > {
+        match self {
+            Self::DemandExecution(denial) => denial.take_managed_cleanup(),
+            Self::Demand(
+                crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
+            ) => denial.take_managed_cleanup(),
+            _ => None,
+        }
+    }
+}
+
+impl WorthQueryRequiredOutputPreparationDenial {
+    pub(in crate::application_entry) fn take_read_cleanup(
+        &mut self,
+    ) -> Option<worth_query_execution::facade::primary_graph::WorthQueryOutputReadCleanup> {
+        match self {
+            Self::DemandExecution(denial)
+            | Self::Demand(
+                crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
+            ) => denial.take_read_cleanup(),
+            _ => None,
+        }
     }
 }

@@ -1,5 +1,9 @@
 //! The OS-thread capability of the selected standard-library target.
 fn main() {
+    // The cfg depends only on the target, which Cargo already keys builds by.
+    // Without a rerun directive Cargo reruns this script after any edit in the
+    // package, tests and docs included, and recompiles every dependent crate.
+    println!("cargo::rerun-if-changed=build.rs");
     println!("cargo::rustc-check-cfg=cfg(worth_execution_os_threads)");
     let target = std::env::var("TARGET").expect("Cargo supplies the target");
     let families =

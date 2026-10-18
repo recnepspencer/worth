@@ -186,12 +186,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 )),
             };
         };
-        if let Ok(result) = &result {
-            if result.receipt().work().total_work_units() != actual {
-                return Err(Resource(
-                    WorthQueryApplicationQueryBatchResourceDenial::WorkAccountingMismatch,
-                ));
-            }
+        if let Ok(result) = &result
+            && result.receipt().work().total_work_units() != actual
+        {
+            return Err(Resource(
+                WorthQueryApplicationQueryBatchResourceDenial::WorkAccountingMismatch,
+            ));
         }
         reservation.settle(actual).map_err(Resource)?;
         match result {

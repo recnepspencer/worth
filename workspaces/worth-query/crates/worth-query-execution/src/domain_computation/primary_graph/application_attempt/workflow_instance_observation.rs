@@ -1,4 +1,20 @@
+pub(in crate::domain_computation::primary_graph) mod history_projection;
+mod read_dependencies;
+pub(in crate::domain_computation::primary_graph) mod read_fields;
+mod recorded_actor;
+pub(in crate::domain_computation::primary_graph::application_attempt) use recorded_actor::{
+    original_parent, original_scope, original_transition, recorded_approval,
+};
+mod actors;
+pub(in crate::domain_computation::primary_graph) mod audit;
+pub(in crate::domain_computation::primary_graph) mod governed_record;
+mod governed_start_path;
+mod transition_roles;
+pub(in crate::domain_computation::primary_graph::application_attempt) use actors::observe as observe_instance_roles;
+pub(in crate::domain_computation::primary_graph::application_attempt) use transition_roles::observe as observe_transition_roles;
+pub(in crate::domain_computation::primary_graph) mod read_only;
 mod retained_history;
+pub(in crate::domain_computation::primary_graph) use read_only::ReadOnlyWorkflowHistory;
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::{EntityId, RelationId};
 
@@ -13,12 +29,13 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
+mod completed_source;
 mod evidence_budget;
 mod history;
 pub(super) use history::observe_ended_history;
 pub(in crate::domain_computation::primary_graph::application_attempt) mod instance_binding;
 mod progression;
-mod settlement;
+pub(in crate::domain_computation::primary_graph::application_attempt) mod settlement;
 mod step_budget;
 mod subject;
 use instance_binding::{adjacency, adjacency_with_kind, exact, exact_u64, text};
@@ -32,6 +49,7 @@ pub(super) use settlement::{
 use step_budget::history_basis;
 pub(in crate::domain_computation::primary_graph::application_attempt) use step_budget::WorkflowInstanceObservationPurpose;
 pub(in crate::domain_computation::primary_graph) use step_budget::WorkflowStepAllowance;
+pub(in crate::domain_computation::primary_graph) use subject::observe_subject;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowInstance
 {
@@ -83,9 +101,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         String,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_content_identity:
         String,
-    /// Absent on evidence recorded before revisions were bound; never current.
-    pub(in crate::domain_computation::primary_graph::application_attempt) program_revision:
-        Option<String>,
+    /// Required program revision of this current assessment evidence record.
+    pub(in crate::domain_computation::primary_graph::application_attempt) program_revision: String,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_workflow_instance(
@@ -103,6 +120,11 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
     purpose: WorkflowInstanceObservationPurpose,
 ) -> Result<ObservedWorkflowInstance, WorthQueryApplicationAttemptDenial> {
+    if purpose == WorkflowInstanceObservationPurpose::ReadOnly {
+        return Err(denial(
+            "read-only history must use its non-progressing owner",
+        ));
+    }
     let entity = instance.entity_id();
     let kind = layout.instance.entity_kind;
     let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
@@ -119,6 +141,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         AspectValue::UInt64(instance.started_occurrence()),
         &mut facts,
     )?;
+    actors::observe(execution, runtime, snapshot, layout, entity, &mut facts)?;
     instance_binding::deny_ended(execution, runtime, snapshot, layout, entity)?;
     exact(
         execution,

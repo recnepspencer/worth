@@ -22,7 +22,7 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     >
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
+    Intent: ApplicationMutationIntent<Schema>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<

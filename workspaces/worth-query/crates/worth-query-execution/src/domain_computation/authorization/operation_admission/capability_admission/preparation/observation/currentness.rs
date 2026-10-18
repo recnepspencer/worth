@@ -88,6 +88,14 @@ where
 {
     validate_approval_lifecycle(&prepared)?;
     let principal = capture_current_principal(&prepared)?;
+    super::super::selector_indexes::prepare(
+        execution,
+        prepared.runtime(),
+        prepared.graph_work(),
+        prepared.projection(),
+        prepared.capability().contract().operation(),
+        &principal.layout,
+    )?;
     let observation = observe_relational_truth(execution, &prepared, &principal)?;
     validate_admission(&prepared, &observation)?;
     prepared.record_admission_decisions();
@@ -160,7 +168,7 @@ where
         .primary_graph()
         .unwrap()
         .retain_entity_resolution_context();
-    handle.with_runtime_mut(execution, |relational| {
+    let (resolved, mut revalidation) = handle.with_runtime_mut(execution, |relational| {
         validate_principal_freshness(execution, prepared, principal, relational, &snapshot)?;
         let truth = resolution
             .at_snapshot(
@@ -181,6 +189,48 @@ where
             prepared.projection(),
             &resolved,
         );
+        Ok((resolved, revalidation))
+    })?;
+    if let Some(context) = &prepared.workflow_actor {
+        if !context.matches_request(
+            prepared.runtime().runtime.authority_identity().as_u64(),
+            prepared
+                .graph_work()
+                .mutation_product()
+                .unwrap()
+                .product_branch(),
+            prepared.capability().contract().operation(),
+            prepared.capability().contract().name(),
+            prepared.capability().contract().capability_type(),
+        ) {
+            return Err(denial::authorization_denial(
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::WorkflowActorSourceInvalid,
+                ),
+                prepared.capability().contract().name(),
+            ));
+        }
+        let requirement = prepared
+            .installed()
+            .rules()
+            .iter()
+            .find_map(|rule| rule.recorded_actor().map(|(requirement, _)| requirement));
+        if let Some(requirement) = requirement {
+            let actor = context
+                .observe(
+                    execution,
+                    &handle,
+                    &snapshot,
+                    prepared.runtime().runtime.primary_graph().unwrap().layout(),
+                    resolved.resource_entity_id(),
+                    requirement,
+                    &prepared.request_scope,
+                )
+                .map_err(WorthQueryOperationAuthorizationDenial::workflow_actor_native)?;
+            revalidation.recorded_actor = Some(std::sync::Arc::new(actor));
+        }
+    }
+    handle.with_runtime_mut(execution, |relational| {
         validate_approval_support(execution, prepared, relational, &snapshot)?;
         let observation =
             WorthQueryCurrentCapabilityObservation::from_axes(CurrentCapabilityObservationAxes {

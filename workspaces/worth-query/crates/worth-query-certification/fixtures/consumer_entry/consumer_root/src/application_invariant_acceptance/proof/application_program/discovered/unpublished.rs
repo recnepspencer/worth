@@ -54,6 +54,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         })
         .expect("fixture control owns its host call");
     let outcome = request
+        .advanced()
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&key)
@@ -83,6 +84,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             world
                 .application
                 .request(&principal, $scope)
+                .advanced()
                 .mutate($input)
                 .expect_source(source.clone())
                 .idempotency($key)
@@ -116,6 +118,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         world
             .application
             .request(&principal, &fresh_scope)
+            .advanced()
             .mutate(intent.clone())
             .expect_result_set(
                 original
@@ -140,6 +143,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     assert!(other
         .application
         .request(&other_principal, &fresh_scope)
+        .advanced()
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&key)
@@ -190,6 +194,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     let (_, retained) = world
         .application
         .request(&principal, &fresh_scope)
+        .advanced()
         .mutate(intent.clone())
         .expect_source(changed.observed_sources()[0].clone())
         .idempotency(&key)
@@ -209,7 +214,18 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             .into_parts();
     assert_eq!(initial_cause, ProductUnpublishedCause::SettlementPending);
     assert!(prior_cleanup.is_empty());
-    let (read, publication_failure, cleanup_failure) = performed.into_parts();
+    let (read, publication_failure, cleanup_failure, pending_cleanup) = performed.into_parts();
+    let released = world
+        .application
+        .release_product_publication_recovery(
+            pending_cleanup.expect("program-source recovery retains exact old record cleanup"),
+            0,
+        )
+        .unwrap();
+    assert!(
+        released.is_complete(),
+        "native old-record cleanup completed"
+    );
     assert!(publication_failure.is_none());
     assert!(cleanup_failure.is_none());
     let WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) =

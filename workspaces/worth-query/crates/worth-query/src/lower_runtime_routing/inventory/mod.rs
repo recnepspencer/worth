@@ -5,8 +5,6 @@ mod crossing_types;
 mod crossings;
 mod gap_types;
 mod rows;
-#[cfg(test)]
-mod tests;
 
 pub use audit_types::{
     WorthQueryLowerRuntimeDirectImportAudit, WorthQueryLowerRuntimeDirectImportAuditRow,

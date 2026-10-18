@@ -1,3 +1,8 @@
+mod admission;
+pub use admission::{
+    ApplicationCapabilityAdmission, ApplicationConventionalAdmission,
+    ApplicationMutationAdmissionBinding, ApplicationMutationAdmissionMode,
+};
 mod descriptor;
 mod identity;
 mod intent;
@@ -23,7 +28,8 @@ pub use identity::{
     ApplicationComputationPartitionIdentity, ApplicationComputationPartitionIdentityDenial,
     ApplicationEncodedInput, ApplicationMutationIdentities,
     ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
-    ApplicationOwnedMutationIdentities, ApplicationValueIdentityDomain, CanonicalEncodingCharge,
+    ApplicationOwnedMutationIdentities, ApplicationSharedInput, ApplicationValueIdentityDomain,
+    CanonicalEncodingCharge,
 };
 pub use intent::{
     ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,

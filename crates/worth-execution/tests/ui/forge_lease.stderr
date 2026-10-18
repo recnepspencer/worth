@@ -4,4 +4,4 @@ error: cannot construct `ExecutionResourceLease<'_>` with struct literal syntax 
 4 |     let _forged = ExecutionResourceLease {};
   |                   ^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: private fields `authority`, `node` and `policy` that were not provided
+  = note: private fields `authority`, `_authority`, `node` and `policy` that were not provided

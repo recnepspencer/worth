@@ -16,8 +16,10 @@ mod elevation_transition;
 pub(crate) mod lifecycle_effect;
 mod marker_identity;
 mod operation_binding;
+mod recorded_actor;
 mod reference;
 mod resource_path;
+pub use recorded_actor::*;
 pub use resource_path::{
     ApplicationCapabilityResourcePath, ApplicationCapabilityResourcePathBuilder,
     ApplicationCapabilityResourcePathDenial,

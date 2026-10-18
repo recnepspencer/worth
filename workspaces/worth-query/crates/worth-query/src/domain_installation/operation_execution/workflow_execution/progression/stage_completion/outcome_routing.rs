@@ -64,10 +64,10 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             receipt.cancel_artifact_output();
         }
         self.artifact_registry.close_cancelled();
-        if !denial.has_managed_cleanup() {
-            if let Some(running) = self.managed.take() {
-                denial = denial.with_managed_cleanup(running.abandon().cleanup());
-            }
+        if !denial.has_managed_cleanup()
+            && let Some(running) = self.managed.take()
+        {
+            denial = denial.with_managed_cleanup(running.abandon().cleanup());
         }
         let completed_effects = self
             .receipts

@@ -6,8 +6,8 @@ use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
-    WorthQueryProgramOutputCurrentnessDenial,
+    WorthQueryApplicationRequestExt, WorthQueryOutputCurrentnessDenial,
+    WorthQueryOutputDemandControls,
 };
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 use worth_query_topology_entry::{
@@ -41,6 +41,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
         replacement_y: length(2),
     };
     let outcome = request
+        .advanced()
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&10_008)
@@ -56,6 +57,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
         .start_required_outputs(&world.application, &request, controls())
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
     let duplicate = request
+        .advanced()
         .mutate(intent)
         .expect_source(source)
         .idempotency(&10_008)
@@ -126,7 +128,7 @@ pub(super) fn two_forks_preserve_predecessor_output(
         left_request
             .at(right_settled.observation())
             .require_current_program_output(&right_settled, NonZeroUsize::new(4_096).unwrap()),
-        Err(WorthQueryProgramOutputCurrentnessDenial::ForeignBranch)
+        Err(WorthQueryOutputCurrentnessDenial::ForeignBranch)
     ));
     assert_eq!(
         root_request
@@ -219,14 +221,14 @@ type ProgramApplication =
 
 type Prepared = worth_query_host::facade::application_entry::WorthQueryPerformedApplicationMutation<
     ConsumerSchema,
-    PlanarSourceAdjustment,
+    worth_query_topology_entry::PlanarSourceAdjustmentBinding<ConsumerSchema>,
     crate::ConsumerProgram,
     crate::ConsumerProgramRoot,
 >;
 
 type Started = worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<
     ConsumerSchema,
-    PlanarSourceAdjustment,
+    worth_query_topology_entry::PlanarSourceAdjustmentBinding<ConsumerSchema>,
     crate::ConsumerProgram,
     crate::ConsumerProgramRoot,
 >;
@@ -253,6 +255,7 @@ fn prepare<'a>(
     command: u64,
 ) -> Prepared {
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: key.to_owned(),
             replacement_y: length(y),

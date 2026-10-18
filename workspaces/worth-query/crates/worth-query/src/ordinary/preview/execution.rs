@@ -45,12 +45,10 @@ impl WorthQueryReadOnlyPreviewRequest {
             .declaration
             .inspection_policy
             .materializes_rich_inspection();
-        if materialize_inspection {
-            if let Err(error) = workspace.admit_ordinary_rich_inspection() {
-                return WorthQueryPreviewJourneyOutcome::Stopped(
-                    WorthQueryWorkflowStop::inspection_unavailable(error, counters),
-                );
-            }
+        if materialize_inspection && let Err(error) = workspace.admit_ordinary_rich_inspection() {
+            return WorthQueryPreviewJourneyOutcome::Stopped(
+                WorthQueryWorkflowStop::inspection_unavailable(error, counters),
+            );
         }
         let basis_admission = self
             .context

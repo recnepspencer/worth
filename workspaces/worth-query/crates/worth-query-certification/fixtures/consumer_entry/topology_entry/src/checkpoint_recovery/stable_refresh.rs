@@ -118,6 +118,7 @@ fn edit_successor(
         .execute()
         .expect("the successor is selected");
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: successor.to_owned(),
             replacement_y: length(replacement_y),

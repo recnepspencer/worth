@@ -64,7 +64,8 @@ impl AspectValue {
         }
     }
 
-    pub(crate) fn has_canonical_representation(&self) -> bool {
+    /// Checks the borrowed scalar representation without allocating or normalizing it.
+    pub fn has_canonical_representation(&self) -> bool {
         match self {
             Self::Float32(value) => value.is_canonical(),
             Self::Float64(value) => value.is_canonical(),

@@ -48,6 +48,7 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
     // A real equal-value source revision activates the program checkpoint path.
     // Only the reopened demand below proves the recovered root Current.
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: length(1),
@@ -130,6 +131,7 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(crate::PlanarEdit(crate::PlanarMutation {
             scope_key: "anchor-a".into(),
             operation: worth_query_consumer_values::PlanarOperation::PublishDerivedOutput(
@@ -151,8 +153,13 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         .at(&changed)
         .require_current_output_demand(&renewed, NonZeroUsize::new(1_000_000).unwrap())
         .is_err());
-    assert!(matches!(consumer.advance(&request).unwrap(), WorthQueryApplicationOutputDemandProgress::Pending),
-        "a changed static root waits for genuine source admission instead of certifying the old consumer");
+    assert!(
+        matches!(
+            consumer.advance(&request).unwrap(),
+            WorthQueryApplicationOutputDemandProgress::Pending
+        ),
+        "a changed static root waits for genuine source admission instead of certifying the old consumer"
+    );
     let after_denial = request
         .query(PlanarOutputRead {
             body_key: "anchor-b".into(),

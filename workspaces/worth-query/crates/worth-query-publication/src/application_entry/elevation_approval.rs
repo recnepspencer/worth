@@ -246,7 +246,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     &capability,
                     input.clone(),
                     self.scope,
-                ) {
+
+            None,
+        ) {
                     Ok(access) => access,
                     Err(denial) => {
                         return Err(Failure::retained(Denial::Authorization(denial), requested))
@@ -282,7 +284,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                             &capability,
                             input,
                             self.scope,
-                        ) {
+
+            None,
+        ) {
                             replay_access
                                 .record_request_identity_work(&publication, workflow.key_work());
 

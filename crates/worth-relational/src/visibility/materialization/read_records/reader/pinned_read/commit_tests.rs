@@ -216,3 +216,82 @@ fn pinned_traversal_keeps_its_frontier_across_a_commit() {
         crate::identity::data::VersionId(3)
     );
 }
+
+#[test]
+fn exact_view_pin_keeps_original_root_after_commit_snapshot_release_and_rejects_foreign_runtime() {
+    let host = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&host);
+    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    let committed = create_entity_outcome(&request, &runtime, "original-view");
+    let original_entity = changed_entities(&committed)[0];
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    assert_eq!(
+        basis.observation().commit_receipt(),
+        Some(&committed.commit)
+    );
+    let view = runtime
+        .read_truth()
+        .project_observation(&basis.observation())
+        .unwrap();
+    release_test_commit_snapshot(&runtime, &committed);
+    assert_eq!(
+        runtime.snapshots().retained_snapshot_for_commit(runtime.runtime_instance_id(), &committed.commit)
+            .unwrap_err().kind(),
+        crate::visibility::exact_commit_snapshot::RelationalRetainedCommitSnapshotDenialKind::SnapshotNotRetained,
+    );
+    let foreign = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    assert!(matches!(
+        foreign
+            .read_truth()
+            .pin_view_read_capability(&view, &[], &request),
+        Err(RelationalPinnedReadAdmissionDenial::SnapshotUnavailable),
+    ));
+    let pin = runtime
+        .read_truth()
+        .pin_view_read_capability(&view, &[], &request)
+        .unwrap();
+    assert_eq!(pin.snapshot, ());
+    assert_eq!(pin.context.version_id, committed.commit.version_id);
+    assert!(Arc::ptr_eq(pin.basis.root(), view.selected_root().unwrap()));
+    let later = create_entity_outcome(&request, &runtime, "later-view");
+    let later_entity = changed_entities(&later)[0];
+    release_test_commit_snapshot(&runtime, &later);
+    drop(later);
+    assert_eq!(pin.context.version_id, committed.commit.version_id);
+    drop(view);
+    drop(basis);
+    drop(committed);
+    drop(runtime);
+    drop(foreign);
+    use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
+    use worth_foundational::facade::{
+        AspectValue, ContractValidatedAspectValueView, InternedString,
+    };
+    let original = pin
+        .authoritative_entity_record(&request, original_entity)
+        .expect("original request reads the retained root")
+        .expect("the original entity survives through its exact pin");
+    assert_eq!(original.entity_id, original_entity);
+    assert!(
+        pin.authoritative_entity_record(&request, later_entity)
+            .expect("original request reads the retained root")
+            .is_none(),
+        "the later entity is absent from the original root"
+    );
+    let state = original
+        .authoritative_aspect_state
+        .as_ref()
+        .expect("original payload");
+    // The generic create fixture supplies a Raw string to its scalar EntityField contract.
+    let ContractValidatedAspectValueView::Scalar(AspectValue::String(InternedString::Raw(text))) =
+        state
+            .get(&aspect_key("name"))
+            .expect("original name aspect")
+            .view()
+    else {
+        panic!("the actual original scalar payload must carry a present plain string");
+    };
+    assert_eq!(text, "original-view");
+}

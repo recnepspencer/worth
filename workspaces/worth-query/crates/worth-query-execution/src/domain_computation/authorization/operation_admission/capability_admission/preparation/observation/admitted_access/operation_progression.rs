@@ -21,6 +21,7 @@ use worth_query_installation::facade::{
 };
 
 mod authority_validation;
+mod borrowed_capability;
 mod precondition_binding;
 mod projection_equivalence;
 
@@ -89,10 +90,12 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-        preconditions: TypedMutationPreconditions<
-            Schema,
-            Operation,
-            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        preconditions: impl std::borrow::Borrow<
+            TypedMutationPreconditions<
+                Schema,
+                Operation,
+                <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+            >,
         >,
     ) -> Result<
         WorthQueryAdmittedApplicationOperation<
@@ -146,10 +149,12 @@ pub(in crate::domain_computation::authorization) fn bind_capability_operation_pr
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-    preconditions: TypedMutationPreconditions<
-        Schema,
-        Operation,
-        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+    preconditions: impl std::borrow::Borrow<
+        TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
     >,
 ) -> Result<WorthQueryBoundMutationPreconditions, WorthQueryOperationAuthorizationDenial>
 where

@@ -56,6 +56,9 @@ impl<const DESTINATION: u64, Operation>
 where
     Operation: DraftOperation<DocumentRetentionSchema<DESTINATION>>,
 {
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
     type Input = DraftInput;
     type InputBinding = DraftInputBinding;
     type Result = ();
@@ -162,6 +165,7 @@ fn invoke<Operation: DraftOperation<DocumentRetentionSchema<20>>>(
     let scope = request_scope();
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     app.request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<20, Operation>::new(note))
         .without_source()
         .idempotency(&key)
@@ -220,6 +224,7 @@ fn concurrent_optional_set_from_absence_stales_without_overwriting_the_winner() 
     let key = 304_u64;
     let mut request = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<20, SetDraftNote>::new("loser"))
         .without_source()
         .idempotency(&key);

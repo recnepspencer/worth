@@ -4,7 +4,7 @@ use worth_foundational::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::foundational_vocabulary::{key, validated_scalar};
+use crate::certification::foundational_vocabulary::{key, validated_scalar};
 
 #[test]
 fn authoritative_state_admission_consumes_validated_entries_and_canonicalizes_order() {

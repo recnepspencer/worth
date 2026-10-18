@@ -8,7 +8,6 @@ use worth_query_host::facade::domain::{
 
 use super::super::{
     host::{DocumentRetentionRuntime, DocumentWorkflowRuntime},
-    programs::RetentionProgramP0,
     retention_days::DocumentRetentionDaysQueryBinding,
     retention_entry::{
         DocumentRetentionConditionQueryBinding, DocumentRetentionQueryBinding,
@@ -26,17 +25,32 @@ use super::{
     WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
 };
 
-pub fn retain_workflow(
-    application: DocumentRetentionRuntime<RetentionProgramP0>,
-) -> DocumentWorkflowRuntime {
+pub fn retain_workflow<Program: ApplicationProgramDefinition<DocumentRetentionSchema>>(
+    application: DocumentRetentionRuntime<Program>,
+) -> DocumentWorkflowRuntime<Program> {
     retain_workflow_with_resources(application, workflow_resources())
 }
 
-pub fn retain_workflow_with_resources(
-    application: DocumentRetentionRuntime<RetentionProgramP0>,
+pub fn retain_workflow_with_resources<
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
+>(
+    application: DocumentRetentionRuntime<Program>,
     resources: WorthQueryApplicationWorkflowResourceCeiling,
-) -> DocumentWorkflowRuntime {
-    let workflow = install_workflow_spec(
+) -> DocumentWorkflowRuntime<Program> {
+    retain_workflow_for::<Program, ReviewedDocumentWorkflow>(application, resources)
+}
+
+pub fn retain_workflow_for<Program, Spec>(
+    application: DocumentRetentionRuntime<Program>,
+    resources: WorthQueryApplicationWorkflowResourceCeiling,
+) -> DocumentWorkflowRuntime<Program, Spec>
+where
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
+    Spec: worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+        Schema = DocumentRetentionSchema,
+    >,
+{
+    let workflow = install_workflow_spec_for::<Program, Spec>(
         application.runtime().installed_schema(),
         application.installed_program(),
         resources,
@@ -63,9 +77,23 @@ pub fn install_workflow_spec<Program>(
 where
     Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
 {
+    install_workflow_spec_for::<Program, ReviewedDocumentWorkflow>(schema, program, resources)
+}
+
+pub(super) fn install_workflow_spec_for<Program, Spec>(
+    schema: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
+    program: &WorthQueryInstalledApplicationProgram<DocumentRetentionSchema, Program>,
+    resources: WorthQueryApplicationWorkflowResourceCeiling,
+) -> WorthQueryInstalledApplicationWorkflowSpec<DocumentRetentionSchema, Spec>
+where
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
+    Spec: worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+        Schema = DocumentRetentionSchema,
+    >,
+{
     WorthQueryApplicationWorkflowSpecInstallation::<
         DocumentRetentionSchema,
-        ReviewedDocumentWorkflow,
+        Spec,
         Program,
     >::begin(schema, program, resources)
     .operation::<WorkflowDefinitionAuthoringBinding>()
@@ -111,10 +139,12 @@ where
     application
         .workflow
         .support_workflow_spec(workflow)
-        .expect("the vocabulary belongs to a rostered program");
+        .unwrap_or_else(|(_, denial)| {
+            panic!("the vocabulary belongs to a rostered program: {denial:?}")
+        });
 }
 
-fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
+pub fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
     WorthQueryApplicationWorkflowResourceCeiling::new(
         32,
         64,

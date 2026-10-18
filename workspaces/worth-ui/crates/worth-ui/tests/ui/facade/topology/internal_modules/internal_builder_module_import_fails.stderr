@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::builder`
- --> tests/ui/facade/topology/internal_modules/internal_builder_module_import_fails.rs:1:23
-  |
-1 | use worth_ui::facade::builder::WorthUiAppBuilder;
-  |                       ^^^^^^^ could not find `builder` in `facade`

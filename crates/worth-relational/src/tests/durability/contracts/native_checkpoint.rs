@@ -246,8 +246,10 @@ fn corrupt_native_checkpoint_is_denied_without_publishing_recovered_state() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let mut bytes = crate::durability::log::native_file_codec::CHECKPOINT_MAGIC.to_vec();
+    bytes.extend([0xc1, 0x00, 0xff]);
     let corrupt = crate::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes(
-        vec![0xc1, 0x00, 0xff].into_boxed_slice(),
+        bytes.into_boxed_slice(),
     );
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered

@@ -1,5 +1,8 @@
 //! Query host audience facade.
 //!
+//! Start with [Build an Application](https://github.com/recnepspencer/worth/blob/master/docs/build-an-application.md)
+//! and the [Capability Index](https://github.com/recnepspencer/worth/blob/master/docs/capability-index.md).
+//!
 //! Admission, lowering, execution, and publication consumers depend on this
 //! crate instead of importing Query's internal authority packages directly.
 //! The read-only [`facade::domain`] surface exposes an installed schema's
@@ -166,7 +169,7 @@
 //!
 //! ```compile_fail,E0599
 //! use worth_query_host::facade::{
-//!     application_entry::WorthQueryApplicationMutationRequestWithIdempotency,
+//!     application_entry::advanced::WorthQueryApplicationMutationRequestWithIdempotency,
 //!     application_installation::WorthQueryProgramApplicationRuntime,
 //!     declaration::application_operation::ApplicationMutationIntent,
 //!     domain::ApplicationSchema,
@@ -190,7 +193,7 @@
 //! ```
 //! use worth_query_host::facade::{
 //!     application_entry::{
-//!         WorthQueryApplicationMutationRequestWithIdempotency,
+//!         advanced::WorthQueryApplicationMutationRequestWithIdempotency,
 //!         WorthQueryMutationSourcePrepared,
 //!     },
 //!     declaration::application_operation::ApplicationMutationIntent,
@@ -247,7 +250,7 @@
 //!     <RootSource<S, R> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <RootSource<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
 //!     RootValue<S, R>: WorthQueryApplicationProjection<S, RootQuery<S, R>> + Clone,
 //! {
-//!     let _ = request.recover_required_outputs::<P, R>(application, receipt, "root-output", controls);
+//!     let _ = request.advanced().recover_required_outputs::<P, R>(application, receipt, "root-output", controls);
 //! }
 //! ```
 //!
@@ -324,3 +327,17 @@
 //! ```
 
 pub mod facade;
+mod ordinary_contract;
+mod workflow_owner_contract;
+
+mod discovered_currentness_contract;
+
+mod funded_input_contract;
+mod workflow_actor_contract;
+
+mod cutover_contract;
+
+mod capability_command_contract;
+mod no_source_tree_contract;
+
+mod closed_delivery_contract;

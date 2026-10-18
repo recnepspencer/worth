@@ -1,8 +1,8 @@
 use std::sync::atomic::Ordering;
 
-use crate::{
-    compat_http_phase_thirteen_assertions::assert_denial_contains,
-    compat_http_phase_thirteen_runtime::{
+use {
+    crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains,
+    crate::shared_support_compat_http_phase_thirteen_runtime::{
         canonical_download_success, compat_read_with_diagnostics, idempotent_mutation,
         idempotent_mutation_conflict, phase_thirteen_counting_server, phase_thirteen_server,
         resumed_download_success,
@@ -37,9 +37,9 @@ fn compat_http_phase_thirteen_retry_and_precondition_matrix_keeps_authority_and_
     );
     let precondition_denial = match read_server.compat_http().read(
         worth_server::WorthServerCompatibilityExecutionInput::new(
-            crate::compat_http_phase_two_runtime::prepared_read_request(
+            crate::shared_support_compat_http_phase_two_runtime::prepared_read_request(
                 &read_server,
-                crate::compat_http_phase_two_runtime::read_input("users.profile")
+                crate::shared_support_compat_http_phase_two_runtime::read_input("users.profile")
                     .with_header("if-match", "\"validator:wrong\"")
                     .build()
                     .expect("conditional request should validate"),

@@ -1,10 +1,41 @@
 use super::*;
 
 pub fn start_instance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
+        >,
+    >,
     definition: PublishedWorkflowDefinitionRef,
     idempotency: u64,
 ) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial> {
+    prepare_instance_start(application, definition, idempotency).map(|request| request.execute())
+}
+
+pub fn prepare_instance_start(
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
+        >,
+    >,
+    definition: PublishedWorkflowDefinitionRef,
+    idempotency: u64,
+) -> Result<
+    worth_query_host::facade::application_entry::WorthQueryWorkflowInstanceStartRequest<
+        '_,
+        DocumentRetentionSchema,
+        super::super::WorkflowInstanceStartOperation,
+        WorkflowInstanceStartInput,
+        super::super::super::schema::Document,
+    >,
+    WorthQueryWorkflowInstancePreparationDenial,
+> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -19,11 +50,17 @@ pub fn start_instance(
         .without_source()
         .idempotency(&idempotency)
         .prepare_workflow_instance_start(application, definition)
-        .map(|request| request.execute())
 }
 
 pub fn advance_instance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowAdvancePreparationDenial> {
@@ -33,7 +70,14 @@ pub fn advance_instance(
 /// Advances `instance` through a request selected on `branch`, which may be
 /// a branch the instance does not live on.
 pub fn advance_instance_on(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
+        >,
+    >,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
@@ -56,7 +100,14 @@ pub fn advance_instance_on(
 }
 
 pub fn approve_instance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     required: &RequiredWorkflowApproval,
     proposal: &PublishedWorkflowProposalRef,
@@ -65,7 +116,10 @@ pub fn approve_instance(
 ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowAdvancePreparationDenial> {
     let runtime = application.runtime();
     let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let principal = super::super::super::operator_identity::authenticate_reviewer(
+        runtime.installed_schema(),
+        &scope,
+    );
     let signing = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
@@ -91,7 +145,14 @@ pub fn approve_instance(
 }
 
 pub fn propose_instance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> Result<WorkflowProposalOutcome, WorthQueryWorkflowProposalPreparationDenial> {
@@ -99,7 +160,14 @@ pub fn propose_instance(
 }
 
 pub fn propose_authoring_instance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> Result<WorkflowProposalOutcome, WorthQueryWorkflowProposalPreparationDenial> {
@@ -107,7 +175,14 @@ pub fn propose_authoring_instance(
 }
 
 pub fn propose_authoring_instance_with_retention(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
     retention_days: u64,
@@ -131,7 +206,14 @@ pub fn propose_authoring_instance_with_retention(
 }
 
 pub fn propose_instance_on_branch(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = DocumentRetentionSchema,
+        >,
+    >,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
@@ -156,7 +238,11 @@ pub fn propose_instance_on_branch(
 
 /// Continues `instance` as a successor on the current `target`, at `resume_at`.
 pub fn migrate_instance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     target: PublishedWorkflowDefinitionRef,
     resume_at: &str,
@@ -181,7 +267,11 @@ pub fn migrate_instance(
 /// Continues the copy `fork` holds of `instance`, started on another branch,
 /// as a successor on the fork's current `target`, at `resume_at`.
 pub fn continue_on_fork(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     fork: worth_query_host::facade::product::WorthQueryProductBranch,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     target: PublishedWorkflowDefinitionRef,
@@ -208,7 +298,11 @@ pub fn continue_on_fork(
 /// Prepares the cancellation of `instance` on its own branch and returns its
 /// execution, so a test can race it against another commit.
 pub fn prepare_cancellation(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> Result<
@@ -222,7 +316,11 @@ pub fn prepare_cancellation(
 /// Prepares the cancellation of `instance` on `branch`, which may be another
 /// branch than the instance's own.
 pub fn prepare_cancellation_on(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
@@ -249,7 +347,11 @@ pub fn prepare_cancellation_on(
 }
 
 pub fn cancel_instance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> Result<

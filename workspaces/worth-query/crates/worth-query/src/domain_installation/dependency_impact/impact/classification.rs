@@ -302,17 +302,17 @@ fn collect_affected_roles(
         }
         return (floor, lookups);
     }
-    if let Some(change) = change.structural_change() {
-        if matches!(
+    if let Some(change) = change.structural_change()
+        && matches!(
             change.kind(),
             worth_runtime_bridge::facade::BridgeCommittedRecordChangeKind::Created
                 | worth_runtime_bridge::facade::BridgeCommittedRecordChangeKind::Deleted
-        ) && closure.has_structural_membership_dependency()
-        {
-            roles.insert(WorthQuerySemanticDependencyRole::SelectionOrMembership);
-            edge_counts
-                [WorthQuerySemanticDependencyRole::SelectionOrMembership.canonical_ordinal()] += 1;
-        }
+        )
+        && closure.has_structural_membership_dependency()
+    {
+        roles.insert(WorthQuerySemanticDependencyRole::SelectionOrMembership);
+        edge_counts[WorthQuerySemanticDependencyRole::SelectionOrMembership.canonical_ordinal()] +=
+            1;
     }
     (floor, 0)
 }

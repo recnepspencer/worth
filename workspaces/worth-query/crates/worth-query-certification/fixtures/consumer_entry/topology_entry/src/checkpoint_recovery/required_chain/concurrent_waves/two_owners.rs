@@ -48,6 +48,7 @@ fn two_owners_deliver_only_their_own_awaited_row() {
             .execute()
             .unwrap();
         request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: name.into(),
                 replacement_y: length(y),

@@ -33,6 +33,7 @@ use super::reconstruction_authority::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) enum WorthQueryTemporalReentryOutcome {
+    CleanupRequired(Box<super::super::WorthQueryApplicationCleanupRequired>),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     NoEffect(crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause),
@@ -61,13 +62,14 @@ pub(super) enum WorthQueryTemporalReentryOutcome {
     Indeterminate(super::WorthQueryConditionalReentryFailure),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum WorthQueryTemporalControlStop {
     Cancelled,
     TimedOut,
+    Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum WorthQueryTemporalTerminalFailure {
     ApplicationCommit(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
@@ -82,13 +84,11 @@ pub(super) enum WorthQueryTemporalTerminalFailure {
     Admission(WorthQueryTemporalAdmissionTerminalFailure),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum WorthQueryTemporalAdmissionTerminalFailure {
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind),
     Entity(crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind),
-    Authorization(
-        crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind,
-    ),
+    Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),
     Projection(crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind),
     Invariant(crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind),
 }

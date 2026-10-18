@@ -107,10 +107,10 @@ impl SemanticAspectDependencyCompilation {
         let mut observed =
             std::collections::HashMap::with_capacity(conditional.semantic_observation_count());
         for ordinal in 0..dependency_count {
-            if let Some(observation) = conditional.semantic_observation(ordinal) {
-                if observed.insert(ordinal, observation).is_some() {
-                    return Err(WorthQuerySemanticAspectDependencyCompilationDenialKind::RealizedConditionalObservationMismatch);
-                }
+            if let Some(observation) = conditional.semantic_observation(ordinal)
+                && observed.insert(ordinal, observation).is_some()
+            {
+                return Err(WorthQuerySemanticAspectDependencyCompilationDenialKind::RealizedConditionalObservationMismatch);
             }
         }
         if observed.len() != conditional.semantic_observation_count() {

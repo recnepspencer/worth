@@ -121,6 +121,7 @@ fn assert_the_key_resolves_by_its_durable_record(
         .runtime()
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(SetRetentionIntent {
             input: SetRetentionInput {
                 identity: DOCUMENT_IDENTITY.to_owned(),

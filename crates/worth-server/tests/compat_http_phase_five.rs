@@ -1,9 +1,9 @@
 #[path = "support/compat_http/phase_five_runtime.rs"]
 mod compat_http_phase_five_runtime;
-#[path = "support/query_handoff/runtime.rs"]
-mod query_handoff_runtime;
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 #[path = "compat_http_phase_five/early_admission.rs"]
 mod early_admission;

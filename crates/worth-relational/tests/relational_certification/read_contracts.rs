@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::world::supply_chain::*;
+use crate::relational_certification::world::supply_chain::*;
 
 #[test]
 fn every_delta_has_an_independent_hand_authored_read_footprint() {

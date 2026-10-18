@@ -104,6 +104,7 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
     let (refused, fresh_work) = runtime
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency(&fresh_key)
@@ -158,6 +159,7 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency(&committed_key)
@@ -175,6 +177,7 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
     let (retried, work) = runtime
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(input)
         .expect_source(source)
         .idempotency(&committed_key)

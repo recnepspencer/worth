@@ -15,6 +15,7 @@ mod persistent_allocation;
 mod preparation;
 mod publication;
 mod refresh_preparation;
+mod selected_field_request;
 use publication::PreparedRefresh;
 #[cfg(test)]
 pub(crate) mod charge_rendezvous;
@@ -72,11 +73,10 @@ impl IndexAuthority<'_> {
                 return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
             }
             let prepared = self.prepare_refresh(execution, &request, None, &projection, work)?;
-            prepared.prepare_publication(work)?;
-            Ok(prepared)
+            prepared.publish_admitted(self.runtime, work)
         })?;
         Ok(DerivedIndexMaintenanceOutcome {
-            generations: prepared.value.publish(self.runtime),
+            generations: prepared.value,
             work: counts,
         })
     }
@@ -95,11 +95,10 @@ impl IndexAuthority<'_> {
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
         let (prepared, counts) = request_payment::run(execution, budget, |work| {
             let prepared = self.prepare_basis_refresh(&request, basis, before, work, execution)?;
-            prepared.prepare_publication(work)?;
-            Ok(prepared)
+            prepared.publish_admitted(self.runtime, work)
         })?;
         Ok(DerivedIndexMaintenanceOutcome {
-            generations: prepared.value.publish(self.runtime),
+            generations: prepared.value,
             work: counts,
         })
     }

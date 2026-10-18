@@ -11,7 +11,7 @@ pub(super) fn from_stop(
             ConsumedOutputVerificationStop::WorkExhausted => {
                 WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded
             }
-            ConsumedOutputVerificationStop::CapacityExhausted => {
+            ConsumedOutputVerificationStop::CapacityExhausted(_) => {
                 WorthQueryCurrentOutputDenialKind::RetentionCapacityExhausted
             }
             ConsumedOutputVerificationStop::PendingUpstream => {

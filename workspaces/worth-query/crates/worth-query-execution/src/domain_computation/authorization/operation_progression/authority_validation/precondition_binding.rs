@@ -69,7 +69,7 @@ pub(in crate::domain_computation::authorization::operation_progression) fn bind_
         Input,
         Scope,
     >,
-    preconditions: TypedMutationPreconditions<Schema, Operation, Scope>,
+    preconditions: impl std::borrow::Borrow<TypedMutationPreconditions<Schema, Operation, Scope>>,
 ) -> Result<
     PreconditionBoundConventionalOperation<
         '_,
@@ -133,10 +133,12 @@ pub(in crate::domain_computation::authorization::operation_progression) fn bind_
     Input,
 >(
     validated: ValidatedCapabilityOperation<'_, Schema, Capability, Operation, Input>,
-    preconditions: TypedMutationPreconditions<
-        Schema,
-        Operation,
-        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+    preconditions: impl std::borrow::Borrow<
+        TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
     >,
 ) -> Result<
     PreconditionBoundCapabilityOperation<'_, Schema, Capability, Operation, Input>,

@@ -77,7 +77,7 @@ mod tests {
 
         let error = foreign
             .durability_authority()
-            .append_commit(authority, &positioned)
+            .append_commit(authority, &positioned, None)
             .expect_err("runtime-affine durable append authority must reject a foreign runtime");
 
         assert_eq!(

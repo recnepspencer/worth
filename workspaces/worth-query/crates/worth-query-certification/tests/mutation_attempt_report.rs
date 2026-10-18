@@ -32,6 +32,7 @@ fn mutation_attempt_report_distinguishes_preflight_domain_success_and_early_repl
     let request = app.runtime.request(&principal, &scope);
 
     let preflight = request
+        .advanced()
         .mutate(amendment("next", 2))
         .without_source()
         .idempotency(&0x81_u64)
@@ -48,6 +49,7 @@ fn mutation_attempt_report_distinguishes_preflight_domain_success_and_early_repl
     ));
 
     let domain = request
+        .advanced()
         .mutate(amendment("refused", 1))
         .without_source()
         .idempotency(&0x82_u64)
@@ -65,6 +67,7 @@ fn mutation_attempt_report_distinguishes_preflight_domain_success_and_early_repl
 
     let key = 0x83_u64;
     let fresh = request
+        .advanced()
         .mutate(amendment("next", 2))
         .without_source()
         .idempotency(&key)
@@ -82,6 +85,7 @@ fn mutation_attempt_report_distinguishes_preflight_domain_success_and_early_repl
     assert_ne!(after, before);
 
     let replay = request
+        .advanced()
         .mutate(amendment("next", 2))
         .without_source()
         .idempotency(&key)
@@ -112,10 +116,12 @@ fn mutation_attempt_report_keeps_preparation_capture_on_late_duplicate() {
     let request = app.runtime.request(&principal, &scope);
     let key = 0x84_u64;
     let mut first = request
+        .advanced()
         .mutate(amendment("prepared", 2))
         .without_source()
         .idempotency(&key);
     let mut second = request
+        .advanced()
         .mutate(amendment("prepared", 2))
         .without_source()
         .idempotency(&key);

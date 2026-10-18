@@ -21,6 +21,10 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
 {
     fn binding_identity(&self) -> &str;
 
+    fn pending_managed_cleanup(
+        &self,
+    ) -> Option<crate::domain_computation::WorthQueryMutationCleanupFailureKind>;
+
     fn installation_canonical_work(
         &self,
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;

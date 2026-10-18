@@ -4,7 +4,11 @@ use super::super::super::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryCompleteApplicationReadSet,
     WorthQueryProjectedApplicationMutation,
 };
-use super::*;
+use super::{
+    mismatch, ApplicationSchema, ApplicationWorkflowSpec, CompiledWorkflowDefinition,
+    WorkflowLineageCarry, WorthQueryApplicationAttemptDenial,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
+};
 use crate::domain_computation::{
     primary_graph::workflow::definition::{
         reconstruct_compiled_definition, WorkflowDefinitionCompilationPosture,
@@ -74,24 +78,30 @@ impl<
         )
         .unwrap_or(usize::MAX);
         let subject = self.admission.scope_entity_id();
-        let mut observed = self.lease.handle().with_runtime(execution, |runtime| {
+        let observed = self.lease.handle().with_runtime(execution, |runtime| {
             super::super::super::workflow_instance_observation::observe_workflow_instance(execution, self.lease.handle(), runtime, self.lease.snapshot(), &layout,
                 predecessor, subject, compiled.lineage(), &mut compiled, maximum, installed.resources().history_reconstruction_budget(),
                 super::super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Close)
         })?;
-        if observed.live_membership.is_some() {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceNotCompleted,
-                "succession requires a completed predecessor",
-            ));
-        }
-        let (custody, successors) = self.lease.handle().with_runtime(execution, |runtime| {
-            observed.ensure_history(execution, self.lease.handle(), runtime, self.lease.snapshot(), &layout, predecessor.entity_id(), maximum, &compiled)?;
-            let custody = super::super::super::workflow_instance_observation::instance_binding::fence_owner_custody(execution, runtime, self.lease.snapshot(), &layout,
-                predecessor.entity_id(), &observed.transitions, "succession predecessor has unsettled owner custody")?;
-            let successors = observe_adjacency(runtime, execution, self.lease.snapshot(), layout.instance_succeeded_from_relation, predecessor.entity_id(),
-                WorthQueryApplicationAdjacencyDirection::Incoming, 2)?.ok_or_else(|| mismatch("succession membership is unavailable"))?;
-            Ok::<_, WorthQueryApplicationAttemptDenial>((custody, successors))
+        let (source, successors) = self.lease.handle().with_runtime(execution, |runtime| {
+            let source = observed.into_completed_source(
+                execution,
+                runtime,
+                self.lease.snapshot(),
+                &layout,
+                predecessor.entity_id(),
+            )?;
+            let successors = observe_adjacency(
+                runtime,
+                execution,
+                self.lease.snapshot(),
+                layout.instance_succeeded_from_relation,
+                predecessor.entity_id(),
+                WorthQueryApplicationAdjacencyDirection::Incoming,
+                2,
+            )?
+            .ok_or_else(|| mismatch("succession membership is unavailable"))?;
+            Ok::<_, WorthQueryApplicationAttemptDenial>((source, successors))
         })?;
         if !successors.is_empty() {
             self.new_commit_refusal = Some(WorthQueryApplicationAttemptDenial::new(
@@ -99,8 +109,7 @@ impl<
                 "predecessor already has a fresh successor",
             ));
         }
-        facts.append(&mut observed.facts);
-        facts.push(custody);
+        facts.extend(source.into_facts());
         facts.push(WorthQueryApplicationObservedFact::Adjacency {
             relation_kind: layout.instance_succeeded_from_relation,
             anchor: predecessor.entity_id(),

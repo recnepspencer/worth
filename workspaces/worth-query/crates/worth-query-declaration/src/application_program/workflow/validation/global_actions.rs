@@ -10,9 +10,10 @@ pub(super) fn validate(actions: &[ApplicationWorkflowGlobalAction]) -> Result<()
         let operation = action.operation();
         let binding = operation.binding();
         if !binding.is_some_and(|binding| binding.2)
-            || !operation
+            || operation
                 .workflow_execution_requirements()
-                .is_some_and(|requirements| requirements.approval().is_none())
+                .approval()
+                .is_some()
         {
             return Err(denial(Kind::InvalidGlobalAction, operation.identifier()));
         }

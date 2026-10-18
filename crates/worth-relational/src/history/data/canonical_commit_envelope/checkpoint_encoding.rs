@@ -45,6 +45,7 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
             schema_version,
             schema_authority,
             merged_plan,
+            symbol_texts,
             record_allocations,
             patch,
             descriptive_touches,
@@ -57,9 +58,9 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
             descriptor_semantics_version,
         } = self.envelope;
         let field_count = if self.include_descriptive_touches {
-            21
+            22
         } else {
-            20
+            21
         };
         let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
         fields.serialize_field("commit", commit)?;
@@ -73,6 +74,7 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
         fields.serialize_field("schema_version", schema_version)?;
         fields.serialize_field("schema_authority", schema_authority)?;
         fields.serialize_field("merged_plan", merged_plan)?;
+        fields.serialize_field("symbol_texts", symbol_texts)?;
         fields.serialize_field("record_allocations", record_allocations)?;
         fields.serialize_field("patch", patch)?;
         if self.include_descriptive_touches {

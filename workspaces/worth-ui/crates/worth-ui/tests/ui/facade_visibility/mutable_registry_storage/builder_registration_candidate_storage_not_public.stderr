@@ -1,5 +1,0 @@
-error[E0609]: no field `registration_candidates` on type `WorthUiBuilder`
- --> tests/ui/facade_visibility/mutable_registry_storage/builder_registration_candidate_storage_not_public.rs:5:21
-  |
-5 |     let _ = builder.registration_candidates;
-  |                     ^^^^^^^^^^^^^^^^^^^^^^^ unknown field

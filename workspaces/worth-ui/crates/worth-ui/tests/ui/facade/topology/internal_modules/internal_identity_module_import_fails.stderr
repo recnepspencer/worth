@@ -1,5 +1,0 @@
-error[E0433]: failed to resolve: could not find `capability` in `worth_ui`
- --> tests/ui/facade/topology/internal_modules/internal_identity_module_import_fails.rs:1:15
-  |
-1 | use worth_ui::capability::identity::CommandId;
-  |               ^^^^^^^^^^ could not find `capability` in `worth_ui`

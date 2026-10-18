@@ -3,86 +3,13 @@ use super::*;
 pub(in super::super::super) fn declare<Schema: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    let scalar =
-        || ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(1).unwrap();
-    let path =
-        ApplicationAuthorizationPathBuilder::from_principal(Principal::reference::<Schema>())
-            .forward(CorrectionGrantee::reference::<Schema>())
-            .forward(CorrectionResource::reference::<Schema>())
-            .allow(Body::reference::<Schema>());
-    let contract = ApplicationCapabilityContractBuilder::new(
+    let contract = grant_contract(
         CorrectEntryCapability::<Schema>::reference(),
         CorrectEntryValue::reference::<Schema>(),
-        CorrectionGrant::reference::<Schema>(),
-    )
-    .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(CorrectionAction::reference::<Schema>(), scalar()),
-        ApplicationCapabilityRelationBinding::from_reference(
-            CorrectionResource::reference::<Schema>(),
-        ),
-        ApplicationCapabilityRelationDimension::not_applicable(),
-        ApplicationCapabilityFieldDimension::not_applicable(),
-        ApplicationCapabilityValueBinding::new(CorrectionPurpose::reference::<Schema>(), scalar()),
-    ))
-    .constraints(ApplicationCapabilityConstraintDefinition::new(
-        ApplicationCapabilityMagnitudeDimension::not_applicable(),
-        ApplicationCapabilityCardinalityDimension::One,
-        ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(
-                CorrectionStatus::reference::<Schema>(),
-                scalar(),
-            ),
-            ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(CorrectionScopeKey::reference::<
-                    Schema,
-                >()),
-                ApplicationCapabilityFieldBinding::from_reference(BodyKey::reference::<Schema>()),
-            ),
-            ApplicationCapabilityValidityDefinition::new(
-                ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CorrectionNotBefore::reference::<Schema>(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(CorrectionNotAfter::reference::<
-                    Schema,
-                >()),
-            ),
-        ),
-        CorrectionContext::<Schema>::reference(),
-    ))
-    .delegation(ApplicationCapabilityDelegationDefinition::new(
-        ApplicationCapabilityRelationBinding::from_reference(
-            CorrectionParent::reference::<Schema>(),
-        ),
-        ApplicationCapabilityRelationBinding::from_reference(
-            CorrectionGrantor::reference::<Schema>(),
-        ),
-        ApplicationCapabilityRelationBinding::from_reference(
-            CorrectionGrantee::reference::<Schema>(),
-        ),
-        ApplicationCapabilityFieldBinding::from_reference(CorrectionDepth::reference::<Schema>()),
-        CorrectionProvenance::<Schema>::reference(),
-    ))
-    .composition(ApplicationCapabilityComposition::new(
-        ApplicationCapabilityDecisionComposition::new(
-            ApplicationCapabilityAllowRule::new(ApplicationCapabilityGraphRule::any([
-                ApplicationCapabilityGraphClause::new(path),
-            ])),
-            ApplicationCapabilityDenyRule::not_applicable(),
-            ApplicationCapabilityConflictRule::not_applicable(),
-        ),
-        ApplicationCapabilityActorComposition::new(
-            ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
-            ApplicationCapabilityDistinctActorRule::not_applicable(),
-        ),
-        ApplicationCapabilityPropagationComposition::new(
-            ApplicationCapabilityDelegationRule::forbidden(),
-            ApplicationCapabilityDisclosureRule::not_applicable(),
-        ),
-    ))
-    .elevation(ApplicationCapabilityElevationRule::not_applicable())
-    .build();
-    schema
+        1,
+        1,
+    );
+    let schema = schema
         .entity(CorrectionGrant::reference::<Schema>())
         .aspect(
             CorrectionGrant::reference::<Schema>(),
@@ -138,5 +65,110 @@ pub(in super::super::super) fn declare<Schema: TopologySchemaBinding>(
         )
         .capability_context(CorrectionContext::<Schema>::reference())
         .capability_provenance(CorrectionProvenance::<Schema>::reference())
-        .capability(contract)
+        .capability(contract);
+    super::super::program_adoption::declare(schema)
+}
+
+pub(in super::super::super) fn grant_contract<
+    Schema: TopologySchemaBinding,
+    Capability,
+    Operation,
+    Input,
+>(
+    capability: ApplicationCapabilityRef<Schema, Capability>,
+    operation: ApplicationOperationRef<Schema, Operation, Input>,
+    action: u64,
+    purpose: u64,
+) -> ApplicationCapabilityContract<Schema, Capability, Operation, Input>
+where
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+{
+    let encoded = |value| {
+        ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(value).unwrap()
+    };
+    let scalar =
+        || ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(1).unwrap();
+    let path =
+        ApplicationAuthorizationPathBuilder::from_principal(Principal::reference::<Schema>())
+            .forward(CorrectionGrantee::reference::<Schema>())
+            .forward(CorrectionResource::reference::<Schema>())
+            .allow(Body::reference::<Schema>());
+    ApplicationCapabilityContractBuilder::new(
+        capability,
+        operation,
+        CorrectionGrant::reference::<Schema>(),
+    )
+    .target(ApplicationCapabilityTargetDefinition::new(
+        ApplicationCapabilityValueBinding::new(
+            CorrectionAction::reference::<Schema>(),
+            encoded(action),
+        ),
+        ApplicationCapabilityRelationBinding::from_reference(
+            CorrectionResource::reference::<Schema>(),
+        ),
+        ApplicationCapabilityRelationDimension::not_applicable(),
+        ApplicationCapabilityFieldDimension::not_applicable(),
+        ApplicationCapabilityValueBinding::new(
+            CorrectionPurpose::reference::<Schema>(),
+            encoded(purpose),
+        ),
+    ))
+    .constraints(ApplicationCapabilityConstraintDefinition::new(
+        ApplicationCapabilityMagnitudeDimension::not_applicable(),
+        ApplicationCapabilityCardinalityDimension::One,
+        ApplicationCapabilityCurrentnessDefinition::new(
+            ApplicationCapabilityValueBinding::new(
+                CorrectionStatus::reference::<Schema>(),
+                scalar(),
+            ),
+            ApplicationCapabilityWorkflowDefinition::new(
+                ApplicationCapabilityFieldBinding::from_reference(CorrectionScopeKey::reference::<
+                    Schema,
+                >()),
+                ApplicationCapabilityFieldBinding::from_reference(BodyKey::reference::<Schema>()),
+            ),
+            ApplicationCapabilityValidityDefinition::new(
+                ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
+                ApplicationCapabilityFieldBinding::from_reference(
+                    CorrectionNotBefore::reference::<Schema>(),
+                ),
+                ApplicationCapabilityFieldBinding::from_reference(CorrectionNotAfter::reference::<
+                    Schema,
+                >()),
+            ),
+        ),
+        CorrectionContext::<Schema>::reference(),
+    ))
+    .delegation(ApplicationCapabilityDelegationDefinition::new(
+        ApplicationCapabilityRelationBinding::from_reference(
+            CorrectionParent::reference::<Schema>(),
+        ),
+        ApplicationCapabilityRelationBinding::from_reference(
+            CorrectionGrantor::reference::<Schema>(),
+        ),
+        ApplicationCapabilityRelationBinding::from_reference(
+            CorrectionGrantee::reference::<Schema>(),
+        ),
+        ApplicationCapabilityFieldBinding::from_reference(CorrectionDepth::reference::<Schema>()),
+        CorrectionProvenance::<Schema>::reference(),
+    ))
+    .composition(ApplicationCapabilityComposition::new(
+        ApplicationCapabilityDecisionComposition::new(
+            ApplicationCapabilityAllowRule::new(ApplicationCapabilityGraphRule::any([
+                ApplicationCapabilityGraphClause::new(path),
+            ])),
+            ApplicationCapabilityDenyRule::not_applicable(),
+            ApplicationCapabilityConflictRule::not_applicable(),
+        ),
+        ApplicationCapabilityActorComposition::new(
+            ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
+            ApplicationCapabilityDistinctActorRule::not_applicable(), worth_query_decl::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
+        ApplicationCapabilityPropagationComposition::new(
+            ApplicationCapabilityDelegationRule::forbidden(),
+            ApplicationCapabilityDisclosureRule::not_applicable(),
+        ),
+    ))
+    .elevation(ApplicationCapabilityElevationRule::not_applicable())
+    .build()
 }

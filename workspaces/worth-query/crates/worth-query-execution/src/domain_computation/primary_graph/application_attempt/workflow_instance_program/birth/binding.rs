@@ -92,13 +92,21 @@ impl<Schema, Operation, Input, Scope>
         self.read_set
             .append_authority_facts(&execution, &authority.facts, allocation)?;
         let mut effects = Vec::new();
+        let start_revision = self.read_set.lease.handle().with_runtime(&execution, |runtime| {
+            crate::domain_computation::primary_graph::workflow::instance::start_provenance::admit(
+                &execution, runtime, self.read_set.lease.product().relational_basis(),
+                authority.compiled.program_revision(),
+            )
+        })?;
         crate::domain_computation::primary_graph::workflow::instance::visit_instance_birth_facts(
             self.read_set.lease.layout.workflow(),
             &authority.compiled,
             &authority.instance_identity,
+            &start_revision,
             authority.branch.occurrence_ordinal(),
             subject,
             authority.carry,
+            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.read_set.admission),
             |effect| {
                 effects.push(effect);
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())

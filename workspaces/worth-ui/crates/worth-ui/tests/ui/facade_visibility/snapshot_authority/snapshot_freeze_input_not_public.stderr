@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::CapabilitySnapshotFreezeInput`
- --> tests/ui/facade_visibility/snapshot_authority/snapshot_freeze_input_not_public.rs:1:5
-  |
-1 | use worth_ui::facade::CapabilitySnapshotFreezeInput;
-  |     ^^^^^^^^^^^^^^^^^^-----------------------------
-  |     |                 |
-  |     |                 help: a similar name exists in the module: `CapabilitySnapshotDigest`
-  |     no `CapabilitySnapshotFreezeInput` in `facade`

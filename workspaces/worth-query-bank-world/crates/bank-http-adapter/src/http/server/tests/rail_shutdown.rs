@@ -46,6 +46,7 @@ async fn failed_http_worker_preserves_rail_route_in_close_failure() {
     let (shutdown, _receiver) = tokio::sync::oneshot::channel();
     let (live_shutdown, _) = tokio::sync::watch::channel(false);
     let server = BankHttpServer {
+        mutations: None,
         local_address: "127.0.0.1:1".parse().unwrap(),
         rail_completion: Some(Arc::new(PendingRoute)),
         rail_maintenance_wake: None,
@@ -56,7 +57,6 @@ async fn failed_http_worker_preserves_rail_route_in_close_failure() {
         })),
         dispatcher_task: None,
         continuation_task: None,
-        elevation_task: None,
         recovery_task: None,
         rail_maintenance_task: None,
         rail_maintenance_deadline: Duration::from_secs(1),
@@ -67,7 +67,7 @@ async fn failed_http_worker_preserves_rail_route_in_close_failure() {
         Err(failure) => failure,
     };
     assert_eq!(failure.error().to_string(), "injected HTTP worker failure");
-    let close = failure.into_close();
+    let close = failure.into_close().unwrap();
     let rail = close.into_rail_completion().expect("rail route retained");
     assert_eq!(
         rail.assessment(),

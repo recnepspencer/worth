@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::workflow::{
 
 mod preparation;
 mod publication;
+pub(in crate::domain_computation::primary_graph) use publication::observe_read_only_proposal;
 
 pub use preparation::{
     WorkflowProposalBindingDenial, WorkflowProposalPreparationDenial,
@@ -165,14 +166,13 @@ where
             source_identity,
             selected.node_path(),
             coverages,
-        );
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
+    );
         let replay = !replay_facts.is_empty();
         facts.append(&mut replay_facts);
         if replay {
-            let transition_count = observed.transitions.len();
             let Some(WorthQueryApplicationObservedFact::WorkflowHistoryBasis {
-                maximum_transitions,
-                ..
+                requirement, ..
             }) = observed.facts.iter_mut().find(|fact| {
                 matches!(
                     fact,
@@ -184,7 +184,7 @@ where
                     "workflow proposal transition capacity fact is unavailable",
                 ));
             };
-            *maximum_transitions = transition_count;
+            *requirement = super::fact::WorkflowHistoryRequirement::ReplayOnly;
         }
         facts.extend(observed.facts);
         check_request_live(self.admission.publication_request(), Operation::IDENTIFIER)?;
@@ -302,7 +302,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 source_identity,
                 selected.node_path(),
                 self.proposal_coverages(compiled, selected.node())?,
-            );
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
+    );
             let proposal_facts = self.lease.handle().with_runtime(execution, |runtime| {
                 observe_workflow_proposal(
                     execution,

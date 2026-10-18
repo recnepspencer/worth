@@ -7,8 +7,8 @@ use worth_server::{
     WorthServerQueryWorkspaceProvider,
 };
 
-#[path = "../query_handoff/runtime.rs"]
-mod query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct SchedulerWorkspaceProvider;

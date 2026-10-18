@@ -38,6 +38,7 @@ where
     runtime
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(SetRetentionIntent {
             input: SetRetentionInput {
                 identity: DOCUMENT_IDENTITY.to_owned(),

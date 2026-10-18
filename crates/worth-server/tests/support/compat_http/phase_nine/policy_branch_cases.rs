@@ -2,14 +2,14 @@ use worth_foundational::facade::DiagnosticRichnessProfile;
 use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
 use worth_server::WorthServerBinaryDownloadRequest;
 
-use crate::compat_http_phase_nine_assertions::{
+use crate::shared_support_compat_http_phase_nine_assertions::{
     assert_diagnostics_profile, assert_policy_alignment,
 };
-use crate::compat_http_phase_nine_runtime::{
+use crate::shared_support_compat_http_phase_nine_runtime::{
     build_phase_nine_server_with_workspace_provider, compat_download_execution_input,
     compat_download_success, compat_read_execution_input, compat_read_success,
 };
-use crate::query_handoff_runtime::ProfiledTestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::ProfiledTestWorkspaceProvider;
 
 #[test]
 fn compat_http_branch_and_diagnostics_variation_keep_policy_and_metadata_truth_aligned() {

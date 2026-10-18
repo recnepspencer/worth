@@ -31,6 +31,7 @@ pub(crate) trait DurabilityWrite {
         &self,
         authority: crate::durability::authority::DurableAppendAuthority,
         commit: &PositionedCanonicalCommit,
+        bytes: Option<&worth_execution::ExecutionImmutableBytes>,
     ) -> Result<(), DurabilityError>;
 }
 
@@ -39,7 +40,9 @@ impl DurabilityWrite for RelationalRuntime {
         &self,
         authority: crate::durability::authority::DurableAppendAuthority,
         commit: &PositionedCanonicalCommit,
+        bytes: Option<&worth_execution::ExecutionImmutableBytes>,
     ) -> Result<(), DurabilityError> {
-        self.durability_authority().append_commit(authority, commit)
+        self.durability_authority()
+            .append_commit(authority, commit, bytes)
     }
 }

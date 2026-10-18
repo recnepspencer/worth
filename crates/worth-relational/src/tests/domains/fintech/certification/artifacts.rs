@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use std::collections::BTreeMap;
 
 use worth_harness::facade::{
@@ -107,9 +108,14 @@ fn branch_summary(session: &CertifiedRelationalFintechSession) -> WorkflowArtifa
 }
 
 fn diagnostics_summary(session: &CertifiedRelationalFintechSession) -> WorkflowArtifactProjection {
-    let recovery = session.world.runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let recovery = session
+        .world
+        .runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let publication_diagnostics = session
         .world
         .runtime

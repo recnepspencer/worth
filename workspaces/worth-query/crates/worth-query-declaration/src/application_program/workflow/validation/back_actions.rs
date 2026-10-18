@@ -46,7 +46,8 @@ impl BackActionValidation {
         let guarded = operation.binding().is_some_and(|binding| binding.2)
             && operation
                 .workflow_execution_requirements()
-                .is_some_and(|requirements| requirements.approval().is_none());
+                .approval()
+                .is_none();
         if !guarded
             || edge.source == edge.target
             || matches!(graph.node(edge.source).kind(), Node::Terminal)

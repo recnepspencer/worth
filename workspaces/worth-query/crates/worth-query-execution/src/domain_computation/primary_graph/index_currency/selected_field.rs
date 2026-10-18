@@ -17,7 +17,8 @@ pub(crate) enum SelectedFieldIndexAdmissionStop {
 }
 
 /// Prepare only the installed EntityField indexes consumed by this
-/// principal/scope request. Every cold native action uses the caller's
+/// principal/scope request. Missing generations require an authentic native seed;
+/// this ordinary selector never reconstructs the population. Every action uses the caller's
 /// original cumulative admission and the native maintenance owner.
 pub(crate) fn ensure_selected_field_indexes_admitted(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -85,7 +86,7 @@ pub(crate) fn ensure_selected_field_indexes_admitted(
                 index_ids: selected,
             },
             basis,
-            super::super::index_maintenance_budget::cold_index_reconstruction_budget(),
+            super::super::index_maintenance_budget::ordinary_index_maintenance_budget(),
             execution,
             |work, bytes| {
                 admission.admit_read_scratch(bytes)?;

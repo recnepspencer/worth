@@ -1,9 +1,9 @@
-use crate::error::BridgeSpeculationError;
-
 use super::*;
 
 mod diagnostics;
 mod routing;
+mod speculation;
+pub use speculation::BridgeSpeculativeSessionHandle;
 
 pub use diagnostics::{
     BridgeDiagnostics, BridgeStandardDiagnosticsExplanation, BridgeStandardSessionExplanation,
@@ -286,81 +286,5 @@ impl BridgeSpeculativePromotionOutcome {
     /// Returns the canonical promotion record.
     pub fn record(&self) -> &BridgePreviewPromotionRecord {
         &self.record
-    }
-}
-
-#[derive(Debug)]
-pub struct BridgeSpeculativeSessionHandle {
-    runtime: RuntimeBridge,
-    session: BridgePreviewSession<PreviewActive>,
-    execution_record: BridgePreviewExecutionRecord,
-    liveness: BridgePreviewSessionLivenessOwner,
-}
-
-impl BridgeSpeculativeSessionHandle {
-    pub(crate) fn new(
-        runtime: RuntimeBridge,
-        session: BridgePreviewSession<PreviewActive>,
-        execution_record: BridgePreviewExecutionRecord,
-    ) -> Self {
-        let liveness = BridgePreviewSessionLivenessOwner::new(session.session_identity().clone());
-        Self {
-            runtime,
-            session,
-            execution_record,
-            liveness,
-        }
-    }
-
-    /// Returns the preview session identity.
-    pub fn session_identity(&self) -> &BridgePreviewSessionIdentity {
-        self.session.session_identity()
-    }
-
-    /// Observes whether this exact Bridge-owned preview session remains active.
-    pub fn liveness_observer(&self) -> BridgePreviewSessionLivenessObserver {
-        self.liveness.observer()
-    }
-
-    /// Builds a comparison handle between this speculative session and main.
-    pub fn compare_to_main(&self) -> BridgeSpeculativeComparison {
-        BridgeSpeculativeComparison::from_active_session(&self.session)
-    }
-
-    /// Returns the retained diagnostics artifact facade.
-    pub fn diagnostics(&self) -> &BridgeDiagnosticsFacade {
-        self.runtime.diagnostics().retained_artifacts()
-    }
-
-    /// Returns the standard-path diagnostics wrapper.
-    pub fn inspect(&self) -> BridgeDiagnostics<'_> {
-        self.runtime.diagnostics()
-    }
-
-    /// Returns the retained execution record for this active session.
-    pub fn execution_record(&self) -> &BridgePreviewExecutionRecord {
-        &self.execution_record
-    }
-
-    /// Discards this speculative session with an explicit residue report.
-    pub fn discard(
-        self,
-        residue_classes: Vec<BridgePreviewResidueClass>,
-    ) -> Result<BridgeSpeculativeDiscardOutcome, BridgeSpeculationError> {
-        let (session, record) = self.runtime.discard_preview_session(
-            self.session,
-            &self.execution_record,
-            residue_classes,
-        )?;
-        Ok(BridgeSpeculativeDiscardOutcome::new(session, record))
-    }
-
-    /// Promotes this speculative session across the authoritative boundary.
-    pub fn promote(self) -> Result<BridgeSpeculativePromotionOutcome, BridgeSpeculationError> {
-        let proof = self.session.promotion_admissibility_proof();
-        let (session, record) =
-            self.runtime
-                .promote_preview_session(self.session, &self.execution_record, &proof)?;
-        Ok(BridgeSpeculativePromotionOutcome::new(session, record))
     }
 }

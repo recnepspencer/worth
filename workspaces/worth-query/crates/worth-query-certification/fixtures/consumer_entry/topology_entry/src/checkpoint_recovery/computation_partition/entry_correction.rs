@@ -1,5 +1,6 @@
 //! A value correction retains the exact value its inverse restores.
 pub(super) mod capability;
+pub(super) mod program_adoption;
 use super::{
     facts::{EntryNumber, EntryValueBits, SetEntry},
     *,
@@ -43,6 +44,17 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for EntryC
 impl<Schema: TopologySchemaBinding, const WORKFLOW: bool> ApplicationMutationBinding<Schema>
     for EntryCorrectionBinding<Schema, WORKFLOW>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        use worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements;
+        if WORKFLOW {
+            ApplicationWorkflowExecutionRequirements::occurrence_only()
+        } else {
+            ApplicationWorkflowExecutionRequirements::not_applicable()
+        }
+    }
+
     type Input = EntryCorrection;
     type InputBinding = EntryCorrectionInput;
     type Result = PlanarAdjustmentResult;
@@ -197,6 +209,7 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
             .operation_projection_work_budget(operation, 4096)
             .operation_read_entity(operation, Body::reference())
             .operation_read_field(operation, BodyKey::reference())
+            .operation_expected_fact(operation, BodyKey::reference())
             .operation_read_entity(operation, SetEntry::reference())
             .operation_read_field(operation, EntryNumber::reference())
             .operation_read_field(operation, EntryValueBits::reference())
@@ -213,3 +226,15 @@ pub(super) fn configure<Schema: TopologySchemaBinding>(
     setup.handler::<EntryCorrectionBinding<Schema>, _>(EntryCorrectionHandler)?;
     setup.handler::<EntryCorrectionBinding<Schema, true>, _>(EntryCorrectionHandler::<true>)
 }
+
+impl<Schema: TopologySchemaBinding> ApplicationCapabilityMutationBinding<Schema>
+    for EntryCorrectionBinding<Schema>
+{
+    type Capability = capability::CorrectEntryCapability<Schema>;
+}
+impl<Schema: TopologySchemaBinding> ApplicationMutationAdmissionBinding<Schema>
+    for EntryCorrectionBinding<Schema>
+{
+    type Admission = ApplicationCapabilityAdmission<capability::CorrectEntryCapability<Schema>>;
+}
+worth_query_decl::facade::worth_query_operation_expects_fact!(CorrectEntryValue => [BodyKey]);

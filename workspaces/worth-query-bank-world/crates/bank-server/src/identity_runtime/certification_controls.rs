@@ -67,3 +67,18 @@ impl BankIdentityRuntime {
             .expect("control opens its host call")
     }
 }
+
+impl BankIdentityRuntime {
+    /// Schedules native cleanup on a foreign worker once, on this installed receiver only.
+    #[doc(hidden)]
+    pub fn schedule_next_managed_cleanup_on_worker_for_test(
+        &self,
+    ) -> Result<
+        worth_query_host::facade::primary_graph::WorthQueryManagedCleanupScheduleForTest,
+        worth_query_host::facade::primary_graph::WorthQueryManagedCleanupRegistrationDenial,
+    > {
+        self.application_program()
+            .runtime()
+            .schedule_next_managed_cleanup_on_worker_for_test()
+    }
+}

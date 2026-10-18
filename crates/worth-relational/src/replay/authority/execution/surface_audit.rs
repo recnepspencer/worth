@@ -246,23 +246,23 @@ pub(super) fn compare_replay_surfaces(
         || format!("{:?}", expected_branch_head),
         || format!("{:?}", replay_runtime.branch_head_ref(&request.branch_id)),
     );
-    if compared_surfaces.contains(&ReplayObservableSurface::Lineage) {
-        if let Some(original_lineage) = selected_lineage_authority {
-            let replayed_lineage = replayed_envelope.published_lineage();
-            compare_replay_surface(
-                runtime,
-                verification_plan,
-                mismatches,
-                ReplayObservableSurface::Lineage,
-                ReplayMismatchClass::LineageDrift,
-                surface_basis_for_published_lineage(&original_lineage.artifact),
-                surface_basis_for_published_lineage(replayed_lineage),
-                "lineage artifacts differed",
-                || published_lineage_artifacts_match(&original_lineage.artifact, replayed_lineage),
-                || format!("{:?}", original_lineage.artifact),
-                || format!("{:?}", replayed_lineage),
-            );
-        }
+    if compared_surfaces.contains(&ReplayObservableSurface::Lineage)
+        && let Some(original_lineage) = selected_lineage_authority
+    {
+        let replayed_lineage = replayed_envelope.published_lineage();
+        compare_replay_surface(
+            runtime,
+            verification_plan,
+            mismatches,
+            ReplayObservableSurface::Lineage,
+            ReplayMismatchClass::LineageDrift,
+            surface_basis_for_published_lineage(&original_lineage.artifact),
+            surface_basis_for_published_lineage(replayed_lineage),
+            "lineage artifacts differed",
+            || published_lineage_artifacts_match(&original_lineage.artifact, replayed_lineage),
+            || format!("{:?}", original_lineage.artifact),
+            || format!("{:?}", replayed_lineage),
+        );
     }
     if compared_surfaces.contains(&DERIVED_INDEX_SURFACE) {
         let original_derived_index_artifacts = crate::indexes::data::DerivedIndexArtifacts::new(

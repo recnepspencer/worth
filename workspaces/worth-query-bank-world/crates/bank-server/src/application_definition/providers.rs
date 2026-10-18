@@ -66,6 +66,9 @@ impl WorthQueryApplicationContribution<BankSchema> for BankAccountsProvider {
         (): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, BankSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<bank_domain::schema::ProgramDeploymentRevocationBinding, _>(
+            crate::mutation_handlers::ProgramDeploymentRevocationHandler,
+        )?;
         setup.handler::<CreatePersonalAccountMutationBinding, _>(CreatePersonalAccountHandler)?;
         setup.handler::<CreateBusinessAccountMutationBinding, _>(CreateBusinessAccountHandler)?;
         setup.handler::<GrantAccountAccessMutationBinding, _>(GrantAccountAccessHandler)?;

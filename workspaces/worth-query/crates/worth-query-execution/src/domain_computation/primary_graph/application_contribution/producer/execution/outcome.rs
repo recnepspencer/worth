@@ -124,10 +124,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 ) -> Result<ProducerCommitReceipt, WorthQueryOutputDemandDenial> {
     // A request refused authorization at commit time stops as that request
     // does anywhere else; the producer did not fail.
-    if let WorthQueryApplicationCommitOutcome::Denied(commit_denial) = &outcome {
-        if let Some(authority) = commit_denial.authorization_denial_kind() {
-            return Err(request_authority_stop(identity, authority));
-        }
+    if let WorthQueryApplicationCommitOutcome::Denied(commit_denial) = &outcome
+        && let Some(authority) = commit_denial.authorization_denial_kind()
+    {
+        return Err(request_authority_stop(identity, authority));
     }
     // A companion with no room for this commit met a budget of the advance
     // that ran it; the producer did not fail, and its row stays claimable.
@@ -135,6 +135,15 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         return Err(denial(kind, identity.to_owned()));
     }
     match outcome {
+        WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
+            let denial = WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ManagedCleanupRequired(
+                    cleanup.cleanup().failure().kind(),
+                ),
+                identity.to_owned(),
+            );
+            Err(denial.with_managed_cleanup(cleanup))
+        }
         WorthQueryApplicationCommitOutcome::Committed(receipt) => Ok(ProducerCommitReceipt {
             receipt,
             publication: CommitPublication::PublishedNow,
@@ -238,12 +247,30 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 .with_commit_denial_kind(kind)
                 .with_commit_execution_denial(execution))
         }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(outcome) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(graph::WorthQueryApplicationUncommitted::ProductUnpublished(
+            outcome,
+        ))),
+        WorthQueryApplicationCommitOutcome::Indeterminate(outcome) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(graph::WorthQueryApplicationUncommitted::Indeterminate(
+            outcome,
+        ))),
+        WorthQueryApplicationCommitOutcome::SettlementDeferred(outcome) => Err(denial(
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+            identity.to_owned(),
+        )
+        .with_uncommitted(graph::WorthQueryApplicationUncommitted::SettlementDeferred(
+            outcome,
+        ))),
         outcome @ (WorthQueryApplicationCommitOutcome::Deferred(_)
         | WorthQueryApplicationCommitOutcome::NoEffect(_)
-        | WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
-        | WorthQueryApplicationCommitOutcome::Aborted
-        | WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
-        | WorthQueryApplicationCommitOutcome::Indeterminate(_)) => Err(failed(identity, outcome)),
+        | WorthQueryApplicationCommitOutcome::Aborted) => Err(failed(identity, outcome)),
     }
 }
 
@@ -267,7 +294,8 @@ fn refused_budget(
             Deferred::RelationalDeferred(CompanionPreflight(stop)) => stop,
             _ => return None,
         },
-        WorthQueryApplicationCommitOutcome::Committed(_)
+        WorthQueryApplicationCommitOutcome::CleanupRequired(_)
+        | WorthQueryApplicationCommitOutcome::Committed(_)
         | WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
         | WorthQueryApplicationCommitOutcome::ProductStale(_)
         | WorthQueryApplicationCommitOutcome::ProductUnpublished(_)

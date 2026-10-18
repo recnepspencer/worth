@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph) use generated_materialization::
 mod history;
 mod observation_room;
 mod operation;
-mod program_adoption;
+pub(in crate::domain_computation::primary_graph) mod program_adoption;
 mod query;
 mod relational_change_delivery;
 mod security_basis;
@@ -68,11 +68,11 @@ pub use program_adoption::{
     WorthQueryClosedBranchSetAdoption, WorthQueryOrderedProgramAdoptionCoverage,
     WorthQueryPerformedBranchAdoption, WorthQueryPreparedBranchAdoption,
     WorthQueryPreparedBranchSetAdoption, WorthQueryPreparedProgramMigration,
-    WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial,
-    WorthQueryProgramCustodyDisposition, WorthQueryProgramCustodyDispositionInventory,
-    WorthQueryProgramCustodyDispositionKind, WorthQueryProgramMigrationDescription,
-    WorthQueryProgramMigrationPreparationDenial, WorthQueryStoppedBranchSetAdoption,
-    WorthQueryUnpublishedBranchAdoption,
+    WorthQueryProgramAdoptionAuthorizationDenial, WorthQueryProgramAdoptionCoverage,
+    WorthQueryProgramAdoptionCoverageDenial, WorthQueryProgramCustodyDisposition,
+    WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
+    WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
+    WorthQueryStoppedBranchSetAdoption, WorthQueryUnpublishedBranchAdoption,
 };
 pub use query::WorthQueryProductQueryControls;
 pub use query::WorthQueryRetainedBatchQueryAdmissionDenial;

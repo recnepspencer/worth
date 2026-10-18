@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::CommandRegistry`
- --> tests/ui/facade/command/facade/command_registry_type_not_publicly_importable.rs:1:5
-  |
-1 | use worth_ui::facade::CommandRegistry;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `CommandRegistry` in `facade`

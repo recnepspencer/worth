@@ -2,8 +2,8 @@ use worth_server::{
     WorthServerCompatibilityMutationPreconditionContext, WorthServerOperationReadinessDenialCode,
 };
 
-#[path = "support/operation_request/runtime.rs"]
-mod operation_request_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_operation_request_runtime as operation_request_runtime;
 
 use operation_request_runtime::{
     compat_prepared_request, compat_request_input, operation_request_test_server,

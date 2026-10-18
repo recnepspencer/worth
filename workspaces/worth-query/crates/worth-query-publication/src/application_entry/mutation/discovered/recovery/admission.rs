@@ -1,4 +1,5 @@
 //! Fresh admission of the original discovered-source request, without a handler.
+use crate::application_entry::mutation::authorization::WorthQueryBindingAdmission;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
@@ -33,6 +34,8 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -40,7 +43,7 @@ where
             <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    pub(in crate::application_entry::mutation::discovered) fn authorize_discovered_source<
+    pub(in crate::application_entry) fn authorize_discovered_source<
         Program,
         Root,
     >(
@@ -49,7 +52,7 @@ where
             '_,
         >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        source: &worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource,
+        source: Option<&worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource>,
     ) -> Result<PreparedMutation<Schema, Intent::Binding>, WorthQueryApplicationRecoveryRequestDenial>
     where
         Program: ApplicationProgramDefinition<Schema>,
@@ -88,17 +91,22 @@ where
         let owner = application.selected_program_owner(&selected).map_err(
             crate::application_entry::mutation::selected_program::map_selected_program_owner_denial,
         )?;
+        if let Some(declared) = self.compiled_action {
+            owner.resolve_declared_action::<Intent::Binding>(declared)
+                .map_err(WorthQueryApplicationRecoveryRequestDenial::Action)?;
+        }
         let staged = self.stage()?;
         let identities = self.identities()?;
         // Only bind the original source proof. The retained native attempt owns
         // its original facts; pending_source must not author another candidate.
-        let prepared = crate::application_entry::mutation::authorization::prepare_selected(
+        let prepared = <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(
             phase,
             self,
             &identities,
             staged,
             &selected,
         )?;
+        if let Some(source) = source {
         application
             .validate_unpublished_discovered_source::<Root, Intent::Binding>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
@@ -112,6 +120,7 @@ where
                     WorthQueryManagedApplicationRecoveryDenial::Demand(denial),
                 )
             })?;
+        }
         self.check_recovery_liveness()?;
         Ok(prepared)
     }

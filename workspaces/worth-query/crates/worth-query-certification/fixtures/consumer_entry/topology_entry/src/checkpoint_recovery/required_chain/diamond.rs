@@ -90,6 +90,7 @@ macro_rules! change_root {
             .execute()
             .unwrap();
         let outcome = $request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: $root.to_owned(),
                 replacement_y: length($y),

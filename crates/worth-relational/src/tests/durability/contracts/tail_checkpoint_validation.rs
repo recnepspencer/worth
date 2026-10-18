@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use worth_foundational::{FoundationalBranchReferenceObservation, FoundationalBranchTarget};
 
 #[test]
@@ -8,11 +9,15 @@ fn durability_contract_recovery_rejects_tail_target_without_immutable_artifact()
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "checkpoint-basis");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let second = create_entity_outcome(execution, &runtime, "tail-commit");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let tail = plan
         .tail_log
         .iter_mut()

@@ -31,6 +31,7 @@ macro_rules! selected {
             .observed_sources()[0]
             .clone();
         $request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "anchor-a".to_owned(),
                 replacement_y: length($y),

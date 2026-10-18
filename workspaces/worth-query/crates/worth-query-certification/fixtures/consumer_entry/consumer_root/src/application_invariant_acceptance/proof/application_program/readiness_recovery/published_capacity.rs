@@ -22,6 +22,7 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
             .output_checkpoint_snapshot_state_for_test()
             .0;
         let mut demand = request
+            .advanced()
             .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
                 &world.application,
                 PlanarOutputDemand::new(source),

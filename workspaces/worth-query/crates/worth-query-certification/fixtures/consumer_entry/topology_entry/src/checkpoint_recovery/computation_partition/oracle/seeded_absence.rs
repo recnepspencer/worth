@@ -338,10 +338,10 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 eligibility = Eligibility::after::<WORK, RUNS, MODE>(&count_model);
                 count_prior =
                     (RUNS == 1 && count_model.completes_at(WORK)).then(|| count_model.clone());
-                if decision == 0 {
-                    if let Some(write) = step.own_write {
-                        count_model.written(write);
-                    }
+                if decision == 0
+                    && let Some(write) = step.own_write
+                {
+                    count_model.written(write);
                 }
             }
             if kind == target {

@@ -23,6 +23,8 @@ mod history_retirement;
 mod idempotency;
 mod inbound_completion;
 mod inbound_cost;
+pub(in crate::domain_computation::primary_graph) mod managed_cleanup_control;
+pub(in crate::domain_computation::primary_graph) mod publication_fault_control;
 pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryInboundCompletionPreparationDenial;
 pub(in crate::domain_computation::primary_graph) use inbound_completion::{
     WorthQueryCanonicalCompletionRow, WorthQueryInboundCompletionReadDenial,
@@ -35,6 +37,11 @@ mod installation;
 mod invariant_execution;
 pub(in crate::domain_computation::primary_graph) mod invariant_execution_failure;
 mod managed_application_recovery;
+pub(in crate::domain_computation::primary_graph) mod recovered_program_source_delivery;
+pub use recovered_program_source_delivery::{
+    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
+    WorthQueryRecoveredProgramSourceDeliveryForTest,
+};
 mod mutation_work;
 pub use managed_application_recovery::{
     WorthQueryManagedApplicationRecoveryDenial, WorthQueryManagedApplicationRecoveryOutcome,
@@ -92,6 +99,7 @@ pub(super) use session_commit::{
 use std::sync::{Arc, Mutex};
 
 pub(crate) struct WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) managed_cleanup_control: Arc<managed_cleanup_control::ManagedCleanupControl>,
     pub(crate) graph: WorthQueryPrimaryGraphIntegrationHandle,
     resource_support: resource_support::WorthQueryPrimaryGraphResourceSupport,
     branch_commit_coordination:
@@ -110,6 +118,7 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     pending_application_publications:
         pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner,
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
+    pub(in crate::domain_computation::primary_graph) publication_fault_control: Arc<publication_fault_control::PublicationFaultControl>,
     world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldLifecyclePort>,
 }
 
@@ -301,4 +310,8 @@ pub(in crate::domain_computation::primary_graph) use inbound_completion::{
 
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
+};
+
+pub use managed_cleanup_control::{
+    WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
 };

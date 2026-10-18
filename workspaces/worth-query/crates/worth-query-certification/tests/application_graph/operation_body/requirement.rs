@@ -31,6 +31,7 @@ fn guidance<const DESTINATION: u64>(
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     let assessed = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<DESTINATION, RequireDraftNote>::new(""))
         .assess_current_body_requirements(app, projection)
         .expect("authorized native assessment");
@@ -55,6 +56,7 @@ fn invoke<Operation: DraftOperation<DocumentRetentionSchema<20>>>(
     let scope = request_scope();
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     app.request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<20, Operation>::new(note))
         .without_source()
         .idempotency(&key)
@@ -72,6 +74,7 @@ fn invoke_requirement<const DESTINATION: u64>(
     let scope = request_scope();
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     app.request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<DESTINATION, RequireDraftNote>::new(""))
         .without_source()
         .idempotency(&key)
@@ -161,6 +164,7 @@ fn clearing_after_preparation_stales_the_requirement_without_effect() {
     let key = 406_u64;
     let mut request = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<20, RequireDraftNote>::new(""))
         .without_source()
         .idempotency(&key);

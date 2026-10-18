@@ -57,6 +57,7 @@ fn signed_dependency_history_preserves_approval_after_an_unrelated_resource_edit
         .idempotency(&30_022_u64)
         .for_workflow_operation(&application, &required)
         .expect("unrelated resource progress must not revoke this approval")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             ExecutionAllocationPolicy::SystemAllocation,
@@ -162,6 +163,7 @@ fn set_resource(
         .runtime()
         .request(&principal, &scope)
         .on_branch(instance.branch())
+        .advanced()
         .mutate(SetRetentionIntent {
             input: SetRetentionInput {
                 identity: identity.to_owned(),

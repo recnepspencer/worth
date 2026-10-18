@@ -79,16 +79,15 @@ impl InvalidationSeedBatch {
             });
             let mut merged = Vec::<InvalidationSeed>::with_capacity(seeds.len());
             for seed in seeds {
-                if let Some(previous) = merged.last_mut() {
-                    if previous.source_node == seed.source_node
-                        && previous.aspect == seed.aspect
-                        && previous.cause == seed.cause
-                    {
-                        let mut scopes = previous.changed_scopes.as_slice().to_vec();
-                        scopes.extend_from_slice(seed.changed_scopes.as_slice());
-                        previous.changed_scopes = PartitionScopeSet::new(scopes);
-                        continue;
-                    }
+                if let Some(previous) = merged.last_mut()
+                    && previous.source_node == seed.source_node
+                    && previous.aspect == seed.aspect
+                    && previous.cause == seed.cause
+                {
+                    let mut scopes = previous.changed_scopes.as_slice().to_vec();
+                    scopes.extend_from_slice(seed.changed_scopes.as_slice());
+                    previous.changed_scopes = PartitionScopeSet::new(scopes);
+                    continue;
                 }
                 merged.push(seed);
             }

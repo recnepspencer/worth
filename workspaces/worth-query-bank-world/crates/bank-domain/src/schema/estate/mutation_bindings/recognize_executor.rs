@@ -53,6 +53,12 @@ impl RecognizeEstateExecutor {
 pub struct RecognizeEstateExecutorMutationBinding;
 
 impl ApplicationMutationBinding<BankSchema> for RecognizeEstateExecutorMutationBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EstateAction;
     type InputBinding = super::super::EstateActionInputBinding;
     type Result = EstateMutationResult;
@@ -129,5 +135,29 @@ impl ApplicationMutationIntent<BankSchema> for RecognizeEstateExecutor {
         &self,
     ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
         ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
+    }
+}
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+    for RecognizeEstateExecutorMutationBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            RecognizeEstateExecutorCapability,
+        >;
+}
+
+impl TryFrom<EstateAction> for RecognizeEstateExecutor {
+    type Error = EstateAction;
+    fn try_from(action: EstateAction) -> Result<Self, Self::Error> {
+        match action {
+            EstateAction::RecognizeExecutor {
+                estate,
+                executor,
+                authority,
+            } => Ok(Self::new(estate, executor, authority)),
+            original => Err(original),
+        }
     }
 }

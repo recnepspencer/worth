@@ -48,6 +48,8 @@ mod input;
 #[cfg(test)]
 #[path = "identity/input_validation_tests.rs"]
 mod input_validation_tests;
+mod shared_input;
+pub use shared_input::ApplicationSharedInput;
 mod partition;
 mod request;
 mod work;

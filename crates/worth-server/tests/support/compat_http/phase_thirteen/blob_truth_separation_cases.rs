@@ -1,12 +1,12 @@
-use crate::{
-    compat_http_phase_thirteen_assertions::{
+use {
+    crate::shared_support_compat_http_phase_thirteen_assertions::{
         assert_binary_counter, assert_bundle_digests_not_equal, assert_external_counter,
     },
-    compat_http_phase_thirteen_bundle::{
+    crate::shared_support_compat_http_phase_thirteen_bundle::{
         WorthServerPhaseThirteenBundle, FILE_ENVELOPE_DIGEST, METADATA_IDENTITY_DIGEST,
         MUTATION_RESULT_DIGEST, POLICY_DIGEST, RESPONSE_DIGEST,
     },
-    compat_http_phase_thirteen_runtime::{
+    crate::shared_support_compat_http_phase_thirteen_runtime::{
         canonical_download_success, canonical_upload_success, direct_and_compat_mutation,
         phase_thirteen_server,
     },

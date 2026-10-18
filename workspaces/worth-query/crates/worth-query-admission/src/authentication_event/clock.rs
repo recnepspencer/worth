@@ -54,13 +54,12 @@ where
             return Err(AuthenticationEventClockDenial::IdentityChanged);
         }
         let current = (reading.sequence(), reading.observed_time().nanoseconds());
-        if let Some(previous) = self.last_reading {
-            if current.0 < previous.0
+        if let Some(previous) = self.last_reading
+            && (current.0 < previous.0
                 || current.1 < previous.1
-                || (current.0 == previous.0 && current.1 != previous.1)
-            {
-                return Err(AuthenticationEventClockDenial::Regressed);
-            }
+                || (current.0 == previous.0 && current.1 != previous.1))
+        {
+            return Err(AuthenticationEventClockDenial::Regressed);
         }
         self.last_reading = Some(current);
         Ok(current.1)

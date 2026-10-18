@@ -13,6 +13,7 @@ pub(super) fn decision_denial_causes(
     bindings: &WorthQueryCapabilityDecisionRuleBindings,
     evidence: &worth_runtime_bridge::facade::BridgeAuthorizationDecisionEvidence,
     elevation: Option<WorthQueryOperationAuthorizationDenialKind>,
+    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
 ) -> Result<Vec<WorthQueryOperationAuthorizationDenialKind>, WorthQueryOperationAuthorizationDenial>
 {
     let matched = |index: usize| {
@@ -29,6 +30,19 @@ pub(super) fn decision_denial_causes(
         ));
     }
     append_prohibition_causes(bindings, &matched, &mut causes)?;
+    if let Some(index) = bindings.recorded_actor
+        && !matched(index)?
+    {
+        causes.push(WorthQueryOperationAuthorizationDenialKind::Refused(
+            match recorded {
+                None => AuthorizationRefusal::WorkflowActorContextRequired,
+                Some(recorded) if !recorded.is_present() => {
+                    AuthorizationRefusal::WorkflowActorAbsent
+                }
+                Some(_) => AuthorizationRefusal::WorkflowActorComparisonMismatch,
+            },
+        ));
+    }
     if let Some(elevation) = elevation {
         causes.push(elevation);
     }
@@ -76,10 +90,10 @@ fn append_prohibition_causes(
             ),
         ),
     ] {
-        if let Some(index) = index {
-            if matched(index)? {
-                causes.push(kind);
-            }
+        if let Some(index) = index
+            && matched(index)?
+        {
+            causes.push(kind);
         }
     }
     Ok(())

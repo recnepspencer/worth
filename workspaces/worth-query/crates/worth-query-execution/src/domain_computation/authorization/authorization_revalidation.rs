@@ -64,14 +64,14 @@ where
             .integration_handle()
             .with_runtime_mut(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
-                let current = validate_retained_currentness(
+
+                validate_retained_currentness(
                     execution,
                     authorization,
                     runtime,
                     snapshot,
                     self.authorization.bridge(),
-                );
-                current
+                )
             })
     }
 
@@ -251,14 +251,14 @@ where
             .integration_handle()
             .with_runtime_mut(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
-                let current = validate_observed_currentness(
+
+                validate_observed_currentness(
                     execution,
                     observed,
                     runtime,
                     snapshot,
                     self.authorization.bridge(),
-                );
-                current
+                )
             })
     }
 
@@ -326,15 +326,15 @@ where
                     )
                     .map(drop)
                 };
-                let result = result.and_then(|()| {
+
+                result.and_then(|()| {
                     self.readmit_capability_commit_support(
                         execution,
                         capability.supporting(),
                         runtime,
                         snapshot,
                     )
-                });
-                result
+                })
             })
     }
 }

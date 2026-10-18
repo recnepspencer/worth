@@ -87,18 +87,17 @@ fn parent_revocation_after_activation_materialization_denies_final_commit() {
                 .materialize_delegation(phase, admission, command.child)
         })
         .expect("the exact activation program must materialize while its parent is current");
-    let revoked = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: GRANT,
-            },
-            &idempotency(121),
-            &request_scope(),
-        )
-        .expect("the exact parent must revoke before the stale program reaches the provider");
+    let revoked = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        EstateAction::RevokeCapability {
+            estate: ESTATE,
+            grant: GRANT,
+        },
+        &idempotency(121),
+        &request_scope(),
+    )
+    .expect("the exact parent must revoke before the stale program reaches the provider");
     assert!(matches!(
         revoked,
         crate::BankMutationCommitOutcome::Committed(_)
@@ -117,15 +116,14 @@ fn ancestor_revocation_after_grandchild_materialization_denies_final_commit() {
     let fixture = delegation_world("delegation-provider-ancestor-currentness");
     let specialist = fixture.authenticate();
     let child = delegated_action();
-    fixture
-        .runtime
-        .delegate_estate_capability_with_key(
-            &specialist,
-            child,
-            &idempotency(129),
-            &request_scope(),
-        )
-        .expect("the root must activate the intermediate child");
+    crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &specialist,
+        child,
+        &idempotency(129),
+        &request_scope(),
+    )
+    .expect("the root must activate the intermediate child");
 
     let approver = fixture.authenticate_approver();
     let action = delegated_action_from_child();
@@ -149,18 +147,17 @@ fn ancestor_revocation_after_grandchild_materialization_denies_final_commit() {
         })
         .expect("the grandchild program must retain its exact ancestor lineage");
 
-    fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: GRANT,
-            },
-            &idempotency(131),
-            &request_scope(),
-        )
-        .expect("the root must revoke before the retained grandchild reaches the provider");
+    crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        EstateAction::RevokeCapability {
+            estate: ESTATE,
+            grant: GRANT,
+        },
+        &idempotency(131),
+        &request_scope(),
+    )
+    .expect("the root must revoke before the retained grandchild reaches the provider");
 
     let outcome = fixture
         .runtime

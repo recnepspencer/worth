@@ -26,6 +26,7 @@ impl Court<'_, '_, '_, '_> {
             .expect("the branch admits a courtroom read");
         let outcome = self
             .request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: body.to_owned(),
                 replacement_y: length(y),
@@ -56,6 +57,9 @@ impl Court<'_, '_, '_, '_> {
             }
             Ok(Performed::RequiredOutputDenied(failure)) => format!("{:?}", failure.denial()),
             Ok(Performed::NotPerformed(refused)) => format!("{refused:?}"),
+            Ok(Performed::CleanupRequired { cleanup, .. }) => {
+                format!("managed cleanup required: {:?}", cleanup.failure().kind())
+            }
             Ok(Performed::ProductUnpublished(partial)) => {
                 format!("unpublished: {:?}", partial.initial_cause())
             }
@@ -77,6 +81,7 @@ impl Court<'_, '_, '_, '_> {
             .expect("the branch admits a courtroom read");
         let outcome = self
             .request
+            .advanced()
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: body.to_owned(),
                 operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {
@@ -111,6 +116,7 @@ impl Court<'_, '_, '_, '_> {
             .expect("the branch admits a courtroom read");
         let outcome = self
             .request
+            .advanced()
             .mutate(VertexReplacement {
                 scope_key: ring.key("a"),
                 replacement: PlanarVertexReplacement {
@@ -154,6 +160,7 @@ impl Court<'_, '_, '_, '_> {
             .expect("the branch admits a courtroom read");
         let outcome = self
             .request
+            .advanced()
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: anchor,
                 operation: PlanarOperation::CreateCycle(ring_world::vertices(index)),

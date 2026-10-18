@@ -34,6 +34,7 @@ pub(in crate::domain_computation) use graph_obligation::{
 pub use graph_obligation::{
     WorthQueryGraphReadCompletion, WorthQueryGraphReadDependencyEvidence,
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
+    WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
     WorthQueryMutationGraphWorkCompletion,
 };
 pub use graph_provider::*;

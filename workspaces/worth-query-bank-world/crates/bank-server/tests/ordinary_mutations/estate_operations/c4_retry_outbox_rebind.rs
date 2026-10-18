@@ -8,7 +8,6 @@ use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRef
 
 use bank_domain::estate::DeathNoticeStatus;
 use bank_external_rail::test_control::FaultScript;
-use bank_server::{BankEstateProgressionDenial, BankMutationCommitOutcome};
 
 use super::{
     external_effect_dispatch::publication_assertions,
@@ -44,20 +43,46 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
     world
         .transport
         .after_next_dispatch(move || armed.store(true, Ordering::Release));
-    let retry = world
-        .fixture
-        .world
-        .runtime
-        .notify_estate_death_with_key(
-            &world.fixture.authenticate_specialist(),
-            world.specialist_action(),
-            &binding,
-            &request_scope(),
-        )
-        .expect("freshly authorized equivalent retry reaches retained resolution");
-    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
-        panic!("the poststate must resolve before materialization: {retry:?}");
+    let retry = {
+        let source_actor = &world.fixture.authenticate_specialist();
+        let source_scope = &request_scope();
+        let source_key = &binding;
+        let source_intent =
+            bank_domain::schema::NotifyEstateDeath::try_from(world.specialist_action())
+                .expect("typed estate command preserves the exact variant");
+        let source_request = world
+            .fixture
+            .world
+            .runtime
+            .request(source_actor, source_scope);
+        let source_operation = world
+            .fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::notify_estate_death(source_intent))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            source_completed,
+        ) = source_operation.advance(&source_request)
+        else {
+            panic!("native source completion required")
+        };
+        assert!(matches!(
+            source_completed.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+        ));
+        let closed_source = source_completed
+            .close_with_evidence(&source_request)
+            .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
+        bank_server::BankCommitReceipt::from_closed_source(closed_source)
     };
+    let recovered = retry;
     publication_assertions::assert_recovered_commit_axes(&receipt, &recovered);
     assert_eq!(world.transport.attempts().len(), 1);
     assert!(!dispatch_observed.load(Ordering::Acquire));
@@ -95,20 +120,43 @@ fn equivalent_binding_does_not_bypass_fresh_authorization_currentness() {
     let receipt = world.commit_with(binding.clone());
     time.advance_to_epoch_seconds(401);
 
-    let denied = world
-        .fixture
-        .world
-        .runtime
-        .notify_estate_death_with_key(
-            &world.fixture.authenticate_specialist(),
-            world.specialist_action(),
-            &binding,
-            &request_scope(),
-        )
-        .expect_err("expired current authority must precede retained resolution");
+    let (_denied_source_custody, denied) = {
+        let source_actor = &world.fixture.authenticate_specialist();
+        let source_scope = &request_scope();
+        let source_key = &binding;
+        let source_intent =
+            bank_domain::schema::NotifyEstateDeath::try_from(world.specialist_action())
+                .expect("typed estate command preserves the exact variant");
+        let source_request = world
+            .fixture
+            .world
+            .runtime
+            .request(source_actor, source_scope);
+        let source_operation = world
+            .fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::notify_estate_death(source_intent))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
+            operation: source_custody,
+            denial:
+                worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(cause),
+        } = source_operation.advance(&source_request)
+        else {
+            panic!("fresh native authorization refusal")
+        };
+        (source_custody, cause)
+    };
     assert!(matches!(
         denied,
-        BankEstateProgressionDenial::ApplicationEntry(ref denial)
+        ref denial
             if matches!(
                 denial.kind(),
                 worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(

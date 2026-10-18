@@ -40,9 +40,7 @@ mod descendants;
 mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
 pub(in crate::domain_computation::primary_graph) mod advancement;
-pub(in crate::domain_computation::primary_graph) use advancement::{
-    advancement_denial, with_serial_host_advancement, with_world_advancement,
-};
+pub(in crate::domain_computation::primary_graph) use advancement::advancement_denial;
 
 pub use advancement::{
     WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,

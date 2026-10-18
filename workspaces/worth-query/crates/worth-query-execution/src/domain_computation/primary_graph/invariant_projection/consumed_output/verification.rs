@@ -10,6 +10,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use super::ConsumedOutputEvidence;
 
 mod at_observation;
+mod capacity_stop;
 mod equality_recovery;
 mod marked_walk;
 mod restored_root;
@@ -27,6 +28,7 @@ use crate::domain_computation::primary_graph::{
     },
     SourceInvalidationOwner,
 };
+pub(in crate::domain_computation::primary_graph) use capacity_stop::VerificationCapacityStop;
 pub(in crate::domain_computation::primary_graph::invariant_projection) use work_budget::map_admission_stop;
 use work_budget::{charge_external, fact_is_current, map_verification_stop, reserve_pending};
 
@@ -93,7 +95,7 @@ pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerification
 pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerificationStop {
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Unavailable,
-    CapacityExhausted,
+    CapacityExhausted(VerificationCapacityStop),
     PendingUpstream,
     RetryCurrentness(CompanionCellEditStop),
     WorkExhausted,

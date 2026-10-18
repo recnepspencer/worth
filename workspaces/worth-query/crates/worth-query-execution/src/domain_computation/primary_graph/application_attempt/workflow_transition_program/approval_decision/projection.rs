@@ -5,10 +5,15 @@ use super::*;
 pub(super) fn prepare(
     layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     meaning: &crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning,
+    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    admitted_text: &crate::domain_computation::primary_graph::workflow::WorkflowApprovalFieldText,
 ) -> Result<publication::PreparedWorkflowApprovalProjection, WorthQueryApplicationAttemptDenial> {
     let mut fields = crate::domain_computation::primary_graph::workflow::workflow_approval_fields(
-        layout, meaning,
-    );
+        layout,
+        meaning,
+        basis,
+        admitted_text,
+    )?;
     let required_fields = [
         layout.approval.authorization_decision.clone(),
         layout.approval.authorization_sample.clone(),

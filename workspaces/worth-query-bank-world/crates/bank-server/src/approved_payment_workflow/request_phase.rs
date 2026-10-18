@@ -144,6 +144,7 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         zero_work();
         let before = reads();
         let denied = mutation
+            .advanced()
             .prepare_workflow_operation_recovery_from_owner(&ready.operation)
             .err()
             .unwrap();
@@ -155,6 +156,7 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         reports();
         let before = reads();
         let prepared = mutation
+            .advanced()
             .prepare_workflow_operation_recovery_from_owner(&ready.operation)
             .expect("the genuine unresolved outbox admits recovery");
         admitted(before);
@@ -199,44 +201,96 @@ fn committed_owner_custody_is_accepted_in_one_request() {
     let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
-        let ready = ReadyPaymentWorld::new("workflow-committed-custody", FaultScript::Succeed);
-        let route = ready
-            .fixture
-            .world
-            .runtime
-            .install_payment_rail_completion_verifier(std::sync::Arc::new(PaymentRailSource))
-            .expect("the payment completion source installs before dispatch");
-        ready
-            .perform()
-            .into_performed()
-            .expect("the real rail completes this payment");
+        let ready = ReadyPaymentWorld::from_fixture(
+            fixture::ordinary_read_world_with_two_approvers(
+                "workflow-committed-custody",
+                authentication::approval_configuration(),
+            ),
+            FaultScript::CommitThenLoseResponse,
+        );
+        let route = ready.install_synchronous_completion();
+        let runtime = &ready.fixture.world.runtime;
+        let vocabulary = runtime.approved_payment_workflow_runtime();
+        let perform_key = key("approved-payment:operation:perform");
+        let request = runtime
+            .request(&ready.principal, &ready.scope)
+            .on_branch(ready.operation.branch());
+        let operation = runtime
+            .approved_business_payment(&ready.principal, &ready.scope)
+            .retain_apply(
+                &ready.operation,
+                ready.authority.clone(),
+                perform_key.clone(),
+            )
+            .expect("retain the installed payment action and original occurrence");
+        let mut operation = match operation.advance(&request) {
+            worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Progress(operation) => operation,
+            worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
+                let _original_owner = operation;
+                panic!("the original dispatch was refused: {denial:?}");
+            }
+            _ => panic!("the actual dispatch must retain its original owner until inbound"),
+        };
 
         let token = ready.rail.attempts()[0]
             .token()
             .try_into()
             .expect("the real dispatch token has 32 bytes");
+        assert!(
+            runtime
+                .observe_payment_rail_completion(&route, token)
+                .is_none(),
+            "a lost response cannot manufacture native inbound completion"
+        );
+        assert_eq!(ready.rail.completed_effect_count(), 1);
+        // Complete through the existing original outbox handle and the real
+        // rail's same-key reply, never by manufacturing an inbound message.
         ready
-            .fixture
-            .world
-            .runtime
+            .rail
+            .under(FaultScript::Succeed, Duration::from_millis(150));
+        let effect = loop {
+            use worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance as Advance;
+            match operation.advance(&request) {
+                Advance::Progress(next) => operation = next,
+                Advance::Completed(completed) => break completed,
+                Advance::Refused { operation, denial } => {
+                    let _original_owner = operation;
+                    panic!("the completed real rail effect must settle: {denial:?}");
+                }
+                Advance::Terminal(terminal) => {
+                    let _original_owner = terminal;
+                    panic!("the completed real rail effect cannot stop terminally");
+                }
+            }
+        };
+        let dispatches = ready.rail.production_dispatches();
+        assert_eq!(dispatches.len(), 2);
+        assert_eq!(dispatches[0].correlation, dispatches[1].correlation);
+        assert_eq!(dispatches[0].payload, dispatches[1].payload);
+        runtime
             .observe_payment_rail_completion(&route, token)
-            .expect("the synchronous transport completion entered the installed terminal owner");
-        let runtime = &ready.fixture.world.runtime;
-        let vocabulary = runtime.approved_payment_workflow_runtime();
-        let perform_key = key("approved-payment:operation:perform");
+            .expect("the real same-key completion entered the installed terminal owner");
+        // The actual original receipt is the actor oracle, never business input.
+        let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+            receipt: original_receipt,
+            ..
+        } = effect.evidence()
+        else {
+            panic!("the real rail payment must newly commit");
+        };
+        let original = original_receipt.principal_scope().principal();
+        let executor = (
+            original.partition_id(),
+            original.local_slot(),
+            original.generation(),
+        );
+        let later_actor = ready.fixture.authenticate(fixture::STRANGER);
         let command_key = key("approved-payment:operation:committed-custody");
-        let mutation = runtime
-            .request(&ready.principal, &ready.scope)
-            .on_branch(ready.operation.branch())
-            .mutate(ApprovedBusinessPaymentApplyIntent {
-                input: ready.authority.clone(),
-            })
-            .idempotency(&perform_key)
-            .for_workflow_operation_recovery(vocabulary, &ready.operation)
-            .unwrap();
         let prepared = runtime
-            .request(&ready.principal, &ready.scope)
+            .request(&later_actor, &ready.scope)
             .mutate(ApprovedBusinessPaymentAdvanceIntent {
+                // The advancer is authenticated independently; the original
+                // payment payload still names the approver who performed it.
                 input: ready.authority.clone(),
             })
             .without_source()
@@ -245,53 +299,54 @@ fn committed_owner_custody_is_accepted_in_one_request() {
             .unwrap();
         reports();
         let before = reads();
-        let outcome = prepared.accept_operation_from_owner(&ready.operation, mutation);
-        assert!(
-            matches!(
-                outcome,
-                Ok(
-                    worth_query_host::facade::application_entry::WorkflowProgressOutcome::Completed(
-                        _
-                    )
-                )
-            ),
-            "committed custody completes acceptance: {outcome:?}"
+        let accepted = prepared
+            .accept_owned_operation(effect)
+            .unwrap_or_else(|(_owner, cause)| {
+                panic!("committed custody completes acceptance: {cause:?}")
+            });
+        let completed = match &accepted.progress {
+            worth_query_host::facade::application_entry::WorkflowProgressOutcome::Completed(
+                completed,
+            ) => completed,
+            other => panic!("committed custody must record its transition: {other:?}"),
+        };
+        let later = completed.receipt().principal_scope().principal();
+        let advancer = (later.partition_id(), later.local_slot(), later.generation());
+        assert_ne!(
+            executor, advancer,
+            "distinct real admitted actors are essential"
         );
+        use worth_query_host::facade::declaration::application_capability::ApplicationWorkflowRecordedRole as Role;
+        let changes = completed.receipt().committed_changes();
+        assert_eq!(
+            changes
+                .workflow_actor_fields_for_test(completed.transition(), Role::Executor)
+                .unwrap()
+                .map(|actor| (
+                    actor.partition_value(),
+                    actor.local_slot_value(),
+                    actor.generation_value()
+                )),
+            Some(executor)
+        );
+        assert_eq!(
+            changes
+                .workflow_actor_fields_for_test(completed.transition(), Role::Advancer)
+                .unwrap()
+                .map(|actor| (
+                    actor.partition_value(),
+                    actor.local_slot_value(),
+                    actor.generation_value()
+                )),
+            Some(advancer)
+        );
+        assert_eq!(ready.rail.completed_effect_count(), 1);
         admitted(before);
-    }
-}
-
-// The installed source enables the real synchronous completion owner. This
-// control authenticates no callback, so it cannot manufacture terminal custody.
-struct PaymentRailSource;
-impl worth_query_host::facade::primary_graph::WorthQueryInboundOccurrenceVerifier
-    for PaymentRailSource
-{
-    fn audience(&self) -> &str {
-        "bank-workflow-committed-custody"
-    }
-    fn source_identity(&self) -> &str {
-        "rail-primary"
-    }
-    fn protocol_identity(&self) -> &worth_foundational::facade::BoundaryProtocolIdentity {
-        static IDENTITY: worth_foundational::facade::BoundaryProtocolIdentity =
-            worth_foundational::facade::BoundaryProtocolIdentity::new(
-                "bank.payment.approved-settlement",
-            );
-        &IDENTITY
-    }
-    fn protocol_version(&self) -> worth_foundational::facade::BoundaryProtocolVersion {
-        worth_foundational::facade::BoundaryProtocolVersion::new(1)
-    }
-    fn verify(
-        &self,
-        _: &[u8],
-        _: u64,
-        _: std::num::NonZeroU64,
-    ) -> Result<
-        worth_query_host::facade::primary_graph::WorthQueryInboundOccurrenceClaims,
-        worth_query_host::facade::primary_graph::WorthQueryInboundVerificationDenial,
-    > {
-        Err(worth_query_host::facade::primary_graph::WorthQueryInboundVerificationDenial::AuthenticationFailed)
+        accepted
+            .operation
+            .close(&request)
+            .unwrap_or_else(|(_owner, cause)| {
+                panic!("original payment cleanup must close: {cause:?}")
+            });
     }
 }

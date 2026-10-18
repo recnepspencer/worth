@@ -15,7 +15,10 @@ impl Drop for Restore {
     }
 }
 struct Case {
-    outcome: bank_server::BankMoneyMovementExecution,
+    outcome: Result<
+        worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial,
+    >,
     work: Vec<u64>,
     balance_before: i64,
     balance_after: i64,
@@ -44,6 +47,17 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
             .minor_units()
     };
     let balance_before = balance();
+    let outcome = fixture
+        .world
+        .runtime
+        .mutate(mutations::send_money(send_for(&fixture)))
+        .as_principal(&owner)
+        .controls(BankMutationControls::new(
+            scope.clone(),
+            key("posting-lease"),
+        ))
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("transfer construction: {cause:?}"));
     reports();
     place(if leased {
         Placement::Leased(NonZeroUsize::MIN)
@@ -56,19 +70,40 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     if cancel {
         source.cancel();
     }
-    let outcome = fixture
-        .world
-        .runtime
-        .mutate(mutations::send_money(send_for(&fixture)))
-        .as_principal(&owner)
-        .controls(BankMutationControls::new(scope, key("posting-lease")))
-        .execute();
+    let request = fixture.world.runtime.request(&owner, &scope);
+    let outcome = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap());
     let work = reports()
         .into_iter()
         .filter_map(|report| report.ok().map(|report| report.charged_work()))
         .collect();
     bound(None);
     place(Placement::Serial);
+    let close_scope = request_scope();
+    let close = fixture.world.runtime.request(&owner, &close_scope);
+    let outcome = match outcome {
+        worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            completed,
+        ) => {
+            let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+                receipt,
+                ..
+            } = completed.evidence()
+            else {
+                panic!("fresh posting evidence")
+            };
+            let receipt = receipt.clone();
+            assert!(completed.close(&close).is_ok());
+            Ok(receipt)
+        }
+        worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
+            operation,
+            denial,
+        } => {
+            let _runtime = operation.into_runtime_for_cleanup();
+            Err(denial)
+        }
+        _ => panic!("unexpected native posting custody"),
+    };
     let balance_after = balance();
     Case {
         outcome,
@@ -78,8 +113,7 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     }
 }
 fn committed(case: &Case) -> u64 {
-    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, result: _ }) = &case.outcome
-    else {
+    let Ok(receipt) = &case.outcome else {
         panic!("{:?}", case.outcome)
     };
     let work = receipt
@@ -107,9 +141,16 @@ fn posting_lease_without_work_room_keeps_the_request_stop() {
     let Err(denial) = stopped.outcome else {
         panic!("{:?}", stopped.outcome)
     };
-    assert_eq!(denial.kind(),
-        worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest(
-            WorthQueryAdvancementDenial::Resource(Resource::WorkExhausted)));
+    assert!(matches!(
+        denial,
+        worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Execution(
+            WorthQueryAdvancementDenial::Resource(Resource::WorkExhausted)
+        ) | worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
+                WorthQueryAdvancementDenial::Resource(Resource::WorkExhausted)
+            )
+        )
+    ));
     assert_eq!(stopped.balance_after, stopped.balance_before);
 }
 #[test]
@@ -118,8 +159,14 @@ fn posting_lease_cancelled_transfer_keeps_the_cancellation() {
     let Err(denial) = cancelled.outcome else {
         panic!("{:?}", cancelled.outcome)
     };
-    assert_eq!(denial.kind(),worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest(
- WorthQueryAdvancementDenial::Interrupted(WorthQueryManagedComputationInterruption::Cancelled)));
+    assert!(matches!(
+        denial,
+        worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Execution(
+            WorthQueryAdvancementDenial::Interrupted(
+                WorthQueryManagedComputationInterruption::Cancelled
+            )
+        )
+    ));
 }
 
 use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;

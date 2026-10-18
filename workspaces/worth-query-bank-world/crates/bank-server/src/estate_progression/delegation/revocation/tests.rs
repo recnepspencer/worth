@@ -10,6 +10,7 @@ use super::*;
 use crate::estate_capability_admission::fixture::{
     emergency_request_world_with_alternate_bound, request_scope, GrantSpec, ESTATE, GRANT,
 };
+use crate::BankMutationCommitOutcome;
 
 #[test]
 fn generic_program_cannot_bypass_the_installed_revocation_action() {
@@ -71,10 +72,14 @@ fn target_status_drift_after_materialization_stales_provider_commit() {
         })
         .expect("the exact Active -> Revoked program should materialize");
 
-    let drift = fixture
-        .runtime
-        .revoke_estate_capability_with_key(&specialist, action, &idempotency(153), &request_scope())
-        .expect("a separate public command should revoke the prepared target");
+    let drift = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        action,
+        &idempotency(153),
+        &request_scope(),
+    )
+    .expect("a separate public command should revoke the prepared target");
     assert!(matches!(drift, BankMutationCommitOutcome::Committed(_)));
 
     let outcome = fixture
@@ -97,15 +102,23 @@ fn exact_revocation_retry_replays_after_the_grant_is_revoked() {
     let specialist = fixture.authenticate();
     let action = revocation_action();
     let key = idempotency(159);
-    let first = fixture
-        .runtime
-        .revoke_estate_capability_with_key(&specialist, action, &key, &request_scope())
-        .expect("the active grant should revoke");
+    let first = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        action,
+        &key,
+        &request_scope(),
+    )
+    .expect("the active grant should revoke");
     assert!(matches!(first, BankMutationCommitOutcome::Committed(_)));
-    let replay = fixture
-        .runtime
-        .revoke_estate_capability_with_key(&specialist, action, &key, &request_scope())
-        .expect("the same request should replay after revocation");
+    let replay = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        action,
+        &key,
+        &request_scope(),
+    )
+    .expect("the same request should replay after revocation");
     assert!(matches!(
         replay,
         BankMutationCommitOutcome::AlreadyCommitted(_)
@@ -127,15 +140,14 @@ fn exact_revocation_retry_replays_after_the_grant_is_revoked() {
 fn revocation_retains_its_declared_preimage_without_a_per_operation_opt_in() {
     let fixture = revocation_world("capability-revocation-retains-preimage");
     let specialist = fixture.authenticate();
-    let outcome = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            revocation_action(),
-            &idempotency(161),
-            &request_scope(),
-        )
-        .expect("the exact command should revoke the active target");
+    let outcome = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        revocation_action(),
+        &idempotency(161),
+        &request_scope(),
+    )
+    .expect("the exact command should revoke the active target");
     let BankMutationCommitOutcome::Committed(receipt) = outcome else {
         panic!("revocation must commit: {outcome:?}");
     };

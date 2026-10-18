@@ -34,6 +34,7 @@ pub struct WorthQueryConditionalExecutionProvenance {
     application_attempt_ordinal: Option<u64>,
     terminal: WorthQueryConditionalExecutionTerminal,
     cause: Option<WorthQueryConditionalExecutionCause>,
+    managed_cleanup_run_identity: Option<String>,
     canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,
 }
 
@@ -67,6 +68,11 @@ impl WorthQueryConditionalExecutionProvenance {
         self.cause.clone()
     }
 
+    /// Native failed terminal or actual release-receipt identity; descriptive only.
+    pub fn managed_cleanup_run_identity(&self) -> Option<&str> {
+        self.managed_cleanup_run_identity.as_deref()
+    }
+
     pub const fn canonical_work(
         &self,
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
@@ -89,6 +95,12 @@ pub(super) fn execution_provenance(
             application_attempt_ordinal: wake.application_attempted.then_some(wake.attempt),
             terminal: terminal(&wake.decision),
             cause: cause(&wake.decision),
+            managed_cleanup_run_identity: match &wake.decision {
+                WorthQueryRetainedConditionalDecision::OperationCleanupRequired(_, cleanup) => {
+                    Some(cleanup.run_identity().to_owned())
+                }
+                _ => None,
+            },
             canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases::new(
                 worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
                 wake.application_admission_canonical_work,
@@ -130,6 +142,9 @@ fn cause(
         Decision::OperationSettlementExecutionDenied(_, _, kind) => {
             Some(Cause::SettlementExecutionDenied(*kind))
         }
+        Decision::OperationCleanupRequired(_, cleanup) => {
+            Some(Cause::ManagedCleanupRequired(cleanup.kind()))
+        }
         Decision::OperationProductStale(_, _) => Some(Cause::ProductHeadChanged),
         Decision::OperationNoEffect(_, cause) => Some(Cause::NoEffect(*cause)),
         Decision::OperationBackpressured(_, cause) => match cause {
@@ -143,12 +158,21 @@ fn cause(
         },
         Decision::OperationControlStopped(_, Control::Cancelled) => Some(Cause::Cancelled),
         Decision::OperationControlStopped(_, Control::TimedOut) => Some(Cause::TimedOut),
+        Decision::OperationControlStopped(_, Control::Authorization(denial)) => {
+            Some(authorization_cause(denial))
+        }
+        Decision::OperationTerminalFailure(
+            _,
+            Terminal::Admission(Admission::Authorization(denial)),
+        ) if matches!(denial.kind(), AuthorizationKind::Stopped(_)) => {
+            Some(authorization_cause(denial))
+        }
         Decision::OperationTerminalFailure(
             _,
             Terminal::ApplicationCommit(CommitKind::RetentionIdentityExhausted),
         ) => Some(Cause::RetentionIdentityExhausted),
         Decision::OperationTerminalFailure(_, Terminal::Admission(failure))
-            if admission_retention_identity_exhausted(*failure) =>
+            if admission_retention_identity_exhausted(failure) =>
         {
             Some(Cause::RetentionIdentityExhausted)
         }
@@ -157,7 +181,7 @@ fn cause(
             Terminal::ApplicationCommit(CommitKind::SnapshotIdentityExhausted),
         ) => Some(Cause::SnapshotIdentityExhausted),
         Decision::OperationTerminalFailure(_, Terminal::Admission(failure))
-            if admission_snapshot_identity_exhausted(*failure) =>
+            if admission_snapshot_identity_exhausted(failure) =>
         {
             Some(Cause::SnapshotIdentityExhausted)
         }
@@ -208,7 +232,7 @@ fn provider_commit_cause(kind: graph::WorthQueryApplicationCommitDeferredKind) -
 }
 
 fn admission_retention_identity_exhausted(
-    failure: super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
+    failure: &super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
 ) -> bool {
     use reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
     match failure {
@@ -220,9 +244,9 @@ fn admission_retention_identity_exhausted(
             kind,
             graph::WorthQueryEntityResolutionRefusalKind::RetentionIdentityExhausted
         ),
-        Admission::Authorization(kind) => {
+        Admission::Authorization(denial) => {
             matches!(
-                kind,
+                denial.kind(),
                 AuthorizationKind::Refused(AuthorizationRefusal::RetentionIdentityExhausted)
             )
         }
@@ -239,7 +263,7 @@ fn admission_retention_identity_exhausted(
 }
 
 fn admission_snapshot_identity_exhausted(
-    failure: super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
+    failure: &super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
 ) -> bool {
     use reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
     match failure {
@@ -251,9 +275,9 @@ fn admission_snapshot_identity_exhausted(
             kind,
             graph::WorthQueryEntityResolutionRefusalKind::SnapshotIdentityExhausted
         ),
-        Admission::Authorization(kind) => {
+        Admission::Authorization(denial) => {
             matches!(
-                kind,
+                denial.kind(),
                 AuthorizationKind::Refused(AuthorizationRefusal::SnapshotIdentityExhausted)
             )
         }
@@ -296,7 +320,8 @@ fn terminal(
         WorthQueryRetainedConditionalDecision::OperationTerminalFailure(_, _) => {
             WorthQueryConditionalExecutionTerminal::Failed
         }
-        WorthQueryRetainedConditionalDecision::OperationIndeterminate(_, _) => {
+        WorthQueryRetainedConditionalDecision::OperationCleanupRequired(_, _)
+        | WorthQueryRetainedConditionalDecision::OperationIndeterminate(_, _) => {
             WorthQueryConditionalExecutionTerminal::Indeterminate
         }
         WorthQueryRetainedConditionalDecision::OperationProductUnpublished(_, _) => {
@@ -322,5 +347,18 @@ fn terminal(
         | WorthQueryRetainedConditionalDecision::InterruptedDuringReentry => {
             WorthQueryConditionalExecutionTerminal::Failed
         }
+    }
+}
+
+fn authorization_cause(denial: &graph::WorthQueryOperationAuthorizationDenial) -> Cause {
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    match denial.kind() {
+        AuthorizationKind::Stopped(Err(Control::Cancelled)) => Cause::Cancelled,
+        AuthorizationKind::Stopped(Err(Control::TimedOut)) => Cause::TimedOut,
+        AuthorizationKind::Stopped(Ok(kind)) => Cause::ApplicationExecutionDenied {
+            stage: graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+            cause: Ok(kind),
+        },
+        AuthorizationKind::Refused(_) => Cause::TerminalFailure,
     }
 }

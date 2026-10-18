@@ -61,8 +61,8 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let accepted = registry.accepted_checkpoint_identities();
 
     assert_eq!(accepted.len(), 2);
-    assert_eq!(accepted[0].producer, "a-producer");
-    assert_eq!(accepted[1].producer, "z-producer");
+    assert_eq!(accepted[0].producer.as_str(), "a-producer");
+    assert_eq!(accepted[1].producer.as_str(), "z-producer");
     assert_eq!(accepted[0].source, a_source);
     assert_eq!(accepted[1].source, z_source);
 }
@@ -73,7 +73,7 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         .principal_scope()
         .scope();
     let checkpoint = |source| WorthQueryAcceptedOutputCheckpointIdentity {
-        producer: "producer".to_owned(),
+        producer: ("producer".to_owned()).into(),
         posture: super::super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source,
         scope,
@@ -81,9 +81,10 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         producer_dependency: None,
         idempotency_key: source,
         resources: None,
-        roles: Vec::new(),
+        roles: (Vec::new()).into(),
         producer_facts: None,
         producer_fact_wire_version: 0,
+        metadata: None,
     };
 
     assert!(checkpoint([1; 32]).same_output_slot(&checkpoint([2; 32])));

@@ -131,16 +131,16 @@ impl AdmittedPreviewTemporalBridgeSubscription {
                 &temporal_basis,
             ));
         }
-        if let Some(branch_identity) = subscription_basis.branch_identity() {
-            if branch_identity != temporal_truth_basis.branch_identity() {
-                return Err(BridgePreviewTemporalSubscriptionAdmissionRejection::new(
+        if let Some(branch_identity) = subscription_basis.branch_identity()
+            && branch_identity != temporal_truth_basis.branch_identity()
+        {
+            return Err(BridgePreviewTemporalSubscriptionAdmissionRejection::new(
                     BridgePreviewTemporalSubscriptionAdmissionRejectionKind::SubscriptionBranchIdentityMismatch,
                     family_kind,
                     admitted,
                     preview_basis,
                     &temporal_basis,
                 ));
-            }
         }
         if preview_basis.truth_snapshot_identity() != temporal_truth_basis.snapshot_identity() {
             return Err(BridgePreviewTemporalSubscriptionAdmissionRejection::new(

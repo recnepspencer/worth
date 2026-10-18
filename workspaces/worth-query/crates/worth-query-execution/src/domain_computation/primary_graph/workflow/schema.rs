@@ -11,6 +11,7 @@ mod fact_custody;
 mod indexes;
 mod instance;
 mod layout;
+mod migration;
 mod proposal;
 mod proposal_coverage;
 mod relations;
@@ -327,25 +328,14 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[1],
         connection_endpoint_integrity(),
     )?;
-    registry = register_relation(
+    registry = migration::register(
         registry,
         schema_id,
         schema_version_id,
-        "worth-query-workflow-instance-migrated-from",
-        kinds[30],
-        kinds[4],
-        kinds[4],
-        relations::single_successor_integrity(),
-    )?;
-    registry = register_relation(
-        registry,
-        schema_id,
-        schema_version_id,
-        "worth-query-workflow-instance-prior-effect",
-        kinds[31],
         kinds[4],
         kinds[14],
-        relations::prior_effect_integrity(),
+        kinds[30],
+        kinds[31],
     )?;
     let (registry, subject_relation) = subject::register(
         registry,
@@ -359,7 +349,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         succession::register(registry, schema_id, schema_version_id, first_kind, kinds[4])?;
     Ok((
         registry,
-        WorthQueryWorkflowLayout {
+        WorthQueryWorkflowLayout::new(WorkflowLayoutFields {
             lineage,
             definition,
             node,
@@ -394,7 +384,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             instance_prior_effect_relation: kinds[31],
             instance_subject_relation: subject_relation,
             instance_succeeded_from_relation: succeeded_from_relation,
-        },
+        }),
     ))
 }
 

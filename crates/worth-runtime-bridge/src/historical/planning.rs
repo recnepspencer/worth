@@ -144,9 +144,10 @@ impl RuntimeBridge {
             ));
         }
 
-        if let Some(selector_commit_identity) = selector.commit_identity() {
-            if envelope.commit_identity() != selector_commit_identity {
-                return Err(BridgeDeliveryError::new(
+        if let Some(selector_commit_identity) = selector.commit_identity()
+            && envelope.commit_identity() != selector_commit_identity
+        {
+            return Err(BridgeDeliveryError::new(
                     BridgeDeliveryErrorKind::HistoricalCommitMismatch,
                     format!(
                         "Truth-view selector `{}` targeted commit `{}` but resolved authority bound commit `{}`.",
@@ -155,12 +156,12 @@ impl RuntimeBridge {
                         envelope.commit_identity().as_str()
                     ),
                 ));
-            }
         }
 
-        if let Some(selector_snapshot_identity) = selector.snapshot_identity() {
-            if envelope.snapshot_identity() != selector_snapshot_identity {
-                return Err(BridgeDeliveryError::new(
+        if let Some(selector_snapshot_identity) = selector.snapshot_identity()
+            && envelope.snapshot_identity() != selector_snapshot_identity
+        {
+            return Err(BridgeDeliveryError::new(
                     BridgeDeliveryErrorKind::SnapshotIdentityMismatch,
                     format!(
                         "Truth-view selector `{}` targeted snapshot `{}` but resolved authority bound snapshot `{}`.",
@@ -169,7 +170,6 @@ impl RuntimeBridge {
                         envelope.snapshot_identity().as_str()
                     ),
                 ));
-            }
         }
 
         Ok(BridgeTruthViewAuthorityBasis::from_resolved_envelope(

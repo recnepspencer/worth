@@ -1,3 +1,5 @@
+mod admission;
+mod proposal;
 use super::*;
 
 impl<Schema, Operation, Input, Scope>
@@ -40,15 +42,8 @@ where
             request_kind,
             WorkflowTransitionRequestKind::LocalAction { .. }
         );
-        if !business_action
-            && (!installed.advance_binding_matches::<Capability, Operation>()
-                || self.admission.installed_capability_identity()
-                    != Some(*installed.advance_capability_identity_bytes()))
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch,
-                self.admission.operation(),
-            ));
+        if !business_action {
+            self.authorize_advance::<Capability, Spec>(installed)?;
         }
         let layout = self.lease.layout.workflow().clone();
         let published = super::super::PublishedWorkflowDefinitionRef::retained(
@@ -175,6 +170,16 @@ where
                     });
             }
         };
+        let proposal = if request_kind == WorkflowTransitionRequestKind::Advance {
+            crate::domain_computation::primary_graph::workflow::instance::select_current_proposal_need(
+                &compiled, &observed.progress_basis,
+            )?
+        } else {
+            None
+        };
+        if let Some(proposal) = proposal {
+            return Ok(self.await_proposal(&layout, instance.entity_id(), proposal, &mut observed));
+        }
         // A step recorded before the budget is spent or the deadline passes
         // still replays after it.
         let allowance = match observed.ensure_step_left().and_then(|allowance| {

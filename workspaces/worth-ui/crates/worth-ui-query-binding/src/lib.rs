@@ -200,8 +200,10 @@ pub use product_projection::{
 pub use product_projection::{
     WorthUiStatusActionExecution, WorthUiStatusActionIdentity, WorthUiStatusActionMutationOutcome,
     WorthUiStatusActionOutcome, WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop,
-    WorthUiStatusMutationOutcome, WorthUiStatusOwnerCloseReceipt, WorthUiStatusOwnerError,
-    WorthUiStatusPublication, WorthUiStatusSourceOwner,
+    WorthUiStatusMutation, WorthUiStatusMutationClose, WorthUiStatusMutationOutcome,
+    WorthUiStatusMutationResult, WorthUiStatusMutationStop, WorthUiStatusOwnerCloseReceipt,
+    WorthUiStatusOwnerError, WorthUiStatusPublication, WorthUiStatusSourceOwner,
+    WorthUiStatusTerminalOutcome,
 };
 pub use projection_binding::{
     UiCollectionProjectionBinding, UiCollectionProjectionBindingAdmission,

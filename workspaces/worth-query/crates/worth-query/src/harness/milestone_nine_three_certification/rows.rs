@@ -10,9 +10,8 @@ use crate::subscription::CoverageResolutionPosture;
 use crate::view_shape_live::LiveViewShapeFamily;
 
 use super::{
-    MilestoneNineThreeCertificationBundle, MilestoneNineThreeCertificationMatrix,
-    MilestoneNineThreeCertificationRow, MilestoneNineThreePerturbationClass,
-    MilestoneNineThreeRejectionBundle,
+    MilestoneNineThreeCertificationBundle, MilestoneNineThreeCertificationRow,
+    MilestoneNineThreePerturbationClass, MilestoneNineThreeRejectionBundle,
 };
 
 pub(super) fn canonical_rows() -> Vec<MilestoneNineThreeCertificationRow> {
@@ -263,46 +262,6 @@ pub(super) fn rejection_rows() -> Vec<
             &detail,
         ),
     ]
-}
-
-pub(super) fn bundle_digest_parts(matrix: &MilestoneNineThreeCertificationMatrix) -> Vec<String> {
-    let mut parts = vec![matrix.suite_name.to_string()];
-    parts.extend(matrix.rows.iter().map(|row| {
-        format!(
-            "row:{}:{}:{}:{}",
-            row.row_name,
-            row.control_lane.runtime_certification_bundle_digest,
-            row.hostile_lane.runtime_certification_bundle_digest,
-            row.parity_lane.runtime_certification_bundle_digest,
-        )
-    }));
-    parts.extend(matrix.rejection_rows.iter().map(|row| {
-        format!(
-            "reject:{}:{}:{}",
-            row.row_name,
-            row.hostile_lane.failure_digest,
-            row.hostile_lane.compile_fail_boundary_digest
-        )
-    }));
-    parts
-}
-
-pub(super) fn coverage_digest_parts(matrix: &MilestoneNineThreeCertificationMatrix) -> Vec<String> {
-    let mut parts = vec![matrix.suite_name.to_string()];
-    parts.extend(matrix.rows.iter().map(|row| {
-        format!(
-            "row:{}:{}",
-            row.row_name,
-            row.control_lane.semantic_signature()
-        )
-    }));
-    parts.extend(matrix.rejection_rows.iter().map(|row| {
-        format!(
-            "reject:{}:{}",
-            row.row_name, row.hostile_lane.failure_digest
-        )
-    }));
-    parts
 }
 
 fn admitted_row(

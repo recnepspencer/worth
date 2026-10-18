@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    BankHttpCommitDisposition, BankHttpCredential, BankHttpDenial, BankHttpMutationControls,
+    BankHttpCommitDisposition, BankHttpCredential, BankHttpDenial, BankHttpEffectControls,
     BankHttpProtocolVersion,
 };
 
@@ -39,7 +39,7 @@ pub struct BankHttpElevationRequest {
     pub protocol: BankHttpProtocolVersion,
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub estate: String,
     pub access: u64,
@@ -56,7 +56,7 @@ pub struct BankHttpElevationApprovalRequest {
     pub protocol: BankHttpProtocolVersion,
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub elevation: String,
 }
@@ -67,7 +67,7 @@ pub struct BankHttpElevationRevocationRequest {
     pub protocol: BankHttpProtocolVersion,
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub elevation: String,
 }
@@ -78,7 +78,7 @@ pub struct BankHttpMandatoryReviewRequest {
     pub protocol: BankHttpProtocolVersion,
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub mandatory_review: String,
 }
@@ -86,6 +86,15 @@ pub struct BankHttpMandatoryReviewRequest {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpElevationRequestOutcome {
+    CleanupRequired {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+    },
+    OutcomeUnknown {
+        request_id: String,
+        custody_id: String,
+    },
     Requested {
         request_id: String,
         disposition: BankHttpCommitDisposition,
@@ -102,6 +111,15 @@ pub enum BankHttpElevationRequestOutcome {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpElevationApprovalOutcome {
+    CleanupRequired {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+    },
+    OutcomeUnknown {
+        request_id: String,
+        custody_id: String,
+    },
     Approved {
         request_id: String,
         disposition: BankHttpCommitDisposition,
@@ -118,6 +136,15 @@ pub enum BankHttpElevationApprovalOutcome {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpElevationRevocationOutcome {
+    CleanupRequired {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+    },
+    OutcomeUnknown {
+        request_id: String,
+        custody_id: String,
+    },
     Closed {
         request_id: String,
         disposition: BankHttpCommitDisposition,
@@ -134,6 +161,15 @@ pub enum BankHttpElevationRevocationOutcome {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpMandatoryReviewOutcome {
+    CleanupRequired {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+    },
+    OutcomeUnknown {
+        request_id: String,
+        custody_id: String,
+    },
     Reviewed {
         request_id: String,
         disposition: BankHttpCommitDisposition,

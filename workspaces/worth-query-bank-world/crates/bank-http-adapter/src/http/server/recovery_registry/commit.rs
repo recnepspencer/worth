@@ -89,7 +89,6 @@ impl BankHttpRecoveryRegistry {
             return BankHttpCommitReplay::Conflicting;
         }
         BankHttpCommitReplay::Applied {
-            commit: record.commit,
             recovery: token.clone(),
             completed: record.settled.is_some(),
         }

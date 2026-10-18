@@ -332,17 +332,16 @@ fn validate_domain_operation_dependencies(
         if let worth_query_installation::facade::WorthQueryOperationInvariantContract::Declared {
             invariant_slots,
         } = &definition.semantics().invariants
-        {
-            if let Some(missing) = invariant_slots.iter().find(|required| {
+            && let Some(missing) = invariant_slots.iter().find(|required| {
                 !invariants
                     .iter()
                     .any(|item| item.slot_key() == required.as_str())
-            }) {
-                return Err(WorthQueryDomainPackageValidationDenial::new(
-                    WorthQueryDomainPackageValidationDenialKind::MissingDomainOperationInvariant,
-                    format!("{} requires `{missing}`", definition.identity().slot()),
-                ));
-            }
+            })
+        {
+            return Err(WorthQueryDomainPackageValidationDenial::new(
+                WorthQueryDomainPackageValidationDenialKind::MissingDomainOperationInvariant,
+                format!("{} requires `{missing}`", definition.identity().slot()),
+            ));
         }
     }
     Ok(())

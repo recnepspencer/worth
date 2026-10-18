@@ -13,7 +13,7 @@ fn transaction_callback_panic_rolls_back_and_keeps_source_and_sibling_healthy() 
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.mutation.advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.root_basis,
             &mut (),
@@ -41,7 +41,7 @@ fn transaction_callback_panic_rolls_back_and_keeps_source_and_sibling_healthy() 
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.root_basis,
             &mut (),
@@ -53,7 +53,7 @@ fn transaction_callback_panic_rolls_back_and_keeps_source_and_sibling_healthy() 
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.child_basis,
             &mut (),

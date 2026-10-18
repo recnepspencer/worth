@@ -22,10 +22,10 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
                 self.control.check()?;
                 scope.increment_counts(edge.source.clone(), edge.target.clone());
                 for entity in [&edge.source, &edge.target] {
-                    if let EntityReference::Existing(entity_id) = entity {
-                        if self.deleted_entities.contains(entity_id) {
-                            scope.deleted_entities.insert(*entity_id);
-                        }
+                    if let EntityReference::Existing(entity_id) = entity
+                        && self.deleted_entities.contains(entity_id)
+                    {
+                        scope.deleted_entities.insert(*entity_id);
                     }
                 }
                 scope.planned_edges.push(edge);

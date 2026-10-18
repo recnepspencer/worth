@@ -36,13 +36,13 @@ impl ProductBranchReferenceCell {
                 observed_head: current.snapshot.clone(),
             });
         }
-        if let Some(record) = publication.as_ref() {
-            if let Err(denial) = record.check_cutoff() {
-                return Err(ProductBranchReferenceLoss {
-                    denial: ProductBranchReferenceCellDenial::Cutoff(denial),
-                    observed_head: current.snapshot.clone(),
-                });
-            }
+        if let Some(record) = publication.as_ref()
+            && let Err(denial) = record.check_cutoff()
+        {
+            return Err(ProductBranchReferenceLoss {
+                denial: ProductBranchReferenceCellDenial::Cutoff(denial),
+                observed_head: current.snapshot.clone(),
+            });
         }
         // Only an exactly current attempt may populate its reserved history
         // storage and transfer already bound World pin claims. The callback

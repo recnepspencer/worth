@@ -76,23 +76,23 @@ impl WorthQueryReviewedElevation {
         self.binding.mandatory().review()
     }
 
-    pub const fn action(&self) -> &AspectValue {
+    pub fn action(&self) -> &AspectValue {
         self.binding.mandatory().action()
     }
 
-    pub const fn purpose(&self) -> &AspectValue {
+    pub fn purpose(&self) -> &AspectValue {
         self.binding.mandatory().purpose()
     }
 
-    pub const fn field(&self) -> Option<&AspectValue> {
+    pub fn field(&self) -> Option<&AspectValue> {
         self.binding.mandatory().field()
     }
 
-    pub const fn magnitude(&self) -> Option<&AspectValue> {
+    pub fn magnitude(&self) -> Option<&AspectValue> {
         self.binding.mandatory().magnitude()
     }
 
-    pub const fn cardinality(&self) -> u32 {
+    pub fn cardinality(&self) -> u32 {
         self.binding.mandatory().cardinality()
     }
 
@@ -117,6 +117,7 @@ impl WorthQueryReviewedElevation {
 /// can be committed again.
 #[derive(Debug)]
 pub enum WorthQueryMandatoryReviewOutcome {
+    CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
         crate::domain_computation::WorthQueryProductStaleApplication,
@@ -204,6 +205,9 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryMandatoryReviewOutcome::SettlementDeferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
+            WorthQueryMandatoryReviewOutcome::CleanupRequired(cleanup)
         }
         WorthQueryApplicationCommitOutcome::Indeterminate(_) => {
             WorthQueryMandatoryReviewOutcome::Indeterminate

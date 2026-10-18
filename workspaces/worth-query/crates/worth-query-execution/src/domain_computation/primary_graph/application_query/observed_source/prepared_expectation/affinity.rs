@@ -73,10 +73,9 @@ where
         };
         if let Some(expected) =
             Binding::expected_source_parameters(input).map_err(|_| parameters_denial())?
+            && !compare_parameters(&source.parameters, expected)?
         {
-            if !compare_parameters(&source.parameters, expected)? {
-                return Err(parameters_denial());
-            }
+            return Err(parameters_denial());
         }
         source.validate_affinity(
             self.runtime.authority_identity().as_u64(),

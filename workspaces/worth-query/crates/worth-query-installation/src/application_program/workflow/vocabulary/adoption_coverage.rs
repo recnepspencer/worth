@@ -31,7 +31,7 @@ pub enum WorthQueryWorkflowNodeDependency {
         input_type: String,
         binding: Option<String>,
         requires_authority: bool,
-        workflow_execution_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
+        workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
     },
     AwaitInbound {
         origin_operation: String,
@@ -157,7 +157,7 @@ where
                     workflow_execution_requirements: operation
                         .reference
                         .workflow_execution_requirements()
-                        .cloned(),
+                        .clone(),
                 });
         // An operation node declared without a mutation binding runs the
         // installed operation directly and never requires workflow authority.
@@ -170,7 +170,7 @@ where
                 input_type: operation.input_type.as_str().to_owned(),
                 binding: None,
                 requires_authority: false,
-                workflow_execution_requirements: None,
+                workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
             });
         let assessments = self.assessments.iter().map(|assessment| {
             WorthQueryWorkflowNodeDependency::Assessment {
@@ -214,16 +214,14 @@ where
                 self.operations
                     .iter()
                     .filter(|operation| operation.supports_local_workflow_action)
-                    .filter_map(|operation| {
-                        Some(WorthQueryWorkflowNodeDependency::BackAction {
-                            identifier: operation.identifier.to_owned(),
-                            input_type: operation.input_type.as_str().to_owned(),
-                            binding: operation.binding_identity.to_owned(),
-                            requirements: operation
-                                .reference
-                                .workflow_execution_requirements()?
-                                .clone(),
-                        })
+                    .map(|operation| WorthQueryWorkflowNodeDependency::BackAction {
+                        identifier: operation.identifier.to_owned(),
+                        input_type: operation.input_type.as_str().to_owned(),
+                        binding: operation.binding_identity.to_owned(),
+                        requirements: operation
+                            .reference
+                            .workflow_execution_requirements()
+                            .clone(),
                     }),
             )
             .chain(direct)
@@ -238,17 +236,17 @@ where
             .operations
             .iter()
             .filter(|operation| operation.supports_local_workflow_action)
-            .filter_map(|operation| {
-                Some(WorthQueryWorkflowGlobalActionDependency::Terminate {
+            .map(
+                |operation| WorthQueryWorkflowGlobalActionDependency::Terminate {
                     identifier: operation.identifier.to_owned(),
                     input_type: operation.input_type.as_str().to_owned(),
                     binding: operation.binding_identity.to_owned(),
                     requirements: operation
                         .reference
-                        .workflow_execution_requirements()?
+                        .workflow_execution_requirements()
                         .clone(),
-                })
-            })
+                },
+            )
             .collect::<Vec<_>>();
         global_actions.sort_unstable();
         global_actions.dedup();

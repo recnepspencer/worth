@@ -1,143 +1,81 @@
-use bank_server::{
-    BankMutationCommitOutcome, BankRecoveryDenialKind, BankRecoveryIdempotencyResolution,
+//! Constructs the actual declared SourceOnly estate owner; transport stores it before replying.
+use super::super::super::protocol::{BankHttpEstateDisbursementOutcome, BankHttpMutationOutcome};
+use super::super::{
+    authenticated_owner::BankHttpAuthenticatedOwner,
+    authentication::BankHttpApplicationAuthenticator, estate_source_custody::*,
+    native_route::NativeRouteResult, recovery_registry::BankHttpRecoveryRegistry,
 };
+use super::{outcome::*, AdmittedBankHttpDisbursementRequest};
+use bank_domain::{estate::EstateAction, schema::DisburseEstate};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
-use super::super::super::protocol::{
-    BankHttpCommitDisposition, BankHttpEstateDisbursementOutcome, BankHttpRecoveryStatus,
-};
-use super::super::authenticated_owner::BankHttpAuthenticatedOwner;
-use super::super::authentication::BankHttpApplicationAuthenticator;
-use super::super::recovery_registry::{
-    BankHttpCommitReplay, BankHttpRecoveryRegistration, BankHttpRecoveryRegistry,
-};
-use super::{outcome::*, AdmittedBankHttpDisbursementRequest};
-
-pub(super) async fn execute_disbursement<A>(
+pub(super) async fn execute_disbursement<A: BankHttpApplicationAuthenticator>(
     application: &A,
-    registry: &mut BankHttpRecoveryRegistry,
+    registry: Arc<Mutex<BankHttpRecoveryRegistry>>,
     request: AdmittedBankHttpDisbursementRequest,
     cancellation: WorthQueryCancellationSource,
-) -> BankHttpEstateDisbursementOutcome
-where
-    A: BankHttpApplicationAuthenticator,
-{
-    let request_id = request.request_id;
+) -> NativeRouteResult<BankHttpEstateDisbursementOutcome> {
     let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token());
     let principal = match application.authenticate(request.credential, &scope).await {
         Ok(principal) => principal,
-        Err(denial) => return disbursement_denied(Some(request_id), denial),
+        Err(denial) => return disbursement_denied(Some(request.request_id), denial).into(),
     };
     let owner = BankHttpAuthenticatedOwner::from_principal(&principal);
-    match registry.disbursement_replay(&owner, &request.idempotency_key, request.action) {
-        BankHttpCommitReplay::Applied {
-            commit,
-            recovery,
-            completed,
-        } => {
-            return BankHttpEstateDisbursementOutcome::Applied {
-                request_id,
-                disposition: BankHttpCommitDisposition::AlreadyCommitted,
-                commit,
-                recovery: Some(recovery),
-                recovery_status: if completed {
-                    BankHttpRecoveryStatus::Completed
-                } else {
-                    BankHttpRecoveryStatus::TokenIssued
-                },
-            };
-        }
-        BankHttpCommitReplay::Conflicting => {
-            return disbursement_denied(Some(request_id), conflicting_idempotency_key());
-        }
-        BankHttpCommitReplay::Missing => {}
-    }
-    let reservation =
-        registry.reserve_disbursement(owner, request.idempotency_key.clone(), request.action);
-    if reservation.is_none() {
-        let resolution = match application.runtime().resolve_estate_action_idempotency(
-            &principal,
-            request.action,
-            &request.idempotency_key,
-            &scope,
-        ) {
-            Ok(resolution) => resolution,
-            Err(denial) => return disbursement_denied(Some(request_id), estate_denial(denial)),
-        };
-        match resolution {
-            BankRecoveryIdempotencyResolution::AlreadyCommitted => {}
-            BankRecoveryIdempotencyResolution::IntentDrift => {
-                return disbursement_denied(Some(request_id), conflicting_idempotency_key());
-            }
-            BankRecoveryIdempotencyResolution::Unseen => {
-                return disbursement_denied(Some(request_id), saturated());
-            }
-        }
-    }
-    let outcome = match application.runtime().disburse_estate_with_key(
-        &principal,
-        request.action,
-        &request.idempotency_key,
-        &scope,
-    ) {
-        Ok(outcome) => outcome,
-        Err(denial) => return disbursement_denied(Some(request_id), estate_denial(denial)),
+    let EstateAction::DisburseEstate(disbursement) = request.action else {
+        return disbursement_denied(
+            Some(request.request_id),
+            super::super::mutation_refusal::denial(
+                super::super::super::protocol::BankHttpDenialKind::MalformedRequest,
+            ),
+        )
+        .into();
     };
-    let (disposition, receipt) = match outcome {
-        BankMutationCommitOutcome::Committed(receipt) => {
-            (BankHttpCommitDisposition::Committed, receipt)
+    let operation = match application
+        .runtime()
+        .mutate(bank_server::mutations::disburse_estate(
+            DisburseEstate::new(disbursement),
+        ))
+        .as_principal(&principal)
+        .controls(bank_server::BankMutationControls::new(
+            scope.clone(),
+            request.idempotency_key.clone(),
+        ))
+        .retain_operation()
+    {
+        Ok(operation) => operation,
+        Err(refusal) => {
+            return disbursement_denied(
+                Some(request.request_id),
+                super::super::construction_denial::construction(refusal),
+            )
+            .into()
         }
-        BankMutationCommitOutcome::AlreadyCommitted(receipt) => {
-            (BankHttpCommitDisposition::AlreadyCommitted, receipt)
-        }
-        other => return disbursement_denied(Some(request_id), commit_denial(other)),
     };
-    let commit = commit_description(&receipt);
-    let Some(reservation) = reservation else {
-        let recovery_status = match omitted_recovery_status(application.runtime(), &receipt) {
-            Ok(status) => status,
-            Err(_) => return disbursement_denied(Some(request_id), unavailable()),
-        };
-        return BankHttpEstateDisbursementOutcome::Applied {
-            request_id,
-            disposition,
-            commit,
-            recovery: None,
-            recovery_status,
-        };
+    let custody = EstateSourceCustody::Disbursement(DisbursementCustody::Active(operation));
+    let (custody, cause) = custody.advance(&application.runtime().request(&principal, &scope));
+    let outcome = match cause {
+        Some(denial) => BankHttpMutationOutcome::Refused {
+            request_id: request.request_id.clone(),
+            custody_id: request.request_id.clone(),
+            sequence: 1,
+            denial,
+            accepted_sequence: Some(1),
+        },
+        None => custody.describe(&request.request_id, &request.request_id, 1),
     };
-    let handle = match application.runtime().open_commit_recovery(&receipt) {
-        Ok(handle) => handle,
-        Err(denial)
-            if disposition == BankHttpCommitDisposition::AlreadyCommitted
-                && matches!(
-                    denial.kind(),
-                    BankRecoveryDenialKind::RecoveryAlreadyMinted
-                        | BankRecoveryDenialKind::AlreadyTerminal
-                ) =>
-        {
-            let recovery_status = match omitted_recovery_status(application.runtime(), &receipt) {
-                Ok(status) => status,
-                Err(_) => return disbursement_denied(Some(request_id), unavailable()),
-            };
-            return BankHttpEstateDisbursementOutcome::Applied {
-                request_id,
-                disposition,
-                commit,
-                recovery: None,
-                recovery_status,
-            };
-        }
-        Err(_) => return disbursement_denied(Some(request_id), unavailable()),
-    };
-    let recovery = reservation.register(BankHttpRecoveryRegistration { commit, handle });
-    BankHttpEstateDisbursementOutcome::Applied {
-        request_id,
-        disposition,
-        commit,
-        recovery: Some(recovery),
-        recovery_status: BankHttpRecoveryStatus::TokenIssued,
+    NativeRouteResult::Estate {
+        record: EstateSourceRecord {
+            owner,
+            sequence: 1,
+            custody,
+            key: request.idempotency_key,
+            action: request.action,
+            registry,
+        },
+        outcome: BankHttpEstateDisbursementOutcome::Owning { outcome },
     }
 }

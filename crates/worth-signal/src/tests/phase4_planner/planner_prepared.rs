@@ -3,6 +3,9 @@ use crate::facade::{
     BoundedSignalInputs, CheckedEvaluationContext, NodeContract, StageExecutionOutcome,
 };
 use crate::facade::{EvaluationContext, EvaluationRequestMode, NodeEvaluationResult, SignalGraph};
+use crate::tests::leased_execution::support::private_authority_process::{
+    run_with_private_authority, NativeExecutionEvidence,
+};
 use crate::tests::leased_execution::support::{authority, request};
 use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
@@ -176,8 +179,9 @@ fn parallel_executor_threshold_keeps_narrow_stage_serial() {
 
 #[test]
 fn checked_wide_epoch_preserves_serial_results_and_reports_resolved_placement() {
-    if crate::tests::leased_execution::support::private_authority_process::run_with_private_authority(
+    if run_with_private_authority(
         "tests::phase4_planner::planner_prepared::checked_wide_epoch_preserves_serial_results_and_reports_resolved_placement",
+        NativeExecutionEvidence::PlacementRendezvous,
     ) {
         return;
     }

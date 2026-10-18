@@ -15,8 +15,8 @@ use super::lanes::builders::{
     template_public_bridge_table_lane,
 };
 use super::row::{
-    MilestoneNineFiveHostileLaneBundle, MilestoneNineFiveHostileMatrix,
-    MilestoneNineFiveHostileRejectionBundle, MilestoneNineFiveHostileRow,
+    MilestoneNineFiveHostileLaneBundle, MilestoneNineFiveHostileRejectionBundle,
+    MilestoneNineFiveHostileRow,
 };
 use crate::projection_consumption::ProjectionConsumptionCertifiedSourceSurface;
 
@@ -118,44 +118,6 @@ pub fn rejection_rows() -> Vec<
             &preserved_detail,
         ),
     ]
-}
-
-pub fn bundle_digest_parts(matrix: &MilestoneNineFiveHostileMatrix) -> Vec<String> {
-    let mut parts = vec![matrix.suite_name.to_string()];
-    parts.extend(matrix.rows.iter().map(|row| {
-        format!(
-            "row:{}:{}:{}:{}",
-            row.row_name,
-            row.control_lane.artifact_signature(),
-            row.hostile_lane.artifact_signature(),
-            row.parity_lane.artifact_signature(),
-        )
-    }));
-    parts.extend(matrix.rejection_rows.iter().map(|row| {
-        format!(
-            "reject:{}:{}:{}",
-            row.row_name, row.hostile_lane.failure_digest, row.hostile_lane.counter_snapshot
-        )
-    }));
-    parts
-}
-
-pub fn coverage_digest_parts(matrix: &MilestoneNineFiveHostileMatrix) -> Vec<String> {
-    let mut parts = vec![matrix.suite_name.to_string()];
-    parts.extend(matrix.rows.iter().map(|row| {
-        format!(
-            "row:{}:{}",
-            row.row_name,
-            row.control_lane.artifact_signature()
-        )
-    }));
-    parts.extend(matrix.rejection_rows.iter().map(|row| {
-        format!(
-            "reject:{}:{}",
-            row.row_name, row.hostile_lane.failure_digest
-        )
-    }));
-    parts
 }
 
 fn admitted_row(

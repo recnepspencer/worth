@@ -50,7 +50,7 @@ fn malformed_credential() -> BankHttpDenial {
     )
 }
 
-fn authentication_denial(error: AuthentikBankAuthenticationError) -> BankHttpDenial {
+pub(super) fn authentication_denial(error: AuthentikBankAuthenticationError) -> BankHttpDenial {
     match error {
         AuthentikBankAuthenticationError::AuthorizationFlow(_) => malformed_credential(),
         AuthentikBankAuthenticationError::PrincipalAdmission(error) => match error {

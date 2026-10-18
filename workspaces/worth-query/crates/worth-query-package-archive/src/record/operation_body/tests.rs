@@ -22,6 +22,8 @@ mod requirements;
 mod signed_evidence;
 #[path = "tests/signing.rs"]
 mod signing;
+#[path = "tests/succession.rs"]
+mod succession;
 
 #[test]
 fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {

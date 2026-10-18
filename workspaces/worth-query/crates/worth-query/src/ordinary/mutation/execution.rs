@@ -36,12 +36,10 @@ impl WorthQueryMutationRequest {
 
         let (command, inspection_policy) = self.declaration.into_parts();
         let materialize_inspection = inspection_policy.materializes_rich_inspection();
-        if materialize_inspection {
-            if let Err(error) = workspace.admit_ordinary_rich_inspection() {
-                return WorthQueryMutationOutcome::Stopped(
-                    WorthQueryMutationStop::inspection_unavailable(error, counters),
-                );
-            }
+        if materialize_inspection && let Err(error) = workspace.admit_ordinary_rich_inspection() {
+            return WorthQueryMutationOutcome::Stopped(
+                WorthQueryMutationStop::inspection_unavailable(error, counters),
+            );
         }
         let execution = match workspace.execute_ordinary_authoritative_mutation(
             request_execution,

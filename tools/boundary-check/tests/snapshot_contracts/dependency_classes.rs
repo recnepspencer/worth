@@ -26,6 +26,16 @@ impl Repository {
         write(&root, "tools/boundary-check/config/road1.toml", CONFIG);
         write(
             &root,
+            "tools/boundary-check/config/consumer-docs.toml",
+            "documents = []\ndoctests = []\n",
+        );
+        write(
+            &root,
+            "tools/boundary-check/snapshots/consumer-doc-fence-debt.toml",
+            "documents = []\n",
+        );
+        write(
+            &root,
             "tools/boundary-check/snapshots/legacy-references.toml",
             "schema_version=1\nreferences=[]\n",
         );
@@ -37,6 +47,7 @@ impl Repository {
         );
         create_crate(&root, "worth-schema-core", "CoreThing");
         create_crate(&root, "worth-schema-graph", "GraphThing");
+        super::query_ordinary_entry_fixture::write(&root);
         Self { root }
     }
 

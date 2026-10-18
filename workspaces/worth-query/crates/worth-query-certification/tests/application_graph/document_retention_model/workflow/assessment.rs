@@ -13,7 +13,14 @@ use super::super::{
 use super::{WorkflowAdvanceInput, WorkflowAdvanceIntent};
 
 pub fn accept_assessment(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     settlement: &WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>,
     idempotency: u64,
@@ -40,7 +47,11 @@ pub fn accept_assessment(
 }
 
 pub fn accept_early_assessment(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     node_path: &str,
     settlement: &WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>,
@@ -68,7 +79,11 @@ pub fn accept_early_assessment(
 }
 
 pub fn settle_early_assessment_for(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     node_path: &str,
     idempotency: u64,
@@ -96,9 +111,11 @@ pub fn settle_early_assessment_for(
             std::num::NonZeroUsize::new(512).unwrap(),
             std::num::NonZeroUsize::new(1024).unwrap(),
         ))
+        .advanced()
         .start()
         .expect("the installed early assessment demand must start");
     match handle
+        .advanced()
         .settle(&runtime.request(&principal, &scope).on_branch(branch))
         .expect("the installed assessment producer must advance")
     {
@@ -110,7 +127,11 @@ pub fn settle_early_assessment_for(
 }
 
 pub fn prepare_early_assessment_denial(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     node_path: &str,
     idempotency: u64,
@@ -136,7 +157,14 @@ pub fn prepare_early_assessment_denial(
 }
 
 pub fn settle_assessment(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery> {
@@ -144,7 +172,14 @@ pub fn settle_assessment(
 }
 
 pub fn settle_assessment_for(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
     subject_identity: &str,
@@ -171,21 +206,36 @@ pub fn settle_assessment_for(
             std::num::NonZeroUsize::new(512).unwrap(),
             std::num::NonZeroUsize::new(1024).unwrap(),
         ))
-        .start()
+        .retain_operation(application.program_runtime())
         .expect("the installed assessment output demand must start");
-    match handle
-        .settle(&runtime.request(&principal, &scope).on_branch(branch))
+    drop(principal);
+    drop(scope);
+    let fresh_scope = request_scope();
+    let fresh_principal = authenticate_operator(runtime.installed_schema(), &fresh_scope);
+    let request = runtime
+        .request(&fresh_principal, &fresh_scope)
+        .on_branch(branch);
+    let settlement = match handle
+        .advance(&request)
         .expect("the installed assessment producer must advance")
     {
         WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
         WorthQueryWorkflowAssessmentDemandProgress::Pending => {
             panic!("the bounded assessment producer did not settle within its declared work")
         }
-    }
+    };
+    handle.close(&request).unwrap_or_else(|_| {
+        panic!("fresh native observer close retains failed cleanup on refusal")
+    });
+    settlement
 }
 
 pub fn spoofed_assessment_denial(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial {
@@ -206,7 +256,7 @@ pub fn spoofed_assessment_denial(
         .expect("spoof probe must receive fresh workflow admission")
         .into_assessment_demand(LookalikeRetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
         .expect("the lookalike repeats the public string contract");
-    match request.start() {
+    match request.advanced().start() {
         Ok(mut handle) => {
             handle.close();
             panic!("lookalike family type must not select the installed producer")

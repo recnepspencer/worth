@@ -8,9 +8,16 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryRetainedBatchQueryAdmissionDenial,
 };
 
+pub(super) enum BatchExecutionPolicy {
+    Explicit(WorthQueryApplicationQueryBatchLimits),
+    Installed(Option<WorthQueryApplicationQueryBatchLimits>),
+}
+
 pub(super) fn execute<Schema: ApplicationSchema, Intent: ApplicationQueryIntent<Schema>>(
 phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-    bounded: WorthQueryApplicationBoundedQueryBatchRequest<'_, '_, '_, Schema, Intent>,
+    request: WorthQueryApplicationQueryBatchRequest<'_, '_, '_, Schema, Intent>,
+    policy: BatchExecutionPolicy,
+    query_limits: Option<(NonZeroUsize, NonZeroUsize)>,
 ) -> Result<crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<
     <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
     <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
@@ -19,20 +26,45 @@ where
     <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
 {
-    let WorthQueryApplicationBoundedQueryBatchRequest { request, limits } = bounded;
-    let admission = WorthQueryApplicationQueryBatchAdmission::new(limits);
-    admission
-        .admit_items(request.intents.len())
-        .map_err(|denial| resource(None, denial))?;
     checkpoint(request.scope)?;
     let binding = request
         .application
         .installed_schema()
         .installed_query_binding::<Intent::Binding>()
         .map_err(|cause| item(0, ItemDenial::BindingInstallation(cause)))?;
+    let admission = match policy {
+        BatchExecutionPolicy::Explicit(limits) => {
+            WorthQueryApplicationQueryBatchAdmission::new(limits)
+        }
+        BatchExecutionPolicy::Installed(limits) => {
+            let plan = request
+                .application
+                .plan_application_query_batch_reads(&binding, request.intents.len())
+                .map_err(|denial| resource(None, denial))?;
+            let admission = request
+                .application
+                .application_query_batch_from_installed_reads(&[plan])
+                .map_err(|denial| resource(None, denial))?;
+            match limits {
+                Some(limits) => admission.narrow_and_freeze_planned_reads(limits),
+                None => admission.freeze_planned_reads(),
+            }
+            .map_err(|denial| resource(None, denial))?;
+            admission
+        }
+    };
+    admission
+        .admit_items(request.intents.len())
+        .map_err(|denial| resource(None, denial))?;
     let item_limits = request
         .application
         .resolve_application_query_limits(binding.limits());
+    let item_limits = match query_limits {
+        Some((results, work)) => item_limits
+            .narrow(results, work)
+            .map_err(|cause| item(0, ItemDenial::Limit(cause)))?,
+        None => item_limits,
+    };
     let selected = request
         .application
         .on_branch(request.branch)
@@ -49,7 +81,7 @@ where
         >>() + std::mem::size_of::<WorthQueryApplicationQueryBatchMemory>()
     ).ok_or_else(|| resource(None, WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow))?;
     let staging_claim = admission
-        .claim_memory(vector_bytes)
+        .claim_publication_memory(vector_bytes)
         .map_err(|denial| resource(None, denial))?;
     let mut staged = Vec::with_capacity(request.intents.len());
     let mut claims = Vec::with_capacity(request.intents.len());

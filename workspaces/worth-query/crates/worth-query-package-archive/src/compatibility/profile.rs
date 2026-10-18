@@ -7,10 +7,7 @@ use crate::application_program::WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL
 use crate::envelope::WORTH_QUERY_PACKAGE_RELEASE_ENVELOPE_PROTOCOL_VERSION;
 use crate::protocol::WORTH_QUERY_PACKAGE_ARCHIVE_PROTOCOL_VERSION;
 use crate::record::WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION;
-use crate::workflow_definition::{
-    WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION,
-    WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
-};
+use crate::workflow_definition::WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION;
 
 use super::WorthQueryPackageArchiveCompatibilityDenial;
 
@@ -48,8 +45,7 @@ impl WorthQueryPackageArchiveCompatibilityProfile {
         application_program_description: exact_window(
             WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION,
         ),
-        workflow_definition_draft: readable_window(
-            WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION,
+        workflow_definition_draft: exact_window(
             WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
         ),
     };

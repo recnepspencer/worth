@@ -70,33 +70,6 @@ pub(super) fn replay_envelope_effect(
     Ok(())
 }
 
-pub(super) fn complete_incomplete_metadata_commit(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    restored: &mut RelationalRuntime,
-    readmitted: crate::durability::migration::ReadmittedCanonicalCommit,
-) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
-    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-    let envelope = readmitted.envelope();
-    let branch_basis = recovered_branch_basis(restored, &envelope.branch_context)?;
-    let published_partition_delta = restored.storage_authority().affirm_no_partition_changes();
-    let preflight = restored
-        .mvcc_publication_authority()
-        .prepare_recovered_commit(
-            envelope.commit.commit_id,
-            envelope.commit.clone(),
-            &branch_basis,
-            published_partition_delta,
-            Arc::new(envelope.clone()),
-        )
-        .map_err(|detail| DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail))?;
-    let checkpoint = preflight.reconstructed_branch_checkpoint();
-    let positioned = readmitted
-        .complete_metadata(checkpoint)
-        .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptSegment, detail))?;
-    replay_envelope_effect(execution, restored, &positioned)?;
-    Ok(positioned)
-}
-
 pub(super) fn restore_authoritative_artifacts_when_required(
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,

@@ -229,16 +229,15 @@ impl WorthQueryAspectMutationBuilder {
         if let Some(reference_collection) = symbolic_target_reference
             .as_ref()
             .and_then(WorthQuerySymbolicTargetReference::target_collection_identity)
+            && !collection.same_target_collection_as(reference_collection)
         {
-            if !collection.same_target_collection_as(reference_collection) {
-                return Err(WorthQueryRuntimeError::Workspace(
-                    WorthQueryWorkspaceError::new(format!(
-                        "symbolic target collection `{}` does not match insert collection `{}`",
-                        reference_collection.as_str(),
-                        collection.as_str()
-                    )),
-                ));
-            }
+            return Err(WorthQueryRuntimeError::Workspace(
+                WorthQueryWorkspaceError::new(format!(
+                    "symbolic target collection `{}` does not match insert collection `{}`",
+                    reference_collection.as_str(),
+                    collection.as_str()
+                )),
+            ));
         }
         Ok(WorthQueryWriteCommand::InsertAspects {
             collection,

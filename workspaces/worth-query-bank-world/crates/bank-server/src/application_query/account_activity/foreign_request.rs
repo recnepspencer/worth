@@ -7,7 +7,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationLiveNextDenial, WorthQueryApplicationMutationOutcome,
+    WorthQueryApplicationLiveNextDenial, WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance,
 };
 
 #[test]
@@ -49,7 +49,7 @@ fn canceled_foreign_branch_is_refused_and_the_next_good_request_delivers() {
         live.query.next(&foreign_request),
         Err(WorthQueryApplicationLiveNextDenial::ForeignBranch)
     ));
-    let committed = runtime
+    let operation = runtime
         .mutate(crate::mutations::deposit(bank_domain::schema::Deposit {
             institution: INSTITUTION,
             account: OTHER_ACCOUNT,
@@ -60,12 +60,23 @@ fn canceled_foreign_branch_is_refused_and_the_next_good_request_delivers() {
             request_scope(),
             bank_domain::proposals::BankIdempotencyKey::new("live-foreign-probe-deposit").unwrap(),
         ))
-        .execute()
-        .unwrap();
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("declared deposit: {cause:?}"));
+    let advance_scope = request_scope();
+    let advance_request = runtime.request(&teller, &advance_scope);
+    let WorthQuerySourceOnlyAdvance::Completed(committed) = operation.advance(
+        &advance_request,
+        std::num::NonZeroUsize::new(8_192).unwrap(),
+    ) else {
+        panic!("the original deposit should complete");
+    };
     assert!(matches!(
-        committed,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
+        committed.evidence(),
+        WorthQuerySourceCompletion::Fresh { .. }
     ));
+    committed
+        .close(&advance_request)
+        .unwrap_or_else(|(_, cause)| panic!("deposit cleanup: {cause:?}"));
     assert!(matches!(
         live.poll(&owner, &request_scope()),
         BankAccountActivityLiveOutcome::Delivered(_)

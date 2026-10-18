@@ -1,7 +1,7 @@
-#[path = "support/product_operation_phase_thirteen/fixture.rs"]
-mod fixture;
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_product_operation_phase_thirteen_fixture as fixture;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use fixture::{
     actions_payload, build_server, build_server_with_execution_authority, direct_read,

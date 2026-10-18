@@ -127,6 +127,9 @@ worth_query_structured_value_binding!(pub AmendTemporalDenialBinding for AmendTe
 });
 
 pub struct AmendTemporalBinding;
+impl worth_query_host::facade::declaration::application_operation::ApplicationMutationAdmissionBinding<TemporalHostSchema> for AmendTemporalBinding {
+    type Admission = worth_query_host::facade::declaration::application_operation::ApplicationConventionalAdmission;
+}
 
 type AmendTemporalScope = ApplicationMutationFieldScope<
     TemporalHostSchema,
@@ -139,6 +142,12 @@ type AmendTemporalScope = ApplicationMutationFieldScope<
 >;
 
 impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = AmendTemporalInput;
     type InputBinding = AmendTemporalInputBinding;
     type Result = AmendTemporalResult;
@@ -265,7 +274,7 @@ impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTempora
         let entity = match writer.projected_entity(&target) {
             Ok(entity) => entity,
             Err(error) => {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
             }
         };
         for result in [

@@ -53,6 +53,7 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
     assert!(requirements.requires_existing_state_validation());
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the seed satisfies P1 and adoption must prepare");
     assert_eq!(
@@ -60,7 +61,13 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
         2,
         "adoption validates both seeded documents, including the related workflow subject"
     );
-    let performed = match prepared.publish() {
+    let performed = match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }
@@ -140,7 +147,11 @@ fn target_rule_rejects_existing_state_by_its_installed_identity() {
         .on_branch(branch)
         .programs();
     let requirements = programs.compare(&target).expect("comparison must succeed");
-    let denial = match programs.adopt(&requirements).prepare(64) {
+    let denial = match programs
+        .adopt(&requirements)
+        .expect("declared adoption capability admits")
+        .prepare(64)
+    {
         Ok(_) => panic!("P1 must judge and reject the existing P0-only value"),
         Err(denial) => denial,
     };
@@ -174,6 +185,7 @@ fn prepared_adoption_refuses_a_branch_head_that_moved() {
     let requirements = programs.compare(&target).expect("comparison must succeed");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the adoption must prepare against the selected head");
 
@@ -186,7 +198,13 @@ fn prepared_adoption_refuses_a_branch_head_that_moved() {
         )),
         RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
-    match prepared.publish() {
+    match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }
@@ -223,6 +241,7 @@ fn affected_state_selection_refuses_an_understated_ceiling() {
         .expect("comparison must succeed");
     let prepared = first_programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("a sufficient ceiling must prepare");
     let exact_work = prepared.selection_work_units();
@@ -234,7 +253,11 @@ fn affected_state_selection_refuses_an_understated_ceiling() {
         .request(&principal, &scope)
         .on_branch(branch)
         .programs();
-    let denial = match denied_programs.adopt(&requirements).prepare(exact_work - 1) {
+    let denial = match denied_programs
+        .adopt(&requirements)
+        .expect("declared adoption capability admits")
+        .prepare(exact_work - 1)
+    {
         Ok(_) => panic!("a ceiling below the measured cost cannot cover the live state"),
         Err(denial) => denial,
     };
@@ -258,6 +281,7 @@ fn affected_state_selection_refuses_an_understated_ceiling() {
         .programs();
     let exact = exact_programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(exact_work)
         .expect("the exact measured ceiling must prepare");
     assert_eq!(exact.selection_work_units(), exact_work);
@@ -294,10 +318,11 @@ fn a_p0_candidate_prepared_before_adoption_cannot_publish_after_p1_activates() {
         let requirements = programs.compare(&target).expect("comparison must succeed");
         let prepared = programs
             .adopt(&requirements)
+            .expect("declared adoption capability admits")
             .prepare(64)
             .expect("adoption must prepare while the old candidate is parked");
         assert!(matches!(
-            prepared.publish(),
+            prepared.publish(host.runtime(), &principal, &scope),
             WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
         ));
 
@@ -336,10 +361,11 @@ fn requirements_from_an_old_activation_cannot_authorize_a_later_adoption() {
     let old_requirements = programs.compare(&target).expect("comparison must succeed");
     let prepared = programs
         .adopt(&old_requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the first adoption must prepare");
     assert!(matches!(
-        prepared.publish(),
+        prepared.publish(host.runtime(), &principal, &scope),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
 
@@ -350,6 +376,7 @@ fn requirements_from_an_old_activation_cannot_authorize_a_later_adoption() {
         .on_branch(adopted)
         .programs()
         .adopt(&old_requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
     {
         Ok(_) => panic!("requirements compiled under P0 cannot authorize a P1 occurrence"),

@@ -6,11 +6,6 @@ use crate::boundary_evidence::FoundationalBoundaryEvidenceProductionReadinessCer
 pub struct FoundationalBoundaryEvidenceProductionReadinessAuthority(());
 
 impl FoundationalBoundaryEvidenceProductionReadinessAuthority {
-    #[cfg(test)]
-    pub(crate) const fn new() -> Self {
-        Self(())
-    }
-
     pub(super) const fn certification_boundary() -> Self {
         Self(())
     }

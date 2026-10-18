@@ -2,6 +2,7 @@ pub mod builder;
 mod configuration;
 mod construction;
 mod durability_fault_injection;
+mod field_text;
 mod guided;
 mod initial_schema_installation;
 mod interruption_counters;
@@ -67,18 +68,18 @@ pub(crate) use state::{
     ExactLookupInputs, HistorySubsystem, IndexingState, IndexingSubsystem,
     LineageIdentityAllocator, LineageState, LineageSubsystem, PartitionEdition,
     PendingRecordAllocations, PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
-    PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
-    PublishedSnapshotCloseout, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
-    RecordIdentitySubsystem, RelationalCandidateRegistrationDenial,
-    RelationalCanonicalPublicationRoutes, RelationalDiagnosticArtifactStore,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
-    RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
-    RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
-    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, ReplayRetentionState,
-    RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem, SchemaContractRuntimeSubsystem,
-    SnapshotHandleBinding, StorageSubsystem, ValidatedLineageEventBatch, VisibilityResidency,
-    VisibilitySubsystem,
+    PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
+    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
+    PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
+    PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
+    RelationalCandidateRegistrationDenial, RelationalCanonicalPublicationRoutes,
+    RelationalDiagnosticArtifactStore, RelationalForkMaterializationCost,
+    RelationalForkOwnerBinding, RelationalPreparationHistory, RelationalPreparationOwnerBinding,
+    RelationalPreparationRuntime, RelationalRuntimeConfigurationBinding,
+    RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
+    RelationalRuntimePublicationBinding, ReplayRetentionState, RuntimeInstrumentation,
+    RuntimeServices, RuntimeSubsystem, SchemaContractRuntimeSubsystem, SnapshotHandleBinding,
+    StorageSubsystem, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub(crate) use state::{
     DeferredRelationalSettlement, PendingRelationalPublicationSettlement,

@@ -31,7 +31,7 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
     let retained =
         crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let current = request.at(&retained);
-    let maximum_work = NonZeroUsize::new(4_096).unwrap();
+    let maximum_work = support::currentness_work_limit();
     let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
@@ -59,7 +59,7 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
                 },
             )));
             let before = reads();
-            let WorthQueryProgramOutputCurrentnessDenial::ExecutionRequest(cause) = current
+            let WorthQueryOutputCurrentnessDenial::ExecutionRequest(cause) = current
                 .require_current_program_output(&settlement, maximum_work)
                 .unwrap_err()
             else {

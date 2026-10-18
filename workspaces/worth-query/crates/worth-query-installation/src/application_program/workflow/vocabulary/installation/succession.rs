@@ -62,7 +62,8 @@ impl<Schema: ApplicationSchema, Spec: ApplicationWorkflowSpec<Schema = Schema>, 
             || succession.role() != role.name()
             || body.scope_entity() != Some(role.entity())
             || Binding::workflow_execution_requirements()
-                .is_some_and(|requirements| requirements.approval().is_some())
+                .approval()
+                .is_some()
         {
             return Err(denied());
         }

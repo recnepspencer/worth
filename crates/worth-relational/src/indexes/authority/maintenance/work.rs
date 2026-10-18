@@ -18,10 +18,18 @@ enum MaintenancePayer<'a, 'run, 'lease> {
     Test,
 }
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum MaintenanceRestriction {
+    Unrestricted,
+    FieldIndexes,
+    IncrementalIndexes,
+}
+
 pub(super) struct MaintenanceWork<'a, 'run, 'lease> {
     pub(super) budget: DerivedIndexMaintenanceBudget,
     counts: DerivedIndexMaintenanceWork,
     payer: MaintenancePayer<'a, 'run, 'lease>,
+    restriction: MaintenanceRestriction,
 }
 
 impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
@@ -61,8 +69,24 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn reserve_generation_publications(&mut self, count: usize) {
         self.counts.generation_publications_reserved = count;
     }
-    pub(super) fn has_preparation(&self) -> bool {
-        matches!(self.payer, MaintenancePayer::Admission(_))
+    pub(super) fn prohibits_population_reconstruction(&self) -> bool {
+        self.restriction != MaintenanceRestriction::Unrestricted
+    }
+
+    pub(super) fn search_is_prepared(&self) -> bool {
+        self.prepares_allocations()
+    }
+
+    pub(super) fn field_indexes_only(&self) -> bool {
+        self.restriction == MaintenanceRestriction::FieldIndexes
+            || matches!(self.payer, MaintenancePayer::Admission(_))
+    }
+
+    pub(super) fn restrict_to_field_indexes(&mut self) {
+        self.restriction = MaintenanceRestriction::FieldIndexes;
+    }
+    pub(super) fn restrict_to_incremental_indexes(&mut self) {
+        self.restriction = MaintenanceRestriction::IncrementalIndexes;
     }
     pub(super) fn prepares_allocations(&self) -> bool {
         match self.payer {
@@ -76,6 +100,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
         Self {
             budget,
             counts: Default::default(),
+            restriction: MaintenanceRestriction::Unrestricted,
             payer: MaintenancePayer::Test,
         }
     }
@@ -87,6 +112,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
         Self {
             budget,
             counts: Default::default(),
+            restriction: MaintenanceRestriction::Unrestricted,
             payer: MaintenancePayer::Admission(preparation),
         }
     }
@@ -99,22 +125,23 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
         Self {
             budget,
             counts: Default::default(),
+            restriction: MaintenanceRestriction::Unrestricted,
             payer: MaintenancePayer::Request(context, memory),
         }
     }
 
     /// Framework preparation extends the caller's authority. Native counters
     /// remain the existing algorithm's receipt; they do not include these copies.
-    /// The admitted caller pays preparation work; request callers pay native work in `charge`.
+    /// Preparation quotes and native logical visits use the same original payer.
     pub(super) fn prepare(&mut self, work: u64, bytes: u64) -> Result<(), Denial> {
         match &mut self.payer {
             MaintenancePayer::Admission(prepare) => {
                 prepare(work, bytes).map_err(|_| Denial::WorkBudgetExceeded)
             }
-            // Native work is paid by charge; framework preparation consults the
-            // same active request without duplicating the native receipt.
+            // Admit quoted metadata, copying and allocation work before doing it.
+            // Native comparisons consume carried search credit without paying twice.
             MaintenancePayer::Request(context, memory) => {
-                checkpoint(context, 0)?;
+                checkpoint(context, work)?;
                 let total = memory
                     .bytes()
                     .checked_add(bytes)

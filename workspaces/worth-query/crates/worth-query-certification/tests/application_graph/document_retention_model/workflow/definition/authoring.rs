@@ -3,16 +3,28 @@
 
 use super::*;
 
-pub fn publish_definition(
-    application: &DocumentWorkflowRuntime,
-    definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
+pub fn publish_definition<
+    Spec: worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+        Schema = DocumentRetentionSchema,
+    >,
+>(
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+        Spec,
+    >,
+    definition: ValidatedWorkflowDefinition<Spec>,
     expected_predecessor: WorkflowDefinitionExpectedPredecessor,
     idempotency: u64,
 ) -> Result<
     WorkflowDefinitionPublicationOutcome,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
 > {
-    let contract = bind_definition(application, definition);
+    let contract = application
+        .workflow_spec()
+        .bind_definition(definition)
+        .expect("definition matches the installed Spec");
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -32,7 +44,11 @@ pub fn publish_definition(
 }
 
 pub fn retire_definition(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     definition: PublishedWorkflowDefinitionRef,
     idempotency: u64,
 ) -> Result<

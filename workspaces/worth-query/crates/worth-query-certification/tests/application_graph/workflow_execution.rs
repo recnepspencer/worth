@@ -100,7 +100,6 @@ fn journey(
     };
     assert!(required
         .workflow_execution_requirements()
-        .unwrap()
         .approval()
         .is_none());
     (application, instance, required)
@@ -133,6 +132,7 @@ fn execute(
         .idempotency(&key)
         .for_workflow_operation(application, required)
         .unwrap()
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             ExecutionAllocationPolicy::SystemAllocation,
@@ -219,7 +219,6 @@ fn reconstructed_occurrence_only_contract_issues_fresh_execution_authority() {
     };
     assert!(rebuilt
         .workflow_execution_requirements()
-        .unwrap()
         .approval()
         .is_none());
     assert!(matches!(
@@ -247,6 +246,7 @@ fn direct_invocation_and_wrong_input_cannot_bypass_occurrence_binding() {
         runtime
             .request(&principal, &scope)
             .on_branch(instance.branch())
+            .advanced()
             .mutate(input(8))
             .without_source()
             .idempotency(&91007_u64)

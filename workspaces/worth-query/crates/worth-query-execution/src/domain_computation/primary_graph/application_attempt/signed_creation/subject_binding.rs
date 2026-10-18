@@ -91,14 +91,11 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
             locator,
             native_revision,
         } = fact
+            && *entity_id == subject
+            && let Some(revision) =
+                revisions.get_mut(&(locator.aspect().aspect_key(), locator.field_path()))
         {
-            if *entity_id == subject {
-                if let Some(revision) =
-                    revisions.get_mut(&(locator.aspect().aspect_key(), locator.field_path()))
-                {
-                    *revision = *native_revision;
-                }
-            }
+            *revision = *native_revision;
         }
     }
     let mut dependencies =

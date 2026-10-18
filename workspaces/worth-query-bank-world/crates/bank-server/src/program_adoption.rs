@@ -3,7 +3,7 @@ use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequ
 use worth_query_host::facade::application_entry::{
     PublishedWorkflowDefinitionRef, WorthQueryApplicationProgramAdoptionPreparationDenial,
     WorthQueryApplicationProgramInspectionDenial, WorthQueryPreparedBranchAdoption,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositionDenial,
+    WorthQueryWorkflowDefinitionDisposition,
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::declaration::application_program::{
@@ -22,9 +22,6 @@ pub enum BankProgramInspectionDenial {
 #[derive(Debug)]
 pub enum BankProgramAdoptionPreparationDenial {
     TargetUnsupported,
-    WorkflowDefinitionMismatch,
-    LiveWorkflowInstances,
-    WorkflowDisposition(WorthQueryWorkflowDispositionDenial),
     Query(Box<WorthQueryApplicationProgramAdoptionPreparationDenial>),
 }
 
@@ -86,6 +83,7 @@ impl BankIdentityRuntime {
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
         programs
             .adopt(&requirements)
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?
             .prepare(maximum_selection_work)
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))
     }
@@ -110,26 +108,12 @@ impl BankIdentityRuntime {
         let requirements = programs
             .compare(&target)
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
-        let adoption = programs.adopt(&requirements);
-        let inventory = adoption
-            .workflow_inventory(maximum_work_units)
+        let adoption = programs
+            .adopt(&requirements)
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
-        if expected.branch() != branch
-            || inventory.definitions().len() != 1
-            || inventory.definitions()[0].entity_id() != expected.entity_id()
-        {
-            return Err(BankProgramAdoptionPreparationDenial::WorkflowDefinitionMismatch);
-        }
-        if !inventory.instances().is_empty() {
-            return Err(BankProgramAdoptionPreparationDenial::LiveWorkflowInstances);
-        }
-        let choices = inventory
-            .dispositions()
-            .definition(
-                &inventory.definitions()[0],
-                WorthQueryWorkflowDefinitionDisposition::Retire,
-            )
-            .map_err(BankProgramAdoptionPreparationDenial::WorkflowDisposition)?;
+        let choices =
+            worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+                .definition(expected, WorthQueryWorkflowDefinitionDisposition::Retire);
         adoption
             .workflow(choices)
             .prepare(maximum_work_units)

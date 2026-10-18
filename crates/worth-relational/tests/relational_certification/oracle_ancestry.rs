@@ -1,4 +1,4 @@
-use crate::world::supply_chain::*;
+use crate::relational_certification::world::supply_chain::*;
 
 #[test]
 fn sibling_branches_share_immutable_ancestor_but_not_lineage() {

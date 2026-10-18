@@ -1,10 +1,16 @@
 //! Issue a succession slot only from exact fresh capability and native completed-chain facts.
 use super::super::{PublishedWorkflowInstanceRef, WorkflowInstancePreparationDenial};
-use super::*;
+use super::{
+    mismatch, ApplicationMutationBinding, ApplicationSchema, ApplicationWorkflowSpec,
+    RequiredWorkflowSuccession, TypeId, WorkflowSuccessionAuthority,
+    WorkflowSuccessionAuthoritySlot, WorthQueryApplicationOutputRole,
+    WorthQueryWorkflowSuccessionAdapter,
+};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
     WorthQuerySelectedProductOperation,
 };
+use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationIdentities, ApplicationMutationScopeBinding, WorthQueryPreserveOutput,

@@ -193,11 +193,11 @@ impl DemandRegistryState {
                     && record.performed_source.is_none()
                     && !record.pending_cleanup_queued
             }) {
-                if let Some(note) = state.records.get(head.as_ref()).and_then(|row| row.closed_cleanup.queued_note()) {
+                match state.records.get(head.as_ref()).and_then(|row| row.closed_cleanup.queued_note()) { Some(note) => {
                     // This paid terminal step completes its own closed note;
                     // unrelated stale notes remain the optional drain's debt.
                     state.take_closed_note(note).prune(|state| state.remove_record(head.as_ref()))
-                } else { state.remove_record(head.as_ref()) }
+                } _ => { state.remove_record(head.as_ref()) }}
             } else {
                 None
             };

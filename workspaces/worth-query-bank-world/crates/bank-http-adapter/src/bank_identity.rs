@@ -57,30 +57,38 @@ impl AuthentikBankIdentity {
     pub(crate) async fn install_for_cold_certification_for_test(
         configuration: AuthentikOidcConfiguration,
         seeds: impl IntoIterator<Item = BankPrincipalSeed>,
+        trusted_root_pem: Option<&[u8]>,
         scope: &WorthQueryRequestScope,
     ) -> Result<Self, AuthentikBankIdentityBuildError> {
         let bank_configuration = configuration
             .bank_authentication_configuration()
             .map_err(AuthentikBankIdentityBuildError::Configuration)?;
-        let adapter =
-            AuthentikOidcAdapter::discover_for_cold_certification_for_test(configuration, scope)
-                .await
-                .map_err(AuthentikBankIdentityBuildError::Adapter)?;
+        let adapter = AuthentikOidcAdapter::discover_for_cold_certification_for_test(
+            configuration,
+            trusted_root_pem,
+            scope,
+        )
+        .await
+        .map_err(AuthentikBankIdentityBuildError::Adapter)?;
         Self::install_with_adapter(bank_configuration, adapter, seeds)
     }
 
     pub(crate) async fn install_world_for_cold_certification_for_test(
         configuration: AuthentikOidcConfiguration,
         seed: BankWorldSeed,
+        trusted_root_pem: Option<&[u8]>,
         scope: &WorthQueryRequestScope,
     ) -> Result<Self, AuthentikBankIdentityBuildError> {
         let bank_configuration = configuration
             .bank_authentication_configuration()
             .map_err(AuthentikBankIdentityBuildError::Configuration)?;
-        let adapter =
-            AuthentikOidcAdapter::discover_for_cold_certification_for_test(configuration, scope)
-                .await
-                .map_err(AuthentikBankIdentityBuildError::Adapter)?;
+        let adapter = AuthentikOidcAdapter::discover_for_cold_certification_for_test(
+            configuration,
+            trusted_root_pem,
+            scope,
+        )
+        .await
+        .map_err(AuthentikBankIdentityBuildError::Adapter)?;
         let runtime = BankIdentityRuntime::install_world(seed)
             .map_err(AuthentikBankIdentityBuildError::Runtime)?;
         let authentication = runtime

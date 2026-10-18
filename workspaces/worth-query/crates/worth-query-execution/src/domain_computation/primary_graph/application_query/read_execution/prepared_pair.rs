@@ -190,10 +190,10 @@ impl PreparedRead<'_> {
                 .map_err(|_| MapKernelStop::WorkCounterOverflow)
                 .and_then(|units| meter.borrow_mut().checkpoint(units));
             #[cfg(test)]
-            if result.is_ok() {
-                if let Some(witness) = witness {
-                    witness.charged(root, units as u64);
-                }
+            if result.is_ok()
+                && let Some(witness) = witness
+            {
+                witness.charged(root, units as u64);
             }
             result.map_err(|cause| {
                 stop.set(Some(cause));

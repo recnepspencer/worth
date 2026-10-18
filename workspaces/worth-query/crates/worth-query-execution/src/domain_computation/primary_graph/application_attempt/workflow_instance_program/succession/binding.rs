@@ -80,8 +80,14 @@ impl<Schema, Operation, Input, Scope>
             .append_authority_facts(&execution, &authority.facts, allocation)?;
         let layout = self.read_set.lease.layout.workflow();
         let mut effects = Vec::new();
+        let start_revision = self.read_set.lease.handle().with_runtime(&execution, |runtime| {
+            crate::domain_computation::primary_graph::workflow::instance::start_provenance::admit(
+                &execution, runtime, self.read_set.lease.product().relational_basis(), authority.compiled.program_revision())
+        })?;
         let successor = crate::domain_computation::primary_graph::workflow::instance::visit_instance_start_facts(layout, &authority.compiled,
-            &authority.instance_identity, authority.branch.occurrence_ordinal(), subject, authority.carry, |effect| { effects.push(effect); Ok::<(), WorthQueryApplicationAttemptDenial>(()) })?;
+            &authority.instance_identity, &start_revision, authority.branch.occurrence_ordinal(), subject, authority.carry,
+            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.read_set.admission),
+            |effect| { effects.push(effect); Ok::<(), WorthQueryApplicationAttemptDenial>(()) })?;
         effects.push(WorthQueryApplicationRealizedEffect::CreateRelation {
             kind: layout.instance_succeeded_from_relation,
             key: "instance-succeeded-from".into(),

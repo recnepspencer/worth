@@ -120,16 +120,17 @@ impl BridgePreviewSession<PreviewActive> {
     pub(crate) fn promote(
         self,
         proof: &BridgePromotionAdmissibilityProof,
-    ) -> Result<BridgePreviewSession<PreviewPromoted>, BridgeSpeculationError> {
+    ) -> Result<BridgePreviewSession<PreviewPromoted>, (Self, BridgeSpeculationError)> {
         if !proof.matches_active_session(&self) {
-            return Err(BridgeSpeculationError::new(
+            let denial = BridgeSpeculationError::new(
                 BridgeSpeculationErrorKind::PromotionAdmissibilityMismatch,
                 format!(
                     "Promotion proof `{}` did not match active preview session `{}`.",
                     proof.proof_identity().as_str(),
                     self.session_identity.as_str(),
                 ),
-            ));
+            );
+            return Err((self, denial));
         }
 
         Ok(BridgePreviewSession::new(

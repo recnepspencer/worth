@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn tail_replay_consumes_canonical_reused_record_allocation() {
@@ -27,12 +28,16 @@ fn tail_replay_consumes_canonical_reused_record_allocation() {
             .reusable_entity_slots,
         1
     );
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     let replacement = create_entity(execution, &runtime, "allocation-after");
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema_profile(
         crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
     );
@@ -77,11 +82,15 @@ fn checkpoint_restores_burned_append_frontier_beyond_all_retained_roots() {
         .unwrap();
     assert_eq!(reservation.slot as u64, original.local_slot.0 + 1);
     drop(burned);
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
@@ -108,10 +117,14 @@ fn recovery_releases_orphaned_append_reservation_without_reusing_its_gap() {
         )
         .unwrap();
     assert_eq!(reservation.slot as u64, original.local_slot.0 + 1);
-    runtime.durability_authority().checkpoint().unwrap();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     drop(pending);
 
     let mut recovered = persisted_runtime_with_test_schema();
@@ -153,10 +166,14 @@ fn recovery_returns_orphaned_reclaimed_reservation_to_reuse() {
         )
         .unwrap();
     assert_eq!(reservation.slot as u64, original.local_slot.0);
-    runtime.durability_authority().checkpoint().unwrap();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     drop(pending);
 
     let mut recovered = persisted_runtime_with_test_schema_profile(
@@ -180,11 +197,15 @@ fn tail_replay_rejects_canonical_allocation_targeting_a_live_slot() {
 
     let runtime = persisted_runtime_with_test_schema();
     let original = create_entity(execution, &runtime, "allocation-live");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     create_entity(execution, &runtime, "allocation-tail");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let tail = plan
         .tail_log
         .last_mut()
@@ -224,11 +245,15 @@ fn tail_replay_rejects_missing_canonical_allocation_evidence() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity(execution, &runtime, "allocation-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     create_entity(execution, &runtime, "allocation-tail");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     plan.tail_log
         .last_mut()
         .expect("tail commit is selected")
@@ -254,11 +279,15 @@ fn tail_replay_gap_admission_cannot_replace_a_different_canonical_effect() {
 
     let runtime = persisted_runtime_with_test_schema();
     let checkpoint_entity = create_entity(execution, &runtime, "allocation-gap-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let tail_entity = create_entity(execution, &runtime, "allocation-gap-tail");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let forged_entity = crate::identity::data::EntityId::new(
         tail_entity.partition_id,
         checkpoint_entity.local_slot.0 + 4,
@@ -303,7 +332,10 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
         entity,
         BranchId("allocation-feature".to_owned()),
     );
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let prepared = runtime
         .prepare_merge_execution(
             execution,
@@ -315,9 +347,10 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
         )
         .unwrap();
     runtime.execute_prepared_merge(execution, prepared).unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let tail = plan
         .tail_log
         .last_mut()

@@ -17,9 +17,6 @@ pub async fn complete_node_authorization(
     capabilities
         .add_arg("--no-sandbox")
         .map_err(|error| format!("sandbox capability failed: {error}"))?;
-    capabilities
-        .add_arg("--ignore-certificate-errors")
-        .map_err(|error| format!("certificate capability failed: {error}"))?;
     let driver = WebDriver::new(webdriver_url, capabilities)
         .await
         .map_err(|error| format!("WebDriver session failed: {error}"))?;

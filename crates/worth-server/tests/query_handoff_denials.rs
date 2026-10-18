@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use worth_query::facade::runtime::{
     WorthQueryRuntimeFacadeFamily, WorthQueryRuntimeFamilySupport, WorthQueryRuntimeSupportProfile,
@@ -11,10 +11,10 @@ use worth_server::{
     WorthServerTransportClass,
 };
 
-#[path = "support/query_handoff/fixture.rs"]
-mod query_handoff_fixture;
-#[path = "support/query_handoff/runtime.rs"]
-mod query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_fixture as query_handoff_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
 
 use query_handoff_fixture::{
     admit_mutation_posture, admit_read_posture, denied, request_input, resolve_request_context,

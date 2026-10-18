@@ -76,6 +76,7 @@ worth_query_mutation_binding!(
     handler identity "bank.operation.approve-payment.handler.v1",
     program required,
     workflow_authority required,
+    workflow_requirements worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<crate::schema::workflow::ApprovedBusinessPaymentApproval>(),
     outputs PaymentDecisionOutputs,
     principal BankPrincipalBinding,
         mapping ExternalPrincipalMapping,

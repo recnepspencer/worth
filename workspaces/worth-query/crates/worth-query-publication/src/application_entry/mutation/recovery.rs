@@ -22,6 +22,7 @@ use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 /// read, publication or cleanup failure remain in the recovery outcome instead.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRecoveryRequestDenial {
+    Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     Request(WorthQueryApplicationRequestMutationDenial),
     /// Workflow control and transition-bound requests need their workflow owner.
     WorkflowUnsupported,
@@ -199,7 +200,48 @@ where
             .map_err(WorthQueryApplicationRecoveryRequestDenial::from)
     }
 
-    pub(in crate::application_entry::mutation) fn read_recovery_idempotency(
+    pub(in crate::application_entry) fn authorize_owning_recovery<Program>(
+        &mut self, phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>, application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<PreparedMutation<Schema, Intent::Binding>, WorthQueryApplicationRecoveryRequestDenial>
+    where Program: ApplicationProgramDefinition<Schema>, Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: super::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>{
+        if Intent::Binding::WORKFLOW_CONTROL
+            || Intent::Binding::REQUIRES_WORKFLOW_AUTHORITY
+            || self.workflow_transition_identity.is_some()
+            || self.workflow_input.is_some()
+            || self.workflow_authority.is_some()
+        {
+            return Err(WorthQueryApplicationRecoveryRequestDenial::WorkflowUnsupported);
+        }
+        self.check_recovery_liveness()?;
+        let selected = self
+            .request
+            .application
+            .on_branch(self.request.branch)
+            .select(phase)
+            .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
+        let owner = application
+            .selected_program_owner(&selected)
+            .map_err(super::selected_program::map_selected_program_owner_denial)?;
+        let declared = self
+            .compiled_action
+            .ok_or(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired)?;
+        owner
+            .resolve_declared_action::<Intent::Binding>(declared)
+            .map_err(WorthQueryApplicationRecoveryRequestDenial::Action)?;
+        use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
+        if owner.owns_output_source(std::any::TypeId::of::<Intent::Binding>()) {
+            return Err(
+                WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired.into(),
+            );
+        }
+        let staged = self.stage()?;
+        let identities = self.identities()?;
+        use super::authorization::WorthQueryBindingAdmission;
+        <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(phase, self, &identities, staged, &selected).map_err(Into::into)
+    }
+
+    pub(in crate::application_entry) fn read_recovery_idempotency(
         &self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
             '_,

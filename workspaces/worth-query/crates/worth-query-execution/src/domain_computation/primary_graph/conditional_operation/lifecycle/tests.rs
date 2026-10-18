@@ -17,6 +17,12 @@ struct InstalledClock {
 }
 
 impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
+    fn pending_managed_cleanup(
+        &self,
+    ) -> Option<crate::domain_computation::WorthQueryMutationCleanupFailureKind> {
+        None
+    }
+
     fn binding_identity(&self) -> &str {
         &self.identity
     }

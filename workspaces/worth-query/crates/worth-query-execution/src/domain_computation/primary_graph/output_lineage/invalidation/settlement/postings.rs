@@ -22,6 +22,8 @@ use super::super::{
     InvalidationEditAdmission,
 };
 
+mod ordering;
+
 pub(super) struct PreparedPostingOrdinals {
     ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
     posting_payload_bytes: u64,
@@ -151,12 +153,17 @@ impl PreparedPostingOrdinals {
             posting_payload_bytes = posting_payload_bytes
                 .checked_add(key_payload_bytes(&group.key)?)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            admission.key_edit::<Arc<FactPostingKey>, OrdSet<usize>>(&group.key, ordinals.len())?;
+            admission.fresh_key_insert::<Arc<FactPostingKey>, OrdSet<usize>>(
+                &group.key,
+                ordinals.len(),
+            )?;
             ordinals.insert(group.key, group.ordinals);
         }
         // Only the final local map, its independently rooted ordinal sets and
         // surviving key allocations become row storage. Sorting/group scratch,
-        // duplicate projected keys and intermediate insertion paths do not.
+        // duplicate projected keys and nodes a fresh build split away do not.
+        // These local trees are created empty here and are never shared while
+        // they grow, so each insertion is admitted as fresh-build growth.
         let retained = index_capacity::retained_map_bytes::<Arc<FactPostingKey>, OrdSet<usize>>(
             ordinals.len(),
         )
@@ -239,57 +246,46 @@ impl PreparedPostingOrdinals {
     }
 }
 
-/// Sort only fixed-width fingerprints. Full equality inside each fingerprint
-/// bucket is still mandatory: a hash never authorizes fact-key deduplication.
+/// Order by fingerprint and exact key, then group adjacent equal keys. Even
+/// colliding fingerprints take O(n log n) comparisons, not a bucket scan per
+/// occurrence. Hashes never authorize deduplication; every ordinal survives.
 fn group_projected(
     mut projected: Vec<ProjectedKey>,
     maximum: usize,
-    admission: &mut InvalidationEditAdmission,
+    admission: &mut impl IndexAdmission,
 ) -> Result<Vec<PostingGroup>, CompanionPreflightStop> {
-    for index in 1..projected.len() {
-        let mut cursor = index;
-        while cursor != 0 {
-            admission.work(1)?;
-            if projected[cursor - 1].hash <= projected[cursor].hash {
-                break;
-            }
-            admission.work(1)?;
-            projected.swap(cursor - 1, cursor);
-            cursor -= 1;
-        }
-    }
+    ordering::sort(&mut projected, admission)?;
     let mut groups: Vec<PostingGroup> = Vec::with_capacity(maximum);
-    let mut bucket_start = 0usize;
     let mut preceding_hash = None;
     admission.work(
         u64::try_from(projected.len()).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
     )?;
     for projection in projected {
-        if preceding_hash != Some(projection.hash) {
-            preceding_hash = Some(projection.hash);
-            bucket_start = groups.len();
-        }
-        let mut matching = None;
-        for (index, group) in groups.iter().enumerate().skip(bucket_start) {
+        let mut equal_key = false;
+        if preceding_hash == Some(projection.hash) {
+            admission.work(super::super::admission::key_traversal_work(&projection.key))?;
             admission.work(
                 projection
                     .key
                     .comparison_work_bound()
                     .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
             )?;
-            if projection.key.as_ref() == group.key.as_ref() {
-                matching = Some(index);
-                break;
-            }
+            equal_key = groups
+                .last()
+                .is_some_and(|group| group.key == projection.key);
         }
-        if let Some(index) = matching {
-            let ordinals = &mut groups[index].ordinals;
-            admission.ordered_edit::<usize, ()>(ordinals.len())?;
+        preceding_hash = Some(projection.hash);
+        if equal_key {
+            let ordinals = &mut groups
+                .last_mut()
+                .expect("an equal key has a group")
+                .ordinals;
+            admission.fresh_insert::<usize, ()>(ordinals.len())?;
             ordinals.insert(projection.ordinal);
         } else {
             admission.work(1)?;
             let mut ordinals = OrdSet::new();
-            admission.ordered_edit::<usize, ()>(0)?;
+            admission.fresh_insert::<usize, ()>(0)?;
             ordinals.insert(projection.ordinal);
             groups.push(PostingGroup {
                 key: projection.key,

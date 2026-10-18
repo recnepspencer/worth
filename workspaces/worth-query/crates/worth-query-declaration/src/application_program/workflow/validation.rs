@@ -44,6 +44,7 @@ pub enum ApplicationWorkflowValidationDenialKind {
     IncompleteEvidenceJoin,
     IncompleteApproval,
     MissingWorkflowAuthority,
+    MissingOperationInput,
     UnexpectedWorkflowAuthority,
     MissingControlOutcome,
     AmbiguousControlOutcome,

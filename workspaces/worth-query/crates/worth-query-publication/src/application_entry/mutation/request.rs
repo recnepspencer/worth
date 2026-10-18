@@ -1,4 +1,5 @@
 mod birth;
+mod input_identity;
 mod succession;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -21,7 +22,7 @@ pub struct WorthQueryMutationSourceUnprepared;
 #[doc(hidden)]
 pub struct WorthQueryMutationSourcePrepared;
 
-pub(super) enum WorthQueryMutationExpectedSource<Query> {
+pub(in crate::application_entry) enum WorthQueryMutationExpectedSource<Query> {
     Row(worth_query_execution::facade::primary_graph::WorthQueryObservedSource<Query>),
     ResultSet(worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<Query>),
 }
@@ -40,22 +41,22 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
-    pub(super) application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    pub(super) principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
-    pub(super) scope: &'scope WorthQueryRequestScope,
-    pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
-    pub(super) intent: Intent,
-    pub(super) preconditions: TypedMutationPreconditions<
+    pub(in crate::application_entry) application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(in crate::application_entry) principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    pub(in crate::application_entry) scope: &'scope WorthQueryRequestScope,
+    pub(in crate::application_entry) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+    pub(in crate::application_entry) intent: Intent,
+    pub(in crate::application_entry) preconditions: TypedMutationPreconditions<
         Schema,
         <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
         <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
     >,
-    pub(super) source: Option<
+    pub(in crate::application_entry) source: Option<
         WorthQueryMutationExpectedSource<
             <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
     >,
-    source_preparation: std::marker::PhantomData<SourcePreparation>,
+    pub(in crate::application_entry) source_preparation: std::marker::PhantomData<SourcePreparation>,
 }
 
 /// A mutation request bound to its idempotency key, ready to execute.
@@ -71,7 +72,7 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
-    pub(super) request: WorthQueryApplicationMutationRequest<
+    pub(in crate::application_entry) request: WorthQueryApplicationMutationRequest<
         'application,
         'principal,
         'scope,
@@ -79,19 +80,27 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
         Intent,
         SourcePreparation,
     >,
+    pub(in crate::application_entry) compiled_action: Option<&'scope worth_query_declaration::facade::application_program::ApplicationActionDeclaration>,
+    pub(in crate::application_entry) borrowed_preconditions: Option<&'scope TypedMutationPreconditions<
+        Schema,
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+        <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+    >>,
+    pub(in crate::application_entry) operation_input: Option<&'scope Result<ApplicationEncodedInput<<Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding>, worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial>>,
     pub(super) unstaged: Option<super::staged::UnstagedMutation>,
-    pub(super) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
-    pub(super) workflow_transition_identity: Option<[u8; 32]>,
+    pub(in crate::application_entry) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
+    pub(in crate::application_entry) workflow_actor_context: Option<worth_query_execution::publication_boundary::workflow_advance::WorthQueryWorkflowActorContext>,
+    pub(in crate::application_entry) workflow_transition_identity: Option<[u8; 32]>,
     pub(super) workflow_birth_identity: Option<[u8; 32]>,
     pub(super) workflow_succession_identity: Option<[u8; 32]>,
     pub(super) workflow_succession_authority: Option<std::sync::Arc<worth_query_execution::publication_boundary::workflow_succession::WorkflowSuccessionAuthoritySlot>>,
     pub(super) workflow_birth_authority: Option<std::sync::Arc<worth_query_execution::publication_boundary::workflow_birth::WorkflowBirthAuthoritySlot>>,
     /// The input, encoded once when the request bound its workflow
     /// requirement, so the entry point encodes only the key beside it.
-    pub(super) workflow_input: Option<
+    pub(in crate::application_entry) workflow_input: Option<
         ApplicationEncodedInput<<Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding>,
     >,
-    pub(super) workflow_authority: Option<
+    pub(in crate::application_entry) workflow_authority: Option<
         std::sync::Arc<
             worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
         >,
@@ -274,6 +283,9 @@ where
         WorthQueryApplicationMutationRequestWithIdempotency {
             request: self,
             key,
+            compiled_action: None,
+            borrowed_preconditions: None,
+            operation_input: None,
             unstaged: Some(super::staged::UnstagedMutation),
             workflow_transition_identity: None,
             workflow_birth_identity: None,
@@ -282,6 +294,7 @@ where
             workflow_birth_authority: None,
             workflow_input: None,
             workflow_authority: None,
+            workflow_actor_context: None,
         }
     }
 }
@@ -326,43 +339,6 @@ where
         self.workflow_transition_identity = Some(identity);
         self.workflow_input = Some(input);
         self
-    }
-
-    /// The request's key and input with the identities encoded from exactly them.
-    ///
-    /// Each entry point calls this once and passes the result through preparation,
-    /// execution, and the idempotency binding; the identities borrow the key and
-    /// the input this request owns, so they cannot be stored beside them. A
-    /// request bound to a workflow requirement already encoded its input when it
-    /// bound, so only the key is encoded here.
-    pub(in crate::application_entry) fn identities(
-        &self,
-    ) -> Result<
-        ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
-        WorthQueryApplicationRequestMutationDenial,
-    > {
-        match &self.workflow_input {
-            Some(input) => ApplicationMutationIdentities::with_encoded_input(self.key, input),
-            None => ApplicationMutationIdentities::encode(self.key, self.request.intent.input()),
-        }
-        .map_err(WorthQueryApplicationRequestMutationDenial::Identity)
-    }
-
-    /// Encodes the request's input once, for binding it to a workflow
-    /// requirement; the entry point later reuses it through `identities`.
-    pub(in crate::application_entry) fn encode_input(
-        &self,
-    ) -> Result<
-        ApplicationEncodedInput<
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding,
-        >,
-        ApplicationMutationIdentityDenial,
-    >
-    where
-        <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone,
-    {
-        ApplicationEncodedInput::encode(self.request.intent.input().clone())
-            .map_err(ApplicationMutationIdentityDenial::Input)
     }
 
     pub(in crate::application_entry) const fn workflow_transition_identity(

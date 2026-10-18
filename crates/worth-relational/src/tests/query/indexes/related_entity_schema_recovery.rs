@@ -178,11 +178,15 @@ fn transition_checkpoint_and_recover(
 
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("checkpoint preserves both schema-qualified generations");
     let plan = runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(v2_registry)
         .build();

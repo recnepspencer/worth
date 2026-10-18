@@ -1,8 +1,10 @@
 use worth_query_decl::facade::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling, ApplicationMutationBinding, ApplicationMutationIntent,
-        ApplicationQueryMutationSource, NoApplicationMutationOutputs,
+        ApplicationCandidateResourceCeiling, ApplicationConventionalAdmission,
+        ApplicationMutationAdmissionBinding, ApplicationMutationBinding, ApplicationMutationIntent,
+        ApplicationQueryMutationSource, ApplicationWorkflowExecutionRequirements,
+        NoApplicationMutationOutputs,
     },
     application_schema::{
         ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
@@ -40,6 +42,10 @@ worth_query_operation_emits!(WorthUiApplyStatusAction => [WorthUiStatusChangedEf
 
 pub struct WorthUiStatusActionBinding;
 
+impl ApplicationMutationAdmissionBinding<WorthUiApplicationSchema> for WorthUiStatusActionBinding {
+    type Admission = ApplicationConventionalAdmission;
+}
+
 impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusActionBinding {
     type Input = WorthUiStatusActionRequest;
     type InputBinding = WorthUiStatusActionInputBinding;
@@ -68,6 +74,10 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusActio
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 1),
             ApplicationCandidateResourceCeiling::representation_bytes(65_544),
         );
+
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
 
     fn scope_field() -> ApplicationFieldRef<
         WorthUiApplicationSchema,
@@ -146,7 +156,7 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusActionBinding>
         let current = match reader.field(&entity, QueryRevisionValueField::reference()) {
             Ok(Some(current)) => current,
             Ok(None) => {
-                return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::RevisionMismatch)
+                return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::RevisionMismatch);
             }
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
@@ -171,7 +181,7 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusActionBinding>
         let entity = match writer.projected_entity(&target) {
             Ok(entity) => entity,
             Err(error) => {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
             }
         };
         if let Err(error) = writer.write_field(

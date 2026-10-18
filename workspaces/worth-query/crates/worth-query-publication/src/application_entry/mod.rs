@@ -1,4 +1,19 @@
+#[path = "advanced/request.rs"]
+mod advanced_request;
+/// Deliberate current native control; ordinary actions use the owning builder.
+pub mod advanced {
+    pub use super::advanced_request::WorthQueryAdvancedApplicationRequest;
+    pub use super::mutation::{
+        WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
+    };
+}
+mod capability_command;
 mod capability_delegation;
+pub use capability_command::{
+    WorthQueryCapabilityCommand, WorthQueryCapabilityCommandAdvance,
+    WorthQueryCapabilityCommandCompletion, WorthQueryCapabilityCommandDenial,
+    WorthQueryCompletedCapabilityCommand, WorthQueryTerminalCapabilityCommand,
+};
 mod capability_revocation;
 mod demand;
 mod denial;
@@ -9,6 +24,29 @@ mod inbound_occurrence;
 mod live;
 mod mandatory_review;
 mod mutation;
+mod ordinary;
+pub use ordinary::{WorthQueryOperationBuilder, WorthQueryPendingApplicationLane};
+mod operation;
+pub use operation::{
+    WorthQueryClosedFixedDelivery, WorthQueryClosedOperation, WorthQueryCompletedSourceOperation,
+    WorthQueryCompletedWorkflowOperation, WorthQueryDiscoveredOperation, WorthQueryFixedOperation,
+    WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
+    WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
+    WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
+    WorthQueryOperationDeliveryPolicy, WorthQueryOperationDescription,
+    WorthQueryOperationInputCaptureDenial, WorthQueryOperationInputCaptureRefusal,
+    WorthQueryOperationInputCaptureRetryDenial, WorthQueryOperationModeFactory,
+    WorthQueryOperationProgress, WorthQueryOutputProjectionInstallation,
+    WorthQueryOwnedWorkflowBinding, WorthQuerySettledDiscoveredOperation,
+    WorthQuerySettledFixedOperation, WorthQuerySourceCompletion, WorthQuerySourceDeliveryMode,
+    WorthQuerySourceOnlyAdvance, WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation,
+    WorthQuerySourceOnlyPosture, WorthQuerySourceOperationAdmission,
+    WorthQueryTerminalDiscoveredOperation, WorthQueryTerminalFixedOperation,
+    WorthQueryTerminalSourceOperation, WorthQueryTerminalWorkflowOperation,
+    WorthQueryWorkflowAcceptance, WorthQueryWorkflowEffectRecoveryDenial,
+    WorthQueryWorkflowOperation, WorthQueryWorkflowOperationAdvance,
+    WorthQueryWorkflowOperationDenial,
+};
 mod programs;
 mod query;
 mod query_batch;
@@ -22,7 +60,13 @@ pub use demand::{
     WorthQueryApplicationOutputDemandContinuation, WorthQueryApplicationOutputDemandDenial,
     WorthQueryApplicationOutputDemandHandle, WorthQueryApplicationOutputDemandProgress,
     WorthQueryApplicationOutputDemandRequest, WorthQueryApplicationOutputDemandSettlement,
+    WorthQueryClosedProgramOutputDelivery, WorthQueryClosedProgramOutputRequest,
     WorthQueryOutputDemandControls, WorthQueryOutputSettlementPosture,
+    WorthQueryProgramOutputAdvanceDenial, WorthQueryProgramOutputCloseDenial,
+    WorthQueryProgramOutputCloseRefusal, WorthQueryProgramOutputConstructionDenial,
+    WorthQueryProgramOutputConstructionRefusal, WorthQueryProgramOutputDeliveryCloseRefusal,
+    WorthQueryProgramOutputOperation, WorthQueryProgramOutputOperationAdvance,
+    WorthQuerySettledProgramOutputOperation, WorthQueryTerminalProgramOutputOperation,
 };
 pub use denial::{
     WorthQueryApplicationRequestMutationDenial, WorthQueryApplicationRequestMutationDenialKind,
@@ -50,9 +94,7 @@ pub use mandatory_review::{
 };
 pub use mutation::{
     WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationAttemptReport,
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequest,
-    WorthQueryApplicationMutationRequestWithIdempotency,
-    WorthQueryApplicationPerformedMutationOutcome,
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationPerformedMutationOutcome,
     WorthQueryApplicationProgramMigrationPreparationDenial,
     WorthQueryApplicationProgramMigrationPreparationOutcome,
     WorthQueryApplicationProgramMutationPreparation, WorthQueryApplicationProgramOutputHandle,
@@ -61,17 +103,17 @@ pub use mutation::{
     WorthQueryApplicationRecoveryRequestDenial, WorthQueryApplicationRetainedMutationOutcome,
     WorthQueryBlockedProgramSource, WorthQueryCurrentAuthorizationAssessment,
     WorthQueryCurrentBodyRequirementAssessment, WorthQueryCurrentBodyRequirementAssessmentDenial,
-    WorthQueryDiscoveredOutputStartFailure, WorthQueryDiscoveredProgramOutputHandle,
-    WorthQueryDiscoveredProgramOutputProgress, WorthQueryDiscoveredProgramOutputSettlement,
-    WorthQueryDiscoveredRecoveryProgress, WorthQueryMutationSourcePrepared,
-    WorthQueryPerformedApplicationMutation, WorthQueryPerformedDiscoveredApplicationMutation,
-    WorthQueryPerformedMutationExecutionDenial, WorthQueryPreparedProgramMutation,
-    WorthQueryProgramSourceRecoveryProgress, WorthQueryRecoveredDiscoveredOutputs,
-    WorthQueryRecoveredRequiredOutputs, WorthQueryRequiredOutputPreparation,
-    WorthQueryRequiredOutputPreparationDenial, WorthQueryRequiredOutputRecoveryPosture,
-    WorthQueryRequiredOutputRetentionFailure, WorthQueryRequiredOutputStartFailure,
-    WorthQueryStartedDiscoveredOutputs, WorthQueryStartedRequiredOutputs,
-    WorthQueryUnpublishedDiscoveredApplicationMutation,
+    WorthQueryDiscoveredOutputRetentionFailure, WorthQueryDiscoveredOutputStartFailure,
+    WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
+    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryDiscoveredRecoveryProgress,
+    WorthQueryMutationSourcePrepared, WorthQueryPerformedApplicationMutation,
+    WorthQueryPerformedDiscoveredApplicationMutation, WorthQueryPerformedMutationExecutionDenial,
+    WorthQueryPreparedProgramMutation, WorthQueryProgramSourceRecoveryProgress,
+    WorthQueryRecoveredDiscoveredOutputs, WorthQueryRecoveredRequiredOutputs,
+    WorthQueryRequiredOutputPreparation, WorthQueryRequiredOutputPreparationDenial,
+    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputRetentionFailure,
+    WorthQueryRequiredOutputStartFailure, WorthQueryStartedDiscoveredOutputs,
+    WorthQueryStartedRequiredOutputs, WorthQueryUnpublishedDiscoveredApplicationMutation,
     WorthQueryUnpublishedRequiredApplicationMutation,
 };
 pub use programs::{
@@ -93,11 +135,8 @@ pub use programs::{
     WorthQueryPreparedBranchSetAdoption, WorthQueryPreparedProgramMigration,
     WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial,
     WorthQueryStoppedBranchSetAdoption, WorthQueryUnpublishedBranchAdoption,
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
-    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,
-    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowInstanceDisposition,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use query_batch::{
@@ -108,7 +147,7 @@ pub use request::{
     WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
     WorthQueryApplicationReadObservationDenial, WorthQueryApplicationRequest,
     WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedRequest,
-    WorthQueryOutputCurrentnessDenial, WorthQueryProgramOutputCurrentnessDenial,
+    WorthQueryOutputCurrentnessDenial, WorthQueryWorkflowObservationDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
 pub use workflow::{
@@ -119,15 +158,18 @@ pub use workflow::{
     PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowBirth, RequiredWorkflowCondition, RequiredWorkflowEvidence,
-    RequiredWorkflowOperation, RequiredWorkflowSuccession, RetiredWorkflowDefinitionStart,
-    SupersededWorkflowDefinitionStart, WorkflowApprovalDecision, WorkflowConditionOperand,
-    WorkflowDefinitionBindingDenial, WorkflowDefinitionExpectedPredecessor,
-    WorkflowDefinitionPreparationDenial, WorkflowDefinitionPublicationOutcome,
-    WorkflowDefinitionRetirementOutcome, WorkflowInstanceBindingDenial,
-    WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalBindingDenial,
-    WorkflowProposalOutcome, WorkflowProposalPreparationDenial, WorkflowTransitionBindingDenial,
-    WorkflowTransitionPreparationDenial, WorthQueryOrdinaryWorkflowDraft,
+    RequiredWorkflowOperation, RequiredWorkflowProposal, RequiredWorkflowSuccession,
+    RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart, WorkflowApprovalDecision,
+    WorkflowConditionOperand, WorkflowDefinitionBindingDenial,
+    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPreparationDenial,
+    WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
+    WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
+    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
+    WorkflowProposalBindingDenial, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
+    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorthQueryAdvancedAssessmentObservation, WorthQueryAdvancedAssessmentRequest,
+    WorthQueryAdvancedWorkflowOperation, WorthQueryBoundWorkflowOperation,
+    WorthQueryClosedAssessmentObservation, WorthQueryOrdinaryWorkflowDraft,
     WorthQueryOrdinaryWorkflowPublication, WorthQueryOrdinaryWorkflowPublicationDenial,
     WorthQueryOrdinaryWorkflowPublicationWithIdempotency, WorthQueryOrdinaryWorkflowRun,
     WorthQueryOrdinaryWorkflowRunProgress, WorthQueryOrdinaryWorkflowRunStop,
@@ -139,19 +181,20 @@ pub use workflow::{
     WorthQueryWorkflowAssessmentDemandPreparationDenial,
     WorthQueryWorkflowAssessmentDemandPreparationDenialKind,
     WorthQueryWorkflowAssessmentDemandProgress, WorthQueryWorkflowAssessmentDemandRequest,
-    WorthQueryWorkflowAssessmentDemandSettlement, WorthQueryWorkflowBirthBindingDenial,
-    WorthQueryWorkflowConditionAcceptance, WorthQueryWorkflowConditionAcceptanceDenial,
+    WorthQueryWorkflowAssessmentDemandSettlement, WorthQueryWorkflowAssessmentOperation,
+    WorthQueryWorkflowBirthBindingDenial, WorthQueryWorkflowConditionAcceptance,
+    WorthQueryWorkflowConditionAcceptanceDenial,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationPreparationDenialKind,
     WorthQueryWorkflowDefinitionPublicationRequest,
     WorthQueryWorkflowDefinitionRetirementPreparationDenial,
     WorthQueryWorkflowDefinitionRetirementPreparationDenialKind,
     WorthQueryWorkflowDefinitionRetirementRequest, WorthQueryWorkflowInstanceCancellationRequest,
-    WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenialKind,
-    WorthQueryWorkflowInstanceStartRequest, WorthQueryWorkflowNavigateBackRequest,
-    WorthQueryWorkflowOperationAcceptanceDenial, WorthQueryWorkflowOperationBindingDenial,
-    WorthQueryWorkflowOperationOwnerAcceptanceDenial, WorthQueryWorkflowOperationOwnerPosture,
-    WorthQueryWorkflowOperationRecoveryDenial,
+    WorthQueryWorkflowInstanceDiscoveryIntent, WorthQueryWorkflowInstancePreparationDenial,
+    WorthQueryWorkflowInstancePreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
+    WorthQueryWorkflowNavigateBackRequest, WorthQueryWorkflowOperationAcceptanceDenial,
+    WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
+    WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryDenial,
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
     WorthQueryWorkflowProposalPreparationDenial, WorthQueryWorkflowProposalPreparationDenialKind,
     WorthQueryWorkflowProposalRequest, WorthQueryWorkflowSuccessionBindingDenial,

@@ -170,6 +170,7 @@ where
             _ => panic!("the seeded root is declared"),
         };
         request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: key.clone(),
                 replacement_y: length(y),

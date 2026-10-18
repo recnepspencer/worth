@@ -222,10 +222,10 @@ impl WorthUiOperationLiveRetention {
         self.staged_sources
             .retain(|identity| retained.contains(identity));
         for (identity, resource) in &mut self.resources {
-            if !retained.contains(identity) {
-                if let Some(resource) = resource.take() {
-                    retirement.extend(std::iter::once(resource));
-                }
+            if !retained.contains(identity)
+                && let Some(resource) = resource.take()
+            {
+                retirement.extend(std::iter::once(resource));
             }
         }
     }

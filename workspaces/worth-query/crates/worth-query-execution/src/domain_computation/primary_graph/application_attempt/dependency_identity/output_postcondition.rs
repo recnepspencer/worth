@@ -10,14 +10,14 @@ use super::super::WorthQueryApplicationObservedFact;
 /// rebase marks those ordinals moved.
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
-    facts: std::sync::Arc<[WorthQueryApplicationObservedFact]>,
+    facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     moved_by_own_effect: std::sync::Arc<[usize]>,
 }
 
 impl OutputCurrentnessFacts {
     pub(in crate::domain_computation::primary_graph) const fn facts(
         &self,
-    ) -> &std::sync::Arc<[WorthQueryApplicationObservedFact]> {
+    ) -> &crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
         &self.facts
     }
 
@@ -32,7 +32,7 @@ impl OutputCurrentnessFacts {
 impl From<std::sync::Arc<[WorthQueryApplicationObservedFact]>> for OutputCurrentnessFacts {
     fn from(facts: std::sync::Arc<[WorthQueryApplicationObservedFact]>) -> Self {
         Self {
-            facts,
+            facts: facts.into(),
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -46,7 +46,10 @@ impl From<crate::domain_computation::primary_graph::output_lineage::ComparableSo
     fn from(
         facts: crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
     ) -> Self {
-        Self::from(std::sync::Arc::clone(facts.facts()))
+        Self {
+            facts: facts.facts().clone(),
+            moved_by_own_effect: std::sync::Arc::from([]),
+        }
     }
 }
 
@@ -56,7 +59,7 @@ pub(super) fn complete_output_currentness_facts(
 ) -> OutputCurrentnessFacts {
     if facts.iter().all(is_output_currentness_fact) {
         OutputCurrentnessFacts {
-            facts: facts.into(),
+            facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from(facts).into(),
             moved_by_own_effect: moved_by_own_effect.into(),
         }
     } else {
@@ -64,7 +67,7 @@ pub(super) fn complete_output_currentness_facts(
         // boundary. Empty is the explicit non-reusable marker; the complete
         // dependency digest still governs idempotency separately.
         OutputCurrentnessFacts {
-            facts: std::sync::Arc::from([]),
+            facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }

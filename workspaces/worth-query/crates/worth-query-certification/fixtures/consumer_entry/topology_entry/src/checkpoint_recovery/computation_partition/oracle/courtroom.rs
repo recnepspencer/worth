@@ -12,6 +12,7 @@ mod adoption;
 mod bits;
 mod branches;
 pub(super) mod cancellation;
+mod common_operation_handoff;
 mod correction_grant;
 mod equal_output;
 worth_execution::needs_os_threads! { mod interleaving; }

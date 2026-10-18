@@ -117,17 +117,16 @@ fn validate_program_command_collection(
     if let (Some(command_collection), Some(step_collection)) = (
         command.declared_collection_identity(),
         step.declared_collection_identity(),
-    ) {
-        if command_collection.as_str() != step_collection.as_str() {
-            return Err(WorthQueryGraphTouchDescriptorDenial::new(
-                WorthQueryGraphTouchDescriptorDenialKind::ProgramCommandCollectionMismatch,
-                format!(
-                    "program collection `{}` does not match command collection `{}`",
-                    step_collection.as_str(),
-                    command_collection.as_str()
-                ),
-            ));
-        }
+    ) && command_collection.as_str() != step_collection.as_str()
+    {
+        return Err(WorthQueryGraphTouchDescriptorDenial::new(
+            WorthQueryGraphTouchDescriptorDenialKind::ProgramCommandCollectionMismatch,
+            format!(
+                "program collection `{}` does not match command collection `{}`",
+                step_collection.as_str(),
+                command_collection.as_str()
+            ),
+        ));
     }
     Ok(())
 }

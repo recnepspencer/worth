@@ -4,6 +4,7 @@
 
 use super::prepared_currentness::grants_named;
 use super::*;
+use crate::BankMutationCommitOutcome;
 
 #[test]
 fn a_delegation_that_does_not_read_its_child_id_stales_then_is_denied() {
@@ -57,28 +58,26 @@ fn a_revoked_child_id_cannot_be_delegated_again() {
     let fixture = delegation_world("delegation-unread-revoked-child");
     let specialist = fixture.authenticate();
     let action = delegated_action();
-    let delegated = fixture
-        .runtime
-        .delegate_estate_capability_with_key(
-            &specialist,
-            action,
-            &idempotency(177),
-            &request_scope(),
-        )
-        .expect("the child delegates");
+    let delegated = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &specialist,
+        action,
+        &idempotency(177),
+        &request_scope(),
+    )
+    .expect("the child delegates");
     assert!(matches!(delegated, BankMutationCommitOutcome::Committed(_)));
-    let revoked = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: CHILD,
-            },
-            &idempotency(179),
-            &request_scope(),
-        )
-        .expect("the child's status changes under the unique id");
+    let revoked = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        EstateAction::RevokeCapability {
+            estate: ESTATE,
+            grant: CHILD,
+        },
+        &idempotency(179),
+        &request_scope(),
+    )
+    .expect("the child's status changes under the unique id");
     assert!(matches!(revoked, BankMutationCommitOutcome::Committed(_)));
 
     let again = commit(
@@ -97,16 +96,16 @@ fn the_bank_s_own_child_rule_is_seen_before_the_unique_law() {
     let fixture = delegation_world("delegation-unread-denial-order");
     let specialist = fixture.authenticate();
     let action = delegated_action();
-    fixture
-        .runtime
-        .delegate_estate_capability_with_key(
-            &specialist,
-            action,
-            &idempotency(183),
-            &request_scope(),
-        )
-        .expect("the child delegates");
-    let late = fixture.runtime.delegate_estate_capability_with_key(
+    crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &specialist,
+        action,
+        &idempotency(183),
+        &request_scope(),
+    )
+    .expect("the child delegates");
+    let late = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
         &specialist,
         action,
         &idempotency(185),

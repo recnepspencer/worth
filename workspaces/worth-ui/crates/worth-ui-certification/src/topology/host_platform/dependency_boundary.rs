@@ -3,7 +3,7 @@ use std::path::Path;
 const RETIRED_PACKAGES: [&str; 4] = ["egui", "eframe", "egui-wgpu", "egui_extras"];
 
 pub(super) fn audit_manifest(path: &Path, text: &str, failures: &mut Vec<String>) {
-    let Ok(document) = text.parse::<toml::Value>() else {
+    let Ok(document) = text.parse::<toml::Table>().map(toml::Value::Table) else {
         failures.push(format!("{} is not valid TOML", path.display()));
         return;
     };
@@ -47,7 +47,7 @@ fn visit_manifest_value(
 }
 
 pub(super) fn audit_lockfile(path: &Path, text: &str, failures: &mut Vec<String>) {
-    let Ok(document) = text.parse::<toml::Value>() else {
+    let Ok(document) = text.parse::<toml::Table>().map(toml::Value::Table) else {
         failures.push(format!("{} is not valid lockfile TOML", path.display()));
         return;
     };

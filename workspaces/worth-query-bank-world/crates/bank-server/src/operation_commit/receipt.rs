@@ -27,6 +27,37 @@ pub struct BankCommitReceipt {
 }
 
 impl BankCommitReceipt {
+    /// Publishes command evidence only after its native owner lawfully closes.
+    pub fn from_closed_capability_command(
+        (_closed, completion): (
+            worth_query_host::facade::application_entry::WorthQueryClosedOperation,
+            worth_query_host::facade::application_entry::WorthQueryCapabilityCommandCompletion,
+        ),
+    ) -> Self {
+        use worth_query_host::facade::application_entry::WorthQueryCapabilityCommandCompletion;
+        let receipt = match completion {
+            WorthQueryCapabilityCommandCompletion::Fresh { receipt }
+            | WorthQueryCapabilityCommandCompletion::Recovered { receipt, .. } => receipt,
+        };
+        super::publication_adapter::commit_receipt(receipt)
+    }
+
+    /// Publishes the original source receipt after its owner lawfully released native cleanup.
+    /// Fresh handler results and recovered publication evidence are not interchangeable.
+    pub fn from_closed_source<Result>(
+        (_closed, completion): (
+            worth_query_host::facade::application_entry::WorthQueryClosedOperation,
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion<Result>,
+        ),
+    ) -> Self {
+        use worth_query_host::facade::application_entry::WorthQuerySourceCompletion;
+        let receipt = match completion {
+            WorthQuerySourceCompletion::Fresh { receipt, .. }
+            | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+        };
+        super::publication_adapter::commit_receipt(receipt)
+    }
+
     pub(super) fn from_publication_projection(projection: BankCommitPublicationProjection) -> Self {
         let (publication, recovery_description) = projection.into_parts();
         let description = BankCommitPublicDescription::from_execution(&recovery_description);

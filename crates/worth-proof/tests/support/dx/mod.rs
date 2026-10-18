@@ -13,10 +13,10 @@ pub fn compile_pass_bundle() -> CompilePassBundle {
     compile::compile_pass_bundle()
 }
 
-use crate::support::compile_fail::CompileFailBundle;
-use crate::support::compile_pass::CompilePassBundle;
-use crate::support::proof_shapes::{FailureDigest, ProofShapeDigest, TransitionDigest};
-use crate::support::type_shapes::{CodegenHonestyReport, ResidualDebtReport};
+use crate::shared_support::compile_fail::CompileFailBundle;
+use crate::shared_support::compile_pass::CompilePassBundle;
+use crate::shared_support::proof_shapes::{FailureDigest, ProofShapeDigest, TransitionDigest};
+use crate::shared_support::type_shapes::{CodegenHonestyReport, ResidualDebtReport};
 
 pub use docs::DocumentationDefaultPathAudit;
 

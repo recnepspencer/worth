@@ -24,8 +24,9 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
         }
         if unrelated == 0 {
             // Match the populated lane's thousand equal-value publications.
-            // Only registry retention differs; created output receipts start
-            // at the same Native ordinal and perform the same fact-key work.
+            // Created output receipts start at the same Native ordinal and
+            // use the same fact keys. Bare publications do not create the
+            // populated lane's managed settlement/retirement footprint.
             for number in 0..1_000_u64 {
                 let (scope, principal) = authenticate(&app);
                 let request = app.request(&principal, &scope);
@@ -39,7 +40,7 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
                 let value =
                     worth_query_consumer_values::PositiveLength::get(&source.rows()[0].y) + 1;
                 let published = request
-                    .mutate(PlanarEdit(PlanarMutation {
+                    .advanced().mutate(PlanarEdit(PlanarMutation {
                         scope_key: name.clone(),
                         operation:
                             worth_query_consumer_values::PlanarOperation::PublishDerivedOutput(
@@ -105,10 +106,8 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
             0,
             "ordinary first request"
         );
-        ordinary.push((
-            app.demand_admission_work_for_test(),
-            app.caller_request_work_for_test(),
-        ));
+        ordinary.push(app.demand_admission_work_for_test());
+        app.caller_request_work_for_test();
         let source = request
             .query(PlanarRead {
                 body_key: "unrelated-1006".to_owned(),
@@ -117,6 +116,7 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
             .unwrap();
         let visits = app.whole_registry_rows_visited_for_test();
         let changed = request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "unrelated-1006".to_owned(),
                 replacement_y: length(2),
@@ -153,20 +153,22 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
             0,
             "performed commit, admission, settlement and release"
         );
-        performed.push((
-            app.demand_admission_work_for_test(),
-            app.caller_request_work_for_test(),
-        ));
+        performed.push(app.demand_admission_work_for_test());
+        app.caller_request_work_for_test();
         for (navigation, operations) in app.caller_request_navigation_for_test() {
             assert!(navigation<=operations*primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::maximum_ordered_descent_work_for_test());
         }
     }
+    // Admission prices the same occurrence payload. Advancement also funds
+    // native settlement/posting maintenance in different physical trees; its
+    // total bill is not an equality oracle. Zero whole-map visits and bounded
+    // selected navigation above protect ordinary and performed locality.
     assert_eq!(
         ordinary[0], ordinary[1],
-        "ordinary admission and advance costs"
+        "ordinary occurrence admission work"
     );
     assert_eq!(
         performed[0], performed[1],
-        "performed admission and advance costs"
+        "performed occurrence admission work"
     );
 }

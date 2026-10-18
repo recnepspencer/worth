@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::ThemeTokenRegistry`
- --> tests/ui/facade/theme_token/facade/theme_token_registry_type_not_publicly_importable.rs:1:5
-  |
-1 | use worth_ui::facade::ThemeTokenRegistry;
-  |     ^^^^^^^^^^^^^^^^^^------------------
-  |     |                 |
-  |     |                 help: a similar name exists in the module: `ThemeTokenFamily`
-  |     no `ThemeTokenRegistry` in `facade`

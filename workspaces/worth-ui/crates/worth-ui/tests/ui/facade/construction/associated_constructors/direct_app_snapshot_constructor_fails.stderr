@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_registration_report` found for struct `WorthUiApp` in the current scope
- --> tests/ui/facade/construction/associated_constructors/direct_app_snapshot_constructor_fails.rs:7:25
-  |
-7 |     let _ = WorthUiApp::from_registration_report(registration_report());
-  |                         ^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `WorthUiApp`

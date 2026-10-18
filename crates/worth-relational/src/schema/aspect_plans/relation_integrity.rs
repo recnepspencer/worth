@@ -217,16 +217,16 @@ fn validate_cardinality_contract(
         (declaration.target_min, declaration.target_max, "target"),
         (declaration.pair_min, declaration.pair_max, "pair"),
     ] {
-        if let (Some(minimum), Some(maximum)) = (minimum, maximum) {
-            if minimum > maximum {
-                return Err(SchemaRegistryError::invalid_relation_integrity_declaration(
-                    kind_id,
-                    format!(
-                        "cardinality contract '{}' declares {label}_min > {label}_max",
-                        declaration.contract_id
-                    ),
-                ));
-            }
+        if let (Some(minimum), Some(maximum)) = (minimum, maximum)
+            && minimum > maximum
+        {
+            return Err(SchemaRegistryError::invalid_relation_integrity_declaration(
+                kind_id,
+                format!(
+                    "cardinality contract '{}' declares {label}_min > {label}_max",
+                    declaration.contract_id
+                ),
+            ));
         }
     }
     match declaration.minimum_enforcement {

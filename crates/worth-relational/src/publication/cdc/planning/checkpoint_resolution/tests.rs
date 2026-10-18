@@ -13,7 +13,10 @@ fn subscriber_stream_recovers_from_durable_canonical_envelopes_when_patch_stream
 
     let runtime = persisted_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let _second = create_entity_outcome(execution, &runtime, "b");
 
     assert!(runtime

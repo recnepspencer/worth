@@ -115,10 +115,9 @@ impl ResourceRuntimeState {
                 .families()
                 .iter()
                 .any(|family| family.class() == ResourcePolicyCompatibilityClass::MissingDescriptor)
+                && let Some(telemetry) = telemetry
             {
-                if let Some(telemetry) = telemetry {
-                    telemetry.resource_replay_missing_policy_count += 1;
-                }
+                telemetry.resource_replay_missing_policy_count += 1;
             }
             Ok(Err(
                 DeniedResourcePolicyRestoreCompatibility::from_compatibility(

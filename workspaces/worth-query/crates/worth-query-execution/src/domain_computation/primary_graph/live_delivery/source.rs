@@ -73,7 +73,7 @@ struct WorthQueryLiveProductPartition {
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatch {
-    pub(super) sequence: u64,
+    pub(in crate::domain_computation::primary_graph) sequence: u64,
     pub(super) publication: WorthQueryCommittedProductPublication,
     pub(super) product: crate::basis::WorthQueryProductObservationLease,
     pub(super) emissions: Vec<WorthQueryApplicationEmission>,
@@ -85,7 +85,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatc
 );
 
 impl WorthQueryLiveCommitBatchCell {
-    pub(super) fn batch(&self) -> &WorthQueryLiveCommitBatch {
+    pub(in crate::domain_computation::primary_graph) fn batch(&self) -> &WorthQueryLiveCommitBatch {
         self.0.get().expect("published live batch is initialized")
     }
 }

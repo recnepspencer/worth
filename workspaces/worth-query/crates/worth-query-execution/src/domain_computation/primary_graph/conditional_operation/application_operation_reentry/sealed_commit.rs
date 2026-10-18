@@ -104,6 +104,9 @@ fn classify_commit(
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> WorthQueryTemporalReentryOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
+            WorthQueryTemporalReentryOutcome::CleanupRequired(cleanup)
+        }
         WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
             WorthQueryTemporalReentryOutcome::ProductStale(stale)
         }

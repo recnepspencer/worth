@@ -91,15 +91,15 @@ fn validate_collection_query_contract(
     {
         return Err("collection-ordering-canonical-query-mismatch");
     }
-    if let WorthQueryOperationGroupingContract::Grouped { grouping_fields } = grouping {
-        if grouping_fields.iter().any(|grouping_field| {
+    if let WorthQueryOperationGroupingContract::Grouped { grouping_fields } = grouping
+        && grouping_fields.iter().any(|grouping_field| {
             !query
                 .projection()
                 .iter()
                 .any(|entry| collection_field_matches(grouping_field, entry.field_key()))
-        }) {
-            return Err("collection-grouping-field-not-projected");
-        }
+        })
+    {
+        return Err("collection-grouping-field-not-projected");
     }
     Ok(())
 }

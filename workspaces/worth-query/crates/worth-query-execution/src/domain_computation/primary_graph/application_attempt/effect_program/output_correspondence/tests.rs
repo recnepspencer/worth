@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -45,6 +46,12 @@ struct Binding;
 
 #[test]
 fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
+    let host = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(64 << 20),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&host);
     let entity = EntityId::new(PartitionId::main(), 1, 1);
     let checkpoint_role = |role: &str, entity_name: &str| WorthQueryCheckpointOutputRole {
         role: role.into(),
@@ -57,9 +64,10 @@ fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             TypeId::of::<Binding>(),
             TypeId::of::<Outputs>(),
-            BTreeSet::new(),
-            vec![checkpoint_role(" invalid", "entity")],
+            std::iter::empty(),
+            &[checkpoint_role(" invalid", "entity")],
             |_| Some(TypeId::of::<Entity>()),
+            &execution,
         )
         .unwrap_err()
         .contains("checkpoint output role  invalid")
@@ -68,9 +76,10 @@ fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             TypeId::of::<Binding>(),
             TypeId::of::<Outputs>(),
-            BTreeSet::new(),
-            vec![checkpoint_role("valid", "unknown")],
+            std::iter::empty(),
+            &[checkpoint_role("valid", "unknown")],
             |_| None,
+            &execution,
         )
         .unwrap_err()
         .contains("names an uninstalled entity unknown")
@@ -79,12 +88,13 @@ fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             TypeId::of::<Binding>(),
             TypeId::of::<Outputs>(),
-            BTreeSet::new(),
-            vec![
+            std::iter::empty(),
+            &[
                 checkpoint_role("same", "entity"),
                 checkpoint_role("same", "entity"),
             ],
             |_| Some(TypeId::of::<Entity>()),
+            &execution,
         )
         .unwrap_err()
         .contains("role same is duplicated")

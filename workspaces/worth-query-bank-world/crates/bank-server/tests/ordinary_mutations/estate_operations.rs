@@ -14,6 +14,8 @@ mod notify_death;
 mod open_estate_case;
 #[path = "estate_operations/phase8_cross_gate.rs"]
 mod phase8_cross_gate;
+#[path = "estate_operations/phase8_disposal.rs"]
+mod phase8_disposal;
 #[path = "estate_operations/phase8_exact_handle_authority.rs"]
 mod phase8_exact_handle_authority;
 #[path = "estate_operations/phase8_ordinary_commit_cost.rs"]
@@ -44,3 +46,35 @@ mod recognize_executor;
 mod release_estate;
 #[path = "estate_operations/undeclared_external_effect.rs"]
 mod undeclared_external_effect;
+
+#[path = "estate_operations/program_adoption_authorization.rs"]
+mod program_adoption_authorization;
+
+#[path = "estate_operations/owning_sources.rs"]
+mod owning_sources;
+
+// Estate sources retain the native original across progress, completion and refusal.
+type EstateSourceAdvance<Intent, Action> =
+    worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance<
+        worth_query_host::facade::application_entry::WorthQuerySourceOnlyOperation<
+            bank_domain::schema::BankSchema,
+            Intent,
+            bank_server::BankApplication,
+            Action,
+            worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+        >,
+        worth_query_host::facade::application_entry::WorthQueryCompletedSourceOperation<
+            bank_domain::schema::BankSchema,
+            Intent,
+            bank_server::BankApplication,
+            Action,
+            worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+        >,
+        worth_query_host::facade::application_entry::WorthQueryTerminalSourceOperation<
+            bank_domain::schema::BankSchema,
+            Intent,
+            bank_server::BankApplication,
+            Action,
+            worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+        >,
+    >;

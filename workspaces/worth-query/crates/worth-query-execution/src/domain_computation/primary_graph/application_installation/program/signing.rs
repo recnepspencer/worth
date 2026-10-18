@@ -25,30 +25,69 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         revision: ApplicationProgramRevision,
         owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<(), WorthQuerySigningOwnerInstallationDenial> {
-        if owner.binding_identity() != &self.runtime.installed_schema.binding_identity() {
-            return Err(WorthQuerySigningOwnerInstallationDenial::ForeignSchema);
-        }
-        if self
-            .runtime
-            .installed_program_support()
-            .and_then(|support| support.present(&revision))
-            .is_none()
-        {
-            return Err(WorthQuerySigningOwnerInstallationDenial::ProgramUnavailable);
-        }
-        let mut owners = self
-            .runtime
-            .signing_owners
+        validate(self.runtime(), &revision, &owner)?;
+        AdmittedSigningOwner::admit(&self.runtime().signing_owners, revision, owner)?.install();
+        Ok(())
+    }
+}
+
+pub(super) fn validate<Schema: ApplicationSchema>(
+    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+        Schema,
+    >,
+    revision: &ApplicationProgramRevision,
+    owner: &WorthQueryAuthenticationEventSigningOwner<Schema>,
+) -> Result<(), WorthQuerySigningOwnerInstallationDenial> {
+    if owner.binding_identity() != &runtime.installed_schema.binding_identity() {
+        return Err(WorthQuerySigningOwnerInstallationDenial::ForeignSchema);
+    }
+    if runtime
+        .installed_program_support()
+        .and_then(|support| support.present(revision))
+        .is_none()
+    {
+        return Err(WorthQuerySigningOwnerInstallationDenial::ProgramUnavailable);
+    }
+    Ok(())
+}
+
+pub(super) struct AdmittedSigningOwner<'a, Schema> {
+    owners: std::sync::MutexGuard<
+        'a,
+        std::collections::BTreeMap<
+            ApplicationProgramRevision,
+            WorthQueryAuthenticationEventSigningOwner<Schema>,
+        >,
+    >,
+    revision: ApplicationProgramRevision,
+    owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
+}
+impl<'a, Schema> AdmittedSigningOwner<'a, Schema> {
+    pub(super) fn admit(
+        owners: &'a std::sync::Mutex<
+            std::collections::BTreeMap<
+                ApplicationProgramRevision,
+                WorthQueryAuthenticationEventSigningOwner<Schema>,
+            >,
+        >,
+        revision: ApplicationProgramRevision,
+        owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
+    ) -> Result<Self, WorthQuerySigningOwnerInstallationDenial> {
+        let owners = owners
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(installed) = owners.get(&revision) {
-            return if installed.same_owner(&owner) {
-                Ok(())
-            } else {
-                Err(WorthQuerySigningOwnerInstallationDenial::AlreadyInstalled)
-            };
+        if let Some(installed) = owners.get(&revision)
+            && !installed.same_owner(&owner)
+        {
+            return Err(WorthQuerySigningOwnerInstallationDenial::AlreadyInstalled);
         }
-        owners.insert(revision, owner);
-        Ok(())
+        Ok(Self {
+            owners,
+            revision,
+            owner,
+        })
+    }
+    pub(super) fn install(mut self) {
+        self.owners.entry(self.revision).or_insert(self.owner);
     }
 }

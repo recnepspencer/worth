@@ -1,9 +1,9 @@
 use worth_query_host::facade::{
     application_entry::WorthQueryApplicationMutationOutcome,
     primary_graph::{
-        WorthQueryApplicationLiveCauseDenialKind, WorthQueryApplicationLiveCloseOutcome,
-        WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
-        WorthQueryApplicationProjectionDenialKind, WorthQueryOperationAuthorizationDenial,
+        WorthQueryApplicationLiveCauseDenialKind, WorthQueryApplicationLiveOutcome,
+        WorthQueryApplicationLiveOverflow, WorthQueryApplicationProjectionDenialKind,
+        WorthQueryOperationAuthorizationDenial,
     },
 };
 
@@ -35,47 +35,18 @@ pub enum WorthUiStatusLiveDeliveryStop {
     Unavailable,
 }
 
-/// The mutation-outcome and live-close payloads are several kilobytes each
-/// (`clippy::result_large_err`); every `Result` carrying this error would
-/// otherwise move that much on each `?`. They are boxed so the error stays
-/// pointer-sized on the hot path and pays for the payload only when it fails.
+/// Setup/read diagnostics carry no mutation custody. Ordinary mutation stops return
+/// the actual `WorthUiStatusMutation` continuation separately.
 #[derive(Debug)]
 pub enum WorthUiStatusOwnerError {
     Installation(String),
-    Authentication(String),
+    AuthenticationAdmission(worth_query_host::facade::admission::authenticated_principal::WorthQueryAuthenticationAdapterAdmissionDenial),
+    Authentication(worth_query_host::facade::admission::authenticated_principal::WorthQueryAuthenticationDenial),
     Query(String),
     MissingUniqueSource,
     MissingUniqueRecord,
     LiveOpen(String),
-    MutationRequest(String),
-    SourceMutationOutcome(Box<WorthUiStatusMutationOutcome>),
-    ActionMutationOutcome(Box<WorthUiStatusActionMutationOutcome>),
     LiveDelivery(WorthUiStatusLiveDeliveryStop),
-    PublicationMismatch,
-    OperationAndLiveClose {
-        operation: Box<WorthUiStatusOwnerError>,
-        close: Box<WorthQueryApplicationLiveCloseOutcome>,
-    },
-}
-
-impl WorthUiStatusOwnerError {
-    pub const fn commit_outcome(
-        &self,
-    ) -> Option<&worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted> {
-        match self {
-            Self::SourceMutationOutcome(outcome) => outcome.commit_outcome(),
-            Self::ActionMutationOutcome(outcome) => outcome.commit_outcome(),
-            Self::OperationAndLiveClose { operation, .. } => operation.commit_outcome(),
-            _ => None,
-        }
-    }
-
-    pub(super) fn with_live_close(self, close: WorthQueryApplicationLiveCloseOutcome) -> Self {
-        Self::OperationAndLiveClose {
-            operation: Box::new(self),
-            close: Box::new(close),
-        }
-    }
 }
 
 impl std::fmt::Display for WorthUiStatusOwnerError {

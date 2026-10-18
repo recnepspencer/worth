@@ -4,6 +4,7 @@ use worth_query_execution::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
 };
 use worth_query_execution::facade::primary_graph::WorthQueryApplicationDependentOutputConnection;
+use worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies;
 
 use crate::application_entry::mutation::program_output_settlement::ProgramOutputRecord;
 use crate::application_entry::mutation::WorthQueryApplicationProgramWork;
@@ -27,7 +28,9 @@ pub enum WorthQueryDiscoveredProgramOutputProgress<RootQuery, RootDemand> {
 }
 
 /// Settled discovered program outputs: each root's settlement, the roots superseded
-/// meanwhile, the outputs produced, and the work spent.
+/// meanwhile, the outputs produced, original complete discovery consumption,
+/// and the work spent. `observation()` describes history; the retained-request
+/// aggregate guard validates currentness without rediscovering replacement roots.
 pub struct WorthQueryDiscoveredProgramOutputSettlement<RootQuery, RootDemand> {
     source: WorthQueryApplicationReadObservation,
     roots: Vec<(
@@ -37,6 +40,7 @@ pub struct WorthQueryDiscoveredProgramOutputSettlement<RootQuery, RootDemand> {
     superseded: Vec<RootDemand>,
     outputs: Vec<ProgramOutputRecord>,
     work: WorthQueryApplicationProgramWork,
+    dependencies: WorthQueryRetainedQueryDependencies,
 }
 
 impl<RootQuery, RootDemand> WorthQueryDiscoveredProgramOutputSettlement<RootQuery, RootDemand> {
@@ -49,6 +53,7 @@ impl<RootQuery, RootDemand> WorthQueryDiscoveredProgramOutputSettlement<RootQuer
         superseded: Vec<RootDemand>,
         outputs: Vec<ProgramOutputRecord>,
         work: WorthQueryApplicationProgramWork,
+        dependencies: WorthQueryRetainedQueryDependencies,
     ) -> Self {
         Self {
             source,
@@ -56,7 +61,28 @@ impl<RootQuery, RootDemand> WorthQueryDiscoveredProgramOutputSettlement<RootQuer
             superseded,
             outputs,
             work,
+            dependencies,
         }
+    }
+
+    pub(in crate::application_entry) fn dependencies(
+        &self,
+    ) -> &WorthQueryRetainedQueryDependencies {
+        &self.dependencies
+    }
+    pub(in crate::application_entry) fn retained_settlements(
+        &self,
+    ) -> impl Iterator<
+        Item = &worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement,
+    > {
+        self.roots
+            .iter()
+            .map(|(_, settled)| settled.retained_settlement())
+            .chain(
+                self.outputs
+                    .iter()
+                    .map(ProgramOutputRecord::retained_settlement),
+            )
     }
 
     pub fn source_observation(&self) -> &WorthQueryApplicationReadObservation {

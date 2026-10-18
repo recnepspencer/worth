@@ -9,7 +9,7 @@ use worth_query_host::facade::{
     domain::WorthQueryInstalledApplicationSchema,
 };
 
-use crate::ConsumerSchema;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 pub(super) struct LocalIdentityAdapter;
 
@@ -62,9 +62,9 @@ pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
         .unwrap()
 }
 
-pub(super) fn admit(
-    schema: &WorthQueryInstalledApplicationSchema<ConsumerSchema>,
-) -> authentication::WorthQueryAdmittedAuthenticationAdapter<ConsumerSchema, LocalIdentityAdapter> {
+pub(super) fn admit<Schema: ApplicationSchema>(
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+) -> authentication::WorthQueryAdmittedAuthenticationAdapter<Schema, LocalIdentityAdapter> {
     authentication::admit_authentication_adapter(
         schema,
         authentication::WorthQueryAuthenticationAdapterAdmission::new(

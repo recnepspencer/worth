@@ -19,7 +19,7 @@ impl BankUserSession {
             None => return disbursement_denied(BankUserNodeDenialKind::NoAuthenticatedSession),
         };
         let upstream = BankHttpEstateDisbursementRequest {
-            protocol: BankHttpProtocolVersion::V3,
+            protocol: BankHttpProtocolVersion::V4,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -39,7 +39,14 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeEstateDisbursementOutcome::Forwarded { response },
-            Err(kind) => disbursement_denied(kind),
+            Err(_) => BankUserNodeEstateDisbursementOutcome::Forwarded {
+                response: bank_http_adapter::BankHttpEstateDisbursementOutcome::Owning {
+                    outcome: bank_http_adapter::BankHttpMutationOutcome::OutcomeUnknown {
+                        request_id: upstream.request_id.clone(),
+                        custody_id: upstream.request_id.clone(),
+                    },
+                },
+            },
         }
     }
 }

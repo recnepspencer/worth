@@ -135,14 +135,19 @@ fn restored_role(
     WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<CheckpointBinding>(),
         TypeId::of::<CheckpointOutputs>(),
-        BTreeSet::new(),
-        vec![WorthQueryCheckpointOutputRole {
+        std::iter::empty(),
+        &[WorthQueryCheckpointOutputRole {
             role: "output".into(),
             posture,
             entity_name: "Account".into(),
             entity,
         }],
         |_| Some(TypeId::of::<Account>()),
+        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::CancellationToken::new(),
+            None,
+        )),
     )
     .unwrap()
 }

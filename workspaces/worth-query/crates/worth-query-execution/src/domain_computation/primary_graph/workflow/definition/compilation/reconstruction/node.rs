@@ -21,7 +21,7 @@ use crate::domain_computation::primary_graph::workflow::{
     schema::WorthQueryWorkflowLayout,
 };
 
-pub(super) fn compile_node(
+pub(in crate::domain_computation::primary_graph) fn compile_node(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -223,20 +223,19 @@ pub(super) fn compile_node(
         &node.requires_authority,
         facts,
     )?;
-    let workflow_execution_requirements =
-        if kind == WorkflowNodeTag::OperationWithRequirements.persisted() {
-            observed_optional_text(
-                execution,
-                runtime,
-                snapshot,
-                entity,
-                node.entity_kind,
-                &node.workflow_execution_requirements,
-                facts,
-            )?
-        } else {
-            None
-        };
+    let workflow_execution_requirements = if kind == WorkflowNodeTag::Operation.persisted() {
+        observed_optional_text(
+            execution,
+            runtime,
+            snapshot,
+            entity,
+            node.entity_kind,
+            &node.workflow_execution_requirements,
+            facts,
+        )?
+    } else {
+        None
+    };
     let kind = decode_kind(
         kind,
         member,

@@ -10,8 +10,8 @@ use bank_external_rail::{
     RailCompletionDeliveryConfiguration, RailProcessHandle,
 };
 use bank_http_adapter::{
-    BankHttpCommitDisposition, BankHttpEstateNotificationOutcome, BankHttpProcessConfiguration,
-    BankHttpServerBinding, BankHttpServerConfiguration, BankRailCompletionServerInstallation,
+    BankHttpProcessConfiguration, BankHttpServerBinding, BankHttpServerConfiguration,
+    BankRailCompletionServerInstallation,
 };
 use bank_user_node::{BankUserNodeEstateNotificationOutcome, BankUserNodeRecoverySafeRetryOutcome};
 use ed25519_dalek::{Signer, SigningKey};
@@ -89,7 +89,7 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
             .expect("Bank identity installation should finish within its 300-second scope"),
     );
     eprintln!("rail completion court: Bank identity installed");
-    let bank = bank_binding
+    let (bank, _mutation_continuation) = bank_binding
         .install_shared_with_rail_completion(
             Arc::clone(&identity),
             BankRailCompletionServerInstallation::new(
@@ -102,7 +102,9 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
             )
             .expect("fixed rail verifier and Bank ACK signer should install"),
         )
-        .expect("real Bank HTTP callback should start");
+        .expect("real Bank HTTP callback should start")
+        .into_parts();
+    let bank = bank.activate();
     eprintln!("rail completion court: Bank callback bound");
     let mut proxy = CallbackProxy::start(bank_address).await;
     eprintln!("rail completion court: callback proxy bound; installing rail sender");
@@ -185,23 +187,24 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
     );
     // Callback arrival proves the outbox committed before client disconnect.
     drop(initiating_client);
-    let replay_before_callback = post_node::<BankUserNodeEstateNotificationOutcome>(
-        &client,
-        node_address,
-        "/v1/estate/notify-death",
-        &request,
-    )
-    .await;
-    let recovery = match replay_before_callback {
-        BankUserNodeEstateNotificationOutcome::Forwarded {
+    let original_custody = request["request_id"].as_str().unwrap();
+    let resumed = super::node_mutation(&client, node_address, &serde_json::json!({"request_id":"callback-original-resume", "command":"resume_source", "custody_id":original_custody, "sequence":2, "controls":{"deadline_milliseconds":5000}})).await;
+    let bank_user_node::BankUserNodeMutationOutcome::Forwarded {
+        response: bank_http_adapter::BankHttpMutationOutcome::Completed { sequence, .. },
+    } = resumed
+    else {
+        panic!("lost notification owner must resume natively: {resumed:?}")
+    };
+    let closed = super::node_mutation(&client, node_address, &serde_json::json!({"request_id":"callback-original-close", "command":"close", "custody_id":original_custody, "sequence":sequence+1, "controls":{"deadline_milliseconds":5000}})).await;
+    let recovery = match closed {
+        bank_user_node::BankUserNodeMutationOutcome::Forwarded {
             response:
-                BankHttpEstateNotificationOutcome::Applied {
-                    disposition: BankHttpCommitDisposition::AlreadyCommitted,
+                bank_http_adapter::BankHttpMutationOutcome::RailRecoveryReady {
                     recovery: Some(recovery),
                     ..
                 },
         } => recovery,
-        other => panic!("held callback must leave exact recovery ownership: {other:?}"),
+        other => panic!("original closed witness must retain its rail recovery: {other:?}"),
     };
     assert!(bank.observe_rail_completion(token).is_none());
     let contacts_before_retry = contact_barrier::count(rail.local_addr()).await;
@@ -284,20 +287,20 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
     )
     .await;
 
+    let mut replay_request = request.clone();
+    replay_request["request_id"] = serde_json::json!("callback-key-replay");
     let replay = post_node::<BankUserNodeEstateNotificationOutcome>(
         &client,
         node_address,
         "/v1/estate/notify-death",
-        &request,
+        &replay_request,
     )
     .await;
+    let closed = super::recovery::close_notification_source(&client, node_address, replay).await;
     assert!(matches!(
-        replay,
-        BankUserNodeEstateNotificationOutcome::Forwarded {
-            response: BankHttpEstateNotificationOutcome::Applied {
-                disposition: BankHttpCommitDisposition::AlreadyCommitted,
-                ..
-            }
+        closed,
+        bank_user_node::BankUserNodeMutationOutcome::Forwarded {
+            response: bank_http_adapter::BankHttpMutationOutcome::RailRecoveryReady { .. }
         }
     ));
     assert_eq!(proxy.captured().len(), 2, "replay cannot dispatch again");

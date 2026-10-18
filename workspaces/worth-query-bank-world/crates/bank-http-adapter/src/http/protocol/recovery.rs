@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpCredential, BankHttpDenial,
-    BankHttpMutationControls, BankHttpProtocolVersion,
+    BankHttpCommitDescription, BankHttpCredential, BankHttpDenial, BankHttpEffectControls,
+    BankHttpProtocolVersion,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -11,7 +11,7 @@ pub struct BankHttpEstateNotificationRequest {
     pub protocol: BankHttpProtocolVersion,
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub estate: String,
     pub notice: String,
@@ -21,12 +21,9 @@ pub struct BankHttpEstateNotificationRequest {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpEstateNotificationOutcome {
-    Applied {
-        request_id: String,
-        disposition: BankHttpCommitDisposition,
-        commit: BankHttpCommitDescription,
-        recovery: Option<String>,
-        recovery_status: BankHttpRecoveryStatus,
+    Owning {
+        #[serde(rename = "operation")]
+        outcome: super::BankHttpMutationOutcome,
     },
     Denied {
         request_id: Option<String>,
@@ -40,7 +37,7 @@ pub struct BankHttpRecoveryRequest {
     pub protocol: BankHttpProtocolVersion,
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub recovery: String,
 }
 
@@ -92,6 +89,10 @@ pub enum BankHttpRecoveryRetryDisposition {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpRecoverySafeRetryOutcome {
+    OutcomeUnknown {
+        request_id: String,
+        recovery: String,
+    },
     Applied {
         request_id: String,
         disposition: BankHttpRecoveryRetryDisposition,

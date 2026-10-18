@@ -243,6 +243,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryBranchSetAdoptionRecovery,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<
         WorthQueryBranchSetAdoptionRecoveryOutcome,
@@ -276,7 +277,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 )
             }
         };
-        match selected.recover_branch_adoption_in_advancement(phase, recovery, request) {
+        match selected
+            .recover_branch_adoption_authorized_in_advancement(phase, recovery, principal, request)
+        {
             Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed {
                 adoption: performed,
                 cleanup,

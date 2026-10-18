@@ -116,3 +116,6 @@ pub(super) fn valid(body: &ApplicationOperationBodyProgram) -> bool {
             && output.target == super::ApplicationOperationBodyOutputTarget::Scope
     })
 }
+
+#[cfg(test)]
+mod tests;

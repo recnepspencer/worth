@@ -1,3 +1,4 @@
+mod retained;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
@@ -40,7 +41,7 @@ where
 {
     /// Starts one explicitly selected installed output root from a retained
     /// current source observation.
-    pub fn start_program_outputs<Program, Root>(
+    pub(in crate::application_entry) fn start_program_outputs<Program, Root>(
         &self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         root_demand: RootDemand<Schema, Root>,
@@ -130,25 +131,18 @@ where
         let observation = self.retain_read(phase).map_err(
             crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ReadObservation,
         )?;
-        let (root, retained) = self
-            .at(&observation)
-            .demand(root_demand.clone())
-            .controls(controls)
-            .start_for_program::<Program, Root>(phase, application)
-            .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
-        Ok(
-            crate::application_entry::WorthQueryApplicationProgramOutputHandle::new_initial(
-                crate::application_entry::WorthQueryApplicationReadObservation::new(retained),
-                root,
-                root_demand,
-                controls,
-            ),
+        self.start_program_outputs_at_in_advancement::<Program, Root>(
+            phase,
+            application,
+            root_demand,
+            controls,
+            &observation,
         )
     }
 
     /// Re-enters one installed program's owner-retained required-output graph
     /// with fresh request authority after caller disposal or interruption.
-    pub fn recover_required_outputs<Program, Root>(
+    pub(in crate::application_entry) fn recover_required_outputs<Program, Root>(
         &self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -262,4 +256,63 @@ where
             ),
         )
     }
+    pub(in crate::application_entry) fn recover_admitted_required_outputs_in_advancement<Program, Root, Operation, Input, Scope>(
+        &self,
+        phase: &AdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        root_demand: RootDemand<Schema, Root>,
+        controls: crate::application_entry::WorthQueryOutputDemandControls,
+        admission: &worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<
+            Schema,
+            Program,
+            Root,
+        >,
+        WorthQueryAdmittedRequiredOutputRecoveryDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Root::Dependents:
+            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
+                Schema,
+                Program,
+                RootDemand<Schema, Root>,
+            >,
+        RootDemand<Schema, Root>: Clone,
+        <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
+            ApplicationQueryIntent<Schema, Binding = RootSource<Schema, Root>>,
+        <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+        RootValue<Schema, Root>:
+            WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
+    {
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryAdmittedRequiredOutputRecoveryDenial::Authorization)?;
+        self.recover_required_outputs_in_advancement::<Program, Root>(
+            phase,
+            application,
+            source_receipt,
+            root_demand,
+            controls,
+        )
+        .map_err(WorthQueryAdmittedRequiredOutputRecoveryDenial::Outputs)
+    }
 }
+
+/// Internal effect refusal keeps admission lifecycle distinct from native output posture.
+pub(in crate::application_entry) enum WorthQueryAdmittedRequiredOutputRecoveryDenial {
+    Authorization(
+        worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationDenial,
+    ),
+    Outputs(crate::application_entry::WorthQueryRequiredOutputPreparationDenial),
+}
+
+mod advanced;

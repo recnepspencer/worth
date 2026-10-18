@@ -2,13 +2,13 @@ use worth_foundational::facade::DiagnosticRichnessProfile;
 use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
 use worth_server::{WorthServerMiddlewareConfig, WorthServerResponseInput};
 
-use crate::compat_http_phase_ten_runtime::{
+use crate::shared_support_compat_http_phase_ten_runtime::{
     build_phase_ten_server_with_workspace_provider, compat_read_execution_input,
     compat_read_success,
 };
-use crate::query_handoff_runtime::ProfiledTestWorkspaceProvider;
-use crate::query_handoff_runtime::TestWorkspaceProvider;
-use crate::response_fixture::{
+use crate::shared_support_query_handoff_runtime::ProfiledTestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::TestWorkspaceProvider;
+use crate::shared_support_response_fixture::{
     middleware_mutation_denial, query_handoff_durable_denial, resolve_blank_principal_denial,
     test_server,
 };

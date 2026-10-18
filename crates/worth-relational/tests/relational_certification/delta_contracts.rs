@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::field_values::field_value;
-use crate::world::supply_chain::*;
+use crate::relational_certification::field_values::field_value;
+use crate::relational_certification::world::supply_chain::*;
 
 #[test]
 fn every_named_delta_has_typed_contract_and_nonempty_footprint() {

@@ -17,6 +17,7 @@ mod readiness;
 mod reopened_consumer;
 mod required_queue;
 mod restored_currentness;
+mod retained_predecessors;
 mod ring_world;
 mod source_world;
 mod stable_alias_currentness;
@@ -145,6 +146,7 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-source-c".to_owned(),
             replacement_y: length(11),

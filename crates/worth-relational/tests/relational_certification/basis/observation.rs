@@ -9,7 +9,8 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn admitted_supply_chain_observation_is_repeatable_after_branch_moves() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());

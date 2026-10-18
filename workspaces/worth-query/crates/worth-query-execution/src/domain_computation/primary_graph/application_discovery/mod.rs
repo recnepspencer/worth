@@ -7,11 +7,19 @@ pub use description::{
     WorthQueryApplicationCallablePosture, WorthQueryApplicationFieldDescription,
     WorthQueryApplicationMutationDescription, WorthQueryApplicationQueryDescription,
 };
+pub(in crate::domain_computation::primary_graph) use workflow::indexes::WorkflowReadIndexes;
 pub(in crate::domain_computation::primary_graph) use workflow::{
     current_definition, WorkflowDefinitionCurrentness,
 };
 pub use workflow::{
-    WorthQueryWorkflowDefinitionDiscovery, WorthQueryWorkflowDefinitionDiscoveryDenial,
+    WorthQueryWorkflowApprovalRead, WorthQueryWorkflowAudit, WorthQueryWorkflowDefinitionDiscovery,
+    WorthQueryWorkflowDefinitionRead, WorthQueryWorkflowHistoricalPosture,
+    WorthQueryWorkflowHistoryAudit, WorthQueryWorkflowHistoryEntry, WorthQueryWorkflowHistoryMark,
+    WorthQueryWorkflowHistoryPage, WorthQueryWorkflowHistorySubscription,
+    WorthQueryWorkflowIndexRead, WorthQueryWorkflowInstancePage, WorthQueryWorkflowInstanceRead,
+    WorthQueryWorkflowObservation, WorthQueryWorkflowObservedState, WorthQueryWorkflowReadBasis,
+    WorthQueryWorkflowReadDenial, WorthQueryWorkflowReadExtent, WorthQueryWorkflowReadTarget,
+    WorthQueryWorkflowRecordedActor, WorthQueryWorkflowTransitionActors,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaMember,
@@ -33,13 +41,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
 impl<'a, Schema: ApplicationSchema> WorthQueryApplicationDiscovery<'a, Schema> {
     /// Entry input and scope contracts for the installed typed query requests.
-    pub fn query_requests(&self) -> impl ExactSizeIterator<Item = &'a worth_query_declaration::facade::application_query::ApplicationQueryBindingDescriptor> + 'a{
+    pub fn query_requests(&self) -> impl ExactSizeIterator<Item = &'a worth_query_declaration::facade::application_query::ApplicationQueryBindingDescriptor> + 'a + use<'a, Schema>{
         self.schema.installed_query_binding_inventory()
     }
 
     pub fn mutations(
         &self,
-    ) -> impl Iterator<Item = WorthQueryApplicationMutationDescription<'a>> + 'a {
+    ) -> impl Iterator<Item = WorthQueryApplicationMutationDescription<'a>> + 'a + use<'a, Schema>
+    {
         let schema = self.schema;
         let members = schema.installed_declaration().members();
         members.iter().filter_map(move |member| {
@@ -57,7 +66,10 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationDiscovery<'a, Schema> {
         })
     }
 
-    pub fn queries(&self) -> impl Iterator<Item = WorthQueryApplicationQueryDescription<'a>> + 'a {
+    pub fn queries(
+        &self,
+    ) -> impl Iterator<Item = WorthQueryApplicationQueryDescription<'a>> + 'a + use<'a, Schema>
+    {
         let schema = self.schema;
         schema
             .installed_declaration()
@@ -78,7 +90,10 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationDiscovery<'a, Schema> {
             })
     }
 
-    pub fn fields(&self) -> impl Iterator<Item = WorthQueryApplicationFieldDescription<'a>> + 'a {
+    pub fn fields(
+        &self,
+    ) -> impl Iterator<Item = WorthQueryApplicationFieldDescription<'a>> + 'a + use<'a, Schema>
+    {
         self.schema
             .installed_declaration()
             .members()

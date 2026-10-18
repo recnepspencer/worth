@@ -1,5 +1,5 @@
 use super::mutation_fields::{text, update_fields, SupplyChainField};
-use crate::world::supply_chain::{
+use crate::relational_certification::world::supply_chain::{
     EntityKey, EntityKind, SupplyChainScale, SupplyChainSemanticHandles,
 };
 use worth_relational::facade::transactions::WorkerIntentBatch;

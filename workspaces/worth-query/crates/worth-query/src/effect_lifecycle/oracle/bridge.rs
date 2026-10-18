@@ -100,12 +100,11 @@ impl ExecutedEffectPlan {
         }
         if let Some(execution_receipt_subject_identity) =
             oracle.execution_receipt_subject_identity()
-        {
-            if bridge_observation_execution_receipt_subject_identity(
+            && bridge_observation_execution_receipt_subject_identity(
                 execution.execution_receipt().digest(),
             ) != *execution_receipt_subject_identity
-            {
-                return Err(EffectExecutionOracleError::new(
+        {
+            return Err(EffectExecutionOracleError::new(
                     EffectExecutionOracleErrorKind::BridgeOracleReceiptMismatch,
                     format!(
                         "bridge oracle observed execution receipt `{}` but executed writeback produced `{}`",
@@ -115,7 +114,6 @@ impl ExecutedEffectPlan {
                     self.effect_execution_identity(),
                     Some(oracle.bridge_oracle_identity()),
                 ));
-            }
         }
         Ok(EffectExecutionOracleVerification::bridge(
             self.effect_execution_identity(),

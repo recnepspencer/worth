@@ -6,5 +6,6 @@ pub(super) fn install(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = RevokeEstateCapabilityOperation::reference();
+    // Native revocation derives its decision reads and effect from the contract.
     schema.operation_projection_work_budget(operation, 32)
 }

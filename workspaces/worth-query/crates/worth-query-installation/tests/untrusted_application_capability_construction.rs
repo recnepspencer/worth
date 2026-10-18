@@ -106,8 +106,7 @@ fn downstream_decoder_constructs_owned_capability_meaning_without_typed_referenc
                 ),
                 ApplicationCapabilityActorComposition::new(
                     ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
-                    ApplicationCapabilityDistinctActorRule::not_applicable(),
-                ),
+                    ApplicationCapabilityDistinctActorRule::not_applicable(), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
                 ApplicationCapabilityPropagationComposition::new(
                     ApplicationCapabilityDelegationRule::forbidden(),
                     ApplicationCapabilityDisclosureRule::Permit(vec![guard]),

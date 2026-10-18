@@ -1,5 +1,0 @@
-error[E0433]: failed to resolve: could not find `compat` in `facade`
- --> tests/ui/admission_boundary/product_compat_module_does_not_export_admission_surface.rs:1:23
-  |
-1 | use worth_ui::facade::compat::admission::{
-  |                       ^^^^^^ could not find `compat` in `facade`

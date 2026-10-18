@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use worth_foundational::facade::AspectKey;
 use worth_relational::facade::identity::KindId;
 
-pub(super) fn encode(bytes: &mut Vec<u8>, fact: &Fact) -> Option<()> {
+pub(super) fn encode(bytes: &mut impl super::FactBytes, fact: &Fact) -> Option<()> {
     let Fact::AspectPresence {
         entity_id,
         kind,

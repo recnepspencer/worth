@@ -203,12 +203,11 @@ impl WorthQueryOutputDemandRegistry {
                     matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
                         if successor.matches_ready(&completion.authority))
                 });
-                if matches_ready {
-                    if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
+                if matches_ready
+                    && let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
                         output.advancement()
-                    {
-                        return Err(denial.clone());
-                    }
+                {
+                    return Err(denial.clone());
                 }
             }
         }
@@ -326,13 +325,13 @@ impl WorthQueryOutputDemandRegistry {
         if record.performed_source.is_none() {
             record.performed_source = prepared_source;
         }
-        if let Some(commit) = prepared_source_commit {
-            if !record.source_commits.contains(&commit) {
-                if let Some(growth) = prepared_commit_growth {
-                    growth.install(&mut record);
-                }
-                record.source_commits.push(commit);
+        if let Some(commit) = prepared_source_commit
+            && !record.source_commits.contains(&commit)
+        {
+            if let Some(growth) = prepared_commit_growth {
+                growth.install(&mut record);
             }
+            record.source_commits.push(commit);
         }
         record.interests = record.interests.saturating_add(1);
         record.required_interests += usize::from(admission_kind.is_required());

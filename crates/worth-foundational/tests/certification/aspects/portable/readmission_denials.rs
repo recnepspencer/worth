@@ -6,8 +6,8 @@ use worth_foundational::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::aspects::patches::patch_fixtures::task_summary_contract;
-use crate::foundational_vocabulary::{field, identity, key, revision};
+use crate::certification::aspects::patches::patch_fixtures::task_summary_contract;
+use crate::certification::foundational_vocabulary::{field, identity, key, revision};
 
 #[test]
 fn foreign_identity_and_missing_contract_deny_before_value_validation() {

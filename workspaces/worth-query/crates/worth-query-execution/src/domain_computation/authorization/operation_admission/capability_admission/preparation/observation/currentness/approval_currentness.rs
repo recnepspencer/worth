@@ -59,8 +59,8 @@ pub(super) fn validate_approval_support<Schema, Principal, Identity, Capability,
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    if let Some(approved) = prepared.approved() {
-        if !approved
+    if let Some(approved) = prepared.approved()
+        && !approved
             .support_remains_current_in(
                 execution,
                 relational,
@@ -73,14 +73,13 @@ where
                     "elevation support currentness",
                 )
             })?
-        {
-            return Err(denial::authorization_denial(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::StaleAuthorization,
-                ),
-                prepared.capability().contract().name(),
-            ));
-        }
+    {
+        return Err(denial::authorization_denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleAuthorization,
+            ),
+            prepared.capability().contract().name(),
+        ));
     }
     Ok(())
 }

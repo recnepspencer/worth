@@ -82,13 +82,9 @@ where
     /// refused, and the ordinary mutation lane refuses the binding.
     const WORKFLOW_CONTROL: bool = false;
 
-    /// Additional evidence for a guarded workflow operation. Absence preserves
-    /// the historical required-approval contract; explicit empty requirements
-    /// opt a new installed binding into occurrence-bound execution alone.
-    fn workflow_execution_requirements() -> Option<super::ApplicationWorkflowExecutionRequirements>
-    {
-        None
-    }
+    /// Explicit workflow applicability. Guarded bindings must choose occurrence
+    /// or approval evidence; a direct/control binding declares NotApplicable.
+    fn workflow_execution_requirements() -> super::ApplicationWorkflowExecutionRequirements;
     const CANDIDATES: ApplicationCandidateRequirements;
 
     /// Binds input-selected subjects to the exact parameters of retained source evidence.
@@ -169,7 +165,7 @@ where
 }
 
 /// Domain input whose operation and scope association are owned by an entry binding.
-pub trait ApplicationMutationIntent<Schema>: Sized + 'static
+pub trait ApplicationMutationIntent<Schema>: Sized
 where
     Schema: ApplicationSchema,
 {
@@ -188,4 +184,16 @@ where
     fn input(&self) -> &<Self::Binding as ApplicationMutationBinding<Schema>>::Input;
 
     fn scope_binding(&self) -> <Self::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding;
+}
+
+impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
+    ApplicationMutationIntent<Schema> for &Intent
+{
+    type Binding = Intent::Binding;
+    fn input(&self) -> &<Self::Binding as ApplicationMutationBinding<Schema>>::Input {
+        <Intent as ApplicationMutationIntent<Schema>>::input(*self)
+    }
+    fn scope_binding(&self) -> <Self::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding {
+        <Intent as ApplicationMutationIntent<Schema>>::scope_binding(*self)
+    }
 }

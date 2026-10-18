@@ -11,6 +11,7 @@ phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         transition_identity: &[u8; 32],
+        completed: Option<&crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt>,
     ) -> Result<
         crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody,
         crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
@@ -30,6 +31,7 @@ phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>
             admission,
             idempotency,
             transition_identity,
+            completed,
         )
     }
 }

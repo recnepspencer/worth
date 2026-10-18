@@ -115,8 +115,8 @@ pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
             .principal_binding(IdentityBinding::reference())
             .unwrap();
         let decoded = checkpoint
-            .decode()
-            .expect("the Query-issued checkpoint decodes");
+            .decode_with_execution(&phase.borrowed_request_for_test())
+            .expect("the Query-issued checkpoint decodes under the original host request");
         let mut bootstrap = authority.prepare_primary_graph_from_native_checkpoint_with_invariants(&phase.bootstrap_for_test(),
         &runtime,
         &schema,

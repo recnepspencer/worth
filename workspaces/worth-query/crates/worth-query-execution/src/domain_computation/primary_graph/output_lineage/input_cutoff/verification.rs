@@ -206,7 +206,7 @@ impl RetainedInputCutoffCandidate {
                 ) {
                     Ok(false) => return Ok(None),
                     Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => {}
-                    Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
+                    Err(ConsumedOutputVerificationStop::CapacityExhausted(_)) => {
                         return Err(InputCutoffVerificationStop::CapacityExhausted);
                     }
                     Err(ConsumedOutputVerificationStop::Execution(cause)) => {
@@ -297,7 +297,7 @@ impl RetainedInputCutoffCandidate {
             | Err(ConsumedOutputVerificationStop::Unavailable) => {
                 return Ok(None);
             }
-            Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
+            Err(ConsumedOutputVerificationStop::CapacityExhausted(_)) => {
                 return Err(InputCutoffVerificationStop::CapacityExhausted);
             }
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {

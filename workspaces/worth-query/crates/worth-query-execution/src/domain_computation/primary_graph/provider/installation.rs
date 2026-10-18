@@ -14,6 +14,8 @@ impl WorthQueryPrimaryGraphProvider {
         Arc<Self>,
     ){
         let provider = Arc::new(Self {
+            publication_fault_control: Default::default(),
+            managed_cleanup_control: Default::default(),
             graph,
             resource_support,
             branch_commit_coordination:

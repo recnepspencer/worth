@@ -1,11 +1,10 @@
+#[path = "recognize_executor/adoption.rs"]
+mod adoption;
 #[path = "recognize_executor/fixture.rs"]
 mod fixture;
 
 use bank_domain::proposals::BankIdempotencyKey;
-use bank_server::{
-    queries, BankEstateProgressionDenial, BankExecutorRecognitionProjectionDenial,
-    BankMutationCommitOutcome, BankReadControls,
-};
+use bank_server::{queries, BankExecutorRecognitionProjectionDenial, BankReadControls};
 
 use self::fixture::{
     duplicate_executor_world, exact_recognition_world, foreign_authority_world,
@@ -18,20 +17,45 @@ fn public_query_observes_the_exact_recognized_executor() {
     let fixture = exact_recognition_world("recognize-executor-commit");
     let specialist = fixture.authenticate_specialist();
     let key = BankIdempotencyKey::new("recognize-estate-executor-program-entry").unwrap();
-    let outcome = fixture
-        .world
-        .runtime
-        .recognize_estate_executor_with_key(
-            &specialist,
+    let outcome = {
+        let source_actor = &specialist;
+        let source_scope = &request_scope();
+        let source_key = &key;
+        let source_intent = bank_domain::schema::RecognizeEstateExecutor::try_from(
             fixture.action(fixture.executor),
-            &key,
-            &request_scope(),
         )
-        .expect("the exact legal authority should authorize one executor relation");
-
-    let BankMutationCommitOutcome::Committed(receipt) = outcome else {
-        panic!("the first exact recognition must commit: {outcome:?}");
+        .expect("typed estate command preserves the exact variant");
+        let source_request = fixture.world.runtime.request(source_actor, source_scope);
+        let source_operation = fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::recognize_estate_executor(
+                source_intent,
+            ))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            source_completed,
+        ) = source_operation.advance(&source_request)
+        else {
+            panic!("native source completion required")
+        };
+        assert!(matches!(
+            source_completed.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        let closed_source = source_completed
+            .close_with_evidence(&source_request)
+            .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
+        bank_server::BankCommitReceipt::from_closed_source(closed_source)
     };
+
+    let receipt = outcome;
     assert_eq!(receipt.emitted_effect_count(), 0);
     assert_eq!(receipt.expected_fact_count(), 0);
     assert_eq!(receipt.decision_fact_count(), Some(8));
@@ -39,19 +63,44 @@ fn public_query_observes_the_exact_recognized_executor() {
     assert_eq!(estate_executors(&fixture), [fixture.executor]);
     assert!(estate_authority_is_still_recognized(&fixture));
 
-    let retry = fixture
-        .world
-        .runtime
-        .recognize_estate_executor_with_key(
-            &specialist,
+    let retry = {
+        let source_actor = &specialist;
+        let source_scope = &request_scope();
+        let source_key = &key;
+        let source_intent = bank_domain::schema::RecognizeEstateExecutor::try_from(
             fixture.action(fixture.executor),
-            &key,
-            &request_scope(),
         )
-        .expect("an equivalent retry should recover before duplicate-state denial");
-    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
-        panic!("the equivalent retry must recover the exact commit: {retry:?}");
+        .expect("typed estate command preserves the exact variant");
+        let source_request = fixture.world.runtime.request(source_actor, source_scope);
+        let source_operation = fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::recognize_estate_executor(
+                source_intent,
+            ))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            source_completed,
+        ) = source_operation.advance(&source_request)
+        else {
+            panic!("native source completion required")
+        };
+        assert!(matches!(
+            source_completed.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+        ));
+        let closed_source = source_completed
+            .close_with_evidence(&source_request)
+            .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
+        bank_server::BankCommitReceipt::from_closed_source(closed_source)
     };
+    let recovered = retry;
     assert_eq!(receipt.aftermath(), recovered.aftermath());
     assert_admission_derives_the_request_identities_once(recovered.canonical_work());
 }
@@ -59,14 +108,19 @@ fn public_query_observes_the_exact_recognized_executor() {
 #[test]
 fn command_authorization_does_not_make_a_foreign_authority_lawful() {
     let fixture = foreign_authority_world("recognize-executor-foreign-authority");
-    let denial = recognize(&fixture, fixture.executor, 51)
-        .expect_err("authority from another estate must fail invariant projection");
+    let (_denial_source, denial) = {
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = recognize(&fixture, fixture.executor, 51) else { panic!("native pre-effect refusal") };
+        (
+            original_source,
+            cause
+                .downcast::<bank_server::BankExecutorRecognitionProjectionDenial>()
+                .expect("native projection cause"),
+        )
+    };
 
     assert!(matches!(
         denial,
-        BankEstateProgressionDenial::ExecutorRecognitionProjection(
-            BankExecutorRecognitionProjectionDenial::AuthorityEstateMismatch
-        )
+        BankExecutorRecognitionProjectionDenial::AuthorityEstateMismatch
     ));
     assert!(estate_executors(&fixture).is_empty());
 }
@@ -74,14 +128,19 @@ fn command_authorization_does_not_make_a_foreign_authority_lawful() {
 #[test]
 fn selected_authority_must_name_the_commanded_executor() {
     let fixture = holder_mismatch_world("recognize-executor-holder-mismatch");
-    let denial = recognize(&fixture, fixture.executor, 61)
-        .expect_err("authority held by another principal must not create the requested edge");
+    let (_denial_source, denial) = {
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = recognize(&fixture, fixture.executor, 61) else { panic!("native pre-effect refusal") };
+        (
+            original_source,
+            cause
+                .downcast::<bank_server::BankExecutorRecognitionProjectionDenial>()
+                .expect("native projection cause"),
+        )
+    };
 
     assert!(matches!(
         denial,
-        BankEstateProgressionDenial::ExecutorRecognitionProjection(
-            BankExecutorRecognitionProjectionDenial::AuthorityHolderMismatch
-        )
+        BankExecutorRecognitionProjectionDenial::AuthorityHolderMismatch
     ));
     assert!(estate_executors(&fixture).is_empty());
 }
@@ -89,24 +148,34 @@ fn selected_authority_must_name_the_commanded_executor() {
 #[test]
 fn unrecognized_authority_and_duplicate_executor_state_are_denied() {
     let unrecognized = unrecognized_authority_world("recognize-executor-unrecognized");
-    let denial = recognize(&unrecognized, unrecognized.executor, 71)
-        .expect_err("an unrecognized legal record must not create executor authority");
+    let (_denial_source, denial) = {
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = recognize(&unrecognized, unrecognized.executor, 71) else { panic!("native pre-effect refusal") };
+        (
+            original_source,
+            cause
+                .downcast::<bank_server::BankExecutorRecognitionProjectionDenial>()
+                .expect("native projection cause"),
+        )
+    };
     assert!(matches!(
         denial,
-        BankEstateProgressionDenial::ExecutorRecognitionProjection(
-            BankExecutorRecognitionProjectionDenial::AuthorityNotRecognized
-        )
+        BankExecutorRecognitionProjectionDenial::AuthorityNotRecognized
     ));
     assert!(estate_executors(&unrecognized).is_empty());
 
     let duplicate = duplicate_executor_world("recognize-executor-duplicate");
-    let denial = recognize(&duplicate, duplicate.executor, 72)
-        .expect_err("a new key must not recreate an existing executor edge");
+    let (_denial_source, denial) = {
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = recognize(&duplicate, duplicate.executor, 72) else { panic!("native pre-effect refusal") };
+        (
+            original_source,
+            cause
+                .downcast::<bank_server::BankExecutorRecognitionProjectionDenial>()
+                .expect("native projection cause"),
+        )
+    };
     assert!(matches!(
         denial,
-        BankEstateProgressionDenial::ExecutorRecognitionProjection(
-            BankExecutorRecognitionProjectionDenial::AlreadyRecognizedExecutor
-        )
+        BankExecutorRecognitionProjectionDenial::AlreadyRecognizedExecutor
     ));
     assert_eq!(estate_executors(&duplicate), [duplicate.executor]);
 }
@@ -115,14 +184,34 @@ fn recognize(
     fixture: &RecognitionFixture,
     executor: bank_domain::model::BankPrincipalId,
     identity: u8,
-) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
+) -> super::EstateSourceAdvance<
+    bank_domain::schema::RecognizeEstateExecutor,
+    bank_server::ExecutorRecognitionAction,
+> {
     let key = idempotency(identity);
-    fixture.world.runtime.recognize_estate_executor_with_key(
-        &fixture.authenticate_specialist(),
-        fixture.action(executor),
-        &key,
-        &request_scope(),
-    )
+    {
+        let source_actor = &fixture.authenticate_specialist();
+        let source_scope = &request_scope();
+        let source_key = &key;
+        let source_intent =
+            bank_domain::schema::RecognizeEstateExecutor::try_from(fixture.action(executor))
+                .expect("typed estate command preserves the exact variant");
+        let source_request = fixture.world.runtime.request(source_actor, source_scope);
+        let source_operation = fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::recognize_estate_executor(
+                source_intent,
+            ))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+        source_operation.advance(&source_request)
+    }
 }
 
 fn estate_executors(fixture: &RecognitionFixture) -> Vec<bank_domain::model::BankPrincipalId> {
@@ -156,19 +245,16 @@ fn idempotency(identity: u8) -> BankIdempotencyKey {
 fn assert_admission_derives_the_request_identities_once(
     phases: bank_server::BankCommitCanonicalWorkPhases,
 ) {
-    // Admission derives the request's two identities once each, streamed into
-    // their hashes with no basis sequence: the governed input (117 encoded
-    // bytes + 67 framing, 4 blocks) and the key `recognize-estate-executor-program-entry` (61
-    // encoded bytes + 85 framing, ceil((146 + 9) / 64) = 3 blocks). A
-    // replayed retry is admitted the same way and reports the same work. Every
-    // other phase performs no canonical work.
+    // Binding-selected capability admission governs its input as well as the mutation
+    // input/key identities. All three native derivations are included here; later
+    // publication and domain recovery do not rebuild these identities.
     let admission = phases.admission();
     assert_eq!(admission.basis_preparations(), 0);
-    assert_eq!(admission.digest_derivations(), 2);
-    assert_eq!(admission.canonical_entries(), 2);
-    assert_eq!(admission.canonical_encoded_bytes(), 178);
-    assert_eq!(admission.sha256_input_bytes(), 330);
-    assert_eq!(admission.sha256_compression_blocks(), 7);
+    assert_eq!(admission.digest_derivations(), 3);
+    assert_eq!(admission.canonical_entries(), 3);
+    assert_eq!(admission.canonical_encoded_bytes(), 295);
+    assert_eq!(admission.sha256_input_bytes(), 514);
+    assert_eq!(admission.sha256_compression_blocks(), 11);
     assert_eq!(admission.digest_text_materializations(), 0);
     for work in [
         phases.installation(),
