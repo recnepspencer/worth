@@ -6,6 +6,7 @@ mod managed_views;
 pub(in crate::domain_computation::primary_graph::provider) use managed_unpublished::ManagedUnpublishedAttempt;
 mod precommit_snapshot;
 mod product_publication;
+mod required_origin;
 mod stops;
 mod touched_records;
 use stops::{failure, index_preparation_stop, native_output_witness_stop, transaction_commit_stop};
@@ -103,6 +104,13 @@ pub(super) fn commit(
             &mut publication_admission,
         )
         .map_err(native_output_witness_stop)?;
+    let candidate = required_origin::bind(
+        candidate,
+        provider,
+        &attempt,
+        required_prerequisites.as_ref(),
+        &mut publication_admission,
+    )?;
     #[cfg(test)]
     provider.fault_port.candidate_ready_for_native_preparation();
     let mut candidate = provider

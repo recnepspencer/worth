@@ -83,6 +83,13 @@ impl CheckpointAspectContractCatalog {
         Ok(Self { contracts })
     }
 
+    pub(crate) fn portable_contracts(&self) -> Vec<PortableAspectContract> {
+        self.contracts
+            .values()
+            .map(PortableAspectContract::from_contract)
+            .collect()
+    }
+
     pub(crate) fn from_plans(
         plans: &crate::schema::data::AspectContractPlanCatalog,
     ) -> Result<Self, DurabilityError> {

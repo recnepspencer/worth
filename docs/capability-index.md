@@ -78,6 +78,12 @@ even with equal field meaning. This grants no request, snapshot or settlement au
 Producer readiness uses the actual output-role carrier and its emitted meaning.
 Predecessor comparison requires explicit semantic aspect revision advancement
 for changed meaning and grants no recovered-transition permission.
+The existing [checkpoint transition](build-an-application.md#44-checkpoint-program-transitions)
+supports whole-output derived-codec retirement when native performed creates
+still cover every present field. It preserves authored bytes and identities on
+the same carrier and requires the installed target producer to rebuild output.
+Protected, partly classified, relation/invariant and unsupported index changes
+refuse before publication; ordinary restore remains exact.
 See [bounded canonical nested values](build-an-application.md#bounded-canonical-nested-values)
 for supported grammar, native checkpoint examples and the current package
 archive refusal. Representation limits do not grant request resources,

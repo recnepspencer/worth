@@ -1,7 +1,5 @@
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
-use crate::durability::checkpoints::images::{
-    partition_to_image, partition_to_image_with_contracts,
-};
+use crate::durability::checkpoints::images::partition_to_image_with_contracts;
 use crate::durability::data::{
     CheckpointCoverage, DurabilityError, DurableBranchRootImage, DurableCheckpoint,
     RecoveryFailureClass,
@@ -20,12 +18,28 @@ impl CapturedCheckpointBasis {
             envelopes,
             partitions,
             aspect_contracts,
+            mirror_schema_authority,
             lineage_nodes,
             index_definitions,
             derived_index_checkpoint,
             symbol_table,
             runtime_name,
         } = self;
+        // The mirror retains deleted records and MVCC cells from earlier
+        // revisions. Their exact contracts belong to the selected main root;
+        // the current runtime's active plans cannot reinterpret those cells.
+        let (mirror_plans, mirror_contracts) = match &mirror_schema_authority {
+            Some(schema) => (
+                schema.aspect_plans(),
+                CheckpointAspectContractCatalog::from_contracts(
+                    schema.retained_aspect_contracts(),
+                )?,
+            ),
+            None => (
+                &aspect_contracts,
+                CheckpointAspectContractCatalog::from_plans(&aspect_contracts)?,
+            ),
+        };
         let published_lineage_commit_count = envelopes
             .iter()
             .filter(|envelope| envelope.has_lineage_authority())
@@ -65,9 +79,9 @@ impl CapturedCheckpointBasis {
             envelopes,
             partition_images: partitions
                 .into_iter()
-                .map(|partition| partition_to_image(partition, &aspect_contracts))
+                .map(|partition| partition_to_image_with_contracts(partition, mirror_plans, &mirror_contracts))
                 .collect::<Result<Vec<_>, _>>()?,
-            aspect_contracts: checkpoint_aspect_contracts(&aspect_contracts)?,
+            aspect_contracts: mirror_contracts.portable_contracts(),
             lineage: LineageCheckpointArtifact::new(
                 LineageCheckpointDigestBasis::new(
                     published_lineage_commit_count,
@@ -249,35 +263,4 @@ fn durable_record_class(
             crate::durability::data::DurableRecordGenerationClass::Relation
         }
     }
-}
-
-fn checkpoint_aspect_contracts(
-    plans: &crate::schema::data::AspectContractPlanCatalog,
-) -> Result<Vec<worth_foundational::facade::PortableAspectContract>, DurabilityError> {
-    let mut contracts = std::collections::BTreeMap::new();
-    for binding in plans
-        .entity_plans
-        .values()
-        .chain(plans.relation_plans.values())
-        .flat_map(|plan| plan.executable_bindings.iter())
-    {
-        let candidate =
-            worth_foundational::facade::PortableAspectContract::from_contract(&binding.contract);
-        match contracts.get(candidate.key()) {
-            Some(existing) if existing == &candidate => continue,
-            Some(_) => {
-                return Err(DurabilityError::new(
-                    RecoveryFailureClass::SchemaMismatch,
-                    format!(
-                        "checkpoint has conflicting active contracts for aspect `{}`",
-                        candidate.key().as_str()
-                    ),
-                ));
-            }
-            None => {
-                contracts.insert(candidate.key().clone(), candidate);
-            }
-        }
-    }
-    Ok(contracts.into_values().collect())
 }

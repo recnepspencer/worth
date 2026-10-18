@@ -41,6 +41,9 @@ pub enum RecoveredCheckpointTransitionDenial {
     ForeignCandidateRuntime { expected: u64, actual: u64 },
     CandidateUnavailable,
     SourceNotRecovered(Box<RelationalBranchBasisDescriptor>),
+    CodecTransition(String),
+    CodecRequest(crate::execution::RelationalExecutionDenialCause),
+    CodecIndexPreparation(crate::indexes::data::DerivedIndexMaintenanceDenial),
     Publication(Box<RelationalPublicationOutcome>),
 }
 

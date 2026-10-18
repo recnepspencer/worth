@@ -215,22 +215,10 @@ where
     }
     let relational_runtime = relational_builder.build();
     let execution = phase.execution_request();
-    let decoded_checkpoint = checkpoint
+    let mut decoded_checkpoint = checkpoint
         .map(|checkpoint| checkpoint.decode_with_execution(&execution))
         .transpose()
         .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
-    if checkpoint_transition.is_some()
-        && decoded_checkpoint
-            .as_ref()
-            .is_some_and(|checkpoint| !checkpoint.accepted_outputs.is_empty())
-    {
-        return Err(Denial::Graph(
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                "checkpoint transition requires accepted-output migration support",
-            ),
-        ));
-    }
     let restoring = decoded_checkpoint.is_some();
     let mut graph = match decoded_checkpoint.as_ref() {
         Some(checkpoint) => authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
@@ -241,6 +229,7 @@ where
             limits.world,
             invariants,
             checkpoint,
+            checkpoint_transition.is_some(),
         ),
         None => authority.prepare_primary_graph_with_relational_runtime_and_invariants(
             phase,
@@ -252,14 +241,36 @@ where
         ),
     }
     .map_err(Denial::Graph)?;
+    if checkpoint_transition.is_some()
+        && decoded_checkpoint
+            .as_ref()
+            .is_some_and(|checkpoint| !checkpoint.accepted_outputs.is_empty())
+        && !graph.has_pending_codec_transition()
+    {
+        return Err(Denial::Graph(
+            WorthQueryPrimaryGraphInstallationDenial::new(
+                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                "checkpoint transition requires accepted-output migration support",
+            ),
+        ));
+    }
     graph.mutation_handlers = handlers;
+    // Seal the real configured executors before a recovered producer route can
+    // justify retiring an old output. The same registry is published below.
+    let producers = producers
+        .seal_with_support(graph.resource_support_ref(), runtime.installed_packages())
+        .map_err(Denial::Contributions)?;
     if restoring && let Some(support) = &admitted_program_support {
         if let Some(transition) = checkpoint_transition {
             super::bootstrap::checkpoint_transition::transition_checkpoint(
                 phase,
                 &mut graph,
-                &installed,
-                support,
+                decoded_checkpoint.as_mut().expect("restoring checkpoint"),
+                super::bootstrap::checkpoint_transition::InstalledCheckpointTarget {
+                    schema: &installed,
+                    program: support,
+                    producers: &producers,
+                },
                 &activation,
                 transition,
             )?;
@@ -284,11 +295,6 @@ where
         }
         initial_state(phase, &mut graph, &installed).map_err(Denial::InitialState)?;
     }
-    // This is the exact support object moved into the final graph provider.
-    // Cold producer executors become installable only after it exists.
-    let producers = producers
-        .seal_with_support(graph.resource_support_ref(), runtime.installed_packages())
-        .map_err(Denial::Contributions)?;
     let (mut application, installed_conditionals) =
         if conditionals.is_empty() && producers.is_empty() {
             let application = match authorization_time_source {

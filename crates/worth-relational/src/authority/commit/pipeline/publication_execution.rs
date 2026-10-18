@@ -97,6 +97,7 @@ pub(super) fn prepare_commit_publication_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     assembled: AssembledCommitExecution,
+    required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
 ) -> Result<PreparedCommitPublicationExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::PublicationPreparation)?;
     let (
@@ -122,6 +123,8 @@ pub(super) fn prepare_commit_publication_execution(
             execution,
             runtime,
             PreparePublicationPhaseInput {
+                required_output_publication,
+                created_entities: &created_entities,
                 commit_log,
                 working_state,
                 record_allocations,
@@ -312,6 +315,14 @@ impl PreparedCommitPublicationExecution {
         }
         self.prepared_indexes = Some(prepared);
         Ok(())
+    }
+
+    pub(crate) fn recovered_codec_publication_custody(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>> {
+        self.admitted
+            .validation_input()
+            .recovered_codec_publication_custody()
     }
 
     pub(crate) fn has_prepared_indexes(&self) -> bool {

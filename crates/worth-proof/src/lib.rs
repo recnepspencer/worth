@@ -1,5 +1,6 @@
 //! Compile-time proof-bearing progression substrate for WORTH.
 
+mod application_publication;
 mod artifact;
 mod assumption;
 mod band;
@@ -18,6 +19,10 @@ pub mod raw;
 mod recipe;
 mod release;
 mod source_observation;
+pub use application_publication::{
+    AdmittedCheckpointProgramActivation, AdmittedRequiredOutputPublication,
+    InstalledApplicationPublicationAuthority, InstalledApplicationPublicationOwner,
+};
 mod transition;
 mod type_level;
 

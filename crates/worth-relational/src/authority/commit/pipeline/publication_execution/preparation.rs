@@ -121,6 +121,8 @@ impl PreparedPublicationPhase {
 }
 
 pub(super) struct PreparePublicationPhaseInput<'a> {
+    pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
     pub(super) commit_log: &'a mut CommitLog,
     pub(super) working_state: crate::storage::overlay::WorkingState,
     pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
@@ -142,6 +144,8 @@ pub(super) fn prepare_publication_phase(
     input: PreparePublicationPhaseInput<'_>,
 ) -> Result<PreparedPublicationPhase, TransactionCommitError> {
     let PreparePublicationPhaseInput {
+        required_output_publication,
+        created_entities,
         commit_log,
         working_state,
         record_allocations,
@@ -159,12 +163,22 @@ pub(super) fn prepare_publication_phase(
     let (
         artifacts,
         changed_records,
-        canonical_commit_envelope,
+        mut canonical_commit_envelope,
         adjacency_deltas,
         lineage_nodes,
         deferred_diagnostic_artifacts,
         target_schema_registry,
     ) = publication.into_finalize().into_parts();
+    if let Some(admission) = required_output_publication {
+        canonical_commit_envelope.install_required_output_origin(
+            execution,
+            runtime,
+            &branch_basis,
+            created_entities,
+            &working_state,
+            admission,
+        )?;
+    }
     let durable_bytes = prepare_durable_bytes(execution, runtime, &canonical_commit_envelope)
         .map_err(|error| error.with_commit_log(commit_log.clone()))?;
     let canonical_commit_envelope = Arc::new(canonical_commit_envelope);

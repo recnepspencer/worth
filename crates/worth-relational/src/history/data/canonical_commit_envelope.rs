@@ -25,13 +25,17 @@ mod checkpoint_encoding;
 pub(crate) use checkpoint_encoding::CheckpointCanonicalEnvelopeRef;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
+mod required_output_origin;
 pub use descriptive_touches::{
     RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
     RelationalDescriptiveTouchPrecision, RelationalTouchAdjacencyDirection,
 };
+pub(crate) use required_output_origin::CanonicalRequiredOutputOrigin;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalCommitEnvelope {
+    #[serde(default)]
+    pub(crate) required_output_origin: Option<std::sync::Arc<CanonicalRequiredOutputOrigin>>,
     pub commit: RelationalCommitReceipt,
     pub branch_context: BranchId,
     /// Exact owner cell state immediately before this commit advances the
@@ -101,6 +105,7 @@ impl CanonicalCommitEnvelope {
         descriptor_semantics_version: DescriptorSemanticsVersion,
     ) -> Self {
         Self {
+            required_output_origin: None,
             commit,
             branch_context,
             branch_cell_checkpoint: None,
@@ -215,6 +220,7 @@ impl CanonicalCommitEnvelope {
             &self.merge_base_commits,
         );
         let canonical_semantics = (
+            &self.required_output_origin,
             &self.schema_version,
             &self.schema_authority,
             &self.merged_plan,

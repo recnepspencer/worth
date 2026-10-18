@@ -14,6 +14,8 @@ pub struct BranchBoundRelationalTransaction {
     pub(crate) transaction_id: TransactionId,
     pub(crate) intent: RelationalTransactionIntent,
     pub(crate) merge_parent_bases: Vec<crate::branch::AdmittedRelationalBranchBasis>,
+    pub(crate) recovered_codec_publication_custody:
+        Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     pub(crate) schema_authority_input: Option<crate::schema::SchemaContinuityAuthorityInput>,
     pub(crate) schema_authority: std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(crate) overlay: DetachedRelationalTransactionOverlay,

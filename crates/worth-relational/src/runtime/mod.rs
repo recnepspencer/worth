@@ -37,6 +37,8 @@ pub use crate::visibility::materialization::read_records::{
     SnapshotPositionDenial, VisibilityProjectionView, VisibilityReadContext,
 };
 pub use crate::visibility::retention::VisibilityRetentionAuthority;
+pub use initial_schema_installation::RecoveredCheckpointProgramActivationUpdate;
+pub(crate) use initial_schema_installation::{codec_field_changes, CodecFieldLocus};
 pub use initial_schema_installation::{
     custom_invariant_inventory_digest, RelationalInitialSchemaInstallation,
     RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,

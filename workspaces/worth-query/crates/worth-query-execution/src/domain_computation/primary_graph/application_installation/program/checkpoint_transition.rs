@@ -25,9 +25,12 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 /// committing typed new records and target revalidation before World installation.
 ///
 /// The predecessor is descriptive only. Ordinary restore still requires a
-/// rostered activation. This first transition surface supports new records and
-/// links between them; it refuses retained outputs, workflow records and
-/// relation-scoped rules until their migration owners supply complete support.
+/// rostered activation. Ordinary transitions support new records and links
+/// between them. A derived-codec cutover instead requires complete performed
+/// native create provenance, preserves authored records, and retires whole
+/// outputs before their installed target producers reconstruct them. It cannot
+/// append authored rows or retain partly classified output correspondence.
+/// Workflow records and relation-scoped rules remain unsupported.
 pub fn in_memory_rostered_program_from_checkpoint_with_transition<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,

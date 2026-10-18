@@ -6,8 +6,12 @@ use crate::schema::data::{RelationalSchemaRegistry, SchemaRegistryError};
 use crate::validation::{data::CustomInvariantRegistration, FrozenCustomInvariantRegistry};
 use std::sync::Arc;
 
+mod application_publication;
 mod inventory_digest;
+mod recovered_codec_transition;
 pub use inventory_digest::custom_invariant_inventory_digest;
+pub use recovered_codec_transition::RecoveredCheckpointProgramActivationUpdate;
+pub(crate) use recovered_codec_transition::{codec_field_changes, CodecFieldLocus};
 
 /// Move-only authority to extend an uncommitted runtime's initial schema.
 #[derive(Debug)]

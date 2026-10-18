@@ -1,3 +1,4 @@
+pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 mod append_authority;
 mod authority_continuity;
 mod checkpoint_capture;
@@ -55,9 +56,47 @@ pub struct RecoveredRelationalRuntimeAuthority {
             crate::branch::RelationalBranchVersion,
         ),
     >,
+    codec_transition: Option<recovery::codec_transition::RecoveredCodecTransitionState>,
+    performed_codec_retirement: Option<crate::history::data::OwnedCodecRetirementClosure>,
 }
 
 impl RecoveredRelationalRuntimeAuthority {
+    /// Whether native recovery retained a distinct codec target for adoption.
+    pub fn codec_transition_pending(&self) -> bool {
+        self.codec_transition.is_some()
+    }
+
+    /// Observe the exact closure already staged by native codec admission.
+    /// This cannot grant retirement permission to an unstaged record.
+    pub fn codec_transition_retires(&self, entity: crate::identity::data::EntityId) -> bool {
+        self.codec_transition
+            .as_ref()
+            .and_then(|state| state.retirement.as_ref())
+            .or(self.performed_codec_retirement.as_ref())
+            .is_some_and(|closure| closure.entities.contains(&entity))
+    }
+
+    /// Native performed output origins retained by exact retirement admission.
+    /// Callers may compare these descriptions to their installed producer
+    /// roster; descriptions alone cannot add a record to the native closure.
+    pub fn codec_transition_output_origins(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            crate::identity::data::EntityId,
+            crate::identity::data::KindId,
+            &str,
+            &[u8; 32],
+        ),
+    > {
+        self.codec_transition
+            .as_ref()
+            .and_then(|state| state.retirement.as_ref())
+            .or(self.performed_codec_retirement.as_ref())
+            .into_iter()
+            .flat_map(|closure| closure.producers())
+    }
+
     pub fn admit_basis(
         self,
         basis: AdmittedRelationalBranchBasis,

@@ -286,10 +286,14 @@ does not establish authentic predecessor or migration authority.
 
 Ordinary native recovery refuses changed codec meaning before exposing the
 recovered graph. Advancing the aspect revision alone does not authorize adoption.
-The [native codec fixture](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition.rs)
-uses nonempty authored source and a distinct producer-created output. It covers
-current-format production/reopen and independently installed incompatible codecs;
-genuine derived-only adoption and regeneration remain unfinished.
+The explicit checkpoint transition below can retire a complete producer-created
+output whose present fields still match its performed native create. Native
+recovery preserves the same physical carrier and unchanged authored records,
+retires the old output before adopting target contracts and indexes, and leaves
+reconstruction to the installed target producer. The
+[native codec journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/successor/adoption.rs)
+uses nonempty authored source, incompatible V1/V2 output codecs, real producer
+publication, a source edit through Preserve, and current-format reopen.
 
 Producer readiness describes the record selected by the producer's output role.
 Its native carrier, field mask, codec meaning and semantic revision must match
@@ -1477,16 +1481,37 @@ Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
 and relations between entities created in that batch. It currently cannot read or
 rewrite recovered records, or link a new record to an existing endpoint. Query
 commits those effects, the target activation and complete supported entity
-revalidation in one native candidate before exposing a World. Accepted outputs,
-retained workflows and relation-scoped rules require further migration support
-and are refused before authoring. Native candidate/publication limits remain in
-force alongside explicit selection and authoring bounds.
+revalidation in one native candidate before exposing a World. Retained workflows
+and relation-scoped rules remain unsupported. Native candidate/publication limits
+remain in force alongside explicit selection and authoring bounds.
+
+For a derived-only codec change, use that same entry point with the target schema
+and program and an empty author callback (`|_, _| Ok(())`). Native recovery must
+first establish each affected present field's actual producer publication and
+complete payload coverage. The target must install that producer with a Create
+role for the same native output kind. Every accepted output role must belong to
+the native retirement closure; a partially classified correspondence refuses.
+An empty callback, a role declaration, a revision advance, or a copied producer
+description grants no retirement permission.
+
+The first supported cutover retires whole output records and rebuilds native
+entity-field equality indexes. It refuses ordinary or subsequently overwritten
+payload, incident relations, affected custom invariants, ordering/join index
+consequences, and multiple current branch heads. Codec cutover cannot append
+authored rows. Historical roots and the original checkpoint keep their old
+meaning; they are not target-current output. Demand the output through the
+installed target producer after installation, then use ordinary edits and
+checkpoint capture/reopen. The linked V1/V2 journey is a complete example.
 
 A deferred native settlement returns `CheckpointTransitionDeferred` with the
 exact unpublished repair custody. Consuming `repair_to_checkpoint` returns a
 target checkpoint after acknowledgment, or the same capsule if repair/capture
 stops. `CheckpointTransitionCaptureStopped` specifically retains the acknowledged
 phase when its first checkpoint capture stops. A later installation failure returns
+`CheckpointTransitionFinalizationStopped` if target finalization refused before
+capture; its capsule retains the acknowledged successor and exposes the original
+typed `finalization_denial()`. Capture retries preserve that original cause.
+A later installation failure after checkpoint capture returns
 `CheckpointTransitionAcknowledged`
 with the already acknowledged target checkpoint and the original phase denial;
 fix the installation configuration and ordinary-restore that checkpoint. A

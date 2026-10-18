@@ -16,6 +16,16 @@ use super::super::{
 };
 use super::WorthQueryPrimaryGraphPublication;
 
+impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn has_pending_codec_transition(
+        &self,
+    ) -> bool {
+        self.recovered_relational_authority
+            .as_ref()
+            .is_some_and(|authority| authority.codec_transition_pending())
+    }
+}
+
 pub(super) fn primary_graph_for_installation(
     runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
@@ -177,7 +187,7 @@ fn created_reference_matches(
             && created.client_key == entity.client_key)
 }
 
-fn verify_bootstrap_indexes(
+pub(super) fn verify_bootstrap_indexes(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     index_ids: impl Iterator<Item = worth_relational::facade::indexes::DerivedIndexId>,
@@ -218,6 +228,7 @@ impl WorthQueryExecutionInstallationAuthority {
         product_world_resources: WorthQueryProductWorldResources,
         invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
         checkpoint: &DecodedApplicationCheckpoint,
+        codec_transition: bool,
     ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
     where
         Schema: ApplicationSchema,
@@ -230,6 +241,7 @@ impl WorthQueryExecutionInstallationAuthority {
             product_world_resources,
             invariant_factories,
             Some(checkpoint),
+            codec_transition,
         )
     }
 }

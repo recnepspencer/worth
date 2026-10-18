@@ -204,6 +204,13 @@ impl IndexingSubsystem {
         self.state.read().definitions.get(&index_id).map(Arc::clone)
     }
 
+    pub(crate) fn with_definitions<R>(
+        &self,
+        read: impl FnOnce(&BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>) -> R,
+    ) -> R {
+        read(&self.state.read().definitions)
+    }
+
     pub(crate) fn definitions(&self) -> Vec<Arc<DerivedIndexDefinition>> {
         self.state
             .read()
