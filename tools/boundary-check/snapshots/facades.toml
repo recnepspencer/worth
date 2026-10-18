@@ -886,6 +886,7 @@ exports = [
     "WorthQueryRestoredGeneratedOutput",
     "WorthQueryRetainedBatchQueryAdmissionDenial",
     "WorthQueryRetainedGeneratedOutputEntity",
+    "WorthQueryRetainedSnapshotRead",
     "WorthQueryReviewedElevation",
     "WorthQueryRuntimeTimeSample",
     "WorthQueryRuntimeTimeSource",
