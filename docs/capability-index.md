@@ -103,6 +103,11 @@ their native contracts. Pure schema owners use the same trait and derive from
 `worth_foundational::facade` without an Execution dependency. See
 [resident value accounting](build-an-application.md#resident-value-accounting).
 
+`WorthQueryInvariantEntityIdentity` has its own native resident contract for the
+shared entity-key allocation. Clones preserve that backing and its original
+reader authority; resident description grants no read, currentness or mutation
+authority and introduces no process-wide deduplication promise.
+
 Platform storage owners separately admit newly copied nested payload through
 `ExecutionAllocationPolicy::reserve_memory(bytes)` before copying, retaining
 the returned reservation with that payload. Fixed arrays still admit inline
