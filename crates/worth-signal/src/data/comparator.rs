@@ -324,10 +324,10 @@ impl<T: Copy + Ord, R: VersionComparatorResolver> ComparatorPolicyResolver
         if let Some(override_policy) = node_override {
             return override_policy.clone();
         }
-        if let Some(tier) = self.node_meta.tier_for_node(node) {
-            if let Some(policy) = self.tier_policies.get(tier) {
-                return policy.default_comparator.clone();
-            }
+        if let Some(tier) = self.node_meta.tier_for_node(node)
+            && let Some(policy) = self.tier_policies.get(tier)
+        {
+            return policy.default_comparator.clone();
         }
         self.fallback.clone()
     }

@@ -9,6 +9,7 @@ pub(super) fn install(
     let operation = DelegateEstateCapabilityOperation::reference();
     schema
         .operation_projection_work_budget(operation, 160)
+        .operation_read_field(operation, EstateCaseIdentityField::reference())
         .operation_read_field(operation, AccountIdentity::reference())
         .operation_read_field(operation, InstitutionIdentityField::reference())
         .operation_read_field(operation, BranchIdentityField::reference())

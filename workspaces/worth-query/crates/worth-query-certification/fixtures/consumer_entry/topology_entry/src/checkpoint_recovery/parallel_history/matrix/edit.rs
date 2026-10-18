@@ -28,6 +28,9 @@ worth_query_operation!(pub Edit for Schema:SchemaBinding,input InputBinding);
 worth_query_operation_reads!(Edit=>[Node,NodeKey,Revision]);
 worth_query_operation_writes!(Edit=>[Revision]);
 pub struct Binding<S>(PhantomData<fn() -> S>);
+impl<S: SchemaBinding> ApplicationMutationAdmissionBinding<S> for Binding<S> {
+    type Admission = ApplicationConventionalAdmission;
+}
 pub type Scope<S> =
     ApplicationMutationFieldScope<S, Node, NodeFacts, NodeKey, String, ReadOnly, NoApplicationUnit>;
 pub struct Decision<S> {
@@ -35,6 +38,12 @@ pub struct Decision<S> {
     revision: u64,
 }
 impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = Input;
     type InputBinding = InputBinding;
     type Result = Outcome;

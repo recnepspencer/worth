@@ -76,7 +76,8 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, memory, 1_000_000),
+                    // This proof isolates memory admission; work has its own funded court.
+                    ExecutionBudget::new(NonZeroUsize::MIN, memory, u64::MAX),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),
@@ -131,7 +132,11 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
             continue;
         }
         let work = work.expect("two copied paths fit the caller's memory");
-        assert_eq!(crate::indexes::last_allocation_bytes(), PATCH_BYTES);
+        // Candidate ownership also reserves deferred catalog insertions. The
+        // independently priced field paths are only part of that full bill;
+        // all of it must fit the original sub-population memory allowance.
+        let prepared_bytes = crate::indexes::last_allocation_bytes();
+        assert!((PATCH_BYTES..=MEMORY).contains(&prepared_bytes));
         assert_eq!(work.patch_records, 2);
         assert_eq!(work.entry_edits, 2);
         assert_eq!(work.cold_record_slots, 0);

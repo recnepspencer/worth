@@ -269,16 +269,15 @@ fn enforce_validated_strategy_basis(
             },
         )));
     }
-    if let Some(identity) = proposal_identity {
-        if identity.runtime_instance_id() != runtime.runtime_instance_id()
+    if let Some(identity) = proposal_identity
+        && (identity.runtime_instance_id() != runtime.runtime_instance_id()
             || identity.transaction_id() != transaction_id
             || identity.branch_observation() != validation_input.basis().reference()
-            || identity.branch_version() != validation_input.basis().truth_version()
-        {
-            return Err(stale_strategy_validation_basis(
-                "proposal identity does not match the owner-issued transaction basis",
-            ));
-        }
+            || identity.branch_version() != validation_input.basis().truth_version())
+    {
+        return Err(stale_strategy_validation_basis(
+            "proposal identity does not match the owner-issued transaction basis",
+        ));
     }
     if !validation_input.basis().is_current() {
         return Err(stale_strategy_validation_basis(

@@ -17,12 +17,14 @@ mod birth;
 mod draft_vocabulary;
 mod installation;
 mod operation;
+mod read_binding;
 mod support_identity;
 pub use adoption_coverage::{
     WorthQueryWorkflowGlobalActionDependency, WorthQueryWorkflowNodeDependency,
     WorthQueryWorkflowVocabularyCoverage,
 };
 pub use installation::WorthQueryApplicationWorkflowSpecInstallation;
+pub use read_binding::WorthQueryInstalledWorkflowReadBinding;
 
 mod resource_ceiling;
 pub use resource_ceiling::{
@@ -47,6 +49,8 @@ pub enum WorthQueryApplicationWorkflowInstallationDenialKind {
     DefinitionLimitExceeded,
     UnsupportedDefinitionMember,
     ForeignSchemaBinding,
+    InvalidPolicy,
+    ObservationNotImplemented,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -86,6 +90,7 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) binding_identity: &'static str,
     pub(super) requires_workflow_authority: bool,
     pub(super) supports_local_workflow_action: bool,
+    pub(super) capability: Option<(&'static str, WorthQueryPortableTypeIdentity)>,
     pub(super) reference: ApplicationWorkflowOperationRef,
     pub(super) inbound_ref:
         Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>,
@@ -186,6 +191,10 @@ where
     pub(super) schema_binding: ApplicationSchemaBindingIdentity,
     pub(super) program_revision: ApplicationProgramRevision,
     pub(super) support_identity: [u8; 32],
+    pub(super) actor_policy:
+        worth_query_declaration::facade::application_program::ApplicationWorkflowActorPolicy,
+    pub(super) observation_policy:
+        worth_query_declaration::facade::application_program::ApplicationWorkflowObservationPolicy,
     pub(super) authoring_capability: InstalledWorkflowAuthoringCapability,
     pub(super) instance_start_capability: InstalledWorkflowInstanceStartCapability,
     pub(super) advance_capability: InstalledWorkflowAdvanceCapability,
@@ -203,6 +212,17 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
+    pub fn actor_policy(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationWorkflowActorPolicy {
+        &self.actor_policy
+    }
+    pub fn observation_policy(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationWorkflowObservationPolicy
+    {
+        &self.observation_policy
+    }
     pub fn schema_binding(&self) -> &ApplicationSchemaBindingIdentity {
         &self.schema_binding
     }

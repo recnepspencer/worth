@@ -29,6 +29,7 @@ pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
     pub(super) root:
         crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery>,
     pub(super) outputs: Vec<ProgramOutputRecord>,
+    pub(in crate::application_entry) dependencies: Option<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies>,
     pub(super) work: super::program_output_work::WorthQueryApplicationProgramWork,
 }
 
@@ -43,6 +44,20 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
                 .iter()
                 .map(ProgramOutputRecord::retained_settlement),
         )
+    }
+
+    /// Borrows the original root's immutable settlement, including typed output roles.
+    ///
+    /// A reused root can retain output correspondence without a producer receipt.
+    /// This is root-only retained evidence: it neither checks fresh whole-tree
+    /// currentness nor discharges any parent operation or native cleanup custody.
+    /// Use the parent settlement's `observation()` for aggregate projection and
+    /// the owning operation's current delivery and close for those boundaries.
+    /// This borrow is O(1), allocates nothing and leaves ownership with `self`.
+    pub fn root_settlement(
+        &self,
+    ) -> &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery> {
+        &self.root
     }
 
     pub fn root_receipt(
@@ -177,7 +192,7 @@ pub struct ProgramOutputRecord {
 }
 
 impl ProgramOutputRecord {
-    fn retained_settlement(
+    pub(in crate::application_entry) fn retained_settlement(
         &self,
     ) -> &worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement {
         self.retained_settlement.as_ref()

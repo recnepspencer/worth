@@ -7,7 +7,7 @@ use worth_foundational::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::foundational_vocabulary::{field, identity, key, revision};
+use crate::certification::foundational_vocabulary::{field, identity, key, revision};
 
 pub(super) fn admitted_state<const N: usize>(
     entries: [worth_foundational::ContractValidatedAspectArtifact; N],

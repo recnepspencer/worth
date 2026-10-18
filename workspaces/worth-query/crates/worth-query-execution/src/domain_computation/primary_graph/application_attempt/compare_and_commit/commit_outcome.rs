@@ -107,6 +107,8 @@ pub use denial::{
 /// Neither calls for a blind retry.
 #[derive(Debug)]
 pub enum WorthQueryApplicationCommitOutcome {
+    /// Business evidence and actual refused managed-cleanup custody remain separate.
+    CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the attempt's basis. Nothing was committed;
     /// re-read and retry.
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
@@ -149,7 +151,8 @@ impl WorthQueryApplicationCommitOutcome {
     pub fn require_committed(self) -> Result<super::WorthQueryApplicationCommitReceipt, Self> {
         match self {
             Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => Ok(receipt),
-            other @ (Self::ProductStale(_)
+            other @ (Self::CleanupRequired(_)
+            | Self::ProductStale(_)
             | Self::ProductUnpublished(_)
             | Self::NoEffect(_)
             | Self::Stale(_)
@@ -174,6 +177,7 @@ impl WorthQueryApplicationCommitOutcome {
         Err(match self {
             Self::Committed(receipt) => return Ok((receipt, false)),
             Self::AlreadyCommitted(receipt) => return Ok((receipt, true)),
+            Self::CleanupRequired(cleanup) => Uncommitted::CleanupRequired(cleanup),
             Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
             Self::ProductUnpublished(unpublished) => Uncommitted::ProductUnpublished(unpublished),
             Self::NoEffect(no_effect) => Uncommitted::NoEffect(no_effect),
@@ -195,6 +199,7 @@ impl WorthQueryApplicationCommitOutcome {
 /// unresolved, not that it failed.
 #[derive(Debug)]
 pub enum WorthQueryApplicationUncommitted {
+    CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     NoEffect(WorthQueryApplicationNoEffect),
@@ -212,6 +217,7 @@ impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutco
     fn from(uncommitted: WorthQueryApplicationUncommitted) -> Self {
         use WorthQueryApplicationUncommitted as Uncommitted;
         match uncommitted {
+            Uncommitted::CleanupRequired(cleanup) => Self::CleanupRequired(cleanup),
             Uncommitted::ProductStale(stale) => Self::ProductStale(stale),
             Uncommitted::ProductUnpublished(unpublished) => Self::ProductUnpublished(unpublished),
             Uncommitted::NoEffect(no_effect) => Self::NoEffect(no_effect),

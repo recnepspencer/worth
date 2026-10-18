@@ -15,9 +15,9 @@ use crate::runtime::{RelationalPinnedRead, VisibilityProjectionView};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::storage::overlay::PartitionAccess;
 
-mod candidate_comparison;
+pub(super) mod candidate_comparison;
 use candidate_comparison::borrowed_matches;
-mod navigation;
+pub(super) mod navigation;
 use navigation::{btree_navigation_work, ordered_navigation_work};
 
 impl RelationalPinnedRead<()> {

@@ -19,19 +19,18 @@ impl<T: Clone> SharedColumn<T> {
             &mut dyn StorageAllocationVisitor,
         ),
     ) {
-        if let Some(default) = &self.default {
-            if previous
+        if let Some(default) = &self.default
+            && previous
                 .default
                 .as_ref()
                 .is_none_or(|old| old.id() != default.id())
-            {
-                value(
-                    default,
-                    previous.default.as_deref(),
-                    default.observation(false),
-                    visitor,
-                );
-            }
+        {
+            value(
+                default,
+                previous.default.as_deref(),
+                default.observation(false),
+                visitor,
+            );
         }
         if let Some(root) = &self.root {
             visit_node(root, self.height, 0, previous, visitor, value);

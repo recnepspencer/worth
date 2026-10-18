@@ -1,4 +1,7 @@
 use std::num::NonZeroUsize;
+mod facts;
+mod settlements;
+use facts::{require_current_facts, require_witnessed_output};
 
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -34,52 +37,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
-                for settlement in settlements {
-                    if !settlement.belongs_to(runtime) {
-                        return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
-                    }
-                    let lineage = runtime
-                        .primary_provider
-                        .graph
-                        .output_lineage
-                        .lock()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner);
-                    let read = lineage_read(&mut admission, |maximum_work| {
-                        if let Some(receipt) = settlement.application_commit_receipt() {
-                            lineage.source_facts_for_receipt(
-                                runtime.runtime.authority_identity().as_u64(),
-                                &runtime.installed_schema.binding_identity(),
-                                self.product().observation(),
-                                receipt,
-                                maximum_work,
-                            )
-                        } else if let Some(stable) = settlement.stable.as_ref() {
-                            lineage.source_facts_for_stable_output(
-                                runtime.runtime.authority_identity().as_u64(),
-                                &runtime.installed_schema.binding_identity(),
-                                self.product().observation(),
-                                stable,
-                                maximum_work,
-                            )
-                        } else {
-                            lineage.source_facts_for_restored_output(
-                                runtime.runtime.authority_identity().as_u64(),
-                                &runtime.installed_schema.binding_identity(),
-                                self.product().observation(),
-                                settlement,
-                                maximum_work,
-                            )
-                        }
-                    })?;
-                    drop(lineage);
-                    let Some(read) = read else {
-                        let receipt = settlement.application_commit_receipt();
-                        require_own_publication(receipt, self.product().observation())?;
-                        continue;
-                    };
-                    self.require_current_read(&execution, relational, &read, &mut admission)?;
-                }
-                Ok(())
+                self.require_current_settlements_in(
+                    execution,
+                    relational,
+                    settlements,
+                    &mut admission,
+                )
             })
     }
 
@@ -139,7 +102,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     }
 
     /// The request's meter, within the caller's declared maximum.
-    fn request_admission(&self, maximum_work: NonZeroUsize) -> InvalidationEditAdmission {
+    pub(in crate::domain_computation::primary_graph) fn request_admission(
+        &self,
+        maximum_work: NonZeroUsize,
+    ) -> InvalidationEditAdmission {
         self.application()
             .primary_provider
             .graph
@@ -261,88 +227,6 @@ fn require_own_publication(
             Err(denial(WorthQueryOutputDemandDenialKind::Superseded))
         }
     }
-}
-
-fn require_witnessed_output(
-    relational: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    witness: Option<
-        &std::sync::Arc<
-            std::sync::OnceLock<
-                crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness,
-            >,
-        >,
-    >,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    use worth_relational::facade::mvcc::CompanionPreflightStop;
-    let witness = witness
-        .and_then(|witness| witness.get())
-        .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable))?;
-    match witness.unchanged_in( relational, snapshot, admission) {
-        Err(CompanionPreflightStop::Execution(cause)) => Err(super::super::output_reuse::read_denial(cause)),
-        Ok(true) => Ok(()),
-        Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
-        Err(
-            CompanionPreflightStop::WorkExhausted { .. }
-            | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-            ,
-        ) => Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)),
-        Err(CompanionPreflightStop::Interrupted(event)) => {
-            Err(super::super::output_reuse::interruption_denial(event))
-        }
-        Err(CompanionPreflightStop::WorkCounterOverflow) => Err(super::super::output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)),
-        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow) => Err(super::super::output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
-        Err(CompanionPreflightStop::PreparationMemoryExhausted { .. } | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => Err(super::super::output_reuse::memory_denial()),
-        Err(CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
-    }
-}
-
-fn require_current_facts(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    relational: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    read: &RetainedOutputCurrentnessRead,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    match first_moved_fact(
-        execution,
-        relational,
-        snapshot,
-        read.facts.iter(),
-        admission,
-    ) {
-        Ok(None) => Ok(()),
-        Ok(Some(moved)) => Err(denial_subject(
-            WorthQueryOutputDemandDenialKind::Superseded,
-            moved.locator_identity(),
-        )),
-        Err(RetainedFactStop::Execution(cause)) => {
-            Err(super::super::output_reuse::read_denial(cause))
-        }
-        Err(RetainedFactStop::Interrupted(event)) => {
-            Err(super::super::output_reuse::interruption_denial(event))
-        }
-        Err(RetainedFactStop::Memory) => Err(super::super::output_reuse::memory_denial()),
-        Err(RetainedFactStop::Work) => {
-            Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
-        }
-        Err(RetainedFactStop::Refused(refusal)) => Err(denial_subject(
-            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-            format!("comparison refused: {refusal:?}"),
-        )),
-        Err(RetainedFactStop::Unavailable(fact)) => Err(denial_subject(
-            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-            fact.locator_identity(),
-        )),
-    }
-}
-
-fn denial_subject(
-    kind: WorthQueryOutputDemandDenialKind,
-    fact: String,
-) -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(kind, format!("settled output fact is not current: {fact}"))
 }
 
 fn denial(kind: WorthQueryOutputDemandDenialKind) -> WorthQueryOutputDemandDenial {

@@ -16,10 +16,11 @@ pub enum ApplicationSemanticFamily {
     ExternalInputs,
     Outputs,
     Resources,
+    Authorization,
 }
 
 impl ApplicationSemanticFamily {
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 9] = [
         Self::Features,
         Self::Ports,
         Self::Connections,
@@ -28,6 +29,7 @@ impl ApplicationSemanticFamily {
         Self::ExternalInputs,
         Self::Outputs,
         Self::Resources,
+        Self::Authorization,
     ];
 }
 
@@ -87,12 +89,22 @@ impl ApplicationSemanticDescription {
         actions: &[ApplicationActionDeclaration],
         connections: &[ApplicationConnectionDeclaration],
         rules: &[ApplicationProgramRuleDeclaration],
+        adoption_authorization: Option<
+            &super::super::ApplicationProgramAdoptionAuthorizationDeclaration,
+        >,
     ) -> Self {
         let mut facts = Vec::new();
         append_features(&mut facts, features);
         append_actions(&mut facts, actions);
         append_connections(&mut facts, connections);
         append_rules(&mut facts, rules);
+        if let Some(authorization) = adoption_authorization {
+            facts.push(fact(
+                ApplicationSemanticFamily::Authorization,
+                "program-adoption-authorization",
+                authorization.canonical_meaning(),
+            ));
+        }
         facts.sort_unstable();
         Self {
             revision,
@@ -268,6 +280,14 @@ fn append_actions(
 ) {
     for action in actions {
         let subject = action.semantic_subject();
+        if let Some(delivery) = action.delivery() {
+            facts.push(fact(
+                ApplicationSemanticFamily::Operations,
+                format!("delivery:{subject}"),
+                delivery.canonical_meaning(),
+            ));
+        }
+
         let mut fields = vec![
             (
                 "input",
@@ -324,7 +344,8 @@ fn append_actions(
         if let Some(binding) = action.conditional_mutation_identity() {
             fields.push(("conditional-mutation-binding", binding.to_owned()));
         }
-        if let Some(requirements) = action.workflow_execution_requirements() {
+        {
+            let requirements = action.workflow_execution_requirements();
             fields.push((
                 "workflow-execution-requirements",
                 requirements.persistence_identity(),

@@ -21,7 +21,9 @@ use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 #[path = "authorization/authorized.rs"]
 mod authorized;
 use authorized::AuthorizedMutation;
+mod binding_dispatch;
 mod capability;
+pub(in crate::application_entry) use binding_dispatch::WorthQueryBindingAdmission;
 pub(super) use capability::admit_capability_for_assessment;
 pub(in crate::application_entry) use capability::prepare_capability_selected;
 
@@ -44,7 +46,7 @@ type AdmittedMutation<Schema, Binding> = WorthQueryAdmittedApplicationOperation<
     MutationScope<Schema, Binding>,
 >;
 
-pub(in crate::application_entry) struct PreparedMutation<Schema, Binding>
+pub struct PreparedMutation<Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
@@ -101,7 +103,7 @@ where
         ApplicationMutationScopeResolution<Schema, IntentPrincipal<Schema, Intent>>,
 {
     let preconditions = std::mem::take(&mut request.preconditions);
-    authorize(phase, request, preconditions).map(|authorized| authorized.admission)
+    authorize(phase, request, &preconditions).map(|authorized| authorized.admission)
 }
 
 pub(super) fn admit_for_assessment_selected<Schema, Intent, SourcePreparation>(
@@ -126,14 +128,14 @@ where
         ApplicationMutationScopeResolution<Schema, IntentPrincipal<Schema, Intent>>,
 {
     let preconditions = std::mem::take(&mut request.preconditions);
-    authorize_selected(phase, request, preconditions, selected)
+    authorize_selected(phase, request, &preconditions, selected)
         .map(|authorized| authorized.admission)
 }
 
 fn authorize<Schema, Intent, SourcePreparation>(
     phase: &AdvancementPhase<'_>,
     request: &WorthQueryApplicationMutationRequest<'_, '_, '_, Schema, Intent, SourcePreparation>,
-    preconditions: Preconditions<Schema, Intent>,
+    preconditions: &Preconditions<Schema, Intent>,
 ) -> Result<
     AuthorizedMutation<Schema, IntentBinding<Schema, Intent>>,
     WorthQueryApplicationRequestMutationDenial,
@@ -161,7 +163,7 @@ where
 fn authorize_selected<Schema, Intent, SourcePreparation>(
     _phase: &AdvancementPhase<'_>,
     request: &WorthQueryApplicationMutationRequest<'_, '_, '_, Schema, Intent, SourcePreparation>,
-    preconditions: Preconditions<Schema, Intent>,
+    preconditions: &Preconditions<Schema, Intent>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<
     AuthorizedMutation<Schema, IntentBinding<Schema, Intent>>,
@@ -202,7 +204,7 @@ where
         )
         .map_err(WorthQueryApplicationRequestMutationDenial::ScopeResolution)?;
     let admission = selected
-        .authorize_operation(
+        .authorize_borrowed_operation(
             _phase,
             &principal,
             &scope,
@@ -247,7 +249,13 @@ where
             <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    let authorized = authorize(phase, &request.request, staged.preconditions)?;
+    let authorized = authorize(
+        phase,
+        &request.request,
+        request
+            .borrowed_preconditions
+            .unwrap_or(&staged.preconditions),
+    )?;
     prepare_authorized(request, identities, staged.source, authorized)
 }
 
@@ -267,7 +275,14 @@ where
             <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    let authorized = authorize_selected(phase, &request.request, staged.preconditions, selected)?;
+    let authorized = authorize_selected(
+        phase,
+        &request.request,
+        request
+            .borrowed_preconditions
+            .unwrap_or(&staged.preconditions),
+        selected,
+    )?;
     prepare_authorized(request, identities, staged.source, authorized)
 }
 

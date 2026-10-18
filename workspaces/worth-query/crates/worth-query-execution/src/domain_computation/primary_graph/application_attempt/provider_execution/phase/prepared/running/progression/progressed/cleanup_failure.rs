@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
     recovery_evidence::unknown_commit_recovery_evidence,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationCommitOutcome as Outcome,
+    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationUncommitted as Outcome,
 };
 use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as Session, WorthQueryProviderSessionFailure,

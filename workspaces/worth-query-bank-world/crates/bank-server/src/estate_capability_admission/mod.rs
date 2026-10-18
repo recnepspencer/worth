@@ -20,4 +20,5 @@ mod scale;
 mod support_cutoff;
 mod warm_locality;
 
+mod adoption_context;
 mod advancement_custody;

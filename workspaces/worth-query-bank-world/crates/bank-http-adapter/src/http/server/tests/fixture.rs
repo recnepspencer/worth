@@ -74,7 +74,11 @@ impl BankHttpApplicationAuthenticator for CausalHttpApplication {
                     scope,
                 )
                 .await
-                .map_err(|_| panic!("causal HTTP credential should authenticate"))
+                .map_err(|error| {
+                    super::super::authentication::authentication_denial(
+                        crate::AuthentikBankAuthenticationError::PrincipalAdmission(error),
+                    )
+                })
         })
     }
 }

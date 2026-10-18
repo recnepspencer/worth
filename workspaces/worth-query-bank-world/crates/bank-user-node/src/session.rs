@@ -6,7 +6,7 @@ use bank_http_adapter::{
     BankHttpAccountActivityPageRequest, BankHttpAccountActivityResumeRequest,
     BankHttpAccountActivityStreamRequest, BankHttpAccountSummaryOutcome,
     BankHttpAccountSummaryRequest, BankHttpCredential, BankHttpMutationOutcome,
-    BankHttpMutationRequest, BankHttpProtocolVersion,
+    BankHttpProtocolVersion,
 };
 use tokio::sync::{watch, Mutex};
 use worth_query_host::facade::admission::authenticated_principal::{
@@ -24,6 +24,7 @@ use crate::protocol::{
 
 mod aftermath;
 mod elevation;
+mod mutation;
 mod recovery;
 mod upstream_response;
 
@@ -207,7 +208,7 @@ impl BankUserSession {
             }
         };
         let upstream = BankHttpAccountSummaryRequest {
-            protocol: BankHttpProtocolVersion::V3,
+            protocol: BankHttpProtocolVersion::V4,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -240,7 +241,7 @@ impl BankUserSession {
             (credential, self.session_revision.subscribe())
         };
         let upstream = BankHttpAccountActivityStreamRequest {
-            protocol: BankHttpProtocolVersion::V3,
+            protocol: BankHttpProtocolVersion::V4,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -276,7 +277,7 @@ impl BankUserSession {
             None => return activity_denied(BankUserNodeDenialKind::NoAuthenticatedSession),
         };
         let upstream = BankHttpAccountActivityPageRequest {
-            protocol: BankHttpProtocolVersion::V3,
+            protocol: BankHttpProtocolVersion::V4,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -299,7 +300,7 @@ impl BankUserSession {
             None => return activity_denied(BankUserNodeDenialKind::NoAuthenticatedSession),
         };
         let upstream = BankHttpAccountActivityResumeRequest {
-            protocol: BankHttpProtocolVersion::V3,
+            protocol: BankHttpProtocolVersion::V4,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -330,35 +331,6 @@ impl BankUserSession {
         {
             Ok(response) => BankUserNodeAccountActivityPageOutcome::Forwarded { response },
             Err(kind) => activity_denied(kind),
-        }
-    }
-
-    pub(super) async fn mutate(
-        &self,
-        request: BankUserNodeMutationRequest,
-    ) -> BankUserNodeMutationOutcome {
-        let credential = match self.credential.lock().await.clone() {
-            Some(credential) => credential,
-            None => return mutation_denied(BankUserNodeDenialKind::NoAuthenticatedSession),
-        };
-        let upstream = BankHttpMutationRequest {
-            protocol: BankHttpProtocolVersion::V3,
-            request_id: request.request_id,
-            credential: BankHttpCredential::from_authentik(&credential),
-            controls: request.controls,
-            idempotency_key: request.idempotency_key,
-            operation: request.operation,
-        };
-        match self
-            .forward::<_, BankHttpMutationOutcome>(
-                self.mutation_endpoint.clone(),
-                &upstream,
-                upstream.controls.deadline_milliseconds,
-            )
-            .await
-        {
-            Ok(response) => BankUserNodeMutationOutcome::Forwarded { response },
-            Err(kind) => mutation_denied(kind),
         }
     }
 }

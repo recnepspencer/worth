@@ -26,7 +26,7 @@ use worth_query_host::facade::{declaration, primary_graph, runtime};
 #[path = "host/world_resources.rs"]
 mod world_resources;
 use world_resources::world_resources;
-pub use world_resources::WORKFLOW_DEFINITION_BYTES;
+pub use world_resources::{ACTIVE_WORLD_OBSERVATIONS, WORKFLOW_DEFINITION_BYTES};
 
 use super::assessment_output::{
     OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,
@@ -92,6 +92,9 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
         (): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, DocumentRetentionSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(
+            super::actor_generation::ActorLifecycleHandler,
+        )?;
         setup.invariant(
             DocumentRetentionV1::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -140,17 +143,14 @@ pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0
     publish_on_first_program_with_limits(host_limits())
 }
 
-/// Scheduled 10k publication lane: 200k candidate items, 128 MiB candidate
-/// bytes, 20M candidate work, 200k operation width, and WorkflowScale's
-/// finite Relational publication and integrity ceilings. Ordinary actions retain smaller
-/// handler-level candidate requirements.
-pub fn publish_on_first_program_for_workflow_scale(
-    nodes: u16,
-    connections: u16,
-) -> DocumentRetentionRuntime<RetentionProgramP0> {
+/// Scale publication lane: 200k candidate items and operation width, 128 MiB
+/// candidate bytes, and WorkflowScale's finite Relational publication and
+/// integrity ceilings. Ordinary handlers retain their narrower requirements.
+pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime<RetentionProgramP0>
+{
     publish_on_first_program_with_limits(
         WorthQueryInMemoryApplicationLimits::new(
-            world_resources::workflow_scale_resources(nodes, connections),
+            world_resources::workflow_scale_resources(),
             runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
                 world_resources::WORKFLOW_SCALE_WIDTH,
                 128 * 1024 * 1024,
@@ -166,7 +166,7 @@ pub fn publish_on_first_program_for_workflow_scale(
     )
 }
 
-fn publish_on_first_program_with_limits(
+pub(super) fn publish_on_first_program_with_limits(
     limits: WorthQueryInMemoryApplicationLimits,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
     publish_with_limits(
@@ -209,7 +209,7 @@ pub fn publish_on_first_resource_program() -> DocumentRetentionRuntime<ResourceR
     .expect("the resource-custody host must install")
 }
 
-/// Attempts a host that rosters P0 alone against the two-rule catalog.
+/// Attempts a host without a V2 program against the two-rule catalog.
 pub fn publish_first_program_alone(
 ) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
     publish(
@@ -268,7 +268,9 @@ where
 {
     in_memory_rostered_program(
         initial,
-        roster,
+        // The installed lifecycle binding is owned by this explicitly rostered
+        // program, not implicitly added to P0/P1 or the alternative programs.
+        roster.support(super::actor_generation::validated_actor_program()),
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         limits,
@@ -287,6 +289,8 @@ fn seed_host(
     seed_operator(graph, &principal_binding);
     seed_document(graph);
     super::workflow::seed_authoring(graph);
+    super::workflow::governed_read::seed(graph);
+    super::program_adoption::seed(graph);
     Ok(())
 }
 
@@ -311,6 +315,28 @@ fn seed_operator(
             declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
         )
         .expect("the operator must seed");
+    for (key, identity, external) in [
+        (
+            "document-retention-reviewer",
+            2_u64,
+            super::operator_identity::reviewer_identity(),
+        ),
+        (
+            "document-retention-ungranted-reviewer",
+            3_u64,
+            super::operator_identity::ungranted_reviewer_identity(),
+        ),
+    ] {
+        graph
+            .bind_principal(
+                principal_binding,
+                primary_graph::WorthQueryApplicationPrincipalKey::new(key).unwrap(),
+                identity,
+                external,
+                declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
+            )
+            .expect("review principals seed through the native principal binding");
+    }
 }
 
 fn seed_document(
@@ -346,18 +372,16 @@ fn seed_document(
         .expect("the related document must seed");
 }
 
-pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
-    // Installation admits the binding's maximum publication shape even though
-    // the ordinary Document handler requests its narrow candidate at execution.
-    WorthQueryInMemoryApplicationLimits::new(
-        world_resources(256, 4 * 1024 * 1024, 256),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            200_000,
-            128 * 1024 * 1024,
-        )
-        .expect("valid candidate limits"),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
-            .expect("valid query limits"),
-        primary_graph::SignalConditionalEvaluationBudget::development(),
-    )
-}
+#[path = "host/query_resources.rs"]
+mod query_resources;
+pub use query_resources::host_limits;
+pub(super) use query_resources::with_query_resources;
+
+#[path = "host/owning_workflow.rs"]
+mod owning_workflow;
+#[allow(
+    unused_imports,
+    reason = "Shared fixture factory is used by compiled workflow examples"
+)]
+pub use owning_workflow::publish_owner_workflow;
+pub use owning_workflow::{publish_owner_workflow_with_projection, read_owner_approval_grant};

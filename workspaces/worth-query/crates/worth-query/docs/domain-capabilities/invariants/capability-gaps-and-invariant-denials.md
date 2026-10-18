@@ -2,6 +2,8 @@
 
 > **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../../foundations/ordinary-application-front-door.md).
 
+> **Not "the platform lacks a feature".** A *capability gap* here is domain-authored runtime posture (for example `WorthQueryInvariantCapabilityContributionAuthoring::graph_capability_gap(..)`) that says one runtime seam is missing a capability for a target combination. To find out whether WORTH supports something you want to build, see the [Capability Index](../../../../../../../docs/capability-index.md).
+
 ## What This Feature Is
 
 This feature covers domain-authored capability-gap and invariant-denial posture
@@ -26,7 +28,8 @@ Proof-facing authoring:
 Canonical materializers:
 
 - `materialize_graph_composition_capability_support_row(...)`
-- `materialize_graph_composition_domain_invariant_denial(...)`
+- `materialize_graph_composition_domain_invariant_denial(...)` (crate-visible
+  only, `pub(crate)`; not callable outside `worth-query`)
 
 Boundary acquisition:
 
@@ -36,9 +39,11 @@ Boundary acquisition:
 - do not construct lower-runtime boundary envelopes directly; constructors are
   intentionally private
 
-For ordinary invariant registration, use the separate runtime and domain
-registration surfaces documented in
-Registering Domain Invariants Through Query.
+For ordinary invariant registration, an application registers invariants in
+its contribution's `configure` with `setup.invariant(..)`; see
+[Build an Application §2](../../../../../../../docs/build-an-application.md#2-declare-the-schema-and-its-contributions)
+and the host README's
+[Typed Handler And Invariant Access](../../../../worth-query-host/README.md#typed-handler-and-invariant-access).
 
 ## Core Mental Model
 
@@ -92,12 +97,12 @@ rebind operation needs to say:
 
 ## How It Relates To Other Features
 
-- use Registering Domain Invariants Through Query
+- use `setup.invariant(..)` in a contribution
+  ([Build an Application §2](../../../../../../../docs/build-an-application.md#2-declare-the-schema-and-its-contributions))
   to install runtime invariants
-- use Lower-Runtime Support And Boundary Traceability
-  when you only need support posture rather than a capability gap or denial
-- use Continuity Contributions And Authoritative Successors
-  when the invariant story depends on predecessor and successor truth
+- use [Lower-Runtime Capability Routing](../lower-runtime-capability-routing.md)
+  (`worth_query_lower_runtime_support_matrix()`) when you only need support
+  posture rather than a capability gap or denial
 
 ## Inspection And Debugging
 
@@ -121,6 +126,7 @@ rebind operation needs to say:
 
 ## Related Docs
 
-- Registering Domain Invariants Through Query
-- Lower-Runtime Support And Boundary Traceability
-- Continuity Contributions And Authoritative Successors
+- [Build an Application §2](../../../../../../../docs/build-an-application.md#2-declare-the-schema-and-its-contributions)
+- [Typed Handler And Invariant Access](../../../../worth-query-host/README.md#typed-handler-and-invariant-access)
+- [Lower-Runtime Capability Routing](../lower-runtime-capability-routing.md)
+- [Capability Index](../../../../../../../docs/capability-index.md)

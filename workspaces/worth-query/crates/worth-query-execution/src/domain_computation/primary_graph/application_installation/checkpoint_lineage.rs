@@ -3,12 +3,12 @@ use super::super::{
     application_checkpoint::decode_checkpoint_computation,
     application_query::WorthQueryCheckpointSourceIdentity, output_lineage::RecordedSourceIdentity,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn restore<Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let Some(authority) = application
         .product_runtime
@@ -17,6 +17,10 @@ pub(super) fn restore<Schema: ApplicationSchema>(
     else {
         return Ok(());
     };
+    execution.consult().map_err(|cause| {
+        super::super::application_checkpoint::CheckpointDecodeDenial::execution(cause)
+            .into_installation_denial()
+    })?;
     let observation = authority.product_branch();
     let mut lineage = application
         .primary_provider
@@ -39,13 +43,11 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             bytes,
             checkpoint.producer_fact_wire_version,
             None,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            execution.allocation_policy(),
         )
-        .map_err(|detail| {
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                detail.to_string(),
-            )
+        .map_err(|cause| {
+            super::super::application_checkpoint::CheckpointDecodeDenial::from_fact(cause)
+                .into_installation_denial()
         })?
         .into_parts();
         lineage.record_restoration(

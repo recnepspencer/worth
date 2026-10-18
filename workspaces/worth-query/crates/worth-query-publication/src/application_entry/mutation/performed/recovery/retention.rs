@@ -3,7 +3,9 @@ use super::super::*;
 use crate::application_entry::mutation::{
     WorthQueryApplicationMutationRequestWithIdempotency, WorthQueryApplicationRecoveryRequestDenial,
 };
-use worth_query_declaration::facade::application_operation::ApplicationMutationScopeResolution;
+use worth_query_declaration::facade::application_operation::{
+    ApplicationMutationIntent, ApplicationMutationScopeResolution,
+};
 use worth_query_declaration::facade::application_program::ApplicationProgramOutputsShape;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryManagedApplicationRecoveryDenial,
@@ -21,6 +23,8 @@ impl<'application, Schema, Intent, SourcePreparation>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -32,13 +36,13 @@ where
     /// Every failed admission or transfer returns the complete owned failure.
     pub fn retry_required_output_retention<Program, Root>(
         self,
-        failure: WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>,
+        failure: WorthQueryRequiredOutputRetentionFailure<Schema, Intent::Binding, Program, Root>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
-        WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>,
+        WorthQueryPerformedApplicationMutation<Schema, Intent::Binding, Program, Root>,
         (
             WorthQueryApplicationRecoveryRequestDenial,
-            WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>,
+            WorthQueryRequiredOutputRetentionFailure<Schema, Intent::Binding, Program, Root>,
         ),
     >
     where
@@ -70,18 +74,26 @@ where
         }
     }
 
-    fn retry_required_output_retention_in_advancement<Program, Root>(
+    pub(in crate::application_entry) fn retry_required_output_retention_in_advancement<
+        Program,
+        Root,
+    >(
         mut self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
             '_,
         >,
-        mut failure: WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>,
+        mut failure: WorthQueryRequiredOutputRetentionFailure<
+            Schema,
+            Intent::Binding,
+            Program,
+            Root,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
-        WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>,
+        WorthQueryPerformedApplicationMutation<Schema, Intent::Binding, Program, Root>,
         (
             WorthQueryApplicationRecoveryRequestDenial,
-            WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>,
+            WorthQueryRequiredOutputRetentionFailure<Schema, Intent::Binding, Program, Root>,
         ),
     >
     where

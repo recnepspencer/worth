@@ -27,17 +27,3 @@ pub use vocabulary::{
     FoundationalTransitionWORTHProofApiEvidence, FoundationalTransitionWORTHProofForbiddenSurface,
     FoundationalTransitionWORTHProofSurface,
 };
-
-#[cfg(test)]
-mod tests {
-    use worth_proof::AuthorityWitness;
-
-    use super::FoundationalTransitionProductionReadinessAuthority;
-
-    #[test]
-    fn production_readiness_authority_is_crate_controlled() {
-        let _authority = AuthorityWitness::from_authority_marker(
-            FoundationalTransitionProductionReadinessAuthority::certification_boundary(),
-        );
-    }
-}

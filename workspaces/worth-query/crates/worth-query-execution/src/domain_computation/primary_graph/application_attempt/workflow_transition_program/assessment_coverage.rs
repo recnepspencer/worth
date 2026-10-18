@@ -218,7 +218,7 @@ pub(super) fn observe(
     // collected under the earlier revision is stale, never reused.
     if evidence.subject != coverage.subject
         || evidence.coverage_identity != coverage.identity
-        || evidence.program_revision.as_deref() != Some(program_revision.to_string().as_str())
+        || evidence.program_revision != program_revision.to_string()
     {
         return Ok(ObservedAssessmentCoverage {
             current: false,

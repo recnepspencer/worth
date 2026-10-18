@@ -37,7 +37,10 @@ facades expose on its behalf. See [§7](#7-internal-crates-do-not-import).
 > `worth-query-publication`, `worth-query-declaration`, `worth-proof`,
 > `worth-runtime-bridge`, or `worth-runtime-world` to an application's
 > `Cargo.toml`, stop. The capability you need is already on
-> `worth_query_host::facade` or `worth_query_decl::facade`. Search there first.
+> `worth_query_host::facade` or `worth_query_decl::facade`. Search there first,
+> then look the task up in the [Capability Index](capability-index.md). If you
+> still cannot find it, follow the index's missing-capability procedure: report
+> the gap, and do not build a substitute.
 
 ---
 
@@ -69,7 +72,9 @@ says what it is: the aftermath and recovery vocabulary is still settling.
 
 ### 3.1 `worth-query-decl`: declare meaning
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_decl::facade::{application_capability, application_query, application_schema};
 ```
 
@@ -97,7 +102,9 @@ Guide: [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-
 
 ### 3.2 `worth-query-host`: install and run
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::{admission, domain, primary_graph, publication, runtime};
 ```
 
@@ -124,7 +131,9 @@ lower-runtime internals.
 
 The two request shapes you will use most:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 
 let request = application.request(&external_principal, &request_scope);
@@ -137,40 +146,39 @@ let published = request
 let rows = published.rows();
 let sources = published.observed_sources();
 
-// A mutation. The outcome is a type you must match; nothing is implied.
-// On a runtime installed with a program, every mutation runs through the
-// program the branch runs. Plain execute() refuses it with
-// ApplicationProgramRequired; it is only for a runtime installed without one.
-match request
-    .mutate(SomeOperation::new(input))
-    .without_source()                        // or .expect_source(source)
-    .idempotency(&key)
-    .execute_in_program(&application)?       // the installed program runtime
-{
-    Committed { receipt, result } => { /* new state is published */ }
-    AlreadyCommitted(receipt)     => { /* this key already committed */ }
-    IdempotencyIntentDrift        => { /* same key, different intent */ }
-    DomainDenied(denial)          => { /* your handler refused */ }
-    Cancelled | DeadlineExceeded  => { /* stopped before commit */ }
-    Commit(uncommitted)           => { /* not a clean landing: stale, denied, deferred,
-                                        indeterminate, or moved-but-unsettled.
-                                        Match the inner outcome; never blindly retry. */ }
-}
+// Reads remain independently admitted at this observation.
 ```
 
-The names above are shortened. The outcome type is
-`WorthQueryApplicationMutationOutcome<Denial, Result>`. Mutation requests also
-take `preconditions`. A mutation that feeds the program's output graph runs
-with `execute_performed::<Program, Root>(&application, allocation_policy)` instead; see
-[Build an Application §5](build-an-application.md#5-run-the-program). How WORTH Works
-[§9](how-it-works.md#9-query-the-life-of-one-request) and
-[§11](how-it-works.md#11-outcomes-every-way-a-request-can-end) explain what each outcome
-means, and why `Commit(..)` is never collapsed into an error string.
+For an action, capture original meaning and select its exact installed occurrence.
+The ordinary builder has no manual execution, preparation or recovery methods.
 
-Guide: [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md).
-It covers contribution-composed applications, branch-local program evolution,
-output demand and live reads, typed handler access, the ordinary typed query
-entry, installed domain use, and application readiness.
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let operation = request.mutate(intent)
+    .without_source() // only a declaration-authorized no-source binding
+    .preconditions(original_conditions)
+    .idempotency_owned(key)?
+    .retain_operation::<Program, Action>(&application)?;
+let next = operation.advance(&fresh_request);
+```
+
+Fixed actions own publication, retention, native output advancement and settlement.
+A settled owner reads its declared query/batch at one authentic current observation;
+refusal retains settlement and cleanup. Source-only actions complete with native
+fresh result or recovered receipt evidence. Every attempt supplies fresh authority.
+Close can refuse and returns the complete remaining owner. See
+[Build §5](build-an-application.md#5-run-the-program).
+
+#### Advanced native entrances
+
+Use the [ordinary owning entry](build-an-application.md#53-execute-through-the-program)
+for fixed, discovered, source-only and bound workflow actions. `request.advanced().mutate(intent)` exposes
+current native execute, prepare and recovery controls; `application_entry::advanced`
+contains their types. Fixed output start and registered recovery also require
+`request.advanced()`. Program-less runtime installation is advanced.
+Discovered and bound workflow actions retain their original owning operation.
+Manual execute, prepare and recovery calls are explicit advanced native controls.
 
 ### 3.3 Runnable examples
 
@@ -273,14 +281,27 @@ when you are building a host around it.
 | `worth-ui-native-platform` | Crate root | The only native-display entry point | [UI README](../workspaces/worth-ui/README.md) |
 | `worth-store` | Crate-root modules: `physical_runtime`, `integrity_observation`, `aspect_native`, `contracts`, `physical_format`, `terminal_projection` | The durable physical store and its runtime lifecycle | [Workspace](../workspaces/worth-store/README.md), [facade](../workspaces/worth-store/crates/worth-store/README.md) |
 
-Two caveats:
+Three caveats:
 
 - **Using Relational or Signal directly means you hold their contracts
   yourself.** Query is what composes truth, derived work, admission, and
   publication into one governed request. Standalone use gives you one owner's
   guarantees, not the platform's.
 - **Store is not yet wired to Query.** No crate outside the Store workspace
-  depends on it today. Query's durable execution parity is planned, not done.
+  depends on it today. Query's store-backed durable execution and restore are
+  planned, not done.
+- **Restart today uses the app-owned checkpoint lane.** An installed runtime
+  captures an opaque `WorthQueryApplicationCheckpoint` with
+  `capture_application_checkpoint_with_sections` (or
+  `capture_application_checkpoint`). Your application stores and transports its
+  `bytes()`; on restart it rebuilds the value with
+  `WorthQueryApplicationCheckpoint::from_untrusted_bytes` and reinstalls through
+  `in_memory_rostered_program_from_checkpoint` (or another `*_from_checkpoint`
+  constructor on `application_installation`), which readmits committed truth and
+  accepted-output identities, not live handles or retained observations. See
+  [Build an Application §4.4](build-an-application.md#44-checkpoint-program-transitions).
+  Do not build host persistence of platform truth: no mirrored tables, saved
+  authority, or replayed history as a substitute.
 
 ---
 
@@ -428,3 +449,66 @@ Use `--document-private-items` only when you are maintaining the platform.
 - [How WORTH Works](how-it-works.md): what happens behind these facades.
 - [Glossary](glossary.md): exact meanings of every term used here.
 - [Documentation index](README.md).
+
+## Source-derived mutation outcomes
+
+These are the current public mutation outcome variants. Their lifecycle meaning
+remains with the mutation owner and the linked application guide.
+
+### Mutation outcomes
+
+<!-- source-facts: mutation-outcomes begin -->
+<!-- Derived from `facade::application_entry::WorthQueryApplicationMutationOutcome`; edit its source, then --write-guidance. -->
+
+| Variant | Shape |
+| --- | --- |
+| `Committed` | named { receipt: WorthQueryApplicationCommitReceipt, result: Result } |
+| `AlreadyCommitted` | tuple (WorthQueryApplicationCommitReceipt) |
+| `PreviouslyCommitted` | tuple (WorthQueryHistoricalApplicationCommit) |
+| `IdempotencyIntentDrift` | unit |
+| `DomainDenied` | tuple (Denial) |
+| `Cancelled` | unit |
+| `DeadlineExceeded` | unit |
+| `Commit` | tuple (WorthQueryApplicationUncommitted) |
+<!-- source-facts: mutation-outcomes end -->
+
+### Retained capability commands
+
+Delegation and revocation enter through
+`WorthQueryApplicationRequest::retain_capability_delegation_in_program` and
+`retain_capability_revocation_in_program`, returning move-only
+`WorthQueryCapabilityCommand` owners. `advance(&fresh_request)` preserves
+original intent and custody through progress/refusal, native Fresh/Recovered
+completion and terminal posture. Completed `close_with_evidence` transfers the
+original receipt after native cleanup; close refusal returns the same owner.
+These commands reuse the native publication owner, without a mutation binding
+or fabricated handler result. See [owning command usage](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands).
+
+### Observable workflow requests
+
+Applications use `worth_query_host::facade::application_entry` for request
+methods and `application_discovery` for workflow read targets, history pages,
+marks and outcomes. Policies and typed read bindings come from
+`worth_query_decl::facade::application_program`; recorded actor requirements
+come from its `application_capability` module.
+
+| Task | Public receiver and returned meaning |
+| --- | --- |
+| Pin current selected data | `request.retain_current_read()`; no phase argument. Returns a retained read, not a disclosure grant. |
+| Select that data | `request.at(&basis)`; current request admission and selected data remain separate. |
+| Reacquire an original start | `read.read_original_workflow::<Spec, SubjectRead, AuditRead>(vocabulary, &original_start, input, audit_input)`; Live, Historical or Missing. |
+| Locate history | `found.target()` or `observation.target()`; a sealed data target, not a new field on Live or command authority. |
+| Read a bounded history | `read.read_workflow_history::<Spec, SubjectRead, AuditRead>(vocabulary, &target, input, audit_input, width, indexes, after)`; `after` is the previous history page at the same basis and selection. |
+| Subscribe to relevant changes | `read.subscribe_workflow_history::<Spec, SubjectRead>(vocabulary, &target, input)`; native envelope subscription custody. |
+| Check a mark | `read.poll_workflow_history::<Spec, SubjectRead>(vocabulary, &mut subscription, input)`; fresh subject admission, `Pending`, `Changed`, `Overflow` or `Closed`, no implicit data refresh. |
+| Release subscription custody | `subscription.close()`; no request argument and no operation cleanup evidence. |
+
+Audit is independently admitted: `Withheld` records undisclosed actor roles,
+while lifecycle rows and locators keep their subject-authorized meaning.
+A live reference, original start intent or observed actor supplies no execution
+permission. Advance and owning operation receivers require current admission.
+
+The [mixed caller journey](build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
+contains marker-bound proposal, archive/ingress/cleanup and old-basis/live-mark
+excerpts. Its complete public-facade target is
+[`observable_workflow`](../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs).

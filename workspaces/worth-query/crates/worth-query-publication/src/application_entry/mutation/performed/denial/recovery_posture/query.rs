@@ -79,6 +79,11 @@ fn authorization_posture(kind: AuthorizationKind) -> WorthQueryRequiredOutputRec
         | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityProjectionRejected)
         | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityGrantMissing)
         | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
+        | AuthorizationKind::Refused(AuthorizationRefusal::WorkflowActorContextRequired)
+        | AuthorizationKind::Refused(AuthorizationRefusal::WorkflowActorAbsent)
+        | AuthorizationKind::Refused(AuthorizationRefusal::WorkflowActorComparisonMismatch)
+        | AuthorizationKind::Refused(AuthorizationRefusal::WorkflowActorSourceInvalid)
+        | AuthorizationKind::Refused(AuthorizationRefusal::WorkflowActorEvidenceUnavailable)
         | AuthorizationKind::Refused(AuthorizationRefusal::PurposeMismatch)
         | AuthorizationKind::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched)
         | AuthorizationKind::Refused(AuthorizationRefusal::ConflictRuleMatched)
@@ -261,6 +266,22 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
 mod tests {
     use super::*;
     use worth_query_execution::facade::product::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+
+    #[test]
+    fn missing_or_invalid_workflow_actor_evidence_is_terminal_for_same_source_recovery() {
+        for cause in [
+            AuthorizationRefusal::WorkflowActorContextRequired,
+            AuthorizationRefusal::WorkflowActorAbsent,
+            AuthorizationRefusal::WorkflowActorComparisonMismatch,
+            AuthorizationRefusal::WorkflowActorSourceInvalid,
+            AuthorizationRefusal::WorkflowActorEvidenceUnavailable,
+        ] {
+            assert_eq!(
+                authorization_posture(AuthorizationKind::Refused(cause)),
+                WorthQueryRequiredOutputRecoveryPosture::Terminal
+            );
+        }
+    }
 
     #[test]
     fn nested_world_capacity_is_retryable_but_foreign_authority_is_terminal() {

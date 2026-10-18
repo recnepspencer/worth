@@ -64,10 +64,10 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
         let facts = crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([field_fact(execution, runtime, &old_handle, entity, status)])).for_comparison().unwrap();
         // Real Native source/output facts, read and fully compared before the fork's first write.
-        let witness = super::super::request_recording::account_witness(&world, runtime, &old_handle, entity);
+        let witness = super::super::request_recording::account_witness(execution, &world, runtime, &old_handle, entity);
         let current = ConsumedOutputEvidence::verify_at_observation(execution, &identity, &facts, &[], Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::CheckpointRestore), &witness, owner, runtime, &old_handle, &old, &mut owner.edit_admission()).unwrap();
         assert_eq!(current, ConsumedOutputVerification::Current);
-        let root = ConsumedOutputEvidence::restored_with_witness_for_test(owner, identity, Arc::clone(facts.facts()), Arc::clone(&old), witness);
+        let root = ConsumedOutputEvidence::restored_with_witness_for_test(owner, identity, facts.facts().clone(), Arc::clone(&old), witness);
         (old_handle, old, root)
     });
     let held = owner

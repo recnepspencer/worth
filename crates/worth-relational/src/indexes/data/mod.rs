@@ -1,3 +1,8 @@
+mod related_entity_prefix;
+pub use related_entity_prefix::{
+    BoundedRelatedEntityPrefixBoundary, BoundedRelatedEntityPrefixDenial,
+    BoundedRelatedEntityPrefixLookupRequest, BoundedRelatedEntityPrefixPage,
+};
 mod selected_read_work;
 pub use selected_read_work::SelectedIndexReadWork;
 mod allocation_accounting;

@@ -9,8 +9,8 @@ use worth_server::{
 
 use super::{registration, TestDurableProductExecutor};
 
-#[path = "../product_adapter_phase_nine/fixture.rs"]
-mod product_adapter_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_product_adapter_phase_nine_fixture as product_adapter_fixture;
 
 pub use product_adapter_fixture::direct_session;
 pub use product_adapter_fixture::schema_bound_json::publish_schema_bound_json;

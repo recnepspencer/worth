@@ -20,19 +20,69 @@ impl WorthQueryRecoveryDisposalReceipt {
     }
 }
 
+/// Refusal preserves the exact live handle; a terminal denial owns no live resource.
+/// ```compile_fail,E0599
+/// fn cannot_copy(denial:worth_query_execution::facade::primary_graph::WorthQueryRecoveryDisposalDenial) { let _=denial.clone(); }
+/// ```
+/// ```
+/// fn transfer(denial:worth_query_execution::facade::primary_graph::WorthQueryRecoveryDisposalDenial)->worth_query_execution::facade::primary_graph::WorthQueryRecoveryDisposalDenial {denial}
+/// ```
+#[derive(Debug)]
+pub enum WorthQueryRecoveryDisposalDenial {
+    Retained {
+        denial: WorthQueryRecoveryHandleDenial,
+        handle: Box<WorthQueryRecoveryHandle>,
+    },
+    Terminal(WorthQueryRecoveryHandleDenial),
+}
+impl WorthQueryRecoveryDisposalDenial {
+    pub fn denial(&self) -> &WorthQueryRecoveryHandleDenial {
+        match self {
+            Self::Retained { denial, .. } | Self::Terminal(denial) => denial,
+        }
+    }
+    pub fn kind(&self) -> WorthQueryRecoveryHandleDenialKind {
+        self.denial().kind()
+    }
+
+    pub fn into_parts(
+        self,
+    ) -> (
+        WorthQueryRecoveryHandleDenial,
+        Option<WorthQueryRecoveryHandle>,
+    ) {
+        match self {
+            Self::Retained { denial, handle } => (denial, Some(*handle)),
+            Self::Terminal(denial) => (denial, None),
+        }
+    }
+}
+
 /// Disposes of a recovery handle, ending the custody it stands for.
 ///
 /// `authority` must be fresh effect authority minted for this exact handle. On
 /// success the handle is consumed as disposed and the receipt names its binding.
-/// On denial the handle is relinquished, not disposed.
+/// On refusal the actual handle is returned; only native terminal consumption returns none.
 pub fn dispose_recovery_handle(
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,
-) -> Result<WorthQueryRecoveryDisposalReceipt, WorthQueryRecoveryHandleDenial> {
-    let handle = handle.admit(|handle| require_fresh_effect_authority(handle, authority))?;
-    Ok(WorthQueryRecoveryDisposalReceipt {
-        binding: handle.consume(WorthQueryRecoveryResourceTerminal::Disposed)?,
-    })
+) -> Result<WorthQueryRecoveryDisposalReceipt, WorthQueryRecoveryDisposalDenial> {
+    if let Err(denial) = require_fresh_effect_authority(&handle, authority) {
+        return Err(
+            if denial.kind() == WorthQueryRecoveryHandleDenialKind::AlreadyTerminal {
+                WorthQueryRecoveryDisposalDenial::Terminal(denial)
+            } else {
+                WorthQueryRecoveryDisposalDenial::Retained {
+                    denial,
+                    handle: Box::new(handle),
+                }
+            },
+        );
+    }
+    handle
+        .consume(WorthQueryRecoveryResourceTerminal::Disposed)
+        .map(|binding| WorthQueryRecoveryDisposalReceipt { binding })
+        .map_err(WorthQueryRecoveryDisposalDenial::Terminal)
 }
 
 /// Expire after `evaluate_expiry` proves the deadline. Records the sample via

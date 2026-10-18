@@ -6,11 +6,6 @@ use super::super::CanonicalProductionReadinessCertified;
 pub struct CanonicalProductionReadinessAuthority(());
 
 impl CanonicalProductionReadinessAuthority {
-    #[cfg(test)]
-    pub(crate) const fn new() -> Self {
-        Self(())
-    }
-
     pub(super) const fn certification_boundary() -> Self {
         Self(())
     }

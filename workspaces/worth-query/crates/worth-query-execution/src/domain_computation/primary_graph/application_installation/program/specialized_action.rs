@@ -38,21 +38,25 @@ where
         // This token names an operation, not a mutation binding. It cannot
         // distinguish an ordinary sibling from a guarded one at commit time.
         if self
+            .backing
             .runtime
             .operation_requires_workflow_authority::<Operation>()
         {
             return Err(WorthQueryApplicationCommitDenial::workflow_authority_required());
         }
         let operation = TypeId::of::<Operation>();
-        let required_output_source = self.program.actions().iter().any(|action| {
+        let required_output_source = self.backing.program.actions().iter().any(|action| {
             TypeId::from(action.operation_type()) == operation
                 && action.mutation_binding_type().is_some_and(|binding| {
-                    self.output_source_bindings.contains(&TypeId::from(binding))
+                    self.backing
+                        .output_source_bindings
+                        .contains(&TypeId::from(binding))
                 })
         });
-        if !self.program.contains_operation_type::<Operation>()
+        if !self.backing.program.contains_operation_type::<Operation>()
             || required_output_source
             || self
+                .backing
                 .runtime
                 .installed_conditionals
                 .contains_operation::<Operation>()
@@ -82,15 +86,17 @@ where
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
+            .backing
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
+                    .backing
                     .runtime
                     .compare_and_commit_elevation_request_for_program(
                         &execution,
@@ -103,6 +109,7 @@ where
             .unwrap_or_else(|denial| match candidate.take() {
                 Some(candidate) => self
                     .runtime
+                    .backing
                     .runtime
                     .refuse_elevation_request(candidate, denial),
                 None => WorthQueryElevationRequestOutcome::Indeterminate,
@@ -120,15 +127,17 @@ where
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
+            .backing
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
+                    .backing
                     .runtime
                     .compare_and_commit_elevation_approval_for_program(
                         &execution,
@@ -142,6 +151,7 @@ where
             .unwrap_or_else(|denial| match candidate.take() {
                 Some(candidate) => self
                     .runtime
+                    .backing
                     .runtime
                     .refuse_elevation_approval(candidate, denial),
                 None => WorthQueryElevationApprovalOutcome::Indeterminate,
@@ -159,15 +169,17 @@ where
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
+            .backing
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
+                    .backing
                     .runtime
                     .compare_and_commit_elevation_close_for_program(
                         &execution,
@@ -181,6 +193,7 @@ where
             .unwrap_or_else(|denial| match candidate.take() {
                 Some(candidate) => self
                     .runtime
+                    .backing
                     .runtime
                     .refuse_elevation_close(candidate, denial),
                 None => WorthQueryElevationCloseOutcome::Indeterminate,
@@ -198,15 +211,17 @@ where
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
+            .backing
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
+                    .backing
                     .runtime
                     .compare_and_commit_mandatory_review_for_program(
                         &execution,
@@ -220,6 +235,7 @@ where
             .unwrap_or_else(|denial| match candidate.take() {
                 Some(candidate) => self
                     .runtime
+                    .backing
                     .runtime
                     .refuse_mandatory_review(candidate, denial),
                 None => WorthQueryMandatoryReviewOutcome::Indeterminate,
@@ -237,15 +253,17 @@ where
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
+            .backing
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
+                    .backing
                     .runtime
                     .compare_and_commit_capability_delegation_for_program(
                         &execution,
@@ -269,15 +287,17 @@ where
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
+            .backing
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
+                    .backing
                     .runtime
                     .compare_and_commit_capability_revocation_for_program(
                         &execution,

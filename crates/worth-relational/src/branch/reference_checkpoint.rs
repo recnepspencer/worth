@@ -56,10 +56,10 @@ impl RelationalBranchReferenceCell {
         {
             return Err(RelationalBranchCellDenial::CheckpointObservationMismatch);
         }
-        if let FoundationalBranchTarget::Basis(target) = checkpoint.observation.target() {
-            if target.runtime_instance_id() != checkpoint.runtime_instance_id {
-                return Err(RelationalBranchCellDenial::CheckpointObservationMismatch);
-            }
+        if let FoundationalBranchTarget::Basis(target) = checkpoint.observation.target()
+            && target.runtime_instance_id() != checkpoint.runtime_instance_id
+        {
+            return Err(RelationalBranchCellDenial::CheckpointObservationMismatch);
         }
         match (
             checkpoint.fork_provenance.as_ref(),
@@ -74,10 +74,10 @@ impl RelationalBranchReferenceCell {
                 if source.branch_id().as_str() != expected_branch_id {
                     return Err(RelationalBranchCellDenial::CheckpointForkProvenanceMismatch);
                 }
-                if let FoundationalBranchTarget::Basis(target) = source.target() {
-                    if target.runtime_instance_id() != checkpoint.runtime_instance_id {
-                        return Err(RelationalBranchCellDenial::CheckpointObservationMismatch);
-                    }
+                if let FoundationalBranchTarget::Basis(target) = source.target()
+                    && target.runtime_instance_id() != checkpoint.runtime_instance_id
+                {
+                    return Err(RelationalBranchCellDenial::CheckpointObservationMismatch);
                 }
             }
             _ => return Err(RelationalBranchCellDenial::CheckpointForkProvenanceMismatch),

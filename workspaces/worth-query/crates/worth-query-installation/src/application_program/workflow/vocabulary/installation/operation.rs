@@ -1,7 +1,7 @@
 //! Register the actual program member, never a second executable-body registry.
 use super::{
-    denial, ApplicationMutationBinding, ApplicationSchema, ApplicationWorkflowSpec,
-    InstalledWorkflowOperation, TypeId, WorthQueryApplicationWorkflowInstallationDenial,
+    denial, ApplicationSchema, ApplicationWorkflowSpec, InstalledWorkflowOperation, TypeId,
+    WorthQueryApplicationWorkflowInstallationDenial,
     WorthQueryApplicationWorkflowInstallationDenialKind,
     WorthQueryApplicationWorkflowSpecInstallation,
 };
@@ -16,7 +16,7 @@ where
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
     where
-        Binding: ApplicationMutationBinding<Schema>,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
     {
         self.insert_marker(0, TypeId::of::<Binding>(), Binding::IDENTITY)?;
         if !self

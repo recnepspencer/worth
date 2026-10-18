@@ -127,10 +127,13 @@ impl ClaimLink {
         }
         let previous = std::mem::take(&mut links.previous);
         let next = links.next.take();
-        if let Some(previous) = previous.upgrade() {
-            previous.links.lock().unwrap().next = next.clone();
-        } else {
-            incoming.first = next.clone();
+        match previous.upgrade() {
+            Some(previous) => {
+                previous.links.lock().unwrap().next = next.clone();
+            }
+            _ => {
+                incoming.first = next.clone();
+            }
         }
         if let Some(next) = next {
             next.links.lock().unwrap().previous = previous;

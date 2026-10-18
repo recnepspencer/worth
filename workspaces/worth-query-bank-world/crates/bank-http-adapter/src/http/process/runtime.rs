@@ -25,13 +25,32 @@ pub async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     write_posture("bound", binding.local_address())?;
     let configuration: BankHttpProcessConfiguration = read_json_line()?;
     let identity = install_identity_on_dedicated_stack(configuration).await?;
-    let server = binding.install(identity)?;
+    let (server, _mutation_continuation) = binding.install(identity)?.into_parts();
+    let server = server.activate();
     write_posture("ready", server.local_address())?;
-    let command = tokio::task::spawn_blocking(read_json_line::<ProcessCommand>).await??;
-    if command.command != "shutdown" {
-        return Err("unsupported Bank HTTP server process command".into());
+    let mut server = server;
+    loop {
+        let command = tokio::task::spawn_blocking(read_json_line::<ProcessCommand>).await??;
+        if command.command != "shutdown" {
+            write_posture("command_refused", server.local_address())?;
+            continue;
+        }
+        let address = server.local_address();
+        match server.shutdown().await {
+            Ok(_) => break,
+            Err(failure) => match failure.into_server() {
+                Ok(retained) => {
+                    server = retained;
+                    write_posture("shutdown_refused", address)?;
+                }
+                Err(failure) => return Err(Box::new(failure)),
+            },
+        }
     }
-    server.shutdown().await?;
+    if _mutation_continuation.finish().await.is_err() {
+        return Err("mutation worker finish refused".into());
+    }
+
     Ok(())
 }
 

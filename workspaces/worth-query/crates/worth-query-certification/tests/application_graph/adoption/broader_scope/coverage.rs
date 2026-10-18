@@ -78,13 +78,14 @@ fn covered_branches_advance_in_order_without_absorbing_a_later_branch() {
         .expect("the order is an exact permutation of the coverage")
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("all covered branches preflight before the first effect");
 
     assert_eq!(adoption.pending_branches().collect::<Vec<_>>(), [a, b, c]);
     for expected in [a, b, c] {
         let progress = adoption
-            .advance()
+            .advance(host.runtime(), &principal, &scope)
             .expect("performed progress does not block the next branch")
             .expect("one covered branch remains");
         assert_eq!(progress.branch(), expected);
@@ -93,7 +94,10 @@ fn covered_branches_advance_in_order_without_absorbing_a_later_branch() {
             WorthQueryBranchSetAdoptionProgress::Performed { .. }
         ));
     }
-    assert!(adoption.advance().unwrap().is_none());
+    assert!(adoption
+        .advance(host.runtime(), &principal, &scope)
+        .unwrap()
+        .is_none());
     let closed = match adoption.close() {
         Ok(closed) => closed,
         Err(_) => panic!("fully performed progress must close"),

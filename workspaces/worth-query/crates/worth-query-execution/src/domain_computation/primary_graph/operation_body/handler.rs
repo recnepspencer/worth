@@ -175,10 +175,10 @@ where
             .map(|inputs| inputs.values.drain(..));
         let mut source_values = decision.sources.into_iter();
         for step in self.body.scope_fields() {
-            if let ApplicationOperationBodyScopeField::Assign { field, value, .. } = step {
-                if let Err(cause) = writer.body_field(&target, field, value) {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
-                }
+            if let ApplicationOperationBodyScopeField::Assign { field, value, .. } = step
+                && let Err(cause) = writer.body_field(&target, field, value)
+            {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
             }
             if let ApplicationOperationBodyScopeField::AssignInput { field, .. } = step {
                 let value = input_values
@@ -209,18 +209,17 @@ where
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
             }
-            if let ApplicationOperationBodyScopeField::ClearOptional { field, .. } = step {
-                if let Err(cause) = writer.body_optional_field(&target, field, None) {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
-                }
+            if let ApplicationOperationBodyScopeField::ClearOptional { field, .. } = step
+                && let Err(cause) = writer.body_optional_field(&target, field, None)
+            {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
             }
         }
         for output in &self.outputs {
-            if matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Scope) {
-                if let Err(cause) = writer.body_output(&target, output.role.clone()) {
+            if matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Scope)
+                && let Err(cause) = writer.body_output(&target, output.role.clone()) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
-            }
         }
         if let Some(creation) = self.body.creation() {
             let created =
@@ -276,15 +275,14 @@ where
                 drop(source_reservation);
             }
             for output in &self.outputs {
-                if matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Creation { .. }) {
-                    if let Err(cause) = writer.body_output(&created, output.role.clone()) {
+                if matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Creation { .. })
+                    && let Err(cause) = writer.body_output(&created, output.role.clone()) {
                         return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                     }
-                }
             }
             for link in creation.links() {
-                if link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle {
-                    if let Some(predecessor) = decision.selections.selected(&link.relation, &link.from, &link.to) {
+                if link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle
+                    && let Some(predecessor) = decision.selections.selected(&link.relation, &link.from, &link.to) {
                         let predecessor = match writer.projected_entity(&predecessor.target) {
                             Ok(target) => target,
                             Err(cause) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
@@ -293,15 +291,14 @@ where
                             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                         }
                     }
-                }
                 if let Err(cause) = writer.body_creation_link(&target, &created, link) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
             }
-            if let Some(signing) = creation.signing() {
-                if let Err(cause) = writer.body_signing_slot(&created, signing) {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
-                }
+            if let Some(signing) = creation.signing()
+                && let Err(cause) = writer.body_signing_slot(&created, signing)
+            {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
             }
         }
         HandlerResult::Completed(())

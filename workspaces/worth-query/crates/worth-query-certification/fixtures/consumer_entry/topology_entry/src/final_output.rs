@@ -48,6 +48,12 @@ pub use output_roles::*;
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for FinalPlanarMutationBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = FinalPlanarMutation;
     type InputBinding = FinalPlanarMutationInputBinding;
     type Result = worth_query_consumer_values::PlanarAdjustmentResult;

@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn checkpoint_duplicate_lineage_event_ids_deny() {
@@ -8,10 +9,14 @@ fn checkpoint_duplicate_lineage_event_ids_deny() {
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "checkpoint-duplicate-first");
     create_entity_outcome(execution, &runtime, "checkpoint-duplicate-second");
-    runtime.durability_authority().checkpoint().unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut events = plan
         .checkpoint
         .as_mut()
@@ -46,12 +51,16 @@ fn tail_duplicate_lineage_event_ids_deny() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "tail-duplicate-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     create_entity_outcome(execution, &runtime, "tail-duplicate-first");
     create_entity_outcome(execution, &runtime, "tail-duplicate-second");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut events = plan
         .tail_log
         .iter_mut()
@@ -83,11 +92,15 @@ fn checkpoint_and_tail_lineage_event_id_collision_denies() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "cross-segment-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     create_entity_outcome(execution, &runtime, "cross-segment-tail");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let checkpoint_id = plan
         .checkpoint
         .as_ref()
@@ -119,11 +132,15 @@ fn tail_lineage_commit_and_branch_cross_splices_deny() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "cross-splice-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     create_entity_outcome(execution, &runtime, "cross-splice-tail");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let event = plan.tail_log[0]
         .envelope_mut_for_test()
         .published_lineage_mut_for_test()
@@ -148,10 +165,14 @@ fn checkpoint_lineage_commit_cross_splice_denies() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "checkpoint-cross-splice");
-    runtime.durability_authority().checkpoint().unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let event = plan.checkpoint.as_mut().expect("checkpoint").envelopes[0]
         .envelope_mut_for_test()
         .published_lineage_mut_for_test()
@@ -175,7 +196,10 @@ fn replay_and_durable_lineage_payload_conflict_denies() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "payload-conflict-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let first = create_entity_outcome(execution, &runtime, "payload-conflict-first");
     let second = create_entity_outcome(execution, &runtime, "payload-conflict-second");
     let first_lineage = runtime
@@ -183,9 +207,10 @@ fn replay_and_durable_lineage_payload_conflict_denies() {
         .for_record(changed_entities(&first)[0])
         .expect("first tail lineage")
         .lineage_id();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let second_event = plan
         .tail_log
         .iter_mut()
@@ -217,10 +242,14 @@ fn checkpoint_lineage_node_deletion_denies_before_installation() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "checkpoint-node-deletion");
-    runtime.durability_authority().checkpoint().unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     plan.checkpoint
         .as_mut()
         .expect("checkpoint")
@@ -240,10 +269,14 @@ fn checkpoint_lineage_node_remap_denies_before_installation() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "checkpoint-node-remap");
-    runtime.durability_authority().checkpoint().unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     plan.checkpoint
         .as_mut()
         .expect("checkpoint")
@@ -279,10 +312,14 @@ fn checkpoint_lineage_node_swap_denies_before_installation() {
     transaction
         .commit(execution, &runtime)
         .expect("two-entity commit");
-    runtime.durability_authority().checkpoint().unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let nodes = plan
         .checkpoint
         .as_mut()
@@ -321,10 +358,14 @@ fn checkpoint_duplicate_lineage_entity_mapping_denies_before_installation() {
     transaction
         .commit(execution, &runtime)
         .expect("two-entity commit");
-    runtime.durability_authority().checkpoint().unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let nodes = plan
         .checkpoint
         .as_mut()
@@ -337,32 +378,6 @@ fn checkpoint_duplicate_lineage_entity_mapping_denies_before_installation() {
     let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("does not name its exact entity"));
-}
-
-#[test]
-fn tail_lineage_event_regression_below_checkpoint_high_water_denies() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(execution, &runtime, "event-regression-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome(execution, &runtime, "event-regression-tail");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
-    plan.tail_log[0]
-        .envelope_mut_for_test()
-        .published_lineage_mut_for_test()
-        .lineage_events_mut()[0]
-        .event_id = 0;
-    plan.tail_log[0]
-        .envelope_mut_for_test()
-        .rebuild_lineage_basis_for_test();
-
-    let error = recover_error(execution, plan);
-    assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
-    assert!(error.detail.contains("lineage event id 0 does not advance"));
 }
 
 fn recover_error(

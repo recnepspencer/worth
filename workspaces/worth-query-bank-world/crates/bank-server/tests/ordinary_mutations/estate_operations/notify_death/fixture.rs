@@ -96,6 +96,18 @@ pub(crate) fn notification_world_with_clock_and_grant_validity(
     let principals = [DECEASED, SPECIALIST, OTHER_SUBJECT, FOREIGN_DECEASED];
     let seed = identities.iter().enumerate().fold(
         BankWorldSeed::new(snapshot)
+            .program_deployment_grant(
+                bank_server::BankProgramDeploymentGrantSeed::for_program::<
+                    bank_server::BankApplication,
+                >(
+                    "specialist-p0-deployment",
+                    SPECIALIST,
+                    SPECIALIST,
+                    0,
+                    u64::MAX,
+                )
+                .expect("the fixture explicitly issues one source-program deployment grant"),
+            )
             .employee(BankEmployeeAssignmentSeed::new(
                 ASSIGNMENT,
                 INSTITUTION,

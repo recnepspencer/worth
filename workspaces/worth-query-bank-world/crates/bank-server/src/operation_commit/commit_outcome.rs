@@ -16,6 +16,7 @@ use super::{
 
 #[derive(Debug)]
 pub enum BankMutationCommitOutcome {
+    CleanupRequired(super::BankManagedCleanup),
     ProductStale(WorthQueryProductStaleApplication),
     ProductUnpublished(WorthQueryProductUnpublishedApplication),
     NoEffect(WorthQueryApplicationNoEffectCause),
@@ -64,6 +65,9 @@ impl BankMutationCommitOutcome {
 impl From<WorthQueryApplicationCommitOutcome> for BankMutationCommitOutcome {
     fn from(outcome: WorthQueryApplicationCommitOutcome) -> Self {
         match outcome {
+            WorthQueryApplicationCommitOutcome::CleanupRequired(owner) => {
+                Self::CleanupRequired(owner.into())
+            }
             WorthQueryApplicationCommitOutcome::ProductStale(stale) => Self::ProductStale(stale),
             WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
                 Self::ProductUnpublished(unpublished)

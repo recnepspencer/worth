@@ -45,6 +45,12 @@ impl DisburseEstate {
 pub struct DisburseEstateMutationBinding;
 
 impl ApplicationMutationBinding<BankSchema> for DisburseEstateMutationBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = EstateAction;
     type InputBinding = super::super::EstateActionInputBinding;
     type Result = EstateMutationResult;
@@ -121,5 +127,25 @@ impl ApplicationMutationIntent<BankSchema> for DisburseEstate {
         &self,
     ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
         ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
+    }
+}
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+    for DisburseEstateMutationBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            DisburseEstateCapability,
+        >;
+}
+
+impl TryFrom<EstateAction> for DisburseEstate {
+    type Error = EstateAction;
+    fn try_from(action: EstateAction) -> Result<Self, Self::Error> {
+        match action {
+            EstateAction::DisburseEstate(disbursement) => Ok(Self::new(disbursement)),
+            original => Err(original),
+        }
     }
 }

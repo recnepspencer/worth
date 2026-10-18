@@ -4,6 +4,7 @@ use super::*;
 use crate::domain_computation::authorization::{
     WorkflowApprovalRequestEncodingDenial, MAXIMUM_PORTABLE_BYTES,
 };
+use crate::domain_computation::primary_graph::workflow::actor::encoding::{self, FundedActorText};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
@@ -36,69 +37,82 @@ impl<Schema, Operation, Input, Scope>
 
     pub(in crate::domain_computation) fn workflow_approval_request_snapshot(
         &self,
-    ) -> Result<Option<String>, WorkflowApprovalRequestEncodingDenial> {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
         self.authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
-            .map(|authorization| authorization.request().encode_workflow_approval_request())
+            .map(|authorization| {
+                authorization
+                    .request()
+                    .encode_workflow_approval_request(execution)
+            })
             .transpose()
     }
 
     pub(in crate::domain_computation) fn workflow_approval_principal_snapshot(
         &self,
-    ) -> Result<Option<String>, WorkflowApprovalRequestEncodingDenial> {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
         self.authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
             .map(|authorization| {
-                let principal = authorization.principal().durable();
-                if !principal.is_portable() {
+                let principal = authorization.principal().durable_view();
+                if !authorization.principal().durable_is_portable() {
                     return Err(WorkflowApprovalRequestEncodingDenial::NonPortableValue);
                 }
-                encode(&principal)
+                encoding::encode(execution, &principal, MAXIMUM_PORTABLE_BYTES)
             })
             .transpose()
     }
 
     pub(in crate::domain_computation) fn workflow_approval_lineage_snapshot(
         &self,
-    ) -> Result<Option<String>, WorkflowApprovalRequestEncodingDenial> {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
         self.authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
-            .map(|authorization| encode(&authorization.decision().durable_lineage()))
+            .map(|authorization| {
+                encoding::encode(
+                    execution,
+                    &authorization.decision().durable_lineage_view(),
+                    MAXIMUM_PORTABLE_BYTES,
+                )
+            })
             .transpose()
     }
 
     pub(in crate::domain_computation) fn workflow_approval_support_snapshot(
         &self,
-    ) -> Result<Option<String>, WorkflowApprovalRequestEncodingDenial> {
-        self.authorization
-            .as_ref()
-            .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
-            .map(crate::domain_computation::authorization::encode_workflow_approval_support)
-            .transpose()
-    }
-
-    pub(in crate::domain_computation) fn workflow_approval_dependencies_snapshot(
-        &self,
-    ) -> Result<Option<String>, WorkflowApprovalRequestEncodingDenial> {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
         self.authorization
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
             .map(|authorization| {
-                crate::domain_computation::authorization::encode_workflow_approval_dependencies(
+                crate::domain_computation::authorization::encode_workflow_approval_support(
+                    execution,
                     authorization,
                 )
             })
             .transpose()
     }
-}
 
-fn encode(value: &impl serde::Serialize) -> Result<String, WorkflowApprovalRequestEncodingDenial> {
-    let encoded = serde_json::to_string(value)
-        .map_err(|_| WorkflowApprovalRequestEncodingDenial::InvalidRequest)?;
-    (encoded.len() <= MAXIMUM_PORTABLE_BYTES)
-        .then_some(encoded)
-        .ok_or(WorkflowApprovalRequestEncodingDenial::TooLarge)
+    pub(in crate::domain_computation) fn workflow_approval_dependencies_snapshot(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
+        self.authorization
+            .as_ref()
+            .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
+            .map(|authorization| {
+                crate::domain_computation::authorization::encode_workflow_approval_dependencies(
+                    execution,
+                    authorization,
+                )
+            })
+            .transpose()
+    }
 }

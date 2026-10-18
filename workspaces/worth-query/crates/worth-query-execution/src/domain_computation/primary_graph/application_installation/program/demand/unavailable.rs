@@ -33,7 +33,7 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
         let phase_request =
-            admit_unavailable_completion(phase, &self.runtime.product_runtime, || {
+            admit_unavailable_completion(phase, &self.backing.runtime.product_runtime, || {
                 self.contains_output_root::<Root>()
                     && demand.target_feature
                         == TypeId::of::<
@@ -43,9 +43,9 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
                         >()
             })?;
         let execution = &phase_request;
-        self.runtime.output_demands.validate_owned_root_kind(prepared,
+        self.backing.runtime.output_demands.validate_owned_root_kind(prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()))?;
-        self.runtime.finish_unavailable_output_demand(
+        self.backing.runtime.finish_unavailable_output_demand(
             execution,
             phase,
             &mut demand.admitted,

@@ -64,7 +64,7 @@ impl PublishedStableLineage {
     }
     pub(in crate::domain_computation::primary_graph) fn checkpoint_source_facts(
         &self,
-    ) -> Option<Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>>
+    ) -> Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
     {
         self.recorded().checkpoint_source_facts()
     }

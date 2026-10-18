@@ -29,15 +29,15 @@ pub fn signal_branch_observation(
     generation: FoundationalBranchReferenceGeneration,
 ) -> Result<SignalBranchObservation, SignalBranchObservationConstructionDenial> {
     let graph_instance_id = graph_instance_id.as_ref();
-    if let FoundationalBranchTarget::Basis(target) = &target {
-        if target.graph_instance_id() != graph_instance_id {
-            return Err(
-                SignalBranchObservationConstructionDenial::GraphInstanceMismatch {
-                    observation_graph_instance_id: graph_instance_id.to_owned(),
-                    target_graph_instance_id: target.graph_instance_id().to_owned(),
-                },
-            );
-        }
+    if let FoundationalBranchTarget::Basis(target) = &target
+        && target.graph_instance_id() != graph_instance_id
+    {
+        return Err(
+            SignalBranchObservationConstructionDenial::GraphInstanceMismatch {
+                observation_graph_instance_id: graph_instance_id.to_owned(),
+                target_graph_instance_id: target.graph_instance_id().to_owned(),
+            },
+        );
     }
     let branch_identity = signal_branch_identity(graph_instance_id, branch_id, branch_name)?;
     Ok(SignalBranchObservation::new(

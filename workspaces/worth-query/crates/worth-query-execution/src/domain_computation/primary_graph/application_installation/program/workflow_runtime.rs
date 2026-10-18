@@ -9,6 +9,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec
 use super::WorthQueryProgramApplicationRuntime;
 
 mod authentication;
+mod registration;
 mod support;
 mod vocabulary;
 pub(crate) use authentication::workflow_approval_authentication_intent;
@@ -36,32 +37,42 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
     Schema: ApplicationSchema,
 {
+    /// Bind vocabulary before cloning runtime handles or retaining operation owners.
+    /// Every refusal returns all three authentic inputs for a later retry.
     pub fn retain_workflow_spec<Spec>(
         mut self,
         workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<
         WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
-        WorthQueryWorkflowRuntimeBindingDenial,
+        WorthQueryWorkflowRuntimeBindingRefusal<Schema, Spec, Program>,
     >
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        if workflow.schema_binding() != &self.runtime.installed_schema().binding_identity() {
-            return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
+        let binding = (|| {
+            if workflow.schema_binding()
+                != &self.backing.runtime.installed_schema().binding_identity()
+            {
+                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
+            }
+            if authentication.binding_identity() != workflow.schema_binding() {
+                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignAuthenticationOwner);
+            }
+            if workflow.program_revision() != self.backing.program.revision() {
+                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
+            }
+            self.install_workflow_registration(&workflow, &authentication)?;
+            Ok(())
+        })();
+        if let Err(denial) = binding {
+            return Err(WorthQueryWorkflowRuntimeBindingRefusal {
+                workflow,
+                authentication,
+                denial,
+                runtime: self,
+            });
         }
-        if authentication.binding_identity() != workflow.schema_binding() {
-            return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignAuthenticationOwner);
-        }
-        if workflow.program_revision() != self.program.revision() {
-            return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
-        }
-        self.install_signing_owner(*workflow.program_revision(), authentication.clone())
-            .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
-        self.runtime
-            .workflow_coverage
-            .register(workflow.adoption_coverage())
-            .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;
         Ok(WorthQueryWorkflowApplicationRuntime {
             runtime: self,
             workflow,
@@ -92,11 +103,27 @@ where
     /// the one installed for the program its branch runs.
     pub fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec> {
         WorthQueryWorkflowVocabulary::new(
-            &self.runtime.runtime,
+            &self.runtime.backing.runtime,
             &self.workflow,
             &self.supported,
             &self.authentication,
         )
+    }
+
+    /// Close the contained native runtime without consuming its installed companions.
+    /// A refusal keeps this complete configured runtime available for retry.
+    pub fn close_conditional_runtime(
+        &mut self,
+    ) -> Result<
+        crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInspection,
+        crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
+    >
+    where
+        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<
+            Schema,
+        >,
+    {
+        self.runtime.close_conditional_runtime()
     }
 
     pub fn into_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
@@ -117,10 +144,75 @@ where
     }
 }
 
+/// Refused binding retains every consumed input for a lawful later attempt.
+/// ```
+/// use worth_query_execution::facade::application_installation::{
+///     WorthQueryWorkflowRuntimeBindingRefusal, WorthQueryWorkflowApplicationRuntime,
+/// };
+/// use worth_query_declaration::facade::{application_program::ApplicationWorkflowSpec, application_schema::ApplicationSchema};
+/// fn retry<S, Spec, P>(refusal: WorthQueryWorkflowRuntimeBindingRefusal<S, Spec, P>)
+///     -> Result<WorthQueryWorkflowApplicationRuntime<S, Spec, P>, WorthQueryWorkflowRuntimeBindingRefusal<S, Spec, P>>
+/// where S: ApplicationSchema, Spec: ApplicationWorkflowSpec<Schema = S> {
+///     let (runtime, spec, signing_owner, _denial) = refusal.into_parts();
+///     runtime.retain_workflow_spec(spec, signing_owner)
+/// }
+/// ```
+/// Debug reports the denial only; it never renders the signing owner.
+#[must_use = "retain the runtime, installed vocabulary and signing owner on refusal"]
+pub struct WorthQueryWorkflowRuntimeBindingRefusal<Schema, Spec, Program>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+    authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
+    denial: WorthQueryWorkflowRuntimeBindingDenial,
+    runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
+}
+impl<Schema, Spec, Program> WorthQueryWorkflowRuntimeBindingRefusal<Schema, Spec, Program>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    pub const fn denial(&self) -> &WorthQueryWorkflowRuntimeBindingDenial {
+        &self.denial
+    }
+    pub fn into_parts(
+        self,
+    ) -> (
+        WorthQueryProgramApplicationRuntime<Schema, Program>,
+        WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        WorthQueryAuthenticationEventSigningOwner<Schema>,
+        WorthQueryWorkflowRuntimeBindingDenial,
+    ) {
+        (
+            self.runtime,
+            self.workflow,
+            self.authentication,
+            self.denial,
+        )
+    }
+}
+impl<Schema, Spec, Program> std::fmt::Debug
+    for WorthQueryWorkflowRuntimeBindingRefusal<Schema, Spec, Program>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryWorkflowRuntimeBindingRefusal")
+            .field("denial", &self.denial)
+            .finish_non_exhaustive()
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowRuntimeBindingDenial {
     SigningOwner(super::WorthQuerySigningOwnerInstallationDenial),
     ForeignSchema,
+    /// Installed runtime meaning cannot grow while dependent handles retain it.
+    RuntimeKeepaliveRetained,
     ForeignProgram,
     ForeignAuthenticationOwner,
     /// The program already has a vocabulary on this runtime.

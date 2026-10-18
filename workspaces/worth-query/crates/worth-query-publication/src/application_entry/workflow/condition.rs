@@ -159,6 +159,7 @@ where
                     PreparedWorkflowAdvance::Transition { .. }
                     | PreparedWorkflowAdvance::AwaitingAssessment(_)
                     | PreparedWorkflowAdvance::AwaitingOperation(_)
+                    | PreparedWorkflowAdvance::AwaitingProposal { .. }
                     | PreparedWorkflowAdvance::AwaitingEvidence { .. }
                     | PreparedWorkflowAdvance::AwaitingApproval { .. }
                     | PreparedWorkflowAdvance::ReplayOnly { .. } => {

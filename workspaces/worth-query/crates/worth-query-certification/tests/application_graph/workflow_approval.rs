@@ -134,6 +134,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
     let unbound = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
+        .advanced()
         .mutate(ReviewedSetRetentionIntent {
             input: super::document_retention_model::schema::SetRetentionInput {
                 identity: DOCUMENT_IDENTITY.to_owned(),
@@ -206,10 +207,10 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&814_u64)
         .for_workflow_operation(&application, &required);
     match wrong_input {
-        Err(denial) => assert_eq!(
+        Err(denial) => assert!(matches!(
             denial,
             worth_query_host::facade::application_entry::WorthQueryWorkflowOperationBindingDenial::RequirementMismatch
-        ),
+        )),
         Ok(_) => panic!("a different proposed input must not bind"),
     }
     let effect = runtime
@@ -225,6 +226,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&815_u64)
         .for_workflow_operation(&application, &required)
         .expect("the effect request matches the durable operation requirement")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -277,6 +279,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&820_u64)
         .for_workflow_operation(&application, &required)
         .expect("the descriptor still identifies the old operation")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -388,3 +391,9 @@ fn approval_rejects_assessment_evidence_after_native_source_aba() {
             == WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
     ));
 }
+
+#[path = "workflow_approval/workflow_actor_contract.rs"]
+mod workflow_actor_contract;
+
+#[path = "workflow_approval/field_text_readmission.rs"]
+mod field_text_readmission;

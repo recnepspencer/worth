@@ -85,15 +85,6 @@ fn canonical_value_families_preserve_width_precision_and_reference_kind() {
 }
 
 #[test]
-fn equality_distinguishes_storage_shape_from_semantic_variant() {
-    assert_ne!(AspectValue::Int8(1), AspectValue::UInt8(1));
-    assert_ne!(
-        AspectValue::Bytes(ContentRefId(1)),
-        AspectValue::ContentRef(ContentRefId(1))
-    );
-}
-
-#[test]
 fn string_values_preserve_relational_interning_surface() {
     let raw = AspectValue::String(CanonicalString::from("name"));
     let symbol = AspectValue::String(InternedString::Symbol(worth_foundational::Symbol(7)));

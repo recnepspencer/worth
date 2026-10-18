@@ -231,13 +231,13 @@ impl ImpactIndexCompilation {
             }
             _ => {}
         }
-        if !matches!(&dependency.source, Source::WorkflowStage { .. }) {
-            if let Some(stage_identity) = dependency_stage_identity(&dependency.locus) {
-                *self
-                    .stage_masks
-                    .entry(stage_identity.to_owned())
-                    .or_default() |= role_bit(dependency.role());
-            }
+        if !matches!(&dependency.source, Source::WorkflowStage { .. })
+            && let Some(stage_identity) = dependency_stage_identity(&dependency.locus)
+        {
+            *self
+                .stage_masks
+                .entry(stage_identity.to_owned())
+                .or_default() |= role_bit(dependency.role());
         }
     }
 

@@ -1,4 +1,5 @@
 //! Discovered-output sources committed under the program their branch selected.
+use crate::application_entry::mutation::authorization::WorthQueryBindingAdmission;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
@@ -31,7 +32,9 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent>
     >
 where
     Schema: ApplicationSchema + 'static,
-    Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
+    Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -57,11 +60,29 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
-        let request_scope = self.request_scope().clone();
+        let scope = self.request_scope().clone();
         let runtime = self.request.application;
-        runtime.with_application_advancement(&request_scope, |active_phase| {
-            let phase = &active_phase;
+        runtime.with_application_advancement(&scope, |phase| {
+            self.execute_performed_discovered_in_advancement(&phase, application, allocation_policy)
+        }).map_err(|cause| WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+    }
 
+    pub(in crate::application_entry) fn execute_performed_discovered_in_advancement<Program, Root>(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryApplicationDiscoveredMutationOutcome<Schema, Intent, Program, Root>,
+        WorthQueryPerformedMutationExecutionDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Program::Outputs: ApplicationProgramOutputsShape<Schema>,
+        Root: ApplicationOutputGraphShape<Schema> + ApplicationDiscoveredOutputRoot,
+        RootConnection<Schema, Root>:
+            WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
+    {
         crate::application_entry::mutation::performed_source::require_program_output_root::<
             Schema,
             Program,
@@ -82,6 +103,10 @@ where
                 crate::application_entry::mutation::selected_program::map_selected_program_owner_denial(denial),
             )
         })?;
+        if let Some(declared) = self.compiled_action {
+            owner.resolve_declared_action::<Intent::Binding>(declared)
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Action)?;
+        }
         let discovery =
             RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
                 .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
@@ -91,7 +116,7 @@ where
         let outcome = self
             .execute_with_preparation_and_commit(phase,
                 move |request, identities, staged| {
-                    crate::application_entry::mutation::authorization::prepare_selected(phase,
+                    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(phase,
                         request, identities, staged, &selected,
                     )
                 },
@@ -113,6 +138,6 @@ where
             )
             .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
         Ok(discovered_outcome(discovery, outcome, source))
-        }).map_err(|cause| WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+
     }
 }

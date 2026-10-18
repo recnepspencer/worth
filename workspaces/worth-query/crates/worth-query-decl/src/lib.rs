@@ -1,5 +1,8 @@
 //! Query declaration audience facade.
 //!
+//! Start with [Build an Application](https://github.com/recnepspencer/worth/blob/master/docs/build-an-application.md)
+//! and the [Capability Index](https://github.com/recnepspencer/worth/blob/master/docs/capability-index.md).
+//!
 //! Law: ordinary declaration consumers depend on this crate, never on Query's
 //! internal authority packages. This crate re-exports declaration types only; it adds no
 //! behavior.

@@ -32,14 +32,14 @@ pub(super) fn check_read_write_conflicts<T, K: Ord>(
         .collect();
     for (reader, partition) in partitions.iter().enumerate() {
         for (read_key, key) in partition.read_keys.iter().enumerate() {
-            if let Some(&writer) = writers.get(key) {
-                if reader != writer {
-                    return Err(MapDenial::ReadWriteConflict {
-                        reader: partition.identity,
-                        writer: write_sets.members()[writer].0,
-                        read_key,
-                    });
-                }
+            if let Some(&writer) = writers.get(key)
+                && reader != writer
+            {
+                return Err(MapDenial::ReadWriteConflict {
+                    reader: partition.identity,
+                    writer: write_sets.members()[writer].0,
+                    read_key,
+                });
             }
         }
     }

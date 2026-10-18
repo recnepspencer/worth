@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn complexity_budget_schema_transition_classification_is_changed_atom_bounded() {
@@ -179,9 +180,10 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
     assert_eq!(cdc_counters.replay_deep_artifact_parity_checks, 0);
 
     runtime.performance_access().reset_counters();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let plan_counters = runtime.performance_access().counters();
 
     assert!(plan_counters.replay_digest_parity_checks >= 1);

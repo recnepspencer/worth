@@ -245,20 +245,20 @@ impl WorthQueryApplicationOutputLineage {
         } else {
             self.live_occurrences.insert(coordinate.occurrence);
         }
-        if prepared.is_none() {
-            if let Some(partition) = partition {
-                assert!(
-                    self.partition_index
-                        .at_generation(
-                            source,
-                            coordinate.occurrence,
-                            coordinate.generation,
-                            partition
-                        )
-                        .is_none(),
-                    "one product generation may publish one output binding once"
-                );
-            }
+        if prepared.is_none()
+            && let Some(partition) = partition
+        {
+            assert!(
+                self.partition_index
+                    .at_generation(
+                        source,
+                        coordinate.occurrence,
+                        coordinate.generation,
+                        partition
+                    )
+                    .is_none(),
+                "one product generation may publish one output binding once"
+            );
         }
         let generation = prepared.is_none().then(|| {
             self.by_source

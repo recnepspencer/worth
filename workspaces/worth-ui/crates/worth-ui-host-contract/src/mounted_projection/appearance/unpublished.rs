@@ -173,10 +173,9 @@ impl UiUnpublishedAppearanceFrameProjection {
             }
             if let UiUnpublishedAppearanceFragmentIdentity::SurfaceOverlay(surface) =
                 fragment.identity
+                && !overlay_surfaces.insert(surface)
             {
-                if !overlay_surfaces.insert(surface) {
-                    return Err(UiUnpublishedAppearanceFrameProjectionDenial::MultipleOverlayFragmentsForSurface(surface));
-                }
+                return Err(UiUnpublishedAppearanceFrameProjectionDenial::MultipleOverlayFragmentsForSurface(surface));
             }
             if let UiUnpublishedAppearanceFragmentIdentity::NodeReceipt {
                 predecessor,
@@ -197,10 +196,9 @@ impl UiUnpublishedAppearanceFrameProjection {
             }
             if let UiUnpublishedAppearanceFragmentIdentity::SurfacePointer { surface, .. } =
                 fragment.identity
+                && !pointer_surfaces.insert(surface)
             {
-                if !pointer_surfaces.insert(surface) {
-                    return Err(UiUnpublishedAppearanceFrameProjectionDenial::MultiplePointerFragmentsForSurface(surface));
-                }
+                return Err(UiUnpublishedAppearanceFrameProjectionDenial::MultiplePointerFragmentsForSurface(surface));
             }
             for identity in validation::fragment_mechanic_identities(fragment) {
                 if !mechanic_identities.insert(identity.clone()) {

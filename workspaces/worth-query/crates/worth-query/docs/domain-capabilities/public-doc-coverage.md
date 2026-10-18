@@ -4,52 +4,41 @@
 
 ## What This Feature Is
 
-Documentation certification keeps the installed-domain public surface,
-representative executable examples, focused authority boundaries, hostile
-tests, and product guides pointed at the same current API.
+This page records what checks documentation against code today, and what does
+not. There is no lane that compiles every documentation example or audits the
+guides against the public API. The consumer boundary audit that once did part
+of this was removed on 2026-08-23 (see
+[Hard Prohibitions](../foundations/hard-prohibitions.md)).
 
-## Why You Use It
+## What Exists Today
 
-- verify that installed-domain discovery still names the public facade
-- reject removed setup roots and consumer-authored authority
-- keep domain-capability and native-aspect examples synchronized with the code
+| Check | Where | What it proves |
+|---|---|---|
+| Domain-capability public surface inventory | `worth_query_domain_capability_public_surface_inventory()` in `src/domain_capabilities/certification/surface/mod.rs` | A static list of certified call shapes, one row per category. It is a list of strings; it does not compile them. |
+| Certification surface digest | `worth_query_domain_capability_certification_surface()` in `src/domain_capabilities/certification/certification_surface.rs` | Hashes that inventory into `public_surface_digest()` and `certification_surface_digest()` and reports `category_count()` (the number of inventory rows). A changed row changes the digest. |
+| Compiled guide examples | `compiled_example_drift.rs` in `worth-query-certification/fixtures/consumer_entry/topology_entry/src/` | The four blocks in [`docs/build-an-application.md`](../../../../../../docs/build-an-application.md) that follow a `<!-- compiled: X -->` marker match, byte for byte, a marked region of a fixture source that compiles. The test also fails if a marker is removed. |
+| Facade export snapshot | `tools/boundary-check/snapshots/facades.toml` | The exported names of `worth-query-decl`, `worth-query-host`, and the other snapshotted facades. Boundary-check fails on drift. |
+| Rustdoc examples | Doc comments in crate source, for example the `compile_fail` blocks in `worth-query-host/src/facade.rs` | Doctests compile when that crate's doctests run. |
+| Front-door guide as rustdoc | `#![doc = include_str!(..)]` in `workspaces/worth-query-bank-world/crates/bank-estate-certification/src/lib.rs` | The [application front door](../foundations/ordinary-application-front-door.md) is that crate's rustdoc, so its `rust` and `rust,no_run` blocks compile when that crate's doctests run. CI does not run them. |
 
-## Stable Entry Points
+## What Does Not Exist
 
-- `worth_query_domain_capability_certification_surface()`
-- `certify_milestone_nine_thirteen_installed_domain(...)`
-- `certify_milestone_nine_thirteen_native_values(...)`
+- `certify_milestone_nine_thirteen_installed_domain(...)` and
+  `certify_milestone_nine_thirteen_native_values(...)` are not in the source.
+- No CI check compiles the other Rust blocks in the guides. Apart from the
+  front door's non-`ignore` blocks above, no check compiles the blocks under
+  `workspaces/worth-query/crates/worth-query/docs/`. Those names are checked
+  by review only.
+- No check compares a guide's prose with the public types it names.
 
-## Core Mental Model
-
-The certification surface is an inventory. The milestone certification bundles
-are executable evidence. Product docs remain the usage source of truth; the
-certification lane proves that their public names and prohibited boundaries
-still agree with compiled code.
-
-## How It Executes
-
-1. compile representative installed-domain public examples
-2. compile-fail only the authority violations whose guarantee is type-level
-3. run hostile runtime and consumer-residue checks
-4. review product docs against current public types and value carriers
-5. seal the resulting evidence rows into certification bundles
+When a guide and the compiled source disagree, the source wins. See
+[Which source wins](../../../../../../docs/capability-index.md#which-source-wins).
 
 ## Small Example
 
 ```rust
 let surface = worth_query_domain_capability_certification_surface();
 assert!(surface.category_count() > 0);
-```
-
-## Real Example
-
-```rust
-let installed = certify_milestone_nine_thirteen_installed_domain(repository_root)?;
-let native = certify_milestone_nine_thirteen_native_values(repository_root)?;
-
-assert!(!installed.certification_digest().is_empty());
-assert!(!native.certification_digest().is_empty());
 ```
 
 ## How It Relates To Other Features
@@ -63,9 +52,9 @@ assert!(!native.certification_digest().is_empty());
 
 ## Inspection And Debugging
 
-Use the evidence rows to locate which compiled example, boundary, hostile case,
-or documentation audit disagreed. Do not use certification artifacts as
-runtime authority.
+When `compiled_examples_match_build_guide` fails, it names the example and the
+first differing line. Change the fixture source and the guide block together.
+Do not use certification artifacts as runtime authority.
 
 ## Anti-Patterns
 
@@ -76,8 +65,9 @@ runtime authority.
 
 ## Current Limits
 
-Certification proves synchronized public teaching and tested boundaries. It is
-not a substitute for runtime support admission or performance evidence.
+Only the four marked blocks of the build guide are compile-checked in CI. The
+inventory digest detects a changed inventory row, not a changed API. Neither is
+a substitute for runtime support admission or performance evidence.
 
 ## Related Docs
 

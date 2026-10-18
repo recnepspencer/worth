@@ -215,9 +215,13 @@ pub(crate) fn application_checkpoint_denies_corrupt_incompatible_and_forged_byte
         .expect("installed host call opens");
     let mut corrupt_payload = checkpoint.bytes().to_vec();
     *corrupt_payload.last_mut().unwrap() ^= 0x01;
+    // Independent current grammar: format, workflow facts, workflow instances,
+    // then bootstrap u64 and native payload length u64.
+    const BOOTSTRAP: usize = 3 * std::mem::size_of::<u16>();
+    const NATIVE_LENGTH: usize = BOOTSTRAP + std::mem::size_of::<u64>();
     let forged_commit = checkpoint
         .rewrite_authenticated_checkpoint_body_for_test(|body| {
-            body[2..10].copy_from_slice(&u64::MAX.to_be_bytes());
+            body[BOOTSTRAP..BOOTSTRAP + 8].copy_from_slice(&u64::MAX.to_be_bytes());
         })
         .bytes()
         .to_vec();
@@ -227,29 +231,73 @@ pub(crate) fn application_checkpoint_denies_corrupt_incompatible_and_forged_byte
         })
         .bytes()
         .to_vec();
+    let unsupported_workflow = checkpoint
+        .rewrite_authenticated_checkpoint_body_for_test(|body| {
+            body[2..4].copy_from_slice(&u16::MAX.to_be_bytes());
+            body[4..6].copy_from_slice(&u16::MAX.to_be_bytes());
+        })
+        .bytes()
+        .to_vec();
     let invalid_payload_length = checkpoint
         .rewrite_authenticated_checkpoint_body_for_test(|body| {
-            body[10..18].copy_from_slice(&u64::MAX.to_be_bytes());
+            body[NATIVE_LENGTH..NATIVE_LENGTH + 8].copy_from_slice(&u64::MAX.to_be_bytes());
         })
         .bytes()
         .to_vec();
 
-    for invalid in [
-        Vec::new(),
-        corrupt_payload,
-        forged_commit,
-        unsupported_version,
-        invalid_payload_length,
+    use primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
+    for (invalid, expected, cause) in [
+        (
+            Vec::new(),
+            Kind::CheckpointRecoveryRejected,
+            "header is invalid",
+        ),
+        (
+            corrupt_payload,
+            Kind::CheckpointRecoveryRejected,
+            "checksum differs",
+        ),
+        (
+            forged_commit,
+            Kind::CheckpointRecoveryRejected,
+            "omitted its claimed bootstrap commit",
+        ),
+        (
+            unsupported_version,
+            Kind::UnsupportedCheckpointFormat {
+                observed: u16::MAX,
+                supported: 10,
+            },
+            "format 65535 is unsupported",
+        ),
+        (
+            unsupported_workflow,
+            Kind::UnsupportedCheckpointWorkflowContract {
+                facts: u16::MAX,
+                instances: u16::MAX,
+            },
+            "workflow contract is unsupported",
+        ),
+        (
+            invalid_payload_length,
+            Kind::CheckpointRecoveryRejected,
+            "checkpoint payload",
+        ),
     ] {
-        checkpoint_bytes_are_denied(invalid);
+        checkpoint_bytes_are_denied(invalid, expected, cause);
     }
 }
 
-fn checkpoint_bytes_are_denied(corrupted_bytes: Vec<u8>) {
+fn checkpoint_bytes_are_denied(
+    corrupted_bytes: Vec<u8>,
+    expected: primary_graph::WorthQueryPrimaryGraphInstallationDenialKind,
+    cause: &str,
+) {
     let corrupt = application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
         corrupted_bytes.into_boxed_slice(),
     );
     let contacts = ContactCounters::default();
+    let observed_contacts = contacts.clone();
     let (installation_predicate, _) = Predicate::controlled(contacts.clone());
     let (definition_predicate, _) = Predicate::controlled(contacts.clone());
     let (clock_source, clock_control) = ClockSource::due();
@@ -274,10 +322,9 @@ fn checkpoint_bytes_are_denied(corrupted_bytes: Vec<u8>) {
     else {
         panic!("corrupt checkpoint must be denied during graph recovery: {denial:?}")
     };
-    assert_eq!(
-        denial.kind(),
-        primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-    );
+    assert_eq!(denial.kind(), expected, "{denial:?}");
+    assert!(denial.subject().contains(cause), "{denial:?}");
+    assert_eq!(observed_contacts.snapshot(), (0, 0, 0, 0));
 }
 
 pub(super) fn checkpoint_limits() -> WorthQueryInMemoryApplicationLimits {

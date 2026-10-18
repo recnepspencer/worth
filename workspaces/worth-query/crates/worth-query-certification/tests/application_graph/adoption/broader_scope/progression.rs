@@ -40,6 +40,7 @@ fn one_incompatible_target_denies_preflight_before_any_branch_effect() {
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
     {
         Ok(_) => panic!("C is incompatible with P1"),
@@ -85,6 +86,7 @@ fn stale_middle_branch_stops_progress_and_cancellation_preserves_the_prefix() {
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("all three branches initially preflight");
     assert_eq!(
@@ -93,16 +95,16 @@ fn stale_middle_branch_stops_progress_and_cancellation_preserves_the_prefix() {
     );
 
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
     ));
     assert_eq!(adoption.pending_branches().collect::<Vec<_>>(), [c]);
     assert!(matches!(
-        adoption.advance(),
+        adoption.advance(host.runtime(), &principal, &scope),
         Err(WorthQueryBranchSetAdoptionAdvanceDenial::ResolutionRequired { branch }) if branch == b
     ));
     let cancelled = match adoption.cancel() {

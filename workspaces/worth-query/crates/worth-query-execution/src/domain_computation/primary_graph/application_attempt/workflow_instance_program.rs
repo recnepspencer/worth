@@ -30,6 +30,8 @@ pub use birth::{
     RequiredWorkflowBirth, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
     WorthQueryWorkflowBirthAdapter,
 };
+mod discovery_intent;
+pub use discovery_intent::WorthQueryWorkflowInstanceDiscoveryIntent;
 mod intent_identity;
 mod migration;
 mod performed;
@@ -87,7 +89,7 @@ where
             self.observe_workflow_start_basis(execution, installed, &published, clock)?;
         let layout = self.lease.layout.workflow().clone();
         let subject = self.admission.scope_entity_id();
-        let (instance_identity, instance_intent_identity) =
+        let discovery_intent =
             intent_identity::instance_identity(&compiled, subject, start_key_identity).map_err(
                 |()| {
                     denial(
@@ -96,15 +98,25 @@ where
             )
                 },
             )?;
+        let start_revision = self.lease.handle().with_runtime(execution, |runtime| {
+            crate::domain_computation::primary_graph::workflow::instance::start_provenance::admit(
+                execution,
+                runtime,
+                self.lease.product().relational_basis(),
+                compiled.program_revision(),
+            )
+        })?;
         let mut demand = PlatformEffectDemand::default();
         let branch_occurrence = self.lease.product().product_branch().occurrence_ordinal();
         visit_instance_start_facts(
             &layout,
             &compiled,
-            &instance_identity,
+            discovery_intent.lookup_identity(),
+            &start_revision,
             branch_occurrence,
             subject,
             carry,
+            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
             |effect| demand.observe(&effect),
         )?;
         let reservation = admit_platform_effects(&self, demand)?;
@@ -112,10 +124,12 @@ where
         visit_instance_start_facts(
             &layout,
             &compiled,
-            &instance_identity,
+            discovery_intent.lookup_identity(),
+            &start_revision,
             branch_occurrence,
             subject,
             carry,
+            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
             |effect| {
                 effects.push(effect);
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
@@ -144,8 +158,7 @@ where
             program_revision,
             definition,
             definition_content_identity,
-            instance_identity,
-            instance_intent_identity,
+            discovery_intent,
             instance_identity_locator: layout.instance.identity.clone(),
             start_path,
             supersession,

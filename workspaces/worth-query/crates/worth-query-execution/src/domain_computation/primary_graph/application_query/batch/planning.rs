@@ -42,7 +42,9 @@ pub(super) struct InstalledBatchPlan {
     pub(super) work: usize,
     pub(super) bytes: usize,
     pub(super) result: NonZeroUsize,
-    frozen: bool,
+    pub(super) frozen: bool,
+    pub(super) started: bool,
+    pub(super) byte_ceiling: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -127,6 +129,8 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
             bytes: 0,
             result: profile.maximum_result_bytes_per_root(),
             frozen: false,
+            started: false,
+            byte_ceiling: None,
         };
         plan.extend(reads, false)?;
         Ok(WorthQueryApplicationQueryBatchAdmission {
@@ -179,10 +183,10 @@ impl InstalledBatchPlan {
             {
                 return Err(ForeignPlan);
             }
-            if let Some(old) = self.slots.get(&read.query) {
-                if old.binding != read.binding {
-                    return Err(ForeignPlan);
-                }
+            if let Some(old) = self.slots.get(&read.query)
+                && old.binding != read.binding
+            {
+                return Err(ForeignPlan);
             }
             items = items.checked_add(read.count).ok_or(CounterOverflow)?;
             work = work
@@ -282,6 +286,7 @@ impl WorthQueryApplicationQueryBatchAdmission {
         if plan.runtime != runtime || &plan.schema != schema {
             return Err(WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan);
         }
+        plan.started = true;
         let slot = plan
             .slots
             .get_mut(query)
@@ -312,15 +317,6 @@ impl WorthQueryApplicationQueryBatchAdmission {
         bytes: usize,
     ) -> Result<WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchResourceDenial>
     {
-        if let BatchPolicy::Installed(plan) = &self.policy {
-            let mut plan = plan
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            plan.bytes = plan
-                .bytes
-                .checked_add(bytes)
-                .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
-        }
-        self.claim_memory(bytes)
+        self.claim_publication_memory(bytes)
     }
 }

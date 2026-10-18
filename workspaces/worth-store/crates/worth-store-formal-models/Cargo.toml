@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-formal-models"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Checked physical protocol semantics and owner-to-model refinement bindings."

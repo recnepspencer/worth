@@ -38,10 +38,13 @@ pub(in crate::domain_computation::primary_graph) use required_continuations::{
 use required_provenance::DemandProgressionProvenance;
 
 mod denial;
+mod managed_cleanup;
+mod read_close;
 pub use denial::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture,
 };
+pub use read_close::{WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial};
 
 /// The one installed producer chosen for an output family and source, with the
 /// applicability it was chosen for.

@@ -7,6 +7,7 @@ mod execution;
 mod native_ingress;
 mod portal_dismissal;
 mod product_action;
+pub(super) use product_action::PlatformPulsePendingQueryRequest;
 mod product_cycle;
 mod product_input;
 

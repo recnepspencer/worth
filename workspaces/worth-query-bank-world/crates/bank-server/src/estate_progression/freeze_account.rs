@@ -1,23 +1,17 @@
 use bank_domain::{
     estate::EstateAction,
     model::AccountId,
-    proposals::BankIdempotencyKey,
     schema::{
         AccountIdentity, AccountStatus, BankSchema, EstateAccount, EstateCase,
         FreezeEstateAccountOperation, Status,
     },
 };
-use worth_query_host::facade::{
-    admission::authenticated_principal::WorthQueryRequestScope,
-    primary_graph::{
-        WorthQueryApplicationOperationInvariantProjectionReader,
-        WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
-        WorthQueryInvariantProjectionTraversalDenial,
-    },
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantDecisionPlanDenial,
+    WorthQueryInvariantEntityIdentity, WorthQueryInvariantProjectionTraversalDenial,
 };
 
 use super::BankEstateProgressionDenial;
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
 
 #[derive(Debug)]
 pub enum BankEstateFreezeProjectionDenial {
@@ -28,39 +22,6 @@ pub enum BankEstateFreezeProjectionDenial {
     AccountNotOpen,
     DecisionPlan(crate::BankInvariantDecisionPlanDenial),
     Traversal(crate::BankInvariantProjectionTraversalDenial),
-}
-
-impl BankIdentityRuntime {
-    pub fn freeze_estate_account_with_key(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        key: &BankIdempotencyKey,
-        request: &WorthQueryRequestScope,
-    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let EstateAction::FreezeAccount { estate, account } = action else {
-            return Err(BankEstateProgressionDenial::CommandInput(
-                "FreezeEstateAccountOperation",
-            ));
-        };
-        super::program_outcome::program_outcome(
-            self.request(principal, request)
-                .mutate(bank_domain::schema::FreezeEstateAccount::new(
-                    estate, account,
-                ))
-                .idempotency(key)
-                .execute_capability_in_program(
-                    self.application_program(),
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                ),
-            "FreezeEstateAccountOperation",
-            |denial| {
-                denial
-                    .downcast::<BankEstateFreezeProjectionDenial>()
-                    .map(BankEstateProgressionDenial::FreezeProjection)
-            },
-        )
-    }
 }
 
 pub(crate) fn freeze_command_account(

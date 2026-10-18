@@ -7,3 +7,6 @@ mod resources;
 mod seed;
 
 pub(crate) use proof::run;
+
+#[cfg(test)]
+pub(crate) mod membership;

@@ -60,12 +60,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ExplicitReviewedSet
     const REQUIRES_WORKFLOW_AUTHORITY: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements = SetRetentionBinding::CANDIDATES;
 
-    fn workflow_execution_requirements() -> Option<ApplicationWorkflowExecutionRequirements> {
-        Some(
-            ApplicationWorkflowExecutionRequirements::requiring_approval::<
-                WorkflowApprovalCapability,
-            >(),
-        )
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::requiring_approval::<WorkflowApprovalCapability>()
     }
 
     fn scope_field() -> ApplicationFieldRef<
@@ -106,4 +102,13 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for ExplicitReviewedSetR
             self.input.identity.clone(),
         )
     }
+}
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for ExplicitReviewedSetRetentionBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
 }

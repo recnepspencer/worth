@@ -1,5 +1,14 @@
 # WORTH Query Workspace
 
+Ordinary fixed, discovered, source-only and bound workflow actions use the [owning entry](crates/worth-query/docs/foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
+Each advance accepts fresh authority and delegates one admitted native phase.
+Provider managed runs remain the resource/execution owners; application ownership
+adds no polling, budgets or second scheduler. Delivery and cleanup remain separate;
+refusal retains custody. Workflow ownership delegates the existing native guarded
+operation funnel; discovered ownership retains the original required-output graph.
+Manual native controls are explicit advanced entrances.
+
+
 This workspace owns the Query engine, its audience facades, and its explicit
 cold certification package.
 
@@ -39,7 +48,9 @@ admitted source, program selection, controls and interest without retaining an
 application borrow, principal or request scope. Advance or settle supplies the
 original runtime and a fresh authenticated request:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let mut continuation = handle.into_continuation();
 let progress = continuation.settle(application.runtime(), &fresh_request)?;
 ```

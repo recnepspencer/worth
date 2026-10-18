@@ -119,6 +119,10 @@ macro_rules! mutation_binding {
         struct $binding;
 
         impl ApplicationMutationBinding<MutationSchema> for $binding {
+    fn workflow_execution_requirements() -> worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements {
+        worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
             type Input = TestInput;
             type InputBinding = TestInputBinding;
             type Operation = $operation;

@@ -12,6 +12,8 @@
 //! them. Managed same-intent replay belongs to the broader-scope progression,
 //! while single-branch requirements remain fail-closed and freshness-bound.
 
+pub(in crate::domain_computation::primary_graph) mod authorization;
+pub use authorization::WorthQueryProgramAdoptionAuthorizationDenial;
 mod custody;
 mod preparation;
 mod publication;

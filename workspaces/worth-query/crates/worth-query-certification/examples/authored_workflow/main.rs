@@ -3,9 +3,9 @@
 //! Authors a reviewed-document workflow from one reusable review component:
 //! a proposed change to a document's retention period is checked twice and
 //! approved before it applies. The example publishes the definition,
-//! discovers it, rejects the first proposal so the loop asks for a revised
+//! demonstrates disabled disclosure, rejects the first proposal so the loop asks for a revised
 //! one, approves the revision and completes. A second revision of the
-//! definition reuses the same component; discovery then names it, and a start
+//! definition reuses the same component; its native publication names it, and a start
 //! from the superseded revision is refused naming the current one.
 
 #[allow(dead_code, unused_imports)]
@@ -15,7 +15,7 @@ mod information;
 mod review;
 
 use document_retention_model::{
-    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
+    host::{publish_owner_workflow, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
     readback::read_retention,
     retention_entry::{ReviewedSetRetentionBinding, ReviewedSetRetentionIntent, DOCUMENT_IDENTITY},
@@ -29,13 +29,11 @@ use document_retention_model::{
 };
 use review::{review, Review};
 use worth_query_host::facade::{
-    application_discovery::WorthQueryWorkflowDefinitionDiscovery,
     application_entry::{
         PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
         RequiredWorkflowApproval, WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
         WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome,
-        WorkflowProgressOutcome, WorkflowProposalOutcome, WorthQueryApplicationMutationOutcome,
-        WorthQueryApplicationRequestExt,
+        WorkflowProgressOutcome, WorkflowProposalOutcome, WorthQueryApplicationRequestExt,
     },
     declaration::application_program::{
         ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
@@ -140,34 +138,22 @@ fn reviewed_document(
 
 fn run() {
     information::run();
-    let host_request = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let application = publish_workflow_on_first_program();
+    let application = publish_owner_workflow();
     let review = review();
     let first = reviewed_document(&review, "applied");
     let identity = first.identity().clone();
     assert_eq!(first.component_expansions().len(), 1);
-    assert_eq!(
-        discover(request_execution, &application, &identity),
-        WorthQueryWorkflowDefinitionDiscovery::Unpublished
-    );
+    assert_discovery_disabled(&application, &identity);
     let first = publish(
         &application,
         first,
         WorkflowDefinitionExpectedPredecessor::Absent,
         1,
     );
-    assert_eq!(
-        discover(request_execution, &application, &identity),
-        WorthQueryWorkflowDefinitionDiscovery::Current(first.clone())
-    );
+    assert_discovery_disabled(&application, &identity);
 
     let instance = match start_instance(&application, first.clone(), 2)
-        .expect("the discovered definition starts")
+        .expect("the original published definition starts")
     {
         WorkflowInstanceStartOutcome::Started(started) => started.instance().clone(),
         other => panic!("the instance must start, got {other:?}"),
@@ -228,20 +214,17 @@ fn run() {
         WorkflowDefinitionExpectedPredecessor::Published(first.clone()),
         500,
     );
-    assert_eq!(
-        discover(request_execution, &application, &identity),
-        WorthQueryWorkflowDefinitionDiscovery::Current(second.clone())
-    );
+    assert_discovery_disabled(&application, &identity);
     let current = expect_superseded_start(start_instance(&application, first, 501));
     assert_eq!(
         current, second,
-        "a refused start names what discovery names"
+        "the native refusal names the replacement publication"
     );
-    println!("authored, reused, rejected, revised, approved, completed and discovered");
+    println!("authored, reused, rejected, revised, approved, completed; this ReviewedDocumentWorkflow Spec deliberately disables metadata disclosure");
 }
 
 fn publish(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
     predecessor: WorkflowDefinitionExpectedPredecessor,
     key: u64,
@@ -256,22 +239,16 @@ fn publish(
     }
 }
 
-fn discover(
-    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &DocumentWorkflowRuntime,
+fn assert_discovery_disabled(
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     identity: &ApplicationWorkflowDefinitionIdentity,
-) -> WorthQueryWorkflowDefinitionDiscovery {
-    application
-        .with_host_advancement(|host_phase| {
-            application
-                .runtime()
-                .on_branch(application.runtime().current_world())
-                .select(&host_phase)
-                .expect("the main branch selects its exact occurrence")
-        })
-        .expect("installed host call opens")
-        .discover_workflow_definition::<ReviewedDocumentWorkflow>(request_execution, identity)
-        .expect("the workflow lineage reads within its bound")
+) {
+    let result = document_retention_model::workflow::discover_definition_metadata(
+        application,
+        application.runtime().current_world(),
+        identity,
+    );
+    assert_eq!(result, Err(()));
 }
 
 /// A proposed retention reviewed up to its approval.
@@ -286,7 +263,7 @@ struct Reviewed {
 /// review until it awaits approval, collecting evidence wherever a review
 /// demands it. Uses keys from `key` upward.
 fn review_proposal(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     instance: &PublishedWorkflowInstanceRef,
     days: u64,
     key: u64,
@@ -326,11 +303,12 @@ fn review_proposal(
 /// Applies the approved retention through the requirement the instance
 /// awaits; the change's commit also settles the `apply` step.
 fn apply_approved_retention(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     instance: &PublishedWorkflowInstanceRef,
     days: u64,
     key: u64,
 ) {
+    // compiled-example: begin
     let required = match advance_instance(application, instance.clone(), key)
         .expect("the approved effect requirement prepares")
     {
@@ -350,24 +328,29 @@ fn apply_approved_retention(
             },
         })
         .without_source()
-        .idempotency(&(key + 1))
+        .idempotency_owned(key + 1).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(application, &required)
-        .expect("the effect matches the approved requirement")
-        .execute_in_program(
-            application.program_runtime(),
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        .unwrap_or_else(|_|panic!("exact original approved occurrence"))
+        .retain_operation::<document_retention_model::programs::WorkflowOwnerProgram,document_retention_model::programs::ReviewedAction>(application.program_runtime())
+        .unwrap_or_else(|_|panic!("installed approved effect action"));
+    let effect=match effect.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
+        worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
+        _=>panic!("lawful approved effect"),
+    };
+    effect
+        .close(
+            &runtime
+                .request(&principal, &scope)
+                .on_branch(instance.branch()),
         )
-        .expect("the approved effect executes");
-    assert!(matches!(
-        effect,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
+        .unwrap_or_else(|_| panic!("native effect cleanup"));
     assert_eq!(read_retention(runtime, instance.branch()), days);
+    // compiled-example: end
 }
 
 /// Advances one step and names the node it completed.
 fn advance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) -> String {

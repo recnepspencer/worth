@@ -49,6 +49,7 @@ pub struct BankApplicationQueryLaneDenial<Kind> {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    ManagedCleanupRequired(worth_query_host::facade::primary_graph::WorthQueryMutationCleanupFailureKind),
     RelationalExecution(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause),
     BridgeConditional(Box<worth_query_host::facade::primary_graph::BridgeConditionalDenialKind>),
     CorrespondenceDelivery(Box<worth_query_host::facade::primary_graph::BridgeCorrespondenceDeliveryStop>),
@@ -275,6 +276,7 @@ impl BankApplicationQueryDenial {
         use WorthQueryOutputDemandDenialKind as Query;
 
         let kind = match denial.kind() {
+            Query::ManagedCleanupRequired(kind) => Bank::ManagedCleanupRequired(kind),
             Query::BridgeConditional(cause) => Bank::BridgeConditional(cause),
             Query::CorrespondenceDelivery(cause) => Bank::CorrespondenceDelivery(cause),
             Query::ProductDelivery(cause) => Bank::ProductDelivery(cause),

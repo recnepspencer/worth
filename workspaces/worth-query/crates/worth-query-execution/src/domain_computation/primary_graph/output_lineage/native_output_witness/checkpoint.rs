@@ -3,9 +3,11 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::Movement;
 
+mod fact_index;
 #[cfg(test)]
 mod tests;
 mod work_bound;
+use fact_index::CheckpointRoleIndex;
 
 impl SealedNativeOutputWitness {
     /// The original output revisions and the decodable producer observations
@@ -49,6 +51,8 @@ impl SealedNativeOutputWitness {
 
     /// Authenticated facts must cover every installed aspect of every exact
     /// output role. Producer-only legacy payloads cannot invent missing proof.
+    /// The roles are indexed once by entity and the facts are read in one
+    /// pass, so cost grows with the facts plus the roles, not their product.
     pub(in crate::domain_computation::primary_graph) fn from_checkpoint_facts(
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         layout: &WorthQueryPrimaryGraphLayout,
@@ -103,20 +107,16 @@ impl SealedNativeOutputWitness {
             let kind = layout
                 .entity_kind(name)
                 .expect("validated checkpoint output kind");
-            if !checkpoint_entity_matches(facts, entity, kind, admission)? {
-                return Ok(None);
-            }
             let first_aspect = aspects.len();
-            for aspect in layout.native_output_aspects(name) {
-                let Some(revision) = checkpoint_aspect_revision(facts, entity, aspect, admission)?
-                else {
-                    return Ok(None);
-                };
-                aspects.push(AspectProbe {
-                    aspect: aspect.clone(),
-                    revision: Some(revision),
-                });
-            }
+            // Each slot stays unfilled until its original revision is read.
+            aspects.extend(
+                layout
+                    .native_output_aspects(name)
+                    .map(|aspect| AspectProbe {
+                        aspect: aspect.clone(),
+                        revision: None,
+                    }),
+            );
             roles.push(RoleProbe {
                 role: role.to_owned(),
                 entity_name: name.to_owned(),
@@ -127,6 +127,15 @@ impl SealedNativeOutputWitness {
                 first_aspect,
                 end_aspect: aspects.len(),
             });
+        }
+        let index = CheckpointRoleIndex::build(
+            correspondence
+                .native_witness_roles()
+                .map(|(_, _, _, entity)| entity),
+            admission,
+        )?;
+        if !index.record_facts(facts, &roles, &mut aspects, admission)? {
+            return Ok(None);
         }
         let cell = Arc::new(OnceLock::new());
         cell.set(Self {
@@ -149,66 +158,4 @@ fn prepay_catalog(
         .native_output_lookup_work(name)
         .ok_or_else(overflow)?;
     admission.charge_external_work(lookup)
-}
-
-fn checkpoint_entity_matches(
-    facts: &[Fact],
-    entity: EntityId,
-    expected: KindId,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, CompanionPreflightStop> {
-    let mut found = false;
-    for fact in facts {
-        admission.charge_external_work(1)?;
-        if let Fact::Entity { entity_id, kind } = fact {
-            admission.charge_external_work((size_of::<EntityId>() * 2) as u64)?;
-            if *entity_id == entity {
-                admission.charge_external_work((size_of::<KindId>() * 2) as u64)?;
-                if *kind != expected {
-                    return Ok(false);
-                }
-                found = true;
-            }
-        }
-    }
-    Ok(found)
-}
-
-fn checkpoint_aspect_revision(
-    facts: &[Fact],
-    entity: EntityId,
-    expected: &AspectKey,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<Option<Option<u64>>, CompanionPreflightStop> {
-    let mut found = None;
-    for fact in facts {
-        admission.charge_external_work(1)?;
-        let Fact::SourceAspectRevision {
-            entity_id,
-            aspect,
-            native_revision,
-        } = fact
-        else {
-            continue;
-        };
-        admission.charge_external_work((size_of::<EntityId>() * 2) as u64)?;
-        if *entity_id != entity {
-            continue;
-        }
-        let comparison = aspect
-            .as_str()
-            .len()
-            .checked_add(expected.as_str().len())
-            .and_then(|n| n.checked_add(1))
-            .ok_or_else(overflow)?;
-        admission.charge_external_work(comparison as u64)?;
-        if aspect == expected {
-            admission.charge_external_work((size_of::<Option<u64>>() * 2 + 1) as u64)?;
-            if found.is_some_and(|revision| revision != *native_revision) {
-                return Ok(None);
-            }
-            found = Some(*native_revision);
-        }
-    }
-    Ok(found)
 }

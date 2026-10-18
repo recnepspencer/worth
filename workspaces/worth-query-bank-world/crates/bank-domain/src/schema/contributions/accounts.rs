@@ -62,7 +62,7 @@ worth_query_application_contribution! {
                 .application_query_binding::<crate::queries::AccountActivityQueryBinding>()
                 .application_query(crate::queries::institution_audit_definition())
                 .application_query_binding::<crate::queries::InstitutionAuditQueryBinding>();
-            install_account_operation_abilities(install_account_ability_policies(schema))
+            super::super::program_deployment::install(install_account_operation_abilities(install_account_ability_policies(schema)))
         }
     }
 }

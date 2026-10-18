@@ -4,6 +4,7 @@ mod adoption_inventory;
 mod facts;
 mod migration;
 mod progression;
+pub(in crate::domain_computation::primary_graph) mod start_provenance;
 mod state;
 mod transition;
 
@@ -29,13 +30,14 @@ pub(in crate::domain_computation::primary_graph) use progression::{
 pub(in crate::domain_computation::primary_graph) use state::WorkflowInstanceState;
 pub(in crate::domain_computation::primary_graph) use transition::{
     admit_workflow_transition, decode_transition_outcome, encode_transition_outcome,
-    select_assessment_collection, select_back_action_transition, select_current_transition,
-    select_navigation_back_transition, select_proposal_replay_transition,
-    select_proposal_transition, select_settled_replay_transition, select_terminal_transition,
+    select_assessment_collection, select_back_action_transition, select_current_proposal_need,
+    select_current_transition, select_navigation_back_transition,
+    select_proposal_replay_transition, select_proposal_transition,
+    select_settled_replay_transition, select_terminal_transition,
     select_termination_action_transition, visit_terminal_transition_facts,
     visit_workflow_operation_settlement_facts, visit_workflow_operation_transition_facts,
     visit_workflow_transition_facts, AdmittedWorkflowTransition, SelectedWorkflowApproval,
     SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowInbound,
-    SelectedWorkflowOperation, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
-    WorkflowOperationSettlementBasis,
+    SelectedWorkflowOperation, SelectedWorkflowProposal, SelectedWorkflowTransition,
+    SelectedWorkflowTransitionKind, WorkflowOperationSettlementBasis,
 };

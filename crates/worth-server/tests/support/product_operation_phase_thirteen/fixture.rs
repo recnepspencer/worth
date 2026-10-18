@@ -15,8 +15,8 @@ use worth_server::{
     WorthServerWorthNativeSessionInput,
 };
 
-#[path = "../product_adapter_phase_nine/fixture.rs"]
-mod product_adapter_phase_nine_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_product_adapter_phase_nine_fixture as product_adapter_phase_nine_fixture;
 use product_adapter_phase_nine_fixture::schema_bound_json;
 
 #[derive(Clone, Debug)]

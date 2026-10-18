@@ -11,7 +11,7 @@ use super::world::supply_chain::{
     entity_kind_id, head_for_supply_chain_branch, CompiledSupplyChainProgram, EntityKind,
     SupplyChainScale, SupplyChainWorldDefinition,
 };
-use crate::invariant_uniqueness_assertion::assert_unique_conflict;
+use crate::relational_certification::invariant_uniqueness_assertion::assert_unique_conflict;
 use scale_snapshot_observation::{current_snapshot_version, live_record_count, vessel_call_signs};
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, InternedString};
 use worth_relational::facade::history::BranchId;
@@ -33,7 +33,8 @@ const DUPLICATE_CALL_SIGN: &str = "AURORA";
 #[test]
 #[ignore = "mandatory scheduled Scale certification; too expensive for the ordinary lane"]
 fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::scale())

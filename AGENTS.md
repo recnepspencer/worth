@@ -1,5 +1,18 @@
 # AGENTS.md
 
+## Consumers And Contributors
+
+If you are consuming WORTH (building an application), read
+`docs/build-an-application.md` and `docs/capability-index.md`. An application
+imports only `worth-query-decl` and `worth-query-host`. Before concluding that a
+capability is missing, follow the capability index's procedure; never build a
+second way to do something the platform already does. The coding guidelines
+below bind platform contributors.
+
+Platform contributors adding a capability first check the capability index and
+its known gaps, so the platform never gains a second way to do the same thing.
+Add each new consumer capability to the index in the same change.
+
 ## Engineering Constitution
 
 This repository builds the WORTH platform under a strict,

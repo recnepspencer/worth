@@ -132,6 +132,14 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
+    if installed.actor_policy() != &Spec::actor_policy()
+        || installed.observation_policy() != &Spec::observation_policy()
+    {
+        return Err(denial(
+            WorthQueryApplicationWorkflowInstallationDenialKind::InvalidPolicy,
+            Spec::IDENTITY.as_str(),
+        ));
+    }
     let limits = definition.limits();
     let resources = installed.resources;
     if limits.maximum_nodes() > resources.maximum_definition_nodes()
@@ -250,11 +258,10 @@ where
     }
     assessment_bindings.sort_unstable_by(|left, right| left.0.cmp(&right.0));
     for edge in definition.connections() {
-        if let worth_query_declaration::facade::application_program::ApplicationWorkflowConnectionKind::BackAction(operation) = edge.kind() {
-            if installed.operations.iter().filter(|candidate| candidate.supports_local_workflow_action && candidate.matches_reference(&operation, true)).count() != 1 {
+        if let worth_query_declaration::facade::application_program::ApplicationWorkflowConnectionKind::BackAction(operation) = edge.kind()
+            && installed.operations.iter().filter(|candidate| candidate.supports_local_workflow_action && candidate.matches_reference(&operation, true)).count() != 1 {
                 return Err(denial(WorthQueryApplicationWorkflowInstallationDenialKind::UnsupportedDefinitionMember, edge.source().as_str()));
             }
-        }
     }
     condition_bindings.sort_unstable_by(|left, right| {
         (&left.node_path, &left.operand).cmp(&(&right.node_path, &right.operand))

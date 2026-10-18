@@ -8,7 +8,7 @@ pub(super) fn advancement(
     use worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial as Denial;
     use worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption as Interruption;
     match denial {
-        Denial::Resource(cause) => super::mutation_application::execution_resource(cause).1,
+        Denial::Resource(cause) => super::mutation_application::execution_resource(cause),
         Denial::Interrupted(Interruption::Cancelled) => {
             BankHttpDenial::new(Kind::Cancelled, Next::Retry)
         }

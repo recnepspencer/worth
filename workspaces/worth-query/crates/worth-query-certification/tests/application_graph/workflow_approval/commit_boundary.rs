@@ -1,9 +1,6 @@
 //! The public program-owner commit door cannot bypass workflow authority.
 
 use super::*;
-use worth_query_execution::publication_boundary::workflow_advance::{
-    PreparedWorkflowAdvance, WorthQueryWorkflowAdvanceAdapter as Adapter,
-};
 #[path = "commit_boundary/authenticated_signer.rs"]
 mod authenticated_signer;
 use worth_query_decl::facade::application_operation::ApplicationMutationIdentities;

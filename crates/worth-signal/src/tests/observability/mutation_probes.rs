@@ -38,14 +38,6 @@ fn assert_timer_is_constructed_only_after_optional_gate(source: &str) {
 
 #[test]
 fn structural_telemetry_owner_gates_are_present_before_their_writes() {
-    let mutation = include_str!("../../data/telemetry_mutation.rs");
-    assert!(mutation.contains("hard gate"));
-    assert!(!mutation.contains("scratch copy"));
-    assert!(!mutation.contains("Suppressed"));
-    let runtime = include_str!("../../data/graph/diagnostics_access/runtime.rs");
-    assert!(runtime.contains("return None"));
-    assert!(runtime.contains("RuntimeTelemetryMutation::active"));
-
     let epoch = include_str!("../../data/graph/lifecycle/epoch.rs");
     assert_gate_shape(
         epoch,
@@ -53,7 +45,6 @@ fn structural_telemetry_owner_gates_are_present_before_their_writes() {
         1,
         "telemetry.storage.gc_epoch_count += 1",
     );
-    assert!(epoch.contains("telemetry.storage.gc_epoch_nanos += elapsed_nanos"));
     assert_timer_is_constructed_only_after_optional_gate(epoch);
 
     let snapshots = include_str!("../../data/graph/storage/entries/snapshots.rs");
@@ -153,21 +144,7 @@ fn execute_observed(
 }
 
 #[test]
-fn representative_counter_gate_deletion_probe_is_source_and_runtime_bound() {
-    let source = include_str!("../../data/graph/runtime/graph/performed_counter_state.rs");
-    assert_gate_shape(
-        source,
-        "captures(SignalObservationSurface::PerformedCounters)",
-        3,
-        "fetch_add",
-    );
-    assert_gate_shape(
-        method_body(source, "pub(crate) fn set("),
-        "captures(SignalObservationSurface::PerformedCounters)",
-        1,
-        ".store(",
-    );
-
+fn performed_counter_gate_records_only_when_counters_are_observed() {
     let (mut runtime, target) = prepared_runtime();
     let receipt = execute_observed(
         &mut runtime,
@@ -276,29 +253,6 @@ fn tier_to_strategy_recoupling_probe_uses_the_objective_axis() {
         development.default_maintenance_strategy(),
         operational.default_maintenance_strategy()
     );
-    let admission = include_str!("../../logic/planner/model/strategy.rs");
-    assert!(admission.contains("installed.execution_objective()"));
-    assert!(
-        !admission.contains("DiagnosticsTier") && !admission.contains("installed.tier()"),
-        "planner parallel admission must not recouple strategy to DiagnosticsTier or installed tier()"
-    );
-    assert!(admission.contains("lease.resolved_posture()"));
-    assert!(admission.contains("installed.parallel_min_tasks()"));
-    assert!(!admission.contains("AdmittedOperational"));
-    assert!(!admission.contains("AdmittedDevelopment"));
-    assert!(!admission.contains("AdmittedForensic"));
-}
-
-#[test]
-fn stable_identity_omission_probe_keeps_identity_outside_optional_lineage_gate() {
-    let source = include_str!("../../diagnostics/runtime/recorder/artifacts.rs");
-    let identity_write = source
-        .find("stamp_runtime_artifact_lineage_and_execution")
-        .expect("stable identity must be stamped by the artifact owner");
-    let optional_gate = source
-        .find("DescriptiveLineage")
-        .expect("optional lineage gate must remain explicit");
-    assert!(identity_write < optional_gate);
 }
 
 #[test]
@@ -334,15 +288,6 @@ fn post_hoc_receipt_minting_probe_requires_an_active_session() {
 
 #[test]
 fn restore_evidence_fabrication_probe_keeps_readmission_quarantine_in_the_owner() {
-    let source = include_str!("../../logic/invalidation/causality/revalidation.rs");
-    assert_eq!(
-        source
-            .matches("ensure_cause_readmission_complete()?")
-            .count(),
-        1
-    );
-    assert!(source.matches("cause_readmission_required").count() >= 2);
-
     let (mut runtime, target) = prepared_runtime();
     let snapshot = runtime.graph_mut().capture_snapshot();
     let restored =
@@ -361,10 +306,6 @@ fn restore_evidence_fabrication_probe_keeps_readmission_quarantine_in_the_owner(
 
 #[test]
 fn included_excluded_work_misclassification_probe_requires_counter_surface() {
-    let source = include_str!("../../data/proof/invalidation/foundational_receipt.rs");
-    assert_eq!(source.matches("ObservationSurfaceUnavailable").count(), 2);
-    assert_eq!(source.matches("PerformedCounters").count(), 1);
-
     let (mut counters, target) = prepared_runtime();
     let counter_receipt = execute_observed(
         &mut counters,

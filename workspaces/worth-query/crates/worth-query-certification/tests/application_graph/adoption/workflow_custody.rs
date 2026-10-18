@@ -11,8 +11,6 @@ use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::primary_graph::{
     WorthQueryBranchAdoptionPreparationDenial,
     WorthQueryWorkflowDefinitionDisposition as DefinitionDisposition,
-    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceDisposition as InstanceDisposition,
 };
 
 use crate::document_retention_model::{
@@ -55,11 +53,12 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         }
         other => panic!("P0 definition did not publish: {other:?}"),
     };
-    let instance =
-        match start_instance(&application, definition, 83_001).expect("P0 instance prepares") {
-            WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
-            other => panic!("P0 instance did not start: {other:?}"),
-        };
+    let instance = match start_instance(&application, definition.clone(), 83_001)
+        .expect("P0 instance prepares")
+    {
+        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
+        other => panic!("P0 instance did not start: {other:?}"),
+    };
     propose_instance(&application, instance.clone(), 83_002).expect("proposal publishes");
     assert!(matches!(
         advance_instance(&application, instance.clone(), 83_003),
@@ -103,52 +102,30 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         .on_branch(main)
         .programs()
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(1_024)
     {
         Err(denial) => denial,
         Ok(_) => panic!("a waiting instance requires a lawful owner disposition"),
     };
-    let inventory = match denied {
+    assert!(matches!(
+        denied,
         WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
-            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired { inventory },
-        ) => inventory,
-        other => panic!("adoption did not name the exact waiting instance: {other:?}"),
-    };
-    let waiting = inventory
-        .instance(instance.entity_id())
-        .expect("the waiting instance is inventoried");
-    assert_eq!(inventory.instances().len(), 1);
-    assert!(!waiting.compatibility().is_compatible());
-    assert_eq!(
-        waiting.custody(),
-        &WorthQueryWorkflowInstanceCustody::Unperformed
-    );
-    assert_eq!(waiting.legal_dispositions(), &[InstanceDisposition::Cancel]);
-    assert_eq!(
-        inventory.definitions()[0].legal_dispositions(),
-        &[DefinitionDisposition::Retire],
-    );
-    assert_eq!(
-        inventory.carry_compatible(),
-        Err(
-            WorthQueryWorkflowDispositionDenial::IllegalDefinitionDisposition {
-                definition: inventory.definitions()[0].entity_id(),
-                disposition: DefinitionDisposition::Carry,
-            }
+            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired
+        )
+    ));
+    let carry = runtime.request(&principal, &scope).on_branch(main).programs()
+        .adopt(&requirements).unwrap().workflow(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()).prepare(1_024);
+    assert!(
+        matches!(
+            carry,
+            Err(
+                WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+                    WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected
+                )
+            )
         ),
-        "the target cannot carry a definition whose supplier it removed",
-    );
-    assert_eq!(
-        inventory
-            .dispositions()
-            .definition(&inventory.definitions()[0], DefinitionDisposition::Carry),
-        Err(
-            WorthQueryWorkflowDispositionDenial::IllegalDefinitionDisposition {
-                definition: inventory.definitions()[0].entity_id(),
-                disposition: DefinitionDisposition::Carry,
-            }
-        ),
-        "no choice value can name Carry for an incompatible definition",
+        "native safety refuses incompatible Carry without exposing private occurrences"
     );
     let fork_programs = runtime
         .request(&principal, &scope)
@@ -163,18 +140,13 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         .request(&principal, &scope)
         .on_branch(historical_fork)
         .programs()
-        .adopt(&fork_requirements);
-    let fork_inventory = fork_adoption
-        .workflow_inventory(1_024)
-        .expect("the fork inventories its workflow facts");
-    assert!(fork_inventory.instances().is_empty());
-    let retire = fork_inventory
-        .dispositions()
+        .adopt(&fork_requirements)
+        .expect("declared adoption capability admits");
+    let retire = worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
         .definition(
-            &fork_inventory.definitions()[0],
+            &definition.held_on(historical_fork),
             DefinitionDisposition::Retire,
-        )
-        .expect("retiring an unsupported definition is lawful");
+        );
     match fork_adoption.workflow(retire).prepare(1_024) {
         Ok(_) => {}
         Err(denial) => panic!("copied instance history must not require live custody: {denial:?}"),

@@ -64,10 +64,12 @@ fn a_republication_continues_the_suspended_performed_record() {
             &continued.predecessor,
             &suspended.settlement_identity
         ));
-        assert!(Arc::ptr_eq(
-            continued.facts.for_comparison().unwrap().facts(),
-            &facts
-        ));
+        assert!(continued
+            .facts
+            .for_comparison()
+            .unwrap()
+            .facts()
+            .same_backing(&Arc::clone(&facts).into()));
         assert!(Arc::ptr_eq(&continued.consumed_outputs, &consumed));
         assert!(Arc::ptr_eq(&continued.witness, &restored_witness));
 
@@ -77,15 +79,13 @@ fn a_republication_continues_the_suspended_performed_record() {
             &continued.identity
         ));
         assert!(Arc::ptr_eq(&restored.consumed_outputs, &consumed));
-        assert!(Arc::ptr_eq(
-            restored
-                .observed_source_facts()
-                .unwrap()
-                .for_comparison()
-                .unwrap()
-                .facts(),
-            &facts
-        ));
+        assert!(restored
+            .observed_source_facts()
+            .unwrap()
+            .for_comparison()
+            .unwrap()
+            .facts()
+            .same_backing(&Arc::clone(&facts).into()));
         // The row is an origin of its own over the re-created entities.
         assert!(Arc::ptr_eq(
             restored.native_output_witness_cell().unwrap(),
@@ -247,15 +247,13 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         assert!(Arc::ptr_eq(&continued.consumed_outputs, &consumed));
 
         let restored = stage.restored();
-        assert!(Arc::ptr_eq(
-            restored
-                .observed_source_facts()
-                .unwrap()
-                .for_comparison()
-                .unwrap()
-                .facts(),
-            continued.facts.for_comparison().unwrap().facts()
-        ));
+        assert!(restored
+            .observed_source_facts()
+            .unwrap()
+            .for_comparison()
+            .unwrap()
+            .facts()
+            .same_backing(continued.facts.for_comparison().unwrap().facts()));
         assert!(Arc::ptr_eq(
             restored.native_output_witness_cell().unwrap(),
             &restored_witness
@@ -315,10 +313,12 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         let [candidate] = candidates.as_slice() else {
             panic!("the partition retains one latest output");
         };
-        assert!(Arc::ptr_eq(
-            candidate.observed_source_facts.as_ref().unwrap().facts(),
-            &alias_facts
-        ));
+        assert!(candidate
+            .observed_source_facts
+            .as_ref()
+            .unwrap()
+            .facts()
+            .same_backing(&Arc::clone(&alias_facts).into()));
         // Selection compares the output half of the alias's fact set, so a
         // moved output ends its exact reuse as it ends its origin's.
         assert!(candidate

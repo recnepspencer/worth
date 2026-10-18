@@ -13,7 +13,7 @@ use worth_server::{
 
 pub(crate) fn build_phase_five_server() -> WorthServer {
     build_phase_five_server_with_workspace_provider(
-        crate::query_handoff_runtime::TestWorkspaceProvider,
+        crate::shared_support_query_handoff_runtime::TestWorkspaceProvider,
     )
 }
 
@@ -38,7 +38,7 @@ pub(crate) fn build_phase_five_server_with_mutation_disabled() -> WorthServer {
                 .with_query_handoff_config(
                     WorthServerQueryHandoffConfig::builder()
                         .with_workspace_provider(
-                            crate::query_handoff_runtime::TestWorkspaceProvider,
+                            crate::shared_support_query_handoff_runtime::TestWorkspaceProvider,
                         )
                         .build()
                         .expect("query handoff config should validate"),

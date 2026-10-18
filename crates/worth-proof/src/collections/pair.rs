@@ -30,17 +30,5 @@ mod tests {
 
     use super::Pair;
 
-    #[test]
-    fn pair_preserves_ordered_access() {
-        let pair = Pair::new("left", "right");
-
-        assert_eq!(pair.left(), &"left");
-        assert_eq!(pair.right(), &"right");
-        assert_eq!(pair.into_array(), ["left", "right"]);
-    }
-
-    #[test]
-    fn pair_is_size_honest() {
-        assert_eq!(size_of::<Pair<u64>>(), size_of::<[u64; 2]>());
-    }
+    const _: () = assert!(size_of::<Pair<u64>>() == size_of::<[u64; 2]>());
 }

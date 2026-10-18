@@ -97,8 +97,10 @@ impl ApplicationProgramDefinition<CheckpointSchema> for ChainProgram {
         let mut features = demand_policy::feature_specs_with_output::<demand_policy::FinalArtifact>(
             ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
                 .provides::<PlanarDerivedBodyOutput>()
-                .mutation::<PlanarEditBinding<CheckpointSchema>>()
-                .mutation::<VertexReplacementBinding<CheckpointSchema>>()
+                .native_action::<PlanarEditBinding<CheckpointSchema>>()
+                .finish_action()
+                .native_action::<VertexReplacementBinding<CheckpointSchema>>()
+                .finish_action()
                 .conditional_operation::<MutatePlanar>()
                 .finish(),
         );

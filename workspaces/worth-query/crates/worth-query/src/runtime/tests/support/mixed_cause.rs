@@ -176,13 +176,13 @@ pub(in crate::runtime::tests) fn admitted_async_completion_for_request(
             ),
         )
         .expect("request-response completion envelope should validate");
-    let completion = runtime
+
+    runtime
         .admit_async_completion(request_identity, &validated)
         .expect("request-response completion should admit or deny canonically")
         .admitted_completion()
         .expect("completion should admit")
-        .clone();
-    completion
+        .clone()
 }
 
 fn admitted_detail_subscription(

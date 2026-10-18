@@ -1,10 +1,14 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 pub(crate) fn expect_durability_failure(
     stop: crate::durability::data::RelationalRecoveryStop,
 ) -> crate::durability::data::DurabilityError {
     match stop {
         crate::durability::data::RelationalRecoveryStop::Durability(error) => error,
+        crate::durability::data::RelationalRecoveryStop::Allocation(cause) => {
+            panic!("expected failed durable evidence, received allocation stop: {cause:?}")
+        }
         crate::durability::data::RelationalRecoveryStop::Request(cause) => {
             panic!("expected failed durable evidence, received request stop: {cause:?}")
         }
@@ -28,7 +32,10 @@ pub(crate) fn checkpoint_and_recover_with<F>(
 where
     F: FnOnce() -> RelationalRuntime,
 {
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     recover_with(execution, runtime, recovered_factory)
 }
 
@@ -40,9 +47,10 @@ pub(crate) fn recover_with<F>(
 where
     F: FnOnce() -> RelationalRuntime,
 {
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = recovered_factory();
     let outcome = recovered
         .durability_recovery()

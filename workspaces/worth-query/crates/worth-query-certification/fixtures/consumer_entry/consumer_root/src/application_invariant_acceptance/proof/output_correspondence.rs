@@ -43,6 +43,7 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
         WorthQueryApplicationMutationOutcome::Committed { .. }
     ));
     let outcome = request
+        .advanced()
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency(&402_u64)
@@ -86,6 +87,7 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
     require_absent(request, "anchor-b");
 
     let recovered = request
+        .advanced()
         .mutate(input.clone())
         .expect_source(source)
         .idempotency(&402_u64)
@@ -103,6 +105,7 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
         .take_performed_relational_product_change()
         .is_none());
     let drift = request
+        .advanced()
         .mutate(input)
         .expect_source(observed_source(request, "anchor-a"))
         .idempotency(&402_u64)
@@ -128,6 +131,7 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
 
     let before = source_version(request);
     let malformed = request
+        .advanced()
         .mutate(replacement("replacement-b", "rejected-replacement", 1, 12))
         .expect_source(observed_source(request, "anchor-a"))
         .idempotency(&404_u64)
@@ -156,6 +160,7 @@ pub(super) fn require_foreign_source(
     source: worth_query_host::facade::primary_graph::WorthQueryObservedSource<PlanarQuery>,
 ) {
     let denial = request
+        .advanced()
         .mutate(replacement(
             "anchor-b",
             "foreign-source-must-not-publish",
@@ -186,6 +191,7 @@ fn require_missing_source(
     command: u64,
 ) {
     let denial = request
+        .advanced()
         .mutate(input)
         .idempotency(&command)
         .execute_in_program(

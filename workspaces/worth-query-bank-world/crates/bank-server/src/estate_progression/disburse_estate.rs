@@ -1,7 +1,6 @@
 pub use crate::bank_projection::BankEstateDisbursementProjectionDenial;
 use bank_domain::{
     estate::EstateAction,
-    proposals::BankIdempotencyKey,
     schema::{BankSchema, DisburseEstateCapability, DisburseEstateOperation, EstateCase},
 };
 use worth_query_host::facade::{
@@ -11,7 +10,7 @@ use worth_query_host::facade::{
 };
 
 use super::BankEstateProgressionDenial;
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
+use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
 
 pub(crate) type AdmittedEstateDisbursement = WorthQueryAdmittedApplicationOperation<
     BankSchema,
@@ -21,35 +20,6 @@ pub(crate) type AdmittedEstateDisbursement = WorthQueryAdmittedApplicationOperat
 >;
 
 impl BankIdentityRuntime {
-    pub fn disburse_estate_with_key(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        idempotency_key: &BankIdempotencyKey,
-        request: &WorthQueryRequestScope,
-    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let EstateAction::DisburseEstate(disbursement) = action else {
-            return Err(BankEstateProgressionDenial::CommandInput(
-                "DisburseEstateOperation",
-            ));
-        };
-        super::program_outcome::program_outcome(
-            self.request(principal, request)
-                .mutate(bank_domain::schema::DisburseEstate::new(disbursement))
-                .idempotency(idempotency_key)
-                .execute_capability_in_program(
-                    self.application_program(),
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                ),
-            "DisburseEstateOperation",
-            |denial| {
-                denial
-                    .downcast::<BankEstateDisbursementProjectionDenial>()
-                    .map(BankEstateProgressionDenial::EstateDisbursementProjection)
-            },
-        )
-    }
-
     pub(crate) fn admit_estate_disbursement(
         &self,
         phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,

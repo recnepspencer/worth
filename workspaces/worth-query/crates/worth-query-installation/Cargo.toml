@@ -1,6 +1,8 @@
 [package]
 name = "worth-query-installation"
+autotests = false
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Portable domain package and installed identity authority for Worth Query."
@@ -14,10 +16,14 @@ subtle = "2.6"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-query-declaration = { path = "../worth-query-declaration" }
-zeroize = { version = "1.8", features = ["derive"] }
+zeroize = "1.8"
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
 
 [lints]
 workspace = true
+
+[[test]]
+name = "installation_contracts"
+path = "tests/installation_contracts.rs"

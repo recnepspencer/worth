@@ -1,5 +1,4 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::collections::{BTreeMap, BTreeSet};
 
 use worth_query_declaration::facade::application_operation::{
     WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
@@ -7,6 +6,10 @@ use worth_query_declaration::facade::application_operation::{
 use worth_relational::facade::identity::EntityId;
 
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
+
+mod checkpoint;
+mod storage;
+use storage::CorrespondenceStorage;
 
 mod candidate;
 pub(in crate::domain_computation::primary_graph::application_attempt) use candidate::WorthQueryApplicationOutputCorrespondenceCandidate;
@@ -54,14 +57,13 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCheckpointOutp
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOutputCorrespondence {
     binding_type: Option<TypeId>,
     contract_type: Option<TypeId>,
-    optional_roles: BTreeSet<String>,
-    roles: BTreeMap<String, CommittedOutputBinding>,
+    storage: std::sync::Arc<CorrespondenceStorage>,
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
     /// Admit the selected role's ordered descent before the ordinary typed
     /// projection reads the installed correspondence. Other roles contribute
-    /// only the finite B-tree node bound, never copied role text.
+    /// only the binary-search depth, never copied role text.
     pub(in crate::domain_computation::primary_graph) fn admit_selected_role_lookup(
         &self,
         role: &str,
@@ -69,12 +71,9 @@ impl WorthQueryApplicationOutputCorrespondence {
     ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
         use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
         admission.charge_external_work(3)?;
-        let count = self.roles.len();
+        let count = self.storage.roles.len();
         let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
-        let comparisons = count
-            .min(11)
-            .checked_mul(levels)
-            .ok_or(Stop::WorkCounterOverflow)?;
+        let comparisons = levels;
         let work = comparisons
             .checked_mul(role.len().checked_add(1).ok_or(Stop::WorkCounterOverflow)?)
             .and_then(|work| work.checked_add(2 * std::mem::size_of::<TypeId>() + 4))
@@ -86,7 +85,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str, EntityId)> + Clone
     {
-        self.roles.iter().map(|(role, binding)| {
+        self.storage.roles.iter().map(|(role, binding)| {
             (
                 role.as_str(),
                 binding.posture,
@@ -96,48 +95,11 @@ impl WorthQueryApplicationOutputCorrespondence {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn from_checkpoint_roles(
-        binding_type: TypeId,
-        contract_type: TypeId,
-        optional_roles: BTreeSet<String>,
-        roles: Vec<WorthQueryCheckpointOutputRole>,
-        mut entity_type: impl FnMut(&str) -> Option<TypeId>,
-    ) -> Result<Self, String> {
-        let mut rebound = BTreeMap::new();
-        for role in roles {
-            WorthQueryApplicationOutputRoleNameDenial::validate(&role.role)
-                .map_err(|denial| format!("checkpoint output role {}: {denial}", role.role))?;
-            let marker = entity_type(&role.entity_name).ok_or_else(|| {
-                format!(
-                    "checkpoint output role {} names an uninstalled entity {}",
-                    role.role, role.entity_name
-                )
-            })?;
-            let binding = CommittedOutputBinding {
-                posture: role.posture,
-                entity_name: role.entity_name,
-                entity_type: marker,
-                entity: role.entity,
-            };
-            if rebound.insert(role.role.clone(), binding).is_some() {
-                return Err(format!(
-                    "checkpoint output role {} is duplicated",
-                    role.role
-                ));
-            }
-        }
-        Ok(Self {
-            binding_type: Some(binding_type),
-            contract_type: Some(contract_type),
-            optional_roles,
-            roles: rebound,
-        })
-    }
-
     pub(in crate::domain_computation::primary_graph) fn checkpoint_roles(
         &self,
     ) -> Vec<WorthQueryCheckpointOutputRole> {
-        self.roles
+        self.storage
+            .roles
             .iter()
             .map(|(role, binding)| WorthQueryCheckpointOutputRole {
                 role: role.clone(),
@@ -155,7 +117,7 @@ impl WorthQueryApplicationOutputCorrespondence {
 
         let mut digest = Sha256::new();
         digest.update(b"worth-query:workflow-assessment-output:v1");
-        for (role, binding) in &self.roles {
+        for (role, binding) in &self.storage.roles {
             digest.update((role.len() as u64).to_le_bytes());
             digest.update(role.as_bytes());
             digest.update([match binding.posture {
@@ -194,20 +156,28 @@ impl WorthQueryApplicationOutputCorrespondence {
     pub(in crate::domain_computation::primary_graph) fn created_entity_ids(
         &self,
     ) -> impl Iterator<Item = EntityId> + '_ {
-        self.roles.values().filter_map(|binding| {
-            (binding.posture == WorthQueryApplicationOutputPosture::Create)
-                .then_some(binding.entity)
-        })
+        self.storage
+            .roles
+            .iter()
+            .map(|(_, binding)| binding)
+            .filter_map(|binding| {
+                (binding.posture == WorthQueryApplicationOutputPosture::Create)
+                    .then_some(binding.entity)
+            })
     }
 
     /// Only completed Retire bindings whose actual delete effects were validated.
     pub(in crate::domain_computation::primary_graph) fn retired_entity_ids(
         &self,
     ) -> impl Iterator<Item = EntityId> + '_ {
-        self.roles.values().filter_map(|binding| {
-            (binding.posture == WorthQueryApplicationOutputPosture::Retire)
-                .then_some(binding.entity)
-        })
+        self.storage
+            .roles
+            .iter()
+            .map(|(_, binding)| binding)
+            .filter_map(|binding| {
+                (binding.posture == WorthQueryApplicationOutputPosture::Retire)
+                    .then_some(binding.entity)
+            })
     }
 
     /// Publication metadata includes retirement; it grants no current identity.
@@ -215,14 +185,14 @@ impl WorthQueryApplicationOutputCorrespondence {
         &self,
         role: &str,
     ) -> Option<EntityId> {
-        self.roles.get(role).map(|binding| binding.entity)
+        self.storage.binding(role).map(|binding| binding.entity)
     }
 
     pub(in crate::domain_computation::primary_graph) fn active_entity_for_role(
         &self,
         role: &str,
     ) -> Option<EntityId> {
-        self.roles.get(role).and_then(|binding| {
+        self.storage.binding(role).and_then(|binding| {
             (binding.posture != WorthQueryApplicationOutputPosture::Retire)
                 .then_some(binding.entity)
         })
@@ -238,10 +208,16 @@ impl WorthQueryApplicationOutputCorrespondence {
         if self.contract_type != Some(role.contract_type) {
             return Err(WorthQueryApplicationOutputProjectionDenial::ForeignContract);
         }
-        if self.optional_roles.contains(&role.name) != role.cardinality.admits_absence() {
+        if self
+            .storage
+            .optional_roles
+            .binary_search(&role.name)
+            .is_ok()
+            != role.cardinality.admits_absence()
+        {
             return Err(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch);
         }
-        let Some(binding) = self.roles.get(&role.name) else {
+        let Some(binding) = self.storage.binding(&role.name) else {
             return Ok(None);
         };
         if binding.posture != role.posture {
@@ -262,8 +238,8 @@ impl WorthQueryApplicationOutputCorrespondence {
         if self.binding_type != Some(TypeId::of::<Binding>()) {
             return Err(WorthQueryApplicationOutputProjectionDenial::ForeignBinding);
         }
-        self.roles
-            .get(role)
+        self.storage
+            .binding(role)
             .map(|binding| binding.entity)
             .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)
     }
@@ -278,8 +254,8 @@ impl WorthQueryApplicationOutputCorrespondence {
         if self.binding_type != Some(TypeId::of::<Binding>()) {
             return Err(WorthQueryApplicationOutputProjectionDenial::ForeignBinding);
         }
-        self.roles
-            .get(role)
+        self.storage
+            .binding(role)
             .map(|binding| binding.posture)
             .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)
     }
@@ -288,7 +264,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         &self,
         role: &str,
     ) -> Result<Option<EntityId>, WorthQueryApplicationOutputProjectionDenial> {
-        let Some(binding) = self.roles.get(role) else {
+        let Some(binding) = self.storage.binding(role) else {
             return Ok(None);
         };
         if binding.entity_type != TypeId::of::<Entity>() {
@@ -316,7 +292,6 @@ impl WorthQueryApplicationOutputCorrespondence {
     where
         Family: WorthQueryApplicationOutputRoleFamily,
     {
-        use std::ops::Bound::{Excluded, Unbounded};
         use worth_query_declaration::facade::application_operation::WorthQueryApplicationDeclaredOutputRoleFamily;
 
         const { <Family as WorthQueryApplicationDeclaredOutputRoleFamily>::DECLARED };
@@ -324,9 +299,12 @@ impl WorthQueryApplicationOutputCorrespondence {
             return Err(WorthQueryApplicationOutputProjectionDenial::ForeignContract);
         }
         let prefix = Family::PREFIX;
-        Ok(self
+        let start = self
+            .storage
             .roles
-            .range::<str, _>((Excluded(prefix), Unbounded))
+            .partition_point(|(role, _)| role.as_str() <= prefix);
+        Ok(self.storage.roles[start..]
+            .iter()
             .take_while(move |(role, _)| role.starts_with(prefix))
             .map(|(role, binding)| {
                 if binding.entity_type != TypeId::of::<Family::Entity>() {

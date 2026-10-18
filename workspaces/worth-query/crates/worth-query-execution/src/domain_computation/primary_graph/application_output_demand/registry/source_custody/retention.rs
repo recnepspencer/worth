@@ -90,7 +90,7 @@ impl WorthQueryOutputDemandRegistry {
                 })
             {
                 abandoned
-                    .try_reserve(1)
+                    .try_reserve(super::reservation_control::reservation_request(&state))
                     .map_err(|_| source_capacity_denial())?;
                 abandoned.push(prior.clone());
             }

@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui_inspection::project_receipt_from_support_report`
- --> tests/ui/inspection/external_callers_cannot_import_receipt_projection_helper.rs:1:5
-  |
-1 | use worth_ui_inspection::project_receipt_from_support_report;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `project_receipt_from_support_report` in the root

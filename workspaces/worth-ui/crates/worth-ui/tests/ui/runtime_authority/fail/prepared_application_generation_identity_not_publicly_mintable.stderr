@@ -1,12 +1,3 @@
 error: cannot construct `WorthUiPreparedApplicationGenerationIdentity` with struct literal syntax due to private fields
- --> tests/ui/runtime_authority/fail/prepared_application_generation_identity_not_publicly_mintable.rs:4:13
-  |
-4 |     let _ = WorthUiPreparedApplicationGenerationIdentity {};
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private fields `capability_snapshot`, `canonical_artifact`, `declaration_source`, `graph_authority_digest`, `query_binding` and `host_session_plan` that were not provided
-help: you might have meant to use the `derive` associated function
-  |
-4 -     let _ = WorthUiPreparedApplicationGenerationIdentity {};
-4 +     let _ = WorthUiPreparedApplicationGenerationIdentity::derive(_, _, _, _, _, _);
-  |
+ --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/prepared_application_generation_identity_not_publicly_mintable.rs
+ help: you might have meant to use the `derive` associated function

@@ -7,13 +7,12 @@ pub(crate) fn aspect_relative_scalar<'a>(
     aspect: &AspectKey,
     field_path: &CanonicalFieldPath,
 ) -> Option<&'a AspectValue> {
-    if let [field] = field_path.fields() {
-        if let Some(value) = entity
+    if let [field] = field_path.fields()
+        && let Some(value) = entity
             .struct_aspect_value(aspect)
             .and_then(|value| value.get(field))
-        {
-            return Some(value);
-        }
+    {
+        return Some(value);
     }
     normalized_native_storage_path(aspect, field_path)
         .as_ref()

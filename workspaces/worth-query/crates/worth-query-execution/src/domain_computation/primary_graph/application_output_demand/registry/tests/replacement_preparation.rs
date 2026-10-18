@@ -217,15 +217,21 @@ fn replacement_one_short_work_or_scratch_preserves_both_records_and_tickets() {
     let work = measured.charged_work();
     let bytes = measured.charged_bytes();
     assert!(work > 0 && bytes > 0);
-    for budget in [
-        CompanionPreflightBudget {
-            maximum_work_visits: work - 1,
-            maximum_preparation_bytes: bytes,
-        },
-        CompanionPreflightBudget {
-            maximum_work_visits: work,
-            maximum_preparation_bytes: bytes - 1,
-        },
+    for (budget, expected_kind) in [
+        (
+            CompanionPreflightBudget {
+                maximum_work_visits: work - 1,
+                maximum_preparation_bytes: bytes,
+            },
+            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        ),
+        (
+            CompanionPreflightBudget {
+                maximum_work_visits: work,
+                maximum_preparation_bytes: bytes - 1,
+            },
+            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+        ),
     ] {
         let (registry, old, next, _) = fixture();
         let (obligation_bytes, record_bytes) = {
@@ -237,7 +243,7 @@ fn replacement_one_short_work_or_scratch_preserves_both_records_and_tickets() {
                     .load(std::sync::atomic::Ordering::Acquire),
             )
         };
-        registry
+        let denial = registry
             .finish_replaced_interest(
                 &old,
                 &next,
@@ -245,6 +251,7 @@ fn replacement_one_short_work_or_scratch_preserves_both_records_and_tickets() {
                 &mut InvalidationEditAdmission::new(budget),
             )
             .expect_err("one short stops before either record moves");
+        assert_eq!(denial.kind(), expected_kind);
         let state = registry.state.lock().unwrap();
         assert_eq!(state.records[&old.key].performed_obligations.len(), 3);
         assert!(state.records[&next.key].performed_obligations.is_empty());

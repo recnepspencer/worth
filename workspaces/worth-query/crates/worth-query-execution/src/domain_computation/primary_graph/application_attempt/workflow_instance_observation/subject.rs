@@ -5,7 +5,7 @@ use super::{
     WorthQueryWorkflowLayout,
 };
 
-pub(super) fn observe_subject(
+pub(in crate::domain_computation::primary_graph) fn observe_subject(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -14,6 +14,20 @@ pub(super) fn observe_subject(
     subject: EntityId,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    if read_subject(execution, runtime, snapshot, layout, entity, facts)? != subject {
+        return Err(denial("workflow instance subject binding changed"));
+    }
+    Ok(())
+}
+
+pub(super) fn read_subject(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    entity: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {
     let kind = layout.instance.entity_kind;
     let protocol = observe_field_value(
         runtime,
@@ -41,7 +55,7 @@ pub(super) fn observe_subject(
                 AspectValue::UInt64(version),
                 facts,
             )?;
-            if version == WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION {
+            let subject = if version == WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION {
                 for locator in [
                     &layout.instance.subject_partition,
                     &layout.instance.subject_slot,
@@ -68,34 +82,35 @@ pub(super) fn observe_subject(
                     "workflow subject correspondence is unavailable",
                     facts,
                 )?;
-                if subjects.as_slice() != [subject] {
-                    return Err(denial("workflow instance subject binding changed"));
-                }
+                let [subject] = subjects.as_slice() else {
+                    return Err(denial("workflow instance subject binding is not singular"));
+                };
+                *subject
             } else {
-                for (locator, expected) in [
-                    (
-                        &layout.instance.subject_partition,
-                        u64::from(subject.partition_value()),
-                    ),
-                    (&layout.instance.subject_slot, subject.local_slot_value()),
-                    (
-                        &layout.instance.subject_generation,
-                        u64::from(subject.generation_value()),
-                    ),
-                ] {
-                    exact(
-                        execution,
-                        runtime,
-                        snapshot,
-                        entity,
-                        kind,
-                        locator,
-                        AspectValue::UInt64(expected),
-                        facts,
+                let mut components = [0u64; 3];
+                for (index, locator) in [
+                    &layout.instance.subject_partition,
+                    &layout.instance.subject_slot,
+                    &layout.instance.subject_generation,
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    components[index] = super::exact_u64(
+                        execution, runtime, snapshot, entity, kind, locator, facts,
                     )?;
                 }
+                let subject = EntityId::new(
+                    worth_relational::facade::identity::PartitionId::new(
+                        u32::try_from(components[0])
+                            .map_err(|_| denial("workflow subject partition is invalid"))?,
+                    ),
+                    components[1],
+                    u32::try_from(components[2])
+                        .map_err(|_| denial("workflow subject generation is invalid"))?,
+                );
                 // A legacy coordinate record must not acquire a conflicting
-                // v3 endpoint through another publication.
+                // birth endpoint through another publication.
                 if !adjacency(
                     execution,
                     runtime,
@@ -110,8 +125,9 @@ pub(super) fn observe_subject(
                 {
                     return Err(denial("legacy workflow has conflicting subject relation"));
                 }
-            }
-            Ok(())
+                subject
+            };
+            Ok(subject)
         }
         _ => Err(denial("workflow instance protocol is unavailable")),
     }

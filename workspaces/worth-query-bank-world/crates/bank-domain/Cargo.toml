@@ -1,6 +1,8 @@
 [package]
 name = "bank-domain"
+autotests = false
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Bank-world semantic contract and typed Query declarations."
@@ -17,3 +19,7 @@ worth-query-host.workspace = true
 
 [lints]
 workspace = true
+
+[[test]]
+name = "domain_contracts"
+path = "tests/domain_contracts.rs"

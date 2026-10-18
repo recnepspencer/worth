@@ -55,10 +55,11 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("main prepares");
     assert!(matches!(
-        prepared.publish(),
+        prepared.publish(host.runtime(), &principal, &scope),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
 

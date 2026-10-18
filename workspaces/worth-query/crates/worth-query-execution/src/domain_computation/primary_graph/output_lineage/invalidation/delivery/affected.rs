@@ -110,7 +110,8 @@ pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) f
         if visited.contains(&upstream) {
             continue;
         }
-        admission.ordered_edit::<Arc<RecordedSettlementIdentity>, ()>(visited.len())?;
+        // The walk creates `visited` empty and never shares it while it grows.
+        admission.fresh_insert::<Arc<RecordedSettlementIdentity>, ()>(visited.len())?;
         visited.insert(Arc::clone(&upstream));
         // A native change to an alias can change the output consumed through
         // any earlier exact identity in its certified equality chain.

@@ -22,7 +22,7 @@ pub struct ApplicationMutationDescriptionParts {
     pub scope: ApplicationMutationScopeDescription,
     pub output_roles: Vec<ApplicationMutationOutputRoleDescription>,
     pub output_role_families: Vec<ApplicationMutationOutputRoleFamilyDescription>,
-    pub workflow_execution_requirements: Option<super::ApplicationWorkflowExecutionRequirements>,
+    pub workflow_execution_requirements: super::ApplicationWorkflowExecutionRequirements,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]

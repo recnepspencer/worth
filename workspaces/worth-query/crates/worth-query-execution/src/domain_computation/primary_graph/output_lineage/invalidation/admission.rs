@@ -56,19 +56,6 @@ pub(super) trait IndexAdmission {
     }
 
     #[track_caller]
-    fn key_edit<K, V>(
-        &mut self,
-        key: &super::fact_key::FactPostingKey,
-        entries: usize,
-    ) -> Result<(), CompanionPreflightStop> {
-        self.key_read(key, entries)?;
-        self.bytes(
-            index_capacity::ordered_edit_bytes::<K, V>(entries)
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )
-    }
-
-    #[track_caller]
     fn ordered_read(&mut self, entries: usize) -> Result<(), CompanionPreflightStop> {
         // One declared unit per ordered operation; its path is navigation.
         self.work(1)?;
@@ -83,6 +70,32 @@ pub(super) trait IndexAdmission {
         self.ordered_read(entries)?;
         self.bytes(
             index_capacity::ordered_edit_bytes::<K, V>(entries)
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        )
+    }
+
+    /// One insertion into a tree this preparation created empty and never
+    /// shares while it grows. Its path is navigated as any ordered edit; its
+    /// bytes are the build's own growth, since no predecessor path is copied.
+    #[track_caller]
+    fn fresh_insert<K, V>(&mut self, entries: usize) -> Result<(), CompanionPreflightStop> {
+        self.ordered_read(entries)?;
+        self.bytes(
+            index_capacity::fresh_insert_bytes::<K, V>(entries)
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        )
+    }
+
+    /// A keyed [`Self::fresh_insert`]: the key's comparisons are its read.
+    #[track_caller]
+    fn fresh_key_insert<K, V>(
+        &mut self,
+        key: &super::fact_key::FactPostingKey,
+        entries: usize,
+    ) -> Result<(), CompanionPreflightStop> {
+        self.key_read(key, entries)?;
+        self.bytes(
+            index_capacity::fresh_insert_bytes::<K, V>(entries)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )
     }

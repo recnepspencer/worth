@@ -65,7 +65,7 @@ where
             Ok(prepared) => {
                 let plan = prepared.into_decision_plan(finish);
 
-                let plan = plan.observe_computes_for_test(
+                plan.observe_computes_for_test(
                     || {
                         runs_on_this_thread();
                     },
@@ -74,8 +74,7 @@ where
                         assert_eq!(reports.len(), 1, "one report for this decision's compute");
                         *observed.borrow_mut() = reports.pop();
                     },
-                );
-                plan
+                )
             }
             Err(error) => {
                 worth_query_host::facade::primary_graph::WorthQueryDecisionPlan::immediate(finish(

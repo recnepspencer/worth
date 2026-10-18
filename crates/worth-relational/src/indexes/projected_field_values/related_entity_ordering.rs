@@ -208,10 +208,7 @@ pub(in crate::indexes) fn compare_related_entries(
         .zip(right.ordering_values())
         .zip(ordering)
     {
-        let comparison = match field.direction() {
-            RelatedEntityOrderingDirection::Ascending => left.value().cmp(right.value()),
-            RelatedEntityOrderingDirection::Descending => right.value().cmp(left.value()),
-        };
+        let comparison = compare_ordering_value(left.value(), right.value(), field);
         if comparison != Ordering::Equal {
             return comparison;
         }
@@ -219,4 +216,16 @@ pub(in crate::indexes) fn compare_related_entries(
     left.child_entity_id()
         .cmp(&right.child_entity_id())
         .then_with(|| left.relation_id().cmp(&right.relation_id()))
+}
+
+/// The same scalar ordering governs full entries and leading-value range bounds.
+pub(in crate::indexes) fn compare_ordering_value(
+    left: &worth_foundational::facade::AspectValue,
+    right: &worth_foundational::facade::AspectValue,
+    field: &RelatedEntityOrderingField,
+) -> Ordering {
+    match field.direction() {
+        RelatedEntityOrderingDirection::Ascending => left.cmp(right),
+        RelatedEntityOrderingDirection::Descending => right.cmp(left),
+    }
 }

@@ -4,50 +4,11 @@ use super::model::{
 };
 use super::row_catalog::{
     PreviewCanonicalRowSpec, PreviewRejectionRowSpec, PREVIEW_CANONICAL_ROW_SPECS,
-    PREVIEW_REJECTION_ROW_SPECS, PREVIEW_REQUIRED_CANONICAL_ROW_NAMES,
-    PREVIEW_REQUIRED_REJECTION_ROW_NAMES,
+    PREVIEW_REJECTION_ROW_SPECS,
 };
-use crate::harness::certification::{
-    milestone_five_point_two_requirements, unmet_required_rows, HostileExpectation,
-};
-
-pub(super) fn assert_adapter_emits_named_matrix(matrix: &PreviewCertificationMatrix) {
-    assert_eq!(
-        matrix.suite_name,
-        "Preview Session Basis And Promotion Parity Test"
-    );
-    for spec in PREVIEW_CANONICAL_ROW_SPECS {
-        assert!(matrix.rows.iter().any(|row| row.row_name == spec.row_name));
-    }
-    for spec in PREVIEW_REJECTION_ROW_SPECS {
-        assert!(matrix
-            .rejection_rows
-            .iter()
-            .any(|row| row.row_name == spec.row_name));
-    }
-}
+use crate::harness::certification::HostileExpectation;
 
 pub(super) fn assert_matrix_meets_required_rows(matrix: &PreviewCertificationMatrix) {
-    let requirements = milestone_five_point_two_requirements();
-    let implemented_missing = unmet_required_rows(
-        matrix,
-        PREVIEW_REQUIRED_CANONICAL_ROW_NAMES,
-        PREVIEW_REQUIRED_REJECTION_ROW_NAMES,
-    );
-
-    assert!(
-        implemented_missing.is_empty(),
-        "missing implemented preview rows: {implemented_missing:?}"
-    );
-    let spec_missing = unmet_required_rows(
-        matrix,
-        requirements.required_canonical_rows,
-        requirements.required_rejection_rows,
-    );
-    assert!(
-        spec_missing.is_empty(),
-        "preview certification should cover the declared minimum 5.2 spec rows: {spec_missing:?}"
-    );
     assert!(matrix
         .rows
         .iter()

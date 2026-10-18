@@ -53,6 +53,7 @@ fn managed_partitioned_execution_prevents_cutoff_and_keeps_incremental_reuse() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
             replacement_y: length(2),
@@ -83,6 +84,7 @@ fn managed_partitioned_execution_prevents_cutoff_and_keeps_incremental_reuse() {
         "byte-equal gathered facts reuse every managed partition"
     );
     request
+        .advanced()
         .mutate(EntryEdit::new("odd", 0, EntryFact::Value, 2.5_f64.to_bits()).commanded(9002))
         .without_source()
         .idempotency(&9002_u64)

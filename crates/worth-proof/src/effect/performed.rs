@@ -128,14 +128,10 @@ mod tests {
         Performed::record(&DispatchAuthority::witness(), payload.len())
     }
 
-    #[test]
-    fn evidence_costs_only_its_outcome() {
-        assert_eq!(
-            size_of::<Performed<SendToOutbox, DispatchAuthority, usize>>(),
-            size_of::<usize>()
-        );
-        assert_eq!(size_of::<Performed<SendToOutbox, DispatchAuthority>>(), 0);
-    }
+    const _: () = assert!(
+        size_of::<Performed<SendToOutbox, DispatchAuthority, usize>>() == size_of::<usize>()
+    );
+    const _: () = assert!(size_of::<Performed<SendToOutbox, DispatchAuthority>>() == 0);
 
     #[test]
     fn performing_the_effect_is_what_produces_the_evidence() {

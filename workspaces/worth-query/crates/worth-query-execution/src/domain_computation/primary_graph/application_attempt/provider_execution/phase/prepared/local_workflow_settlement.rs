@@ -88,6 +88,7 @@ impl WorthQueryProviderAttemptPreparation {
                 &binding.workflow_layout,
                 &binding.settlement_basis,
                 &receipt_identity,
+                crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(admission),
                 |effect| {
                     settlement_effects.push(effect);
                     Ok::<(), WorthQueryApplicationAttemptDenial>(())

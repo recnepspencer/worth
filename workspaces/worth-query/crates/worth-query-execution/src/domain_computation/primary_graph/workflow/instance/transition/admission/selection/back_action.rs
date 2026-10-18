@@ -36,7 +36,7 @@ pub(in crate::domain_computation::primary_graph) fn select_back_action_transitio
     if requested.operation != *operation
         || requested.input_type != *input_type
         || requested.binding.as_deref() != Some(binding)
-        || requested.workflow_execution_requirements.as_ref() != Some(requirements)
+        || &requested.workflow_execution_requirements != requirements
     {
         return Err(denial(
             WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch,

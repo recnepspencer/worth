@@ -21,7 +21,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
 use worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity;
 use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 
-use super::schema::DocumentRetentionSchema;
+use worth_query_host::facade::declaration::application_schema::ApplicationSchema;
 
 pub const OPERATOR_ISSUER: &str = "https://issuer.example";
 pub const OPERATOR_SUBJECT: &str = "document-retention-operator";
@@ -69,9 +69,9 @@ pub fn secondary_signer_identity() -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new(OPERATOR_ISSUER, "secondary-signer").unwrap()
 }
 
-pub fn admit_operator_adapter(
-    schema: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
-) -> WorthQueryAdmittedAuthenticationAdapter<DocumentRetentionSchema, OperatorAdapter> {
+pub fn admit_operator_adapter<S: ApplicationSchema>(
+    schema: &WorthQueryInstalledApplicationSchema<S>,
+) -> WorthQueryAdmittedAuthenticationAdapter<S, OperatorAdapter> {
     admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(audience(), method()),
@@ -80,10 +80,10 @@ pub fn admit_operator_adapter(
     .expect("the operator adapter must be admitted")
 }
 
-pub fn authenticate_operator(
-    schema: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
+pub fn authenticate_operator<S: ApplicationSchema>(
+    schema: &WorthQueryInstalledApplicationSchema<S>,
     scope: &WorthQueryRequestScope,
-) -> WorthQueryAuthenticatedExternalPrincipal<DocumentRetentionSchema> {
+) -> WorthQueryAuthenticatedExternalPrincipal<S> {
     block_on(admit_operator_adapter(schema).authenticate((), scope))
         .expect("the operator must authenticate")
 }
@@ -118,3 +118,10 @@ pub(crate) fn block_on<F: Future>(future: F) -> F::Output {
         }
     }
 }
+
+#[path = "operator_identity/reviewer.rs"]
+mod reviewer;
+pub use reviewer::{
+    authenticate_reviewer, authenticate_ungranted_reviewer, reviewer_identity,
+    ungranted_reviewer_identity,
+};

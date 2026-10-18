@@ -119,6 +119,7 @@ fn publish_initial_output(
 ) {
     let observed = source(application, principal, scope, "anchor-a").observed_sources()[0].clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -191,6 +192,7 @@ fn adjust(
 ) {
     let observed = source(application, principal, scope, key).observed_sources()[0].clone();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: key.to_owned(),
             replacement_y: length(y),

@@ -1,4 +1,5 @@
 mod read_observation;
+mod retained_managed_cleanup;
 pub use read_observation::conditional_intent_read_is_active_for_test;
 mod reentry_failure;
 pub use reentry_failure::WorthQueryConditionalReentryFailure;

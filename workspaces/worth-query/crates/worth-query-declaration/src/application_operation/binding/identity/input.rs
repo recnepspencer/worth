@@ -1,13 +1,16 @@
 //! One operation input together with the identity encoded from it.
 
+use crate::native_input_capture::NativeImmutableInput;
 use serde::Serialize;
 
-use super::{input_identity, ApplicationCanonicalInput, ApplicationCanonicalWork};
+use super::{
+    input_identity, ApplicationCanonicalInput, ApplicationCanonicalWork, ApplicationSharedInput,
+};
 use crate::application_schema::{ApplicationStructuredValueBinding, ApplicationValueEncodeDenial};
 
 /// An operation input and its canonical identity, scoped to `InputBinding`.
 ///
-/// Only [`encode`](Self::encode) derives one, and
+/// [`encode`](Self::encode) and the sealed native integration derive one, and
 /// [`ApplicationMutationIdentities::encoded_input`](super::ApplicationMutationIdentities::encoded_input)
 /// copies one out of a request that already encoded its input, so the identity
 /// always describes the value it travels with and the input type in the scope
@@ -17,14 +20,15 @@ use crate::application_schema::{ApplicationStructuredValueBinding, ApplicationVa
 ///
 /// `canonical_work` is the derivation work this carrier still has to report:
 /// the encoding it performed, or none when the request's
-/// `ApplicationMutationIdentities` already report it. A clone carries the same
+/// `ApplicationMutationIdentities` already report it. Input custody is immutable and shared.
+/// A clone carries the same
 /// work, because only one of two admissions of one request ever reaches a
 /// receipt.
 pub struct ApplicationEncodedInput<InputBinding>
 where
     InputBinding: ApplicationStructuredValueBinding,
 {
-    input: InputBinding::Value,
+    input: ApplicationSharedInput<InputBinding::Value>,
     identity: [u8; 32],
     work: ApplicationCanonicalWork,
     capture: Option<ApplicationCanonicalInput>,
@@ -45,7 +49,23 @@ where
     pub fn encode(input: InputBinding::Value) -> Result<Self, ApplicationValueEncodeDenial> {
         let derived = input_identity::<InputBinding>(&input)?;
         Ok(Self {
-            input,
+            input: ApplicationSharedInput::from_value(input),
+            identity: derived.identity(),
+            work: derived.work(),
+            capture: derived.capture,
+        })
+    }
+    /// Derives identity/work from this SAME immutable owner and retains it.
+    /// No identity, work or allocation policy is supplied by the caller.
+    pub(crate) fn from_native_owned<Owner>(
+        owner: Owner,
+    ) -> Result<Self, ApplicationValueEncodeDenial>
+    where
+        Owner: NativeImmutableInput<InputBinding::Value> + Send + Sync + 'static,
+    {
+        let derived = input_identity::<InputBinding>(owner.value())?;
+        Ok(Self {
+            input: ApplicationSharedInput::from_owned(owner),
             identity: derived.identity(),
             work: derived.work(),
             capture: derived.capture,
@@ -57,13 +77,13 @@ impl<InputBinding> ApplicationEncodedInput<InputBinding>
 where
     InputBinding: ApplicationStructuredValueBinding,
 {
-    pub(super) const fn reported_elsewhere(
+    pub(super) fn reported_elsewhere(
         input: InputBinding::Value,
         identity: [u8; 32],
         capture: Option<ApplicationCanonicalInput>,
     ) -> Self {
         Self {
-            input,
+            input: ApplicationSharedInput::from_value(input),
             identity,
             work: ApplicationCanonicalWork::none(),
             capture,
@@ -71,8 +91,8 @@ where
     }
 
     /// The input the identity was encoded from.
-    pub const fn input(&self) -> &InputBinding::Value {
-        &self.input
+    pub fn input(&self) -> &InputBinding::Value {
+        self.input.as_ref()
     }
 
     /// Identity of the input, scoped to its input type.
@@ -89,8 +109,8 @@ where
         self.work
     }
 
-    /// The input, giving up its identity.
-    pub fn into_input(self) -> InputBinding::Value {
+    /// Gives native admission shared immutable custody of the encoded input.
+    pub fn into_shared_input(self) -> ApplicationSharedInput<InputBinding::Value> {
         self.input
     }
 }
@@ -98,7 +118,6 @@ where
 impl<InputBinding> Clone for ApplicationEncodedInput<InputBinding>
 where
     InputBinding: ApplicationStructuredValueBinding,
-    InputBinding::Value: Clone,
 {
     fn clone(&self) -> Self {
         Self {

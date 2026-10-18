@@ -18,6 +18,7 @@ use crate::config::SourceOwnerIsolationConfig;
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 
 mod owned_items;
+mod path_resolution;
 mod test_sources;
 mod use_bindings;
 
@@ -63,6 +64,7 @@ pub(crate) fn validate_source_owner_isolations(
                 crate::source_syntax::parse_named(&workspace.join(&path), &source),
                 &owned,
                 rule,
+                path_resolution::external_crates(workspace, &path),
             ));
         }
     }
@@ -81,6 +83,7 @@ fn diagnostics_for_source(
         crate::source_syntax::parse_file(source).map(std::rc::Rc::new),
         owned,
         rule,
+        path_resolution::standard_crates(),
     )
 }
 
@@ -89,6 +92,7 @@ fn diagnostics_for_syntax(
     syntax: syn::Result<std::rc::Rc<syn::File>>,
     owned: &OwnedItems,
     rule: &SourceOwnerIsolationConfig,
+    external_crates: BTreeSet<String>,
 ) -> Vec<Diagnostic> {
     let Ok(file) = syntax else {
         return vec![unparsable(path)];
@@ -96,6 +100,8 @@ fn diagnostics_for_syntax(
     let module = module_path(path);
     let mut visitor = IsolationVisitor {
         owned,
+        external_crates,
+        generic_types: BTreeSet::new(),
         forbidden_paths: &rule.forbidden_paths,
         bindings: UseBindings::collect(&file, &module),
         module,
@@ -200,6 +206,8 @@ fn unreadable(path: &str, error: &std::io::Error) -> Diagnostic {
 
 struct IsolationVisitor<'a> {
     owned: &'a OwnedItems,
+    external_crates: BTreeSet<String>,
+    generic_types: BTreeSet<String>,
     forbidden_paths: &'a [Vec<String>],
     bindings: UseBindings,
     module: Vec<String>,
@@ -221,112 +229,97 @@ impl IsolationVisitor<'_> {
                 self.found.insert(forbidden.join("::"));
             }
         }
+        if let (true, Some(last)) = (segments.len() > 1, segments.last())
+            && self.owned.reaches_method(last, &self.module)
+        {
+            self.found.insert(last.clone());
+        }
+        if self.independent_root(segments) {
+            return;
+        }
+        for segment in segments {
+            if self.owned.types.contains(segment) {
+                self.found.insert(segment.clone());
+            }
+        }
         if let (true, Some(last)) = (segments.len() > 1, segments.last()) {
-            if self.owned.reaches_value(last, &self.module)
-                || self.owned.reaches_method(last, &self.module)
-            {
+            if self.owned.reaches_value(last, &self.module) {
                 self.found.insert(last.clone());
             }
         }
     }
 
-    /// The crate-absolute form of a path, or the path as written when it
-    /// names no module of this crate.
-    fn resolve(&self, segments: &[String]) -> Vec<String> {
-        self.resolve_local(segments)
-            .unwrap_or_else(|| segments.to_vec())
-    }
-
-    /// The crate-absolute form of a `crate::`, `self::` or `super::` path, or
-    /// of one that starts with a name a `use` in this module binds. An alias
-    /// chain too deep to follow, or an ambiguous alias, resolves to the empty
-    /// path, which a glob refuses.
-    fn resolve_local(&self, segments: &[String]) -> Option<Vec<String>> {
-        let mut segments = segments.to_vec();
-        for _ in 0..MAXIMUM_ALIAS_DEPTH {
-            match segments.first().map(String::as_str) {
-                Some("crate") => return Some(segments[1..].to_vec()),
-                Some("self") => return Some([&self.module[..], &segments[1..]].concat()),
-                Some("super") => {
-                    let depth = segments.iter().take_while(|s| *s == "super").count();
-                    let kept = self.module.len().saturating_sub(depth);
-                    return Some([&self.module[..kept], &segments[depth..]].concat());
-                }
-                Some(name) => {
-                    let target = self.bindings.target(&self.module, name)?;
-                    if target.is_empty() {
-                        return Some(Vec::new());
-                    }
-                    segments = [target, &segments[1..]].concat();
-                }
-                None => return None,
-            }
-        }
-        Some(Vec::new())
-    }
-
     fn visit_tokens(&mut self, tokens: proc_macro2::TokenStream) {
         let mut segments = Vec::new();
-        for token in tokens {
+        let mut qualified = false;
+        let mut tokens = tokens.into_iter().peekable();
+        while let Some(token) = tokens.next() {
             match token {
                 proc_macro2::TokenTree::Ident(identifier) => {
-                    self.visit_ident(&identifier);
+                    if !qualified {
+                        self.check_segments(&std::mem::take(&mut segments));
+                    }
                     segments.push(identifier.to_string());
+                    qualified = false;
                 }
-                proc_macro2::TokenTree::Punct(punct) if punct.as_char() == ':' => {}
-                proc_macro2::TokenTree::Group(group) => {
+                proc_macro2::TokenTree::Punct(punct)
+                    if !qualified
+                        && punct.as_char() == ':'
+                        && punct.spacing() == proc_macro2::Spacing::Joint
+                        && matches!(tokens.peek(), Some(proc_macro2::TokenTree::Punct(next)) if next.as_char() == ':') =>
+                {
+                    tokens.next();
+                    qualified = !segments.is_empty();
+                }
+                other => {
                     self.check_segments(&std::mem::take(&mut segments));
-                    self.visit_tokens(group.stream());
-                }
-                _ => self.check_segments(&std::mem::take(&mut segments)),
-            }
-        }
-        self.check_segments(&segments);
-    }
-
-    fn visit_use_tree_segments(&mut self, tree: &syn::UseTree, prefix: &mut Vec<String>) {
-        match tree {
-            syn::UseTree::Path(path) => {
-                prefix.push(path.ident.to_string());
-                self.visit_use_tree_segments(&path.tree, prefix);
-                prefix.pop();
-            }
-            syn::UseTree::Name(name) => self.check_leaf(prefix, &name.ident),
-            syn::UseTree::Rename(rename) => self.check_leaf(prefix, &rename.ident),
-            syn::UseTree::Glob(_) => {
-                let reported = self.found.len();
-                self.check_segments(prefix);
-                if self.found.len() == reported {
-                    self.check_glob(prefix);
-                }
-            }
-            syn::UseTree::Group(group) => {
-                for tree in &group.items {
-                    self.visit_use_tree_segments(tree, prefix);
+                    qualified = false;
+                    if let proc_macro2::TokenTree::Group(group) = other {
+                        self.visit_tokens(group.stream());
+                    }
                 }
             }
         }
-    }
-
-    /// A crate-relative glob import must stay inside a guarded root; a glob
-    /// from an enclosing facade could bring owner values in by bare name.
-    fn check_glob(&mut self, prefix: &[String]) {
-        let Some(resolved) = self.resolve_local(prefix) else {
-            return;
-        };
-        if resolved.is_empty() || !self.guarded.iter().any(|root| resolved.starts_with(root)) {
-            self.found.insert(format!("{}::*", prefix.join("::")));
-        }
-    }
-
-    fn check_leaf(&mut self, prefix: &[String], leaf: &proc_macro2::Ident) {
-        let mut segments = prefix.to_vec();
-        segments.push(leaf.to_string());
         self.check_segments(&segments);
     }
 }
 
 impl Visit<'_> for IsolationVisitor<'_> {
+    fn visit_item_impl(&mut self, item: &syn::ItemImpl) {
+        let previous = self.generic_types.clone();
+        self.generic_types.extend(
+            item.generics
+                .type_params()
+                .map(|parameter| parameter.ident.to_string()),
+        );
+        syn::visit::visit_item_impl(self, item);
+        self.generic_types = previous;
+    }
+
+    fn visit_item_fn(&mut self, item: &syn::ItemFn) {
+        let previous = self.generic_types.clone();
+        self.generic_types.extend(
+            item.sig
+                .generics
+                .type_params()
+                .map(|parameter| parameter.ident.to_string()),
+        );
+        syn::visit::visit_item_fn(self, item);
+        self.generic_types = previous;
+    }
+
+    fn visit_impl_item_fn(&mut self, item: &syn::ImplItemFn) {
+        let previous = self.generic_types.clone();
+        self.generic_types.extend(
+            item.sig
+                .generics
+                .type_params()
+                .map(|parameter| parameter.ident.to_string()),
+        );
+        syn::visit::visit_impl_item_fn(self, item);
+        self.generic_types = previous;
+    }
+
     fn visit_ident(&mut self, identifier: &proc_macro2::Ident) {
         let identifier = identifier.to_string();
         if self.owned.types.contains(&identifier) {
@@ -341,7 +334,13 @@ impl Visit<'_> for IsolationVisitor<'_> {
             .map(|segment| segment.ident.to_string())
             .collect::<Vec<_>>();
         self.check_segments(&segments);
-        syn::visit::visit_path(self, path);
+        if self.independent_root(&segments) {
+            for segment in &path.segments {
+                self.visit_path_arguments(&segment.arguments);
+            }
+        } else {
+            syn::visit::visit_path(self, path);
+        }
     }
 
     fn visit_expr_method_call(&mut self, call: &syn::ExprMethodCall) {
@@ -367,7 +366,6 @@ impl Visit<'_> for IsolationVisitor<'_> {
     fn visit_item_use(&mut self, item: &syn::ItemUse) {
         let mut prefix = Vec::new();
         self.visit_use_tree_segments(&item.tree, &mut prefix);
-        syn::visit::visit_item_use(self, item);
     }
 
     fn visit_macro(&mut self, node: &syn::Macro) {

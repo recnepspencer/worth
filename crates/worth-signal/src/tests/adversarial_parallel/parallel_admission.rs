@@ -2,6 +2,9 @@ use crate::facade::{
     mark_dirty, EvaluationRequestMode, ParallelAdmissionPolicy, SignalGraph, SignalRuntimePolicy,
     StageExecutionOutcome,
 };
+use crate::tests::leased_execution::support::private_authority_process::{
+    run_with_private_authority, NativeExecutionEvidence,
+};
 use crate::tests::leased_execution::support::{authority, request};
 use crate::tests::support::{version_ab, ASPECT_A};
 
@@ -75,8 +78,9 @@ fn many_thin_stages_use_one_worker_with_bounded_physical_memory_growth() {
 
 #[test]
 fn wide_checked_epoch_reports_resolved_parallel_admission_and_bounded_workers() {
-    if crate::tests::leased_execution::support::private_authority_process::run_with_private_authority(
+    if run_with_private_authority(
         "tests::adversarial_parallel::parallel_admission::wide_checked_epoch_reports_resolved_parallel_admission_and_bounded_workers",
+        NativeExecutionEvidence::PlacementRendezvous,
     ) {
         return;
     }

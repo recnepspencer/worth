@@ -71,7 +71,7 @@ fn restoring_existing_unverified_facts_drops_state_as_restored() {
             &facts,
         );
         let record = cell.get().unwrap();
-        record.restore(Arc::clone(&facts), None, None);
+        record.restore(Arc::clone(&facts).into(), None, None);
         assert!(matches!(
             record.mutable.lock().unwrap().computation,
             RecordedComputation::Absent(PriorAbsence::Restored)

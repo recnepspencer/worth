@@ -852,11 +852,14 @@ owner_source = "workspaces/worth-query/crates/worth-query-execution/src/facade/p
 root = "workspaces/worth-query/crates"
 exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src/publication_boundary.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies/cumulative_court.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_governed_input/funded_capture.rs",
   "workspaces/worth-query/crates/worth-query-publication",
 ]
 forbidden_identifiers = ["program_publication_access"]
 forbidden_identifier_fragments = []
-guidance = "Milestone 9.17.4: only worth-query-publication may issue execution's program-output progression access"
+guidance = "Milestone 9.17.4: only worth-query-publication and the exact registered native ownership courts may issue execution's program-output progression access"
 
 [[source_identifier_denials]]
 root = "workspaces/worth-query/crates"
@@ -1440,7 +1443,31 @@ category = "async-runtime"
 reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
 
 [[threading_sites]]
-source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mod.rs"
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mutation_executor.rs"
+item = "BankHttpMutationContinuation::start"
+kind = "async-runtime"
+count = 1
+category = "async-runtime"
+reason = "Current-thread Tokio and LocalSet drive bounded transport commands and I/O while preserving the owning thread for failed native Signal cleanup."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mutation_executor.rs"
+item = "BankHttpMutationContinuation::start"
+kind = "thread-builder"
+count = 1
+category = "owner-thread"
+reason = "Configured finite dedicated threads retain native request and cleanup custody across transport awaits and listener loss; native computation remains Query-owned."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mutation_executor.rs"
+item = "BankHttpMutationContinuation::join_closed"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Tokio's blocking executor joins the actual owned OS threads after quiescence reports zero custody; it schedules no parallel computation."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/lifecycle.rs"
 item = "BankHttpServer::shutdown"
 kind = "async-blocking"
 count = 1
@@ -1695,3 +1722,26 @@ kind = "thread-spawn"
 count = 1
 category = "stream-reader"
 reason = "Test child stdout and stderr are drained independently while execution and cleanup remain bounded."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/provider_session/graph_obligation/mutation_progression.rs"
+item = "WorthQueryMutationRunBinding::finish"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "A receiver-owned compiled cleanup scheduling guard joins one foreign native cleanup actor and returns the real lower terminal failure to its Signal owner; unarmed cleanup stays on its original thread and no query computation is parallelized."
+
+# Only this concrete Execution owner may supply a native immutable input backer.
+# Normal decl/host facades cannot reexport or construct this integration.
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates"
+exclude_paths = [
+  "workspaces/worth-query/crates/worth-query-declaration/src/lib.rs",
+  "workspaces/worth-query/crates/worth-query-declaration/src/native_input_capture.rs",
+  "workspaces/worth-query/crates/worth-query-declaration/src/application_operation/binding/identity/input.rs",
+  "workspaces/worth-query/crates/worth-query-declaration/src/application_operation/binding/identity/shared_input.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_input_capture.rs",
+]
+forbidden_identifiers = ["native_input_capture", "NativeImmutableInput", "encode_native_input", "from_native_owned"]
+forbidden_identifier_fragments = []
+guidance = "Only the exact Execution frozen-input capture owner may construct Declaration native-backed encoded input; neither consumer audience may expose a variable-borrow backend"

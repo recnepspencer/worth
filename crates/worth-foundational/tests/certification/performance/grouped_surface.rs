@@ -2,9 +2,7 @@ use worth_foundational::{
     performance_api::{
         common_path,
         lower_lane::{basis, receipts, reports},
-        performance_public_surface_inventory,
         stronger_lane::{certified, readiness as stronger_readiness},
-        FoundationalPerformancePublicLane,
     },
     profiles, CertificationPostureProfile, DiagnosticRichnessProfile,
     FoundationalPerformanceAccessPatternPosture, FoundationalPerformanceAttachmentTargetKind,
@@ -107,35 +105,4 @@ fn grouped_performance_surface_exposes_common_lower_and_stronger_lanes() {
         readiness_certified.payload()
     ));
     let _ = certified::foundational_performance_certified_attachment_authority();
-}
-
-#[test]
-fn grouped_performance_surface_exposes_certified_and_readiness_stronger_lanes() {
-    let public_surface_inventory = performance_public_surface_inventory();
-    let stronger_lane_entries: Vec<_> = public_surface_inventory
-        .iter()
-        .filter(|entry| entry.lane() == FoundationalPerformancePublicLane::StrongerLane)
-        .collect();
-
-    assert_eq!(stronger_lane_entries.len(), 3);
-    assert!(stronger_lane_entries.iter().any(|entry| {
-        entry.path() == "worth_foundational::performance_api::stronger_lane"
-            && entry.teaches()
-                == "grouped stronger lane for certified performance bundles, trust-boundary readmission, and readiness certification"
-            && entry.does_not_hide() == "common-path authoring or lower-lane inspection"
-    }));
-    assert!(stronger_lane_entries.iter().any(|entry| {
-        entry.path() == "worth_foundational::performance_api::stronger_lane::certified"
-            && entry.teaches()
-                == "proof-bearing certified performance bundles and trust-boundary readmission over current-basis hot-path receipts and support-expansion reports"
-            && entry.does_not_hide()
-                == "plain lower-lane receipt/report inspection or readiness-only certification"
-    }));
-    assert!(stronger_lane_entries.iter().any(|entry| {
-        entry.path() == "worth_foundational::performance_api::stronger_lane::readiness"
-            && entry.teaches()
-                == "production-readiness certification and proof-bearing readiness requirement"
-            && entry.does_not_hide()
-                == "plain readiness report or certified bundle proof progression"
-    }));
 }

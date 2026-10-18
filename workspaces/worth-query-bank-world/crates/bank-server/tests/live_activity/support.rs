@@ -2,8 +2,8 @@ use bank_domain::model::{CustomerRole, Money};
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::{Deposit, GrantAccountAuthorization, RevokeAccountAuthorization};
 use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
+use std::num::NonZeroUsize;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControls;
 
 use crate::fixture::{self, VIEWER};
@@ -14,8 +14,10 @@ pub(crate) fn commit_authorization_toggle(
     owner: &bank_server::BankAuthenticatedPrincipal,
     ordinal: usize,
 ) {
-    let outcome = if ordinal.is_multiple_of(2) {
-        fixture
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(owner, &scope);
+    if ordinal.is_multiple_of(2) {
+        let operation = fixture
             .world
             .runtime
             .mutate(mutations::revoke_account_access(
@@ -26,9 +28,22 @@ pub(crate) fn commit_authorization_toggle(
             ))
             .as_principal(owner)
             .controls(mutation_controls(&format!("overflow-revoke-{ordinal}")))
-            .execute()
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("declared access: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            done,
+        ) = operation.advance(&request)
+        else {
+            panic!("fresh access completion")
+        };
+        assert!(matches!(
+            done.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        done.close(&request)
+            .unwrap_or_else(|(_, cause)| panic!("access close: {cause:?}"));
     } else {
-        fixture
+        let operation = fixture
             .world
             .runtime
             .mutate(mutations::grant_account_access(GrantAccountAuthorization {
@@ -38,12 +53,21 @@ pub(crate) fn commit_authorization_toggle(
             }))
             .as_principal(owner)
             .controls(mutation_controls(&format!("overflow-grant-{ordinal}")))
-            .execute()
-    };
-    assert!(matches!(
-        outcome,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ));
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("declared access: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            done,
+        ) = operation.advance(&request)
+        else {
+            panic!("fresh access completion")
+        };
+        assert!(matches!(
+            done.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        done.close(&request)
+            .unwrap_or_else(|(_, cause)| panic!("access close: {cause:?}"));
+    }
 }
 
 pub(crate) fn authorized_user_id(
@@ -105,10 +129,26 @@ pub(crate) fn commit_deposit(
             request_scope(),
             BankIdempotencyKey::new(key).unwrap(),
         ))
-        .execute();
-    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = outcome else {
-        panic!("deposit must commit: {outcome:?}");
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(teller, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        completed,
+    ) = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("native retained deposit completion")
     };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        receipt,
+        ..
+    } = completed.evidence()
+    else {
+        panic!("fresh deposit evidence")
+    };
+    let receipt = receipt.clone();
+    assert!(completed.close(&request).is_ok());
+
     receipt
 }
 

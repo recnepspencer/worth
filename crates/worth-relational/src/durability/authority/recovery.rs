@@ -41,9 +41,11 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let native_bytes_read = checkpoint.bytes().len();
-        let checkpoint =
-            crate::durability::log::native_file_codec::decode_checkpoint(checkpoint.bytes())?
-                .checkpoint;
+        let checkpoint = crate::durability::log::native_file_codec::decode_checkpoint(
+            execution,
+            checkpoint.bytes(),
+        )?
+        .checkpoint;
         let native_envelopes_readmitted = checkpoint.envelopes.len();
         let plan = crate::durability::access::native_checkpoint_recovery_plan(
             self.runtime,
@@ -112,6 +114,9 @@ fn rebuild_admitted_recovery_or_emit(
             Err(RelationalRecoveryStop::Durability(error))
         }
         Err(RelationalRecoveryStop::Request(cause)) => Err(RelationalRecoveryStop::Request(cause)),
+        Err(RelationalRecoveryStop::Allocation(cause)) => {
+            Err(RelationalRecoveryStop::Allocation(cause))
+        }
     }
 }
 

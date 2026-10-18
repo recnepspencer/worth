@@ -8,7 +8,7 @@ impl InstalledWorkflowOperation {
     pub(super) fn declared<Spec, Binding>(supports_local_workflow_action: bool) -> Self
     where
         Spec: ApplicationWorkflowSpec,
-        Binding: ApplicationMutationBinding<Spec::Schema>,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Spec::Schema>,
     {
         let reference = ApplicationWorkflowOperationRef::declared_binding::<Spec, Binding>();
         Self {
@@ -19,6 +19,7 @@ impl InstalledWorkflowOperation {
             binding_identity: Binding::IDENTITY,
             requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
             supports_local_workflow_action,
+            capability: <Binding::Admission as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionMode>::capability_identity(),
             reference,
             inbound_ref: None,
         }

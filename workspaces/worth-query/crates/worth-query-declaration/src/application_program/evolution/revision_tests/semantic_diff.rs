@@ -166,6 +166,7 @@ fn connection_description(
         &[],
         &connections,
         &[],
+        None,
     )
 }
 

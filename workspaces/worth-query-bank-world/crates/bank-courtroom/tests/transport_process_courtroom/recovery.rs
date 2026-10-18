@@ -1,9 +1,7 @@
 use std::net::SocketAddr;
 
 use bank_external_rail::test_control::FaultScript;
-use bank_http_adapter::{
-    BankHttpCommitDisposition, BankHttpDenialKind, BankHttpRecoveryRetryDisposition,
-};
+use bank_http_adapter::{BankHttpDenialKind, BankHttpRecoveryRetryDisposition};
 use bank_user_node::{
     BankUserNodeEstateNotificationOutcome, BankUserNodeRecoveryInspectionOutcome,
     BankUserNodeRecoverySafeRetryOutcome,
@@ -38,39 +36,44 @@ pub async fn assert_opaque_recovery_is_owned_by_the_authenticated_specialist(
         &request,
     )
     .await;
-    assert!(matches!(
-        first,
-        BankUserNodeEstateNotificationOutcome::Forwarded {
-            response: bank_http_adapter::BankHttpEstateNotificationOutcome::Applied {
-                disposition: BankHttpCommitDisposition::Committed,
+    let first_close = close_notification_source(client, specialist, first).await;
+    let bank_user_node::BankUserNodeMutationOutcome::Forwarded {
+        response:
+            bank_http_adapter::BankHttpMutationOutcome::RailRecoveryReady {
+                recovery: Some(first_recovery),
                 ..
-            }
-        }
-    ));
+            },
+    } = first_close
+    else {
+        panic!("first original source closes into real rail recovery: {first_close:?}")
+    };
     assert_eq!(world.rail_admission_count().await, admission_before + 1);
     assert_eq!(world.rail_contact_count().await, contact_before + 1);
     assert_eq!(
         world.rail_completed_effect_count().await,
         completed_before + 1
     );
+    let mut replay_request = request.clone();
+    replay_request["request_id"] = serde_json::json!("process-notify-death-key-replay");
     let notified = post_node::<BankUserNodeEstateNotificationOutcome>(
         client,
         specialist,
         "/v1/estate/notify-death",
-        &request,
+        &replay_request,
     )
     .await;
+    let notified = close_notification_source(client, specialist, notified).await;
     let recovery = match notified {
-        BankUserNodeEstateNotificationOutcome::Forwarded {
+        bank_user_node::BankUserNodeMutationOutcome::Forwarded {
             response:
-                bank_http_adapter::BankHttpEstateNotificationOutcome::Applied {
-                    disposition: BankHttpCommitDisposition::AlreadyCommitted,
-                    recovery,
+                bank_http_adapter::BankHttpMutationOutcome::RailRecoveryReady {
+                    recovery: Some(recovery),
                     ..
                 },
-        } => recovery.expect("live commit replay must retain its recovery token"),
-        other => panic!("specialist notification did not commit: {other:?}"),
+        } => recovery,
+        other => panic!("native replay must preserve real rail ownership: {other:?}"),
     };
+    assert_eq!(recovery, first_recovery);
     assert_eq!(
         world.rail_admission_count().await,
         admission_before + 1,
@@ -181,4 +184,26 @@ fn recovery_request(request_id: &str, recovery: &str) -> serde_json::Value {
         "controls": { "deadline_milliseconds": 5_000 },
         "recovery": recovery
     })
+}
+
+pub(super) async fn close_notification_source(
+    client: &reqwest::Client,
+    address: SocketAddr,
+    notified: BankUserNodeEstateNotificationOutcome,
+) -> bank_user_node::BankUserNodeMutationOutcome {
+    let BankUserNodeEstateNotificationOutcome::Forwarded {
+        response:
+            bank_http_adapter::BankHttpEstateNotificationOutcome::Owning {
+                outcome:
+                    bank_http_adapter::BankHttpMutationOutcome::Completed {
+                        custody_id,
+                        sequence,
+                        ..
+                    },
+            },
+    } = notified
+    else {
+        panic!("actual notification source completion required: {notified:?}")
+    };
+    super::node_mutation(client, address, &serde_json::json!({"request_id":format!("{custody_id}-close"), "command":"close", "custody_id":custody_id, "sequence":sequence+1, "controls":{"deadline_milliseconds":5000}})).await
 }

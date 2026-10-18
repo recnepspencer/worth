@@ -58,11 +58,14 @@ fn awaiting_assessment(key: u64) -> (DocumentWorkflowRuntime, PublishedWorkflowI
 fn adopt_second_program(application: &mut DocumentWorkflowRuntime) {
     support_workflow_program::<RetentionProgramP1>(application);
     let main = application.current_world();
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            application,
+            main,
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
+        ),
+    );
 }
 
 /// The producer runs this demand started, and what the settlement is.

@@ -206,15 +206,14 @@ where
         prior_timeout_wake: Option<crate::data::temporal::TemporalWakeId>,
         scheduled_timeout_wake: Option<&ScheduledTemporalWake>,
     ) -> Result<(), crate::data::error::SignalError> {
-        if let Some(wake_id) = prior_timeout_wake {
-            if let Err(err) =
+        if let Some(wake_id) = prior_timeout_wake
+            && let Err(err) =
                 self.retire_temporal_wake(wake_id, TemporalWakeRetirementReason::Superseded)
-            {
-                if let Some(wake) = scheduled_timeout_wake {
-                    self.dispose_resource_timeout_wake(wake);
-                }
-                return Err(err);
+        {
+            if let Some(wake) = scheduled_timeout_wake {
+                self.dispose_resource_timeout_wake(wake);
             }
+            return Err(err);
         }
         Ok(())
     }
@@ -247,15 +246,14 @@ where
         prior_stale_after_wake: Option<crate::data::temporal::TemporalWakeId>,
         scheduled_stale_after_wake: Option<&ScheduledTemporalWake>,
     ) -> Result<(), crate::data::error::SignalError> {
-        if let Some(wake_id) = prior_stale_after_wake {
-            if let Err(err) =
+        if let Some(wake_id) = prior_stale_after_wake
+            && let Err(err) =
                 self.retire_temporal_wake(wake_id, TemporalWakeRetirementReason::Superseded)
-            {
-                if let Some(wake) = scheduled_stale_after_wake {
-                    self.dispose_resource_stale_after_wake(wake);
-                }
-                return Err(err);
+        {
+            if let Some(wake) = scheduled_stale_after_wake {
+                self.dispose_resource_stale_after_wake(wake);
             }
+            return Err(err);
         }
         Ok(())
     }

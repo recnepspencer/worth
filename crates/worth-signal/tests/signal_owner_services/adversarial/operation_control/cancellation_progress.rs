@@ -38,7 +38,7 @@ fn assert_root_progress_with_basis(
     mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             root_basis,
             &mut (),
@@ -53,7 +53,7 @@ fn assert_root_progress(world: &AdversarialWorld) {
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.root_basis,
             &mut (),

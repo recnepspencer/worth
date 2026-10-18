@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::MosaicSizingRegistry`
- --> tests/ui/facade/mosaic_sizing/facade/mosaic_sizing_registry_type_not_publicly_importable.rs:1:5
-  |
-1 | use worth_ui::facade::MosaicSizingRegistry;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `MosaicSizingRegistry` in `facade`

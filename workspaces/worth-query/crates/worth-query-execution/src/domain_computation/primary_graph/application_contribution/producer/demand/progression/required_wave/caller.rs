@@ -125,11 +125,12 @@ where
         match pending {
             Ok(Some(_)) => {}
 
-            Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
+            Err(ConsumedOutputVerificationStop::CapacityExhausted(cause)) => {
                 return Err(denial(
                     WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
                     "",
-                ))
+                )
+                .with_capacity_stop(Some(cause)))
             }
             Err(ConsumedOutputVerificationStop::WorkExhausted) => return Err(work_denial()),
             Err(ConsumedOutputVerificationStop::Execution(cause)) => {
@@ -216,7 +217,7 @@ where
     admission
         .charge_external_work(5)
         .map_err(|_| work_denial())?;
-    if let Some(mut successor) = demand
+    match demand
         .required_continuations
         .promote_caller_successor::<Family>(
             &runtime.output_demands,
@@ -224,21 +225,25 @@ where
             selected,
             continues_caller,
             admission,
-        )?
-    {
-        // The successor completed under its own issued mode. This is a
-        // Current custody handoff, so future advances retain the caller's
-        // original authority, as when an open demand rejoins another refresh.
-        let mut provenance = std::mem::take(&mut demand.progression_provenance);
-        if let DemandProgressionProvenance::RequiredSuccessor(required) = &mut provenance {
-            required.bind_successor(successor.installed_entry.edition);
+        )? {
+        Some(mut successor) => {
+            // The successor completed under its own issued mode. This is a
+            // Current custody handoff, so future advances retain the caller's
+            // original authority, as when an open demand rejoins another refresh.
+            let mut provenance = std::mem::take(&mut demand.progression_provenance);
+            if let DemandProgressionProvenance::RequiredSuccessor(required) = &mut provenance {
+                required.bind_successor(successor.installed_entry.edition);
+            }
+            successor.progression_provenance = provenance;
+            successor.required_continuations = demand.required_continuations.take_all();
+            successor.producer_contacts_in_this_demand = current_contacts;
+            *demand = successor;
         }
-        successor.progression_provenance = provenance;
-        successor.required_continuations = demand.required_continuations.take_all();
-        successor.producer_contacts_in_this_demand = current_contacts;
-        *demand = successor;
-    } else if !caller_current {
-        return Ok(None);
+        _ => {
+            if !caller_current {
+                return Ok(None);
+            }
+        }
     }
     let interest = demand
         .interest

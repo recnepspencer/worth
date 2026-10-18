@@ -210,41 +210,6 @@ pub fn with_bootstrap_advancement<R>(
     })
 }
 
-/// A held product remembers policy facts even when its weak owner has expired.
-/// Publication still enters a bounded call and lets World report owner absence.
-pub(in crate::domain_computation::primary_graph) fn with_serial_host_advancement<R>(
-    owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    policy: worth_foundational::ExecutionRequestPolicy,
-    request: &WorthQueryRequestScope,
-    body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
-) -> Result<R, WorthQueryAdvancementDenial> {
-    let _custody = OpeningCustody::enter()?;
-    let cancellation = request.cancellation().execution_token();
-    let deadline = request.deadline();
-    let execution = QueryRequestExecution {
-        cancellation: cancellation.clone(),
-        deadline,
-        declared_work: policy.budget().work_ceiling(),
-        certified_seed: super::test_placement::certifying(),
-        form: super::serial_placement::form(policy, cancellation, deadline),
-    };
-    execution.run_advancement(Some(owner), None, body)
-}
-
-/// Opens the request for a host call whose staged product retained only owner facts.
-pub(in crate::domain_computation::primary_graph) fn with_world_advancement<R>(
-    world: &worth_runtime_world::facade::RuntimeWorldOwner<(), (), (), (), ()>,
-    request: &WorthQueryRequestScope,
-    body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
-) -> Result<R, WorthQueryAdvancementDenial> {
-    let _custody = OpeningCustody::enter()?;
-    QueryRequestExecution::open(world.execution_placement(), request).run_advancement(
-        Some(world.owner_identity()),
-        None,
-        body,
-    )
-}
-
 impl WorthQueryAdvancementDenial {
     pub(in crate::domain_computation) fn provider_denial_cause(
         self,

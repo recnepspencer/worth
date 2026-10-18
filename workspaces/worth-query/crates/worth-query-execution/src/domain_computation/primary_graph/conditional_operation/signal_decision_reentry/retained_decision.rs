@@ -2,6 +2,10 @@ use worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence;
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) enum WorthQueryRetainedConditionalDecision
 {
+    OperationCleanupRequired(
+        BridgeConditionalDecisionEvidence,
+        Box<super::super::retained_managed_cleanup::RetainedManagedCleanup>,
+    ),
     OperationProductStale(
         BridgeConditionalDecisionEvidence,
         crate::domain_computation::WorthQueryProductStaleApplication,

@@ -11,12 +11,16 @@ where
         &self,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         checkpoint: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         std::sync::Arc<
             crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
         >,
-        String,
+        crate::domain_computation::primary_graph::application_checkpoint::CheckpointDecodeDenial,
     > {
+        execution.consult().map_err(
+            crate::domain_computation::primary_graph::application_checkpoint::CheckpointDecodeDenial::execution,
+        )?;
         let installed = installed_checkpoint_producer(&self.entries, &checkpoint.producer)?;
         validate_checkpoint_output_meaning(&installed.declaration, checkpoint)?;
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
@@ -27,10 +31,10 @@ where
                 .output_role_descriptors
                 .iter()
                 .filter(|descriptor| descriptor.cardinality().admits_absence())
-                .map(|descriptor| descriptor.name().to_owned())
-                .collect(),
-            checkpoint.roles.clone(),
+                .map(|descriptor| descriptor.name()),
+            &checkpoint.roles,
             |entity| installed_schema.installed_entity_marker_type(entity).map(TypeId::from),
+            execution,
         )
         .map(std::sync::Arc::new)
     }
@@ -53,7 +57,7 @@ pub(super) fn validate_checkpoint_output_meaning(
     installed: &super::DeclaredProducerBinding,
     checkpoint: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
 ) -> Result<(), String> {
-    for role in &checkpoint.roles {
+    for role in checkpoint.roles.iter() {
         let exact = installed
             .output_role_descriptors
             .iter()

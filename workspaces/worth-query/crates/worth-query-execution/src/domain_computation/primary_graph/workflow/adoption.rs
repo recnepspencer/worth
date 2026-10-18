@@ -13,18 +13,24 @@ mod occurrence;
 mod staging;
 mod truth;
 
-pub use choices::{WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions};
+mod request;
+mod selected_population;
+pub(in crate::domain_computation::primary_graph) use choices::AdmittedWorkflowDispositions;
 pub(in crate::domain_computation::primary_graph) use coverage::WorkflowVocabularyCoverageRegistry;
 pub(in crate::domain_computation::primary_graph) use inventory::{
     inventory_workflows, WorkflowAdoptionInventoryRequest,
 };
-pub use occurrence::{
+pub(in crate::domain_computation::primary_graph) use occurrence::{
     WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
-    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
+    WorthQueryWorkflowDefinitionOccurrence, WorthQueryWorkflowIncompatibility,
+    WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceOccurrence,
 };
+pub use request::WorthQueryWorkflowDispositions;
 pub(in crate::domain_computation::primary_graph) use staging::stage_workflow_dispositions;
 pub(in crate::domain_computation::primary_graph) use truth::{
-    WorkflowAdoptionReadDenial, WorkflowAdoptionTruth,
+    WorkflowAdoptionEntity, WorkflowAdoptionReadDenial, WorkflowAdoptionTruth,
+};
+
+pub use occurrence::{
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowInstanceDisposition,
 };

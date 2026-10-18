@@ -23,7 +23,7 @@ impl BankUserSession {
             return request_denied(BankUserNodeDenialKind::NoAuthenticatedSession);
         };
         let upstream = BankHttpElevationRequest {
-            protocol: BankHttpProtocolVersion::V3,
+            protocol: BankHttpProtocolVersion::V4,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -45,7 +45,12 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeElevationRequestOutcome::Forwarded { response },
-            Err(kind) => request_denied(kind),
+            Err(_) => BankUserNodeElevationRequestOutcome::Forwarded {
+                response: BankHttpElevationRequestOutcome::OutcomeUnknown {
+                    request_id: upstream.request_id.clone(),
+                    custody_id: upstream.request_id.clone(),
+                },
+            },
         }
     }
 
@@ -57,7 +62,7 @@ impl BankUserSession {
             return approval_denied(BankUserNodeDenialKind::NoAuthenticatedSession);
         };
         let upstream = BankHttpElevationApprovalRequest {
-            protocol: BankHttpProtocolVersion::V3,
+            protocol: BankHttpProtocolVersion::V4,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -73,7 +78,12 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeElevationApprovalOutcome::Forwarded { response },
-            Err(kind) => approval_denied(kind),
+            Err(_) => BankUserNodeElevationApprovalOutcome::Forwarded {
+                response: BankHttpElevationApprovalOutcome::OutcomeUnknown {
+                    request_id: upstream.request_id.clone(),
+                    custody_id: upstream.request_id.clone(),
+                },
+            },
         }
     }
 
@@ -85,7 +95,7 @@ impl BankUserSession {
             return revocation_denied(BankUserNodeDenialKind::NoAuthenticatedSession);
         };
         let upstream = BankHttpElevationRevocationRequest {
-            protocol: BankHttpProtocolVersion::V3,
+            protocol: BankHttpProtocolVersion::V4,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -101,7 +111,12 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeElevationRevocationOutcome::Forwarded { response },
-            Err(kind) => revocation_denied(kind),
+            Err(_) => BankUserNodeElevationRevocationOutcome::Forwarded {
+                response: BankHttpElevationRevocationOutcome::OutcomeUnknown {
+                    request_id: upstream.request_id.clone(),
+                    custody_id: upstream.request_id.clone(),
+                },
+            },
         }
     }
 
@@ -113,7 +128,7 @@ impl BankUserSession {
             return review_denied(BankUserNodeDenialKind::NoAuthenticatedSession);
         };
         let upstream = BankHttpMandatoryReviewRequest {
-            protocol: BankHttpProtocolVersion::V3,
+            protocol: BankHttpProtocolVersion::V4,
             request_id: request.request_id,
             credential: BankHttpCredential::from_authentik(&credential),
             controls: request.controls,
@@ -129,7 +144,12 @@ impl BankUserSession {
             .await
         {
             Ok(response) => BankUserNodeMandatoryReviewOutcome::Forwarded { response },
-            Err(kind) => review_denied(kind),
+            Err(_) => BankUserNodeMandatoryReviewOutcome::Forwarded {
+                response: BankHttpMandatoryReviewOutcome::OutcomeUnknown {
+                    request_id: upstream.request_id.clone(),
+                    custody_id: upstream.request_id.clone(),
+                },
+            },
         }
     }
 }

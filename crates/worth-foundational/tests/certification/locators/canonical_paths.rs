@@ -5,7 +5,7 @@ use worth_foundational::{
     LocatorAuthority, MutationMask,
 };
 
-use crate::foundational_vocabulary::{field, key};
+use crate::certification::foundational_vocabulary::{field, key};
 
 #[test]
 fn equivalent_mask_locators_canonicalize_path_order() {

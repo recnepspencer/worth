@@ -54,8 +54,11 @@ impl ApplicationProgramDefinition<CheckpointSchema> for DemandProgram {
         let mut specs = CheckpointProgram::feature_specs();
         specs[0] = ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>()
-            .mutation::<PlanarEditBinding<CheckpointSchema>>()
-            .mutation_with_locality_and_change::<PlanarSourceAdjustmentBinding<CheckpointSchema>, SourceLocality, SourceChange>()
+            .native_action::<PlanarEditBinding<CheckpointSchema>>()
+            .finish_action()
+            .native_action::<PlanarSourceAdjustmentBinding<CheckpointSchema>>()
+            .locality_and_change::<SourceLocality, SourceChange>()
+            .finish_action()
             .finish();
         specs[1] = required_chain::output_feature_spec_with_artifact::<OptionalArtifact>();
         specs
@@ -87,8 +90,10 @@ impl ApplicationProgramDefinition<CheckpointSchema> for UngovernedProgram {
         let mut specs = DemandProgram::feature_specs();
         specs[0] = ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>()
-            .mutation::<PlanarEditBinding<CheckpointSchema>>()
-            .mutation::<PlanarSourceAdjustmentBinding<CheckpointSchema>>()
+            .native_action::<PlanarEditBinding<CheckpointSchema>>()
+            .finish_action()
+            .native_action::<PlanarSourceAdjustmentBinding<CheckpointSchema>>()
+            .finish_action()
             .finish();
         specs
     }

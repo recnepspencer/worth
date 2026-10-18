@@ -23,6 +23,9 @@ pub struct Targets<const MODE: u64> {
 impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     for UnlinkBinding<MODE>
 {
+    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
+        ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
     type Input = DraftInput;
     type InputBinding = DraftInputBinding;
     type Result = ();

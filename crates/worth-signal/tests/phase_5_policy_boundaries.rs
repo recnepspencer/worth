@@ -69,11 +69,6 @@ fn public_runtime_policy_adjustment_returns_typed_denial_without_mutation() {
 
 #[test]
 fn diagnostics_owned_policy_path_is_not_a_second_front_door() {
-    let diagnostics_facade = include_str!("../src/facade/diagnostics.rs");
-    assert!(
-        !diagnostics_facade.contains("SignalRuntimePolicy"),
-        "diagnostics facade must not become a second runtime-policy front door"
-    );
     let cases = TestCases::new();
     cases.compile_fail("tests/ui/milestone_10/diagnostics_policy_path_is_removed.rs");
     cases.compile_fail("tests/ui/milestone_10/installed_policy_cannot_be_forged.rs");

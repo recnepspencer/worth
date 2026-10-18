@@ -245,9 +245,10 @@ where
                             .kind(),
                             Family::IDENTITY,
                         )),
-                        Err(ConsumedOutputVerificationStop::CapacityExhausted) => Err(retry(
-                            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                        )),
+                        Err(ConsumedOutputVerificationStop::CapacityExhausted(cause)) => Err(
+                            retry(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
+                                .with_capacity_stop(Some(cause)),
+                        ),
                         Err(ConsumedOutputVerificationStop::Unavailable) => Err(unavailable()),
                     }
                 })?;

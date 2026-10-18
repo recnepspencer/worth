@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::WorthUiReadyActivation`
- --> tests/ui/runtime_authority/fail/ready_activation_fields_not_public.rs:3:5
-  |
-3 |     WorthUiReadyActivation,
-  |     ^^^^^^^^^^^^^^^^^^^^^^
-  |     |
-  |     no `WorthUiReadyActivation` in `facade`
-  |     help: a similar name exists in the module: `WorthUiPendingActivation`

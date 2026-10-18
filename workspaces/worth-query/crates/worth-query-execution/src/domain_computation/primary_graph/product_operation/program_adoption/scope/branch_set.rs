@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPreparedBranchAdoption, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod admission;
 mod recovery;
 mod resume;
 pub use recovery::{
@@ -77,8 +78,16 @@ impl BranchSetAdoptionResolution {
 
 /// Why a branch-set adoption would not advance to the next branch. Nothing was
 /// published.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub enum WorthQueryBranchSetAdoptionAdvanceDenial {
+    Execution {
+        branch: WorthQueryProductBranch,
+        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    },
+    Authorization {
+        branch: WorthQueryProductBranch,
+        cause: super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial,
+    },
     /// The last branch's publication had no effect or left the product
     /// unpublished. Resume, recover, or cancel before advancing.
     ResolutionRequired { branch: WorthQueryProductBranch },
@@ -119,8 +128,11 @@ impl WorthQueryPreparedBranchSetAdoption {
         self.total_selection_work_units
     }
 
-    pub fn advance(
+    pub fn advance<Schema: ApplicationSchema>(
         &mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
     ) -> Result<
         Option<&WorthQueryBranchSetAdoptionProgress>,
         WorthQueryBranchSetAdoptionAdvanceDenial,
@@ -135,7 +147,27 @@ impl WorthQueryPreparedBranchSetAdoption {
         let Some(pending) = self.pending.pop_front() else {
             return Ok(None);
         };
-        let progress = match pending.adoption.publish() {
+        let progress = match pending.adoption.publish(application, principal, request) {
+            WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, prepared } => {
+                self.pending.push_front(PendingBranchAdoption {
+                    branch: pending.branch,
+                    adoption: prepared,
+                });
+                return Err(WorthQueryBranchSetAdoptionAdvanceDenial::Execution {
+                    branch: pending.branch,
+                    cause,
+                });
+            }
+            WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, prepared } => {
+                self.pending.push_front(PendingBranchAdoption {
+                    branch: pending.branch,
+                    adoption: prepared,
+                });
+                return Err(WorthQueryBranchSetAdoptionAdvanceDenial::Authorization {
+                    branch: pending.branch,
+                    cause,
+                });
+            }
             WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
                 WorthQueryBranchSetAdoptionProgress::ExecutionDenied {
                     branch: pending.branch,
@@ -264,6 +296,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         coverage: WorthQueryOrderedProgramAdoptionCoverage,
         target: &ApplicationProgramRevision,
         maximum_selection_work_per_branch: usize,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionPreparationDenial>
     {
@@ -281,6 +314,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 &coverage.branches,
                 target,
                 maximum_selection_work_per_branch,
+                principal,
                 request,
             )?;
             let mut progress = Vec::new();
@@ -307,6 +341,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         branches: &[WorthQueryProductBranch],
         target: &ApplicationProgramRevision,
         maximum_selection_work_per_branch: usize,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<
         (VecDeque<PendingBranchAdoption>, usize),
@@ -343,6 +378,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     None,
                     None,
                     maximum_selection_work_per_branch,
+                    principal,
                     request,
                 )
                 .map_err(

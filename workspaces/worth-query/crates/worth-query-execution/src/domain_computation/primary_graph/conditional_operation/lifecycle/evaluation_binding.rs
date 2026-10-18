@@ -170,6 +170,10 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
         resume_after: Option<worth_relational::facade::publication::PatchStreamPosition>,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
+        super::super::retained_managed_cleanup::admit_reinstallation(
+            super::super::retained_managed_cleanup::pending_kind(self.retained_wakes.iter()
+                .chain(self.inactive_bindings.values().flat_map(|binding| binding.retained_wakes.iter()))),
+            &self.runtime_binding_identity)?;
         let mut rebuilt = self.fresh_evaluation_binding(execution, bridge, runtime, truth, None)?;
         rebuilt.authoritative_commit_cursor = resume_after;
         // The Query-commit delivery stays deliverable; the gap the rebuild
@@ -350,7 +354,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         let WorthQueryInactiveTemporalEvaluationBinding {
             affinity,
             managed_clock,
-            retained_wakes,
+            mut retained_wakes,
             pending_invalidations,
             reconstructed_intents,
             reconstruction_work,
@@ -359,7 +363,10 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         } = binding;
         self.active_affinity = Some(affinity);
         self.managed_clock = Some(managed_clock);
-        self.retained_wakes = retained_wakes;
+        let mut preserved = std::mem::take(&mut self.retained_wakes);
+        super::super::retained_managed_cleanup::retain_cleanup_wakes(&mut preserved);
+        preserved.append(&mut retained_wakes);
+        self.retained_wakes = preserved;
         self.pending_invalidations = pending_invalidations;
         self.reconstructed_intents = reconstructed_intents;
         self.reconstruction_work = reconstruction_work;

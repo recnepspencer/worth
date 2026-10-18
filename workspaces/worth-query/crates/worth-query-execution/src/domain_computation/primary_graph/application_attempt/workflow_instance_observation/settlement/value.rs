@@ -42,28 +42,6 @@ pub(super) fn observed_text(
     Ok(text)
 }
 
-pub(super) fn observed_optional_text(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    entity: EntityId,
-    kind: KindId,
-    locator: &AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
-    if super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
-        .is_none()
-    {
-        facts.push(WorthQueryApplicationObservedFact::AbsentField {
-            entity_id: entity,
-            kind,
-            locator: locator.clone(),
-        });
-        return Ok(None);
-    }
-    observed_text(execution, runtime, snapshot, entity, kind, locator, facts).map(Some)
-}
-
 pub(super) fn observed_bool(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,

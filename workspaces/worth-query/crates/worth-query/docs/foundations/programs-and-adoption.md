@@ -35,7 +35,7 @@ or recovered. A host can stop supporting a program with
 9. [Inspect and compare](#inspect-and-compare)
 10. [Adoption requirements](#adoption-requirements)
 11. [Migration](#migration)
-12. [Workflow inventory and dispositions](#workflow-inventory-and-dispositions)
+12. [Governed workflow reads and adoption choices](#governed-workflow-reads-and-adoption-choices)
 13. [Workflow disposition legality](#workflow-disposition-legality)
 14. [Custody dispositions](#custody-dispositions)
 15. [Prepare and publish](#prepare-and-publish)
@@ -64,7 +64,7 @@ or recovered. A host can stop supporting a program with
 | Adoption | Publishing a branch's move from its current (source) program to a rostered target program. |
 | Requirements | `WorthQueryProgramAdoptionRequirements`: what one exact source-to-target move demands. |
 | Migration | A target-owned mutation, prepared under the target program, that is committed atomically with the adoption. |
-| Workflow inventory | `WorthQueryWorkflowAdoptionInventory`: the current workflow definitions and live workflow instances on the branch, each with the dispositions the host allows. |
+| Workflow decisions | `WorthQueryWorkflowDispositions`: explicit choices over opaque references, or native carry-compatible intent. Complete safety inventory stays private. |
 | Custody disposition | What the host does with an in-flight operation continuation, external-effect recovery, or resource reservation when the program changes. The host derives it; you do not choose it. |
 | Branch-set adoption | Adoption over an admitted, ordered set of branches, published one branch at a time. |
 | Retirement | Removing a rostered program from ordinary host service with `retire_program_support`. |
@@ -106,7 +106,9 @@ The rules that follow from the separation:
 A program is a type implementing `ApplicationProgramDefinition<Schema>`.
 Validation produces the revision:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::declaration::application_program::ApplicationProgramAuthoring;
 
 let orders_v1 = ApplicationProgramAuthoring::<OrderSchema, OrdersV1>::begin()
@@ -127,7 +129,9 @@ installed conditional owner, such as an output producer, alone may issue the
 mutation. It retains the exact mutation binding for installation completeness,
 including bindings that declare `REQUIRES_APPLICATION_PROGRAM = true`:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 ApplicationFeatureSpec::root::<Schema, AssessmentFeature>()
     .conditional_mutation::<PublishAssessmentBinding>()
     .finish()
@@ -145,7 +149,9 @@ conditional. This output feature from the compiled public topology consumer
 combines optional-artifact meaning with an exact binding and a specialized
 conditional operation:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
     .derived_artifact::<OptionalArtifact>()
     .conditional_mutation::<PlanarMutationBinding<CheckpointSchema>>()
@@ -170,7 +176,9 @@ binding and operation happen to use the same portable name.
 `in_memory_rostered_program` validates and installs the whole roster before
 the host serves anything:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, WorthQueryApplicationProgramRoster,
 };
@@ -201,21 +209,41 @@ let host = in_memory_rostered_program(
   usable after it adopts another program, install the same spec against that
   program with `support_workflow_spec`. See [Workflows](workflows.md).
 
+## Owning action affinity
+
+The [ordinary entry](ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+retains the exact action and original branch. Fresh admission compares its full
+meaning with the selected program; another occurrence with the same binding
+cannot substitute delivery. A foreign branch/runtime refuses with original
+custody intact. Unsupported predecessor contracts refuse before effects or
+readmission with original bytes preserved.
+
 ## How a mutation reads the branch's program
+
+### Advanced native program selection
+
+Use the [ordinary owning entry](ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for fixed, discovered, source-only and guarded workflow actions. The example selects `request.advanced()`.
+
 
 A mutation request never names a program revision. On the program lane:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let outcome = host
     .runtime()
     .request(&principal, &scope)
     .on_branch(branch)
-    .mutate(PlaceOrderIntent { input })
+    .advanced().mutate(PlaceOrderIntent { input })
     .without_source()
     .idempotency(&key)
-    .execute_in_program(&host)?;
+    .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)?;
 ```
 
+- The second argument is the request's `ExecutionAllocationPolicy`
+  (`worth_query_host::facade::runtime`): `SystemAllocation` or
+  `Execution(&lease)`. There is no default.
 - `execute_in_program` resolves the commit owner from the program carried by
   the request's exact branch. No caller-supplied revision or activation receipt
   takes part in selection.
@@ -229,7 +257,7 @@ let outcome = host
   before the replay is consulted.
 - `execute_capability_in_program` is the capability counterpart with the same
   rules.
-- A binding that needs a program and is sent through the ordinary `execute`
+- A binding that needs a program and is sent through the advanced program-less `execute`
   lane is refused before any effect with
   `WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired`. On
   the program lane that denial means neither the branch's program nor the
@@ -257,14 +285,33 @@ raised at the `ProposalBinding` stage, before any effect.
 | 1 | `request.on_branch(b).programs()` | `WorthQueryApplicationProgramsRequest` |
 | 2 | `.inspect()` (optional) | `WorthQuerySelectedProgramInspection` |
 | 3 | `.compare(&target)` | `WorthQueryProgramAdoptionRequirements` |
-| 4 | `.adopt(&requirements)` | `WorthQueryApplicationProgramAdoptionRequest` |
+| 4 | `.adopt(&requirements)?` | `WorthQueryApplicationProgramAdoptionRequest`, after source capability admission |
 | 5 | `.migration(prepared)` if the requirements demand an assessment | same request |
-| 6 | `.workflow_inventory(max)`, then `.workflow(dispositions)` if the branch holds workflow facts | same request |
+| 6 | `.workflow(dispositions)` when workflow facts require explicit choices | same request |
 | 7 | `.prepare(max_selection_work)` | `WorthQueryPreparedBranchAdoption` |
-| 8 | `.publish()` | `WorthQueryBranchAdoptionPublicationOutcome` |
+| 8 | `programs.publish(prepared)` | `WorthQueryBranchAdoptionPublicationOutcome` |
 | 9 | `programs().recover(recovery)` if step 8 was `ProductUnpublished` | `WorthQueryBranchAdoptionRecoveryOutcome` |
 
-Nothing before `publish` changes the branch.
+Nothing before publication changes the branch.
+
+The current source program declares adoption authorization through
+`ApplicationProgramDefinition::adoption_authorization` and an
+`ApplicationProgramAdoptionBinding`. The binding names the schema’s capability,
+operation, capability input and principal mapping. Bank’s deployment contract
+uses an explicit grant for the selected source program revision. The production
+world seed issues only supplied deployment grants; estate/payment grants grant
+no deployment access. An old revision’s grant does not authorize a later source
+revision, and the recorded issuer can revoke it through the ordinary Query
+mutation owner. Install that contract and
+issue grants through its existing application grant owner. Authentication alone
+cannot grant adoption. `CapabilityNotDeclared` is the typed refusal when the
+source program declares none. A branch without an installed activation retains
+its existing inspection refusal; it never receives an implicit permission.
+
+Comparison and every fresh adoption phase use that same source permission.
+The target’s declaration does not authorize its own installation. Native
+capability progression retains request lifecycle, authentication expiry,
+installed binding and graph-work currentness through the effect continuation.
 
 ## Inspect and compare
 
@@ -276,7 +323,7 @@ Nothing before `publish` changes the branch.
 - `compare(&target)` derives the requirements for moving this branch from its
   current program to `target`. Its denial is
   `WorthQueryApplicationProgramAdoptionPreparationDenial` (`ProductSelection` or
-  `Adoption`).
+  `Adoption` or `Authorization`).
 
 ## Adoption requirements
 
@@ -300,6 +347,11 @@ Preparation refuses requirements the branch no longer matches, with
 
 ## Migration
 
+### Advanced migration preparation
+
+Use the [ordinary owning entry](ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for actions. Migration candidates are explicit native control through `advanced()`.
+
 A semantic change requires a migration assessment when it changes or removes
 a feature, port, connection, or output. Added items and rule changes do not;
 an added rule instead adds a validation scope, and existing state that
@@ -314,13 +366,15 @@ migration is refused with `MigrationAssessmentRequired(requirement)`. A
 migration is an ordinary mutation executed as a candidate under the target
 program:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_entry::WorthQueryApplicationProgramMigrationPreparationOutcome as Outcome;
 
 let migration = match runtime
     .request(&principal, &scope)
     .on_branch(branch)
-    .mutate(BackfillOrderStatusIntent { input })
+    .advanced().mutate(BackfillOrderStatusIntent { input })
     .without_source()
     .idempotency(&key)
     .prepare_program_migration(&revision_2)?
@@ -340,61 +394,45 @@ let migration = match runtime
   migration prepared for another target (`MigrationTargetMismatch`) or against
   branch state that has since moved (`MigrationSourceChanged`).
 
-## Workflow inventory and dispositions
+## Governed workflow reads and adoption choices
 
-A branch holding workflow facts needs one explicit decision per current
-workflow definition and per live workflow instance. Preparing without them is
-refused with `WorkflowDispositionRequired { inventory }`, which carries the
-inventory. You can also read it first:
+The runtime reads a complete private safety inventory at preparation and
+requires a total legal decision. Neither ordinary programs nor advanced selected
+operations expose that inventory. Consumer enumeration explicitly selects one
+typed definition and its installed Definition read binding through the retained
+`read_workflow_instances` owner; Metadata permission does not enumerate instances.
 
+The following illustrative call shape uses the governed adoption contract:
+
+<!-- illustrative -->
 ```rust,ignore
-let adoption = programs.adopt(&requirements);
-let inventory = adoption.workflow_inventory(1_024)?;   // WorthQueryWorkflowAdoptionInventory
-```
-
-The inventory:
-
-| Method | Meaning |
-|---|---|
-| `definitions()`, `definition(entity)` | Current definitions (`WorthQueryWorkflowDefinitionOccurrence`). |
-| `instances()`, `instance(entity)` | Live instances (`WorthQueryWorkflowInstanceOccurrence`). Historical instances copied into a fork are not listed. |
-| `is_empty()`, `digest()`, `work_units()`, `source()`, `target()` | Shape and identity of the inventory. |
-| `dispositions()` | An empty `WorthQueryWorkflowDispositions` bound to this inventory's digest. |
-| `carry_compatible()` | Chooses `Carry` for everything, refusing at the first occurrence that cannot be carried. |
-
-Each occurrence reports:
-
-- `compatibility()`: `WorthQueryWorkflowCompatibility::Compatible`, or
-  `Incompatible(WorthQueryWorkflowIncompatibility)` with one of
-  `VocabularyUnsupported { spec }`, `NodeUncovered { node_path }`, or
-  `DependencyChanged { node_path, name }`.
-- `legal_dispositions()`: the only dispositions the builder accepts.
-- For instances, also `custody()` (`WorthQueryWorkflowInstanceCustody`) and
-  `requires_migration()`.
-
-Build the decisions by chaining. Each call consumes the builder and returns
-`Result<WorthQueryWorkflowDispositions, WorthQueryWorkflowDispositionDenial>`:
-
-```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::primary_graph::{
-    WorthQueryWorkflowDefinitionDisposition as Definition,
+    WorthQueryWorkflowDispositions, WorthQueryWorkflowDefinitionDisposition as Definition,
     WorthQueryWorkflowInstanceDisposition as Instance,
 };
-
-let choices = inventory
-    .dispositions()
-    .definition(&inventory.definitions()[0], Definition::Carry)?
-    .instance(&inventory.instances()[0], Instance::Cancel)?;
-let prepared = adoption.workflow(choices).prepare(1_024)?;
+let choices = WorthQueryWorkflowDispositions::new()
+    .definition(&definition, Definition::Carry)
+    .instance(&instance, Instance::Cancel);
+let prepared = programs.adopt(&requirements)?.workflow(choices).prepare(1_024)?;
 ```
 
-- A definition disposition is `Carry` or `Retire`.
-- An instance disposition is `Carry` or `Cancel`. After adoption cancels an
-  instance, requests on it are refused with the attempt denial
-  `WorkflowInstanceCancelled`, the same one an explicit cancellation produces.
-- If owner truth moves after you decide, preparation is refused with
-  `WorkflowInventoryChanged { inventory }`. Decide the new inventory and prepare
-  again.
+Use opaque references from genuine publication or governed reads. A reference
+is a locator, never authority. The native owner resolves the exact branch and
+full entity identity against its fresh complete inventory, binds the resolved
+decisions to its digest, and uses the existing legality and atomic staging path.
+Omission, duplicate targets, foreign branches and illegal choices refuse.
+`WorkflowDispositionRequired` and `WorkflowDispositionRejected` disclose no
+inventory, identities or population counts. Native relational preparation logs
+stay private; execution interruption/resource causes remain typed without the
+log or its partition context. A later start makes an earlier
+explicit list incomplete; publication also checks its expected product head.
+
+When the intended decision is to carry every fact that can legally carry, use
+`WorthQueryWorkflowDispositions::carry_compatible()`. This is explicit intent
+for the fresh safety check, not a cached read or a disclosure grant. Incompatible
+facts and outstanding custody still refuse. Individual choices may narrow the
+result, and total legality is always checked again by the native owner.
 
 ## Workflow disposition legality
 
@@ -453,12 +491,15 @@ the publication. It returns `WorthQueryPreparedBranchAdoption`:
 | `source()`, `target()`, `requirements()` | What is being adopted. |
 | `selected_entity_count()`, `selection_work_units()` | How much state was validated. |
 | `migration()`, `custody()` | The staged migration and derived custody dispositions. |
-| `publish()` | Publishes the move. |
+| `programs.publish(prepared)` | Uses a fresh authenticated request to publish the move. |
 
-`publish()` returns `WorthQueryBranchAdoptionPublicationOutcome`:
+`programs.publish(prepared)` returns `WorthQueryBranchAdoptionPublicationOutcome`:
 
 | Outcome | Meaning | Next step |
 |---|---|---|
+| `AuthorizationDenied { cause, prepared }` | The fresh capability progression refused; no adoption effects. | Retain `prepared` and retry with current authorization. |
+| `AdmissionDenied { cause, prepared }` | Execution admission refused before effects. | Retain `prepared` for a later request. |
+| `ExecutionDenied(cause)` | The native publication attempt stopped. | Handle the native stop. |
 | `Performed(WorthQueryPerformedBranchAdoption)` | The branch now runs the target. `target()`, `migration()`, `custody()` describe it. | None. |
 | `NoEffect(NoEffectCompositePublication)` | Nothing was published. The branch still runs the source. | Prepare again if you still want the move. |
 | `ProductUnpublished(WorthQueryUnpublishedBranchAdoption)` | Owner effects started but the product publication did not complete. | Recover. |
@@ -473,7 +514,9 @@ A work bound that is too small is refused with
 `expected_product()`, `next_actions()`, `relational_requires_settlement()`, and
 `into_recovery()`.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let recovery = unpublished.into_recovery();       // WorthQueryBranchAdoptionRecovery
 let outcome = runtime
     .request(&principal, &scope)
@@ -490,6 +533,9 @@ let outcome = runtime
 
 - `recover` accepts only the exact custody an unpublished adoption returned. A
   raw runtime-world handle or receipt does not compile as its argument.
+- Recovery re-admits the current source permission in its fresh request before
+  settlement or publication. Revocation, expiry and request interruption refuse
+  with the exact recovery custody retained.
 - On failure, `WorthQueryApplicationProgramAdoptionRecoveryFailure` hands the
   custody back through `into_recovery()`.
 
@@ -503,10 +549,10 @@ It is explicitly **non-atomic**: each branch publishes on its own.
    named. Branches created later are not added.
 2. Order it. `request.on_branches(coverage, &ordered_targets)` fixes the
    publication order. It is refused if the order does not match the coverage.
-3. Prepare. `.programs().adopt(&target).prepare(maximum_selection_work_per_branch)`
+3. Prepare. `.programs().adopt(&target)?.prepare(maximum_selection_work_per_branch)`
    returns `WorthQueryPreparedBranchSetAdoption`. Every branch is preflighted
    before any branch publishes.
-4. Advance. Each `advance()` publishes the next branch and returns its
+4. Advance. Each `advance(runtime, &principal, &scope)` publishes the next branch and returns its
    `WorthQueryBranchSetAdoptionProgress`: `Performed { branch, adoption }`,
    `NoEffect { branch, no_effect }`, or `ProductUnpublished { branch, adoption }`.
    It returns `Ok(None)` when nothing is pending.
@@ -515,7 +561,9 @@ It is explicitly **non-atomic**: each branch publishes on its own.
    unchanged; `close_denial()` says why (`Pending { remaining }` or
    `ResolutionRequired { branch }`).
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use std::num::NonZeroUsize;
 
 let coverage = runtime
@@ -525,9 +573,9 @@ let mut adoption = runtime
     .request(&principal, &scope)
     .on_branches(coverage, &branches)?
     .programs()
-    .adopt(&revision_2)
+    .adopt(&revision_2)?
     .prepare(1_024)?;
-while let Some(progress) = adoption.advance()? {
+while let Some(progress) = adoption.advance(runtime, &principal, &scope)? {
     record(progress);
 }
 let closed = adoption.close().map_err(|open| open.close_denial())?;
@@ -542,7 +590,7 @@ single-branch flow first, then adopt the rest as a set.
 
 ## Resume, cancel, and recover a branch set
 
-After a `NoEffect` or `ProductUnpublished` step, `advance()` is refused with
+After a `NoEffect` or `ProductUnpublished` step, `advance(runtime, &principal, &scope)` is refused with
 `ResolutionRequired { branch }` until you resolve the stop.
 
 | Situation | Call | Result |
@@ -567,7 +615,9 @@ After a `NoEffect` or `ProductUnpublished` step, `advance()` is refused with
 
 ## Retire program support
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let receipt = host.retire_program_support(&revision_1)?;
 // WorthQueryProgramSupportRetirementReceipt, with inventory()
 ```
@@ -603,7 +653,7 @@ While a retirement runs, adoption to that revision is refused with
 | Support and activation | `ProgramSupportUnavailable`, `ProgramActivationUnavailable`, `ProgramActivationUnreadable`, `ProgramActivationUnrostered`, `ProgramSupportRetirementInProgress` | Check the roster and retirement state. The source or target is not usable on this host. |
 | Requirements | `Requirements(WorthQueryProgramAdoptionRequirementsDenial)`, `RequirementsChanged` | Compare again. |
 | Migration and custody | `MigrationAssessmentRequired(..)`, `MigrationTargetMismatch`, `MigrationSourceChanged`, `CustodyDispositionUnsupported(..)` | Supply or re-prepare the migration; resolve unsupported custody. |
-| Workflow | `WorkflowDispositionRequired { inventory }`, `WorkflowInventoryChanged { inventory }`, `WorkflowDispositionRejected(..)`, `WorkflowInventoryUnreadable { .. }`, `WorkflowInventoryRelationUnreadable { .. }` | Decide the carried inventory and prepare again. |
+| Workflow | `WorkflowDispositionRequired`, `WorkflowDispositionRejected`, `WorkflowInventoryUnavailable`, `WorkflowInventoryWorkLimit` | Freshly authorize a definition-selected read if needed, then submit total legal choices. |
 | Scope and basis | `UnknownEntityScope { .. }`, `RelationScopeUnsupported { .. }`, `SelectionLimitExceeded { .. }`, `BranchBasisUnavailable(..)` | Raise the work bound or re-select the branch. |
 | Transaction and publication | `TransactionAdmission(..)`, `TransactionStaging(..)`, `TargetRuleRejected { .. }`, `RelationalPreparation(..)`, `WorldPreparation(..)`, `ProductActivation(..)` | `TargetRuleRejected` means existing state violates a target rule: migrate it. The rest are storage or publication refusals. |
 
@@ -689,7 +739,9 @@ moves the main branch, then each preview branch, then retires revision 1.
 **1. Install both revisions.** The host activates revision 1 and rosters
 revision 2.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let v1 = ApplicationProgramAuthoring::<OrderSchema, OrdersV1>::begin().validated_program()?;
 let v2 = ApplicationProgramAuthoring::<OrderSchema, OrdersV2>::begin().validated_program()?;
 let (revision_1, revision_2) = (*v1.revision(), *v2.revision());
@@ -704,7 +756,9 @@ let runtime = host.runtime();
 
 **2. Compare.**
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let programs = runtime.request(&principal, &scope).on_branch(main).programs();
 let requirements = programs.compare(&revision_2)?;
 assert!(requirements.requires_existing_state_validation());
@@ -714,11 +768,13 @@ assert!(requirements.requires_migration_assessment());
 **3. Prepare the migration** under revision 2, as a mutation that sets a
 status on every existing order.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let migration = match runtime
     .request(&principal, &scope)
     .on_branch(main)
-    .mutate(BackfillOrderStatusIntent { input })
+    .advanced().mutate(BackfillOrderStatusIntent { input })
     .without_source()
     .idempotency(&backfill_key)
     .prepare_program_migration(&revision_2)?
@@ -731,17 +787,23 @@ let migration = match runtime
 **4. Decide workflow facts.** The definition is compatible, so `Carry` is legal.
 The instance is compatible and `Unperformed`, so `Carry` is legal too.
 
+<!-- illustrative -->
 ```rust,ignore
-let adoption = programs.adopt(&requirements).migration(migration);
-let inventory = adoption.workflow_inventory(1_024)?;
-let choices = inventory.carry_compatible()?;
+// Illustrative: not compiled.
+let adoption = programs.adopt(&requirements)?.migration(migration);
+let choices = WorthQueryWorkflowDispositions::carry_compatible();
 ```
 
 **5. Prepare and publish.**
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let prepared = adoption.workflow(choices).prepare(4_096)?;
-match prepared.publish() {
+match runtime.request(&principal, &scope).on_branch(main).programs().publish(prepared) {
+    WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, prepared } => retain_for_fresh_authorization(cause, prepared),
+    WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, prepared } => retain_for_fresh_execution(cause, prepared),
+    WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => handle_native_stop(cause),
     WorthQueryBranchAdoptionPublicationOutcome::Performed(done) => assert_eq!(done.target(), &revision_2),
     WorthQueryBranchAdoptionPublicationOutcome::NoEffect(_) => retry_from_compare(),
     WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
@@ -764,7 +826,9 @@ migration, across branches that hold no workflow facts.
 
 **7. Retire revision 1.**
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let receipt = host.retire_program_support(&revision_1)?;
 ```
 

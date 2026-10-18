@@ -4,11 +4,13 @@ use bank_server::{
     BankApplicationQueryAdmissionDenialKind, BankApplicationQueryDenial,
     BankAuthorizationDenialKind,
 };
-use worth_query_host::facade::application_entry::WorthQueryApplicationRetainedMutationOutcome;
+use worth_query_host::facade::application_entry::{
+    WorthQuerySourceCompletion as Completion, WorthQuerySourceOnlyAdvance as Advance,
+};
 use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControls;
 
 #[test]
-fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
+fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     let fixture = ordinary_read_world("ordinary-retained-deposit", 0);
     let teller = fixture.authenticate(TELLER);
     let owner = fixture.authenticate(OWNER);
@@ -22,6 +24,9 @@ fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
         .rows()[0]
         .entries()
         .len();
+    let deposit_scope = request_scope();
+    let deposit_request = fixture.world.runtime.request(&teller, &deposit_scope);
+    let history = std::num::NonZeroUsize::new(20_000).unwrap();
     let deposit = Deposit {
         institution: fixture.institution,
         account,
@@ -36,13 +41,18 @@ fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
             request_scope(),
             key("retained-deposit"),
         ))
-        .execute_retained()
-        .expect("an opted-in deposit should reach publication");
-    let WorthQueryApplicationRetainedMutationOutcome::Committed {
-        receipt, retained, ..
-    } = performed
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
+    let Advance::Completed(performed) = performed.advance(&deposit_request, history) else {
+        panic!("fresh retained deposit")
+    };
+    let Completion::Fresh {
+        receipt,
+        retained: Some(retained),
+        ..
+    } = performed.evidence()
     else {
-        panic!("the first deposit must perform with a retained successor");
+        panic!("actual original observation")
     };
     assert_eq!(
         retained.selected_commit(),
@@ -51,7 +61,7 @@ fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
     let at_commit = saved_view
         .as_principal(&owner)
         .retained(
-            &retained,
+            retained,
             BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
         )
         .expect("fresh security should admit read-after at the performed product");
@@ -59,7 +69,7 @@ fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
     let allowed_viewer = saved_view
         .as_principal(&viewer)
         .retained(
-            &retained,
+            retained,
             BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
         )
         .expect("the currently authorized viewer can read the retained publication");
@@ -80,10 +90,21 @@ fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
         amount: Money::from_minor(19).unwrap(),
         ..deposit.clone()
     };
-    assert!(matches!(
-        execute!(fixture, teller, mutations::deposit(later), "later-deposit"),
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ));
+    let later = fixture
+        .world
+        .runtime
+        .mutate(mutations::deposit(later))
+        .as_principal(&teller)
+        .controls(BankMutationControls::new(
+            deposit_scope.clone(),
+            key("later-deposit"),
+        ))
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("later construction: {cause:?}"));
+    let Advance::Completed(later) = later.advance(&deposit_request, history) else {
+        panic!("later fresh deposit")
+    };
+    assert!(later.close(&deposit_request).is_ok());
     let BankAccountActivityLiveOutcome::Delivered(update) = live.poll(&owner, &request_scope())
     else {
         panic!("the saved view must deliver the later matching deposit");
@@ -105,7 +126,7 @@ fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
     let still_exact = saved_view
         .as_principal(&owner)
         .retained(
-            &retained,
+            retained,
             BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
         )
         .expect("later publication cannot retarget the retained read");
@@ -120,34 +141,64 @@ fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
             request_scope(),
             key("retained-deposit"),
         ))
-        .execute_retained()
-        .expect("equivalent idempotent replay should return its prior outcome");
-    let WorthQueryApplicationRetainedMutationOutcome::Other(
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(replay_receipt),
-    ) = &replay
-    else {
-        panic!("equivalent replay must return only a descriptive receipt");
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("replay construction: {cause:?}"));
+    let Advance::Progress(replay) = replay.advance(&deposit_request, history) else {
+        panic!("native retained replay pending")
     };
-    assert!(replay.retained_read().is_none());
+    let Advance::Completed(replay) = replay.advance(&deposit_request, history) else {
+        panic!("bounded original native replay delivery")
+    };
+    let Completion::Recovered {
+        receipt: replay_receipt,
+        retained: Some(replay_retained),
+        ..
+    } = replay.evidence()
+    else {
+        panic!("real replay observation, no handler result")
+    };
+    assert_eq!(
+        replay_retained.selected_commit(),
+        retained.selected_commit()
+    );
+    let replay_receipt = replay_receipt.clone();
+    assert!(replay.close(&deposit_request).is_ok());
     let authorization = authorized_users(&fixture, &owner)
         .into_iter()
         .find(|user| user.principal() == principal_id(fixture::VIEWER))
         .expect("fixture viewer must have account access")
         .authorization();
-    assert!(matches!(
-        execute!(
-            fixture,
-            owner,
-            mutations::revoke_account_access(RevokeAccountAuthorization {
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(&owner, &scope);
+    let operation = fixture
+        .world
+        .runtime
+        .mutate(mutations::revoke_account_access(
+            RevokeAccountAuthorization {
                 account,
                 authorization,
-            }),
-            "retained-revoke-viewer"
-        ),
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+            },
+        ))
+        .as_principal(&owner)
+        .controls(BankMutationControls::new(
+            scope.clone(),
+            key("retained-revoke-viewer"),
+        ))
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("declared revoke: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
+        operation.advance(&request)
+    else {
+        panic!("fresh revoke")
+    };
+    assert!(matches!(
+        done.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    done.close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("revoke close: {cause:?}"));
     let denied = saved_view.as_principal(&viewer).retained(
-        &retained,
+        retained,
         BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
     );
     assert!(matches!(
@@ -158,11 +209,11 @@ fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
                     BankAuthorizationDenialKind::PermissionDenied
                 )
     ));
-    drop(retained);
+    assert!(performed.close(&deposit_request).is_ok());
     let historical = saved_view
         .as_principal(&owner)
         .historical(
-            replay_receipt,
+            &replay_receipt,
             std::num::NonZeroUsize::new(128).unwrap(),
             std::num::NonZeroUsize::new(8_192).unwrap(),
             &request_scope(),

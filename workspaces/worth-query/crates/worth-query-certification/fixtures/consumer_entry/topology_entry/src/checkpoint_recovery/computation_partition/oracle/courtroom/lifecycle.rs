@@ -63,10 +63,10 @@ fn judge(
             assert_eq!(run.runs, [Run::Full(cause)]);
         }
         *prior = now.completes().then(|| now.clone());
-        if index == 0 {
-            if let Some(write) = write {
-                now.written(write);
-            }
+        if index == 0
+            && let Some(write) = write
+        {
+            now.written(write);
         }
     }
     *last_facts = Some(now);

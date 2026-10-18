@@ -96,6 +96,61 @@ pub mod mutations {
         Institution,
         reverse_journal
     );
+    mutation!(
+        NotifyEstateDeathMutation,
+        NotifyEstateDeath,
+        NotifyDeathEstateOperation,
+        EstateCase,
+        notify_estate_death
+    );
+
+    mutation!(
+        FreezeEstateAccountMutation,
+        FreezeEstateAccount,
+        FreezeEstateAccountOperation,
+        EstateCase,
+        freeze_estate_account
+    );
+
+    mutation!(
+        OpenEstateCaseMutation,
+        OpenEstateCase,
+        OpenEstateCaseOperation,
+        EstateCase,
+        open_estate_case
+    );
+
+    mutation!(
+        RecognizeEstateExecutorMutation,
+        RecognizeEstateExecutor,
+        RecognizeEstateExecutorOperation,
+        EstateCase,
+        recognize_estate_executor
+    );
+
+    mutation!(
+        ReleaseEstateMutation,
+        ReleaseEstate,
+        ReleaseEstateOperation,
+        EstateCase,
+        release_estate
+    );
+
+    mutation!(
+        DisburseEstateMutation,
+        DisburseEstate,
+        DisburseEstateOperation,
+        EstateCase,
+        disburse_estate
+    );
+
+    mutation!(
+        RetransmitEstateDeathNoticeMutation,
+        RetransmitEstateDeathNotice,
+        RetransmitDeathNoticeEstateOperation,
+        EstateCase,
+        retransmit_estate_death_notice
+    );
 }
 
 #[doc(hidden)]

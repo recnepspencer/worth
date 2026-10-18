@@ -34,6 +34,7 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
             .execute()
             .unwrap();
         request
+            .advanced()
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: "anchor-a".into(),
                 operation: PlanarOperation::VerifyCurrentOutputs(vec![
@@ -72,6 +73,7 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: length(2),

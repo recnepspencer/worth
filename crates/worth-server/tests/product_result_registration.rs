@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use std::sync::Arc;
 
@@ -20,8 +20,8 @@ use worth_server::{
     WorthServerScheduledProductOperation,
 };
 
-#[path = "support/durable_product_mutation/mod.rs"]
-mod durable_support;
+#[allow(unused_imports)]
+use crate::shared_support_durable_product_mutation as durable_support;
 
 #[test]
 fn adapter_cannot_return_a_result_under_an_undeclared_schema() {

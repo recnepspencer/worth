@@ -261,17 +261,17 @@ pub fn declare_projection_consumption(
     if requested.requested_count() == 0 {
         return Err(ProjectionConsumptionDeclarationError::NoRequestedFacts);
     }
-    if let Some(source_query_digest) = source.query_digest() {
-        if source_query_digest != binding.authorized_projection_query_digest() {
-            return Err(
-                ProjectionConsumptionDeclarationError::SourceAuthorizedProjectionQueryMismatch {
-                    source_query_digest: source_query_digest.to_string(),
-                    authorized_projection_query_digest: binding
-                        .authorized_projection_query_digest()
-                        .to_string(),
-                },
-            );
-        }
+    if let Some(source_query_digest) = source.query_digest()
+        && source_query_digest != binding.authorized_projection_query_digest()
+    {
+        return Err(
+            ProjectionConsumptionDeclarationError::SourceAuthorizedProjectionQueryMismatch {
+                source_query_digest: source_query_digest.to_string(),
+                authorized_projection_query_digest: binding
+                    .authorized_projection_query_digest()
+                    .to_string(),
+            },
+        );
     }
     if binding.result_shape_digest() != binding.authorized_projection_result_shape_digest() {
         return Err(
@@ -283,15 +283,15 @@ pub fn declare_projection_consumption(
             },
         );
     }
-    if let Some(source_result_shape_digest) = source.result_shape_digest() {
-        if source_result_shape_digest != binding.result_shape_digest() {
-            return Err(
-                ProjectionConsumptionDeclarationError::SourceBindingResultShapeMismatch {
-                    source_result_shape_digest: source_result_shape_digest.to_string(),
-                    binding_result_shape_digest: binding.result_shape_digest().to_string(),
-                },
-            );
-        }
+    if let Some(source_result_shape_digest) = source.result_shape_digest()
+        && source_result_shape_digest != binding.result_shape_digest()
+    {
+        return Err(
+            ProjectionConsumptionDeclarationError::SourceBindingResultShapeMismatch {
+                source_result_shape_digest: source_result_shape_digest.to_string(),
+                binding_result_shape_digest: binding.result_shape_digest().to_string(),
+            },
+        );
     }
     let declaration_digest = compose_declaration_digest(&source, &binding, &requested);
     Ok(ProjectionConsumptionDeclaration {

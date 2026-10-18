@@ -28,10 +28,10 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) fn map_ad
         | CompanionPreflightStop::RegistrationChanged => {
             ConsumedOutputVerificationStop::Unavailable
         }
-        CompanionPreflightStop::PreparationMemoryExhausted { .. }
+        stop @ (CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
-        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
-            ConsumedOutputVerificationStop::CapacityExhausted
+        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => {
+            ConsumedOutputVerificationStop::CapacityExhausted(VerificationCapacityStop::Meter(stop))
         }
         CompanionPreflightStop::Interrupted(event) => {
             ConsumedOutputVerificationStop::Interrupted(event)
@@ -76,24 +76,35 @@ pub(super) fn reserve_pending<T>(
     additional: usize,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), ConsumedOutputVerificationStop> {
+    let unrepresentable = ConsumedOutputVerificationStop::CapacityExhausted(
+        VerificationCapacityStop::ScratchSizeOverflow,
+    );
     let needed = pending
         .len()
         .checked_add(additional)
-        .ok_or(ConsumedOutputVerificationStop::CapacityExhausted)?;
+        .ok_or(unrepresentable)?;
     if needed <= pending.capacity() {
         return Ok(());
     }
-    let bytes = needed
+    // Doubling keeps a worklist's admitted growth within twice its final
+    // backing. Growing to exactly `needed` would admit every intermediate
+    // length again: quadratic in a walk that pushes one row at a time.
+    let target = needed.max(pending.capacity().saturating_mul(2));
+    let bytes = target
         .checked_mul(size_of::<T>())
         .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or(ConsumedOutputVerificationStop::CapacityExhausted)?;
+        .ok_or(unrepresentable)?;
     admission
         .admit_read_scratch(bytes)
         .map_err(map_admission_stop)?;
     charge_external(admission, pending.len())?;
     pending
-        .try_reserve_exact(additional)
-        .map_err(|_| ConsumedOutputVerificationStop::CapacityExhausted)
+        .try_reserve_exact(target - pending.len())
+        .map_err(|_| {
+            ConsumedOutputVerificationStop::CapacityExhausted(
+                VerificationCapacityStop::ScratchAllocationRefused { bytes },
+            )
+        })
 }
 
 pub(super) fn fact_is_current(
@@ -128,9 +139,15 @@ mod tests {
 
     use super::*;
 
+    /// Each capacity stop keeps the meter's own typed cause, so its required
+    /// and maximum amounts survive into the caller's denial.
     #[test]
     fn capacity_stops_are_not_missing_output_evidence() {
         for stop in [
+            CompanionPreflightStop::PreparationMemoryExhausted {
+                required: 2,
+                maximum: 1,
+            },
             CompanionPreflightStop::PreparationMemoryCounterOverflow,
             CompanionPreflightStop::RetainedCompanionCapacityExhausted {
                 requested: 1,
@@ -138,15 +155,72 @@ mod tests {
                 maximum: 1,
             },
         ] {
-            assert_eq!(
-                map_admission_stop(stop),
-                ConsumedOutputVerificationStop::CapacityExhausted
+            let kept = ConsumedOutputVerificationStop::CapacityExhausted(
+                VerificationCapacityStop::Meter(stop),
             );
+            assert_eq!(map_admission_stop(stop), kept);
             assert_eq!(
                 map_verification_stop(SettlementVerificationStop::Admission(stop)),
-                ConsumedOutputVerificationStop::CapacityExhausted
+                kept
             );
         }
+    }
+
+    /// A worklist growth the meter refuses reports the meter's amounts; one
+    /// whose size is not representable is not reported as the meter's.
+    #[test]
+    fn worklist_growth_distinguishes_the_meter_from_an_unrepresentable_size() {
+        let mut admission = InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: u64::MAX,
+                maximum_preparation_bytes: 8,
+            },
+        );
+        let mut pending = Vec::<u64>::new();
+        assert_eq!(
+            reserve_pending(&mut pending, 2, &mut admission),
+            Err(ConsumedOutputVerificationStop::CapacityExhausted(
+                VerificationCapacityStop::Meter(
+                    CompanionPreflightStop::PreparationMemoryExhausted {
+                        required: 16,
+                        maximum: 8,
+                    }
+                )
+            ))
+        );
+        assert_eq!(
+            reserve_pending(&mut pending, usize::MAX, &mut admission),
+            Err(ConsumedOutputVerificationStop::CapacityExhausted(
+                VerificationCapacityStop::ScratchSizeOverflow
+            ))
+        );
+        assert_eq!(
+            admission.charged_bytes(),
+            0,
+            "a refused growth admits nothing"
+        );
+    }
+
+    /// A walk pushing one row at a time admits each doubled backing once:
+    /// 1, 2, 4, ..., 1024 slots for 1000 rows. Exact growth to each length
+    /// would need n(n + 1)/2 slots and stop this meter long before the end.
+    #[test]
+    fn one_row_pushes_admit_growth_linear_in_the_final_length() {
+        let rows = 1_000usize;
+        let slot = size_of::<u64>() as u64;
+        let mut admission = InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: u64::MAX,
+                maximum_preparation_bytes: 4 * rows as u64 * slot,
+            },
+        );
+        let mut pending = Vec::<u64>::new();
+        for row in 0..rows as u64 {
+            reserve_pending(&mut pending, 1, &mut admission).unwrap();
+            pending.push(row);
+        }
+        assert_eq!(pending.len(), rows);
+        assert_eq!(admission.charged_bytes(), ((1 << 11) - 1) * slot);
     }
 
     /// An interrupted verification is the request's interruption. Read as

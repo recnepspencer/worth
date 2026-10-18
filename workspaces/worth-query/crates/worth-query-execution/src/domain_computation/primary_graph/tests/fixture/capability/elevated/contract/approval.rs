@@ -104,8 +104,7 @@ fn composition() -> ApplicationCapabilityComposition {
             ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
             ApplicationCapabilityDistinctActorRule::when(ApplicationCapabilityGraphRule::any([
                 requester,
-            ])),
-        ),
+            ])), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         command_propagation(),
     )
 }

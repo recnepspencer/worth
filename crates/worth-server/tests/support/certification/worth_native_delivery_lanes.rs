@@ -6,14 +6,16 @@ use worth_server::{
     WorthServerSurfaceFamily, WorthServerTransportClass,
 };
 
-use crate::{
-    certification_bundle::{
+use {
+    crate::certification_suite::certification_bundle::{
         WorthServerCertificationBundle, WorthServerCertificationOutputDigest as Output,
     },
-    query_handoff_fixture::{
+    crate::shared_support_query_handoff_fixture::{
         admit_delivery_posture, request_input, resolve_request_context, success,
     },
-    worth_native_assertions::{admitted_named_read, operator_evidence_record},
+    crate::shared_support_worth_native_assertions::{
+        admitted_named_read, operator_evidence_record,
+    },
 };
 
 use super::worth_native_common::{

@@ -14,20 +14,22 @@ pub(in crate::application_entry) mod program_output_continuation;
 mod program_output_settlement;
 mod program_output_work;
 mod recovery;
-mod request;
+pub(in crate::application_entry) mod request;
 mod requirement_assessment;
-mod retained;
-mod selected_program;
+pub(in crate::application_entry) mod retained;
+pub(in crate::application_entry) mod selected_program;
 mod staged;
 
 pub use attempt::WorthQueryApplicationMutationAttemptReport;
 pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
+pub(in crate::application_entry) use discovered::AdmittedDiscoveredRecoveryDenial;
 pub use discovered::{
-    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputStartFailure,
-    WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
-    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryDiscoveredRecoveryProgress,
-    WorthQueryPerformedDiscoveredApplicationMutation, WorthQueryRecoveredDiscoveredOutputs,
-    WorthQueryStartedDiscoveredOutputs, WorthQueryUnpublishedDiscoveredApplicationMutation,
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputRetentionFailure,
+    WorthQueryDiscoveredOutputStartFailure, WorthQueryDiscoveredProgramOutputHandle,
+    WorthQueryDiscoveredProgramOutputProgress, WorthQueryDiscoveredProgramOutputSettlement,
+    WorthQueryDiscoveredRecoveryProgress, WorthQueryPerformedDiscoveredApplicationMutation,
+    WorthQueryRecoveredDiscoveredOutputs, WorthQueryStartedDiscoveredOutputs,
+    WorthQueryUnpublishedDiscoveredApplicationMutation,
 };
 pub use execution::{
     WorthQueryApplicationProgramMigrationPreparationDenial,

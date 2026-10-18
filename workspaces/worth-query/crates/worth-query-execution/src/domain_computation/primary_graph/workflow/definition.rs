@@ -7,10 +7,12 @@ mod global_actions;
 mod inbound_codec;
 mod preparation;
 mod publication;
+pub(in crate::domain_computation::primary_graph) mod retained_descriptor;
 mod retirement;
 pub use compilation::WorthQueryWorkflowCompilationReuseCounters;
 pub(in crate::domain_computation::primary_graph) use compilation::{
-    reconstruct_compiled_definition, CompiledWorkflowAssessmentApplicability,
+    compile_node, observe_connection, reconstruct_compiled_definition,
+    CompiledWorkflowAssessmentApplicability, CompiledWorkflowConnection,
     CompiledWorkflowConnectionKind, CompiledWorkflowDefinition, CompiledWorkflowNode,
     CompiledWorkflowNodeKind, WorkflowDefinitionCompilationPosture,
     WorkflowDefinitionCompilationReuse,

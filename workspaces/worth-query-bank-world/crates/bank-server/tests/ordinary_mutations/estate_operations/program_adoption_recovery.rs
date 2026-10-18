@@ -3,7 +3,7 @@
 use bank_domain::estate::EstateAction;
 use bank_external_rail::test_control::FaultScript;
 use bank_external_rail::LedgerStatus;
-use bank_server::{BankApplicationP1, BankCommitDenialKind, BankMutationCommitOutcome};
+use bank_server::BankApplicationP1;
 use worth_query_host::facade::application_entry::WorthQueryBranchAdoptionPublicationOutcome;
 use worth_query_host::facade::declaration::application_program::ApplicationSemanticChangeKind;
 use worth_query_host::facade::domain::WorthQueryProgramCustodyInventoryKind;
@@ -48,36 +48,53 @@ fn performed_effect_recovery_survives_removal_from_the_current_program() {
         .expect("removed effectful operation requires exact recovery custody");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared program adoption permission admits")
         .prepare(128)
         .expect("Bank P1 adoption prepares");
     assert!(has_exact_recovery(prepared.custody(), recovery));
-    let performed = match prepared.publish() {
+    let performed = match runtime
+        .request(&specialist, &adoption_scope)
+        .on_branch(branch)
+        .programs()
+        .publish(prepared)
+    {
         WorthQueryBranchAdoptionPublicationOutcome::Performed(performed) => performed,
         _ => panic!("Bank P1 adoption must publish"),
     };
     assert!(has_exact_recovery(performed.custody(), recovery));
 
     let attempts_before_ordinary = world.transport.attempts().len();
-    let ordinary = world.fixture.world.runtime.notify_estate_death_with_key(
-        &specialist,
-        EstateAction::NotifyDeath {
-            estate: world.fixture.second_estate,
-            notice: world.fixture.second_notice,
-            subject: world.fixture.other_subject,
-        },
-        &world::idempotency(89),
-        &request_scope(),
-    );
-    assert!(
-        matches!(
-            &ordinary,
-            Ok(BankMutationCommitOutcome::Denied {
-                kind: BankCommitDenialKind::ProgramNotActiveOnOccurrence,
-                ..
+    let ordinary = {
+        let source_actor = &specialist;
+        let source_scope = &request_scope();
+        let source_key = &world::idempotency(89);
+        let source_intent =
+            bank_domain::schema::NotifyEstateDeath::try_from(EstateAction::NotifyDeath {
+                estate: world.fixture.second_estate,
+                notice: world.fixture.second_notice,
+                subject: world.fixture.other_subject,
             })
-        ),
-        "removed ordinary operation returned {ordinary:?}"
-    );
+            .expect("typed estate command preserves the exact variant");
+        let source_request = world
+            .fixture
+            .world
+            .runtime
+            .request(source_actor, source_scope);
+        let source_operation = world
+            .fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::notify_estate_death(source_intent))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+        source_operation.advance(&source_request)
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: _original_ordinary, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired) } = ordinary else { panic!("removed declaration refuses at the current installed action owner") };
     assert_eq!(world.transport.attempts().len(), attempts_before_ordinary);
 
     world.transport.under(FaultScript::Succeed, world::PATIENT);

@@ -3,11 +3,20 @@ use crate::tests::domains::fintech::{
     compile_financial_locality_world_with_policy, verify_locality_case_with_policy, DensityRatio,
     FinancialWorldDefinition,
 };
+use crate::tests::leased_execution::support::private_authority_process::{
+    run_with_private_authority, NativeExecutionEvidence,
+};
 
 use super::throughput_definition::profiles;
 
 #[test]
 fn throughput_serial_and_parallel_commit_the_same_operational_digest() {
+    if run_with_private_authority(
+        "tests::performance_profiles::throughput_parity::throughput_serial_and_parallel_commit_the_same_operational_digest",
+        NativeExecutionEvidence::ThroughputParity,
+    ) {
+        return;
+    }
     let policy = profiles()
         .into_iter()
         .find(|profile| profile.name == "throughput_idle")
@@ -44,11 +53,28 @@ fn throughput_serial_and_parallel_commit_the_same_operational_digest() {
         serial.necessary_evaluation_count(),
         parallel.necessary_evaluation_count()
     );
+    println!(
+        "THROUGHPUT_PARITY parallel_stages={}",
+        parallel
+            .execution_stage_outcomes()
+            .iter()
+            .filter(|outcome| **outcome == StageExecutionOutcome::CompletedParallel)
+            .count()
+    );
 }
 
 #[test]
 fn all_profiles_preserve_serial_parallel_operational_digest() {
-    for profile in profiles() {
+    if run_with_private_authority(
+        "tests::performance_profiles::throughput_parity::all_profiles_preserve_serial_parallel_operational_digest",
+        NativeExecutionEvidence::ThroughputParity,
+    ) {
+        return;
+    }
+    let mut parallel_dispatches = 0;
+    let selected_profiles = profiles();
+    let profile_count = selected_profiles.len();
+    for profile in selected_profiles {
         let definition =
             FinancialWorldDefinition::dense_market_close(41, 256, DensityRatio::FourInFive);
         let mut serial_world =
@@ -86,5 +112,9 @@ fn all_profiles_preserve_serial_parallel_operational_digest() {
             "parallel profile {} must dispatch production parallel work",
             profile.name
         );
+        parallel_dispatches += parallel_report.parallel_stage_dispatches;
     }
+    println!(
+        "THROUGHPUT_PARITY profiles={profile_count} parallel_dispatches={parallel_dispatches}"
+    );
 }

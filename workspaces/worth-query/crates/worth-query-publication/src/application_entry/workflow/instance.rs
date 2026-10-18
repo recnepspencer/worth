@@ -12,7 +12,7 @@ use worth_query_execution::facade::application_installation::WorthQueryWorkflowV
 use worth_query_execution::publication_boundary::workflow_instance::{
     PreparedWorkflowInstanceStart, PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
     WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-    WorthQueryWorkflowInstanceAdapter,
+    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -373,7 +373,18 @@ where
     }
 }
 
+impl<Schema: ApplicationSchema, Operation, Input, Scope>
+    WorthQueryWorkflowInstanceStartRequest<'_, Schema, Operation, Input, Scope>
+{
+    /// Original creation intent, available before effects and independent of this request.
+    pub fn discovery_intent(&self) -> WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
+        self.prepared.discovery_intent()
+    }
+}
+
 mod preparation_denial;
 pub use preparation_denial::{
     WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenialKind,
 };
+
+mod ordinary;

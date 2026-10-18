@@ -6,17 +6,26 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 };
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
-    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn recover_branch_adoption_in_advancement(
+    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn recover_branch_adoption_in_advancement<
+        Operation,
+        Input,
+        Scope,
+    >(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
         recovery: WorthQueryBranchAdoptionRecovery,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
     {
-        let execution = match recovery_execution(phase, &self.application().product_runtime) {
-            Ok(execution) => execution,
-            Err(denial) => return Err(failure(denial, recovery)),
-        };
+        if let Err(cause) = admission.validate_current_authority() {
+            return Err(failure(WorthQueryBranchAdoptionRecoveryDenial::Authorization(super::super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)), recovery));
+        }
         let inspected = match recovery.product.inspect() {
             Ok(inspected) => inspected,
             Err(denial) => {
@@ -36,6 +45,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let needs_settlement = inspected.relational_requires_settlement();
         drop(inspected);
         if needs_settlement {
+            if let Err(cause) = admission.validate_current_authority() {
+                return Err(failure(WorthQueryBranchAdoptionRecoveryDenial::Authorization(super::super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)), recovery));
+            }
+
             if let Err(denial) = recovery.product.continue_owner_settlement() {
                 return Err(failure(
                     WorthQueryBranchAdoptionRecoveryDenial::OwnerSettlement(denial),
@@ -76,6 +89,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             }
         };
         drop(unpublished);
+        if let Err(cause) = admission.validate_current_authority() {
+            return Err(failure(WorthQueryBranchAdoptionRecoveryDenial::Authorization(super::super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)), recovery));
+        }
         let binding = self.product().publication_binding().clone();
         let WorthQueryBranchAdoptionRecovery {
             source,
@@ -86,7 +102,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             product,
             support_custody,
         } = recovery;
-        match prepared.execute(execution) {
+        match prepared.execute(*execution) {
             Ok(PublicationOutcome::Performed(performed)) => {
                 let adoption = WorthQueryPerformedBranchAdoption::new(
                     performed.consume(),
@@ -157,6 +173,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     }
 }
 
+#[cfg(test)]
 fn recovery_execution<'scope>(
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
     runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
@@ -180,9 +197,11 @@ impl crate::domain_computation::execution_observation::WorthQueryExecutionObserv
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryBranchAdoptionRecovery,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
     {
-        selected.recover_branch_adoption_in_advancement(phase, recovery, request)
+        selected
+            .recover_branch_adoption_authorized_in_advancement(phase, recovery, principal, request)
     }
 }

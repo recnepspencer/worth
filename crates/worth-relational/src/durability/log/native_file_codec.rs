@@ -1,65 +1,17 @@
 use std::fs;
 use std::path::Path;
 
-use serde::{Deserialize, Serialize};
-
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 
 use super::local_store::{DurableCheckpointFile, DurableSegmentFile, DurableStoreManifestFile};
-use super::persisted_checkpoint::{
-    PersistedDurableCheckpointFile, PersistedDurableCheckpointFileRef,
-};
+pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK4\n";
 
 mod checkpoint_encoding;
-pub(crate) use checkpoint_encoding::encode_checkpoint;
+pub(crate) use checkpoint_encoding::{encode_checkpoint, encode_payload};
 
 pub(crate) fn read_store_manifest_file(
     path: &Path,
 ) -> Result<DurableStoreManifestFile, DurabilityError> {
-    read_native_file(path)
-}
-
-pub(crate) fn write_store_manifest_file(
-    path: &Path,
-    file: &DurableStoreManifestFile,
-) -> Result<(), DurabilityError> {
-    write_native_file(path, file)
-}
-
-pub(crate) fn read_segment_file(path: &Path) -> Result<DurableSegmentFile, DurabilityError> {
-    read_native_file(path)
-}
-
-pub(crate) fn write_segment_file(
-    path: &Path,
-    file: &DurableSegmentFile,
-) -> Result<(), DurabilityError> {
-    write_native_file(path, file)
-}
-
-pub(crate) fn read_checkpoint_file(path: &Path) -> Result<DurableCheckpointFile, DurabilityError> {
-    read_native_file::<PersistedDurableCheckpointFile>(path)?.readmit()
-}
-
-pub(crate) fn write_checkpoint_file(
-    path: &Path,
-    checkpoint: &crate::durability::data::DurableCheckpoint,
-) -> Result<(), DurabilityError> {
-    write_native_file(path, &PersistedDurableCheckpointFileRef::new(checkpoint))
-}
-
-pub(crate) fn decode_checkpoint(bytes: &[u8]) -> Result<DurableCheckpointFile, DurabilityError> {
-    rmp_serde::from_slice::<PersistedDurableCheckpointFile>(bytes)
-        .map_err(|error| {
-            DurabilityError::new(
-                RecoveryFailureClass::CorruptCheckpoint,
-                format!("failed to decode native checkpoint: {error}"),
-            )
-        })?
-        .readmit()
-}
-
-fn read_native_file<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T, DurabilityError> {
     let bytes = fs::read(path).map_err(super::local_store::io_error)?;
     rmp_serde::from_slice(&bytes).map_err(|error| {
         DurabilityError::new(
@@ -72,12 +24,15 @@ fn read_native_file<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T, Dura
     })
 }
 
-fn write_native_file<T: Serialize>(path: &Path, value: &T) -> Result<(), DurabilityError> {
+pub(crate) fn write_store_manifest_file(
+    path: &Path,
+    file: &DurableStoreManifestFile,
+) -> Result<(), DurabilityError> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(super::local_store::io_error)?;
     }
     let temp_path = path.with_extension("tmp");
-    let bytes = rmp_serde::to_vec_named(value).map_err(|error| {
+    let bytes = rmp_serde::to_vec_named(file).map_err(|error| {
         DurabilityError::new(
             RecoveryFailureClass::DurableIoFailure,
             format!(
@@ -90,3 +45,42 @@ fn write_native_file<T: Serialize>(path: &Path, value: &T) -> Result<(), Durabil
     fs::rename(&temp_path, path).map_err(super::local_store::io_error)?;
     Ok(())
 }
+
+mod segment_frames;
+#[cfg(test)]
+pub(crate) use segment_frames::write as write_segment_file;
+pub(crate) use segment_frames::{
+    append as append_segment_bytes, inventory as read_segment_inventory,
+    preflight as preflight_segments, read as read_segment_file,
+};
+
+pub(crate) fn write_checkpoint_file(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    path: &Path,
+    checkpoint: &crate::durability::data::DurableCheckpoint,
+) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
+    execution
+        .check_live()
+        .map_err(|stop| crate::durability::data::RelationalRecoveryStop::Request(stop.into()))?;
+    let (bytes, _) = encode_checkpoint(checkpoint, execution.allocation_policy())
+        .map_err(crate::durability::data::RelationalRecoveryStop::from)?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(super::local_store::io_error)?;
+    }
+    let temporary = path.with_extension("tmp");
+    let mut output = fs::File::create(&temporary).map_err(super::local_store::io_error)?;
+    use std::io::Write;
+    output
+        .write_all(bytes.bytes())
+        .map_err(super::local_store::io_error)?;
+    output.sync_all().map_err(super::local_store::io_error)?;
+    drop(output);
+    execution
+        .check_live()
+        .map_err(|stop| crate::durability::data::RelationalRecoveryStop::Request(stop.into()))?;
+    fs::rename(temporary, path).map_err(super::local_store::io_error)?;
+    Ok(())
+}
+
+mod text_readmission;
+pub(crate) use text_readmission::{decode_checkpoint, read_checkpoint_file};

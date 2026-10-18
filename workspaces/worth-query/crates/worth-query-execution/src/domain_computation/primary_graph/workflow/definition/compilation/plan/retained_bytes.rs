@@ -19,8 +19,7 @@ impl CompiledWorkflowNodeKind {
                 .saturating_add(input_type.len())
                 .saturating_add(
                     workflow_execution_requirements
-                        .as_ref()
-                        .and_then(|requirements| requirements.approval())
+                        .approval()
                         .map_or(0, |(name, identity)| {
                             name.len().saturating_add(identity.len())
                         }),

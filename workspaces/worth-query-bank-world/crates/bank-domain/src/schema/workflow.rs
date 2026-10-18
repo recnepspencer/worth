@@ -26,6 +26,15 @@ pub use settlement::*;
 pub struct ApprovedBusinessPaymentWorkflow;
 
 impl ApplicationWorkflowSpec for ApprovedBusinessPaymentWorkflow {
+    fn observation_policy(
+    ) -> worth_query_decl::facade::application_program::ApplicationWorkflowObservationPolicy {
+        worth_query_decl::facade::application_program::ApplicationWorkflowObservationPolicy::disabled()
+    }
+    fn actor_policy(
+    ) -> worth_query_decl::facade::application_program::ApplicationWorkflowActorPolicy {
+        worth_query_decl::facade::application_program::ApplicationWorkflowActorPolicy::not_applicable()
+    }
+
     type Schema = BankSchema;
 
     const IDENTITY: ApplicationWorkflowSpecIdentity =

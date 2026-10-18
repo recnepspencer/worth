@@ -75,9 +75,9 @@ pub(super) fn authenticate(
         ),
         WorthUiLocalSourceAdapter,
     )
-    .map_err(|error| WorthUiStatusOwnerError::Authentication(format!("{error:?}")))?;
+    .map_err(WorthUiStatusOwnerError::AuthenticationAdmission)?;
     block_on(adapter.authenticate(WorthUiLocalSourceCredential, scope))
-        .map_err(|error| WorthUiStatusOwnerError::Authentication(format!("{error:?}")))
+        .map_err(WorthUiStatusOwnerError::Authentication)
 }
 
 fn block_on<Output>(future: impl Future<Output = Output>) -> Output {

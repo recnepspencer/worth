@@ -51,10 +51,8 @@ impl ResourceRuntimeState {
         evidence: ResourceRevalidationEvidence,
         mut telemetry: Option<&mut ResourceTelemetry>,
     ) -> Result<PreparedResourceRevalidation, ResourceRevalidationReport> {
-        if count_policy_decision {
-            if let Some(telemetry) = telemetry.as_deref_mut() {
-                telemetry.resource_revalidation_policy_decision_count += 1;
-            }
+        if count_policy_decision && let Some(telemetry) = telemetry.as_deref_mut() {
+            telemetry.resource_revalidation_policy_decision_count += 1;
         }
         let disposition = match self.preview_revalidation_admission(intent, &freshness_decision) {
             ResourceRevalidationAdmissionPreview::Proceed { descriptor_id } => {

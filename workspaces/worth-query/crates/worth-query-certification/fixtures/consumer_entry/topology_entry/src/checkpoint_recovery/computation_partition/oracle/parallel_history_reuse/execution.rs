@@ -117,7 +117,8 @@ impl ApplicationProgramDefinition<CheckpointSchema> for HistoryProgram {
                 .managed_computation::<OracleTotals>()
                 .managed_computation::<ChangedCodeTotals>()
                 .conditional_operation::<TotalRegionOutput>()
-                .mutation::<EntryEditBinding<CheckpointSchema>>()
+                .native_action::<EntryEditBinding<CheckpointSchema>>()
+                .finish_action()
                 .finish(),
         )
     }
@@ -254,6 +255,7 @@ pub(super) fn edit(
 ) {
     let made = format!("{edit:?}");
     let outcome = request
+        .advanced()
         .mutate(edit.commanded(command))
         .without_source()
         .idempotency(&command)
@@ -284,6 +286,7 @@ pub(super) fn adjust(
         .execute()
         .expect("the scope's source is readable");
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: SCOPE.to_owned(),
             replacement_y: length(y),

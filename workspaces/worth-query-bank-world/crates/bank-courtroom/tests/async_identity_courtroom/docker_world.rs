@@ -1,3 +1,7 @@
+#[path = "docker_world/blueprint.rs"]
+mod blueprint;
+#[path = "docker_world/tls.rs"]
+mod tls;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::time::{Duration, Instant, SystemTime};
@@ -13,6 +17,7 @@ pub struct DockerIdentityWorld {
     project: String,
     authentik_port: u16,
     selenium_port: u16,
+    trusted_root_pem: String,
 }
 
 impl DockerIdentityWorld {
@@ -27,15 +32,33 @@ impl DockerIdentityWorld {
             project,
             authentik_port: 0,
             selenium_port: 0,
+            trusted_root_pem: String::new(),
         };
         std::fs::write(world.directory.join("compose.yml"), compose_yaml(fixture))
             .map_err(|error| format!("courtroom compose write failed: {error}"))?;
+        let trusted_root_pem = tls::prepare(&world.directory, AUTHENTIK_IMAGE)?;
         std::fs::write(
             world.directory.join("bank-blueprint.yaml"),
-            blueprint_yaml(fixture),
+            tls::declare(&world.directory, blueprint::blueprint_yaml(fixture))?,
         )
         .map_err(|error| format!("courtroom blueprint write failed: {error}"))?;
+        world.trusted_root_pem = trusted_root_pem;
         world.compose(["up", "-d"]).map(|_| ())?;
+        world.compose([
+            "exec",
+            "-T",
+            "selenium",
+            "certutil",
+            "-d",
+            "sql:/home/seluser/.pki/nssdb",
+            "-A",
+            "-t",
+            "C,,",
+            "-n",
+            "WORTH isolated court CA",
+            "-i",
+            "/worth-trust/root.pem",
+        ])?;
         world.authentik_port = world.published_port("server", 9443)?;
         world.selenium_port = world.published_port("selenium", 4444)?;
         Ok(world)
@@ -45,11 +68,18 @@ impl DockerIdentityWorld {
         &self,
         fixture: &IdentityFixture,
     ) -> Result<IdentityEndpoints, String> {
-        let endpoints =
-            IdentityEndpoints::new(self.authentik_port, self.selenium_port, fixture.slug());
+        let endpoints = IdentityEndpoints::new(
+            self.authentik_port,
+            self.selenium_port,
+            fixture.slug(),
+            self.trusted_root_pem.clone(),
+        );
         let client = reqwest::ClientBuilder::new()
             .redirect(reqwest::redirect::Policy::none())
-            .danger_accept_invalid_certs(true)
+            .add_root_certificate(
+                reqwest::Certificate::from_pem(self.trusted_root_pem.as_bytes())
+                    .map_err(|error| format!("named root certificate invalid: {error}"))?,
+            )
             .build()
             .map_err(|error| format!("readiness client failed: {error}"))?;
         let deadline = Instant::now() + Duration::from_secs(360);
@@ -145,15 +175,21 @@ pub struct IdentityEndpoints {
     authentik_origin: String,
     selenium_origin: String,
     slug: String,
+    trusted_root_pem: String,
 }
 
 impl IdentityEndpoints {
-    fn new(authentik_port: u16, selenium_port: u16, slug: &str) -> Self {
+    fn new(authentik_port: u16, selenium_port: u16, slug: &str, trusted_root_pem: String) -> Self {
         Self {
             authentik_origin: format!("https://host.docker.internal:{authentik_port}"),
             selenium_origin: format!("http://127.0.0.1:{selenium_port}"),
             slug: slug.to_string(),
+            trusted_root_pem,
         }
+    }
+
+    pub fn trusted_root_pem(&self) -> &str {
+        &self.trusted_root_pem
     }
 
     pub fn issuer(&self) -> String {
@@ -271,6 +307,8 @@ fn compose_yaml(fixture: &IdentityFixture) -> String {
   selenium:
     image: {SELENIUM_IMAGE}
     shm_size: 2gb
+    volumes:
+      - ./root.pem:/worth-trust/root.pem:ro
     ports:
       - "127.0.0.1::4444"
 volumes:
@@ -279,113 +317,5 @@ volumes:
         postgres_password = fixture.postgres_password(),
         authentik_secret = fixture.authentik_secret(),
         bootstrap_token = fixture.bootstrap_token(),
-    )
-}
-
-fn blueprint_yaml(fixture: &IdentityFixture) -> String {
-    let user_entries = fixture
-        .participants()
-        .iter()
-        .map(|participant| {
-            format!(
-                r#"  - model: authentik_core.user
-    state: must_created
-    identifiers:
-      username: {username}
-    attrs:
-      name: Dynamic courtroom user
-      email: {username}@courtroom.invalid
-      is_active: true
-      password: {password}
-"#,
-                username = participant.username(),
-                password = participant.password(),
-            )
-        })
-        .collect::<String>();
-    let redirect_uris = fixture
-        .redirect_urls()
-        .iter()
-        .map(|redirect_url| {
-            format!(
-                "        - matching_mode: strict\n          redirect_uri_type: authorization\n          url: {redirect_url}\n"
-            )
-        })
-        .collect::<String>();
-    format!(
-        r#"version: 1
-metadata:
-  name: WORTH bank identity courtroom
-entries:
-{user_entries}
-  - model: authentik_providers_oauth2.oauth2provider
-    state: must_created
-    id: bank-provider
-    identifiers:
-      name: {slug}
-    attrs:
-      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-      client_type: confidential
-      client_id: {client_id}
-      client_secret: {client_secret}
-      grant_types:
-        - authorization_code
-      include_claims_in_id_token: true
-      issuer_mode: per_provider
-      sub_mode: user_username
-      signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
-      property_mappings:
-        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, openid]]
-        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, email]]
-        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, profile]]
-      redirect_uris:
-{redirect_uris}
-  - model: authentik_providers_oauth2.oauth2provider
-    state: must_created
-    id: alternate-provider
-    identifiers:
-      name: {alternate_slug}
-    attrs:
-      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-      client_type: confidential
-      client_id: {alternate_client_id}
-      client_secret: {alternate_client_secret}
-      grant_types:
-        - authorization_code
-      include_claims_in_id_token: true
-      issuer_mode: per_provider
-      sub_mode: user_username
-      signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
-      property_mappings:
-        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, openid]]
-        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, email]]
-        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, profile]]
-      redirect_uris:
-{redirect_uris}
-  - model: authentik_core.application
-    state: must_created
-    identifiers:
-      slug: {slug}
-    attrs:
-      name: WORTH bank courtroom
-      provider: !KeyOf bank-provider
-  - model: authentik_core.application
-    state: must_created
-    identifiers:
-      slug: {alternate_slug}
-    attrs:
-      name: WORTH bank alternate issuer
-      provider: !KeyOf alternate-provider
-"#,
-        user_entries = user_entries,
-        slug = fixture.slug(),
-        client_id = fixture.client_id(),
-        client_secret = fixture.client_secret(),
-        alternate_slug = fixture.alternate_slug(),
-        alternate_client_id = fixture.alternate_client_id(),
-        alternate_client_secret = fixture.alternate_client_secret(),
-        redirect_uris = redirect_uris,
     )
 }

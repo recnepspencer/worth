@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -16,8 +16,8 @@ use worth_server::{
     WorthServerProductOperationSurfaceDenialCode,
 };
 
-#[path = "support/product_adapter_phase_nine/fixture.rs"]
-mod fixture;
+#[allow(unused_imports)]
+use crate::shared_support_product_adapter_phase_nine_fixture as fixture;
 
 use fixture::{
     build_server, completed, direct_session, editor_registration, open_mutation_product_session,

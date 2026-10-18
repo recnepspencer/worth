@@ -111,12 +111,11 @@ pub(super) fn create_node(
         );
     }
     if let ApplicationWorkflowNodeKind::Operation { operation, .. } = node.kind() {
-        if let Some(requirements) = operation.workflow_execution_requirements() {
-            fields.insert(
-                layout.node.workflow_execution_requirements.clone(),
-                text(requirements.persistence_identity()),
-            );
-        }
+        let requirements = operation.workflow_execution_requirements();
+        fields.insert(
+            layout.node.workflow_execution_requirements.clone(),
+            text(requirements.persistence_identity()),
+        );
     }
     if let ApplicationWorkflowNodeKind::Condition(condition) = node.kind() {
         // Installation admits a definition only when every operand has a

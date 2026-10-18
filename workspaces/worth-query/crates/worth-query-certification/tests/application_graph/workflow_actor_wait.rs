@@ -239,6 +239,7 @@ fn change_grant(
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
+        .advanced()
         .mutate(WorkflowGrantStatusIntent {
             input: WorkflowGrantStatusInput {
                 grant_identity: grant_identity.to_owned(),

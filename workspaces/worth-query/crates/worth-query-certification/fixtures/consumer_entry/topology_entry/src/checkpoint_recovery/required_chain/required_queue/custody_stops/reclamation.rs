@@ -22,6 +22,7 @@ pub(super) fn overwrite_middle_output(
         .execute()
         .unwrap();
     let outcome = request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-b".to_owned(),
             operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {

@@ -20,6 +20,7 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
         .unwrap(),
     );
     let mut output = request
+        .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
             &application,
             PlanarOutputDemand::new("anchor-a"),
@@ -137,6 +138,7 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .unwrap();
     reports();
     let outcome = request
+        .advanced()
         .mutate(input())
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_761_u64)
@@ -160,6 +162,7 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .unwrap();
     reports();
     let retained = request
+        .advanced()
         .mutate(input())
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_765_u64)
@@ -185,6 +188,7 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .execute()
         .unwrap();
     let mut mutation = request
+        .advanced()
         .mutate(input())
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_762_u64);
@@ -221,6 +225,7 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
         .execute()
         .unwrap();
     let mut mutation = request
+        .advanced()
         .mutate(input())
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&9_763_u64);
@@ -258,6 +263,7 @@ fn signal_reservation_uses_the_advancement_work_ceiling() {
         .unwrap(),
     );
     let mut output = request
+        .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
             &application,
             PlanarOutputDemand::new("anchor-a"),

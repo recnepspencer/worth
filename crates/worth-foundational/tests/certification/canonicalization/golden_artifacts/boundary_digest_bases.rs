@@ -12,7 +12,7 @@ use super::golden_fixtures::{
     admitted_state, golden_contract, golden_contract_basis, golden_mutation_mask_basis,
     golden_patch_basis, ready_contract, ready_mask, ready_patch, ready_state,
 };
-use crate::foundational_vocabulary::{field, key};
+use crate::certification::foundational_vocabulary::{field, key};
 
 #[test]
 fn contract_mask_patch_state_and_compatibility_digest_basis_golden_is_semantic() {

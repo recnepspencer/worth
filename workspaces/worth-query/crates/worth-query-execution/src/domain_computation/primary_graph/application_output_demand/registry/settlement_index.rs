@@ -183,10 +183,10 @@ impl SettlementIndex {
         let mut held = posting
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some((recorded, answering)) = held.as_mut() {
-            if recorded.as_ref() == identity {
-                *answering = key;
-            }
+        if let Some((recorded, answering)) = held.as_mut()
+            && recorded.as_ref() == identity
+        {
+            *answering = key;
         }
     }
 }

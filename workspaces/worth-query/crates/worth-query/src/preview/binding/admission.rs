@@ -80,35 +80,31 @@ fn validate_execution_record_affinity(
 ) -> Result<(), PreviewBindingError> {
     if let Some(execution_record_session_identity) =
         source.execution_record_preview_session_identity.as_ref()
-    {
-        if execution_record_session_identity
+        && execution_record_session_identity
             != workflow_context_identity::preview_session_identity_record_label(
                 &source.preview_session_identity,
             )
-        {
-            return Err(invalid_preview_basis(
-                "preview execution record must belong to the requested preview session",
-            ));
-        }
+    {
+        return Err(invalid_preview_basis(
+            "preview execution record must belong to the requested preview session",
+        ));
     }
     if let Some(execution_record_declaration_digest) =
         source.execution_record_declaration_digest.as_ref()
+        && execution_record_declaration_digest != &source.declaration_digest
     {
-        if execution_record_declaration_digest != &source.declaration_digest {
-            return Err(invalid_preview_basis(
-                "preview execution record must match the requested preview declaration digest",
-            ));
-        }
+        return Err(invalid_preview_basis(
+            "preview execution record must match the requested preview declaration digest",
+        ));
     }
     if let (Some(execution_record_identity), Some(session_execution_record_identity)) = (
         source.execution_record_identity.as_ref(),
         source.session_execution_record_identity.as_ref(),
-    ) {
-        if execution_record_identity != session_execution_record_identity {
-            return Err(invalid_preview_basis(
-                "preview execution record identity must match the active preview session identity",
-            ));
-        }
+    ) && execution_record_identity != session_execution_record_identity
+    {
+        return Err(invalid_preview_basis(
+            "preview execution record identity must match the active preview session identity",
+        ));
     }
 
     Ok(())

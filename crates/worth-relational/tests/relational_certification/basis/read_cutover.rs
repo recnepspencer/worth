@@ -10,7 +10,8 @@ use worth_relational::facade::history::{BranchId, RelationalMergeBranchBasisDeni
 
 #[test]
 fn history_and_visibility_read_the_observation_selected_root() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -78,7 +79,8 @@ fn history_and_visibility_read_the_observation_selected_root() {
 
 #[test]
 fn merge_history_resolves_from_two_exact_observations() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -131,7 +133,8 @@ fn merge_history_resolves_from_two_exact_observations() {
 
 #[test]
 fn merge_history_preserves_source_and_target_observation_denials() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (owner, _) = certified_supply_chain_world(execution, SupplyChainScale::court());

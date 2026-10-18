@@ -32,14 +32,13 @@ impl CompletedEffects {
         match effects.entry(correlation.clone()) {
             Entry::Vacant(entry) => {
                 entry.insert(effect);
-                if let Some(delivery) = delivery {
-                    if delivery
+                if let Some(delivery) = delivery
+                    && delivery
                         .record_completed(correlation.clone(), payload)
                         .is_err()
-                    {
-                        effects.remove(&correlation);
-                        return Err(CompletedEffectConflict::DeliveryUnavailable);
-                    }
+                {
+                    effects.remove(&correlation);
+                    return Err(CompletedEffectConflict::DeliveryUnavailable);
                 }
                 Ok(())
             }

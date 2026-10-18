@@ -49,8 +49,8 @@ pub(super) fn start_approved_payment_instance(
         WorkflowInstanceStartOutcome::Started(started) => started,
         other => panic!("expected workflow instance, got {other:?}"),
     };
-    let instance = started.instance().clone();
-    instance
+
+    started.instance().clone()
 }
 
 pub(super) fn prepare_approved_payment_approval_on_instance(
@@ -120,7 +120,7 @@ pub(super) fn reach_approval_limit(
         "review/payment",
     );
     let mut payment_demand = actor
-        .begin_payment_assessment(
+        .retain_payment_assessment(
             instance.clone(),
             actor_authority.clone(),
             BankPaymentAssessmentSettlement::DEFAULT,
@@ -128,7 +128,7 @@ pub(super) fn reach_approval_limit(
         )
         .expect("the payment assessment demand starts");
     let payment_assessment = match actor
-        .settle_payment_assessment(&mut payment_demand)
+        .advance_payment_assessment(&mut payment_demand)
         .expect("the payment assessment advances")
     {
         WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
@@ -159,7 +159,7 @@ pub(super) fn reach_approval_limit(
         "review/independent",
     );
     let mut independent_demand = actor
-        .begin_payment_assessment(
+        .retain_payment_assessment(
             instance.clone(),
             actor_authority.clone(),
             BankPaymentAssessmentSettlement::DEFAULT,
@@ -167,7 +167,7 @@ pub(super) fn reach_approval_limit(
         )
         .expect("the independent assessment demand starts");
     let independent_assessment = match actor
-        .settle_payment_assessment(&mut independent_demand)
+        .advance_payment_assessment(&mut independent_demand)
         .expect("the independent assessment advances")
     {
         WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,

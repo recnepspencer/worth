@@ -187,7 +187,7 @@ fn catalog_filters_quarantined_sibling_and_ancestry_keeps_observable_suffix() {
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = mutation.advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &quarantined_basis,
             &mut (),

@@ -4,6 +4,8 @@ use crate::indexes::data::{
 };
 use proptest::prelude::*;
 
+mod selected_scope_admission;
+
 // These are catalog ordering inputs, not forged runtime admission or storage truth.
 fn generation(
     id: u64,

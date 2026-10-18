@@ -7,6 +7,9 @@ use crate::domain_computation::primary_graph::{
 
 pub(super) fn decode_denial(error: FactDecodeDenial) -> WorthQueryOutputDemandDenial {
     match error {
+        FactDecodeDenial::Execution(cause) => {
+            crate::domain_computation::primary_graph::output_reuse::read_denial(cause)
+        }
         FactDecodeDenial::Format(message) => denial(Kind::IncompleteDependencyCoverage, message),
         FactDecodeDenial::Retention(StoreDenial::Allocation(allocation)) => {
             use worth_execution::{

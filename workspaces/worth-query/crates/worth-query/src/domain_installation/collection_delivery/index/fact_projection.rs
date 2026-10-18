@@ -74,10 +74,10 @@ pub(super) fn native_value(
             .map(ConsumedNativeValue::scalar)
             .unwrap_or_else(|| ConsumedNativeValue::absent(key.absence_posture()));
     }
-    if let Some(path) = native_storage_path(key) {
-        if let Some(value) = entity.scalar_value_at(&path).cloned() {
-            return ConsumedNativeValue::scalar(value);
-        }
+    if let Some(path) = native_storage_path(key)
+        && let Some(value) = entity.scalar_value_at(&path).cloned()
+    {
+        return ConsumedNativeValue::scalar(value);
     }
     if let Some(value) = entity.struct_aspect_value(key.contract_key()) {
         return ConsumedNativeValue::struct_value(value.clone());

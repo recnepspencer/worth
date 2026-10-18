@@ -54,7 +54,7 @@ where
         return Ok(CallerAcceptance::Deferred);
     };
     let proof = decision.take().expect("the caller owns its Current proof");
-    if let Some(proof) = super::super::caller::finish_current_caller(
+    match super::super::caller::finish_current_caller(
         runtime,
         demand,
         super::super::caller::CurrentCaller {
@@ -67,11 +67,14 @@ where
         proof,
         admission,
     )? {
-        frontier.members[0].state = MemberState::AcceptedCaller;
-        Ok(CallerAcceptance::Accepted(proof))
-    } else {
-        caller.state = MemberState::Pending;
-        Ok(CallerAcceptance::Deferred)
+        Some(proof) => {
+            frontier.members[0].state = MemberState::AcceptedCaller;
+            Ok(CallerAcceptance::Accepted(proof))
+        }
+        _ => {
+            caller.state = MemberState::Pending;
+            Ok(CallerAcceptance::Deferred)
+        }
     }
 }
 

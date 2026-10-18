@@ -29,7 +29,7 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
     let services = runtime.owner_component_services();
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("the create publication is the suspension replay checkpoint");
     let (_, source_basis) = services
         .basis_port()
@@ -64,7 +64,7 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
         .expect("the original owner retains the suspended basis");
     runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("the suspended publication is the restoration replay checkpoint");
     let restored = services
         .materialization_port()

@@ -202,74 +202,72 @@ impl SignalGraph {
         if self.captures_observation_surface(
             crate::logic::transaction::SignalObservationSurface::DescriptiveFacts,
         ) && (policy.retains_explanation_facts() || policy.retains_provenance_facts())
+            && let Some(runtime) = payload.warm.runtime_artifact_state.as_ref()
         {
-            if let Some(runtime) = payload.warm.runtime_artifact_state.as_ref() {
-                let cold = payload.cold.as_deref();
-                let projection_copy = compact_projection_copy_bytes(
-                    runtime,
-                    cold.and_then(|cold| cold.retained_artifact.as_ref()),
-                    cold.and_then(|cold| cold.causality.as_ref()),
-                    &contract.semantics.partition_scope,
-                    condition,
+            let cold = payload.cold.as_deref();
+            let projection_copy = compact_projection_copy_bytes(
+                runtime,
+                cold.and_then(|cold| cold.retained_artifact.as_ref()),
+                cold.and_then(|cold| cold.causality.as_ref()),
+                &contract.semantics.partition_scope,
+                condition,
+                work,
+            )?;
+            checkpoint_copy(work, projection_copy)?;
+            let mut projection = ExplanationFact::compact_explanation_from_runtime_projection(
+                node,
+                payload.hot.state,
+                contract.semantics.reads,
+                contract.semantics.produces,
+                contract.semantics.partition_scope.clone(),
+                contract.semantics.required_context,
+                condition.clone(),
+                runtime,
+                cold.and_then(|cold| cold.retained_artifact.as_ref()),
+                cold.and_then(|cold| cold.execution_trace),
+                cold.and_then(|cold| cold.causality.as_ref()),
+                seed.rewiring,
+            );
+            if let Some(rewiring) = projection.rewiring.take() {
+                checkpoint_rewiring_links(work, &rewiring)?;
+                self.attach_rewiring_topology_links(&mut projection, &rewiring);
+                projection.rewiring = Some(rewiring);
+            }
+            if policy.retains_explanation_facts() {
+                let heap = projection
+                    .retained_heap_charge(work)
+                    .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?
+                    .bytes();
+                checkpoint_copy(
                     work,
+                    heap.checked_add(19)
+                        .ok_or_else(|| SignalError::invalid_input("explanation work overflow"))?,
                 )?;
-                checkpoint_copy(work, projection_copy)?;
-                let mut projection = ExplanationFact::compact_explanation_from_runtime_projection(
-                    node,
-                    payload.hot.state,
-                    contract.semantics.reads,
-                    contract.semantics.produces,
-                    contract.semantics.partition_scope.clone(),
-                    contract.semantics.required_context,
-                    condition.clone(),
-                    runtime,
-                    cold.and_then(|cold| cold.retained_artifact.as_ref()),
-                    cold.and_then(|cold| cold.execution_trace),
-                    cold.and_then(|cold| cold.causality.as_ref()),
-                    seed.rewiring,
-                );
-                if let Some(rewiring) = projection.rewiring.take() {
-                    checkpoint_rewiring_links(work, &rewiring)?;
-                    self.attach_rewiring_topology_links(&mut projection, &rewiring);
-                    projection.rewiring = Some(rewiring);
-                }
-                if policy.retains_explanation_facts() {
-                    let heap = projection
-                        .retained_heap_charge(work)
-                        .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?
-                        .bytes();
-                    checkpoint_copy(
-                        work,
-                        heap.checked_add(19).ok_or_else(|| {
-                            SignalError::invalid_input("explanation work overflow")
-                        })?,
-                    )?;
-                    let mut fact = ExplanationFact::from_explanation(&projection);
-                    fact.compact_projection = true;
-                    explanation = Some(fact);
-                }
-                if policy.retains_provenance_facts() {
-                    let heap = projection
-                        .rewiring
-                        .retained_heap_charge(work)
-                        .and_then(|charge| {
-                            charge.checked_add(projection.causal_links.retained_heap_charge(work)?)
-                        })
-                        .and_then(|charge| {
-                            charge.checked_add(optional_charge(
-                                projection.causality.as_ref().map(|cause| &cause.kind),
-                                work,
-                            )?)
-                        })
-                        .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
-                    checkpoint_copy(
-                        work,
-                        heap.bytes().checked_add(10).ok_or_else(|| {
-                            SignalError::invalid_input("provenance work overflow")
-                        })?,
-                    )?;
-                    provenance = Some(ProvenanceFact::from_explanation(&projection));
-                }
+                let mut fact = ExplanationFact::from_explanation(&projection);
+                fact.compact_projection = true;
+                explanation = Some(fact);
+            }
+            if policy.retains_provenance_facts() {
+                let heap = projection
+                    .rewiring
+                    .retained_heap_charge(work)
+                    .and_then(|charge| {
+                        charge.checked_add(projection.causal_links.retained_heap_charge(work)?)
+                    })
+                    .and_then(|charge| {
+                        charge.checked_add(optional_charge(
+                            projection.causality.as_ref().map(|cause| &cause.kind),
+                            work,
+                        )?)
+                    })
+                    .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
+                checkpoint_copy(
+                    work,
+                    heap.bytes()
+                        .checked_add(10)
+                        .ok_or_else(|| SignalError::invalid_input("provenance work overflow"))?,
+                )?;
+                provenance = Some(ProvenanceFact::from_explanation(&projection));
             }
         }
         #[cfg(test)]

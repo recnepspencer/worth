@@ -91,6 +91,9 @@ where
                 approval_identity,
                 approval_authentication,
             ),
+            PreparedWorkflowAdvance::AwaitingProposal { required, .. } => {
+                return WorkflowProgressOutcome::AwaitingProposal(required)
+            }
             PreparedWorkflowAdvance::AwaitingAssessment(prepared) => {
                 return WorkflowProgressOutcome::AwaitingAssessment(prepared.into_required())
             }

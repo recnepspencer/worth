@@ -14,16 +14,6 @@ pub struct MilestoneEightCertificationBundle {
     pub inspector_identity_classification: String,
 }
 
-impl MilestoneEightCertificationBundle {
-    pub(super) fn has_required_outputs(&self) -> bool {
-        !self.query_digest.is_empty()
-            && !self.plan_digest.is_empty()
-            && !self.result_shape_digest.is_empty()
-            && !self.delivery_digest.is_empty()
-            && !self.counter_snapshot_digest.is_empty()
-    }
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MilestoneEightRejectionBundle {
     pub failure_class: MilestoneEightFailureClass,
@@ -43,11 +33,3 @@ pub type MilestoneEightCertificationMatrix = CertificationMatrix<
     MilestoneEightCertificationBundle,
     MilestoneEightRejectionBundle,
 >;
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MilestoneEightCertificationArtifact {
-    pub suite_name: &'static str,
-    pub certification_bundle_digest: String,
-    pub coverage_matrix_digest: String,
-    pub matrix: MilestoneEightCertificationMatrix,
-}

@@ -147,77 +147,71 @@ impl SignalGraph {
     ) -> Result<(), SignalError> {
         for registration in schema_registry.iter() {
             let descriptor = registration.descriptor();
-            if let Some(strategy_name) = descriptor.default_merge_strategy_name() {
-                if merge_strategy_registry
+            if let Some(strategy_name) = descriptor.default_merge_strategy_name()
+                && merge_strategy_registry
                     .resolve_by_name(strategy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "schema `{}` references unknown default merge strategy `{}`",
-                        descriptor.semantic_name().as_str(),
-                        strategy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "schema `{}` references unknown default merge strategy `{}`",
+                    descriptor.semantic_name().as_str(),
+                    strategy_name.as_str()
+                )));
             }
-            if let Some(policy_name) = descriptor.default_conflict_policy_name() {
-                if conflict_policy_registry
+            if let Some(policy_name) = descriptor.default_conflict_policy_name()
+                && conflict_policy_registry
                     .resolve_by_name(policy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "schema `{}` references unknown default conflict policy `{}`",
-                        descriptor.semantic_name().as_str(),
-                        policy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "schema `{}` references unknown default conflict policy `{}`",
+                    descriptor.semantic_name().as_str(),
+                    policy_name.as_str()
+                )));
             }
-            if let Some(matcher_name) = descriptor.default_identity_matcher_name() {
-                if identity_matcher_registry
+            if let Some(matcher_name) = descriptor.default_identity_matcher_name()
+                && identity_matcher_registry
                     .resolve_by_name(matcher_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "schema `{}` references unknown default identity matcher `{}`",
-                        descriptor.semantic_name().as_str(),
-                        matcher_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "schema `{}` references unknown default identity matcher `{}`",
+                    descriptor.semantic_name().as_str(),
+                    matcher_name.as_str()
+                )));
             }
-            if let Some(policy_name) = descriptor.default_source_only_policy_name() {
-                if source_only_policy_registry
+            if let Some(policy_name) = descriptor.default_source_only_policy_name()
+                && source_only_policy_registry
                     .resolve_by_name(policy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "schema `{}` references unknown default source-only policy `{}`",
-                        descriptor.semantic_name().as_str(),
-                        policy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "schema `{}` references unknown default source-only policy `{}`",
+                    descriptor.semantic_name().as_str(),
+                    policy_name.as_str()
+                )));
             }
-            if let Some(policy_name) = descriptor.default_deletion_policy_name() {
-                if deletion_policy_registry
+            if let Some(policy_name) = descriptor.default_deletion_policy_name()
+                && deletion_policy_registry
                     .resolve_by_name(policy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "schema `{}` references unknown default deletion policy `{}`",
-                        descriptor.semantic_name().as_str(),
-                        policy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "schema `{}` references unknown default deletion policy `{}`",
+                    descriptor.semantic_name().as_str(),
+                    policy_name.as_str()
+                )));
             }
-            if let Some(policy_name) = descriptor.default_conflict_isolation_policy_name() {
-                if conflict_isolation_registry
+            if let Some(policy_name) = descriptor.default_conflict_isolation_policy_name()
+                && conflict_isolation_registry
                     .resolve_by_name(policy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "schema `{}` references unknown default conflict isolation policy `{}`",
-                        descriptor.semantic_name().as_str(),
-                        policy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "schema `{}` references unknown default conflict isolation policy `{}`",
+                    descriptor.semantic_name().as_str(),
+                    policy_name.as_str()
+                )));
             }
             for binding in descriptor.default_aspect_merge_policy_bindings() {
                 if aspect_merge_policy_registry
@@ -235,77 +229,71 @@ impl SignalGraph {
         }
 
         for node in self.live_node_ids() {
-            if let Some(strategy_name) = self.node_merge_strategy_name(node)? {
-                if merge_strategy_registry
+            if let Some(strategy_name) = self.node_merge_strategy_name(node)?
+                && merge_strategy_registry
                     .resolve_by_name(strategy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "node {} references unknown merge strategy `{}`",
-                        node,
-                        strategy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "node {} references unknown merge strategy `{}`",
+                    node,
+                    strategy_name.as_str()
+                )));
             }
-            if let Some(policy_name) = self.node_conflict_policy_name(node)? {
-                if conflict_policy_registry
+            if let Some(policy_name) = self.node_conflict_policy_name(node)?
+                && conflict_policy_registry
                     .resolve_by_name(policy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "node {} references unknown conflict policy `{}`",
-                        node,
-                        policy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "node {} references unknown conflict policy `{}`",
+                    node,
+                    policy_name.as_str()
+                )));
             }
-            if let Some(matcher_name) = self.node_identity_matcher_name(node)? {
-                if identity_matcher_registry
+            if let Some(matcher_name) = self.node_identity_matcher_name(node)?
+                && identity_matcher_registry
                     .resolve_by_name(matcher_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "node {} references unknown identity matcher `{}`",
-                        node,
-                        matcher_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "node {} references unknown identity matcher `{}`",
+                    node,
+                    matcher_name.as_str()
+                )));
             }
-            if let Some(policy_name) = self.node_source_only_policy_name(node)? {
-                if source_only_policy_registry
+            if let Some(policy_name) = self.node_source_only_policy_name(node)?
+                && source_only_policy_registry
                     .resolve_by_name(policy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "node {} references unknown source-only policy `{}`",
-                        node,
-                        policy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "node {} references unknown source-only policy `{}`",
+                    node,
+                    policy_name.as_str()
+                )));
             }
-            if let Some(policy_name) = self.node_deletion_policy_name(node)? {
-                if deletion_policy_registry
+            if let Some(policy_name) = self.node_deletion_policy_name(node)?
+                && deletion_policy_registry
                     .resolve_by_name(policy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "node {} references unknown deletion policy `{}`",
-                        node,
-                        policy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "node {} references unknown deletion policy `{}`",
+                    node,
+                    policy_name.as_str()
+                )));
             }
-            if let Some(policy_name) = self.node_conflict_isolation_policy_name(node)? {
-                if conflict_isolation_registry
+            if let Some(policy_name) = self.node_conflict_isolation_policy_name(node)?
+                && conflict_isolation_registry
                     .resolve_by_name(policy_name)
                     .is_none()
-                {
-                    return Err(SignalError::invalid_input(format!(
-                        "node {} references unknown conflict isolation policy `{}`",
-                        node,
-                        policy_name.as_str()
-                    )));
-                }
+            {
+                return Err(SignalError::invalid_input(format!(
+                    "node {} references unknown conflict isolation policy `{}`",
+                    node,
+                    policy_name.as_str()
+                )));
             }
             for binding in self.node_aspect_merge_policy_bindings(node)? {
                 if aspect_merge_policy_registry

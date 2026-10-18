@@ -1,12 +1,12 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use worth_server::WorthServerProductOperationInput;
 
-#[path = "support/product_operation_phase_thirteen/fixture.rs"]
-mod fixture;
-#[path = "support/product_operation_phase_thirteen/parity_driver.rs"]
-mod parity_driver;
+#[allow(unused_imports)]
+use crate::shared_support_product_operation_phase_thirteen_fixture as fixture;
+#[allow(unused_imports)]
+use crate::shared_support_product_operation_phase_thirteen_parity_driver as parity_driver;
 
 use fixture::{
     apply_payload, build_server, direct_mutation, direct_read, direct_session, finalize_payload,

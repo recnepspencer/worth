@@ -80,12 +80,6 @@ impl PreparedRelationalPublication {
 }
 
 impl PreparedRecoveredRelationalPublication {
-    pub(crate) fn reconstructed_branch_checkpoint(
-        &self,
-    ) -> crate::branch::RelationalBranchCellCheckpoint {
-        self.publication.reconstructed_branch_checkpoint()
-    }
-
     pub(crate) fn install_recovered(
         self,
         runtime: &RelationalRuntime,

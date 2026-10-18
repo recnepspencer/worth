@@ -1,7 +1,7 @@
 use super::{BaselineName, SupplyChainBaseline};
-use crate::world::supply_chain::definition::SupplyChainWorldDefinition;
-use crate::world::supply_chain::oracle::{OracleBranch, OracleState};
-use crate::world::supply_chain::scale::SupplyChainScale;
+use crate::relational_certification::world::supply_chain::definition::SupplyChainWorldDefinition;
+use crate::relational_certification::world::supply_chain::oracle::{OracleBranch, OracleState};
+use crate::relational_certification::world::supply_chain::scale::SupplyChainScale;
 
 pub(super) fn build(scale: SupplyChainScale) -> SupplyChainBaseline {
     let definition = SupplyChainWorldDefinition::operating(scale)

@@ -103,7 +103,7 @@ impl ApplicationOutputPort<DocumentRetentionSchema, DocumentRetentionFeature>
 }
 
 macro_rules! retention_artifact {
-    ($artifact:ty, $work:expr, $bytes:expr) => {
+    ($artifact:ty, $work:expr_2021, $bytes:expr_2021) => {
         impl ApplicationDerivedArtifact<DocumentRetentionSchema, DocumentRetentionFeature>
             for $artifact
         {
@@ -148,6 +148,10 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for RetentionProgramP
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.document-retention.p0.v1");
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+    }
+
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         retention_feature_specs()
     }
@@ -161,123 +165,14 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for RetentionProgramP
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.document-retention.p1.v1");
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+    }
+
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         retention_feature_specs()
     }
 }
-
-impl ApplicationProgramDefinition<DocumentRetentionSchema> for ChangedFeatureRetentionProgram {
-    type Contributions = (DocumentRetentionContribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = CommitBoundaryRule<DocumentRetentionV1>;
-
-    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
-        "worth.query.certification.document-retention.changed-feature.v1",
-    );
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeatureV2>()
-                .mutation::<SetRetentionBinding>()
-                .conditional_operation::<PublishRetentionAssessment>()
-                .mutation::<WorkflowDefinitionAuthoringBinding>()
-                .mutation::<WorkflowInstanceStartBinding>()
-                .mutation::<WorkflowAdvanceBinding>()
-                .mutation::<WorkflowApprovalBinding>()
-                .mutation::<WorkflowGrantStatusBinding>()
-                .finish(),
-        ]
-    }
-}
-
-impl ApplicationProgramDefinition<DocumentRetentionSchema> for RemovedOperationRetentionProgram {
-    type Contributions = (DocumentRetentionContribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = CommitBoundaryRule<DocumentRetentionV1>;
-
-    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
-        "worth.query.certification.document-retention.removed-operation.v1",
-    );
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
-                .mutation::<ReviewRequirementBinding>()
-                .mutation::<UnlinkReviewRequirementBinding>()
-                .conditional_operation::<PublishRetentionAssessment>()
-                .mutation::<WorkflowDefinitionAuthoringBinding>()
-                .mutation::<WorkflowInstanceStartBinding>()
-                .mutation::<WorkflowAdvanceBinding>()
-                .mutation::<WorkflowApprovalBinding>()
-                .mutation::<WorkflowGrantStatusBinding>()
-                .finish(),
-        ]
-    }
-}
-
-impl ApplicationProgramDefinition<DocumentRetentionSchema> for ChangedOperationRetentionProgram {
-    type Contributions = (DocumentRetentionContribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = CommitBoundaryRule<DocumentRetentionV1>;
-
-    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
-        "worth.query.certification.document-retention.changed-operation.v1",
-    );
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
-                .mutation_with_locality_and_change::<
-                    SetRetentionBinding,
-                    ChangedOperationLocality,
-                    ChangedOperationShape,
-                >()
-                .mutation::<ReviewRequirementBinding>()
-                .mutation::<UnlinkReviewRequirementBinding>()
-                .conditional_operation::<PublishRetentionAssessment>()
-                .mutation::<WorkflowDefinitionAuthoringBinding>()
-                .mutation::<WorkflowInstanceStartBinding>()
-                .mutation::<WorkflowAdvanceBinding>()
-                .mutation::<WorkflowApprovalBinding>()
-                .mutation::<WorkflowGrantStatusBinding>()
-                .finish(),
-        ]
-    }
-}
-
-macro_rules! resource_program {
-    ($program:ty, $artifact:ty, $identity:literal) => {
-        impl ApplicationProgramDefinition<DocumentRetentionSchema> for $program {
-            type Contributions = (DocumentRetentionContribution,);
-            type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-            type Rules = CommitBoundaryRule<DocumentRetentionV1>;
-
-            const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new($identity);
-
-            fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-                vec![ApplicationFeatureSpec::root::<
-                    DocumentRetentionSchema,
-                    DocumentRetentionFeature,
-                >()
-                .mutation::<SetRetentionBinding>()
-                .conditional_operation::<PublishRetentionAssessment>()
-                .derived_artifact::<$artifact>()
-                .finish()]
-            }
-        }
-    };
-}
-
-resource_program!(
-    ResourceRetentionProgramP0,
-    RetentionArtifactP0,
-    "worth.query.certification.document-retention.resource-p0.v1"
-);
-resource_program!(
-    ResourceRetentionProgramP1,
-    RetentionArtifactP1,
-    "worth.query.certification.document-retention.resource-p1.v1"
-);
 
 impl ApplicationProgramDefinition<DocumentRetentionSchema> for UnrosteredRetentionProgram {
     type Contributions = (DocumentRetentionContribution,);
@@ -287,6 +182,10 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for UnrosteredRetenti
     const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
         "worth.query.certification.document-retention.unrostered.v1",
     );
+
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+    }
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         retention_feature_specs()
@@ -302,10 +201,17 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for ForeignRuleRetent
         "worth.query.certification.document-retention.foreign-rule.v1",
     );
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::program_adoption::ProgramAdoptionBinding>()
+    }
+
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         retention_feature_specs()
     }
 }
+
+#[path = "programs/resource.rs"]
+mod resource;
 
 pub fn validated_first_program(
 ) -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP0> {
@@ -360,21 +266,16 @@ where
         .expect("the authored document-retention program must validate")
 }
 
-fn retention_feature_specs() -> Vec<ApplicationFeatureSpec> {
-    vec![
-        ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
-            .mutation::<SetRetentionBinding>()
-            .mutation::<ReviewedSetRetentionBinding>()
-            .mutation::<OccurrenceSetRetentionBinding>()
-            .mutation::<ExplicitReviewedSetRetentionBinding>()
-            .mutation::<ReviewRequirementBinding>()
-            .mutation::<UnlinkReviewRequirementBinding>()
-            .conditional_operation::<PublishRetentionAssessment>()
-            .mutation::<WorkflowDefinitionAuthoringBinding>()
-            .mutation::<WorkflowInstanceStartBinding>()
-            .mutation::<WorkflowAdvanceBinding>()
-            .mutation::<WorkflowApprovalBinding>()
-            .mutation::<WorkflowGrantStatusBinding>()
-            .finish(),
-    ]
-}
+#[path = "programs/completion.rs"]
+mod completion;
+#[path = "programs/workflow_owner.rs"]
+mod workflow_owner;
+pub use completion::RetentionCompletion;
+#[path = "programs/features.rs"]
+mod features;
+#[path = "programs/successors.rs"]
+mod successors;
+use features::retention_feature_specs;
+pub use workflow_owner::{
+    GrantStatusAction, OccurrenceAction, ReviewedAction, SavedSourceAction, WorkflowOwnerProgram,
+};

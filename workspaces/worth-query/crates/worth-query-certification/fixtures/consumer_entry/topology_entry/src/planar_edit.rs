@@ -30,6 +30,12 @@ pub struct PlanarEditBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for PlanarEditBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = PlanarMutation;
     type InputBinding = PlanarMutationInputBinding;
     type Result = PlanarAdjustmentResult;

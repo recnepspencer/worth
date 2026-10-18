@@ -6,8 +6,8 @@ use super::super::fixture::{
     apply_payload, direct_mutation, direct_read, finalize_payload, open_mutation_session,
     prepared_mutation_request, prepared_read_request, render_payload, select_payload,
 };
-#[path = "../../route_assembly_phase_twelve/request_driver.rs"]
-mod route_driver;
+#[allow(unused_imports)]
+use crate::shared_support_route_assembly_phase_twelve_request_driver as route_driver;
 
 use route_driver::WorthServerRouteHttpTestDriver;
 

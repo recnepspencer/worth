@@ -1,5 +1,5 @@
 //! Bank's action for each typed application commit refusal.
-use super::{BankHttpDenial, BankHttpDenialKind, BankHttpMutationFailureKind, BankHttpNextAction};
+use super::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
@@ -9,42 +9,31 @@ use worth_query_host::facade::{
 
 pub(in crate::http::server) fn commit_denial(
     kind: WorthQueryApplicationCommitDenialKind,
-) -> (BankHttpMutationFailureKind, BankHttpDenial) {
+) -> BankHttpDenial {
     use WorthQueryApplicationCommitDenialKind as Denial;
     match kind {
         Denial::ExecutionResource { denial, .. } => execution_resource(denial),
         Denial::ExecutionWorkerPanicked { .. } => operator_denial(),
         Denial::ExecutionUncheckedCustomKernel { .. } => operator_denial(),
         Denial::ExecutionIdentitiesNotCanonical { .. } => operator_denial(),
-        Denial::ProductBasisStale => (
-            BankHttpMutationFailureKind::ProductStale,
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        Denial::ProductBasisStale => {
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
+        }
+        Denial::CustomInvariantDenied => BankHttpDenial::new(
+            BankHttpDenialKind::MalformedRequest,
+            BankHttpNextAction::CorrectRequest,
         ),
-        Denial::CustomInvariantDenied => (
-            BankHttpMutationFailureKind::InvariantViolated,
-            BankHttpDenial::new(
-                BankHttpDenialKind::MalformedRequest,
-                BankHttpNextAction::CorrectRequest,
-            ),
-        ),
-        Denial::IdempotencyIntentDrift => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(
-                BankHttpDenialKind::Stale,
-                BankHttpNextAction::CorrectRequest,
-            ),
+        Denial::IdempotencyIntentDrift => BankHttpDenial::new(
+            BankHttpDenialKind::Stale,
+            BankHttpNextAction::CorrectRequest,
         ),
         // The key's earlier commit took effect; reading current state shows it.
-        Denial::IdempotencyReceiptNotRetained { .. } => (
-            BankHttpMutationFailureKind::Stale,
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        ),
-        Denial::IdempotencyIntentUnverifiable => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(
-                BankHttpDenialKind::InternalDenied,
-                BankHttpNextAction::ContactOperator,
-            ),
+        Denial::IdempotencyReceiptNotRetained { .. } => {
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
+        }
+        Denial::IdempotencyIntentUnverifiable => BankHttpDenial::new(
+            BankHttpDenialKind::InternalDenied,
+            BankHttpNextAction::ContactOperator,
         ),
         Denial::UniqueValueTaken
         | Denial::WorkflowSettlementDenied { .. }
@@ -56,12 +45,9 @@ pub(in crate::http::server) fn commit_denial(
         | Denial::DelegationActivationRequired
         | Denial::CapabilityRevocationRequired
         | Denial::ApplicationProgramRequired
-        | Denial::WorkflowAuthorityRequired => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(
-                BankHttpDenialKind::MalformedRequest,
-                BankHttpNextAction::CorrectRequest,
-            ),
+        | Denial::WorkflowAuthorityRequired => BankHttpDenial::new(
+            BankHttpDenialKind::MalformedRequest,
+            BankHttpNextAction::CorrectRequest,
         ),
         // A nested stop only records that an inner run stopped: cancellation,
         // a deadline or memory pressure among them. It stays retryable.
@@ -69,10 +55,9 @@ pub(in crate::http::server) fn commit_denial(
         | Denial::ProviderRejected
         | Denial::ActiveSnapshotCapacityExhausted { .. }
         | Denial::RetentionCapacityExhausted
-        | Denial::IndexMaintenanceBudgetExceeded => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
-        ),
+        | Denial::IndexMaintenanceBudgetExceeded => {
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
+        }
         Denial::RetentionIdentityExhausted
         | Denial::SnapshotIdentityExhausted
         | Denial::CandidateIdentityExhausted
@@ -82,17 +67,13 @@ pub(in crate::http::server) fn commit_denial(
         | Denial::ProgramSupportRetired
         | Denial::MutationBindingMismatch
         | Denial::MutationInputMismatch
-        | Denial::RecoveryHandoffMismatch { .. } => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(
-                BankHttpDenialKind::Unavailable,
-                BankHttpNextAction::ContactOperator,
-            ),
+        | Denial::RecoveryHandoffMismatch { .. } => BankHttpDenial::new(
+            BankHttpDenialKind::Unavailable,
+            BankHttpNextAction::ContactOperator,
         ),
-        Denial::ProgramNotActiveOnOccurrence { .. } => (
-            BankHttpMutationFailureKind::ProductStale,
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        ),
+        Denial::ProgramNotActiveOnOccurrence { .. } => {
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
+        }
     }
 }
 
@@ -100,9 +81,7 @@ pub(in crate::http::server) fn commit_denial(
 // Process
 // pressure, busy ownership and control stops keep Retry; request-sized limits
 // ask for correction, while configuration and faults ask for the operator.
-pub(in crate::http::server) fn execution_resource(
-    denial: Resource,
-) -> (BankHttpMutationFailureKind, BankHttpDenial) {
+pub(in crate::http::server) fn execution_resource(denial: Resource) -> BankHttpDenial {
     let (kind, next) = match denial {
         Resource::MemoryLimit {
             level: Level::Process,
@@ -146,19 +125,13 @@ pub(in crate::http::server) fn execution_resource(
             BankHttpNextAction::ContactOperator,
         ),
     };
-    (
-        BankHttpMutationFailureKind::Aborted,
-        BankHttpDenial::new(kind, next),
-    )
+    BankHttpDenial::new(kind, next)
 }
 
-fn operator_denial() -> (BankHttpMutationFailureKind, BankHttpDenial) {
-    (
-        BankHttpMutationFailureKind::Aborted,
-        BankHttpDenial::new(
-            BankHttpDenialKind::InternalDenied,
-            BankHttpNextAction::ContactOperator,
-        ),
+fn operator_denial() -> BankHttpDenial {
+    BankHttpDenial::new(
+        BankHttpDenialKind::InternalDenied,
+        BankHttpNextAction::ContactOperator,
     )
 }
 

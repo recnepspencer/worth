@@ -110,13 +110,17 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
     )
     .unwrap();
     // Both policies encode the SAME actual native payload and accepted rows.
-    // Policy changes physical custody, never the authenticated v9 grammar.
+    // Policy changes physical custody, never the authenticated v10 grammar.
     assert_eq!(system.bytes(), checkpoint.bytes());
     assert_eq!(system.charged_payload_bytes(), None);
     assert_eq!(system_sections.total_bytes(), sections.total_bytes());
     drop(system);
     let native = decoded.native;
-    assert_eq!(native.bytes().as_ptr(), pointer.wrapping_add(66));
+    // Independent current wire layout: magic, checksum, Query/facts/instances
+    // versions (u16 each), bootstrap commit, native length and accepted count.
+    const NATIVE_OFFSET: usize =
+        8 + 32 + 3 * std::mem::size_of::<u16>() + 3 * std::mem::size_of::<u64>();
+    assert_eq!(native.bytes().as_ptr(), pointer.wrapping_add(NATIVE_OFFSET));
     let native_clone = native.clone();
     assert_eq!(native_clone.bytes().as_ptr(), native.bytes().as_ptr());
     drop(lease);

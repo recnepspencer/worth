@@ -59,10 +59,10 @@ impl ExecutionAuthority {
         &self,
         policy: &ExecutionRequestPolicy,
     ) -> Result<(), ExecutionPolicyDenial> {
-        if let DeterminismContract::ContractEquivalent(id) = policy.determinism() {
-            if self.inner.equivalences.get(id).is_none() {
-                return Err(ExecutionPolicyDenial::ContractUnavailable);
-            }
+        if let DeterminismContract::ContractEquivalent(id) = policy.determinism()
+            && self.inner.equivalences.get(id).is_none()
+        {
+            return Err(ExecutionPolicyDenial::ContractUnavailable);
         }
         let budget = policy.budget();
         if budget.max_workers().get() > self.inner.config.max_workers.get() {

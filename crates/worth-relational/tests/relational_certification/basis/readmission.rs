@@ -9,7 +9,8 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn transported_descriptor_requires_owner_readmission() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -32,7 +33,8 @@ fn transported_descriptor_requires_owner_readmission() {
 
 #[test]
 fn unretained_descriptor_cannot_follow_a_moved_reference() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());

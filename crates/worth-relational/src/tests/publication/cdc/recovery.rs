@@ -7,7 +7,10 @@ fn subscriber_stream_recovers_from_durable_canonical_envelopes_when_checkpoint_i
 
     let runtime = persisted_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let _second = create_entity_outcome(execution, &runtime, "b");
 
     assert!(runtime
@@ -43,9 +46,15 @@ fn subscriber_stream_reports_durable_latest_available_checkpoint_when_latest_hea
 
     let runtime = persisted_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let second = create_entity_outcome(execution, &runtime, "b");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     assert!(runtime
         .history_authority()

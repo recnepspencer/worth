@@ -1,12 +1,12 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use serde_json::{json, Value};
 
-#[path = "support/durable_product_mutation/mod.rs"]
-mod durable_support;
-#[path = "support/route_assembly_phase_twelve/request_driver.rs"]
-mod request_driver;
+#[allow(unused_imports)]
+use crate::shared_support_durable_product_mutation as durable_support;
+#[allow(unused_imports)]
+use crate::shared_support_route_assembly_phase_twelve_request_driver as request_driver;
 
 use durable_support::{
     build_server, execute, result_body, session, session_with_principal, TestDurableProductExecutor,

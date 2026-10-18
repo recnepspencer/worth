@@ -161,14 +161,14 @@ async fn serve_dispatch(
         Err(rejection) => return fault_behavior::reject(stream, rejection).await,
     };
     let reserve_new = fault_script != FaultScript::DisappearMidDispatch;
-    if let Some(sender) = state.completion_delivery() {
-        if !sender.admits_envelope(correlation, &dispatch.payload) {
-            return fault_behavior::reject(
-                stream,
-                crate::protocol::notice::RailRejection::CompletionEnvelopeInvalid,
-            )
-            .await;
-        }
+    if let Some(sender) = state.completion_delivery()
+        && !sender.admits_envelope(correlation, &dispatch.payload)
+    {
+        return fault_behavior::reject(
+            stream,
+            crate::protocol::notice::RailRejection::CompletionEnvelopeInvalid,
+        )
+        .await;
     }
     let mut delivery =
         if reserve_new && owners.ledger.status_of(correlation) == LedgerStatus::NoRecord {

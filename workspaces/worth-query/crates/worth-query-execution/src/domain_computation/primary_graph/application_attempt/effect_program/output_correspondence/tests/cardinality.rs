@@ -124,18 +124,25 @@ fn a_write_whose_cardinality_differs_from_the_declaration_is_refused() {
 
 #[test]
 fn checkpoint_readmission_keeps_absence_a_value() {
+    let host = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(64 << 20),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&host);
     let entity = EntityId::new(PartitionId::main(), 55, 1);
     let readmitted = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<Binding>(),
         TypeId::of::<OptionalOutputs>(),
-        BTreeSet::from(["companion".to_owned()]),
-        vec![WorthQueryCheckpointOutputRole {
+        ["companion"].into_iter(),
+        &[WorthQueryCheckpointOutputRole {
             role: "preserved".into(),
             posture: WorthQueryApplicationOutputPosture::Preserve,
             entity_name: "entity".into(),
             entity,
         }],
         |_| Some(TypeId::of::<Entity>()),
+        &execution,
     )
     .unwrap();
 

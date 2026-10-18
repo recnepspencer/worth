@@ -83,7 +83,7 @@ fn eager(registry: &WorthQueryOutputDemandRegistry) {
 
 pub(in super::super::super) fn value(
     registry: &WorthQueryOutputDemandRegistry,
-) -> impl PartialEq + std::fmt::Debug {
+) -> impl PartialEq + std::fmt::Debug + use<> {
     let state = registry.state.lock().unwrap();
     let records: Vec<_> = state
         .records

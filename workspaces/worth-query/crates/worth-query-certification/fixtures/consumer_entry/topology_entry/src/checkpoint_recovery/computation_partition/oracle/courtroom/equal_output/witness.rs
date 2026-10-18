@@ -46,7 +46,7 @@ fn changed_consumed_witness_with_equal_input_contacts_once_for_one_and_several_o
                     .execute()
                     .unwrap();
                 request
-                    .mutate(PlanarSourceAdjustment {
+                    .advanced().mutate(PlanarSourceAdjustment {
                         scope_key: "anchor-b".to_owned(),
                         replacement_y: length(value),
                     })

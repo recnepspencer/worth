@@ -26,6 +26,7 @@ major runtimes have their own workspaces, documentation, tests, and lifecycle.
 | Understand how the platform works, from the substrate up to one request | [How WORTH Works](docs/how-it-works.md) |
 | Look up an exact term | [Glossary](docs/glossary.md) |
 | **Build an application: declare features and a program, install the application graph, author workflows, adopt a new program** | [**Build an Application**](docs/build-an-application.md) |
+| **Check whether a capability exists, and the one way to use it** | [**Capability Index**](docs/capability-index.md) |
 | Find which crate to import for any job | [API Map](docs/api.md) |
 | Contribute to the platform itself | [Coding Guidelines](docs/coding-guidelines/) and [AGENTS.md](AGENTS.md) |
 | Browse every public document | [Documentation index](docs/README.md) |
@@ -36,6 +37,9 @@ Then write it from [Build an Application](docs/build-an-application.md): the
 exact calls to declare features and a program, install the application graph,
 run it, author and run workflows, and adopt a new program on a branch.
 A Query application imports only `worth-query-decl` and `worth-query-host`.
+Before you conclude that the platform lacks something, look it up in the
+[Capability Index](docs/capability-index.md) and follow its procedure. Never
+build a second way to do something the platform already does.
 Servers, UIs, and standalone runtimes have their own entry points; see
 [API Map §6](docs/api.md#6-standalone-runtimes-and-hosts). Everything else is
 how the platform keeps its promises.

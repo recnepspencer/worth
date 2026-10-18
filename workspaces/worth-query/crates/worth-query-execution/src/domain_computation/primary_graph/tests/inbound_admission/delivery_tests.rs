@@ -41,7 +41,7 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
             Some(CommitId(u64::MAX)),
             2,
             CommitTouchInterest {
-                entities: &unwatched,
+                entities: (&unwatched).into(),
                 every_commit: true,
             },
         )

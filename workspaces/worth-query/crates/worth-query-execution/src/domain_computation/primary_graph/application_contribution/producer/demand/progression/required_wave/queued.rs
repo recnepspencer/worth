@@ -77,22 +77,28 @@ impl QueuedRequiredRoots {
         })
     }
 
-    /// Once the caller's outcome is decided, nothing a queued root meets can
-    /// replace it: held items requeue on drop and their errors surface on
-    /// their own demands. Earlier errors are the caller's own.
+    /// Ordinary queued diagnostics cannot replace a decided caller. Actual
+    /// native cleanup custody must instead reach its caller's owning handoff;
+    /// holding a queue token or cloning diagnostics cannot preserve that terminal.
     pub(super) fn conclude(
         &mut self,
         result: Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>,
     ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial> {
         match result {
-            Err(stop)
+            Err(mut stop) => {
+                if let Some(cleanup) = stop.take_managed_cleanup() {
+                    return Err(stop.with_managed_cleanup(cleanup));
+                }
                 if self.draining()
                     && !matches!(
                         stop.kind(),
                         WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
-                    ) =>
-            {
-                Ok(self.take_caller())
+                    )
+                {
+                    Ok(self.take_caller())
+                } else {
+                    Err(stop)
+                }
             }
             result => result,
         }
@@ -278,6 +284,15 @@ impl QueuedRequiredRoots {
         stop: Option<WorthQueryOutputDemandDenial>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let stop = match stop {
+            Some(mut stop) => {
+                if let Some(cleanup) = stop.take_managed_cleanup() {
+                    return Err(stop.with_managed_cleanup(cleanup));
+                }
+                Some(stop)
+            }
+            None => None,
+        };
         if let Some(stop) = stop.filter(is_budget) {
             return Err(stop);
         }

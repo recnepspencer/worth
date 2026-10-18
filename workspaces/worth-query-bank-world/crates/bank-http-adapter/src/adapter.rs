@@ -39,9 +39,10 @@ impl AuthentikOidcAdapter {
 
     pub(crate) async fn discover_for_cold_certification_for_test(
         configuration: AuthentikOidcConfiguration,
+        trusted_root_pem: Option<&[u8]>,
         scope: &WorthQueryRequestScope,
     ) -> Result<Self, AuthentikOidcAdapterBuildError> {
-        let http_client = crate::client::cold_certification_http_client_for_test()?;
+        let http_client = crate::client::cold_certification_http_client_for_test(trusted_root_pem)?;
         Self::discover_with_http_client(configuration, http_client, scope).await
     }
 

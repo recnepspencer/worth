@@ -15,30 +15,6 @@ pub struct UnifiedFacadeRejectionRowSpec {
     pub failure_class: UnifiedFacadeFailureClass,
 }
 
-pub const UNIFIED_FACADE_REQUIRED_CANONICAL_ROW_NAMES: &[&str] = &[
-    "unified-query-read-capability",
-    "unified-query-context-capability",
-    "unified-identity-evolution-capability",
-    "unified-query-context-basis-result-bundle",
-    "unified-query-context-diff-result-bundle",
-    "unified-live-capability",
-    "unified-preview-capability",
-    "unified-workflow-capability",
-    "unified-historical-capability",
-    "unified-config-section-explicitness",
-    "capability-support-metadata-sync",
-    "query-context-support-profile-sync",
-    "identity-evolution-support-profile-sync",
-];
-
-pub const UNIFIED_FACADE_REQUIRED_REJECTION_ROW_NAMES: &[&str] = &[
-    "missing-owning-live-section",
-    "invalid-workflow-support-posture",
-    "deferred-durable-artifacts",
-    "invalid-unified-configuration",
-    "broad-collection-diff-denied",
-];
-
 pub const UNIFIED_FACADE_CANONICAL_ROW_SPECS: &[UnifiedFacadeCanonicalRowSpec] = &[
     UnifiedFacadeCanonicalRowSpec {
         row_name: "unified-query-read-capability",

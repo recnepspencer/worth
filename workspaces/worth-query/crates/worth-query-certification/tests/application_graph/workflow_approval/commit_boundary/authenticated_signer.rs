@@ -1,15 +1,14 @@
 //! A genuine second authentication event cannot replace the natively admitted approver.
 use super::super::super::document_retention_model::{
-    host::DocumentWorkflowRuntime,
-    operator_identity::{block_on, secondary_signer_identity},
-    schema::{Document, DocumentPrincipalBinding, DocumentRetentionSchema},
-    workflow::{WorkflowAdvanceInput, WorkflowAdvanceOperation, WorkflowApprovalCapability},
+    operator_identity::{authenticate_reviewer, block_on, secondary_signer_identity},
+    workflow::{WorkflowAdvanceInput, WorkflowApprovalIntent},
 };
 use super::*;
 use std::time::{Duration, SystemTime};
 use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial;
 use worth_query_host::facade::{
-    admission::authenticated_principal::*, primary_graph::WorthQueryPrincipalResolutionMode,
+    admission::authenticated_principal::*,
+    application_entry::WorthQueryWorkflowAdvancePreparationDenial,
 };
 
 struct SecondarySigner;
@@ -42,85 +41,13 @@ impl WorthQueryAuthenticationAdapter for SecondarySigner {
     }
 }
 
-type Prepared = PreparedWorkflowAdvance<
-    DocumentRetentionSchema,
-    WorkflowAdvanceOperation,
-    WorkflowAdvanceInput,
-    Document,
->;
-
-fn prepare_as_operator(
-    application: &DocumentWorkflowRuntime,
-    external: &WorthQueryAuthenticatedExternalPrincipal<DocumentRetentionSchema>,
-    scope: &WorthQueryRequestScope,
-    instance: PublishedWorkflowInstanceRef,
-    proposal: &PublishedWorkflowProposalRef,
-    required: &RequiredWorkflowApproval,
-) -> Prepared {
-    let runtime = application.runtime();
-    runtime
-        .with_application_advancement(scope, |phase| {
-            let selected = runtime.on_branch(instance.branch()).select(&phase).unwrap();
-            let principal_binding = runtime
-                .installed_schema()
-                .principal_binding(DocumentPrincipalBinding::reference())
-                .unwrap();
-            let principal = selected
-                .resolve_authenticated_principal(
-                    &phase,
-                    &principal_binding,
-                    external,
-                    scope,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap();
-            let operation = runtime
-                .installed_schema()
-                .installed_operation(WorkflowAdvanceOperation::reference())
-                .unwrap();
-            let capability = runtime
-                .installed_schema()
-                .capability(
-                    WorkflowApprovalCapability::reference(),
-                    WorkflowAdvanceOperation::reference(),
-                )
-                .unwrap();
-            let access = selected
-                .admit_capability_access(
-                    &phase,
-                    &principal,
-                    &capability,
-                    WorkflowAdvanceInput {
-                        document_identity: DOCUMENT_IDENTITY.to_owned(),
-                    },
-                    scope,
-                )
-                .unwrap();
-            let admission = runtime
-                .authorize_capability_operation(&phase, access, &operation, Default::default())
-                .unwrap();
-            Adapter::prepare_approval::<_, WorkflowApprovalCapability, _, _, _, _>(
-                &phase,
-                &selected,
-                application.vocabulary(),
-                instance,
-                required,
-                proposal,
-                WorkflowApprovalDecision::Approve,
-                admission,
-            )
-            .unwrap()
-        })
-        .unwrap()
-}
-
 #[test]
-fn advanced_approval_cannot_reauthenticate_as_a_different_admitted_signer() {
+fn approval_owner_rejects_authentication_from_another_principal() {
     let (application, _, instance, proposal, required, _) =
         approval_journey("signer-affinity", 25_000);
     let runtime = application.runtime();
     let scope = request_scope();
-    let operator = authenticate_operator(runtime.installed_schema(), &scope);
+    let reviewer = authenticate_reviewer(runtime.installed_schema(), &scope);
     let secondary = block_on(
         admit_authentication_adapter(
             runtime.installed_schema(),
@@ -134,15 +61,28 @@ fn advanced_approval_cannot_reauthenticate_as_a_different_admitted_signer() {
         .authenticate((), &scope),
     )
     .unwrap();
-    let prepared = prepare_as_operator(
-        &application,
-        &operator,
-        &scope,
-        instance.clone(),
-        &proposal,
-        &required,
-    );
-    let intent = prepared.approval_authentication_intent().unwrap().clone();
+    // The native owner supplies the original actor context and freshly admits
+    // a reviewer distinct from the proposer; the test must not restate that admission.
+    let key = 25_005;
+    let signing = runtime
+        .request(&reviewer, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowApprovalIntent {
+            input: WorkflowAdvanceInput {
+                document_identity: DOCUMENT_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&key)
+        .prepare_workflow_approval(
+            &application,
+            instance.clone(),
+            &required,
+            &proposal,
+            WorkflowApprovalDecision::Approve,
+        )
+        .unwrap();
+    let intent = signing.authentication_intent().unwrap().clone();
     let event = block_on(application.authentication().authenticate(
         (),
         &secondary,
@@ -150,10 +90,12 @@ fn advanced_approval_cannot_reauthenticate_as_a_different_admitted_signer() {
         &scope,
     ))
     .unwrap();
-    assert_eq!(
-        prepared.sign_approval(&event, &secondary, &scope).err(),
-        Some(WorthQueryAuthenticationEventDenial::PrincipalMismatch)
-    );
+    assert!(matches!(
+        signing.sign(&event).err(),
+        Some(WorthQueryWorkflowAdvancePreparationDenial::Authentication(
+            WorthQueryAuthenticationEventDenial::PrincipalMismatch
+        ))
+    ));
     // Rejection occurs before consumption: this genuine event still has its one use.
     let unused = application
         .authentication()

@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::durability::data::{DurableCheckpoint, DurableStore};
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
@@ -16,9 +16,18 @@ use state::DurabilityState;
 pub(crate) struct DurabilitySubsystem {
     state: RuntimeOwnedState<DurabilityState>,
     fail_next_append: AtomicBool,
+    store_io: Arc<Mutex<()>>,
 }
 
 impl DurabilitySubsystem {
+    pub(crate) fn lock_store(&self) -> MutexGuard<'_, ()> {
+        self.store_io
+            .lock()
+            .expect("native store I/O lock poisoned")
+    }
+    pub(crate) fn try_lock_store(&self) -> std::sync::TryLockResult<MutexGuard<'_, ()>> {
+        self.store_io.try_lock()
+    }
     pub(crate) fn push_log_envelope(&self, commit: PositionedCanonicalCommit) {
         self.state.write().push_log_envelope(commit);
     }
@@ -101,6 +110,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
         Self {
             state: RuntimeOwnedState::new(DurabilityState::build_from_config(config)),
             fail_next_append: AtomicBool::new(false),
+            store_io: Arc::new(Mutex::new(())),
         }
     }
 
@@ -108,6 +118,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
         Self {
             state: self.state.detached(),
             fail_next_append: AtomicBool::new(self.fail_next_append.load(Ordering::Acquire)),
+            store_io: Arc::clone(&self.store_io),
         }
     }
 }

@@ -8,7 +8,7 @@ use super::super::authentication::BankHttpApplicationAuthenticator;
 use super::super::recovery_registry::BankHttpRecoveryRegistry;
 use super::{outcome::*, AdmittedBankHttpRecoveryRequest};
 
-pub(super) async fn execute_inspection<A>(
+pub(in crate::http::server) async fn execute_inspection<A>(
     application: &A,
     registry: &mut BankHttpRecoveryRegistry,
     request: AdmittedBankHttpRecoveryRequest,

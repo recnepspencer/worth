@@ -38,7 +38,7 @@ where
 }
 
 use super::super::super::{
-    Account, AccountLabel, AccountStatus, IdentityExecutionSchema, Principal,
+    Account, AccountIdentity, AccountLabel, AccountStatus, IdentityExecutionSchema, Principal,
 };
 use super::super::declaration::{
     CapabilityAction, CapabilityActionBinding, CapabilityActionField, CapabilityAmountField,
@@ -183,6 +183,10 @@ pub(in crate::domain_computation::primary_graph::tests::fixture::capability) fn 
             CompleteCapabilityReviewOperation::reference(),
         ))
         .operation_projection_work_budget(ElevatedCapabilityTouchOperation::reference(), 32)
+        .operation_read_field(
+            ElevatedCapabilityTouchOperation::reference(),
+            AccountIdentity::reference(),
+        )
         .operation_read_field(
             ElevatedCapabilityTouchOperation::reference(),
             AccountLabel::reference(),
@@ -370,8 +374,7 @@ fn composition_with_propagation(
         ),
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
-            ApplicationCapabilityDistinctActorRule::not_applicable(),
-        ),
+            ApplicationCapabilityDistinctActorRule::not_applicable(), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         propagation,
     )
 }

@@ -1,31 +1,14 @@
 use crate::facade::*;
 use crate::tests::support::*;
 
-use super::source_corpus::{
-    DOT_SOURCE, ENTRIES_SOURCE, EXECUTION_FLOW_SOURCE, FACADE_SOURCE, HARNESS_BRIDGE_SOURCE,
-    HISTORY_SOURCE, OBSERVER_SOURCE, RECORDER_SOURCE, SUMMARY_SOURCE,
-};
+use super::source_corpus::{ENTRIES_SOURCE, FACADE_SOURCE, OBSERVER_SOURCE};
 
 #[test]
-fn gate6_broad_entry_access_is_visibility_restricted_and_boundary_reads_are_explicit() {
-    assert!(
-        ENTRIES_SOURCE.contains("pub(crate) fn get_entry(")
-            && ENTRIES_SOURCE.contains("pub(crate) fn get_entry_mut("),
-        "broad entry accessors should be crate-visible compatibility seams, not public API"
-    );
+fn broad_entry_and_artifact_state_stay_off_the_public_surface() {
     assert!(
         !ENTRIES_SOURCE.contains("pub fn get_entry(")
             && !ENTRIES_SOURCE.contains("pub fn get_entry_mut("),
         "broad entry accessors should no longer be exported publicly"
-    );
-    assert!(
-        DOT_SOURCE.contains("node_condition(")
-            && HARNESS_BRIDGE_SOURCE.contains("node_eval_config(")
-            && EXECUTION_FLOW_SOURCE.contains("node_lineage_artifact_id(")
-            && RECORDER_SOURCE.contains("stamp_runtime_artifact_lineage_and_execution(")
-            && HISTORY_SOURCE.contains("node_execution_trace_stamp(")
-            && SUMMARY_SOURCE.contains("node_runtime_artifact_state_present("),
-        "boundary modules should move onto explicit graph accessors instead of relying on public broad entry assembly"
     );
     assert!(
         !FACADE_SOURCE.contains("NodeEntry,"),

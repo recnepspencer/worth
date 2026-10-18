@@ -244,6 +244,8 @@ fn request_response(
 ) -> (StatusCode, Json<BankHttpElevationRequestOutcome>) {
     let status = match &outcome {
         BankHttpElevationRequestOutcome::Requested { .. } => StatusCode::OK,
+        BankHttpElevationRequestOutcome::CleanupRequired { .. }
+        | BankHttpElevationRequestOutcome::OutcomeUnknown { .. } => StatusCode::ACCEPTED,
         BankHttpElevationRequestOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))
@@ -254,6 +256,8 @@ fn approval_response(
 ) -> (StatusCode, Json<BankHttpElevationApprovalOutcome>) {
     let status = match &outcome {
         BankHttpElevationApprovalOutcome::Approved { .. } => StatusCode::OK,
+        BankHttpElevationApprovalOutcome::CleanupRequired { .. }
+        | BankHttpElevationApprovalOutcome::OutcomeUnknown { .. } => StatusCode::ACCEPTED,
         BankHttpElevationApprovalOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))
@@ -264,6 +268,8 @@ fn revocation_response(
 ) -> (StatusCode, Json<BankHttpElevationRevocationOutcome>) {
     let status = match &outcome {
         BankHttpElevationRevocationOutcome::Closed { .. } => StatusCode::OK,
+        BankHttpElevationRevocationOutcome::CleanupRequired { .. }
+        | BankHttpElevationRevocationOutcome::OutcomeUnknown { .. } => StatusCode::ACCEPTED,
         BankHttpElevationRevocationOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))
@@ -274,6 +280,8 @@ fn review_response(
 ) -> (StatusCode, Json<BankHttpMandatoryReviewOutcome>) {
     let status = match &outcome {
         BankHttpMandatoryReviewOutcome::Reviewed { .. } => StatusCode::OK,
+        BankHttpMandatoryReviewOutcome::CleanupRequired { .. }
+        | BankHttpMandatoryReviewOutcome::OutcomeUnknown { .. } => StatusCode::ACCEPTED,
         BankHttpMandatoryReviewOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))

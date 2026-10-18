@@ -1,3 +1,6 @@
+mod advancement;
+pub use advancement::WorthQueryCommandSettlementDenial;
+
 /// Why recovering a deferred settlement did not return a commit receipt.
 ///
 /// The commit was already performed; recovery only completes its settlement.

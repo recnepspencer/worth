@@ -31,6 +31,8 @@ pub(super) fn lower_proposal(
     let source_identity = planned_field_locator(PROPOSAL_ASPECT, "source-identity")?;
     let node_path = planned_field_locator(PROPOSAL_ASPECT, "node-path")?;
     let coverage_count = planned_field_locator(PROPOSAL_ASPECT, "coverage-count")?;
+    let proposer =
+        super::super::actor::record::WorkflowActorFields::planned(PROPOSAL_ASPECT, "proposer")?;
     let shape = aspects()
         .struct_fields()
         .required("identity", ScalarAspectType::String)
@@ -41,6 +43,9 @@ pub(super) fn lower_proposal(
         .optional("source-identity", ScalarAspectType::String)
         .required("node-path", ScalarAspectType::String)
         .required("coverage-count", ScalarAspectType::UInt64)
+        .required("proposer-partition", ScalarAspectType::UInt64)
+        .required("proposer-slot", ScalarAspectType::UInt64)
+        .required("proposer-generation", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(PROPOSAL_ASPECT))?;
     let registry = register_platform_entity(
@@ -56,6 +61,8 @@ pub(super) fn lower_proposal(
     Ok((
         registry,
         WorkflowProposalLayout {
+            proposer,
+
             entity_kind: kind,
             identity: identity_field,
             protocol_version,

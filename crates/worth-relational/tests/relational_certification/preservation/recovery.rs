@@ -12,7 +12,8 @@ use worth_relational::facade::history::BranchId;
 /// handle, fresh-process, or durable-owner lifecycle contract.
 #[test]
 fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let scale = SupplyChainScale::court();
@@ -50,12 +51,16 @@ fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
     world
         .runtime
         .durability_authority()
-        .checkpoint()
+        .checkpoint(execution)
         .expect("checkpoint captures exact branch roots");
     let plan = world
         .runtime
         .durability()
-        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .expect("original request admits native recovery input");
     let mut recovered = canonical_empty_supply_chain_runtime(scale);
     recovered
         .durability_recovery()

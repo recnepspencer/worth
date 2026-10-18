@@ -127,8 +127,7 @@ fn composition() -> ApplicationCapabilityComposition {
         ),
         ApplicationCapabilityActorComposition::new(
             ApplicationCapabilitySeparationOfDutyRule::when(anchored_graph(request_actor)),
-            ApplicationCapabilityDistinctActorRule::when(anchored_graph(prior_actor)),
-        ),
+            ApplicationCapabilityDistinctActorRule::when(anchored_graph(prior_actor)), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
         ApplicationCapabilityPropagationComposition::new(
             ApplicationCapabilityDelegationRule::narrow_all_dimensions(
                 worth_query_declaration::facade::application_capability::ApplicationCapabilityDelegationDepth::new(1)

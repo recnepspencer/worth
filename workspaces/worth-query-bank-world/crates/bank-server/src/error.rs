@@ -45,7 +45,10 @@ pub enum BankIdentityRuntimeBuildError {
     InstalledOperation(WorthQueryApplicationOperationInstallationDenial),
     InstalledBinding(WorthQueryPrincipalBindingInstallationDenial),
     WorkflowInstallation(WorthQueryApplicationWorkflowInstallationDenial),
-    WorkflowRuntimeBinding(WorthQueryWorkflowRuntimeBindingDenial),
+    WorkflowRuntimeBinding {
+        binding: Box<crate::BankIdentityRuntimeWorkflowBinding>,
+        denial: WorthQueryWorkflowRuntimeBindingDenial,
+    },
     WorkflowAuthenticationInstallation(WorthQueryAuthenticationEventDenial),
 }
 
@@ -64,7 +67,7 @@ impl std::fmt::Display for BankIdentityRuntimeBuildError {
             Self::InstalledOperation(error) => error.fmt(formatter),
             Self::InstalledBinding(error) => error.fmt(formatter),
             Self::WorkflowInstallation(error) => error.fmt(formatter),
-            Self::WorkflowRuntimeBinding(error) => error.fmt(formatter),
+            Self::WorkflowRuntimeBinding { denial, .. } => denial.fmt(formatter),
             Self::WorkflowAuthenticationInstallation(error) => error.fmt(formatter),
         }
     }
@@ -85,7 +88,7 @@ impl std::error::Error for BankIdentityRuntimeBuildError {
             Self::InstalledOperation(error) => error,
             Self::InstalledBinding(error) => error,
             Self::WorkflowInstallation(error) => error,
-            Self::WorkflowRuntimeBinding(error) => error,
+            Self::WorkflowRuntimeBinding { denial, .. } => denial,
             Self::WorkflowAuthenticationInstallation(error) => error,
         })
     }

@@ -57,6 +57,29 @@ pub(super) fn capability_world_with_specialist_authority(
     })
 }
 
+pub(super) fn adoption_context_world(scenario: &str) -> CapabilityFixture {
+    let grant = crate::BankProgramDeploymentGrantSeed::for_program::<crate::BankApplication>(
+        "adoption-context-deployment",
+        SPECIALIST,
+        SPECIALIST,
+        0,
+        u64::MAX,
+    )
+    .expect("explicit canonical P0 deployment authority");
+    capability_fixture(world::install_fixture_world_with_deployment(
+        FixtureWorldSpec {
+            scenario,
+            spec: GrantSpec::recognize(),
+            case_stage: EstateWorkflowStage::Administration,
+            specialist_holds_authority: true,
+            unrelated_grants: 0,
+            composition: FixtureWorldComposition::Admission,
+            alternate_emergency_bound: None,
+        },
+        grant,
+    ))
+}
+
 pub(super) fn capability_world_with_unrelated_grants(
     scenario: &str,
     spec: GrantSpec,

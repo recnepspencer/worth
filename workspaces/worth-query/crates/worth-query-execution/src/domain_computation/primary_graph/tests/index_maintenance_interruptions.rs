@@ -36,6 +36,18 @@ fn index_currency_stop(cancelled: bool) {
             assert_eq!(currency_stop(denied), Some(Err(Control::Cancelled)));
             return;
         }
+        // Both twins reconstruct the same cold inventory. The installed
+        // world may already carry generations before this first measurement.
+        for index in handle.primary_index_ids.iter() {
+            runtime
+                .index_authority()
+                .discard_generations(
+                    worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(
+                        *index,
+                    ),
+                )
+                .unwrap();
+        }
         let (enough, report) = setup
             .run(ExecutionWorkCeiling::new(100_000), |_| {
                 handle.ensure_primary_indexes_for_basis(&setup, runtime, &basis)

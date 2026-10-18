@@ -13,7 +13,7 @@ use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
     application_entry::{
         WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
-        WorthQueryOutputDemandControls, WorthQueryProgramOutputCurrentnessDenial,
+        WorthQueryOutputCurrentnessDenial, WorthQueryOutputDemandControls,
     },
     application_installation::{self, WorthQueryInMemoryApplicationLimits},
     primary_graph::{self, WorthQueryOutputDemandDenialKind},
@@ -39,6 +39,7 @@ mod parallel_history;
 mod producer_domain_denial;
 pub(crate) mod required_chain;
 mod reuse_opt_out;
+mod root_delivery;
 mod stable_refresh;
 mod support;
 use support::{authenticate, install, length};
@@ -156,6 +157,7 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
         .execute()
         .expect("the unrelated source is readable");
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-isolated".to_owned(),
             replacement_y: length(51),
@@ -202,6 +204,7 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
         .execute()
         .expect("the unrelated source is readable");
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-isolated".to_owned(),
             replacement_y: length(51),
@@ -301,6 +304,7 @@ fn settle_for<'application, 'principal, 'scope>(
         .unwrap(),
     );
     let mut output = request
+        .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
             application,
             PlanarOutputDemand::new(root),

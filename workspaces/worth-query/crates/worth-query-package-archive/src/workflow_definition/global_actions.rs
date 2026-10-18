@@ -40,7 +40,6 @@ pub(super) fn encode(
                     .0,
                 &operation
                     .workflow_execution_requirements()
-                    .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?
                     .persistence_identity(),
             ] {
                 super::records::text(output, value)?;
@@ -78,7 +77,7 @@ pub(super) fn command<Schema: ApplicationSchema, Spec: ApplicationWorkflowSpec<S
         .draft_operation(&action.operation, Some(&action.binding))
         .ok_or_else(|| denial(Refused::UnknownMember, &action.operation))?;
     if operation.input_type().as_str() != action.input_type
-        || operation.workflow_execution_requirements() != Some(&action.requirements)
+        || operation.workflow_execution_requirements() != &action.requirements
     {
         return Err(denial(Refused::ChangedMember, &action.operation));
     }

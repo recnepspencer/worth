@@ -172,3 +172,5 @@ fn required_local_action<Schema, Operation, Input, Scope>(
         _ => Err(unavailable),
     }
 }
+
+mod ordinary;

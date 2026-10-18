@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::facade::diagnostics::DiagnosticCode;
 use crate::facade::query::PlannedQueryPacket;
 use crate::facade::replay::ReplayFailureClass;
@@ -13,12 +14,14 @@ fn fintech_persisted_workflow_recovers_checkpoint_tail_and_keeps_queryable_portf
     let mut world = setup_world_for(execution, FintechScenario::PersistedSmokeBook);
     let analysis = open_analysis_branch(&mut world);
     let _shock = shock_market_on_branch(execution, &mut world, analysis.clone());
-    let _checkpoint = checkpoint_world(&mut world).unwrap();
+    let _checkpoint = checkpoint_world(execution, &mut world).unwrap();
     let _correction = correct_seeded_trade_candidate(execution, &mut world, analysis);
     let expected = {
-        let plan = world.runtime.durability().recovery_plan(
-            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-        );
+        let plan = world
+            .runtime
+            .durability()
+            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+            .unwrap();
         let mut recovered = FintechWorld::setup_persisted_world(execution).runtime;
         let outcome = recovered
             .durability_recovery()
@@ -171,10 +174,14 @@ fn fintech_failure_injection_helpers_cover_savepoints_replay_and_checkpoint_corr
     );
 
     let mut persisted = setup_world_for(execution, FintechScenario::PersistedSmokeBook);
-    checkpoint_world(&mut persisted).unwrap();
-    let path = corrupt_latest_checkpoint_file(&persisted.runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    ));
+    checkpoint_world(execution, &mut persisted).unwrap();
+    let path = corrupt_latest_checkpoint_file(
+        &persisted
+            .runtime
+            .durability()
+            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+            .unwrap(),
+    );
     assert!(path.is_some());
 }
 
@@ -216,7 +223,7 @@ fn fintech_persisted_workflow_supports_compaction_after_checkpoint() {
     let mut world = setup_world_for(execution, FintechScenario::PersistedSmokeBook);
     let analysis = open_analysis_branch(&mut world);
     let _shock = shock_market_on_branch(execution, &mut world, analysis);
-    checkpoint_world(&mut world).unwrap();
+    checkpoint_world(execution, &mut world).unwrap();
     let pre_compaction_probe = capture_case_truth_probe(
         execution,
         &world,
@@ -295,7 +302,7 @@ fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
         analysis,
         correction.commit.clone(),
     );
-    checkpoint_world(&mut world).unwrap();
+    checkpoint_world(execution, &mut world).unwrap();
 
     let (recovered, _outcome) = recover_persisted_world(execution, &world).unwrap();
     let index_access = recovered.index_access();

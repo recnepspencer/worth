@@ -4,7 +4,9 @@ use worth_foundational::{
     JsonCompatibilityAspectInput, LocatorAuthority, ScalarAspectType, StructAspectShape,
 };
 
-use crate::foundational_vocabulary::{field, identity, key, revision, scalar_contract};
+use crate::certification::foundational_vocabulary::{
+    field, identity, key, revision, scalar_contract,
+};
 
 pub(super) fn task_summary_contract() -> AspectContract {
     let shape = StructAspectShape::new([

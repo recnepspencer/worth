@@ -1,4 +1,5 @@
 use super::*;
+use crate::BankMutationCommitOutcome;
 
 /// A prepared delegation decided on its parent's authority and on its child
 /// id naming no grant. An unrelated revocation moves neither fact. A commit
@@ -32,18 +33,17 @@ fn unrelated_revocation_preserves_the_prepared_delegation_and_a_taken_child_id_s
     let retry = prepare();
     let losing = prepare();
 
-    let revoked = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: UNRELATED_GOVERNANCE_GRANT,
-            },
-            &idempotency(139),
-            &request_scope(),
-        )
-        .expect("an unrelated authority should revoke independently");
+    let revoked = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        EstateAction::RevokeCapability {
+            estate: ESTATE,
+            grant: UNRELATED_GOVERNANCE_GRANT,
+        },
+        &idempotency(139),
+        &request_scope(),
+    )
+    .expect("an unrelated authority should revoke independently");
     assert!(matches!(revoked, BankMutationCommitOutcome::Committed(_)));
     let commit = |program, seed| {
         fixture
@@ -81,7 +81,8 @@ fn unrelated_revocation_preserves_the_prepared_delegation_and_a_taken_child_id_s
 
     // A request admitted after the commit reads the grant the id names and
     // is denied by the domain rule.
-    let late = fixture.runtime.delegate_estate_capability_with_key(
+    let late = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
         &specialist,
         action,
         &idempotency(145),

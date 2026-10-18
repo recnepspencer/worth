@@ -39,6 +39,12 @@ pub struct Decision<S> {
     computation_work: u64,
 }
 impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = Input;
     type InputBinding = InputBinding;
     type Result = Outcome;

@@ -112,14 +112,21 @@ impl Court {
             WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
                 TypeId::of::<Binding>(),
                 TypeId::of::<()>(),
-                BTreeSet::new(),
-                vec![WorthQueryCheckpointOutputRole {
+                std::iter::empty(),
+                &[WorthQueryCheckpointOutputRole {
                     role: role.to_owned(),
                     posture,
                     entity_name: "fixture".to_owned(),
                     entity: entity(output),
                 }],
                 |_| Some(TypeId::of::<()>()),
+                &worth_execution::ExecutionRequest::serial(
+                    &worth_execution::SerialRequest::from_memory(
+                        worth_execution::SerialMemoryBudget::new(64 << 20),
+                        worth_execution::CancellationToken::new(),
+                        None,
+                    ),
+                ),
             )
             .unwrap(),
         );

@@ -54,6 +54,7 @@ fn settle_and_close(
     usize,
 ) {
     let mut demand = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             application,
             PlanarOutputDemand::new(source),

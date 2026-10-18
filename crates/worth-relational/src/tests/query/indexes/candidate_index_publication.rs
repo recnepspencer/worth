@@ -1,3 +1,5 @@
+#[path = "candidate_index_publication/incremental_accounting.rs"]
+mod incremental_accounting;
 use super::*;
 use crate::facade::indexes::{
     DerivedIndexEntries, DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenialKind,

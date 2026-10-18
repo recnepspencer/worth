@@ -4,6 +4,7 @@
 //! Build the separate rail first: `cargo build -p bank-external-rail`.
 //! This example issues a real Bank outbox, lets the separate rail perform its
 //! consequence, and receives its signed callback through the installed host.
+#![recursion_limit = "256"]
 
 #[allow(dead_code)]
 #[path = "../../bank-server/tests/ordinary_mutations/authorization_time.rs"]
@@ -22,7 +23,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bank_domain::estate::{DeathNoticeStatus, EstateAction};
-use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::{BankSchema, EstateDeathNotificationEffect, NotifyDeathEstateOperation};
 use bank_external_rail::test_control::FaultScript;
 use bank_external_rail::{
@@ -33,23 +33,30 @@ use bank_http_adapter::{
     BankHttpServerConfiguration, BankRailCallbackServerBinding,
     BankRailCompletionServerInstallation,
 };
-use bank_server::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
+use bank_server::{BankAuthenticatedPrincipal, BankIdentityRuntime};
+#[path = "inbound_completion/notification_source.rs"]
+mod notification_source;
 use ed25519_dalek::SigningKey;
+use notification_source::ExampleFailure;
 use worth_query_decl::facade::application_schema::OperationEmits;
 
 use rail_transport::BankEstateRailTransport;
 
-fn main() -> Result<(), String> {
-    std::thread::Builder::new()
+fn main() -> Result<(), ExampleFailure> {
+    let close = std::thread::Builder::new()
         .name("inbound-completion-example".to_owned())
         .stack_size(16 * 1024 * 1024)
         .spawn(run)
         .map_err(|error| format!("example thread refused: {error}"))?
         .join()
-        .map_err(|_| "example thread panicked".to_owned())?
+        .map_err(|_| "example thread panicked".to_owned())??;
+    // The returned continuation remains owned through the reported assessment.
+    // Final example exit is not a promise of native disposal or crash durability.
+    println!("callback host stopped: {:?}", close.assessment());
+    Ok(())
 }
 
-fn run() -> Result<(), String> {
+fn run() -> Result<bank_http_adapter::BankRailCompletionClose, ExampleFailure> {
     let _declared = BankSchema::declaration().expect("Bank publishes its Query schema");
     fn require_declared_effect<Operation, Effect: OperationEmits<Operation>>() {}
     require_declared_effect::<NotifyDeathEstateOperation, EstateDeathNotificationEffect>();
@@ -91,7 +98,7 @@ async fn receive_completion(
     transport: &Arc<BankEstateRailTransport>,
     specialist: &BankAuthenticatedPrincipal,
     action: EstateAction,
-) -> Result<(), String> {
+) -> Result<bank_http_adapter::BankRailCompletionClose, ExampleFailure> {
     let rail_signer = SigningKey::from_bytes(&[7; 32]);
     let source = BankRailCompletionServerInstallation::new(
         rail_signer.verifying_key().to_bytes(),
@@ -158,11 +165,17 @@ async fn receive_completion(
     let result = exercise_completion(rail, runtime, transport, specialist, action, &server).await;
     let server =
         Arc::try_unwrap(server).unwrap_or_else(|_| panic!("response hook released its host"));
-    server
-        .shutdown()
-        .await
-        .map_err(|cause| format!("callback host close refused: {cause}"))?;
-    result
+    let shutdown = server.shutdown().await;
+    // One shutdown attempt is made even when the source attempt failed. Its
+    // failure cannot replace an error that owns the original native custody.
+    match (result, shutdown) {
+        (Err(original), close) => Err(ExampleFailure::SourceAndHost {
+            original: Box::new(original),
+            close: close.map(Box::new).map_err(Box::new),
+        }),
+        (Ok(()), Err(cause)) => Err(ExampleFailure::Host(Box::new(cause))),
+        (Ok(()), Ok(close)) => Ok(close),
+    }
 }
 
 async fn exercise_completion(
@@ -172,24 +185,12 @@ async fn exercise_completion(
     specialist: &BankAuthenticatedPrincipal,
     action: EstateAction,
     server: &bank_http_adapter::BankRailCallbackServer,
-) -> Result<(), String> {
+) -> Result<(), ExampleFailure> {
     tokio::task::block_in_place(|| {
         transport.under(FaultScript::CommitThenLoseResponse, Duration::from_secs(5));
     });
-    let receipt = tokio::task::block_in_place(|| {
-        runtime.notify_estate_death_with_key(
-            specialist,
-            action,
-            &BankIdempotencyKey::new("public-inbound-example").unwrap(),
-            &support::request_scope(),
-        )
-    })
-    .map_err(|cause| format!("Bank death notice refused: {cause:?}"))?;
-    let BankMutationCommitOutcome::Committed(receipt) = receipt else {
-        return Err(format!(
-            "the notification did not commit a fresh outbox: {receipt:?}"
-        ));
-    };
+    let receipt =
+        tokio::task::block_in_place(|| notification_source::issue(runtime, specialist, action))?;
     assert!(receipt.co_committed_dispatch_outbox());
     assert_eq!(receipt.emitted_effect_count(), 1);
     // This is only a selector copied from the actual Query-issued request.

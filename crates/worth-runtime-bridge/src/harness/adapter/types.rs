@@ -68,18 +68,55 @@ impl Default for BridgeHarnessSession {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BridgeHarnessError(String);
+#[derive(Debug)]
+pub struct BridgeHarnessError {
+    message: String,
+    preview: Option<
+        Box<(
+            crate::facade::BridgeSpeculativeSessionHandle,
+            crate::facade::BridgeSpeculationError,
+        )>,
+    >,
+}
 
 impl BridgeHarnessError {
     pub(crate) fn new(message: impl Into<String>) -> Self {
-        Self(message.into())
+        Self {
+            message: message.into(),
+            preview: None,
+        }
+    }
+
+    pub(crate) fn preview_refused(
+        preview: crate::facade::BridgeSpeculativeSessionHandle,
+        denial: crate::facade::BridgeSpeculationError,
+    ) -> Self {
+        Self {
+            message: format!("speculation transition refused: {denial}"),
+            preview: Some(Box::new((preview, denial))),
+        }
+    }
+
+    /// Recover the actual active preview after a certification transition refuses.
+    pub fn into_preview(
+        self,
+    ) -> Result<
+        (
+            crate::facade::BridgeSpeculativeSessionHandle,
+            crate::facade::BridgeSpeculationError,
+        ),
+        Self,
+    > {
+        match self.preview {
+            Some(preview) => Ok(*preview),
+            None => Err(self),
+        }
     }
 }
 
 impl std::fmt::Display for BridgeHarnessError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.message)
     }
 }
 

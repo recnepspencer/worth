@@ -1,7 +1,7 @@
 use bank_http_adapter::{
-    BankHttpElevationApprovalOutcome, BankHttpElevationRequestOutcome,
+    BankHttpEffectControls, BankHttpElevationApprovalOutcome, BankHttpElevationRequestOutcome,
     BankHttpElevationRevocationOutcome, BankHttpEmergencyAccessReason,
-    BankHttpMandatoryReviewOutcome, BankHttpMutationControls, BankHttpRestrictedBankField,
+    BankHttpMandatoryReviewOutcome, BankHttpRestrictedBankField,
 };
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +11,7 @@ use super::BankUserNodeDenial;
 #[serde(deny_unknown_fields)]
 pub struct BankUserNodeElevationRequest {
     pub request_id: String,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub estate: String,
     pub access: u64,
@@ -26,7 +26,7 @@ pub struct BankUserNodeElevationRequest {
 #[serde(deny_unknown_fields)]
 pub struct BankUserNodeElevationApprovalRequest {
     pub request_id: String,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub elevation: String,
 }
@@ -35,7 +35,7 @@ pub struct BankUserNodeElevationApprovalRequest {
 #[serde(deny_unknown_fields)]
 pub struct BankUserNodeElevationRevocationRequest {
     pub request_id: String,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub elevation: String,
 }
@@ -44,7 +44,7 @@ pub struct BankUserNodeElevationRevocationRequest {
 #[serde(deny_unknown_fields)]
 pub struct BankUserNodeMandatoryReviewRequest {
     pub request_id: String,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub mandatory_review: String,
 }

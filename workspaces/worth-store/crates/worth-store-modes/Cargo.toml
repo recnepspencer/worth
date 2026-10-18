@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-modes"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Durable, embedded, and absent Store mode contracts."

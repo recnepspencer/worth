@@ -32,14 +32,16 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
             0,
         ))))
         .expect("rail port should install once");
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application),
         BankHttpServerConfiguration::local_ephemeral()
             .with_opaque_handle_capacity(NonZeroUsize::new(1).unwrap())
             .with_opaque_handle_lifetime(Duration::ZERO),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let first_action = recovery_action();
     let first = notify_with_key(
@@ -50,7 +52,8 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         "first-key",
     )
     .await;
-    let (_, token) = applied_notification(first);
+    let (_, token) =
+        rail_notification_parts(close_notification(&client, server.local_address(), first).await);
     let retry = post_typed::<BankHttpRecoverySafeRetryOutcome>(
         &client,
         server.local_address(),
@@ -91,22 +94,29 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         "first-key",
     )
     .await;
+    let completed_commit_replay =
+        close_notification(&client, server.local_address(), completed_commit_replay).await;
     assert!(matches!(
         completed_commit_replay,
-        BankHttpEstateNotificationOutcome::Applied {
+        crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
             recovery_status: BankHttpRecoveryStatus::Completed,
             recovery: Some(_),
             ..
         }
     ));
     let alternate = alternate_recovery_action();
-    applied_notification(
-        notify_with_key(
+    rail_notification_parts(
+        close_notification(
             &client,
             server.local_address(),
-            &alternate,
-            "second-notification",
-            "second-key",
+            notify_with_key(
+                &client,
+                server.local_address(),
+                &alternate,
+                "second-notification",
+                "second-key",
+            )
+            .await,
         )
         .await,
     );
@@ -121,9 +131,20 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
     assert!(
         matches!(
             &old_replay,
-            BankHttpEstateNotificationOutcome::Applied {
-                disposition:
-                    super::super::super::super::protocol::BankHttpCommitDisposition::AlreadyCommitted,
+            crate::http::protocol::BankHttpEstateNotificationOutcome::Owning {
+                outcome: crate::http::protocol::BankHttpMutationOutcome::Completed {
+                    recovered: true,
+                    ..
+                }
+            }
+        ),
+        "the original key must return recovered native evidence: {old_replay:?}"
+    );
+    let old_replay = close_notification(&client, server.local_address(), old_replay).await;
+    assert!(
+        matches!(
+            &old_replay,
+            crate::http::protocol::BankHttpMutationOutcome::RailRecoveryReady {
                 recovery: None,
                 recovery_status: BankHttpRecoveryStatus::Completed,
                 ..
@@ -132,4 +153,5 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         "unexpected post-eviction replay: {old_replay:?}"
     );
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }

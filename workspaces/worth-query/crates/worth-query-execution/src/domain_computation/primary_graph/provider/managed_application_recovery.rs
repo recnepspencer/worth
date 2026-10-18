@@ -24,6 +24,7 @@ use crate::domain_computation::{
 enum RecoveredPublicationDelivery {
     Ordinary,
     ProgramSource,
+    OwningSource,
 }
 
 /// A performed World successor has been handed to the normal Query pending
@@ -34,20 +35,38 @@ pub struct WorthQueryManagedApplicationRecoveryPerformed {
         Result<WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationIdempotencyResolutionDenial>,
     publication_failure: Option<WorthQueryProviderSessionFailure>,
     prior_cleanup_failure: Option<WorthQueryProductUnpublishedRecoveryReleaseFailure>,
+    pending_cleanup: Option<WorthQueryProductUnpublishedRecovery>,
 }
 
 impl WorthQueryManagedApplicationRecoveryPerformed {
+    /// Transfers the actual old record's cleanup custody without claiming refusal or completion.
+    pub fn take_pending_cleanup(
+        &mut self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    ) -> Option<WorthQueryProductUnpublishedRecovery> {
+        self.pending_cleanup.take()
+    }
+
+    pub fn take_prior_cleanup_failure(
+        &mut self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    ) -> Option<WorthQueryProductUnpublishedRecoveryReleaseFailure> {
+        self.prior_cleanup_failure.take()
+    }
+
     pub fn into_parts(
         self,
     ) -> (
         Result<WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationIdempotencyResolutionDenial>,
         Option<WorthQueryProviderSessionFailure>,
         Option<WorthQueryProductUnpublishedRecoveryReleaseFailure>,
+        Option<WorthQueryProductUnpublishedRecovery>,
     ) {
         (
             self.read,
             self.publication_failure,
             self.prior_cleanup_failure,
+            self.pending_cleanup,
         )
     }
 }
@@ -170,6 +189,31 @@ where
         )
     }
 
+    /// Owning no-output recovery retains cleanup without constructing an output carrier.
+    pub fn recover_admitted_unpublished_source_operation<Operation, Input, Scope>(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        recovery: &WorthQueryProductUnpublishedRecovery,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        WorthQueryManagedApplicationRecoveryOutcome,
+        WorthQueryManagedApplicationRecoveryDenial,
+    >
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
+        self.recover_admitted_unpublished_application_delivery(
+            phase,
+            recovery,
+            admission,
+            idempotency,
+            RecoveredPublicationDelivery::OwningSource,
+        )
+        .map(|(outcome, _)| outcome)
+    }
+
     fn recover_admitted_unpublished_application_delivery<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
@@ -281,7 +325,11 @@ where
                     .into_recovery();
                     guard.retain_successor(next.record_handle());
                     let prior_cleanup_failure = self
-                        .release_product_publication_recovery(recovery.clone(), 0)
+                        .release_product_publication_recovery_in_advancement(
+                            phase,
+                            recovery.clone(),
+                            0,
+                        )
                         .err();
                     Ok((
                         WorthQueryManagedApplicationRecoveryOutcome::ProductUnpublished {
@@ -294,17 +342,34 @@ where
                 Ok(PublicationOutcome::Performed(publication)) => {
                     let session = guard.take_attempt().complete(publication, None);
                     let source = match delivery {
-                        RecoveredPublicationDelivery::Ordinary => None,
+                        RecoveredPublicationDelivery::Ordinary
+                        | RecoveredPublicationDelivery::OwningSource => None,
                         RecoveredPublicationDelivery::ProgramSource => {
+                            super::recovered_program_source_delivery::consume_first_if_armed(
+                                self,
+                                || session.take_recovered_output_source(),
+                            );
                             Some(session.take_recovered_output_source())
                         }
                     };
                     let publication_failure =
                         publish_recovered(&request, &self.primary_provider, session).err();
                     guard.finish();
-                    let prior_cleanup_failure = self
-                        .release_product_publication_recovery(recovery.clone(), 0)
-                        .err();
+                    let (prior_cleanup_failure, pending_cleanup) = match delivery {
+                        RecoveredPublicationDelivery::Ordinary => (
+                            self.release_product_publication_recovery_in_advancement(
+                                phase,
+                                recovery.clone(),
+                                0,
+                            )
+                            .err(),
+                            None,
+                        ),
+                        RecoveredPublicationDelivery::ProgramSource
+                        | RecoveredPublicationDelivery::OwningSource => {
+                            (None, Some(recovery.clone()))
+                        }
+                    };
                     drop(coordination);
                     let read = self.resolve_admitted_application_idempotency(
                         phase,
@@ -317,6 +382,7 @@ where
                                 read,
                                 publication_failure,
                                 prior_cleanup_failure,
+                                pending_cleanup,
                             },
                         ),
                         source,

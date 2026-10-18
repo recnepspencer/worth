@@ -111,7 +111,7 @@ impl<T> Drop for OwnedTasks<T> {
 }
 
 impl<T> OwnedInputs<T> {
-    fn tasks(&mut self, seed: Option<u64>) -> impl Iterator<Item = (usize, T)> + Send
+    fn tasks(&mut self, seed: Option<u64>) -> impl Iterator<Item = (usize, T)> + Send + use<T>
     where
         T: Send,
     {

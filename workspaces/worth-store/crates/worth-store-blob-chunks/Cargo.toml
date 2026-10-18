@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-blob-chunks"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Roadmap 2 S.7 native content-addressed blob and object chunk store."

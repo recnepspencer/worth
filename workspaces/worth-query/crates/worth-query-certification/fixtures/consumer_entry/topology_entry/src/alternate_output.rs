@@ -52,6 +52,12 @@ pub struct AlternatePlanarOutputBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for AlternatePlanarOutputBinding<Schema>
 {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = AlternatePlanarOutput;
     type InputBinding = AlternatePlanarOutputInputBinding;
     type Result = PlanarAdjustmentResult;
@@ -189,10 +195,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
-        if input.output_key.starts_with(SURVEYED_OUTPUT_KEY_PREFIX) {
-            if let Err(error) = writer.write_field(&anchor, Length::reference(), above(y)) {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-            }
+        if input.output_key.starts_with(SURVEYED_OUTPUT_KEY_PREFIX)
+            && let Err(error) = writer.write_field(&anchor, Length::reference(), above(y))
+        {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
         let y = if input.output_key.contains(RAISED_OUTPUT_KEY_MARKER) {
             above(y)

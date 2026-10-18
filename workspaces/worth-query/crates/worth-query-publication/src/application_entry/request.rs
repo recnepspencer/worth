@@ -1,3 +1,4 @@
+use super::mutation::WorthQueryApplicationMutationRequest;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -6,20 +7,23 @@ use worth_query_declaration::facade::application_query::ApplicationQueryIntent;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
-    WorthQueryApplicationMutationRequest, WorthQueryApplicationOutputDemandRequest,
-    WorthQueryApplicationProgramsRequest, WorthQueryApplicationQueryRequest,
+    WorthQueryApplicationOutputDemandRequest, WorthQueryApplicationProgramsRequest,
+    WorthQueryApplicationQueryRequest, WorthQueryOperationBuilder,
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod branch_set;
 mod current_read;
+mod workflow_history;
+mod workflow_pages;
+mod workflow_read;
+mod workflow_subscription;
+pub use workflow_read::WorthQueryWorkflowObservationDenial;
 mod output_currentness;
-mod program_outputs;
+pub(in crate::application_entry) mod program_outputs;
 pub use branch_set::WorthQueryApplicationBranchSetRequest;
 pub use current_read::WorthQueryApplicationReadObservationDenial;
-pub use output_currentness::{
-    WorthQueryOutputCurrentnessDenial, WorthQueryProgramOutputCurrentnessDenial,
-};
+pub use output_currentness::WorthQueryOutputCurrentnessDenial;
 
 /// Borrowed ordinary-request context. Construction selects no World state and
 /// resolves no application principal.
@@ -117,17 +121,38 @@ where
     pub fn mutate<Intent>(
         &self,
         intent: Intent,
-    ) -> WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>
+    ) -> WorthQueryOperationBuilder<'application, 'principal, 'scope, Schema, Intent>
     where
         Intent: ApplicationMutationIntent<Schema>,
     {
-        WorthQueryApplicationMutationRequest::new(
-            self.application,
-            self.principal,
-            self.scope,
-            self.branch,
-            intent,
-        )
+        WorthQueryOperationBuilder {
+            native: WorthQueryApplicationMutationRequest::new(
+                self.application,
+                self.principal,
+                self.scope,
+                self.branch,
+                intent,
+            ),
+        }
+    }
+
+    /// Select deliberate native mutation and fixed-output control.
+    pub fn advanced(
+        &self,
+    ) -> super::advanced::WorthQueryAdvancedApplicationRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+    > {
+        super::advanced::WorthQueryAdvancedApplicationRequest {
+            request: Self {
+                application: self.application,
+                principal: self.principal,
+                scope: self.scope,
+                branch: self.branch,
+            },
+        }
     }
 
     pub fn demand<Demand>(
@@ -262,6 +287,24 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(in crate::application_entry) fn retained_observation(
+        &self,
+    ) -> super::WorthQueryApplicationReadObservation {
+        super::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(&self.observation))
+    }
+
+    /// The same runtime, principal, scope and branch, unpinned, for native owner affinity.
+    pub(in crate::application_entry) fn base_request(
+        &self,
+    ) -> WorthQueryApplicationRequest<'application, 'principal, 'scope, Schema> {
+        WorthQueryApplicationRequest {
+            application: self.application,
+            principal: self.principal,
+            scope: self.scope,
+            branch: self.branch,
+        }
+    }
+
     /// Reads independently scoped intents at this same observation, publishing
     /// only a complete ordered batch. Duplicate scopes are independently billed.
     pub fn query_batch<Intent>(
@@ -321,3 +364,5 @@ where
         )
     }
 }
+
+mod discovery_currentness;

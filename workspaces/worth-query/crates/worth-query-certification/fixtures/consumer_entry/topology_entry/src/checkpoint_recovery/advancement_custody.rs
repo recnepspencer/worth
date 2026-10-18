@@ -124,6 +124,7 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
                 .unwrap();
             let before = observed.receipt().inspect().basis().version();
             let mut mutation = request
+                .advanced()
                 .mutate(crate::PlanarEdit(crate::PlanarMutation {
                     scope_key: "anchor-a".into(),
                     operation: worth_query_consumer_values::PlanarOperation::VerifyCurrentOutputs(
@@ -206,6 +207,7 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
                 .unwrap();
             assert_eq!(after.receipt().inspect().basis().version(), before);
             let mut mutation = request
+                .advanced()
                 .mutate(crate::PlanarEdit(crate::PlanarMutation {
                     scope_key: "anchor-a".into(),
                     operation: worth_query_consumer_values::PlanarOperation::VerifyCurrentOutputs(
@@ -272,6 +274,7 @@ fn mutation_commit_report(placement: Placement) -> (u64, u64) {
     let contacts = crate::handler::handler_contacts();
     reports();
     let outcome = request
+        .advanced()
         .mutate(crate::PlanarEdit(crate::PlanarMutation {
             scope_key: "anchor-a".into(),
             operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![

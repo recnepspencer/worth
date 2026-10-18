@@ -35,6 +35,10 @@ impl ReadyPaymentWorld {
     pub(super) fn new(scenario: &str, script: FaultScript) -> Self {
         let fixture =
             ordinary_read_world_with_approval_authentication(scenario, approval_configuration());
+        Self::from_fixture(fixture, script)
+    }
+
+    pub(super) fn from_fixture(fixture: OrdinaryReadFixture, script: FaultScript) -> Self {
         let rail_process = spawn_rail();
         let rail = Arc::new(BankEstateRailTransport::connected_to(
             rail_process.local_addr(),
@@ -69,17 +73,67 @@ impl ReadyPaymentWorld {
         }
     }
 
+    pub(super) fn install_synchronous_completion(
+        &self,
+    ) -> bank_server::BankPaymentRailCompletionRoute {
+        install_synchronous_completion(&self.fixture.world.runtime)
+    }
+
     pub(super) fn perform(&self) -> BankApprovedPaymentApplyOutcome {
         self.fixture
             .world
             .runtime
             .approved_business_payment(&self.principal, &self.scope)
-            .perform_apply(
+            .advanced()
+            .execute_operation(
                 self.instance.clone(),
                 &self.operation,
                 self.authority.clone(),
                 &key("approved-payment:operation:perform"),
             )
             .expect("the prepared Bank operation reaches Query's owner")
+    }
+}
+
+pub(super) fn install_synchronous_completion(
+    runtime: &bank_server::BankIdentityRuntime,
+) -> bank_server::BankPaymentRailCompletionRoute {
+    runtime
+        .install_payment_rail_completion_verifier(Arc::new(PaymentRailSource))
+        .expect("the payment completion source installs before dispatch")
+}
+
+// The installed source enables the real synchronous completion owner. This
+// control authenticates no callback, so it cannot manufacture terminal custody.
+struct PaymentRailSource;
+impl worth_query_host::facade::primary_graph::WorthQueryInboundOccurrenceVerifier
+    for PaymentRailSource
+{
+    fn audience(&self) -> &str {
+        "bank-workflow-committed-custody"
+    }
+    fn source_identity(&self) -> &str {
+        "rail-primary"
+    }
+    fn protocol_identity(&self) -> &worth_foundational::facade::BoundaryProtocolIdentity {
+        static IDENTITY: worth_foundational::facade::BoundaryProtocolIdentity =
+            worth_foundational::facade::BoundaryProtocolIdentity::new(
+                "bank.payment.approved-settlement",
+            );
+        &IDENTITY
+    }
+    fn protocol_version(&self) -> worth_foundational::facade::BoundaryProtocolVersion {
+        worth_foundational::facade::BoundaryProtocolVersion::new(1)
+    }
+    fn verify(
+        &self,
+        _: &[u8],
+        _: u64,
+        _: std::num::NonZeroU64,
+    ) -> Result<
+        worth_query_host::facade::primary_graph::WorthQueryInboundOccurrenceClaims,
+        worth_query_host::facade::primary_graph::WorthQueryInboundVerificationDenial,
+    > {
+        Err(worth_query_host::facade::primary_graph::WorthQueryInboundVerificationDenial::AuthenticationFailed)
     }
 }

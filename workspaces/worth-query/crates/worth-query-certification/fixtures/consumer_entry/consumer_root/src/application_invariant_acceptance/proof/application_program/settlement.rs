@@ -64,6 +64,7 @@ pub(super) fn performed_source_settles_required_output(
         NonZeroUsize::new(8_192).unwrap(),
     );
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -85,6 +86,12 @@ pub(super) fn performed_source_settles_required_output(
         }
         WorthQueryApplicationPerformedMutationOutcome::ProductUnpublished(partial) => {
             panic!("unpublished: {:?}", partial.initial_cause())
+        }
+        WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, .. } => {
+            panic!(
+                "this unarmed court met genuine managed cleanup refusal: {:?}",
+                cleanup.failure()
+            )
         }
         WorthQueryApplicationPerformedMutationOutcome::Blocked(blocked) => {
             panic!("blocked: {:?}", blocked.outcome())
@@ -236,16 +243,25 @@ pub(super) fn performed_source_settles_required_output(
                 .expect("current product basis remains readable")
         })
         .expect("installed host call opens");
+    let comparison_work = NonZeroUsize::new(
+        world
+            .application
+            .runtime()
+            .output_demand_resource_profile()
+            .limits()
+            .source_currentness_work(),
+    )
+    .expect("the installed profile admits positive source currentness work");
     request
         .at(&current_basis)
-        .require_current_program_output(&original_settlement, NonZeroUsize::new(4_096).unwrap())
+        .require_current_program_output(&original_settlement, comparison_work)
         .expect("every transitive output retains current Query source lineage");
     assert!(matches!(
         request.at(&current_basis).require_current_program_output(
             &original_settlement,
             NonZeroUsize::new(1).unwrap(),
         ),
-        Err(worth_query_host::facade::application_entry::WorthQueryProgramOutputCurrentnessDenial::Output(denial))
+        Err(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial))
             if denial.kind()
                 == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
     ));

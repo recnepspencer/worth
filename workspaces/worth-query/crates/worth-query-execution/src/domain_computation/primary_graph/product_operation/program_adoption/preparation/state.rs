@@ -26,11 +26,37 @@ use crate::domain_computation::primary_graph::workflow::{
 fn map_relational_preparation_denial(
     denial: worth_relational::facade::transactions::TransactionCommitError,
 ) -> WorthQueryBranchAdoptionPreparationDenial {
+    // Execution control remains typed, but native partition context and the
+    // private workflow candidate's commit log never cross the disclosure boundary.
+    use worth_relational::facade::transactions::{
+        CommitExecutionDenialKind, RelationalExecutionDenialCause as Cause, TransactionCommitError,
+    };
+    let execution_cause = match &denial {
+        TransactionCommitError::Execution { denial, .. } => {
+            let CommitExecutionDenialKind::Cause(cause) = denial.kind;
+            Some(cause)
+        }
+        TransactionCommitError::Interrupted { interruption, .. } => {
+            Some(match interruption.interruption() {
+                worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
+                    Cause::Cancelled
+                }
+                worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
+                    Cause::DeadlineElapsed
+                }
+            })
+        }
+        _ => None,
+    };
+    if let Some(cause) = execution_cause {
+        return WorthQueryBranchAdoptionPreparationDenial::ReadExecution(
+            crate::facade::primary_graph::relational_execution_kind(cause, None),
+        );
+    }
     if let worth_relational::facade::transactions::TransactionCommitError::Conflict {
         error, ..
     } = &denial
-    {
-        if let worth_relational::facade::transactions::ConflictClass::InvariantViolation {
+        && let worth_relational::facade::transactions::ConflictClass::InvariantViolation {
             fields:
                 worth_relational::facade::transactions::InvariantViolationFields::CustomInvariantViolation {
                     identity,
@@ -42,12 +68,17 @@ fn map_relational_preparation_denial(
                 identity: identity.clone(),
             };
         }
-    }
-    WorthQueryBranchAdoptionPreparationDenial::RelationalPreparation(denial)
+    WorthQueryBranchAdoptionPreparationDenial::RelationalPreparation
 }
 
-pub(super) fn prepare<Schema: ApplicationSchema>(
+pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
     _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
@@ -57,18 +88,19 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     maximum_selection_work: usize,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
+    admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
     let (source, requirements) = requirements(selected, target)?;
     if &requirements != expected_requirements {
         return Err(WorthQueryBranchAdoptionPreparationDenial::RequirementsChanged);
     }
-    if migration.is_none() {
-        if let Some(requirement) = requirements.migration_assessment_requirements().first() {
-            return Err(
-                WorthQueryBranchAdoptionPreparationDenial::MigrationAssessmentRequired(
-                    requirement.clone(),
-                ),
-            );
-        }
+    if migration.is_none()
+        && let Some(requirement) = requirements.migration_assessment_requirements().first()
+    {
+        return Err(
+            WorthQueryBranchAdoptionPreparationDenial::MigrationAssessmentRequired(
+                requirement.clone(),
+            ),
+        );
     }
     let custody = dispositions::derive(&requirements)
         .map_err(WorthQueryBranchAdoptionPreparationDenial::CustodyDispositionUnsupported)?;
@@ -132,18 +164,22 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             source: &source,
             target,
             maximum_work_units: maximum_selection_work.saturating_sub(selection.work_units),
+            maximum_preparation_bytes: application
+                .runtime
+                .application_query_resource_profile()
+                .maximum_inline_index_bytes()
+                .get() as u64,
         };
-        let inventory =
-            inventory_workflows(execution, view, &workflow_request).map_err(|denial| {
-                workflow_read_denial(denial, maximum_selection_work, selection.work_units)
-            })?;
+        let inventory = inventory_workflows(execution, runtime, basis, view, &workflow_request)
+            .map_err(|cause| workflow_read_denial(cause, maximum_selection_work))?;
         Ok((selection, Some(inventory)))
     })?;
     let selected_entity_count = selection.entities.len();
     let workflow_intents = match workflow_inventory.as_ref() {
-        Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref())?
+        Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref(), selected.product().product_branch())?
             .map(|choices| {
-                stage_workflow_dispositions(graph.layout.workflow(), inventory, choices, target)
+                stage_workflow_dispositions(graph.layout.workflow(), inventory, &choices, target,
+                    crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission))
             })
             .unwrap_or_default(),
         None => Vec::new(),
@@ -154,7 +190,8 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             .map_or(0, WorthQueryWorkflowAdoptionInventory::work_units),
     );
     let target_rendering = program_revision_rendering(target);
-    let candidate = graph.with_runtime_mut(execution, |runtime| {
+    admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
+    let mut candidate = graph.with_runtime_mut(execution, |runtime| {
         let mut batch =
             WorkerIntentBatch::new("application-program-adoption").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -200,12 +237,14 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             .prepare_branch_transaction(execution, transaction)
             .map_err(map_relational_preparation_denial)
     })?;
+    super::selector_indexes::prepare(execution, selected, &mut candidate)?;
     let successor_observation_requested = false;
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected
         .application()
         .primary_provider
         .unpublished_idempotency_disposition();
+    admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
     let publication = selected
         .product()
         .publication_binding()
@@ -219,24 +258,12 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             }
         })?;
     Ok(WorthQueryPreparedBranchAdoption {
-        owner: std::sync::Arc::downgrade(&selected.application().product_runtime.owner),
+        branch: selected.product().product_branch(),
         owner_identity: selected
             .application()
             .product_runtime
             .owner
             .owner_identity(),
-        host_request: request.clone(),
-        host_policy: match selected
-            .application()
-            .product_runtime
-            .owner
-            .execution_placement()
-        {
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
-            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
-                policy, ..
-            } => policy,
-        },
         source,
         target: *target,
         requirements,

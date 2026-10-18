@@ -11,6 +11,12 @@ on:
       - codex/query-bounded-package-identity-2026-10-07
       - codex/query-retired-output-readiness-2026-10-07
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Jobs to run
+        type: choice
+        default: all
+        options: [all, consumer-docs, checkpoint-only]
 
 permissions:
   contents: read
@@ -20,19 +26,60 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  consumer-docs:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'checkpoint-only'
+    name: Consumer documentation and doctests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@1.94.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Refuse consumer fence debt growth
+        env:
+          DEBT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
+        run: |
+          if [[ -n "$DEBT_BASE" && "$DEBT_BASE" != 0000000000000000000000000000000000000000 ]]; then
+            python scripts/ci/check_consumer_doc_debt.py --base "$DEBT_BASE"
+          else
+            python scripts/ci/check_consumer_doc_debt.py
+          fi
+      - name: Test the predecessor ratchet
+        run: python -m unittest discover -s scripts/ci -p test_consumer_doc_debt.py
+      - name: Compile and run configured Query and Bank doctests
+        run: python scripts/ci/query_gate.py doc
+      - name: Run the observable mixed workflow consumer
+        run: >-
+          cargo run --manifest-path workspaces/worth-query/Cargo.toml
+          -p worth-query-certification --example observable_workflow
+      - name: Preserve failed gate logs and results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consumer-docs-gate-failure
+          path: |
+            target/query-gate/*.log
+            target/query-gate/*.json
+
   line-cap:
+    if: github.event_name != 'workflow_dispatch' || (inputs.scope != 'consumer-docs' && inputs.scope != 'checkpoint-only')
     name: Rust line cap
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Enforce the 400-line Rust file cap
         run: bash scripts/ci/check_workspace_rust_line_caps.sh workspace
+      - name: Keep every lockfile on the same dependency versions
+        run: python3 scripts/ci/check_lockfile_alignment.py
 
   boundary-check:
+    if: github.event_name != 'workflow_dispatch' || (inputs.scope != 'consumer-docs' && inputs.scope != 'checkpoint-only')
     name: Boundary and facade doc check
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.94.0
@@ -54,27 +101,41 @@ jobs:
         run: ./scripts/check-constitution.ps1
 
   query-checkpoint-recovery:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'consumer-docs'
     name: Query checkpoint recovery court
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       # Admitted canonical preparation requires the audited std-sort implementation
       # selected by worth-foundational/build.rs. Other compilers remain refused.
       - uses: dtolnay/rust-toolchain@1.94.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Record the audited compiler identity
         run: rustc --version --verbose
-      # Every court compiles in this build; each test owns its controls and observers.
+      # Isolate topology's process-wide controls while running independent courts
+      # concurrently; the same runner includes owning-consumer and parameter courts.
       - name: Prove restored accepted outputs avoid producer contact
+        run: python scripts/ci/query_gate.py fixture
+      - name: Prove public output-role documentation contracts
         run: >-
-          cargo test
+          cargo test --doc
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-topology-entry
-          -- --test-threads=1
       # The external consumer journey: publication, reconstruction, output
       # preservation and optional output roles through the public facades.
       - name: Run the public consumer journey
         run: >-
-          cargo run
+          time cargo run
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-consumer-root
+      - name: Preserve failed court logs and results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: query-checkpoint-recovery-failure
+          path: |
+            target/query-gate/*.log
+            target/query-gate/*.json
+            target/query-gate/*.jsonl

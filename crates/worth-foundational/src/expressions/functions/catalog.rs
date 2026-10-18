@@ -137,7 +137,7 @@ impl ExpressionFunctionCatalog {
         self.by_name.len()
     }
 
-    pub(crate) fn overloads(&self, name: &str) -> impl Iterator<Item = usize> + '_ {
+    pub(crate) fn overloads(&self, name: &str) -> impl Iterator<Item = usize> + '_ + use<'_> {
         self.by_name.get(name).into_iter().flatten().copied()
     }
 

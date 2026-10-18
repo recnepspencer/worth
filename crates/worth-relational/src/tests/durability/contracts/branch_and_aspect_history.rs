@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn durability_contract_recovery_rebuilds_branch_heads_and_latest_commit() {
@@ -245,10 +246,14 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
         )
         .expect("read request remains live");
 
-    runtime.durability_authority().checkpoint().unwrap();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)

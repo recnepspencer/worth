@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "crates/worth-query",
     "crates/worth-query-decl",
@@ -20,7 +20,8 @@ default-members = [
 ]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
+rust-version = "1.94"
 version = "0.1.0"
 license = "BUSL-1.1"
 
@@ -44,13 +45,8 @@ worth-runtime-bridge = { path = "../../crates/worth-runtime-bridge" }
 worth-signal = { path = "../../crates/worth-signal" }
 worth-schema-graph = { path = "../worth-contracts/crates/worth-schema-graph" }
 
-arc-swap = "1"
-proc-macro2 = { version = "1", features = ["span-locations"] }
-quote = "1"
 serde = { version = "1", features = ["derive", "rc"] }
-serde_json = "1"
-sha2 = "0.10"
-syn = { version = "2", features = ["full", "visit"] }
+sha2 = "=0.10.9"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -73,14 +69,35 @@ wrong_self_convention = "allow"
 opt-level = 0
 debug = "line-tables-only"
 
-[profile.dev.package."*"]
-opt-level = 2
+[profile.dev.package]
+"*".opt-level = 2
+# First-party crates owned by other workspaces arrive here as path dependencies,
+# which "*" would optimize. They stay on the member profile so every workspace
+# compiles them identically and editing one never pays an optimizing rebuild.
+worth-proof.opt-level = 0
+worth-foundational.opt-level = 0
+worth-execution.opt-level = 0
+worth-relational.opt-level = 0
+worth-signal.opt-level = 0
+worth-runtime-bridge.opt-level = 0
+worth-runtime-world.opt-level = 0
+worth-harness.opt-level = 0
+worth-schema-graph.opt-level = 0
 
 [profile.test]
 opt-level = 0
 
-[profile.test.package."*"]
-opt-level = 2
+[profile.test.package]
+"*".opt-level = 2
+worth-proof.opt-level = 0
+worth-foundational.opt-level = 0
+worth-execution.opt-level = 0
+worth-relational.opt-level = 0
+worth-signal.opt-level = 0
+worth-runtime-bridge.opt-level = 0
+worth-runtime-world.opt-level = 0
+worth-harness.opt-level = 0
+worth-schema-graph.opt-level = 0
 
 [profile.perf]
 inherits = "dev"

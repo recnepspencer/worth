@@ -49,23 +49,35 @@ impl RecognitionFixture {
 }
 
 pub(super) fn exact_recognition_world(scenario: &str) -> RecognitionFixture {
-    recognition_world(scenario, RecognitionPosture::exact())
+    recognition_world(scenario, RecognitionPosture::exact(), None)
 }
 
+pub(super) fn adoption_recognition_world(scenario: &str) -> RecognitionFixture {
+    let grant =
+        bank_server::BankProgramDeploymentGrantSeed::for_program::<bank_server::BankApplication>(
+            "recognition-context-deployment",
+            SPECIALIST,
+            SPECIALIST,
+            0,
+            u64::MAX,
+        )
+        .expect("explicit canonical P0 deployment authority");
+    recognition_world(scenario, RecognitionPosture::exact(), Some(grant))
+}
 pub(super) fn foreign_authority_world(scenario: &str) -> RecognitionFixture {
-    recognition_world(scenario, RecognitionPosture::foreign_authority())
+    recognition_world(scenario, RecognitionPosture::foreign_authority(), None)
 }
 
 pub(super) fn holder_mismatch_world(scenario: &str) -> RecognitionFixture {
-    recognition_world(scenario, RecognitionPosture::holder_mismatch())
+    recognition_world(scenario, RecognitionPosture::holder_mismatch(), None)
 }
 
 pub(super) fn unrecognized_authority_world(scenario: &str) -> RecognitionFixture {
-    recognition_world(scenario, RecognitionPosture::unrecognized())
+    recognition_world(scenario, RecognitionPosture::unrecognized(), None)
 }
 
 pub(super) fn duplicate_executor_world(scenario: &str) -> RecognitionFixture {
-    recognition_world(scenario, RecognitionPosture::duplicate())
+    recognition_world(scenario, RecognitionPosture::duplicate(), None)
 }
 
 const INSTITUTION: InstitutionId = InstitutionId::new(1).unwrap();
@@ -129,7 +141,11 @@ impl RecognitionPosture {
     }
 }
 
-fn recognition_world(scenario: &str, posture: RecognitionPosture) -> RecognitionFixture {
+fn recognition_world(
+    scenario: &str,
+    posture: RecognitionPosture,
+    deployment: Option<bank_server::BankProgramDeploymentGrantSeed>,
+) -> RecognitionFixture {
     let identities = [
         DynamicIdentity::new(&format!("{scenario}-deceased")),
         DynamicIdentity::new(&format!("{scenario}-specialist")),
@@ -138,6 +154,10 @@ fn recognition_world(scenario: &str, posture: RecognitionPosture) -> Recognition
         DynamicIdentity::new(&format!("{scenario}-foreign-deceased")),
     ];
     let seed = recognition_seed(&identities, posture);
+    let seed = match deployment {
+        Some(grant) => seed.program_deployment_grant(grant),
+        None => seed,
+    };
     RecognitionFixture {
         world: runtime(seed),
         identities,

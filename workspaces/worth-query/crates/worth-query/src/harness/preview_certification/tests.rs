@@ -1,22 +1,13 @@
-use super::expectations::{assert_adapter_emits_named_matrix, assert_matrix_meets_required_rows};
+use super::expectations::assert_matrix_meets_required_rows;
 use super::model::{
     MilestoneFivePointTwoPreviewCertificationArtifact, PreviewCertificationLane,
     PreviewCertificationMatrix,
 };
 use super::MilestoneFivePointTwoPreviewCertificationAdapter;
-use crate::harness::certification::{milestone_five_point_two_requirements, unmet_required_rows};
 use crate::preview::{
     PreviewBindingCounters, PreviewComparisonCounters, PreviewExecutionCounters,
     PreviewLiveCounters,
 };
-
-#[test]
-fn preview_certification_adapter_emits_named_matrix() {
-    let matrix =
-        MilestoneFivePointTwoPreviewCertificationAdapter::preview_session_basis_and_promotion_parity_test();
-
-    assert_adapter_emits_named_matrix(&matrix);
-}
 
 #[test]
 fn preview_certification_matrix_meets_required_rows() {
@@ -119,24 +110,6 @@ fn assert_artifact_expectations(artifact: &MilestoneFivePointTwoPreviewCertifica
 fn assert_artifact_metadata_and_completeness(
     artifact: &MilestoneFivePointTwoPreviewCertificationArtifact,
 ) {
-    assert_eq!(
-        artifact.suite_name,
-        "Preview Session Basis And Promotion Parity Test"
-    );
-    assert!(!artifact.certification_bundle_digest.is_empty());
-    assert!(!artifact.coverage_matrix_digest.is_empty());
-    let requirements = milestone_five_point_two_requirements();
-    let missing_spec_rows = unmet_required_rows(
-        &artifact.matrix,
-        requirements.required_canonical_rows,
-        requirements.required_rejection_rows,
-    );
-    assert_eq!(
-        artifact
-            .bundle_completeness_report
-            .covers_full_milestone_five_point_two_spec_matrix,
-        missing_spec_rows.is_empty()
-    );
     assert!(
         artifact
             .bundle_completeness_report

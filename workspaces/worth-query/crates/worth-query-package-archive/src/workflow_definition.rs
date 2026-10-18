@@ -5,6 +5,13 @@
 //! vocabulary by identifier. Authoring it against an installed workflow spec
 //! rebuilds the typed definition, which then validates, binds and publishes
 //! like any other; decoded bytes alone mint nothing.
+//!
+//! Only the current draft version is supported. It carries explicit operation
+//! evidence requirements and the authored observation and actor policies.
+//! Readmission compares those policies with the installed spec before rebuilding
+//! nodes. Unsupported drafts are refused intact; the codec never upgrades old
+//! bytes, supplies omitted requirements or backfills actors. Logical migration
+//! between valid current workflow definitions remains a separate native operation.
 
 use worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionLimits;
 
@@ -17,7 +24,6 @@ mod tests;
 
 pub use codec::{
     decode_workflow_definition_draft, encode_workflow_definition_draft,
-    WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION,
     WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
 };
 pub use compatibility::{
@@ -30,6 +36,8 @@ pub use compatibility::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryUntrustedWorkflowDefinitionDraft {
     spec: String,
+    observation_policy: String,
+    actor_policy: String,
     identity: String,
     limits: ApplicationWorkflowDefinitionLimits,
     start: String,
@@ -77,7 +85,7 @@ pub(crate) enum DraftMember {
         input_type: String,
         binding: Option<String>,
         requires_workflow_authority: bool,
-        workflow_execution_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
+        workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
     },
     Assessment {
         identifier: String,
@@ -116,8 +124,6 @@ pub(crate) enum DraftCondition {
         draft: Box<[u8]>,
         operands: Box<[DraftConditionOperand]>,
     },
-    /// A version-1 condition: one Bool query read as the whole decision.
-    Migrated(DraftConditionOperand),
 }
 
 /// One named operand and the installed query it reads.

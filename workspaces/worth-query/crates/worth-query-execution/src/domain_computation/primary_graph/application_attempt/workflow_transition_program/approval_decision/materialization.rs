@@ -5,6 +5,8 @@ pub(super) fn materialize_decision<Schema, Operation, Input, Scope>(
     program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     admitted: crate::domain_computation::primary_graph::workflow::instance::AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
     meaning: crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning,
+    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    admitted_text: &crate::domain_computation::primary_graph::workflow::WorkflowApprovalFieldText,
     evidence_currentness: std::sync::Arc<
         [crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
     >,
@@ -25,6 +27,8 @@ where
         layout,
         &admitted,
         &meaning,
+        basis,
+        admitted_text,
         |effect| demand.observe(&effect),
     )?;
     let reservation = admit_platform_effects(admitted.read_set(), demand)?;
@@ -33,6 +37,8 @@ where
         layout,
         &admitted,
         &meaning,
+        basis,
+        admitted_text,
         |effect| {
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())

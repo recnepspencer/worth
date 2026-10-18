@@ -33,12 +33,17 @@ pub(super) fn execute_promotion_certification(
         })?;
     let (promoted_active, promoted_execution_record) =
         runtime_bridge.activate_preview_session(admitted, 3, 1, 2);
-    let proof = promoted_active.promotion_admissibility_proof();
-    let (_promoted, promotion_record) = runtime_bridge
-        .promote_preview_session(promoted_active, &promoted_execution_record, &proof)
-        .map_err(|error| {
-            BridgeHarnessError::new(format!("speculation promotion failed: {error}"))
-        })?;
+    let preview = crate::facade::BridgeSpeculativeSessionHandle::new(
+        runtime_bridge.clone(),
+        promoted_active,
+        promoted_execution_record,
+    );
+    let promoted_execution_record = preview.execution_record().clone();
+    let outcome = match preview.promote() {
+        Ok(outcome) => outcome,
+        Err((preview, denial)) => return Err(BridgeHarnessError::preview_refused(preview, denial)),
+    };
+    let promotion_record = outcome.record().clone();
     let promoted_replay_bundle = runtime_bridge
         .replay_preview_bundle(&promotion_session_identity)
         .map_err(|error| BridgeHarnessError::new(format!("speculation replay failed: {error}")))?;
@@ -69,20 +74,22 @@ pub(super) fn execute_promotion_certification(
         })?;
     let (discarded_active, discarded_execution_record) =
         runtime_bridge.activate_preview_session(discarded_admitted, 3, 1, 2);
-    let (_discarded, discarded_record) = runtime_bridge
-        .discard_preview_session(
-            discarded_active,
-            &discarded_execution_record,
-            vec![
-                crate::facade::BridgePreviewResidueClass::PreviewExecutionRetained,
-                crate::facade::BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-                crate::facade::BridgePreviewResidueClass::TemporaryRoutingResidue,
-                crate::facade::BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-            ],
-        )
-        .map_err(|error| {
-            BridgeHarnessError::new(format!("speculation sibling discard failed: {error}"))
-        })?;
+    let preview = crate::facade::BridgeSpeculativeSessionHandle::new(
+        runtime_bridge.clone(),
+        discarded_active,
+        discarded_execution_record,
+    );
+    let discarded_execution_record = preview.execution_record().clone();
+    let outcome = match preview.discard(vec![
+        crate::facade::BridgePreviewResidueClass::PreviewExecutionRetained,
+        crate::facade::BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
+        crate::facade::BridgePreviewResidueClass::TemporaryRoutingResidue,
+        crate::facade::BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
+    ]) {
+        Ok(outcome) => outcome,
+        Err((preview, denial)) => return Err(BridgeHarnessError::preview_refused(preview, denial)),
+    };
+    let discarded_record = outcome.record().clone();
     let discarded_replay_bundle = runtime_bridge
         .replay_preview_bundle(&discard_sibling_session_identity)
         .map_err(|error| {

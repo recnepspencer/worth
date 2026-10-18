@@ -27,7 +27,8 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn supply_chain_child_commit_uses_child_root_after_main_advances() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let original = CompiledSupplyChainProgram::compile(
@@ -120,7 +121,8 @@ fn assert_native_cardinality_execution(
 
 #[test]
 fn supply_chain_child_custom_invariant_uses_child_selected_version() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let original = CompiledSupplyChainProgram::compile(

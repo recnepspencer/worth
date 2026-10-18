@@ -51,12 +51,17 @@ impl<'a, Schema: ApplicationSchema + 'static> RefusingMember<'a, Schema> {
         queue: &mut QueuedRequiredRoots,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RefusalEnd, WorthQueryOutputDemandDenial> {
-        let stop = member_stop(stop)?;
+        let mut stop = member_stop(stop)?;
         let row = match self.row {
             RefusalRow::Member => self.member.key(),
             RefusalRow::HeldHead(head) => head,
         };
         recording.record_if_needed(self.registry, row, &stop);
+        // A queued member's native terminal belongs to the advancing caller's
+        // cleanup handoff, never to a suppressed registry diagnostic.
+        if let Some(cleanup) = stop.take_managed_cleanup() {
+            return Err(stop.with_managed_cleanup(cleanup));
+        }
         match self.custody {
             RefusalCustody::Caller => return Err(stop),
             RefusalCustody::Queue(custody) => custody.end_refused(&stop),

@@ -19,10 +19,15 @@ pub use crate::domain_computation::primary_graph::application_installation::{
     WorthQuerySettledProgramOutput, WorthQuerySigningOwnerInstallationDenial,
     WorthQuerySupportedProgramHandle, WorthQueryUnpublishedProgramOutputSource,
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
-    WorthQueryWorkflowVocabulary,
+    WorthQueryWorkflowRuntimeBindingRefusal, WorthQueryWorkflowVocabulary,
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
+};
+
+// Actual result vocabulary returned by the application preview lifecycle.
+pub use worth_runtime_bridge::facade::{
+    BridgeSpeculationError, BridgeSpeculationErrorKind, BridgeSpeculativePromotionOutcome,
 };

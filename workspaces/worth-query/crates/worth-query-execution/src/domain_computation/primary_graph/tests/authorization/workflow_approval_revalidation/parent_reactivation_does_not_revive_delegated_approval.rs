@@ -24,7 +24,13 @@ fn parent_reactivation_does_not_revive_delegated_approval() {
             )
         })
         .expect("the fixture read owns its installed host call");
-    let basis = durable_approval_basis(&admission);
+    let basis = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            durable_approval_basis(&host.borrowed_request_for_test(), &admission)
+        })
+        .expect("the fixture envelope owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| revoke_parent(&phase, &world))

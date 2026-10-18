@@ -9,7 +9,6 @@ mod observation_materialization;
 mod phase2_adversarial;
 mod phase2_resolution_adversarial;
 mod phase4_facade_parity;
-mod phase4_facade_parity_compile;
 mod progression_and_attachment;
 mod readiness;
 mod support;

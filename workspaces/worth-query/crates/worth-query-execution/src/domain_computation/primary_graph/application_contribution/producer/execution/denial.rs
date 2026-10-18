@@ -106,6 +106,18 @@ pub(super) fn request_authority_stop(
 pub(super) fn request_admission_rejected(
     denial: WorthQueryOutputDemandDenial,
 ) -> ProducerExecutionStop {
+    // Only this typed pre-effect stop relinquishes the selected execution.
+    // The same kinds from a stopped producer/commit keep their native defaults.
+    let denial = if matches!(
+        denial.kind(),
+        WorthQueryOutputDemandDenialKind::Cancelled | WorthQueryOutputDemandDenialKind::TimedOut
+    ) {
+        denial.with_recovery_posture(
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+        )
+    } else {
+        denial
+    };
     ProducerExecutionStop::RequestAdmissionDenied(ProducerRequestAdmissionRejection { denial })
 }
 
@@ -127,9 +139,33 @@ pub(super) fn execution_failed(
         }
         error => error,
     };
+    if let MutationHandlerExecutionDenial::Attempt(attempt) = &error
+        && let Some(authority) = attempt.request_authority()
+    {
+        return request_authority_denied(subject, authority.clone());
+    }
     if let MutationHandlerExecutionDenial::Attempt(attempt) = &error {
-        if let Some(authority) = attempt.request_authority() {
-            return request_authority_denied(subject, authority.clone());
+        match attempt.kind() {
+            WorthQueryApplicationAttemptDenialKind::ExecutionRequest(cause) => {
+                return denial(
+                    source_readmission::request_execution_kind(cause),
+                    format!("{subject}: {error:?}"),
+                )
+                .into();
+            }
+            WorthQueryApplicationAttemptDenialKind::Cancelled => {
+                return request_admission_rejected(denial(
+                    WorthQueryOutputDemandDenialKind::Cancelled,
+                    format!("{subject}: {error:?}"),
+                ));
+            }
+            WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => {
+                return request_admission_rejected(denial(
+                    WorthQueryOutputDemandDenialKind::TimedOut,
+                    format!("{subject}: {error:?}"),
+                ));
+            }
+            _ => {}
         }
     }
     let interruption = match &error {
@@ -149,10 +185,12 @@ pub(super) fn execution_failed(
         };
         return request_admission_rejected(denial(kind, format!("{subject}: {error:?}")));
     }
-    if let MutationHandlerExecutionDenial::Projection(projection) = &error {
-        if let Some(kind) = projection_budget(projection.kind()) {
-            return denial(kind, format!("{subject}: {projection}")).into();
-        }
+    if let MutationHandlerExecutionDenial::Projection(projection) = &error
+        && let Some(kind) = projection_budget(projection.kind())
+    {
+        // The reader's captured counters name which work exhausted the budget.
+        let work = projection.projection_work();
+        return denial(kind, format!("{subject}: {projection}; work {work:?}")).into();
     }
     if matches!(
         error,
@@ -183,6 +221,14 @@ fn projection_budget(
         WorthQueryOperationProjectionDenialKind as Projection,
     };
     match kind {
+        Projection::InvariantAdmission(Invariant::ExecutionRequest(cause)) => {
+            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            Some(match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+                Ok(cause) => source_readmission::request_execution_kind(cause),
+                Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
+                Err(Control::TimedOut) => WorthQueryOutputDemandDenialKind::TimedOut,
+            })
+        }
         Projection::WorkBudgetExceeded => {
             Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
         }

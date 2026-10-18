@@ -50,7 +50,7 @@ impl DownstreamAuthorityClosureContract {
             .count()
     }
 
-    pub fn deletion_obligations(&self) -> impl Iterator<Item = &'static str> {
+    pub fn deletion_obligations(&self) -> impl Iterator<Item = &'static str> + use<> {
         self.rows.iter().filter_map(|row| {
             (row.role == DownstreamAuthorityClosureRole::DeletionObligation)
                 .then_some(row.component)

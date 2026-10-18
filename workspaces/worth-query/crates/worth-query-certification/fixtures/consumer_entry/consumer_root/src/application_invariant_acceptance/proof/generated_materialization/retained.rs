@@ -24,6 +24,7 @@ pub(super) fn initial_source_identity(
     application: &ProgramApplication,
 ) -> EntityId {
     let mut output = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             application,
             PlanarOutputDemand::new("anchor-b"),
@@ -61,6 +62,7 @@ pub(super) fn preserved_outputs_remain_read_only(
         "reconstruction writes only generated payload, never the retained source"
     );
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".into(),
             replacement_y: length(3),

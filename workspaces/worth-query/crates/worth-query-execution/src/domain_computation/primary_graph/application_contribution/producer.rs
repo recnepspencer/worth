@@ -15,6 +15,7 @@ pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, Curr
 pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
+    WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
     WorthQuerySelectedApplicationProducer,
 };
 mod execution;

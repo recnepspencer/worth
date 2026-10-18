@@ -66,23 +66,23 @@ impl WorthQueryRequestedElevation {
         self.binding.grant()
     }
 
-    pub const fn action(&self) -> &AspectValue {
+    pub fn action(&self) -> &AspectValue {
         self.binding.upper_bound().action()
     }
 
-    pub const fn purpose(&self) -> &AspectValue {
+    pub fn purpose(&self) -> &AspectValue {
         self.binding.upper_bound().purpose()
     }
 
-    pub const fn field(&self) -> Option<&AspectValue> {
+    pub fn field(&self) -> Option<&AspectValue> {
         self.binding.upper_bound().field()
     }
 
-    pub const fn magnitude(&self) -> Option<&AspectValue> {
+    pub fn magnitude(&self) -> Option<&AspectValue> {
         self.binding.upper_bound().magnitude()
     }
 
-    pub const fn cardinality(&self) -> u32 {
+    pub fn cardinality(&self) -> u32 {
         self.binding.upper_bound().cardinality()
     }
 
@@ -185,6 +185,7 @@ impl WorthQueryRequestedElevation {
 /// `AlreadyRequested` carry the move-only requested-elevation receipt.
 #[derive(Debug)]
 pub enum WorthQueryElevationRequestOutcome {
+    CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     /// Some owners moved, but the product head did not. Recover publication.
@@ -253,6 +254,9 @@ pub(in crate::domain_computation::primary_graph) fn requested_outcome(
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryElevationRequestOutcome::SettlementDeferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
+            WorthQueryElevationRequestOutcome::CleanupRequired(cleanup)
         }
         WorthQueryApplicationCommitOutcome::Indeterminate(_) => {
             WorthQueryElevationRequestOutcome::Indeterminate

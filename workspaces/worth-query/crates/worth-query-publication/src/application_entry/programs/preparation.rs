@@ -4,16 +4,16 @@ use super::WorthQueryApplicationProgramsRequest;
 
 pub use worth_query_execution::facade::primary_graph::{
     WorthQueryPreparedBranchAdoption, WorthQueryPreparedProgramMigration,
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDefinitionOccurrence,
-    WorthQueryWorkflowDispositionDenial, WorthQueryWorkflowDispositions,
-    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowInstanceDisposition,
 };
 
 /// Why a program adoption did not prepare.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProgramAdoptionPreparationDenial {
+    Authorization(
+        worth_query_execution::facade::primary_graph::WorthQueryProgramAdoptionAuthorizationDenial,
+    ),
     ProductSelection(
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
     ),
@@ -26,21 +26,38 @@ pub enum WorthQueryApplicationProgramAdoptionPreparationDenial {
 /// effects performed.
 /// Only `prepare` can mint the move-only value whose `publish` method exists.
 ///
-/// A branch holding workflow facts needs one explicit decision per current
-/// definition and live instance: read [`Self::workflow_inventory`], decide it
-/// into [`WorthQueryWorkflowDispositions`], and pass them to [`Self::workflow`].
+/// A branch holding workflow facts needs an explicit total decision or the
+/// native carry-compatible policy. Definition-selected governed reads disclose
+/// consumer views; preparation never returns its complete safety inventory.
+///
+/// ```compile_fail,E0599
+/// use worth_query_publication::facade::application_entry::WorthQueryApplicationProgramAdoptionRequest;
+/// use worth_query_installation::facade::ApplicationSchema;
+/// fn no_complete_disclosure<S: ApplicationSchema>(request: WorthQueryApplicationProgramAdoptionRequest<'_, '_, '_, '_, S>) {
+///     request.workflow_inventory(64);
+/// }
+/// ```
+/// ```
+/// use worth_query_publication::facade::application_entry::{WorthQueryApplicationProgramAdoptionRequest, WorthQueryWorkflowDispositions, WorthQueryPreparedBranchAdoption};
+/// use worth_query_installation::facade::ApplicationSchema;
+/// fn explicit_native_intent<S: ApplicationSchema>(request: WorthQueryApplicationProgramAdoptionRequest<'_, '_, '_, '_, S>) {
+///     let _owned_request = request.workflow(WorthQueryWorkflowDispositions::carry_compatible());
+/// }
+/// fn preserve_prepared_custody(prepared: WorthQueryPreparedBranchAdoption) -> WorthQueryPreparedBranchAdoption {
+///     prepared
+/// }
+/// ```
+///
+/// A genuine prepared value can be moved intact, but callers cannot replace
+/// its target while carrying its private native publication custody.
 ///
 /// ```compile_fail,E0451
-/// use worth_query_execution::facade::primary_graph::WorthQueryPreparedBranchAdoption;
+/// use worth_query_publication::facade::application_entry::WorthQueryPreparedBranchAdoption;
 ///
-/// fn callers_cannot_forge_prepared_adoption() {
+/// fn callers_cannot_retarget_prepared_adoption(prepared: WorthQueryPreparedBranchAdoption) {
 ///     let _forged = WorthQueryPreparedBranchAdoption {
-///         source: todo!(),
-///         target: todo!(),
-///         requirements: todo!(),
-///         selected_entity_count: 0,
-///         selection_work_units: 0,
-///         publication: todo!(),
+///         target: *prepared.target(),
+///         ..prepared
 ///     };
 /// }
 /// ```
@@ -74,36 +91,7 @@ where
         self
     }
 
-    /// Every current workflow definition and live instance this branch
-    /// incarnation holds, each with its legal dispositions under the target.
-    pub fn workflow_inventory(
-        &self,
-        maximum_work_units: usize,
-    ) -> Result<
-        WorthQueryWorkflowAdoptionInventory,
-        WorthQueryApplicationProgramAdoptionPreparationDenial,
-    > {
-        let request_scope = self.programs.scope.clone();
-        let runtime = self.programs.application;
-        runtime.with_application_advancement(&request_scope, |phase| {
-
-        self.programs
-            .application
-            .on_branch(self.programs.branch)
-            .select(&phase, )
-            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
-            .workflow_adoption_inventory(&phase,
-                self.requirements.target(),
-                self.requirements,
-                maximum_work_units,
-            )
-            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
-
-        }).map_err(|cause| WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause)))?
-    }
-
-    /// Decisions for the inventory they were built from. Preparation refuses
-    /// them if owner truth moved since.
+    /// Explicit adoption intent, resolved against complete private fresh safety truth.
     pub fn workflow(mut self, dispositions: WorthQueryWorkflowDispositions) -> Self {
         self.workflow = Some(dispositions);
         self
@@ -120,18 +108,19 @@ where
         let runtime = self.programs.application;
         runtime.with_application_advancement(&request_scope, |phase| {
 
-        self.programs
+        let selected = self.programs
             .application
             .on_branch(self.programs.branch)
             .select(&phase, )
-            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
-            .prepare_branch_adoption_in_advancement(
+            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?;
+        selected.prepare_branch_adoption_in_advancement(
                 &phase,
                 self.requirements.target(),
                 self.requirements,
                 self.migration,
                 self.workflow,
                 maximum_selection_work,
+                self.programs.principal,
                 self.programs.scope,
             )
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)

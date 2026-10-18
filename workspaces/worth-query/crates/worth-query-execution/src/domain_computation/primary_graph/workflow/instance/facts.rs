@@ -26,18 +26,22 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,
+    started_program_revision: &AspectValue,
     branch_occurrence: u64,
     subject: EntityId,
     carry: WorkflowLineageCarry,
+    advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     visit_start_facts(
         layout,
         compiled,
         instance_identity,
+        started_program_revision,
         branch_occurrence,
         EntityReference::Existing(subject),
         carry,
+        advancer,
         &mut emit,
     )
 }
@@ -46,18 +50,22 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_birth_facts<E
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,
+    started_program_revision: &AspectValue,
     branch_occurrence: u64,
     subject: CreatedEntityRef,
     carry: WorkflowLineageCarry,
+    advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     visit_start_facts(
         layout,
         compiled,
         instance_identity,
+        started_program_revision,
         branch_occurrence,
         EntityReference::Created(subject),
         carry,
+        advancer,
         emit,
     )
 }
@@ -66,9 +74,11 @@ fn visit_start_facts<Error>(
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,
+    started_program_revision: &AspectValue,
     branch_occurrence: u64,
     subject: EntityReference,
     carry: WorkflowLineageCarry,
+    advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     let partition = compiled.definition().partition_id;
@@ -79,6 +89,10 @@ fn visit_start_facts<Error>(
     };
     let mut fields = BTreeMap::from([
         (layout.instance.identity.clone(), text(instance_identity)),
+        (
+            layout.instance.started_program_revision.clone(),
+            started_program_revision.clone(),
+        ),
         (
             layout.instance.protocol_version.clone(),
             AspectValue::UInt64(match &subject {
@@ -123,6 +137,7 @@ fn visit_start_facts<Error>(
             ),
         ]);
     }
+    advancer.append_fields(&layout.instance.start_advancer, &mut fields);
     if let Some(path) = compiled.resumed_path() {
         fields.insert(layout.instance.resume_node_path.clone(), text(path));
     }

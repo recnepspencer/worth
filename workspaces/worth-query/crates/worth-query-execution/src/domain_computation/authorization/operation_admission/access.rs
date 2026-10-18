@@ -136,7 +136,7 @@ impl<Schema, Operation, Input, Scope>
         )
     }
 
-    pub const fn capability_input(&self) -> Option<&Input> {
+    pub fn capability_input(&self) -> Option<&Input> {
         self.authorization_basis.capability_input()
     }
 
@@ -331,6 +331,12 @@ impl<Schema, Operation, Input, Scope>
         &self,
     ) -> Option<[u8; 32]> {
         self.source_partition_identity
+    }
+
+    pub(in crate::domain_computation) fn source_facts(
+        &self,
+    ) -> &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact] {
+        &self.source_facts
     }
 
     pub(in crate::domain_computation) fn take_source_facts(

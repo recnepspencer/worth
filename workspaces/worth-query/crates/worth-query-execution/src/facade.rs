@@ -41,9 +41,10 @@ pub mod runtime {
     };
     pub use worth_execution::{
         CancellationSource, CancellationToken, ExecutionAllocationDenial,
-        ExecutionAllocationDenialKind, ExecutionAllocationPolicy, ExecutionAuthority,
-        ExecutionAuthorityConfig, ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial,
-        LeaseRequest, MemoryLimitDenial, MemoryLimitLevel,
+        ExecutionAllocationDenialClass, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
+        ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMemoryReservation,
+        ExecutionPhysicalAllocationDenialKind, ExecutionResourceLease, LeaseDenial, LeaseRequest,
+        MapKernelStop, MemoryLimitDenial, MemoryLimitLevel, WorkCeilingDenial,
     };
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity, NoEffectCause,

@@ -99,20 +99,6 @@ impl IdentityEvolutionCertificationLane {
             exact_counter_values: evidence.counter_snapshot().exact_counter_values().to_vec(),
         }
     }
-
-    pub fn has_required_outputs(&self) -> bool {
-        !self.query_digest.is_empty()
-            && !self.basis_digest.is_empty()
-            && !self.lineage_digest.is_empty()
-            && !self.branch_locality_digest.is_empty()
-            && !self.complexity_contract_digest.is_empty()
-            && !self.result_digest.is_empty()
-            && !self.failure_digest.is_empty()
-            && !self.replay_digest.is_empty()
-            && !self.counter_snapshot_digest.is_empty()
-            && !self.inspector_identity_digest.is_empty()
-            && !self.inspector_replay_stable_digest.is_empty()
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

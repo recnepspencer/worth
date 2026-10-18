@@ -112,17 +112,17 @@ where
         mut self,
     ) -> Result<FoundationalPerformanceBundle<Claim>, FoundationalPerformanceBundleConstructionDenial>
     {
-        if let Some(layout_intent_claim) = &self.layout_intent_claim {
-            if self.claim.access_pattern() != layout_intent_claim.access_pattern() {
-                return Err(
-                    FoundationalPerformanceBundleConstructionDenial::LayoutAttachment(
-                        FoundationalLayoutAnnotatedClaimConstructionDenial::AccessPatternMismatch {
-                            claim_access_pattern: self.claim.access_pattern(),
-                            layout_access_pattern: layout_intent_claim.access_pattern(),
-                        },
-                    ),
-                );
-            }
+        if let Some(layout_intent_claim) = &self.layout_intent_claim
+            && self.claim.access_pattern() != layout_intent_claim.access_pattern()
+        {
+            return Err(
+                FoundationalPerformanceBundleConstructionDenial::LayoutAttachment(
+                    FoundationalLayoutAnnotatedClaimConstructionDenial::AccessPatternMismatch {
+                        claim_access_pattern: self.claim.access_pattern(),
+                        layout_access_pattern: layout_intent_claim.access_pattern(),
+                    },
+                ),
+            );
         }
 
         self.contract_names.sort();

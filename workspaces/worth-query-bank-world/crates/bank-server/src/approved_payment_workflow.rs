@@ -1,3 +1,8 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Workflow refusals preserve complete native operation recovery and cleanup custody without allocation"
+)]
+
 use bank_domain::{
     proposals::{BankIdempotencyKey, BankProposalDenial},
     schema::{
@@ -30,8 +35,12 @@ mod assessment;
 mod condition;
 #[path = "approved_payment_workflow/error.rs"]
 mod error;
+mod native_operation;
 #[path = "approved_payment_workflow/owner.rs"]
 mod owner;
+mod owning;
+pub use native_operation::BankAdvancedApprovedPaymentWorkflow;
+pub use owning::BankCompletedApprovedPayment;
 #[path = "approved_payment_workflow/progression.rs"]
 mod progression;
 pub use assessment::{
@@ -219,61 +228,45 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .map_err(BankApprovedPaymentWorkflowError::Advance)
     }
 
-    pub fn perform_apply(
+    /// Retains the exact guarded effect without retaining this principal or request scope.
+    pub fn retain_apply(
         &self,
-        instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowOperation,
         operation: ApprovePayment,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<BankApprovedPaymentApplyOutcome, BankApprovedPaymentWorkflowError> {
-        let effect = self
-            .runtime
+        command_key: BankIdempotencyKey,
+    ) -> Result<
+        worth_query_host::facade::application_entry::WorthQueryWorkflowOperation<
+            BankSchema,
+            ApprovedBusinessPaymentApplyIntent,
+            crate::BankApplication,
+            crate::ApprovedPaymentEffectAction,
+        >,
+        BankApprovedPaymentWorkflowError,
+    > {
+        self.runtime
             .request(self.principal, self.scope)
-            .on_branch(instance.branch())
-            .mutate(ApprovedBusinessPaymentApplyIntent {
-                input: operation.clone(),
-            })
-            .idempotency(command_key)
+            .on_branch(required.branch())
+            .mutate(ApprovedBusinessPaymentApplyIntent { input: operation })
+            .without_source()
+            .idempotency_owned(command_key)
+            .map_err(|(builder, key, denial)| {
+                BankApprovedPaymentWorkflowError::OperationCapture(
+                    builder.into_capture_refusal(key, denial),
+                )
+            })?
             .for_workflow_operation(self.runtime.approved_payment_workflow_runtime(), required)
-            .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
-            .execute_in_program(
-                self.runtime
-                    .approved_payment_workflow_runtime()
-                    .program_runtime(),
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            .map_err(|(_, cause)| BankApprovedPaymentWorkflowError::OperationBinding(cause))?
+            .retain_operation::<crate::BankApplication, crate::ApprovedPaymentEffectAction>(
+                self.runtime.application_program(),
             )
-            .map_err(BankApprovedPaymentWorkflowError::OperationMutation)?;
-        Ok(match effect {
-            WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => {
-                BankApprovedPaymentApplyOutcome::Performed(BankApprovedPaymentPerformedOperation {
-                    receipt,
-                    newly_committed: true,
-                })
-            }
-            WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt) => {
-                BankApprovedPaymentApplyOutcome::Performed(BankApprovedPaymentPerformedOperation {
-                    receipt,
-                    newly_committed: false,
-                })
-            }
-            WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation) => {
-                BankApprovedPaymentApplyOutcome::PreviouslyCommitted(observation)
-            }
-            WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift => {
-                BankApprovedPaymentApplyOutcome::IdempotencyIntentDrift
-            }
-            WorthQueryApplicationMutationOutcome::DomainDenied(denial) => {
-                BankApprovedPaymentApplyOutcome::DomainDenied(denial)
-            }
-            WorthQueryApplicationMutationOutcome::Cancelled => {
-                BankApprovedPaymentApplyOutcome::Cancelled
-            }
-            WorthQueryApplicationMutationOutcome::DeadlineExceeded => {
-                BankApprovedPaymentApplyOutcome::DeadlineExceeded
-            }
-            WorthQueryApplicationMutationOutcome::Commit(outcome) => {
-                BankApprovedPaymentApplyOutcome::Commit(outcome)
-            }
-        })
+            .map_err(|(_, cause)| BankApprovedPaymentWorkflowError::OperationConstruction(cause))
+    }
+    /// Current native workflow controls for callers explicitly managing the native funnel.
+    pub fn advanced(&self) -> BankAdvancedApprovedPaymentWorkflow<'runtime, 'principal, 'scope> {
+        BankAdvancedApprovedPaymentWorkflow {
+            runtime: self.runtime,
+            principal: self.principal,
+            scope: self.scope,
+        }
     }
 }

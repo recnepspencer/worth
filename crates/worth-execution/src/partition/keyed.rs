@@ -171,12 +171,12 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
         entry: KeyedItem<K>,
         admit: impl FnOnce(u64) -> Result<(), Admission>,
     ) -> Result<PartitionWork, KeyedEditDenial<Admission>> {
-        if let Some((identity, _)) = self.keys.get(&entry.key) {
-            if *identity != entry.partition {
-                return Err(KeyedEditDenial::Keyed(KeyedDenial::KeyIdentityChanged {
-                    partition: *identity,
-                }));
-            }
+        if let Some((identity, _)) = self.keys.get(&entry.key)
+            && *identity != entry.partition
+        {
+            return Err(KeyedEditDenial::Keyed(KeyedDenial::KeyIdentityChanged {
+                partition: *identity,
+            }));
         }
         if self
             .identities

@@ -4,11 +4,15 @@ error[E0599]: no method named `commit_validated_proposal` found for struct `Rela
 6 |     runtime.commit_validated_proposal(proposal);
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-help: there is a method `prepare_validated_proposal` with a similar name
+help: there is a method `prepare_validated_proposal` with a similar name, but with different arguments
+ --> src/mvcc/publication/candidate_preparation.rs
   |
-6 -     runtime.commit_validated_proposal(proposal);
-6 +     runtime.prepare_validated_proposal(proposal);
-  |
+  | /     pub fn prepare_validated_proposal(
+  | |         &self,
+  | |         execution: &worth_execution::ExecutionRequest<'_, '_>,
+  | |         proposal: crate::mvcc::ValidatedRelationalProposal,
+  | |     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+  | |_______________________________________________________________________________________^
 
 error[E0599]: no method named `execute_validated_commit` found for struct `CommitStrategiesAuthorityFacade` in the current scope
  --> tests/ui/prepared_candidate/validated_proposal_cannot_publish.rs:9:16
@@ -16,8 +20,13 @@ error[E0599]: no method named `execute_validated_commit` found for struct `Commi
 9 |     strategies.execute_validated_commit(&runtime, proposal);
   |                ^^^^^^^^^^^^^^^^^^^^^^^^
   |
-help: there is a method `prepare_validated_commit` with a similar name
+help: there is a method `prepare_validated_commit` with a similar name, but with different arguments
+ --> src/commit_strategies/facade.rs
   |
-9 -     strategies.execute_validated_commit(&runtime, proposal);
-9 +     strategies.prepare_validated_commit(&runtime, proposal);
-  |
+  | /     pub fn prepare_validated_commit(
+  | |         &mut self,
+  | |         execution: &worth_execution::ExecutionRequest<'_, '_>,
+  | |         runtime: &RelationalRuntime,
+  | |         validated: crate::mvcc::ValidatedRelationalProposal,
+  | |     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+  | |_______________________________________________________________________________________^

@@ -1,6 +1,7 @@
 //! The document-retention host's installed workflow and authentication owner.
 
 use std::time::Duration;
+use worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec;
 
 use worth_query_host::facade::application_installation::{
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowVocabulary,
@@ -15,17 +16,20 @@ use super::super::{
     },
 };
 
-pub struct DocumentWorkflowRuntime {
-    pub(in super::super) workflow: WorthQueryWorkflowApplicationRuntime<
-        DocumentRetentionSchema,
-        ReviewedDocumentWorkflow,
-        RetentionProgramP0,
-    >,
+pub struct DocumentWorkflowRuntime<Program = RetentionProgramP0, Spec = ReviewedDocumentWorkflow>
+where
+    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
+{
+    pub(in super::super) workflow:
+        WorthQueryWorkflowApplicationRuntime<DocumentRetentionSchema, Spec, Program>,
     pub(in super::super) authentication: CertificationAuthenticationOwner,
     pub(in super::super) authentication_clock: CertificationAuthenticationClockSource,
 }
 
-impl DocumentWorkflowRuntime {
+impl<Program, Spec> DocumentWorkflowRuntime<Program, Spec>
+where
+    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
+{
     pub fn authentication(&self) -> &CertificationAuthenticationOwner {
         &self.authentication
     }
@@ -33,11 +37,7 @@ impl DocumentWorkflowRuntime {
     /// Lets a certification add vocabularies for other rostered programs.
     pub fn workflow_mut(
         &mut self,
-    ) -> &mut WorthQueryWorkflowApplicationRuntime<
-        DocumentRetentionSchema,
-        ReviewedDocumentWorkflow,
-        RetentionProgramP0,
-    > {
+    ) -> &mut WorthQueryWorkflowApplicationRuntime<DocumentRetentionSchema, Spec, Program> {
         &mut self.workflow
     }
 
@@ -46,12 +46,11 @@ impl DocumentWorkflowRuntime {
     }
 }
 
-impl std::ops::Deref for DocumentWorkflowRuntime {
-    type Target = WorthQueryWorkflowApplicationRuntime<
-        DocumentRetentionSchema,
-        ReviewedDocumentWorkflow,
-        RetentionProgramP0,
-    >;
+impl<Program, Spec> std::ops::Deref for DocumentWorkflowRuntime<Program, Spec>
+where
+    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
+{
+    type Target = WorthQueryWorkflowApplicationRuntime<DocumentRetentionSchema, Spec, Program>;
 
     fn deref(&self) -> &Self::Target {
         &self.workflow
@@ -60,14 +59,14 @@ impl std::ops::Deref for DocumentWorkflowRuntime {
 
 /// Every workflow entry names its vocabulary; this host's initial one is the
 /// P0 vocabulary its workflow runtime retained at installation.
-impl<'application> From<&'application DocumentWorkflowRuntime>
-    for WorthQueryWorkflowVocabulary<
-        'application,
-        DocumentRetentionSchema,
-        ReviewedDocumentWorkflow,
-    >
+impl<'application, Program, Spec> From<&'application DocumentWorkflowRuntime<Program, Spec>>
+    for WorthQueryWorkflowVocabulary<'application, DocumentRetentionSchema, Spec>
+where
+    Spec: worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+        Schema = DocumentRetentionSchema,
+    >,
 {
-    fn from(application: &'application DocumentWorkflowRuntime) -> Self {
+    fn from(application: &'application DocumentWorkflowRuntime<Program, Spec>) -> Self {
         application.workflow.vocabulary()
     }
 }

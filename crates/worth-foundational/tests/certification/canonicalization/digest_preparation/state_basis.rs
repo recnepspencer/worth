@@ -7,7 +7,7 @@ use worth_foundational::{
 use worth_proof::TransitionOutcome;
 
 use super::readiness_fixtures::{admitted_state, ready_state, task_summary_contract};
-use crate::foundational_vocabulary::{field, key, revision, validated_scalar};
+use crate::certification::foundational_vocabulary::{field, key, revision, validated_scalar};
 
 #[test]
 fn digest_preparation_basis_is_stable_across_native_insertion_order() {

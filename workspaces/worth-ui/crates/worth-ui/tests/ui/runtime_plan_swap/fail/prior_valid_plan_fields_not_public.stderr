@@ -1,7 +1,0 @@
-error: cannot construct `WorthUiPriorValidPlanObservation` with struct literal syntax due to private fields
- --> tests/ui/runtime_plan_swap/fail/prior_valid_plan_fields_not_public.rs:4:13
-  |
-4 |     let _ = WorthUiPriorValidPlanObservation {};
-  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private fields `artifact_digest`, `active_plan_digest`, `snapshot_digest`, `lifecycle`, `status` and `frame_epoch` that were not provided

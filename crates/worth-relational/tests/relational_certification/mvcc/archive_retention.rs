@@ -1,5 +1,5 @@
 use super::world::supply_chain::{certified_supply_chain_world, SupplyChainScale};
-use crate::mvcc_branch_fork_fixture::fork_branch;
+use crate::relational_certification::mvcc_branch_fork_fixture::fork_branch;
 use worth_relational::facade::branch::{
     RelationalBranchBasisDenial, RelationalBranchLifecyclePosture, RelationalForkDenial,
 };
@@ -12,7 +12,8 @@ use worth_relational::facade::runtime::ProjectionAspectScope;
 
 #[test]
 fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());

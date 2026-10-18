@@ -139,8 +139,11 @@ impl worth_query_decl::facade::application_program::ApplicationChangeShape for S
 pub(super) fn source_feature() -> ApplicationFeatureSpec {
     ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
         .provides::<PlanarBodyOutput>()
-        .mutation::<PlanarEditBinding<CheckpointSchema>>()
-        .mutation_with_locality_and_change::<PlanarSourceAdjustmentBinding<CheckpointSchema>, computation::Locality, SourceChange>()
+        .native_action::<PlanarEditBinding<CheckpointSchema>>()
+        .finish_action()
+        .native_action::<PlanarSourceAdjustmentBinding<CheckpointSchema>>()
+        .locality_and_change::<computation::Locality, SourceChange>()
+        .finish_action()
         .finish()
 }
 impl ApplicationProgramDefinition<CheckpointSchema> for Program {
@@ -154,8 +157,10 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
             ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
                 .derived_artifact::<computation::Artifact>()
                 .managed_computation::<computation::Computation>()
-                .mutation::<PlanarEditBinding<CheckpointSchema>>()
-                .mutation::<VertexReplacementBinding<CheckpointSchema>>()
+                .native_action::<PlanarEditBinding<CheckpointSchema>>()
+                .finish_action()
+                .native_action::<VertexReplacementBinding<CheckpointSchema>>()
+                .finish_action()
                 .conditional_operation::<MutatePlanar>()
                 .finish(),
         );
@@ -242,6 +247,7 @@ fn compiled_examples_parallel_advancement() {
             .execute()
             .unwrap();
         let changed = request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: key.to_owned(),
                 replacement_y: length(y),

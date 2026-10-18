@@ -50,13 +50,19 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// The savepoint limit was reached.
-    SavepointCapacityExhausted { maximum_savepoints: usize },
+    SavepointCapacityExhausted {
+        maximum_savepoints: usize,
+    },
     /// The runtime ran out of savepoint identities.
     SavepointIdentityExhausted,
     /// The provider's candidate limit was reached.
-    CandidateCapacityExhausted { maximum_candidates: usize },
+    CandidateCapacityExhausted {
+        maximum_candidates: usize,
+    },
     /// The provider's published-snapshot limit was reached.
-    PublishedSnapshotCapacityExhausted { maximum_handles: usize },
+    PublishedSnapshotCapacityExhausted {
+        maximum_handles: usize,
+    },
     /// The runtime ran out of candidate identities.
     CandidateIdentityExhausted,
     /// The commit position was contended.
@@ -68,6 +74,12 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// The execution owner refused commit or index preparation; the cause and partition stay typed.
     ExecutionDenied {
         kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    /// Native checkpoint recovery's allocation owner refused the backing.
+    /// The checked quote is absent when layout could not be represented.
+    NativeAllocation {
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
     },
     /// Commit or index preparation was canceled or exceeded its deadline before publication.
     ExecutionControlStopped {
@@ -123,6 +135,19 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvariantInstallationReceiptMismatch,
     /// Recovery from a checkpoint was rejected.
     CheckpointRecoveryRejected,
+    UnsupportedCheckpointFormat {
+        observed: u16,
+        supported: u16,
+    },
+    UnsupportedCheckpointWorkflowContract {
+        facts: u16,
+        instances: u16,
+    },
+    UnsupportedCheckpointProducerFactVersion {
+        observed: u16,
+        supported: u16,
+    },
+    UnsupportedRecoveredNativeAuthorityLayout,
     /// A declared output producer has no binding.
     MissingProducerBinding,
     /// A producer is bound more than once.

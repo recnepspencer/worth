@@ -33,3 +33,10 @@ pub type ConsumerInitialDiscoveredProgramRoot = ApplicationDiscoveredOutputGraph
     InitialConnection,
     ApplicationOutputEdge<InitialDependentConnection, ApplicationOutputLeaf>,
 >;
+
+// This fixed graph uses the same lawful no-source connection and real dependent delivery.
+#[cfg(test)]
+pub type ConsumerInitialFixedProgramRoot = ApplicationOutputGraph<
+    InitialConnection,
+    ApplicationOutputEdge<InitialDependentConnection, ApplicationOutputLeaf>,
+>;

@@ -87,6 +87,7 @@ fn compare(
 
 #[cfg(test)]
 mod tests {
+    use super::super::VerificationCapacityStop;
     use super::*;
     use worth_relational::facade::mvcc::CompanionPreflightStop;
 
@@ -113,18 +114,19 @@ mod tests {
 
     #[test]
     fn observer_capacity_is_not_missing_evidence() {
+        let stop = CompanionPreflightStop::RetainedCompanionCapacityExhausted {
+            requested: 1,
+            retained: 1,
+            maximum: 1,
+        };
         assert_eq!(
             compare(
                 Ok(ConsumedOutputVerification::Current),
-                Err(FullVerificationStop::Admission(
-                    CompanionPreflightStop::RetainedCompanionCapacityExhausted {
-                        requested: 1,
-                        retained: 1,
-                        maximum: 1,
-                    },
-                )),
+                Err(FullVerificationStop::Admission(stop)),
             ),
-            EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::CapacityExhausted),
+            EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::CapacityExhausted(
+                VerificationCapacityStop::Meter(stop)
+            )),
         );
     }
 

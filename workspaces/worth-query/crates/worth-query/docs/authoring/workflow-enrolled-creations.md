@@ -106,16 +106,21 @@ let body = CreateRequestOperation::reference().body()
 ```
 
 After installing that body, its program action, own company-scoped capability
-and vocabulary membership, use the same intent and logical key at both calls:
+and vocabulary membership, use the same intent and logical key at both calls.
+The explicit native control lane below retains the enrollment requirement:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let birth = runtime.request(&principal, &scope)
     .on_branch(definition.branch())
+    .advanced()
     .mutate(intent.clone()).without_source().idempotency(&key)
     .prepare_workflow_birth::<_, CreatedRequest>(&workflow, definition)?;
 
 let outcome = runtime.request(&principal, &scope)
     .on_branch(birth.branch())
+    .advanced()
     .mutate(intent).without_source().idempotency(&key)
     .for_workflow_birth::<_, CreatedRequest>(&workflow, &birth)?
     .execute_capability_in_program(&program, allocation)?;

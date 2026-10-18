@@ -15,7 +15,8 @@ use super::{
 };
 
 /// Both performed and stable publications retain the same exact upstream
-/// identities through the invalidation owner's admitted ordered set.
+/// identities through the invalidation owner's admitted ordered set. The set
+/// is created empty here and never shared while it grows.
 pub(in crate::domain_computation::primary_graph) fn collect_consumed_output_upstream<'a>(
     consumed_outputs: impl IntoIterator<
         Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
@@ -26,7 +27,7 @@ pub(in crate::domain_computation::primary_graph) fn collect_consumed_output_upst
     let mut upstream = im::OrdSet::new();
     for consumed in consumed_outputs {
         admission.work(1)?;
-        admission.ordered_edit::<Arc<RecordedSettlementIdentity>, ()>(upstream.len())?;
+        admission.fresh_insert::<Arc<RecordedSettlementIdentity>, ()>(upstream.len())?;
         upstream.insert(Arc::clone(consumed.identity()));
     }
     Ok(upstream)
@@ -190,6 +191,7 @@ fn stopped(stop: CompanionPreflightStop) -> FullVerificationReason {
 
 /// The registration reads at the post-effect snapshot, so no later delivery
 /// marks a source fact the effect itself moved. The row starts dirty there.
+/// Its set is created empty here and never shared while it grows.
 fn own_effect_stale_ordinals(
     application: &WorthQueryPrimaryGraphCommittedApplication,
     admission: &mut super::InvalidationEditAdmission,
@@ -201,7 +203,7 @@ fn own_effect_stale_ordinals(
         .source_facts_superseded_by_own_effect()
     {
         admission.work(1)?;
-        admission.ordered_edit::<usize, ()>(stale.len())?;
+        admission.fresh_insert::<usize, ()>(stale.len())?;
         stale.insert(*ordinal);
     }
     Ok(stale)

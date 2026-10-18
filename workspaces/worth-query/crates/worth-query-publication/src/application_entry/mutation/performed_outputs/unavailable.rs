@@ -40,6 +40,16 @@ where Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<WorthQueryApplicationProgramOutputUnavailable, crate::application_entry::WorthQueryRequiredOutputPreparationDenial> {
         application.runtime().with_application_advancement(request.scope, |phase| {
+            self.finish_unavailable_in_advancement(&phase, application, request)
+        }).map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::advancement)?
+    }
+
+    pub(in crate::application_entry) fn finish_unavailable_in_advancement(
+        &mut self,
+        phase: &AdvancementPhase<'_>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<WorthQueryApplicationProgramOutputUnavailable, crate::application_entry::WorthQueryRequiredOutputPreparationDenial> {
         use crate::application_entry::WorthQueryRequiredOutputPreparationDenial as Denial;
         if self.complete || self.root_settlement.is_some() || self.pending_root_authority.is_some() || self.continuation.is_some() { return Err(Denial::Closed); }
         if !std::ptr::eq(application.runtime(), request.application) {
@@ -47,17 +57,16 @@ where Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition
         }
         let (Some(receipt), Some(prepared), Some(root)) = (&self.source_receipt, &self.source_preparation, &mut self.root) else { return Err(Denial::MissingPerformedDelivery); };
         let access = worth_query_execution::publication_boundary::program_publication_access();
-        application.validate_required_program_source::<Root>(&phase, &access, prepared, receipt,
+        application.validate_required_program_source::<Root>(phase, &access, prepared, receipt,
             &self.source_observation.retained, request.principal, request.scope, request.branch)
             .map_err(|d| Denial::Demand(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(d)))?;
         // Prepare the descriptive receipt before the native terminal transition.
         let receipt = receipt.clone();
-        let denial = root.finish_unavailable::<Root>(&phase, application, request, prepared).map_err(Denial::Demand)?;
+        let denial = root.finish_unavailable::<Root>(phase, application, request, prepared).map_err(Denial::Demand)?;
         self.complete = true;
         self.root = None;
         self.source_preparation = None;
         Ok(WorthQueryApplicationProgramOutputUnavailable { receipt, denial })
 
-        }).map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::advancement)?
     }
 }

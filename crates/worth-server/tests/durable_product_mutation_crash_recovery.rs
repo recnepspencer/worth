@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use serde_json::{json, Value};
 use worth_server::{
@@ -8,8 +8,8 @@ use worth_server::{
     WorthServerProductOperationSurfaceDenialCode,
 };
 
-#[path = "support/durable_product_mutation/mod.rs"]
-mod durable_support;
+#[allow(unused_imports)]
+use crate::shared_support_durable_product_mutation as durable_support;
 
 use durable_support::{
     build_server, build_server_with_mutation_policy, execute, prepared_mutation_request, session,

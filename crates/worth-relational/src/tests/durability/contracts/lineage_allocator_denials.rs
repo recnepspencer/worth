@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
@@ -7,11 +8,15 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
 
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "lineage-overflow-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     create_entity_outcome(execution, &runtime, "lineage-overflow-tail");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     plan.tail_log[0]
         .envelope_mut_for_test()
         .published_lineage_mut_for_test()

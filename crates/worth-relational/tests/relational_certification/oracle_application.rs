@@ -1,4 +1,4 @@
-use crate::world::supply_chain::*;
+use crate::relational_certification::world::supply_chain::*;
 
 #[test]
 fn every_named_delta_applies_to_the_correct_semantic_branch() {

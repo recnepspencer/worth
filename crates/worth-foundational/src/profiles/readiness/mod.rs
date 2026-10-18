@@ -26,17 +26,3 @@ pub use vocabulary::{
     FoundationalProfileWORTHProofApi, FoundationalProfileWORTHProofForbiddenSurface,
     FoundationalProfileWORTHProofSurface,
 };
-
-#[cfg(test)]
-mod tests {
-    use worth_proof::AuthorityWitness;
-
-    use super::FoundationalProfileProductionReadinessAuthority;
-
-    #[test]
-    fn production_readiness_authority_is_crate_controlled() {
-        let _authority = AuthorityWitness::from_authority_marker(
-            FoundationalProfileProductionReadinessAuthority::certification_boundary(),
-        );
-    }
-}

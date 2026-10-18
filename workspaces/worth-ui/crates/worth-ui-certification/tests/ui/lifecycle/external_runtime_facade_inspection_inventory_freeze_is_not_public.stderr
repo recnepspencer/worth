@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui_runtime::certification`
- --> tests/ui/lifecycle/external_runtime_facade_inspection_inventory_freeze_is_not_public.rs:1:23
-  |
-1 | use worth_ui_runtime::certification::freeze_with_inspection_scope_inventory;
-  |                       ^^^^^^^^^^^^^ could not find `certification` in `worth_ui_runtime`

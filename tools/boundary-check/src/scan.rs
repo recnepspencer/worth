@@ -63,6 +63,9 @@ pub(crate) fn run(
         prepare_source_identifier_denials(&root, &config.source_identifier_denials)
     });
     let mut diagnostics = Vec::<Diagnostic>::new();
+    diagnostics.extend(scan_profile::measure("validate_consumer_docs", || {
+        crate::consumer_docs::validate(&root)
+    }));
     diagnostics.extend(crate::one_build::validate(&root));
     diagnostics.extend(crate::sealed_sources::validate(&root));
     diagnostics.extend(scan_profile::measure("validate_hook_authority", || {

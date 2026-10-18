@@ -4,6 +4,11 @@
 //! adapter. The callback crosses a separate OS process and the production HTTP
 //! verifier; this court does not claim an OIDC payment entry route.
 
+#![allow(
+    clippy::result_large_err,
+    reason = "Transport payment courts retain complete native workflow and cleanup refusal owners"
+)]
+
 use std::time::{Duration, Instant};
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
@@ -99,20 +104,19 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
         )
     });
     let initial = tokio::task::block_in_place(|| {
-        let workflow = runtime.approved_business_payment(&approver, &scope);
-        workflow
-            .perform_apply(
-                instance.clone(),
+        let operation_owner = runtime
+            .approved_business_payment(&approver, &scope)
+            .retain_apply(
                 &operation,
                 authority.clone(),
-                &key("approved-payment:operation:perform"),
+                key("approved-payment:operation:perform"),
             )
-            .expect("real payment operation commits before response loss")
+            .expect("exact owning payment construction");
+        match operation_owner.advance(&runtime.request(&approver,&scope).on_branch(instance.branch())) {
+            worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Progress(owner)=>owner,
+            _=>panic!("actual payment effect retains original dispatch handle after response loss"),
+        }
     });
-    assert!(initial
-        .into_performed()
-        .expect("payment commit performed")
-        .newly_committed());
 
     let first = tokio::time::timeout(Duration::from_secs(20), proxy.await_first_capture())
         .await
@@ -157,15 +161,14 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
 
     let terminal = tokio::time::timeout(Duration::from_secs(25), async {
         loop {
-            if let Some(terminal) = bank.observe_rail_completion(token) {
-                if inquire_completion_delivery_posture(rail.local_addr(), TIMEOUT)
+            if let Some(terminal) = bank.observe_rail_completion(token)
+                && inquire_completion_delivery_posture(rail.local_addr(), TIMEOUT)
                     .await
                     .expect("rail reports callback custody")
                     .pending
                     == 0
-                {
-                    break terminal;
-                }
+            {
+                break terminal;
             }
             tokio::time::sleep(Duration::from_millis(25)).await;
         }
@@ -231,21 +234,40 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
         still_pending,
         WorkflowProgressOutcome::AwaitingOperation(_)
     ));
-    let workflow = runtime.approved_business_payment(&approver, &scope);
-    require_completed(
-        tokio::task::block_in_place(|| {
-            workflow.accept_applied(
-                instance.clone(),
-                &operation,
-                authority.clone(),
-                authority.clone(),
-                &key("approved-payment:operation:perform"),
-                &key("approved-payment:operation:accept:inbound"),
-            )
-        })
-        .expect("fresh authorized owner acceptance settles the exact operation"),
-        "apply",
+    let initial = tokio::task::block_in_place(|| {
+        match initial.advance(&runtime.request(&approver,&scope).on_branch(instance.branch())) {
+        worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
+        _=>panic!("authenticated inbound must lawfully discharge ORIGINAL retained dispatch handle"),
+    }
+    });
+    assert!(
+        initial.dispatch_disposal_receipt().is_some(),
+        "actual native disposal receipt, not Drop/descriptive completion"
     );
+    assert!(matches!(
+        initial.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+    ));
+    let workflow = runtime.approved_business_payment(&approver, &scope);
+    let accepted = tokio::task::block_in_place(|| {
+        workflow.accept_owned_applied(
+            instance.clone(),
+            authority.clone(),
+            initial,
+            &key("approved-payment:operation:accept:inbound"),
+        )
+    })
+    .unwrap_or_else(|_| panic!("fresh authorized owner acceptance retains native custody"));
+    require_completed(accepted.progress, "apply");
+    tokio::task::block_in_place(|| {
+        accepted.operation.close(
+            &runtime
+                .request(&approver, &scope)
+                .on_branch(instance.branch()),
+        )
+    })
+    .unwrap_or_else(|_| panic!("actual payment effect cleanup"));
+
     let await_commit = match tokio::task::block_in_place(|| {
         workflow.advance(
             instance.clone(),

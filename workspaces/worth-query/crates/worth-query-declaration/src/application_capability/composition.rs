@@ -85,17 +85,24 @@ impl ApplicationCapabilityDecisionComposition {
 pub struct ApplicationCapabilityActorComposition {
     separation_of_duty: ApplicationCapabilitySeparationOfDutyRule,
     distinct_actor: ApplicationCapabilityDistinctActorRule,
+    recorded_actor: super::ApplicationCapabilityRecordedActorRule,
 }
 
 impl ApplicationCapabilityActorComposition {
     pub const fn new(
         separation_of_duty: ApplicationCapabilitySeparationOfDutyRule,
         distinct_actor: ApplicationCapabilityDistinctActorRule,
+        recorded_actor: super::ApplicationCapabilityRecordedActorRule,
     ) -> Self {
         Self {
             separation_of_duty,
             distinct_actor,
+            recorded_actor,
         }
+    }
+
+    pub const fn recorded_actor(&self) -> &super::ApplicationCapabilityRecordedActorRule {
+        &self.recorded_actor
     }
 
     pub const fn separation_of_duty(&self) -> &ApplicationCapabilitySeparationOfDutyRule {

@@ -83,6 +83,10 @@ macro_rules! payment_workflow_control {
         pub struct $binding;
 
         impl ApplicationMutationBinding<BankSchema> for $binding {
+    fn workflow_execution_requirements() -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
             type Input = ApprovePayment;
             type InputBinding = ApprovePaymentInputBinding;
             type Result = PaymentDecisionResult;
@@ -135,6 +139,12 @@ macro_rules! payment_workflow_control {
             > {
                 BankPrincipalBinding::reference()
             }
+        }
+
+        impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+            for $binding
+        {
+            type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<$capability>;
         }
 
         impl ApplicationCapabilityMutationBinding<BankSchema> for $binding {

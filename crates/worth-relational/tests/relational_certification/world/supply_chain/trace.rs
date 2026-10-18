@@ -166,13 +166,13 @@ impl SemanticTrace {
         }
         let relation_vector = expected.relations.values().copied().collect::<Vec<_>>();
         let relation_vector_input = relation_vector_bytes(&relation_vector);
-        if let Some(recorded) = &self.recorded_relation_vector {
-            if recorded != &relation_vector_input {
-                return Err(TraceReplayError::RecordedRelationVectorMismatch {
-                    expected: recorded.clone(),
-                    observed: relation_vector_input,
-                });
-            }
+        if let Some(recorded) = &self.recorded_relation_vector
+            && recorded != &relation_vector_input
+        {
+            return Err(TraceReplayError::RecordedRelationVectorMismatch {
+                expected: recorded.clone(),
+                observed: relation_vector_input,
+            });
         }
         let mut observed = ObservedSupplyChainState::from_expected(&expected);
         apply_mutation(&mut observed, *mutation, &baseline)?;
@@ -181,22 +181,22 @@ impl SemanticTrace {
             Err(failure) => failure,
         };
         let first_divergence = comparison.mismatch.clone();
-        if let Some(recorded) = &self.first_divergence {
-            if recorded != &first_divergence {
-                return Err(TraceReplayError::ForgedFirstDivergence {
-                    expected: first_divergence,
-                    observed: recorded.clone(),
-                });
-            }
+        if let Some(recorded) = &self.first_divergence
+            && recorded != &first_divergence
+        {
+            return Err(TraceReplayError::ForgedFirstDivergence {
+                expected: first_divergence,
+                observed: recorded.clone(),
+            });
         }
         let mutated_input = observed_canonical_bytes(&observed);
-        if let Some(recorded) = &self.mutated_input {
-            if recorded != &mutated_input {
-                return Err(TraceReplayError::MutatedInputMismatch {
-                    expected: recorded.clone(),
-                    observed: mutated_input,
-                });
-            }
+        if let Some(recorded) = &self.mutated_input
+            && recorded != &mutated_input
+        {
+            return Err(TraceReplayError::MutatedInputMismatch {
+                expected: recorded.clone(),
+                observed: mutated_input,
+            });
         }
         let mut replayed_trace = self.clone();
         replayed_trace.mutated_input = Some(mutated_input.clone());

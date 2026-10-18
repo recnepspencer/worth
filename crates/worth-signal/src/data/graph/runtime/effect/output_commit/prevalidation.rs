@@ -61,12 +61,11 @@ impl SignalGraph {
             .prepared_direct
             .as_ref()
             .map(PreparedDirectInvalidation::delta)
+            && delta.producer != producer
         {
-            if delta.producer != producer {
-                return Err(SignalError::internal(
-                    "prepared output delta belongs to another producer",
-                ));
-            }
+            return Err(SignalError::internal(
+                "prepared output delta belongs to another producer",
+            ));
         }
         if let Some(causes) = packet.direct_causes.as_ref() {
             causes.admit_node_and_waiter_publication_work(self, producer, work)?;

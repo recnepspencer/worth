@@ -9,10 +9,30 @@ use worth_query_topology_entry::{PlanarRead, PlanarSourceAdjustment};
 use super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
+#[cfg(test)]
+mod closed_delivery;
 mod continuation_basis;
 mod custody;
+#[cfg(test)]
+mod delivery_binding;
 mod dependent_recovery;
+#[cfg(test)]
+mod descriptor_result_set;
 mod discovered;
+#[cfg(test)]
+mod discovered_contracts;
+#[cfg(test)]
+mod discovered_owning;
+#[cfg(test)]
+mod fixed_action_instances;
+#[cfg(test)]
+mod fixed_batch;
+#[cfg(test)]
+mod fixed_branch_affinity;
+#[cfg(test)]
+mod fixed_delivery;
+#[cfg(test)]
+mod fixed_native_postures;
 pub(super) mod lifecycle;
 mod owner_demand_boundary;
 mod program_contract;
@@ -20,9 +40,14 @@ mod readiness_recovery;
 mod recovery;
 mod required_basis;
 mod required_unpublished;
+mod required_unpublished_hostile;
 pub(super) mod root_selection;
 pub(super) mod selected_root_selection;
 mod settlement;
+#[cfg(test)]
+mod source_inventory;
+#[cfg(test)]
+mod source_only_pinned;
 
 pub(super) fn performed_source_settles_required_output(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
@@ -39,6 +64,7 @@ pub(super) fn performed_source_settles_required_output(
     discovered::recovery::interrupted_discovery_recovers_both_consumed_roots(foreign);
     discovered::unpublished::original_partial_recovers_discovered_outputs(foreign);
     required_unpublished::original_partial_recovers_required_outputs(foreign);
+    required_unpublished_hostile::hostile_reconstruction_preserves_required_custody(foreign);
     discovered::initial_unpublished::initial_partial_recovers_discovered_outputs(foreign);
     discovered::publication_lifecycle::unchanged_roots_join_new_publication(foreign);
     discovered::publication_lifecycle::older_publication_starts_after_newer_root_binding(foreign);
@@ -89,6 +115,7 @@ fn secondary_root_settles_independently(
         .observed_sources()[0]
         .clone();
     let primary_outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -125,6 +152,7 @@ fn secondary_root_settles_independently(
         .observed_sources()[0]
         .clone();
     let secondary_outcome = secondary_request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
             replacement_y: length(3),
@@ -267,6 +295,7 @@ pub(super) fn ordinary_source_publication_cannot_bypass_program(
         .expect("the source occurrence is readable");
     let source = before.observed_sources()[0].clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -289,3 +318,38 @@ pub(super) fn ordinary_source_publication_cannot_bypass_program(
         .expect("the denied source remains readable");
     assert_eq!(after.rows()[0].y, length(1));
 }
+
+#[cfg(test)]
+#[test]
+fn owning_fixed_partial_publication_delivery_and_close() {
+    required_unpublished::original_partial_recovers_required_outputs(&crate::installed_schema());
+}
+
+#[cfg(test)]
+#[test]
+fn required_source_cleanup_consumers_complete() {
+    let installed = crate::installed_schema();
+    required_unpublished_hostile::hostile_reconstruction_preserves_required_custody(&installed);
+    discovered::unpublished::original_partial_recovers_discovered_outputs(&installed);
+    discovered::initial_unpublished::initial_partial_recovers_discovered_outputs(&installed);
+}
+
+#[cfg(test)]
+mod deployment_authorization;
+
+#[cfg(test)]
+mod fixed_replay;
+
+#[cfg(test)]
+mod fixed_missing_carrier;
+
+#[cfg(test)]
+mod fixed_managed_cleanup;
+
+#[cfg(test)]
+mod operation_cost;
+
+#[cfg(test)]
+mod fixed_cleanup;
+#[cfg(test)]
+mod fixed_readmission;

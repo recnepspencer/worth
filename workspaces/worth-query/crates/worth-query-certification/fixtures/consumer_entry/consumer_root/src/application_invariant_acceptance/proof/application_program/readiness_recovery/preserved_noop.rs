@@ -17,6 +17,7 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
     let request = world.application.request(&principal, &scope);
 
     let mut initial = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerSecondaryProgramRoot>(
             &world.application,
             PlanarOutputDemand::new("anchor-a"),
@@ -46,6 +47,7 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
         .execute()
         .expect("the source including its related vertex is observed");
     let outcome = request
+        .advanced()
         .mutate(PlanarEdit(adjust("anchor-b", 5)))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&10_021)
@@ -60,6 +62,7 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
     ));
 
     let mut preserved = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerSecondaryProgramRoot>(
             &world.application,
             PlanarOutputDemand::new("anchor-a"),

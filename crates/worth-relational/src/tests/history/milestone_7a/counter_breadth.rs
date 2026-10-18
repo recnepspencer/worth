@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::facade::history::BranchId;
 use crate::facade::replay::{RelationalReplayRequest, ReplayExecutionMode, ReplayVerificationMode};
 use crate::tests::support::*;
@@ -50,9 +51,10 @@ fn merge_ready_history_shape_reports_counter_breadth_explicitly() {
     assert!(runtime_counters.merge_history_replay_planning_nodes_visited >= 4);
     assert!(runtime_counters.merge_history_replay_parent_checks >= 4);
 
-    let recovery_plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
+    let recovery_plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()

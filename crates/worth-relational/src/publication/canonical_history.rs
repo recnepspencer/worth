@@ -44,20 +44,21 @@ pub(crate) fn durable_canonical_envelopes(
         return Vec::new();
     }
 
-    let recovery_plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
-    let mut envelopes = recovery_plan
-        .checkpoint
-        .map(|checkpoint| checkpoint.envelopes)
+    // Request-free observers borrow already-admitted native custody. Disk
+    // readmission belongs exclusively to execution-taking recovery planning.
+    let mut envelopes = runtime
+        .durable_checkpoints()
+        .last()
+        .map(|checkpoint| checkpoint.envelopes.clone())
         .unwrap_or_default();
     envelopes.extend(
-        recovery_plan
-            .tail_log
+        runtime
+            .durable_log()
             .into_iter()
-            .filter_map(|commit| commit.positioned().cloned()),
+            .map(|commit| commit.as_ref().clone()),
     );
     envelopes.sort_by_key(|commit| commit.position());
+    envelopes.dedup_by_key(|commit| commit.position());
     envelopes
 }
 

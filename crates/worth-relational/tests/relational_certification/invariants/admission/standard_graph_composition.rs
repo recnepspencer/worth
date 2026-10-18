@@ -26,7 +26,8 @@ const GRAPH_PROBE_ID: &str = "phase5.common.graph-composition";
 
 #[test]
 fn standard_runtime_public_graph_admission_is_touched_and_not_ordinary_commit_work() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::standard())
@@ -81,7 +82,8 @@ fn standard_runtime_public_graph_admission_is_touched_and_not_ordinary_commit_wo
 
 #[test]
 fn graph_planning_uses_child_basis_after_main_diverges_and_rejects_stale_binding() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())

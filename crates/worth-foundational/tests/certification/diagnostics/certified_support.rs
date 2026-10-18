@@ -22,7 +22,7 @@ use worth_foundational::{
 use worth_proof::TransitionOutcome;
 
 use super::materialization_support::{explanation_input, subject, support_input};
-use crate::transitions::fixtures::committed::{
+use crate::certification::transitions::fixtures::committed::{
     accepted_verdict, committed_authority, ordinary_commit_input,
 };
 

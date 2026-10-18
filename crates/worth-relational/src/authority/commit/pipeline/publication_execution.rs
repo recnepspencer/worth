@@ -119,6 +119,7 @@ pub(super) fn prepare_commit_publication_execution(
     let publication = {
         let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
         prepare_publication_phase(
+            execution,
             runtime,
             PreparePublicationPhaseInput {
                 commit_log,
@@ -280,6 +281,12 @@ pub(crate) struct PreparedCommitPublicationCompletion {
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
     prepared_indexes: Option<crate::indexes::PreparedCandidateIndexPublication>,
+}
+
+impl PreparedCommitPublicationCompletion {
+    pub(crate) fn durable_bytes(&self) -> Option<worth_execution::ExecutionImmutableBytes> {
+        self.publication.durable_bytes.clone()
+    }
 }
 
 impl PreparedCommitPublicationExecution {

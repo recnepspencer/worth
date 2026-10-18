@@ -131,8 +131,9 @@ impl ApplicationProgramDefinition<Schema> for Program {
         vec![
             ApplicationFeatureSpec::root::<Schema, SourceFeature>()
                 .provides::<SourcePort>()
-                .mutation_with_locality_and_change::<edit::Binding<Schema>, Locality, SourceChange>(
-                )
+                .native_action::<edit::Binding<Schema>>()
+                .locality_and_change::<Locality, SourceChange>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, Feature>()
                 .derived_artifact::<Artifact>()

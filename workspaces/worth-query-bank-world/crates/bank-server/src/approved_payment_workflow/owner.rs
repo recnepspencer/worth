@@ -12,12 +12,14 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission;
 
 use super::{
-    BankApprovedPaymentPreparedRecovery, BankApprovedPaymentWorkflow,
+    BankAdvancedApprovedPaymentWorkflow, BankApprovedPaymentPreparedRecovery,
     BankApprovedPaymentWorkflowError,
 };
 
-impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'principal, 'scope> {
-    pub fn accept_applied(
+impl<'runtime, 'principal, 'scope>
+    BankAdvancedApprovedPaymentWorkflow<'runtime, 'principal, 'scope>
+{
+    pub fn accept_native_effect(
         &self,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowOperation,
@@ -50,7 +52,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             })
     }
 
-    pub fn prepare_apply_recovery(
+    pub fn prepare_native_effect_recovery(
         &self,
         required: &RequiredWorkflowOperation,
         operation: ApprovePayment,
@@ -67,6 +69,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                 required,
             )
             .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
+            .advanced()
             .prepare_workflow_operation_recovery_from_owner(required)
             .map_err(|denial| {
                 BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(Box::new(denial))
@@ -74,7 +77,7 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn accept_recovered_applied(
+    pub fn accept_native_recovered_effect(
         &self,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowOperation,

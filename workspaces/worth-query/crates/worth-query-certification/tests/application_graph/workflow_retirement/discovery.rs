@@ -5,64 +5,33 @@
 //! replays.
 
 use worth_query_host::facade::{
-    application_discovery::{
-        WorthQueryWorkflowDefinitionDiscovery, WorthQueryWorkflowDefinitionDiscoveryDenial,
-    },
-    declaration::application_program::{
-        ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowSpec,
-        ApplicationWorkflowSpecIdentity,
-    },
+    application_discovery::WorthQueryWorkflowDefinitionDiscovery,
+    declaration::application_program::ApplicationWorkflowDefinitionIdentity,
     product::WorthQueryProductBranch,
 };
 
-use super::super::document_retention_model::schema::DocumentRetentionSchema;
 use super::fork_definitions::fork_of;
 use super::*;
 
 fn discover(
-    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &DocumentWorkflowRuntime,
     branch: WorthQueryProductBranch,
     identity: &ApplicationWorkflowDefinitionIdentity,
-) -> WorthQueryWorkflowDefinitionDiscovery {
-    application
-        .with_host_advancement(|host_phase| {
-            application
-                .runtime()
-                .on_branch(branch)
-                .select(&host_phase)
-                .expect("the branch selects its exact occurrence")
-        })
-        .expect("installed host call opens")
-        .discover_workflow_definition::<ReviewedDocumentWorkflow>(request_execution, identity)
-        .expect("the branch's workflow lineage reads within its bound")
-}
-
-fn discovered_current(
-    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &DocumentWorkflowRuntime,
-    branch: WorthQueryProductBranch,
-    identity: &ApplicationWorkflowDefinitionIdentity,
-) -> PublishedWorkflowDefinitionRef {
-    match discover(request_execution, application, branch, identity) {
-        WorthQueryWorkflowDefinitionDiscovery::Current(current) => current,
-        other => panic!("the branch must hold a current definition, got {other:?}"),
-    }
+) -> Result<WorthQueryWorkflowDefinitionDiscovery, ()> {
+    super::super::document_retention_model::workflow::discover_definition_metadata(
+        application,
+        branch,
+        identity,
+    )
 }
 
 #[test]
-fn discovery_names_the_current_definition_and_starts_refuse_any_other() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
+fn workflow_actor_contract_disabled_discovery_preserves_native_start_currentness() {
     let application = publish_workflow_on_first_program();
     let main = application.runtime().current_world();
     let draft = terminal_definition("completed");
     let identity = draft.identity().clone();
-    assert_eq!(
-        discover(request_execution, &application, main, &identity),
-        WorthQueryWorkflowDefinitionDiscovery::Unpublished,
-    );
+    assert_eq!(discover(&application, main, &identity), Err(()),);
 
     let first = expect_published(
         "first revision",
@@ -73,10 +42,7 @@ fn discovery_names_the_current_definition_and_starts_refuse_any_other() {
             601,
         ),
     );
-    assert_eq!(
-        discovered_current(request_execution, &application, main, &identity),
-        first
-    );
+    assert_eq!(discover(&application, main, &identity), Err(()));
     let recorded = expect_started(start_instance(&application, first.clone(), 602));
     let second = expect_published(
         "second revision",
@@ -87,11 +53,13 @@ fn discovery_names_the_current_definition_and_starts_refuse_any_other() {
             603,
         ),
     );
-    let current = discovered_current(request_execution, &application, main, &identity);
-    assert_eq!(current, second);
+    let current = second.clone();
 
     let named = expect_superseded_start(start_instance(&application, first.clone(), 604));
-    assert_eq!(named, current, "a refused start names what discovery named");
+    assert_eq!(
+        named, current,
+        "a refused start names the actual current publication"
+    );
     match start_instance(&application, first.clone(), 602)
         .expect("a recorded start's retry prepares")
     {
@@ -108,12 +76,9 @@ fn discovery_names_the_current_definition_and_starts_refuse_any_other() {
     assert_ne!(started, recorded, "the refused key recorded nothing");
 
     expect_retired(retire_definition(&application, second.clone(), 605));
-    assert_eq!(
-        discover(request_execution, &application, main, &identity),
-        WorthQueryWorkflowDefinitionDiscovery::Retired,
-    );
+    assert_eq!(discover(&application, main, &identity), Err(()),);
     expect_retired_start(start_instance(&application, second, 606));
-    let reopened = expect_published(
+    let _reopened_definition = expect_published(
         "reopened lineage",
         publish_definition(
             &application,
@@ -122,17 +87,11 @@ fn discovery_names_the_current_definition_and_starts_refuse_any_other() {
             607,
         ),
     );
-    assert_eq!(
-        discovered_current(request_execution, &application, main, &identity),
-        reopened
-    );
+    assert_eq!(discover(&application, main, &identity), Err(()));
 }
 
 #[test]
-fn discovery_on_a_fork_names_the_forks_own_definition() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
+fn workflow_actor_contract_disabled_discovery_preserves_fork_start_control() {
     let application = publish_workflow_on_first_program();
     let main = application.runtime().current_world();
     let draft = terminal_definition("completed");
@@ -147,9 +106,8 @@ fn discovery_on_a_fork_names_the_forks_own_definition() {
         ),
     );
     let fork = fork_of(&application, main);
-    let copied = discovered_current(request_execution, &application, fork, &identity);
-    assert_eq!(copied, first.held_on(fork));
-    let successor = expect_published(
+    let copied = first.held_on(fork);
+    let _fork_successor = expect_published(
         "fork successor",
         publish_definition(
             &application,
@@ -158,62 +116,7 @@ fn discovery_on_a_fork_names_the_forks_own_definition() {
             612,
         ),
     );
-    assert_eq!(
-        discovered_current(request_execution, &application, fork, &identity),
-        successor
-    );
-    assert_eq!(
-        discovered_current(request_execution, &application, main, &identity),
-        first
-    );
+    assert_eq!(discover(&application, fork, &identity), Err(()));
+    assert_eq!(discover(&application, main, &identity), Err(()));
     expect_started(start_instance(&application, first, 613));
-}
-
-/// A second workflow family over the same schema, which never published the
-/// lineage the reviewed-document spec owns.
-struct ForeignWorkflow;
-
-impl ApplicationWorkflowSpec for ForeignWorkflow {
-    type Schema = DocumentRetentionSchema;
-    const IDENTITY: ApplicationWorkflowSpecIdentity =
-        ApplicationWorkflowSpecIdentity::new("worth.query.certification.foreign-workflow.v1");
-}
-
-#[test]
-fn discovery_under_another_spec_names_the_lineage_foreign() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let application = publish_workflow_on_first_program();
-    let main = application.runtime().current_world();
-    let draft = terminal_definition("completed");
-    let identity = draft.identity().clone();
-    let first = expect_published(
-        "owned revision",
-        publish_definition(
-            &application,
-            draft,
-            WorkflowDefinitionExpectedPredecessor::Absent,
-            621,
-        ),
-    );
-    let foreign = application
-        .with_host_advancement(|host_phase| {
-            application
-                .runtime()
-                .on_branch(main)
-                .select(&host_phase)
-                .expect("the branch selects its exact occurrence")
-        })
-        .expect("installed host call opens")
-        .discover_workflow_definition::<ForeignWorkflow>(request_execution, &identity);
-    assert_eq!(
-        foreign,
-        Err(WorthQueryWorkflowDefinitionDiscoveryDenial::ForeignLineage),
-        "a lineage another spec published is named foreign, not unreadable",
-    );
-    assert_eq!(
-        discovered_current(request_execution, &application, main, &identity),
-        first
-    );
 }

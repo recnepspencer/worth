@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn direct_mutation_canonicalizes_operation_name_before_handoff() {
-    let server = crate::worth_native_runtime::build_server_with_workspace_provider(
+    let server = crate::shared_support_worth_native_runtime::build_server_with_workspace_provider(
         RealMutationWorkspaceProvider,
         true,
     );
@@ -35,7 +35,7 @@ fn direct_mutation_denies_backend_verified_assertions_at_the_server_boundary() {
 
 #[test]
 fn direct_mutation_preserves_query_contract_denials() {
-    let server = crate::worth_native_runtime::build_server_with_workspace_provider(
+    let server = crate::shared_support_worth_native_runtime::build_server_with_workspace_provider(
         RealMutationWorkspaceProvider,
         true,
     );

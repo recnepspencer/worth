@@ -102,7 +102,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
                 deleted_at: record.deleted_at_version(), read_locator: "output-role:7:Account:7:retired".into(),
             }];
             assert!(facts[0].remains_equal_in(runtime,execution,  snapshot).unwrap(), "both actual tombstones match native truth");
-            let correspondence = correspondence(entity);
+            let correspondence = correspondence(entity, execution);
             let candidate = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence,
                 graph.layout(), &facts, owner, &mut owner.edit_admission()).unwrap();
             let current = candidate.as_ref().is_some_and(|candidate| candidate.get().unwrap()
@@ -113,18 +113,22 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
     });}).expect("restored read owns its host call");
     }
 }
-fn correspondence(entity: EntityId) -> WorthQueryApplicationOutputCorrespondence {
+fn correspondence(
+    entity: EntityId,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryApplicationOutputCorrespondence {
     WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),
-        Default::default(),
-        vec![WorthQueryCheckpointOutputRole {
+        std::iter::empty(),
+        &[WorthQueryCheckpointOutputRole {
             role: "retired".into(),
             posture: WorthQueryApplicationOutputPosture::Retire,
             entity_name: "Account".into(),
             entity,
         }],
         |_| Some(TypeId::of::<()>()),
+        execution,
     )
     .unwrap()
 }

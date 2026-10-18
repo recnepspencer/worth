@@ -78,6 +78,12 @@ type GrantScope = ApplicationMutationFieldScope<
 >;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowGrantStatusBinding {
+    fn workflow_execution_requirements(
+    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
+    {
+        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    }
+
     type Input = WorkflowGrantStatusInput;
     type InputBinding = WorkflowGrantStatusInputBinding;
     type Result = WorkflowGrantStatusChanged;
@@ -246,4 +252,13 @@ pub(super) fn install_members(
             WorkflowGrantStatusField::reference(),
         )
         .application_mutation_binding::<WorkflowGrantStatusBinding>()
+}
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for WorkflowGrantStatusBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
 }

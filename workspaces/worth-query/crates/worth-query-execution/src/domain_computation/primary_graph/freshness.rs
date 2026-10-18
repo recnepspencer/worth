@@ -30,26 +30,60 @@ pub(in crate::domain_computation) struct WorthQueryDurablePrincipalCurrentness {
     target_adjacency_revision: Option<worth_relational::facade::identity::VersionId>,
 }
 
+#[derive(Serialize)]
+pub(in crate::domain_computation) struct DurablePrincipalView<'a> {
+    binding: &'a str,
+    mapping: EntityId,
+    mapping_kind: KindId,
+    mapping_identity: &'a AspectValue,
+    mapping_identity_revision: worth_relational::facade::runtime::RelationalFieldRevision,
+    mapping_status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
+    target_relation: RelationId,
+    relation_kind: KindId,
+    principal: EntityId,
+    principal_kind: KindId,
+    principal_identity: &'a AspectValue,
+    principal_identity_revision: worth_relational::facade::runtime::RelationalFieldRevision,
+    target_adjacency_revision: Option<worth_relational::facade::identity::VersionId>,
+}
+
+impl DurablePrincipalView<'_> {
+    pub(in crate::domain_computation) fn is_portable(&self) -> bool {
+        principal_description_is_portable(
+            self.binding,
+            self.mapping_identity,
+            self.principal_identity,
+        )
+    }
+}
+
+fn principal_description_is_portable(
+    binding: &str,
+    mapping: &AspectValue,
+    principal: &AspectValue,
+) -> bool {
+    !binding.is_empty()
+        && [mapping, principal].iter().all(|value| {
+            !matches!(
+                value,
+                AspectValue::String(InternedString::Symbol(_))
+                    | AspectValue::Bytes(_)
+                    | AspectValue::ContentRef(_)
+            )
+        })
+}
+
 impl WorthQueryDurablePrincipalCurrentness {
     pub(in crate::domain_computation) fn principal(&self) -> EntityId {
         self.principal
     }
 
     pub(in crate::domain_computation) fn is_portable(&self) -> bool {
-        !self.binding.is_empty()
-            && [
-                self.mapping_identity.clone(),
-                self.principal_identity.clone(),
-            ]
-            .iter()
-            .all(|value| {
-                !matches!(
-                    value,
-                    AspectValue::String(InternedString::Symbol(_))
-                        | AspectValue::Bytes(_)
-                        | AspectValue::ContentRef(_)
-                )
-            })
+        principal_description_is_portable(
+            &self.binding,
+            &self.mapping_identity,
+            &self.principal_identity,
+        )
     }
 
     pub(in crate::domain_computation) fn remains_current_in(
@@ -167,22 +201,22 @@ impl WorthQueryPrincipalFreshnessEvidence {
         }
     }
 
-    pub(in crate::domain_computation) fn durable(
-        &self,
-        binding: &str,
-    ) -> WorthQueryDurablePrincipalCurrentness {
-        WorthQueryDurablePrincipalCurrentness {
-            binding: binding.to_owned(),
+    pub(in crate::domain_computation) fn durable_view<'a>(
+        &'a self,
+        binding: &'a str,
+    ) -> DurablePrincipalView<'a> {
+        DurablePrincipalView {
+            binding,
             mapping: self.mapping.entity_id,
             mapping_kind: self.mapping.kind_id,
-            mapping_identity: self.mapping.identity.clone(),
+            mapping_identity: &self.mapping.identity,
             mapping_identity_revision: self.mapping.identity_revision,
             mapping_status_revision: self.mapping.status_revision,
             target_relation: self.target.relation_id,
             relation_kind: self.target.relation_kind,
             principal: self.target.target,
             principal_kind: self.target.principal_kind,
-            principal_identity: self.target.principal_identity.clone(),
+            principal_identity: &self.target.principal_identity,
             principal_identity_revision: self.target.principal_identity_revision,
             target_adjacency_revision: self.target.adjacency_revision,
         }

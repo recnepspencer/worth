@@ -81,15 +81,14 @@ pub(super) fn resolve_effect_reuse_boundary_with_policy(
         .and_then(|prepared| prepared.persistent_correspondence.as_ref())
         .is_none()
         && keyed.is_none_or(|prepared| prepared.composition_regions.is_empty())
+        && let Some(output) = result
     {
-        if let Some(output) = result {
-            crate::data::proof::PartitionScopeSet::admit_regions_copy_work(
-                output.changed_regions.as_slice(),
-                1,
-                1,
-                work,
-            )?;
-        }
+        crate::data::proof::PartitionScopeSet::admit_regions_copy_work(
+            output.changed_regions.as_slice(),
+            1,
+            1,
+            work,
+        )?;
     }
     let authority = hydrate_reuse_topology_boundary_authority_from_previous(
         graph,

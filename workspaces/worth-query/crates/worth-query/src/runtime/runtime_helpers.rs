@@ -226,14 +226,14 @@ pub(super) fn resolve_same_batch_symbolic_target(
             ),
         ));
     };
-    if let Some(expected_collection) = reference.target_collection_identity() {
-        if resolved_target
+    if let Some(expected_collection) = reference.target_collection_identity()
+        && resolved_target
             .target_collection_identity()
             .is_none_or(|resolved_collection| {
                 !resolved_collection.same_target_collection_as(expected_collection)
             })
-        {
-            return Err(WorthQueryRuntimeError::MutationTargetReferenceDenied(
+    {
+        return Err(WorthQueryRuntimeError::MutationTargetReferenceDenied(
                 WorthQuerySymbolicTargetReferenceDenial::new(
                     reference,
                     WorthQuerySymbolicTargetReferenceDenialKind::CollectionMismatch,
@@ -247,7 +247,6 @@ pub(super) fn resolve_same_batch_symbolic_target(
                     ),
                 ),
             ));
-        }
     }
     Ok(resolved_target.clone())
 }

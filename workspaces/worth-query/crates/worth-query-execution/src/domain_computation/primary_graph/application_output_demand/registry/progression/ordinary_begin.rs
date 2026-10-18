@@ -32,12 +32,12 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let result = match state.records.get_mut(&interest.key) {
+
+        match state.records.get_mut(&interest.key) {
             Some(mut record) if matches!(record.state, DemandState::Output(_)) => {
                 begin_record(&mut record, CLAIM_OVERFLOW)
             }
             _ => WorthQueryOutputDemandAdvanceAdmission::Pending,
-        };
-        result
+        }
     }
 }

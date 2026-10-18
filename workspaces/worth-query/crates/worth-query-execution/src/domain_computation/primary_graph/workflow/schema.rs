@@ -356,7 +356,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
     )?;
     Ok((
         registry,
-        WorthQueryWorkflowLayout {
+        WorthQueryWorkflowLayout::new(WorkflowLayoutFields {
             lineage,
             definition,
             node,
@@ -390,7 +390,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             instance_migrated_from_relation: kinds[30],
             instance_prior_effect_relation: kinds[31],
             instance_subject_relation: subject_relation,
-        },
+        }),
     ))
 }
 

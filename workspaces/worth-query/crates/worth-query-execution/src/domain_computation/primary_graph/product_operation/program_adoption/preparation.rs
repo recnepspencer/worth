@@ -1,6 +1,7 @@
 mod dispositions;
 mod migration;
 mod selection;
+mod selector_indexes;
 mod state;
 mod workflow;
 
@@ -47,6 +48,7 @@ pub enum WorthQueryBranchAdoptionActivationDenial {
 /// Why a branch adoption could not be prepared. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionPreparationDenial {
+    Authorization(super::authorization::WorthQueryProgramAdoptionAuthorizationDenial),
     /// The caller's read request stopped.
     ReadExecution(
         Result<
@@ -83,38 +85,25 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     MigrationSourceChanged,
     /// No custody disposition exists for the carried requirement.
     CustodyDispositionUnsupported(WorthQueryProgramCustodyInventoryRequirement),
-    /// The branch holds workflow facts and no dispositions were supplied.
-    /// Decide each occurrence of the carried inventory and prepare again.
-    WorkflowDispositionRequired {
-        inventory: Box<
-            crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowAdoptionInventory,
-        >,
-    },
-    /// Owner truth moved after the dispositions were decided. Decide the
-    /// carried inventory and prepare again.
-    WorkflowInventoryChanged {
-        inventory: Box<
-            crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowAdoptionInventory,
-        >,
-    },
-    /// The supplied workflow dispositions do not legally decide the inventory.
-    WorkflowDispositionRejected(
-        crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowDispositionDenial,
-    ),
-    /// A workflow entity on the branch could not be read.
-    WorkflowInventoryUnreadable {
-        entity: worth_relational::facade::identity::EntityId,
-    },
-    /// A workflow relation slot on the branch could not be read.
-    WorkflowInventoryRelationUnreadable {
-        partition_id: worth_relational::facade::identity::PartitionId,
-        slot: usize,
-    },
+    /// Workflow safety requires explicit decisions; no inventory is disclosed.
+    WorkflowDispositionRequired,
+    /// The supplied intent does not totally and legally decide current owner truth.
+    WorkflowDispositionRejected,
+    /// Private workflow safety facts could not be read.
+    WorkflowInventoryUnavailable,
+    /// Private workflow safety selection exceeded the admitted work allowance.
+    WorkflowInventoryWorkLimit,
+    /// The private inventory's original preparation allowance refused work or storage.
+    WorkflowInventoryPreparation(worth_relational::facade::mvcc::CompanionPreflightStop),
     /// A validation scope names an entity type the schema does not declare.
-    UnknownEntityScope { entity: String },
+    UnknownEntityScope {
+        entity: String,
+    },
     /// A validation scope names a relation; adoption revalidates only entity
     /// scopes.
-    RelationScopeUnsupported { relation: String },
+    RelationScopeUnsupported {
+        relation: String,
+    },
     /// Selecting what to revalidate would exceed the work limit. The fields
     /// give the limit and the work consumed.
     SelectionLimitExceeded {
@@ -127,6 +116,10 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     TransactionAdmission(
         worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,
     ),
+    /// The exact predecessor snapshot could not be retained for selector maintenance.
+    SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
+    /// Selected installed selector generations could not be maintained on the candidate.
+    SelectorMaintenance(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
     /// The adoption's changes could not be staged in the branch transaction.
     TransactionStaging(worth_relational::facade::mvcc::RelationalTransactionStagingDenial),
     /// A custom invariant of the target program rejected the prepared adoption;
@@ -134,8 +127,9 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     TargetRuleRejected {
         identity: worth_relational::facade::transactions::CustomInvariantSemanticIdentity,
     },
-    /// The branch transaction could not be prepared.
-    RelationalPreparation(worth_relational::facade::transactions::TransactionCommitError),
+    /// The branch transaction could not be prepared. Its private workflow
+    /// candidate and commit log are not a consumer disclosure surface.
+    RelationalPreparation,
     /// The product publication could not be prepared.
     WorldPreparation(worth_runtime_world::facade::NoEffectCompositePublication),
     /// The product's program activation refused the preparation.
@@ -167,10 +161,8 @@ impl From<crate::domain_computation::execution_runtime::product_world::activatio
 /// candidate make it impossible to construct from a target revision alone.
 #[must_use = "a prepared adoption owns a reserved publication attempt"]
 pub struct WorthQueryPreparedBranchAdoption {
-    pub(super) owner: std::sync::Weak<worth_runtime_world::facade::RuntimeWorldOwner<(), (), (), (), ()>>,
+    pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) owner_identity: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    pub(super) host_policy: worth_foundational::ExecutionRequestPolicy,
-    pub(super) host_request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(super) source: ApplicationProgramRevision,
     pub(super) target: ApplicationProgramRevision,
     pub(super) requirements: WorthQueryProgramAdoptionRequirements,
@@ -187,6 +179,10 @@ pub struct WorthQueryPreparedBranchAdoption {
 }
 
 impl WorthQueryPreparedBranchAdoption {
+    pub const fn branch(&self) -> crate::basis::WorthQueryProductBranch {
+        self.branch
+    }
+
     pub fn source(&self) -> &ApplicationProgramRevision {
         &self.source
     }
@@ -216,8 +212,14 @@ impl WorthQueryPreparedBranchAdoption {
     }
 }
 
-pub(super) fn prepare<Schema: ApplicationSchema>(
+pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
@@ -231,6 +233,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
     state::prepare(
         execution,
+        admission,
         phase,
         selected,
         target,
@@ -239,25 +242,6 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         workflow,
         maximum_selection_work,
         request,
-    )
-}
-
-pub(super) fn workflow_inventory<Schema: ApplicationSchema>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-    target: &ApplicationProgramRevision,
-    expected_requirements: &WorthQueryProgramAdoptionRequirements,
-    maximum_work_units: usize,
-) -> Result<
-    crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowAdoptionInventory,
-    WorthQueryBranchAdoptionPreparationDenial,
-> {
-    workflow::inventory(
-        execution,
-        selected,
-        target,
-        expected_requirements,
-        maximum_work_units,
     )
 }
 

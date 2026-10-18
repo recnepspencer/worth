@@ -4,7 +4,7 @@ use worth_foundational::{
     StructAspectShape,
 };
 
-use crate::foundational_vocabulary::{field, identity, key, revision};
+use crate::certification::foundational_vocabulary::{field, identity, key, revision};
 
 #[test]
 fn absence_null_default_and_clear_are_distinct_surface_states() {

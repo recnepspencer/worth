@@ -154,3 +154,5 @@ where
         }).map_err(|cause| WorthQueryWorkflowInstancePreparationDenial::RequestAdmission(crate::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 }
+
+mod entry;

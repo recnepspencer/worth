@@ -33,7 +33,8 @@ async fn close_before_payment_callback_preserves_unresolved_dispatch() {
     tokio::task::block_in_place(|| {
         let workflow = runtime.approved_business_payment(&approver, &scope);
         assert!(workflow
-            .perform_apply(
+            .advanced()
+            .execute_operation(
                 instance,
                 &operation,
                 authority,

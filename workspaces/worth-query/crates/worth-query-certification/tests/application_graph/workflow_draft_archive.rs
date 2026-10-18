@@ -42,17 +42,22 @@ fn operation_evidence_round_trips_and_cannot_silently_rebind_to_an_installed_flo
         assert_eq!(rebuilt.content_identity(), definition.content_identity());
         assert_eq!(encode(&rebuilt), bytes);
     }
-    // Both a legacy absence and a different explicit floor are well-formed,
-    // untrusted metadata, not permission to reinterpret the installed binding.
+    // A different explicit current floor remains untrusted metadata and cannot
+    // reinterpret the installed binding. Omitted or displaced evidence is malformed.
     let bytes = encode(&information);
     let different = worth_query_host::facade::declaration::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<
         super::document_retention_model::workflow::WorkflowApprovalCapability,
     >().persistence_identity();
-    for replacement in ["", different.as_str()] {
-        assert_eq!(
-            refusal(&application, &retext(&bytes, "1:none", replacement)),
-            DraftDenial::ChangedMember
-        );
+    assert_eq!(
+        refusal(&application, &retext(&bytes, "2:occurrence", &different)),
+        DraftDenial::ChangedMember
+    );
+    for replacement in ["", "1:none"] {
+        let malformed = retext(&bytes, "2:occurrence", replacement);
+        let denial =
+            decode_workflow_definition_draft(&malformed, WorthQueryPackageArchiveLimits::DEFAULT)
+                .expect_err("current draft requires an explicit current evidence identity");
+        assert_eq!(denial.kind(), worth_query_package_archive::facade::WorthQueryPackageArchiveDenialKind::InvalidRecordShape);
     }
 }
 

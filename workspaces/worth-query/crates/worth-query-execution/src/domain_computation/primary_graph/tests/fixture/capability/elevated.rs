@@ -127,7 +127,7 @@ worth_query_declaration::worth_query_structured_value_binding!(pub RequestCapabi
 worth_query_operation!(pub RequestCapabilityElevationOperation for IdentityExecutionSchema, input RequestCapabilityElevationOperationInputBinding);
 worth_query_declaration::worth_query_structured_value_binding!(pub ApproveCapabilityElevationOperationInputBinding for ApproveElevationInput { identity: "worth.query.test.approve-elevation-input.v1" });
 worth_query_operation!(pub ApproveCapabilityElevationOperation for IdentityExecutionSchema, input ApproveCapabilityElevationOperationInputBinding);
-worth_query_operation_reads!(ElevatedCapabilityTouchOperation => [AccountLabel]);
+worth_query_operation_reads!(ElevatedCapabilityTouchOperation => [AccountLabel, AccountIdentity]);
 worth_query_operation_writes!(ElevatedCapabilityTouchOperation => [AccountLabel]);
 worth_query_operation_reads!(RequestCapabilityElevationOperation => [AccountLabel]);
 worth_query_operation_creates!(RequestCapabilityElevationOperation => [CapabilityElevation, CapabilityReview]);

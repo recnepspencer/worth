@@ -15,6 +15,7 @@ use worth_runtime_bridge::facade::BridgeAuthorizationRuleContract;
 pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityRuleBinding {
     bridge: BridgeAuthorizationRuleContract,
     path_requirements: Vec<Vec<usize>>,
+    recorded_actor: Option<(worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRequirement, [u8;32])>,
 }
 
 impl WorthQueryCapabilityRuleBinding {
@@ -25,9 +26,34 @@ impl WorthQueryCapabilityRuleBinding {
         Self {
             bridge,
             path_requirements,
+            recorded_actor: None,
         }
     }
 
+    pub(in crate::domain_computation::authorization) fn recorded_actor(
+        &self,
+    ) -> Option<(worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRequirement, [u8;32])>{
+        self.recorded_actor
+    }
+    pub(in crate::domain_computation::authorization) fn required_recorded_actor(
+        requirement: worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRequirement,
+        identity: [u8; 32],
+    ) -> Self {
+        use worth_runtime_bridge::facade::{
+            BridgeAuthorizationClauseContract, BridgeAuthorizationRequirementContract,
+            BridgeAuthorizationRuleEffect,
+        };
+        Self {
+            bridge: BridgeAuthorizationRuleContract::all(
+                BridgeAuthorizationRuleEffect::Required,
+                [BridgeAuthorizationRequirementContract::any([
+                    BridgeAuthorizationClauseContract::new(identity),
+                ])],
+            ),
+            path_requirements: Vec::new(),
+            recorded_actor: Some((requirement, identity)),
+        }
+    }
     pub(in crate::domain_computation::authorization) const fn bridge(
         &self,
     ) -> &BridgeAuthorizationRuleContract {
@@ -47,6 +73,7 @@ pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityDeci
     pub(in crate::domain_computation::authorization) conflict: Option<usize>,
     pub(in crate::domain_computation::authorization) separation_of_duty: Option<usize>,
     pub(in crate::domain_computation::authorization) distinct_actor: Option<usize>,
+    pub(in crate::domain_computation::authorization) recorded_actor: Option<usize>,
 }
 
 #[derive(Clone, Copy)]

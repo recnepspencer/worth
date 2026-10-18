@@ -20,10 +20,12 @@ pub(super) fn bind_progression_preconditions<Schema, Capability, Operation, Inpu
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-    preconditions: TypedMutationPreconditions<
-        Schema,
-        Operation,
-        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+    preconditions: impl std::borrow::Borrow<
+        TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
     >,
 ) -> Result<WorthQueryBoundMutationPreconditions, WorthQueryOperationAuthorizationDenial>
 where

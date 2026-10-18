@@ -39,6 +39,7 @@ macro_rules! change_root_input {
             .execute()
             .unwrap();
         let outcome = $request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "anchor-a".to_owned(),
                 replacement_y: length($y),
@@ -70,6 +71,7 @@ macro_rules! writes_y {
             .execute()
             .unwrap();
         let changed = $request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: $key.to_owned(),
                 replacement_y: length($y),

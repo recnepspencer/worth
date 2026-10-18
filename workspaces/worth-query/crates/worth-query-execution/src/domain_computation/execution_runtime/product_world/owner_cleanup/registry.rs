@@ -112,11 +112,11 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         let Some(entry) = entry else {
             return Vec::new();
         };
-        let pending = lock(&entry.record)
+
+        lock(&entry.record)
             .as_ref()
             .map(WorthQueryProductBranchOwnerCleanupRecord::described_work)
-            .unwrap_or_default();
-        pending
+            .unwrap_or_default()
     }
 
     pub(super) fn pending_signal_references(
@@ -127,7 +127,8 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         let Some(entry) = entry else {
             return Vec::new();
         };
-        let references = lock(&entry.record)
+
+        lock(&entry.record)
             .as_ref()
             .map(|record| {
                 record
@@ -144,8 +145,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
                     })
                     .collect()
             })
-            .unwrap_or_default();
-        references
+            .unwrap_or_default()
     }
 
     pub(super) fn release_history(
@@ -189,6 +189,16 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         runtime: &WorthQueryProductRuntime,
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
     {
+        self.retry_admitted(identity, runtime, |_| Ok(()))
+    }
+
+    pub(super) fn retry_admitted(
+        &self,
+        identity: u64,
+        runtime: &WorthQueryProductRuntime,
+        checkpoint: impl FnMut(u64) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>,
+    ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
+    {
         let entry = lock(&self.state)
             .entries
             .get(&identity)
@@ -197,7 +207,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         let mut record = RetryRecordGuard::take(&entry.record)?;
         match record
             .record_mut()
-            .retry(runtime, || self.after_component_progress())
+            .retry(runtime, || self.after_component_progress(), checkpoint)
         {
             Ok(receipt) => {
                 let mut state = lock(&self.state);

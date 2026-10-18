@@ -152,18 +152,20 @@ where
     ) -> Result<TemporalWakeAdmissionSummary, SignalError> {
         let mut summary = TemporalWakeAdmissionSummary::default();
         let Some(active) = self.temporal.scheduled_wake(active_wake_id) else {
-            if let Some(ready) = self.temporal.ready_wake_for_owner(owner) {
-                if ready.condition() != &condition {
-                    let supersession = self.temporal.supersede_wake_with_condition(
-                        active_wake_id,
-                        condition,
-                        due_tick,
-                        self.graph
-                            .captures_observation_surface(crate::logic::transaction::SignalObservationSurface::OptionalTelemetry)
-                            .then_some(&mut self.telemetry.temporal),
-                    )?;
-                    summary.record_policy_supersession(supersession);
-                }
+            if let Some(ready) = self.temporal.ready_wake_for_owner(owner)
+                && ready.condition() != &condition
+            {
+                let supersession = self.temporal.supersede_wake_with_condition(
+                    active_wake_id,
+                    condition,
+                    due_tick,
+                    self.graph
+                        .captures_observation_surface(
+                            crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
+                        )
+                        .then_some(&mut self.telemetry.temporal),
+                )?;
+                summary.record_policy_supersession(supersession);
             }
             return Ok(summary);
         };

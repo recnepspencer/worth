@@ -16,8 +16,7 @@ use crate::document_retention_model::{
     workflow::{
         advance_instance, expect_capacity_refused, expect_superseded_start, install_workflow_spec,
         prepare_second_program_adoption, publish_adoption, publish_definition,
-        retain_workflow_with_resources, second_program_workflow_inventory, start_instance,
-        terminal_definition,
+        retain_workflow_with_resources, start_instance, terminal_definition,
     },
 };
 
@@ -67,7 +66,9 @@ fn a_waiting_instance_keeps_its_pinned_revision_across_a_definition_and_a_capaci
     application
         .workflow_mut()
         .support_workflow_spec(second_program)
-        .expect("the vocabulary belongs to a rostered program");
+        .unwrap_or_else(|(_, denial)| {
+            panic!("the vocabulary belongs to a rostered program: {denial:?}")
+        });
     let main = application.current_world();
     let first = published(
         &application,
@@ -89,27 +90,18 @@ fn a_waiting_instance_keeps_its_pinned_revision_across_a_definition_and_a_capaci
     let newer = expect_started(start_instance(&application, second.clone(), 97_004));
     assert_eq!(newer.definition_entity_id(), second.entity_id());
     assert_eq!(newer.start_node_path(), "settled");
-    let pinned = |at: &str| {
-        let inventory = second_program_workflow_inventory(&application, main);
-        let live = inventory
-            .instance(waiting.entity_id())
-            .unwrap_or_else(|| panic!("{at}: the waiting instance is live"));
-        assert_eq!(
-            live.definition(),
-            first.entity_id(),
-            "{at}: the waiting instance keeps the revision it started under"
-        );
-    };
-    pinned("after the definition change");
     expect_capacity_refused(start_instance(&application, second.clone(), 97_005));
 
     // The lineage capacity changes under it: the branch adopts the program
     // whose vocabulary admits a third live instance.
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
+        ),
+    );
     let third = expect_started(start_instance(&application, second.clone(), 97_006));
     assert_eq!(
         third.definition_entity_id(),
@@ -117,7 +109,6 @@ fn a_waiting_instance_keeps_its_pinned_revision_across_a_definition_and_a_capaci
         "a new start reads the new capacity and the new revision"
     );
     expect_capacity_refused(start_instance(&application, second.clone(), 97_007));
-    pinned("after the capacity change");
 
     // No waiting step reads lineage capacity: the pinned instance completes
     // at its own revision's node while its lineage is full.

@@ -68,30 +68,12 @@ impl FrontierCertificationLane {
     pub fn counter_snapshot(&self) -> &FrontierCounterSnapshot {
         self.parity_bundle.counter_snapshot()
     }
-
-    pub fn has_required_outputs(&self) -> bool {
-        !self.parity_bundle.query_digest().as_str().is_empty()
-            && !self.parity_bundle.plan_digest().as_str().is_empty()
-            && !self.parity_bundle.result_digest().as_str().is_empty()
-            && !self.parity_bundle.basis_digest().is_empty()
-            && !self
-                .parity_bundle
-                .route_posture_digest()
-                .as_str()
-                .is_empty()
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FrontierCertificationRejection {
     pub failure_class: FrontierFailureClass,
     pub failure_digest: String,
-}
-
-impl FrontierCertificationRejection {
-    pub fn has_required_outputs(&self) -> bool {
-        !self.failure_digest.is_empty()
-    }
 }
 
 pub type FrontierCertificationMatrix = CertificationMatrix<
@@ -106,50 +88,6 @@ pub struct MilestoneFivePointThreeFrontierCertificationArtifact {
     pub certification_bundle_digest: String,
     pub coverage_matrix_digest: String,
     pub matrix: FrontierCertificationMatrix,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum FrontierCloseoutStatus {
-    Satisfied,
-}
-
-impl FrontierCloseoutStatus {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Satisfied => "satisfied",
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FrontierCloseoutRequirement {
-    pub requirement_name: &'static str,
-    pub status: FrontierCloseoutStatus,
-    pub proof_artifacts: &'static [&'static str],
-    pub certification_rows: &'static [&'static str],
-    pub notes: &'static str,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MilestoneFivePointThreeFrontierCloseoutArtifact {
-    pub suite_name: &'static str,
-    pub closeout_matrix_digest: String,
-    pub certification_bundle_digest: String,
-    pub must_ship: Vec<FrontierCloseoutRequirement>,
-    pub must_preserve: Vec<FrontierCloseoutRequirement>,
-    pub proof_obligations: Vec<FrontierCloseoutRequirement>,
-    pub acceptance_evidence: Vec<FrontierCloseoutRequirement>,
-}
-
-impl MilestoneFivePointThreeFrontierCloseoutArtifact {
-    pub fn all_requirements_marked_satisfied(&self) -> bool {
-        self.must_ship
-            .iter()
-            .chain(self.must_preserve.iter())
-            .chain(self.proof_obligations.iter())
-            .chain(self.acceptance_evidence.iter())
-            .all(|requirement| requirement.status == FrontierCloseoutStatus::Satisfied)
-    }
 }
 
 impl FrontierCertificationMatrix {
@@ -248,28 +186,4 @@ fn rejection_digest_parts(bundle: &FrontierCertificationRejection, label: &str) 
         format!("{label}.failure_class:{}", bundle.failure_class.as_str()),
         format!("{label}.failure_digest:{}", bundle.failure_digest),
     ]
-}
-
-pub fn closeout_matrix_digest_parts(
-    sections: &[(&str, &[FrontierCloseoutRequirement])],
-    certification_bundle_digest: &str,
-) -> Vec<String> {
-    let mut parts = vec![format!(
-        "certification_bundle_digest:{certification_bundle_digest}"
-    )];
-    for (section_name, requirements) in sections {
-        parts.push(format!("section:{section_name}"));
-        for requirement in *requirements {
-            parts.push(format!("requirement:{}", requirement.requirement_name));
-            parts.push(format!("status:{}", requirement.status.as_str()));
-            for artifact in requirement.proof_artifacts {
-                parts.push(format!("artifact:{artifact}"));
-            }
-            for row in requirement.certification_rows {
-                parts.push(format!("row:{row}"));
-            }
-            parts.push(format!("notes:{}", requirement.notes));
-        }
-    }
-    parts
 }

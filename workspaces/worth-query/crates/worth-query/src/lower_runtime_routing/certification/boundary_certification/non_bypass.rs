@@ -183,13 +183,12 @@ fn scan_file_contents(
         if let Some(marker) = LOWER_RUNTIME_IMPORT_MARKERS
             .iter()
             .find(|marker| line.contains(**marker))
+            && !allow_imports
         {
-            if !allow_imports {
-                violations.push(format!(
-                    "{relative}:{} imports `{marker}` outside the declared routed boundary",
-                    line_number + 1
-                ));
-            }
+            violations.push(format!(
+                "{relative}:{} imports `{marker}` outside the declared routed boundary",
+                line_number + 1
+            ));
         }
     }
     Ok(())

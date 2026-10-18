@@ -255,11 +255,10 @@ fn commit_prepared_carries(
             successor.take_settled_snapshot(reference);
             successor.replace_settled_snapshot(projection);
         }
-        if let Some(resource) = predecessor.take_operation_live_resource(reference) {
-            if let Some(displaced) = successor.replace_operation_live_resource(reference, resource)
-            {
-                retirement.extend(std::iter::once(displaced));
-            }
+        if let Some(resource) = predecessor.take_operation_live_resource(reference)
+            && let Some(displaced) = successor.replace_operation_live_resource(reference, resource)
+        {
+            retirement.extend(std::iter::once(displaced));
         }
     }
 }

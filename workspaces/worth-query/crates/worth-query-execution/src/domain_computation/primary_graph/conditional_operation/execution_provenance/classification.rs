@@ -53,6 +53,7 @@ pub enum WorthQueryConditionalExecutionTerminal {
 /// Why processing a due wake ended as it did, when a specific cause is known.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionCause {
+    ManagedCleanupRequired(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
     /// A reentry retry or unresolved outcome retains the original typed cause.
     Reentry(super::super::WorthQueryConditionalReentryFailure),
     /// Bridge refused the retained conditional decision with this native cause.

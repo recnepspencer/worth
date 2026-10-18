@@ -6,13 +6,13 @@ use worth_server::{
     WorthServerCompatibilityRequestInput, WorthServerQueryHandoffDenialCode,
 };
 
-use crate::compat_http_phase_ten_assertions::assert_denial;
-use crate::compat_http_phase_ten_runtime::{
+use crate::shared_support_compat_http_phase_ten_assertions::assert_denial;
+use crate::shared_support_compat_http_phase_ten_runtime::{
     ambiguous_metadata_upload, build_phase_ten_server_with_workspace_provider,
     compat_download_denied, compat_read_denied, compat_upload_denied,
     compat_upload_execution_input, non_ascii_metadata_upload, prepared_request,
 };
-use crate::query_handoff_runtime::ProfiledTestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::ProfiledTestWorkspaceProvider;
 
 #[test]
 fn compat_http_phase_ten_rejects_non_portable_external_names_before_truth_linkage() {

@@ -47,7 +47,10 @@ impl ValidatedCheckpointSize {
                     MINIMUM_ACCEPTED_OUTPUT_BYTES - 1,
                     output.producer.len(),
                     roles,
-                    output.producer_facts.as_ref().map_or(0, Vec::len),
+                    output
+                        .producer_facts
+                        .as_ref()
+                        .map_or(0, |bytes| bytes.len()),
                 ])?)
             },
         )?;

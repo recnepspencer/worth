@@ -17,7 +17,7 @@ struct ProcessConfiguration {
     maximum_request_concurrency: Option<NonZeroUsize>,
     maximum_live_streams: Option<NonZeroUsize>,
     #[serde(default)]
-    cold_certification: bool,
+    cold_certification: Option<bank_http_adapter::BankHttpProcessColdCertification>,
     external_redirect_url: Option<String>,
 }
 
@@ -35,7 +35,7 @@ struct ProcessPosture<'a> {
 
 struct NodeInstallation {
     configuration: BankUserNodeConfiguration,
-    cold_certification: bool,
+    cold_certification: Option<bank_http_adapter::BankHttpProcessColdCertification>,
     external_redirect_url: Option<String>,
 }
 
@@ -96,7 +96,7 @@ async fn install_node(
     binding: BankUserNodeBinding,
     installation: NodeInstallation,
 ) -> Result<BankUserNode, Box<dyn Error + Send + Sync>> {
-    if !installation.cold_certification {
+    if installation.cold_certification.is_none() {
         return binding
             .install(installation.configuration)
             .await
@@ -116,6 +116,10 @@ async fn install_cold_node(
         binding,
         installation.configuration,
         redirect,
+        installation
+            .cold_certification
+            .as_ref()
+            .map(|cold| cold.trusted_root_pem.as_bytes()),
     )
     .await
     .map_err(Into::into)

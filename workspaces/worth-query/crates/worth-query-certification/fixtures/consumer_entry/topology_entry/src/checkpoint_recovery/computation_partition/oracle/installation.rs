@@ -116,6 +116,12 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
     type Rules = CheckpointRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("checkpoint-region-output-program");
+    fn adoption_authorization<Visitor: worth_query_decl::facade::application_program::ApplicationProgramAdoptionAuthorizationVisitor<CheckpointSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor
+            .capability::<super::super::entry_correction::program_adoption::ProgramAdoptionBinding<
+                CheckpointSchema,
+            >>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         demand_policy::feature_specs_with_final_output(
             required_chain::output_feature_spec(),
@@ -123,10 +129,10 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                 .managed_computation::<OracleTotals<WORK>>()
                 .managed_computation::<program::UnretainedTotals<WORK>>()
                 .conditional_operation::<TotalRegionOutput>()
-                .mutation::<EntryEditBinding<CheckpointSchema>>()
-                .mutation::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema>>()
-                .mutation::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema, true>>()
-                .mutation::<RegionTotalsDemandBinding<CheckpointSchema>>()
+                .action::<EntryEditBinding<CheckpointSchema>, super::source_delivery::RetainedEntry>().finish_action()
+                .action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema>, super::source_delivery::CorrectEntryCompletion>().finish_action()
+                .native_action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema, true>>().finish_action()
+                .native_action::<RegionTotalsDemandBinding<CheckpointSchema>>().finish_action()
                 .finish(),
         )
     }
@@ -145,7 +151,7 @@ pub(super) type Request<'application, 'principal, 'scope> =
     WorthQueryApplicationRequest<'application, 'principal, 'scope, CheckpointSchema>;
 
 /// The scope whose output the producer keeps. Its ordinate names the set.
-pub(super) const SCOPE: &str = "anchor-isolated";
+pub(in super::super) const SCOPE: &str = "anchor-isolated";
 /// The scope's seeded ordinate, which names the even set, and the one that
 /// names the odd set.
 pub(super) const RETAINED_POSITIONS: usize = 4;

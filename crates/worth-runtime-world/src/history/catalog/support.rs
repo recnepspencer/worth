@@ -130,10 +130,10 @@ pub(super) fn remove_installed(
 ) -> Arc<std::sync::OnceLock<CompositeHistoryCatalogEntry>> {
     let (entry, parent) = detach_installed(state, identity);
     // The base's parent was retired before it; nothing remains to release.
-    if let Some((parent, _)) = parent {
-        if state.entries.contains_key(&parent) {
-            lock_index(&state.reachability).decrement_descendant_dependency(&parent);
-        }
+    if let Some((parent, _)) = parent
+        && state.entries.contains_key(&parent)
+    {
+        lock_index(&state.reachability).decrement_descendant_dependency(&parent);
     }
     entry
 }

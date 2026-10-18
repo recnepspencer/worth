@@ -5,6 +5,8 @@
 /// again can succeed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    /// The producer returned actual managed cleanup custody; ordinary rerun is not authorized.
+    ManagedCleanupRequired(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
     /// The product root retained the precise delivery admission cause.
     ProductDelivery(Box<crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind>),
     /// Correspondence delivery retained its native non-success posture.

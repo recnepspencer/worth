@@ -109,6 +109,7 @@ fn run(workers: usize) -> Vec<String> {
             .execute()
             .unwrap();
         request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: key.clone(),
                 replacement_y: length(y),

@@ -39,6 +39,8 @@ fn assert_aspect_inventory(members: &[ApplicationSchemaMember]) {
             "PostingIdentity",
             "PostingValue",
             "PrincipalIdentity",
+            "ProgramDeploymentGrantFacts",
+            "ProgramDeploymentScopeFacts",
         ])
     );
 }
@@ -104,6 +106,15 @@ fn assert_field_inventory(members: &[ApplicationSchemaMember]) {
             "PostingAmount",
             "PostingIdentityField",
             "PrincipalIdentityField",
+            "ProgramDeploymentGrantAction",
+            "ProgramDeploymentGrantDepth",
+            "ProgramDeploymentGrantIdentity",
+            "ProgramDeploymentGrantNotAfter",
+            "ProgramDeploymentGrantNotBefore",
+            "ProgramDeploymentGrantPurpose",
+            "ProgramDeploymentGrantSourceRevision",
+            "ProgramDeploymentGrantStatus",
+            "ProgramDeploymentSourceRevision",
             "Purpose",
             "Status",
         ])
@@ -119,6 +130,7 @@ fn assert_governance_inventory(members: &[ApplicationSchemaMember]) {
             "DistinctApproverPolicy",
             "EmployeeScopePolicy",
             "EstateCapabilityScopePolicy",
+            "ProgramDeploymentGrantIssuerPolicy",
         ])
     );
     assert_eq!(names(members, unit_name), expected(&["UsdCurrency"]));

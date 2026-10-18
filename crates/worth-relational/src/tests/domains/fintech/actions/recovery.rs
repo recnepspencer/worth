@@ -1,3 +1,4 @@
+use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::facade::durability::{
     CompactionOutcome, DurabilityError, DurableCheckpoint, RecoveryPlan,
 };
@@ -7,9 +8,10 @@ use crate::runtime::RecoveryOutcome;
 use super::super::fixture::FintechWorld;
 
 pub(crate) fn checkpoint_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
-) -> Result<DurableCheckpoint, DurabilityError> {
-    world.runtime.durability_authority().checkpoint()
+) -> Result<DurableCheckpoint, crate::durability::data::RelationalRecoveryStop> {
+    world.runtime.durability_authority().checkpoint(execution)
 }
 
 pub(crate) fn recover_persisted_world(
@@ -18,9 +20,11 @@ pub(crate) fn recover_persisted_world(
 ) -> Result<(RelationalRuntime, RecoveryOutcome), String> {
     recover_runtime_from_plan(
         execution,
-        world.runtime.durability().recovery_plan(
-            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-        ),
+        world
+            .runtime
+            .durability()
+            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+            .unwrap(),
     )
 }
 

@@ -1,5 +1,7 @@
 #[path = "archive_stream/fixture.rs"]
 pub(super) mod fixture;
+#[path = "archive_stream/predecessor.rs"]
+mod predecessor;
 
 use std::ops::Range;
 
@@ -11,10 +13,23 @@ use worth_query_package_archive::facade::*;
 
 const MANIFEST_FRAME_BYTES: usize = 118;
 const RECORD_FRAME_HEADER_BYTES: usize = 12;
-const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str = include_str!("archive_stream/archive_v2.hex");
+const RETAINED_VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
+    include_str!("archive_stream/archive_v2.hex");
+
+const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
+    include_str!("archive_stream/archive_v2_record_v7.hex");
 
 #[test]
 fn version_two_minimal_archive_is_deterministic_and_frozen() {
+    let original = decode_hex(RETAINED_VERSION_TWO_MINIMAL_ARCHIVE_HEX.trim());
+    let denial =
+        decode_package_archive(&original, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
+
     // package/identity.rs:81 declares canonical identity v4: hash the fixture's
     // canonical tokens with that domain, then encode the v2 archive framing.
     let export = fixture::minimal_package().export_typed_records().unwrap();

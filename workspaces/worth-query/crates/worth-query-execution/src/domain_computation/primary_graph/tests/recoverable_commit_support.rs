@@ -88,7 +88,8 @@ fn commit_with_observation(
                 current_status,
                 &request,
             );
-            let program = super::application_attempt::preimage_evidence::retained_status_program(
+
+            super::application_attempt::preimage_evidence::retained_status_program(
                 &(phase_custody).test_host_request(),
                 world,
                 &principal,
@@ -96,8 +97,7 @@ fn commit_with_observation(
                 &request,
                 replacement,
                 super::application_attempt::preimage_evidence::RetentionMutationBreadth::Narrow,
-            );
-            program
+            )
         })
         .expect("the recoverable fixture opens its preparation call");
     let program = if retain_output_demand_observation {

@@ -100,10 +100,8 @@ pub(super) fn cold(
                 .filter(|bytes| *bytes <= isize::MAX as usize),
         )?;
     }
-    if retain_detail {
-        if let Some(detail) = effect.reuse_boundary_detail() {
-            context(detail, work)?;
-        }
+    if retain_detail && let Some(detail) = effect.reuse_boundary_detail() {
+        context(detail, work)?;
     }
     Ok(())
 }

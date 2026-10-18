@@ -43,10 +43,10 @@ fn project_row(
             aspect_values.insert(aspect, value.clone());
             continue;
         }
-        if let Some(path) = delivered_field_path(&aspect, &field) {
-            if let Some(value) = row.scalar_value_at(&path) {
-                delivered_field_values.insert(path, value.clone());
-            }
+        if let Some(path) = delivered_field_path(&aspect, &field)
+            && let Some(value) = row.scalar_value_at(&path)
+        {
+            delivered_field_values.insert(path, value.clone());
         }
     }
 

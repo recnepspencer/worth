@@ -113,23 +113,23 @@ impl WorthQueryApprovedElevation {
         self.binding.review()
     }
 
-    pub const fn action(&self) -> &worth_foundational::facade::AspectValue {
+    pub fn action(&self) -> &worth_foundational::facade::AspectValue {
         self.binding.requested().upper_bound().action()
     }
 
-    pub const fn purpose(&self) -> &worth_foundational::facade::AspectValue {
+    pub fn purpose(&self) -> &worth_foundational::facade::AspectValue {
         self.binding.requested().upper_bound().purpose()
     }
 
-    pub const fn field(&self) -> Option<&worth_foundational::facade::AspectValue> {
+    pub fn field(&self) -> Option<&worth_foundational::facade::AspectValue> {
         self.binding.requested().upper_bound().field()
     }
 
-    pub const fn magnitude(&self) -> Option<&worth_foundational::facade::AspectValue> {
+    pub fn magnitude(&self) -> Option<&worth_foundational::facade::AspectValue> {
         self.binding.requested().upper_bound().magnitude()
     }
 
-    pub const fn cardinality(&self) -> u32 {
+    pub fn cardinality(&self) -> u32 {
         self.binding.requested().upper_bound().cardinality()
     }
 
@@ -223,6 +223,7 @@ impl WorthQueryApprovedElevation {
 /// can be committed again.
 #[derive(Debug)]
 pub enum WorthQueryElevationApprovalOutcome {
+    CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
         crate::domain_computation::WorthQueryProductStaleApplication,
@@ -303,6 +304,9 @@ pub(in crate::domain_computation::primary_graph) fn approved_outcome(
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryElevationApprovalOutcome::SettlementDeferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
+            WorthQueryElevationApprovalOutcome::CleanupRequired(cleanup)
         }
         WorthQueryApplicationCommitOutcome::Indeterminate(_) => {
             WorthQueryElevationApprovalOutcome::Indeterminate

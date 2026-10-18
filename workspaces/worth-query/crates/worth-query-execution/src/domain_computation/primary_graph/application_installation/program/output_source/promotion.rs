@@ -52,7 +52,7 @@ where
                     "selected program does not own the original discovered source",
                 )
             })?;
-        if source.runtime_authority != self.runtime.runtime.authority_identity().as_u64()
+        if source.runtime_authority != self.backing.runtime.runtime.authority_identity().as_u64()
             || source.program != *presented.rendering()
             || source.binding != TypeId::of::<Source>()
             || source.payload.root_kind() != PreparedOutputRootKind::Discovered(TypeId::of::<Root>())
@@ -96,7 +96,7 @@ where
                     "selected program does not own the original required source",
                 )
             })?;
-        if source.runtime_authority != self.runtime.runtime.authority_identity().as_u64()
+        if source.runtime_authority != self.backing.runtime.runtime.authority_identity().as_u64()
             || source.program != *presented.rendering()
             || source.binding != TypeId::of::<Source>()
             || source.payload.root_kind() != PreparedOutputRootKind::Required(TypeId::of::<Root>())
@@ -128,7 +128,8 @@ where
         ),
     > {
         let retained = (|| {
-            if source.runtime_authority != self.runtime.runtime.authority_identity().as_u64()
+            if source.runtime_authority
+                != self.backing.runtime.runtime.authority_identity().as_u64()
                 || source.branch != receipt.product_branch()
                 || carrier.publication.composite_commit()
                     != receipt.committed_product_publication().composite_commit()
@@ -150,7 +151,7 @@ where
                     "original recovered source has no retained output observation",
                 )
             })?;
-            self.runtime.retain_required_output_source_carrier(
+            self.backing.runtime.retain_required_output_source_carrier(
                 receipt,
                 Arc::clone(change),
                 observation.clone(),

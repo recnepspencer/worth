@@ -4,16 +4,15 @@ mod outcome;
 mod query;
 
 pub use continuation::{
-    BankPaymentContinuationDenial, BankPaymentInitiationOutcome, BankPendingPaymentContinuation,
-    BankRejectPendingPayment,
+    BankPaymentContinuationDenial, BankPendingPaymentContinuation, BankRejectPendingPayment,
 };
 pub use controls::BankMutationControls;
 pub use outcome::{
-    BankAccountAccessExecution, BankAuthorizationDenial, BankAuthorizationDenialKind,
-    BankBusinessAccountCreationExecution, BankEntityResolutionDenial,
-    BankEntityResolutionDenialKind, BankMoneyMovementExecution, BankMoneyMovementRetainedExecution,
-    BankOperationInstallationDenial, BankOperationInstallationDenialKind,
-    BankPaymentDecisionExecution, BankPersonalAccountCreationExecution,
-    BankProgramMutationExecution,
+    BankAuthorizationDenial, BankAuthorizationDenialKind, BankEntityResolutionDenial,
+    BankEntityResolutionDenialKind, BankOperationInstallationDenial,
+    BankOperationInstallationDenialKind,
 };
-pub use query::{mutations, BankMutation, BankMutationForPrincipal, BankReadyMutation};
+pub use query::{
+    mutations, BankMutation, BankMutationForPrincipal, BankOperationConstructionRefusal,
+    BankReadyMutation,
+};

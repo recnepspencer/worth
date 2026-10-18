@@ -36,10 +36,10 @@ pub(crate) fn latest_available_checkpoint(
 pub(crate) fn latest_available_checkpoint_basis(
     runtime: &RelationalRuntime,
 ) -> Option<SubscriberCheckpointBasis> {
-    if let Some(latest_position) = runtime.latest_patch_stream_position() {
-        if let Some(basis) = checkpoint_basis_from_patch_position(runtime, latest_position) {
-            return Some(basis);
-        }
+    if let Some(latest_position) = runtime.latest_patch_stream_position()
+        && let Some(basis) = checkpoint_basis_from_patch_position(runtime, latest_position)
+    {
+        return Some(basis);
     }
 
     durable_canonical_envelopes(runtime)

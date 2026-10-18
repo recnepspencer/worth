@@ -13,11 +13,17 @@
 
 mod crate_index;
 pub(crate) mod item_shape;
+mod knowledge;
+#[cfg(test)]
+mod knowledge_tests;
 mod macro_generation;
 mod name_lookup;
+mod payload_knowledge;
 mod use_bindings;
 
 pub(crate) use crate_index::{CrateId, CrateIndex};
+pub(crate) use knowledge::{enum_definition, export_knowledge, Knowledge, SelectorKind};
+pub(crate) use payload_knowledge::payload_name;
 
 use crate_index::ExternCrate;
 use std::cell::RefCell;
@@ -126,6 +132,33 @@ impl<'a> Resolver<'a> {
         };
         for segment in rest {
             current = self.descend(krate, current, segment)?;
+        }
+        Ok(current)
+    }
+
+    /// Each written audience segment is public; an admitted public reexport may
+    /// traverse its private implementation internally using the existing resolver.
+    pub(crate) fn resolve_public_path(
+        &self,
+        id: CrateId,
+        segments: &[String],
+    ) -> Result<Vec<Definition>, String> {
+        let mut current = vec![module_definition(id, &[])];
+        for (position, segment) in segments.iter().enumerate() {
+            let mut next = Vec::new();
+            for definition in current {
+                let Definition::Module { krate, path } = definition else {
+                    return Err("public route is not a source module".into());
+                };
+                next.extend(self.lookup(
+                    krate,
+                    &path,
+                    segment,
+                    Reach::PublicOnly,
+                    position == 0,
+                )?);
+            }
+            current = next;
         }
         Ok(current)
     }

@@ -5,7 +5,7 @@ use worth_proof::{
     ProofOutcome, Recipe, TransitionOutcome,
 };
 
-use crate::support::type_shapes::{CodegenHonestyReport, CodegenShapeCheck};
+use crate::shared_support::type_shapes::{CodegenHonestyReport, CodegenShapeCheck};
 
 use super::representatives::{
     CurrentBasis, LoweringCapability, ReadinessAuthority, ResolutionAuthority,

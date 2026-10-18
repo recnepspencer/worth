@@ -84,7 +84,7 @@ fn history_bills(stdout: &str) -> (u64, u64, u64, u64) {
         None => (
             stdout
                 .lines()
-                .find(|line| line.starts_with("SAME_REQUEST_BILL:"))
+                .find(|line| line.starts_with("SIBLING_BRANCH_BILLS:"))
                 .unwrap(),
             [
                 "edited_retained_work",

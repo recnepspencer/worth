@@ -25,13 +25,10 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 
 const MAGIC: &[u8; 4] = b"WQWD";
 
-/// V6 carries definition-level global actions. Back-only definitions retain
-/// v5 bytes, definitions with neither retain v4; readers preserve v1 through v5.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 6;
-
-/// The oldest draft protocol still read. Its conditions readmit as migrated
-/// expressions; nothing writes it.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION: u16 = 1;
+/// Current deterministic draft protocol. Version 7 combines explicit execution,
+/// observation and actor policies with local Back and global termination actions.
+/// Earlier competing development layouts are refused without reinterpretation.
+pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 7;
 
 /// Encodes one validated definition's authored meaning. Only the draft
 /// travels: nothing about instances, approvals or publication is read.
@@ -45,10 +42,14 @@ where
     let limits = limits.narrowed();
     let mut output = BinaryOutput::with_capacity(256);
     output.raw_bytes(MAGIC);
-    let version = if !definition.global_actions().is_empty() { 6 } else if definition.connections().iter().any(|edge| matches!(edge.kind(),
-        worth_query_declaration::facade::application_program::ApplicationWorkflowConnectionKind::BackAction(_))) { 5 } else { 4 };
+    let version = WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION;
     output.u16(version);
     records::text(&mut output, Spec::IDENTITY.as_str())?;
+    records::text(
+        &mut output,
+        &Spec::observation_policy().persistence_identity(),
+    )?;
+    records::text(&mut output, &Spec::actor_policy().persistence_identity())?;
     records::text(&mut output, definition.identity().as_str())?;
     encode_limits(&mut output, definition.limits())?;
     records::text(&mut output, definition.start().as_str())?;
@@ -97,6 +98,8 @@ pub fn decode_workflow_definition_draft(
             )
         })?;
     let spec = records::nonempty_text(&mut input)?;
+    let observation_policy = records::nonempty_text(&mut input)?;
+    let actor_policy = records::nonempty_text(&mut input)?;
     let identity = records::nonempty_text(&mut input)?;
     let definition_limits = decode_limits(&mut input)?;
     let start = records::nonempty_text(&mut input)?;
@@ -109,7 +112,7 @@ pub fn decode_workflow_definition_draft(
     )?;
     let mut nodes = Vec::with_capacity(node_count);
     for _ in 0..node_count {
-        let node = records::decode_node(&mut input, version)?;
+        let node = records::decode_node(&mut input)?;
         if nodes
             .last()
             .is_some_and(|previous: &super::DraftNode| previous.identity >= node.identity)
@@ -143,6 +146,8 @@ pub fn decode_workflow_definition_draft(
     }
     Ok(WorthQueryUntrustedWorkflowDefinitionDraft {
         spec,
+        observation_policy,
+        actor_policy,
         identity,
         limits: definition_limits,
         start,

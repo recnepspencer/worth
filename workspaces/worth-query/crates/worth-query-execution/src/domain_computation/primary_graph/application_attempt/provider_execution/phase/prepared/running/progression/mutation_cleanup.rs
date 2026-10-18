@@ -22,14 +22,14 @@ impl WorthQueryApplicationMutationCleanupOwner {
         running: WorthQueryRunningDirectRun,
         terminal: WorthQueryManagedRunTerminalKind,
         snapshot_release: WorthQueryApplicationSnapshotRelease,
-    ) -> Result<WorthQueryMutationGraphWorkCompletion, ()> {
-        #[cfg(test)]
-        if provider.take_fault(crate::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFault::RejectedManagedCleanup) { return Err(()); }
-        #[cfg(not(test))]
-        let _ = provider;
+    ) -> Result<
+        WorthQueryMutationGraphWorkCompletion,
+        crate::domain_computation::WorthQueryMutationCleanupFailure,
+    > {
+        let on_worker = provider.managed_cleanup_control.take();
         match self {
-            Self::Unbound(run) => run.finish(running, terminal, snapshot_release),
-            Self::ProviderBound(run) => run.finish(running, terminal, snapshot_release),
+            Self::Unbound(run) => run.finish(running, terminal, snapshot_release, on_worker),
+            Self::ProviderBound(run) => run.finish(running, terminal, snapshot_release, on_worker),
         }
     }
 }

@@ -26,8 +26,8 @@ mod world;
 use std::net::SocketAddr;
 
 use bank_http_adapter::{
-    BankHttpAccountSummaryOutcome, BankHttpCommitDisposition, BankHttpDenialKind,
-    BankHttpMutationOutcome, BankHttpPostingPurpose,
+    BankHttpAccountSummaryOutcome, BankHttpDenialKind, BankHttpMutationOutcome,
+    BankHttpPostingPurpose,
 };
 use bank_user_node::{
     BankUserNodeAccountActivityPageOutcome, BankUserNodeAccountSummaryOutcome,
@@ -128,12 +128,10 @@ async fn assert_mutation_response_loss_and_cross_user_denial(
     let activity_before = activity_entries(client, primary, "send-activity-before").await;
     let request = serde_json::json!({
         "request_id": "process-send-response-loss",
-        "controls": { "deadline_milliseconds": 5_000 },
+        "command": "create", "custody_id": "process-send", "sequence": 1,
+        "controls": { "deadline_milliseconds": 5_000, "maximum_history_work": 128 },
         "idempotency_key": "process-send-response-loss-key",
-        "operation": "send_money",
-        "from": "fixture:100",
-        "recipient": "fixture:2",
-        "amount_minor_units": 25
+        "operation": { "operation": "send_money", "from": "fixture:100", "recipient": "fixture:2", "amount_minor_units": 25 }
     });
     drop(
         client
@@ -156,12 +154,18 @@ async fn assert_mutation_response_loss_and_cross_user_denial(
         1,
         "the lost response must follow exactly one real transfer posting"
     );
-    let replayed = node_mutation(client, primary, &request).await;
+    let resume = serde_json::json!({ "request_id": "process-send-resume", "command": "resume", "custody_id": "process-send", "sequence": 2,
+        "controls": { "deadline_milliseconds": 5000, "maximum_history_work": 128 } });
+    let crossed = node_mutation(client, peer, &resume).await;
+    assert!(
+        matches!(crossed, BankUserNodeMutationOutcome::Forwarded { response: BankHttpMutationOutcome::Refused { denial, .. } } if denial.kind == BankHttpDenialKind::PermissionDenied)
+    );
+    let replayed = node_mutation(client, primary, &resume).await;
     assert!(matches!(
         replayed,
         BankUserNodeMutationOutcome::Forwarded {
-            response: BankHttpMutationOutcome::Applied {
-                disposition: BankHttpCommitDisposition::AlreadyCommitted,
+            response: BankHttpMutationOutcome::Completed {
+                recovered: false,
                 ..
             }
         }
@@ -174,12 +178,13 @@ async fn assert_mutation_response_loss_and_cross_user_denial(
         activity_entries(client, primary, "send-activity-retry").await,
         activity_after
     );
-    let crossed = node_mutation(client, peer, &request).await;
+    let closed = node_mutation(client, primary, &serde_json::json!({ "request_id": "process-send-close", "command": "close", "custody_id": "process-send", "sequence": 3,
+        "controls": { "deadline_milliseconds": 5000,  } })).await;
     assert!(matches!(
-        crossed,
+        closed,
         BankUserNodeMutationOutcome::Forwarded {
-            response: BankHttpMutationOutcome::NotApplied { denial, .. }
-        } if denial.kind == BankHttpDenialKind::PermissionDenied
+            response: BankHttpMutationOutcome::Closed { .. }
+        }
     ));
 }
 

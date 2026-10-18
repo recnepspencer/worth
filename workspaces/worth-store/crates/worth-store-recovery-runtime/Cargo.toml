@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-recovery-runtime"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Fresh-process physical Store recovery orchestration."
@@ -18,7 +19,6 @@ worth-store-recovery-physics.workspace = true
 [dev-dependencies]
 tempfile = "3"
 trybuild = "1.0"
-syn = { version = "2", features = ["full"] }
 serde_json = "1"
 worth-store = { workspace = true, features = ["certification-test-authority", "volatile-sync-for-tests", "test-support"] }
 worth-store-physical-integrity = { workspace = true, features = ["test-support"] }

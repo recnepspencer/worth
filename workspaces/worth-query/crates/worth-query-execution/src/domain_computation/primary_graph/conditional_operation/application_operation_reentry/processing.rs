@@ -282,6 +282,13 @@ where
             | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, _) => {
                 evidence
             }
+            WorthQueryRetainedConditionalDecision::OperationCleanupRequired(evidence, cleanup) => {
+                wake.decision = WorthQueryRetainedConditionalDecision::OperationCleanupRequired(
+                    evidence, cleanup,
+                );
+                counts.indeterminate += 1;
+                continue;
+            }
             other @ (WorthQueryRetainedConditionalDecision::Suppressed(_)
             | WorthQueryRetainedConditionalDecision::Deferred(_)
             | WorthQueryRetainedConditionalDecision::OperationControlStopped(_, _)

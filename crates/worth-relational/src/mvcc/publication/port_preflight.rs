@@ -283,14 +283,14 @@ fn companion_stop_outcome(
     publication_cell: &crate::branch::RelationalBranchPublicationCell,
     expected: &crate::branch::RelationalBranchBasisDescriptor,
 ) -> RelationalPublicationOutcome {
-    if follows_concurrent_publication(&stop) {
-        if let Some(observed) = observe_head(publication_cell) {
-            if observed != *expected {
-                return RelationalPublicationOutcome::stale(
-                    super::StaleRelationalBranchObservation::new(expected.clone(), observed),
-                );
-            }
-        }
+    if follows_concurrent_publication(&stop)
+        && let Some(observed) = observe_head(publication_cell)
+        && observed != *expected
+    {
+        return RelationalPublicationOutcome::stale(super::StaleRelationalBranchObservation::new(
+            expected.clone(),
+            observed,
+        ));
     }
     map_companion_stop(stop)
 }

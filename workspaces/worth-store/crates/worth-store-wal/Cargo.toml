@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-wal"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Roadmap 1 WAL-coordinated durable mode and semantic write-path contracts."

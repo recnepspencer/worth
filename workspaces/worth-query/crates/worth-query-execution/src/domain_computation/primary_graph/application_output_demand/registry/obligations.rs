@@ -67,7 +67,7 @@ impl DemandRegistryState {
         &self,
         upstream: &WorthQueryOutputDemandKey,
         charge: &mut C,
-    ) -> Result<impl Iterator<Item = WorthQueryOutputDemandKey>, C::Refusal> {
+    ) -> Result<impl Iterator<Item = WorthQueryOutputDemandKey> + use<C>, C::Refusal> {
         let newest =
             super::refreshed_rejoin::newest_of_occurrence(&self.records, upstream, charge)?;
         Ok(std::iter::once(upstream.clone()).chain(newest))
@@ -276,10 +276,9 @@ impl super::WorthQueryAcceptedOutputAuthority {
                     && left.observation == right.observation
                     && left.source_scope == right.source_scope
                     && left.source_identity == right.source_identity
-                    && std::sync::Arc::ptr_eq(
-                        &left.observed_source_facts,
-                        &right.observed_source_facts,
-                    )
+                    && left
+                        .observed_source_facts
+                        .same_backing(&right.observed_source_facts)
             }
             _ => false,
         }

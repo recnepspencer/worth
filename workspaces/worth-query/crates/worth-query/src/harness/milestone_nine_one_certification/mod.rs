@@ -123,36 +123,6 @@ pub struct MilestoneNineOneCertificationBundle {
 }
 
 impl MilestoneNineOneCertificationBundle {
-    fn has_required_outputs(&self) -> bool {
-        !self.query_digest.is_empty()
-            && !self.live_family_digest.is_empty()
-            && !self.subscription_family_digest.is_empty()
-            && !self.subscription_equivalence_digest.is_empty()
-            && !self.policy_digest.is_empty()
-            && !self.tenant_basis_digest.is_empty()
-            && !self.relationship_proof_digest.is_empty()
-            && !self.view_shape_digest.is_empty()
-            && !self.basis_digest.is_empty()
-            && !self.query_family.is_empty()
-            && !self.bridge_family.is_empty()
-            && !self.basis_request_digest.is_empty()
-            && !self.signal_strategy_digest.is_empty()
-            && !self.declaration_digest.is_empty()
-            && !self.bridge_declaration_digest.is_empty()
-            && !self.admission_digest.is_empty()
-            && !self.activation_digest.is_empty()
-            && !self.certification_bundle_digest.is_empty()
-            && !self.support_profile_digest.is_empty()
-            && !self.diagnostics_digest.is_empty()
-            && !self.scale_slope_digest.is_empty()
-            && !self.scale_activation_digest.is_empty()
-            && !self.scale_admission_digest.is_empty()
-            && !self.counter_snapshot_digest.is_empty()
-            && !self.fixture_digest.is_empty()
-            && !self.compile_fail_boundary_digest.is_empty()
-            && !self.support_matrix_digest.is_empty()
-    }
-
     fn subscription_semantic_signature(&self) -> String {
         digest_parts(&[
             format!("query_family:{}", self.query_family),
@@ -197,37 +167,9 @@ pub type MilestoneNineOneCertificationMatrix = CertificationMatrix<
     MilestoneNineOneRejectionBundle,
 >;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MilestoneNineOneCertificationArtifact {
-    pub suite_name: &'static str,
-    pub certification_bundle_digest: String,
-    pub coverage_matrix_digest: String,
-    pub matrix: MilestoneNineOneCertificationMatrix,
-}
-
-impl MilestoneNineOneCertificationMatrix {
-    pub fn into_milestone_nine_one_artifact(self) -> MilestoneNineOneCertificationArtifact {
-        let certification_bundle_digest =
-            digest_parts(&bundle_projection::bundle_digest_parts(&self));
-        let coverage_matrix_digest = digest_parts(&bundle_projection::coverage_digest_parts(&self));
-        MilestoneNineOneCertificationArtifact {
-            suite_name: self.suite_name,
-            certification_bundle_digest,
-            coverage_matrix_digest,
-            matrix: self,
-        }
-    }
-}
-
 pub struct MilestoneNineOneCertificationAdapter;
 
 impl MilestoneNineOneCertificationAdapter {
-    pub fn query_subscription_declaration_and_lowering_certification_artifact(
-    ) -> MilestoneNineOneCertificationArtifact {
-        Self::query_subscription_declaration_and_lowering_parity_test()
-            .into_milestone_nine_one_artifact()
-    }
-
     pub fn query_subscription_declaration_and_lowering_parity_test(
     ) -> MilestoneNineOneCertificationMatrix {
         MilestoneNineOneCertificationMatrix {

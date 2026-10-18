@@ -32,6 +32,7 @@ fn guidance<const MODE: u64>(app: &App<MODE>, projection: &Projection<MODE>) -> 
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     let assessed = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<MODE, RequireDraftNote>::new(""))
         .assess_current_body_requirements(app, projection)
         .expect("authorized native assessment");
@@ -56,6 +57,7 @@ fn invoke<const MODE: u64>(
     let scope = request_scope();
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     app.request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<MODE, RequireDraftNote>::new(""))
         .without_source()
         .idempotency(&key)
@@ -68,6 +70,7 @@ fn unlink<const MODE: u64>(app: &App<MODE>, key: u64) {
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     assert!(matches!(
         app.request(&principal, &scope)
+            .advanced()
             .mutate(UnlinkIntent::<MODE>(DraftInput {
                 identity: super::DOCUMENT_IDENTITY.to_owned(),
                 note: String::new()
@@ -117,6 +120,7 @@ fn unlinking_required_member_stales_without_the_target_write() {
     let key = 502;
     let mut request = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<25, RequireDraftNote>::new(""))
         .without_source()
         .idempotency(&key);
@@ -145,6 +149,7 @@ fn inapplicable_requirement_does_not_retain_satisfaction_only_adjacency() {
     let key = 504;
     let mut request = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<27, RequireDraftNote>::new(""))
         .without_source()
         .idempotency(&key);
@@ -198,6 +203,7 @@ fn runtime_expression_failure_retains_native_denial_and_cannot_write() {
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     let assessment = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<29, RequireDraftNote>::new(""))
         .assess_current_body_requirements(&app, &projection);
     match assessment {
@@ -208,6 +214,7 @@ fn runtime_expression_failure_retains_native_denial_and_cannot_write() {
     }
     let invocation = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(DraftIntent::<29, RequireDraftNote>::new(""))
         .without_source()
         .idempotency(&512)
@@ -234,6 +241,7 @@ fn native_optional_scalar_expression_keeps_empty_text_distinct_from_absence() {
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     assert!(matches!(
         app.request(&principal, &scope)
+            .advanced()
             .mutate(DraftIntent::<28, SetDraftNote>::new("complete"))
             .without_source()
             .idempotency(&509)
@@ -245,6 +253,7 @@ fn native_optional_scalar_expression_keeps_empty_text_distinct_from_absence() {
     assert!(matches!(invoke(&app, 510), Outcome::Committed { .. }));
     assert!(matches!(
         app.request(&principal, &scope)
+            .advanced()
             .mutate(DraftIntent::<28, ClearDraftNote>::new(""))
             .without_source()
             .idempotency(&511)

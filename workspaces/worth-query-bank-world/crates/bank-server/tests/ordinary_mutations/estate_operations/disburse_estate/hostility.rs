@@ -1,8 +1,6 @@
 use super::{assert_no_disbursement_effects, disburse, fixture::*, idempotency};
 use bank_domain::{proposals::BankProposalDenial, schema::AccountStatus};
-use bank_server::{
-    BankEstateDisbursementProjectionDenial, BankEstateProgressionDenial, BankMutationCommitOutcome,
-};
+use bank_server::BankEstateDisbursementProjectionDenial;
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
@@ -24,26 +22,29 @@ fn exact_beneficiary_and_destination_joint_ownership_are_required() {
             },
         );
         let specialist = fixture.authenticate_actor();
-        let denial = disburse(
+        let (_denial_source, denial) = {
+            let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = disburse(
             &fixture,
             &specialist,
             fixture.action(250),
             idempotency(61 + ordinal as u8),
-        )
-        .expect_err("missing or misdirected beneficiary truth must deny");
+        ) else { panic!("native pre-effect refusal") };
+            (
+                original_source,
+                cause
+                    .downcast::<bank_server::BankEstateDisbursementProjectionDenial>()
+                    .expect("native projection cause"),
+            )
+        };
         match posture {
             BeneficiaryPosture::Missing | BeneficiaryPosture::WrongEstate => assert!(matches!(
                 denial,
-                BankEstateProgressionDenial::EstateDisbursementProjection(
-                    BankEstateDisbursementProjectionDenial::EstateBeneficiaryRelationMissing
-                )
+                BankEstateDisbursementProjectionDenial::EstateBeneficiaryRelationMissing
             )),
             BeneficiaryPosture::JointOwnerMissing | BeneficiaryPosture::JointOwnerWrongAccount => {
                 assert!(matches!(
                     denial,
-                    BankEstateProgressionDenial::EstateDisbursementProjection(
-                        BankEstateDisbursementProjectionDenial::EstateJointOwnerRelationMissing
-                    )
+                    BankEstateDisbursementProjectionDenial::EstateJointOwnerRelationMissing
                 ))
             }
             BeneficiaryPosture::Ready => unreachable!(),
@@ -72,18 +73,23 @@ fn a_recognized_exact_executor_authority_is_required_but_not_artificially_unique
             },
         );
         let specialist = fixture.authenticate_actor();
-        let denial = disburse(
+        let (_denial_source, denial) = {
+            let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = disburse(
             &fixture,
             &specialist,
             fixture.action(250),
             idempotency(71 + ordinal as u8),
-        )
-        .expect_err("missing exact recognized executor authority must deny");
+        ) else { panic!("native pre-effect refusal") };
+            (
+                original_source,
+                cause
+                    .downcast::<bank_server::BankEstateDisbursementProjectionDenial>()
+                    .expect("native projection cause"),
+            )
+        };
         assert!(matches!(
             denial,
-            BankEstateProgressionDenial::EstateDisbursementProjection(
-                BankEstateDisbursementProjectionDenial::RecognizedExecutorAuthorityMissing
-            )
+            BankEstateDisbursementProjectionDenial::RecognizedExecutorAuthorityMissing
         ));
     }
 
@@ -95,11 +101,26 @@ fn a_recognized_exact_executor_authority_is_required_but_not_artificially_unique
         },
     );
     let specialist = fixture.authenticate_actor();
-    let outcome = disburse(&fixture, &specialist, fixture.action(250), idempotency(74))
-        .expect("multiple lawful recognized executor authorities must remain admissible");
-    let BankMutationCommitOutcome::Committed(receipt) = outcome else {
-        panic!("multiple lawful executors must commit: {outcome:?}");
+    let outcome = {
+        let closing_actor = &specialist;
+        let closing_scope = crate::support::request_scope();
+        let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            done,
+        ) = disburse(&fixture, &specialist, fixture.action(250), idempotency(74))
+        else {
+            panic!("native source completion")
+        };
+        assert!(matches!(
+            done.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        bank_server::BankCommitReceipt::from_closed_source(
+            done.close_with_evidence(&closing_request)
+                .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
+        )
     };
+    let receipt = outcome;
     assert_eq!(receipt.decision_fact_count(), Some(41));
 }
 
@@ -118,13 +139,27 @@ fn source_and_destination_must_both_be_open() {
             },
         );
         let specialist = fixture.authenticate_actor();
-        let denial = disburse(
-            &fixture,
-            &specialist,
-            fixture.action(250),
-            idempotency(81 + ordinal),
-        )
-        .expect_err("a non-open movement endpoint must deny");
+        let denial = {
+            let closing_actor = &specialist;
+            let closing_scope = crate::support::request_scope();
+            let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
+            let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
+                done,
+            ) = disburse(
+                &fixture,
+                &specialist,
+                fixture.action(250),
+                idempotency(81 + ordinal),
+            )
+            else {
+                panic!("native domain no-effect denial")
+            };
+            let Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::DomainDenied(bank_domain::schema::EstateMutationDenial::Proposal(cause))) = done.native_outcome() else { panic!("original proposal denial") };
+            let cause = cause.clone();
+            done.close(&closing_request)
+                .unwrap_or_else(|(_, denial)| panic!("terminal close: {denial:?}"));
+            cause
+        };
         let expected = if expected_account == 0 {
             fixture.source
         } else {
@@ -137,10 +172,10 @@ fn source_and_destination_must_both_be_open() {
         };
         assert!(matches!(
             denial,
-            BankEstateProgressionDenial::Proposal(BankProposalDenial::AccountStatus {
+            BankProposalDenial::AccountStatus {
                 account,
                 status: observed,
-            }) if account == expected && observed == status
+            } if account == expected && observed == status
         ));
     }
 }
@@ -159,16 +194,25 @@ fn beneficiary_and_executor_actors_deny_at_capability_composition() {
             },
         );
         let specialist = fixture.authenticate_actor();
-        let denial = disburse(
-            &fixture,
-            &specialist,
-            fixture.action(250),
-            idempotency(91 + ordinal as u8),
-        )
-        .expect_err("conflicted authority must deny before invariant projection");
-        let BankEstateProgressionDenial::ApplicationEntry(
-            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(denial),
-        ) = denial else {
+        let (_denial_source, denial) = {
+            let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
+                operation: original_source,
+                denial:
+                    worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(
+                        cause,
+                    ),
+            } = disburse(
+                &fixture,
+                &specialist,
+                fixture.action(250),
+                idempotency(91 + ordinal as u8),
+            )
+            else {
+                panic!("native pre-effect refusal")
+            };
+            (original_source, cause)
+        };
+        let worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(denial) = denial else {
             panic!("actor conflict must deny at Query authorization")
         };
         let kind = match actor_conflict {
@@ -196,12 +240,19 @@ fn approved_emergency_graph_state_is_not_ordinary_disbursement_authority() {
         },
     );
     let specialist = fixture.authenticate_actor();
-    let denial = disburse(&fixture, &specialist, fixture.action(250), idempotency(101))
-        .expect_err("an approved graph record does not replace ordinary command authority");
+    let (_denial_source, denial) = {
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
+            operation: original_source,
+            denial:
+                worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(cause),
+        } = disburse(&fixture, &specialist, fixture.action(250), idempotency(101))
+        else {
+            panic!("native pre-effect refusal")
+        };
+        (original_source, cause)
+    };
     assert!(matches!(
         denial,
-        BankEstateProgressionDenial::ApplicationEntry(
-            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(_)
-        )
+        worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(_)
     ));
 }

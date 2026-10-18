@@ -15,6 +15,10 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     PrimaryGraphPublication,
     /// A binding does not belong to this installation.
     ForeignBinding,
+    /// A failed native terminal must be released through fresh progression before reconstitution.
+    ManagedCleanupRetained(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
+    /// Another owning handle still retains the exact installed runtime.
+    RuntimeKeepaliveRetained,
     /// The same binding was installed twice.
     DuplicateBinding,
     /// Not every expected conditional binding was installed.

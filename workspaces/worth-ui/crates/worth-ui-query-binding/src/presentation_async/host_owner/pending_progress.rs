@@ -40,12 +40,11 @@ impl WorthUiPresentationAsyncOwner {
         observation: WorthUiPresentationAsyncObservation,
     ) -> Result<WorthUiPresentationPendingReceipt, WorthUiPresentationPendingAdmissionDenial> {
         if !pending.predecessor_supersession_complete {
-            if !pending.reconstructing_unresolved_predecessor {
-                if let Err(stop) =
+            if !pending.reconstructing_unresolved_predecessor
+                && let Err(stop) =
                     self.supersede_pending_lineage(pending.lineage, &pending.admission)
-                {
-                    return Err(self.retain_admission_progress(key, pending, stop));
-                }
+            {
+                return Err(self.retain_admission_progress(key, pending, stop));
             }
             pending.predecessor_supersession_complete = true;
         }

@@ -13,7 +13,7 @@ phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvan
 ) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema> + Clone,
+    Intent: ApplicationMutationIntent<Schema>,
     IntentBinding<Schema, Intent>: ApplicationCapabilityMutationBinding<Schema>,
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -34,9 +34,20 @@ where
     let authorized = authorize_capability_selected(
         phase,
         &request.request,
-        identities.encoded_input(),
-        staged.preconditions,
+        match request.operation_input {
+            Some(Ok(input)) => input.clone(),
+            Some(Err(denial)) => {
+                return Err(WorthQueryApplicationRequestMutationDenial::Identity(
+                    ApplicationMutationIdentityDenial::Input(denial.clone()),
+                ))
+            }
+            None => identities.encoded_input(),
+        },
+        request
+            .borrowed_preconditions
+            .unwrap_or(&staged.preconditions),
         selected,
+        request.workflow_actor_context.as_ref(),
     )?;
     prepare_authorized(request, identities, staged.source, authorized)
 }
@@ -81,7 +92,7 @@ where
             )
         })?;
     let preconditions = std::mem::take(&mut request.preconditions);
-    authorize_capability_selected(phase, request, input, preconditions, selected)
+    authorize_capability_selected(phase, request, input, &preconditions, selected, None)
         .map(|authorized| authorized.admission)
 }
 
@@ -91,8 +102,9 @@ fn authorize_capability_selected<Schema, Intent, SourcePreparation>(
     input: ApplicationEncodedInput<
         <Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding,
     >,
-    preconditions: Preconditions<Schema, Intent>,
+    preconditions: &Preconditions<Schema, Intent>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    actor_context: Option<&worth_query_execution::publication_boundary::workflow_advance::WorthQueryWorkflowActorContext>,
 ) -> Result<AuthorizedMutation<Schema, Intent::Binding>, WorthQueryApplicationRequestMutationDenial>
 where
     Schema: ApplicationSchema,
@@ -143,13 +155,14 @@ where
             &capability,
             input,
             request.scope,
+            actor_context,
         )
         .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
 
     let principal_identity = principal.principal_identity().clone();
     let admission = request
         .application
-        .authorize_capability_operation(phase, access, binding.operation(), preconditions)
+        .authorize_borrowed_capability_operation(phase, access, binding.operation(), preconditions)
         .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
     Ok(AuthorizedMutation {
         principal_identity,

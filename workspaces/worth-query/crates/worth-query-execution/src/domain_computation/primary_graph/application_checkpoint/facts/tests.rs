@@ -23,6 +23,11 @@ fn complete_comparable_fact_kinds_round_trip_without_losing_absence_or_sets() {
             aspect: AspectKey::new("test.aspect").unwrap(),
             native_revision: Some(11),
         },
+        Fact::Field {
+            entity_id: entity, kind: KindId(14), locator: locator.clone(),
+            value: worth_foundational::facade::AspectValue::UInt64(31),
+        },
+        Fact::AbsentField { entity_id: entity, kind: KindId(14), locator: locator.clone() },
         Fact::SourceFieldRevision {
             entity_id: entity,
             locator,
@@ -96,12 +101,6 @@ fn incomplete_or_unsupported_facts_never_gain_checkpoint_reuse_payload() {
         entity_id: entity,
         locator: locator.clone(),
         native_revision: None,
-    }])
-    .is_none());
-    assert!(encode(&[Fact::AbsentField {
-        entity_id: entity,
-        kind: KindId(1),
-        locator,
     }])
     .is_none());
 }
@@ -203,7 +202,7 @@ fn optional_absence_is_exact_and_an_older_wire_version_is_never_read() {
         .as_ref(),
         &[fact]
     );
-    for older in [5, 6] {
+    for older in [5, 6, 7, 8, 9] {
         assert!(decode_for_wire_version(
             &bytes,
             older,

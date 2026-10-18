@@ -1,24 +1,19 @@
 use bank_domain::{
     estate::{EstateAction, EstateCaseId, LegalAuthorityId},
     model::BankPrincipalId,
-    proposals::BankIdempotencyKey,
     schema::{
         BankSchema, EstateCase, EstateCaseIdentityField, EstateExecutor, LegalAuthorityEstate,
         LegalAuthorityHolder, LegalAuthorityIdentityField, LegalAuthorityRecognizedField,
         PrincipalIdentityField, RecognizeEstateExecutorOperation,
     },
 };
-use worth_query_host::facade::{
-    admission::authenticated_principal::WorthQueryRequestScope,
-    primary_graph::{
-        WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryEntityResolutionDenial,
-        WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
-        WorthQueryInvariantProjectionTraversalDenial,
-    },
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryEntityResolutionDenial,
+    WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
+    WorthQueryInvariantProjectionTraversalDenial,
 };
 
 use super::BankEstateProgressionDenial;
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
 
 #[derive(Debug)]
 pub enum BankExecutorRecognitionProjectionDenial {
@@ -36,44 +31,6 @@ pub enum BankExecutorRecognitionProjectionDenial {
     EntityResolution(crate::BankEntityResolutionDenial),
     DecisionPlan(crate::BankInvariantDecisionPlanDenial),
     Traversal(crate::BankInvariantProjectionTraversalDenial),
-}
-
-impl BankIdentityRuntime {
-    pub fn recognize_estate_executor_with_key(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        key: &BankIdempotencyKey,
-        request: &WorthQueryRequestScope,
-    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let EstateAction::RecognizeExecutor {
-            estate,
-            executor,
-            authority,
-        } = action
-        else {
-            return Err(BankEstateProgressionDenial::CommandInput(
-                "RecognizeEstateExecutorOperation",
-            ));
-        };
-        super::program_outcome::program_outcome(
-            self.request(principal, request)
-                .mutate(bank_domain::schema::RecognizeEstateExecutor::new(
-                    estate, executor, authority,
-                ))
-                .idempotency(key)
-                .execute_capability_in_program(
-                    self.application_program(),
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                ),
-            "RecognizeEstateExecutorOperation",
-            |denial| {
-                denial
-                    .downcast::<BankExecutorRecognitionProjectionDenial>()
-                    .map(BankEstateProgressionDenial::ExecutorRecognitionProjection)
-            },
-        )
-    }
 }
 
 #[derive(Clone, Copy)]

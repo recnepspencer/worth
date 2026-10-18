@@ -216,8 +216,8 @@ impl CustomInvariantWorkMeter {
         if self.exceeded() || !self.safe_point() {
             return false;
         }
-        if let Some(leased) = &self.leased {
-            if leased
+        if let Some(leased) = &self.leased
+            && leased
                 .consumed_work
                 .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
                     current
@@ -225,10 +225,9 @@ impl CustomInvariantWorkMeter {
                         .filter(|next| leased.work_ceiling.is_none_or(|ceiling| *next <= ceiling))
                 })
                 .is_err()
-            {
-                self.stop(CustomPreparationStop::WorkExhausted);
-                return false;
-            }
+        {
+            self.stop(CustomPreparationStop::WorkExhausted);
+            return false;
         }
         if self
             .consumed

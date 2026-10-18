@@ -161,11 +161,11 @@ impl Model {
                 for claim in &mut r.claims {
                     if closed.contains(claim) {
                         let upstream = &old[claim];
-                        if let Some(&(generation, successor)) = newest.get(&upstream.occurrence) {
-                            if generation > upstream.generation {
-                                *claim = successor;
-                                changed = true;
-                            }
+                        if let Some(&(generation, successor)) = newest.get(&upstream.occurrence)
+                            && generation > upstream.generation
+                        {
+                            *claim = successor;
+                            changed = true;
                         }
                     }
                 }
@@ -175,7 +175,7 @@ impl Model {
             let retired: Vec<_> = self
                 .rows
                 .iter()
-                .filter(|(&id, r)| {
+                .filter(|&(&id, r)| {
                     matches!(r.phase, Phase::Superseded | Phase::Closed | Phase::Pending)
                         && !self.held(id)
                 })

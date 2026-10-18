@@ -207,13 +207,10 @@ const fn mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
         WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget => 1 << 13,
-        WorthQueryPrimaryGraphFault::RejectedManagedCleanup => 1 << 14,
         WorthQueryPrimaryGraphFault::FailedOutputReadinessEvaluation => 1 << 10,
         WorthQueryPrimaryGraphFault::ReadyReadSnapshotPressure => 1 << 11,
         WorthQueryPrimaryGraphFault::ReadinessSnapshotPressure => 1 << 12,
     }
 }
-
-mod cleanup;
 
 mod native_preparation_interruption;

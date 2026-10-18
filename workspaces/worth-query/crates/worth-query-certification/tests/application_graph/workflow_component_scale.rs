@@ -131,10 +131,8 @@ fn qualify(occurrences: u16, key: u64) {
         256 * 1024,
     )
     .expect("finite workflow resources");
-    let application = retain_workflow_with_resources(
-        publish_on_first_program_for_workflow_scale(nodes, connections),
-        resources,
-    );
+    let application =
+        retain_workflow_with_resources(publish_on_first_program_for_workflow_scale(), resources);
     let runtime = application.runtime();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(

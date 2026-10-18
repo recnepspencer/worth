@@ -164,7 +164,7 @@ fn application_mappings<Schema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
 ) -> Result<
-    impl Iterator<Item = WorthQueryApplicationFieldMappings>,
+    impl Iterator<Item = WorthQueryApplicationFieldMappings> + use<Schema>,
     WorthQueryPrimaryGraphInstallationDenial,
 >
 where

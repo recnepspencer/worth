@@ -60,6 +60,21 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 prepared.replays = replays;
                 Self::AwaitingOperation(prepared)
             }
+            Self::AwaitingProposal {
+                read_set,
+                transition_identity_locator,
+                assessment_identity_locator,
+                instance,
+                required,
+                ..
+            } => Self::AwaitingProposal {
+                read_set,
+                transition_identity_locator,
+                assessment_identity_locator,
+                instance,
+                required,
+                replays,
+            },
             Self::AwaitingEvidence {
                 read_set,
                 transition_identity_locator,

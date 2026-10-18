@@ -156,13 +156,13 @@ fn ensure_materialized_read_target_available(
     target: &WorthQueryLiveArtifactTarget,
     request: &DeclarativeLiveQueryRequest,
 ) -> Result<(), WorthQueryReadDenial> {
-    if let Some(existing) = materialized_read_views.get(target) {
-        if existing != request {
-            return Err(WorthQueryReadDenial::new(
-                WorthQueryReadDenialKind::ExecutionDenied,
-                "materialized read view name collision with mismatched declarative request",
-            ));
-        }
+    if let Some(existing) = materialized_read_views.get(target)
+        && existing != request
+    {
+        return Err(WorthQueryReadDenial::new(
+            WorthQueryReadDenialKind::ExecutionDenied,
+            "materialized read view name collision with mismatched declarative request",
+        ));
     }
     Ok(())
 }

@@ -44,6 +44,8 @@ pub use worth_ui_query_binding::{
     WorthUiSnapshotConsumerPreparationDenial, WorthUiSnapshotProjectionConsumptionOutcome,
     WorthUiSnapshotProjectionPublicationOutcome, WorthUiSnapshotProjectionSettlementOutcome,
     WorthUiStatusActionExecution, WorthUiStatusActionMutationOutcome, WorthUiStatusActionOutcome,
-    WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop, WorthUiStatusMutationOutcome,
-    WorthUiStatusOwnerError, WorthUiStatusSourceOwner,
+    WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop, WorthUiStatusMutation,
+    WorthUiStatusMutationClose, WorthUiStatusMutationOutcome, WorthUiStatusMutationResult,
+    WorthUiStatusMutationStop, WorthUiStatusOwnerError, WorthUiStatusSourceOwner,
+    WorthUiStatusTerminalOutcome,
 };

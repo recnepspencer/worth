@@ -206,12 +206,3 @@ fn existing_proof_surface_supports_owner_specific_origins_and_ready_only_executi
         assert_eq!(executed.strong_basis().value(), &binding());
     }
 }
-
-#[test]
-fn actual_owner_prototype_mutation_evidence_is_retained() {
-    let evidence = include_str!("progression_contract_mutation.txt");
-    assert!(evidence.contains("execute_ready(PreparedDirectInvalidation::new(7))"));
-    assert!(evidence.contains("expected `ExecutionReadyRecipe"));
-    assert!(evidence.contains("found struct `PreparedDirectInvalidation`"));
-    assert!(evidence.contains("progression_contract_tests.rs:205:38"));
-}

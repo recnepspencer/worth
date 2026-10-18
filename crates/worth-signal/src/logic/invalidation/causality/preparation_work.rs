@@ -81,10 +81,10 @@ pub(super) fn claim_causes_copy(
             cause.binding_axes.edge_scope.as_ref(),
             budget.as_deref_mut(),
         )?;
-        if !cause.changed_scopes.is_empty() {
-            if let Some(budget) = budget.as_deref_mut() {
-                budget.claim_vec::<PartitionSubscription>(cause.changed_scopes.len())?;
-            }
+        if !cause.changed_scopes.is_empty()
+            && let Some(budget) = budget.as_deref_mut()
+        {
+            budget.claim_vec::<PartitionSubscription>(cause.changed_scopes.len())?;
         }
         for scope in cause.changed_scopes.as_slice() {
             claim_scope_copy(Some(scope), budget.as_deref_mut())?;
@@ -144,10 +144,10 @@ pub(super) fn claim_delta_copy(
         )?;
     }
     for change in delta.changes.as_slice() {
-        if !change.changed_scopes.is_empty() {
-            if let Some(budget) = budget.as_deref_mut() {
-                budget.claim_vec::<PartitionSubscription>(change.changed_scopes.len())?;
-            }
+        if !change.changed_scopes.is_empty()
+            && let Some(budget) = budget.as_deref_mut()
+        {
+            budget.claim_vec::<PartitionSubscription>(change.changed_scopes.len())?;
         }
         for scope in change.changed_scopes.as_slice() {
             claim_scope_copy(Some(scope), budget.as_deref_mut())?;

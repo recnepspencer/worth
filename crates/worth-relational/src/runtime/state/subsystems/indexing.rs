@@ -4,6 +4,8 @@ use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
 mod admitted_selection;
+mod prepared_publication;
+pub(crate) use prepared_publication::PreparedGenerationBatch;
 mod discard;
 pub(crate) use admitted_selection::ExactLookupInputs;
 mod generation_catalog;
@@ -58,19 +60,18 @@ impl IndexingState {
         self.next_index_id = self
             .next_index_id
             .max(definition.index_id.0.saturating_add(1));
-        if let Some(previous) = self.definitions.remove(&definition.index_id) {
-            if let Some((aspect, field)) = field_index_locator(&previous.kind) {
-                if let Some(fields) = self.field_definitions.get_mut(&aspect) {
-                    if let Some(definitions) = fields.get_mut(&field) {
-                        definitions.retain(|entry| entry.index_id != previous.index_id);
-                        if definitions.is_empty() {
-                            fields.remove(&field);
-                        }
-                    }
-                    if fields.is_empty() {
-                        self.field_definitions.remove(&aspect);
-                    }
+        if let Some(previous) = self.definitions.remove(&definition.index_id)
+            && let Some((aspect, field)) = field_index_locator(&previous.kind)
+            && let Some(fields) = self.field_definitions.get_mut(&aspect)
+        {
+            if let Some(definitions) = fields.get_mut(&field) {
+                definitions.retain(|entry| entry.index_id != previous.index_id);
+                if definitions.is_empty() {
+                    fields.remove(&field);
                 }
+            }
+            if fields.is_empty() {
+                self.field_definitions.remove(&aspect);
             }
         }
         let definition = Arc::new(definition);

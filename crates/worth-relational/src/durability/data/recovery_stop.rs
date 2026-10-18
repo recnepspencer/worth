@@ -17,6 +17,7 @@ use super::DurabilityError;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalRecoveryStop {
     Request(RelationalExecutionDenialCause),
+    Allocation(worth_execution::ExecutionAllocationDenial),
     Durability(DurabilityError),
 }
 
@@ -29,6 +30,7 @@ impl From<DurabilityError> for RelationalRecoveryStop {
 impl std::fmt::Display for RelationalRecoveryStop {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Allocation(cause) => write!(formatter, "recovery allocation stopped: {cause}"),
             Self::Request(cause) => write!(formatter, "recovery request stopped: {cause:?}"),
             Self::Durability(error) => write!(formatter, "recovery durability: {error:?}"),
         }
@@ -36,3 +38,16 @@ impl std::fmt::Display for RelationalRecoveryStop {
 }
 
 impl std::error::Error for RelationalRecoveryStop {}
+
+impl From<super::RelationalNativeCheckpointCaptureDenial> for RelationalRecoveryStop {
+    fn from(denial: super::RelationalNativeCheckpointCaptureDenial) -> Self {
+        match denial {
+            super::RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
+            super::RelationalNativeCheckpointCaptureDenial::Allocation(error) => {
+                crate::symbols::data::field_text_recovery_stop(
+                    crate::symbols::data::RelationalFieldTextAdmissionDenial::Allocation(error),
+                )
+            }
+        }
+    }
+}

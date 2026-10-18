@@ -218,6 +218,9 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
 fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
+        Settlement::ManagedCleanupRequired(_) => {
+            BankHttpDenial::new(Kind::ManagedCleanupRequired, Next::ContactOperator)
+        }
         Settlement::BridgeConditional(_)
         | Settlement::CorrespondenceDelivery(_)
         | Settlement::ProductDelivery(_) => unavailable(),

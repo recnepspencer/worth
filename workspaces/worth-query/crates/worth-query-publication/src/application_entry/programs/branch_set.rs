@@ -13,7 +13,7 @@ pub struct WorthQueryApplicationBranchSetProgramsRequest<
     Schema,
 > {
     application: &'application worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    _principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
     scope: &'scope WorthQueryRequestScope,
     coverage: worth_query_execution::facade::primary_graph::WorthQueryOrderedProgramAdoptionCoverage,
 }
@@ -31,7 +31,7 @@ where
     ) -> Self {
         Self {
             application,
-            _principal: principal,
+            principal,
             scope,
             coverage,
         }
@@ -40,17 +40,26 @@ where
     pub fn adopt<'target>(
         self,
         target: &'target ApplicationProgramRevision,
-    ) -> WorthQueryApplicationBranchSetProgramAdoptionRequest<
-        'application,
-        'principal,
-        'scope,
-        'target,
-        Schema,
+    ) -> Result<
+        WorthQueryApplicationBranchSetProgramAdoptionRequest<
+            'application,
+            'principal,
+            'scope,
+            'target,
+            Schema,
+        >,
+        worth_query_execution::facade::primary_graph::WorthQueryBranchSetAdoptionPreparationDenial,
     > {
-        WorthQueryApplicationBranchSetProgramAdoptionRequest {
+        self.application.authorize_branch_set_adoption(
+            &self.coverage,
+            target,
+            self.principal,
+            self.scope,
+        )?;
+        Ok(WorthQueryApplicationBranchSetProgramAdoptionRequest {
             request: self,
             target,
-        }
+        })
     }
 
     /// Freshly preflights every branch that remained unperformed after a
@@ -68,6 +77,7 @@ where
             adoption,
             self.coverage,
             maximum_selection_work_per_branch,
+            self.principal,
             self.scope,
         )
     }
@@ -109,6 +119,7 @@ where
             self.request.coverage,
             self.target,
             maximum_selection_work_per_branch,
+            self.request.principal,
             self.request.scope,
         )
     }

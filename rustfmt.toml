@@ -1,0 +1,4 @@
+# The language edition is 2024 everywhere; formatting keeps the 2021 style so
+# the edition move did not reformat every file. Delete this file (and run
+# `cargo fmt` per workspace) to adopt the 2024 style in one dedicated change.
+style_edition = "2021"

@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 use serde_json::json;
 use worth_proof::TransitionOutcome;
 use worth_server::{
@@ -10,12 +10,12 @@ use worth_server::{
     WorthServerProductSupportPosture, WorthServerSharedReadBasisKind, WorthServerSurfaceFamily,
 };
 
-#[path = "support/operation_request/runtime.rs"]
-mod operation_request_runtime;
-#[path = "support/query_handoff/fixture.rs"]
-mod query_handoff_fixture;
-#[path = "support/query_handoff/runtime.rs"]
-mod query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_operation_request_runtime as operation_request_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_fixture as query_handoff_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
 
 use operation_request_runtime::{
     operation_request_test_server, operation_request_test_server_with_operations,

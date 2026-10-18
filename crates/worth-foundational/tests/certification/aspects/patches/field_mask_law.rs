@@ -5,7 +5,7 @@ use worth_foundational::{
 use worth_proof::TransitionOutcome;
 
 use super::patch_fixtures::{admitted_state, task_summary_contract, validated_task_summary};
-use crate::foundational_vocabulary::{field, identity, key, revision};
+use crate::certification::foundational_vocabulary::{field, identity, key, revision};
 
 #[test]
 fn field_level_patch_uses_struct_contract_and_mutation_mask() {

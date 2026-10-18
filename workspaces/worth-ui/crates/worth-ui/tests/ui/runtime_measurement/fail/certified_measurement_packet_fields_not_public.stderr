@@ -1,9 +1,0 @@
-error[E0451]: fields `packet` and `contract` of struct `WorthUiCertifiedMeasurementPacket` are private
- --> tests/ui/runtime_measurement/fail/certified_measurement_packet_fields_not_public.rs:7:9
-  |
-6 |     let _packet = WorthUiCertifiedMeasurementPacket {
-  |                   --------------------------------- in this type
-7 |         packet: worthd_packet(),
-  |         ^^^^^^ private field
-8 |         contract: WorthUiComplexityContract::hot_path("fake"),
-  |         ^^^^^^^^ private field

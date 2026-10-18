@@ -1,5 +1,5 @@
-use crate::field_values::field_value;
-use crate::world::supply_chain::*;
+use crate::relational_certification::field_values::field_value;
+use crate::relational_certification::world::supply_chain::*;
 
 #[test]
 fn field_vocabulary_is_exhaustive_and_not_aliased() {

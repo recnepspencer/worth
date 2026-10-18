@@ -187,7 +187,7 @@ mod tests {
                 input_type: "payment".to_owned(),
                 binding: None,
                 requires_workflow_authority: true,
-                workflow_execution_requirements: None,
+                workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
             },
             CompiledWorkflowNodeKind::AwaitInbound {
                 origin: "apply".to_owned(),

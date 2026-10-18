@@ -15,23 +15,39 @@ use worth_query_host::facade::runtime::NoEffectCause;
 use super::workflow_participant::{expect_started, live_instance_on_first_program};
 use crate::document_retention_model::workflow::{
     advance_instance, advance_instance_on, prepare_second_program_adoption, publish_adoption,
-    second_program_workflow_inventory, start_instance,
+    start_instance,
 };
 
 #[test]
 fn a_start_between_preparation_and_publication_stales_the_adoption() {
     let (application, definition, first) = live_instance_on_first_program(85_300);
     let main = application.current_world();
-    let choices = second_program_workflow_inventory(&application, main)
-        .carry_compatible()
-        .expect("everything is compatible");
+    let choices = worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::new()
+        .definition(
+            &definition,
+            worth_query_host::facade::primary_graph::WorthQueryWorkflowDefinitionDisposition::Carry,
+        )
+        .instance(
+            &first,
+            worth_query_host::facade::primary_graph::WorthQueryWorkflowInstanceDisposition::Carry,
+        );
     let decided = choices.clone();
-    let prepared =
-        prepare_second_program_adoption(&application, main, Some(&move |_| decided.clone()))
-            .expect("the decided inventory prepares");
+    let prepared = prepare_second_program_adoption(&application, main, Some(decided))
+        .expect("the decided inventory prepares");
     let second = expect_started(start_instance(&application, definition, 85_310));
 
-    match prepared.publish() {
+    let scope = crate::document_retention_model::operator_identity::request_scope();
+    let principal = crate::document_retention_model::operator_identity::authenticate_operator(
+        application.runtime().installed_schema(),
+        &scope,
+    );
+    match prepared.publish(application.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }
@@ -47,22 +63,22 @@ fn a_start_between_preparation_and_publication_stales_the_adoption() {
             panic!("a stale adoption refuses before owner effects: {unpublished:?}")
         }
     }
-    match prepare_second_program_adoption(&application, main, Some(&move |_| choices.clone())) {
+    match prepare_second_program_adoption(&application, main, Some(choices)) {
         Err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
-            WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryChanged { inventory },
-        )) => {
-            assert_eq!(inventory.instances().len(), 2);
-            assert!(inventory.instance(second.entity_id()).is_some());
-        }
+            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected,
+        )) => {}
         Err(other) => panic!("re-preparation must inventory the new start: {other:?}"),
         Ok(_) => panic!("the old choices never decide the new start"),
     }
 
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
+        ),
+    );
     for (instance, key) in [(first, 85_320), (second, 85_321)] {
         assert!(
             matches!(
@@ -76,7 +92,7 @@ fn a_start_between_preparation_and_publication_stales_the_adoption() {
 
 #[test]
 fn a_fork_adopts_without_deciding_the_instance_it_copied() {
-    let (application, definition, instance) = live_instance_on_first_program(85_400);
+    let (application, _retained_definition, instance) = live_instance_on_first_program(85_400);
     let main = application.current_world();
     let fork = application
         .with_host_advancement(|host_phase| {
@@ -90,17 +106,14 @@ fn a_fork_adopts_without_deciding_the_instance_it_copied() {
         })
         .expect("installed host call opens");
 
-    let copied = second_program_workflow_inventory(&application, fork);
-    assert!(
-        copied.instances().is_empty(),
-        "the copied instance is history on the fork and asks for no disposition",
-    );
-    assert!(copied.definition(definition.entity_id()).is_some());
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        fork,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            fork,
+            Some(worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions::carry_compatible()),
+        ),
+    );
     match advance_instance_on(&application, fork, instance.clone(), 85_410) {
         // Adoption carries only the fork's live facts, so the copied history
         // stays another branch's incarnation: the fork refuses it by
@@ -114,11 +127,8 @@ fn a_fork_adopts_without_deciding_the_instance_it_copied() {
 
     match prepare_second_program_adoption(&application, main, None) {
         Err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
-            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired { inventory },
-        )) => assert!(
-            inventory.instance(instance.entity_id()).is_some(),
-            "the instance still waits on its own branch",
-        ),
+            WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired,
+        )) => {}
         Err(other) => panic!("the source branch still owes a disposition: {other:?}"),
         Ok(_) => panic!("the fork's adoption never decides the source branch's instance"),
     }
@@ -128,5 +138,61 @@ fn a_fork_adopts_without_deciding_the_instance_it_copied() {
             Ok(WorkflowProgressOutcome::Completed(_))
         ),
         "the source branch's instance still progresses under P0",
+    );
+}
+
+#[test]
+fn opaque_choices_cannot_cross_branches_or_decide_one_fact_twice() {
+    use worth_query_host::facade::primary_graph::{
+        WorthQueryWorkflowDefinitionDisposition as Definition,
+        WorthQueryWorkflowDispositions as Choices,
+        WorthQueryWorkflowInstanceDisposition as Instance,
+    };
+    let (application, definition, instance) = live_instance_on_first_program(85_450);
+    let main = application.current_world();
+    let fork = application
+        .with_host_advancement(|phase| {
+            application
+                .runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+                .unwrap()
+        })
+        .unwrap();
+    // These genuine source references do not become the fork's choices simply
+    // because its relational component copied the entities.
+    let foreign = Choices::new().definition(&definition, Definition::Carry);
+    let duplicate = Choices::new()
+        .definition(&definition, Definition::Carry)
+        .definition(&definition, Definition::Retire)
+        .instance(&instance, Instance::Carry);
+    for (branch, choices) in [(fork, foreign), (main, duplicate), (main, Choices::new())] {
+        assert!(
+            matches!(
+                prepare_second_program_adoption(&application, branch, Some(choices)),
+                Err(
+                    WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
+                        WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected
+                    )
+                )
+            ),
+            "all refused choices expose the same payload-free native result"
+        );
+    }
+    // Explicitly naming the fork's genuine held definition is lawful: copied
+    // instance history is not a live obligation in that branch's inventory.
+    let fork_choices = Choices::new().definition(&definition.held_on(fork), Definition::Carry);
+    publish_adoption(
+        &application,
+        prepare_second_program_adoption(&application, fork, Some(fork_choices)),
+    );
+    assert!(
+        matches!(
+            advance_instance(&application, instance, 85_451),
+            Ok(WorkflowProgressOutcome::Completed(_))
+        ),
+        "the source instance still progresses under its own program"
     );
 }

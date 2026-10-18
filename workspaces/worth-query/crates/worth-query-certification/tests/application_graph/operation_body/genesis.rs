@@ -29,6 +29,7 @@ fn create(
     let scope = request_scope();
     let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
     app.request(&principal, &scope)
+        .advanced()
         .mutate(CreateIntent(input))
         .without_source()
         .idempotency(&key)

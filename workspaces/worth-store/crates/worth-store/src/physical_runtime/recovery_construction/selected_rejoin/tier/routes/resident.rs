@@ -217,40 +217,43 @@ fn verify_inner<S: RouteWalkStorage>(
             SelectedArtifactSlice::observed(artifact, 0, bytes, true)
                 .ok_or(Denial::RoutingFrame)?,
         );
-        if let Some(entries) = block.entries() {
-            validate_leaf_count(entries.len(), root, count)?;
-            for placement in entries {
-                if !reference.contains(placement.record())
-                    || last_record.is_some_and(|previous| previous >= placement.record())
-                {
+        match block.entries() {
+            Some(entries) => {
+                validate_leaf_count(entries.len(), root, count)?;
+                for placement in entries {
+                    if !reference.contains(placement.record())
+                        || last_record.is_some_and(|previous| previous >= placement.record())
+                    {
+                        return Err(Denial::RoutingFrame);
+                    }
+                    last_record = Some(placement.record());
+                    validate_route(placement, free)?;
+                    if let Some(transcript) = transcript.as_deref_mut() {
+                        transcript
+                            .include_route(placement)
+                            .map_err(|_| Denial::RoutingFrame)?;
+                    }
+                    if let Some(snapshot) = snapshot.as_deref_mut() {
+                        snapshot.push(placement);
+                    }
+                    if selected_control(placement, false) {
+                        storage.grow_vec_geometrically(&mut selected_routes, 1)?;
+                        selected_routes.push(placement);
+                    }
+                    count += 1;
+                }
+            }
+            _ => {
+                let children = block.children().ok_or(Denial::RoutingFrame)?;
+                if children.len() > usize::from(root.node_capacity()) {
                     return Err(Denial::RoutingFrame);
                 }
-                last_record = Some(placement.record());
-                validate_route(placement, free)?;
-                if let Some(transcript) = transcript.as_deref_mut() {
-                    transcript
-                        .include_route(placement)
-                        .map_err(|_| Denial::RoutingFrame)?;
+                validate_stack_growth(stack.len(), children.len())?;
+                storage.grow_vec(&mut stack, children.len())?;
+                for child in children.rev() {
+                    validate_child(child, reference)?;
+                    stack.push(child);
                 }
-                if let Some(snapshot) = snapshot.as_deref_mut() {
-                    snapshot.push(placement);
-                }
-                if selected_control(placement, false) {
-                    storage.grow_vec_geometrically(&mut selected_routes, 1)?;
-                    selected_routes.push(placement);
-                }
-                count += 1;
-            }
-        } else {
-            let children = block.children().ok_or(Denial::RoutingFrame)?;
-            if children.len() > usize::from(root.node_capacity()) {
-                return Err(Denial::RoutingFrame);
-            }
-            validate_stack_growth(stack.len(), children.len())?;
-            storage.grow_vec(&mut stack, children.len())?;
-            for child in children.rev() {
-                validate_child(child, reference)?;
-                stack.push(child);
             }
         }
         drop(block);

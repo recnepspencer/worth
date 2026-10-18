@@ -53,7 +53,7 @@ fn backing_stop(stop: ConsumedOutputVerificationStop) -> ApplicationAttemptRegis
         ConsumedOutputVerificationStop::WorkExhausted => {
             "consumed output backing exceeds request work".into()
         }
-        ConsumedOutputVerificationStop::CapacityExhausted
+        ConsumedOutputVerificationStop::CapacityExhausted(_)
         | ConsumedOutputVerificationStop::Unavailable
         | ConsumedOutputVerificationStop::PendingUpstream
         | ConsumedOutputVerificationStop::RetryCurrentness(_) => {

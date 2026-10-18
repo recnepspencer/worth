@@ -47,6 +47,7 @@ fn a_dependent_reads_a_held_stable_join_at_the_current_head_once() {
             .execute()
             .unwrap();
         let outcome = request
+            .advanced()
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: "anchor-c".to_owned(),
                 operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {

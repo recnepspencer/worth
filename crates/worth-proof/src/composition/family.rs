@@ -140,31 +140,11 @@ mod tests {
     use std::mem::size_of;
 
     use super::{
-        lower_deterministic_family_pair, resolve_family_symbol, AuthoritativeFamilyMember,
-        CompositionFamilySymbol, FamilyLifecycleAction, LoweredFamilyProgram2,
+        lower_deterministic_family_pair, AuthoritativeFamilyMember, CompositionFamilySymbol,
+        FamilyLifecycleAction, LoweredFamilyProgram2,
     };
     use crate::collections::Pair;
     use crate::proof::{Proof, StructuralProofAuthority};
-
-    #[test]
-    fn symbolic_and_authoritative_family_references_remain_distinct() {
-        assert_ne!(
-            std::any::type_name::<CompositionFamilySymbol<u64>>(),
-            std::any::type_name::<AuthoritativeFamilyMember<u64>>()
-        );
-    }
-
-    #[test]
-    fn family_resolution_is_explicit() {
-        let resolved = resolve_family_symbol(
-            CompositionFamilySymbol::new(7_u8),
-            AuthoritativeFamilyMember::new(11_u16),
-        );
-
-        assert_eq!(resolved.symbol().value(), &7_u8);
-        assert_eq!(resolved.authoritative().value(), &11_u16);
-        assert_eq!(resolved.into_authoritative().value(), &11_u16);
-    }
 
     #[test]
     fn deterministic_family_lowering_orders_actions_canonically() {
@@ -231,13 +211,10 @@ mod tests {
         assert_eq!(left_first.actions(), right_first.actions());
     }
 
-    #[test]
-    fn lowered_family_program_is_size_honest_for_pair_and_zero_sized_proof() {
-        assert_eq!(
-            size_of::<LoweredFamilyProgram2<u8, u16, u32>>(),
-            size_of::<Pair<FamilyLifecycleAction<u8, u16, u32>>>()
-        );
-    }
+    const _: () = assert!(
+        size_of::<LoweredFamilyProgram2<u8, u16, u32>>()
+            == size_of::<Pair<FamilyLifecycleAction<u8, u16, u32>>>()
+    );
 
     fn family_action_key<S: Ord + Copy, A: Ord + Copy, P>(
         action: &FamilyLifecycleAction<S, A, P>,

@@ -1,5 +1,8 @@
 //! declared root paths retain per row native witnesses.
 use super::*;
+use crate::domain_computation::primary_graph::{
+    WorthQueryOutputDemandDenialKind, WorthQuerySourceExpectationDenialKind,
+};
 
 #[test]
 fn declared_root_paths_retain_per_row_native_witnesses() {
@@ -113,17 +116,21 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     assert_eq!(result.receipt().work().predicate_work_units(), 6);
     assert_eq!(result.receipt().fallback_count(), 0);
     assert_eq!(result.receipt().per_result_neighbor_lookup_count(), 0);
-    let first = result.observed_sources()[0]
-        .footprint_for_test()
-        .root_selection
-        .as_ref()
-        .expect("path-selected rows retain native selection evidence");
-    let second = result.observed_sources()[1]
-        .footprint_for_test()
-        .root_selection
-        .as_ref()
-        .expect("every row retains its own path witness");
-    assert!(!std::sync::Arc::ptr_eq(first, second));
+    let first = std::sync::Arc::clone(
+        result.observed_sources()[0]
+            .footprint_for_test()
+            .root_selection
+            .as_ref()
+            .expect("path-selected rows retain native selection evidence"),
+    );
+    let second = std::sync::Arc::clone(
+        result.observed_sources()[1]
+            .footprint_for_test()
+            .root_selection
+            .as_ref()
+            .expect("every row retains its own path witness"),
+    );
+    assert!(!std::sync::Arc::ptr_eq(&first, &second));
     assert_eq!(first.aspects.len(), 1);
     assert_eq!(first.adjacencies.len(), 1);
     assert_eq!(second.adjacencies.len(), 1);
@@ -138,6 +145,35 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         second.adjacencies[0].relation_kind
     );
 
+    let result = result.into_admitted_disclosed().into_output_demand_source();
+    let dependencies = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&phase.test_host_request())
+                .retain_query_dependencies(
+                    &phase,
+                    &crate::publication_boundary::program_publication_access(),
+                    &result,
+                )
+                .expect("the complete sealed pairing is retained")
+        })
+        .unwrap();
+    world.application.with_host_advancement(|phase| {
+        let selected = world.selected_product(&phase.test_host_request());
+        selected.assert_cumulative_currentness_for_test(&phase, &request, &dependencies);
+        dependencies.assert_storage_custody_for_test(phase.checked_execution_request_for(&world.application.product_runtime).unwrap());
+        selected.require_current_required_set(&phase, &crate::publication_boundary::program_publication_access(), &request,
+            std::iter::empty(), &dependencies, std::num::NonZeroUsize::new(8192).unwrap()).unwrap();
+        // A caller cannot force an unbounded descriptor allocation: metadata
+        // traversal is admitted before exact backing. Refusal borrows all parts.
+        let refused = selected.combine_query_dependencies(&phase, &crate::publication_boundary::program_publication_access(),
+            std::iter::repeat_n(&dependencies, usize::MAX));
+        assert!(matches!(refused, Err(crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(ref cause))
+            if cause.kind() == WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded));
+        selected.require_current_required_set(&phase, &crate::publication_boundary::program_publication_access(), &request,
+            std::iter::empty(), &dependencies, std::num::NonZeroUsize::new(8192).unwrap()).unwrap();
+    }).unwrap();
     let graph = world.application.runtime.primary_graph().unwrap();
     let observed_source = &result.observed_sources()[0];
     let crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity::Product(product) = &observed_source.selection else {
@@ -265,6 +301,15 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             )
         })
         .expect("the fixture read owns its installed host call");
+    world.application.with_host_advancement(|phase| {
+        let capture = current.retain_query_dependencies(&phase, &crate::publication_boundary::program_publication_access(), &result).err().unwrap();
+        assert!(matches!(capture, crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(ref cause)
+            if cause.kind() == WorthQuerySourceExpectationDenialKind::ForeignOperation));
+        let denial = current.require_current_required_set(&phase, &crate::publication_boundary::program_publication_access(), &request,
+            std::iter::empty(), &dependencies, std::num::NonZeroUsize::new(8192).unwrap()).unwrap_err();
+        assert!(matches!(denial, crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Output(ref cause)
+            if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded), "real native adjacency ABA refuses the complete original pairing: {denial:?}");
+    }).unwrap();
     let refreshed = world
         .application
         .with_host_advancement(|phase| {

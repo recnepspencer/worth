@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::workflow::{
 
 mod preparation;
 mod publication;
+pub(in crate::domain_computation::primary_graph) use publication::observe_read_only_proposal;
 
 pub use preparation::{
     WorkflowProposalBindingDenial, WorkflowProposalPreparationDenial,
@@ -165,7 +166,8 @@ where
             source_identity,
             selected.node_path(),
             coverages,
-        );
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
+    );
         let replay = !replay_facts.is_empty();
         facts.append(&mut replay_facts);
         if replay {
@@ -302,7 +304,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 source_identity,
                 selected.node_path(),
                 self.proposal_coverages(compiled, selected.node())?,
-            );
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
+    );
             let proposal_facts = self.lease.handle().with_runtime(execution, |runtime| {
                 observe_workflow_proposal(
                     execution,

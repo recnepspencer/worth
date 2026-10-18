@@ -7,8 +7,10 @@ use worth_foundational::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::aspects::patches::patch_fixtures::{task_summary_contract, validated_task_summary};
-use crate::foundational_vocabulary::{field, identity, revision};
+use crate::certification::aspects::patches::patch_fixtures::{
+    task_summary_contract, validated_task_summary,
+};
+use crate::certification::foundational_vocabulary::{field, identity, revision};
 
 #[test]
 fn serialized_whole_struct_patch_earns_fresh_authority_from_the_current_contract() {

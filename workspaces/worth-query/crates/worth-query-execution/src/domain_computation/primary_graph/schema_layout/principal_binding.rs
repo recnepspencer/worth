@@ -13,6 +13,29 @@ use super::{
 };
 
 impl WorthQueryPrimaryGraphLayout {
+    pub(in crate::domain_computation) fn principal_binding(
+        &self,
+        name: &str,
+    ) -> Option<&WorthQueryPrimaryPrincipalBindingLayout> {
+        self.principal_bindings.get(name)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn principal_bindings(
+        &self,
+    ) -> impl Iterator<Item = (&str, &WorthQueryPrimaryPrincipalBindingLayout)> {
+        self.principal_bindings
+            .iter()
+            .map(|(name, layout)| (name.as_str(), layout))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn principal_bindings_mut(
+        &mut self,
+    ) -> impl Iterator<Item = (&str, &mut WorthQueryPrimaryPrincipalBindingLayout)> {
+        self.principal_bindings
+            .iter_mut()
+            .map(|(name, layout)| (name.as_str(), layout))
+    }
+
     /// Comparison Work before the one borrowed installed-principal lookup.
     /// The selected key has no owned copy; each comparison checks the tag and
     /// at most its initialized UTF-8 bytes.
@@ -48,6 +71,12 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryPrincipalBindingLayout
     pub(in crate::domain_computation::primary_graph) principal_kind: KindId,
     pub(in crate::domain_computation::primary_graph) principal_identity_locator: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) index_id: DerivedIndexId,
+}
+
+impl WorthQueryPrimaryPrincipalBindingLayout {
+    pub(in crate::domain_computation) const fn selector_index(&self) -> DerivedIndexId {
+        self.index_id
+    }
 }
 
 pub(super) fn lower_principal_bindings(

@@ -66,10 +66,20 @@ fn progress_advances_from_owner_results_and_rebuilds_after_release() {
         cold.cold_reconstruction_transition_visits()
     );
 
-    assert!(matches!(
-        advance_instance(&application, started.instance().clone(), 1_215),
-        Ok(WorkflowProgressOutcome::PreparationDenied(_))
-    ));
+    let WorkflowProgressOutcome::AwaitingProposal(need) =
+        advance_instance(&application, started.instance().clone(), 1_215)
+            .expect("native progress identifies the pending proposal")
+    else {
+        panic!("the unchanged slot must remain AwaitingProposal");
+    };
+    assert_eq!(need.instance(), started.instance().entity_id());
+    assert_eq!(need.node_path(), "proposal/first");
+    assert_eq!(need.operation(), "WorkflowDefinitionAuthoringOperation");
+    assert_eq!(
+        need.input_type(),
+        "worth.query.certification.document-retention.set-input.v1"
+    );
+    assert_eq!(need.occurrence(), 2);
     let reconstructed = application.runtime().workflow_instance_progress_counters();
     assert_eq!(reconstructed.warm_hits(), changed_revision.warm_hits() + 1);
     assert_eq!(reconstructed.cold_misses(), changed_revision.cold_misses());
@@ -78,10 +88,20 @@ fn progress_advances_from_owner_results_and_rebuilds_after_release() {
         changed_revision.cold_reconstruction_transition_visits()
     );
 
-    assert!(matches!(
-        advance_instance(&application, started.instance().clone(), 1_216),
-        Ok(WorkflowProgressOutcome::PreparationDenied(_))
-    ));
+    let WorkflowProgressOutcome::AwaitingProposal(need) =
+        advance_instance(&application, started.instance().clone(), 1_216)
+            .expect("native progress identifies the pending proposal")
+    else {
+        panic!("the unchanged slot must remain AwaitingProposal");
+    };
+    assert_eq!(need.instance(), started.instance().entity_id());
+    assert_eq!(need.node_path(), "proposal/first");
+    assert_eq!(need.operation(), "WorkflowDefinitionAuthoringOperation");
+    assert_eq!(
+        need.input_type(),
+        "worth.query.certification.document-retention.set-input.v1"
+    );
+    assert_eq!(need.occurrence(), 2);
     let warm = application.runtime().workflow_instance_progress_counters();
     assert_eq!(warm.warm_hits(), reconstructed.warm_hits() + 1);
 
@@ -91,10 +111,20 @@ fn progress_advances_from_owner_results_and_rebuilds_after_release() {
     let released = application.runtime().workflow_instance_progress_counters();
     assert_eq!(released.retained_charge_bytes(), 0);
     assert!(released.releases() > warm.releases());
-    assert!(matches!(
-        advance_instance(&application, started.instance().clone(), 1_217),
-        Ok(WorkflowProgressOutcome::PreparationDenied(_))
-    ));
+    let WorkflowProgressOutcome::AwaitingProposal(need) =
+        advance_instance(&application, started.instance().clone(), 1_217)
+            .expect("native progress identifies the pending proposal")
+    else {
+        panic!("the unchanged slot must remain AwaitingProposal");
+    };
+    assert_eq!(need.instance(), started.instance().entity_id());
+    assert_eq!(need.node_path(), "proposal/first");
+    assert_eq!(need.operation(), "WorkflowDefinitionAuthoringOperation");
+    assert_eq!(
+        need.input_type(),
+        "worth.query.certification.document-retention.set-input.v1"
+    );
+    assert_eq!(need.occurrence(), 2);
     let rebuilt = application.runtime().workflow_instance_progress_counters();
     assert_eq!(rebuilt.cold_misses(), released.cold_misses() + 1);
     assert_eq!(rebuilt.cold_retains(), released.cold_retains() + 1);

@@ -159,16 +159,15 @@ impl PricedMutation<'_> {
         let note = self.state.take_closed_note(queued);
         note.prune(|state| {
             for key in &candidates {
-                if let Some(mut row) = state.records.get_mut(key) {
-                    if row.terminal()
-                        && row.interests == 0
-                        && row.framework_required_count == 0
-                        && row.prepared_prerequisite_claims == 0
-                    {
-                        let released = row.release_obligations();
-                        state.obligation_reserved_bytes =
-                            state.obligation_reserved_bytes.saturating_sub(released);
-                    }
+                if let Some(mut row) = state.records.get_mut(key)
+                    && row.terminal()
+                    && row.interests == 0
+                    && row.framework_required_count == 0
+                    && row.prepared_prerequisite_claims == 0
+                {
+                    let released = row.release_obligations();
+                    state.obligation_reserved_bytes =
+                        state.obligation_reserved_bytes.saturating_sub(released);
                 }
             }
             // The cascade can end the last stale owner of another row in this

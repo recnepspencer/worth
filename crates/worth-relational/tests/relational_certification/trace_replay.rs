@@ -1,4 +1,4 @@
-use crate::world::supply_chain::*;
+use crate::relational_certification::world::supply_chain::*;
 
 #[test]
 fn semantic_trace_executes_deltas_and_records_actual_divergence() {

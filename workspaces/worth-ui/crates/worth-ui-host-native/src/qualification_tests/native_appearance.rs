@@ -160,7 +160,8 @@ fn live_native_preparation_uses_the_active_appearance_and_cutover_protocol() {
     );
     assert_eq!(
         WORTH_UI_NATIVE_PROFILE_MANIFEST
-            .parse::<toml::Value>()
+            .parse::<toml::Table>()
+            .map(toml::Value::Table)
             .expect("live native profile manifest parses")["identity"]
             .as_str(),
         Some(ACTIVE_PROFILE.identity.as_str())
@@ -175,5 +176,8 @@ fn live_native_preparation_uses_the_active_appearance_and_cutover_protocol() {
 }
 
 fn parse(manifest: &str) -> toml::Value {
-    manifest.parse().expect("profile manifest parses")
+    manifest
+        .parse::<toml::Table>()
+        .map(toml::Value::Table)
+        .expect("profile manifest parses")
 }

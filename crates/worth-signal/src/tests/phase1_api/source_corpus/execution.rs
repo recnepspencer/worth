@@ -88,40 +88,9 @@ pub(in crate::tests::phase1_api) const HOT_INVALIDATION_SUBSCRIPTION_SOURCE: &st
     include_str!("../../../logic/invalidation/subscription.rs");
 pub(in crate::tests::phase1_api) const HOT_TRANSACTION_OBSERVATION_MUTATION_SOURCE: &str =
     include_str!("../../../logic/transaction/runtime/transaction/transaction_mutation.rs");
-pub(in crate::tests::phase1_api) const HOT_EASY_OBSERVATION_SOURCE: &str =
-    include_str!("../../../easy/observation.rs");
-pub(in crate::tests::phase1_api) const HOT_RUNTIME_OBSERVATION_SOURCE: &str = concat!(
-    include_str!("../../../logic/transaction/runtime/state/runtime_observation.rs"),
-    include_str!("../../../logic/transaction/runtime/state/runtime_observation/registry.rs"),
-);
-pub(in crate::tests::phase1_api) const PROOF_SOURCE: &str = concat!(
-    include_str!("../../../data/proof/mod.rs"),
-    include_str!("../../../data/proof/snapshot_commit.rs"),
-);
-pub(in crate::tests::phase1_api) const PLANNER_MODEL_SOURCE: &str = concat!(
-    include_str!("../../../logic/planner/model/mod.rs"),
-    include_str!("../../../logic/planner/model/admission.rs"),
-    include_str!("../../../logic/planner/model/apply.rs"),
-    include_str!("../../../logic/planner/model/frontier_route_receipt.rs"),
-    include_str!("../../../logic/planner/model/plan.rs"),
-    include_str!("../../../logic/planner/model/report.rs"),
-    include_str!("../../../logic/planner/model/strategy.rs"),
-    include_str!("../../../logic/planner/model/task.rs"),
-);
-pub(in crate::tests::phase1_api) const SEMANTIC_SOURCE: &str = HOT_SEMANTIC_FINALIZE_SOURCE;
-pub(in crate::tests::phase1_api) const WORKSPACE_SOURCE: &str =
-    include_str!("../../../logic/planner/apply/workspace.rs");
-pub(in crate::tests::phase1_api) const PATCH_BUFFER_SOURCE: &str =
-    include_str!("../../../logic/transaction/patch_buffer.rs");
 pub(in crate::tests::phase1_api) const ORDINARY_INVALIDATION_ACCESS_SOURCE: &str = concat!(
     include_str!("../../../logic/invalidation/causality/dependency_admission.rs"),
     include_str!("../../../logic/invalidation/scheduling/readiness.rs"),
 );
 pub(in crate::tests::phase1_api) const INVALIDATION_REVALIDATION_SOURCE: &str =
     include_str!("../../../logic/invalidation/causality/revalidation.rs");
-pub(in crate::tests::phase1_api) const ORDINARY_EXPLANATION_ACCESS_SOURCE: &str = concat!(
-    include_str!("../../../logic/explain/analysis.rs"),
-    include_str!("../../../logic/explain/resolver/assembly.rs"),
-    include_str!("../../../logic/explain/resolver/causes.rs"),
-    include_str!("../../../logic/explain/resolver/policy.rs"),
-);

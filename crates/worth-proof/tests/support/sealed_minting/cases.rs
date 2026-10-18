@@ -2,7 +2,6 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use super::super::compile_fail::{CompileFailBundle, CompileFailCase};
-use super::super::proof_shapes::FailureDigest;
 
 pub const SUITE: &str = "sealed_minting_and_witness_authority";
 
@@ -71,10 +70,6 @@ impl SealedMintingCase {
     pub const fn path(self) -> &'static str {
         self.path
     }
-
-    fn failure_identity(self) -> String {
-        format!("{}::{}", self.family(), self.path)
-    }
 }
 
 pub const CASES: &[SealedMintingCase] = &[
@@ -132,16 +127,6 @@ pub fn compile_fail_bundle() -> CompileFailBundle {
             .iter()
             .map(|case| CompileFailCase::new(case.family(), case.path()))
             .collect(),
-    )
-}
-
-pub fn failure_digest() -> FailureDigest {
-    FailureDigest::new(
-        SUITE,
-        CASES
-            .iter()
-            .copied()
-            .map(SealedMintingCase::failure_identity),
     )
 }
 

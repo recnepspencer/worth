@@ -69,14 +69,14 @@ fn publish_retained(
         publication_admission,
         ..
     } = committed;
-    if let (Some(witness), Some(slot)) = (prepared_output_witness, prepared_lineage_slot.as_mut()) {
-        if let Some(sealed) = witness.finish(
+    if let (Some(witness), Some(slot)) = (prepared_output_witness, prepared_lineage_slot.as_mut())
+        && let Some(sealed) = witness.finish(
             evidence.output_correspondence(),
             runtime,
             &committed.snapshot,
-        ) {
-            slot.retain_native_output_witness(sealed);
-        }
+        )
+    {
+        slot.retain_native_output_witness(sealed);
     }
     if let Some(managed_views) = managed_views {
         managed_views.apply(&committed, &next_basis, &product_publication);

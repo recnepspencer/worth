@@ -1,5 +1,6 @@
 //! Managed custody for branch and unpublished-creation cleanup.
 
+mod admitted;
 mod component;
 mod history;
 mod registry;
@@ -49,6 +50,7 @@ pub enum WorthQueryProductBranchOwnerCleanupWork {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchOwnerCleanupDenial {
+    Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     CleanupUnavailable,
     CleanupBusy,
     WorldHistoryUnavailable,
@@ -208,10 +210,32 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         &mut self,
         runtime: &WorthQueryProductRuntime,
         mut after_component_progress: impl FnMut(),
+        mut checkpoint: impl FnMut(u64) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>,
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
     {
+        let history_work = self.history.as_ref().map_or(0, |history| match history {
+            WorthQueryProductBranchHistoryCleanup::ExactUnpublished { pending } => pending.len(),
+            WorthQueryProductBranchHistoryCleanup::RetiredBranch {
+                pending: Some(pending),
+                ..
+            } => pending.len(),
+            WorthQueryProductBranchHistoryCleanup::RetiredBranch { pending: None, .. } => runtime
+                .owner
+                .inspection_port()
+                .history_snapshot()
+                .map(|snapshot| snapshot.installed_commits())
+                .unwrap_or(0),
+        });
+        let history_work = u64::try_from(history_work)
+            .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?;
+        checkpoint(
+            history_work
+                .checked_add(1)
+                .ok_or(WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?,
+        )?;
         self.release_retired_history(runtime)?;
         while let Some(work) = self.pending.first() {
+            checkpoint(1)?;
             runtime.retire_owner_component(work)?;
             self.pending.remove(0);
             self.retired_component_count += 1;

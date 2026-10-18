@@ -9,7 +9,9 @@ use worth_relational::facade::mvcc::{
 
 #[test]
 fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothing() {
-    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let host_request = std::sync::Arc::new(
+        crate::shared_relational_certification_test_execution_policy::serial_request(),
+    );
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(request_execution, SupplyChainScale::court());
@@ -60,7 +62,9 @@ fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothi
 
 #[test]
 fn cancellation_inside_the_supply_chain_critical_section_is_deferred() {
-    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let host_request = std::sync::Arc::new(
+        crate::shared_relational_certification_test_execution_policy::serial_request(),
+    );
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(request_execution, SupplyChainScale::court());

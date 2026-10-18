@@ -184,15 +184,15 @@ fn mutation_work(
                 "open",
                 &request,
             );
-            let program = admitted_program(
+
+            admitted_program(
                 &phase_custody.phase_for_application(&world.application),
                 &world,
                 &principal,
                 &account,
                 &request,
                 "scale-committed",
-            );
-            program
+            )
         })
         .expect("the fixture preparation owns its host call");
     commit_work(&world, program, idempotency_key)

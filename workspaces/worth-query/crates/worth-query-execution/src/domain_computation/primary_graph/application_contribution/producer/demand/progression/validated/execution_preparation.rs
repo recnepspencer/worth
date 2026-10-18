@@ -147,14 +147,17 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                                 request_admission,
                             ),
                     };
-                    if let Some(finish) = selected_finish.take() {
-                        finish.finish(performed_source, &mut result);
-                    } else {
-                        self.output_demands.finish_scheduling(
-                            interest,
-                            performed_source,
-                            &mut result,
-                        );
+                    match selected_finish.take() {
+                        Some(finish) => {
+                            finish.finish(performed_source, &mut result);
+                        }
+                        _ => {
+                            self.output_demands.finish_scheduling(
+                                interest,
+                                performed_source,
+                                &mut result,
+                            );
+                        }
                     }
                     match result {
                     // The scheduled row is this call's to execute.

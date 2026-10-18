@@ -43,7 +43,8 @@ fn with_unmanaged_publications(
                 let phase_custody = &phase;
                 let account =
                     resolved_account(&phase.test_host_request(), &world, status, &request);
-                let program = retained_status_program(
+
+                retained_status_program(
                     &(phase_custody).test_host_request(),
                     &world,
                     &principal,
@@ -51,8 +52,7 @@ fn with_unmanaged_publications(
                     &request,
                     replacement,
                     RetentionMutationBreadth::Narrow,
-                );
-                program
+                )
             })
             .expect("the publication fixture opens its preparation call");
         let outcome = world.application.compare_and_commit_application(

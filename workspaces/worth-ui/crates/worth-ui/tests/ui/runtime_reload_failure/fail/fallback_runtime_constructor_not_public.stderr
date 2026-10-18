@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_fallback_runtime` found for struct `WorthUiReloadFailure` in the current scope
- --> tests/ui/runtime_reload_failure/fail/fallback_runtime_constructor_not_public.rs:4:35
-  |
-4 |     let _ = WorthUiReloadFailure::from_fallback_runtime(());
-  |                                   ^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `WorthUiReloadFailure`

@@ -28,6 +28,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .observed_sources()[0]
         .clone();
     let first = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -64,6 +65,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .observed_sources()[0]
         .clone();
     request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "sibling-b".to_owned(),
             operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
@@ -87,6 +89,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .observed_sources()[0]
         .clone();
     let second = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(3),

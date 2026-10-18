@@ -1,3 +1,5 @@
+mod producer_identity;
+use producer_identity::SettlementProducerIdentity;
 mod current_commit;
 use current_commit::reacquire_current_committed_output;
 mod current_accepted;
@@ -31,7 +33,7 @@ pub struct WorthQueryOutputDemandSettlement {
     posture: WorthQueryOutputSettlementPosture,
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
-    producer_identity: String,
+    producer_identity: SettlementProducerIdentity,
     output_family_identity: String,
     receipt: Option<SettlementReceiptCustody>,
     pub(in crate::domain_computation::primary_graph) stable:
@@ -114,7 +116,7 @@ impl WorthQueryOutputDemandSettlement {
             posture: WorthQueryOutputSettlementPosture::Performed,
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
-            producer_identity: producer_identity.to_owned(),
+            producer_identity: producer_identity.to_owned().into(),
             output_family_identity: output_family_identity.to_owned(),
             receipt: Some(SettlementReceiptCustody::Owned(receipt.clone())),
             stable: None,
@@ -155,7 +157,7 @@ impl WorthQueryOutputDemandSettlement {
     }
 
     pub fn producer_identity(&self) -> &str {
-        &self.producer_identity
+        self.producer_identity.as_str()
     }
 
     pub fn output_family_identity(&self) -> &str {
@@ -212,7 +214,7 @@ impl WorthQueryOutputDemandSettlement {
             posture: restored.settlement_posture(),
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
-            producer_identity: restored.checkpoint.producer.clone(),
+            producer_identity: SettlementProducerIdentity::from_checkpoint(&restored.checkpoint),
             output_family_identity: output_family_identity.to_owned(),
             receipt: None,
             stable: None,
@@ -242,7 +244,7 @@ impl WorthQueryOutputDemandSettlement {
             posture: WorthQueryOutputSettlementPosture::StableReused,
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
-            producer_identity: producer_identity.to_owned(),
+            producer_identity: producer_identity.to_owned().into(),
             output_family_identity: output_family_identity.to_owned(),
             receipt: None,
             stable: Some(stable.clone()),

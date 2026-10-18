@@ -2,6 +2,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+mod query_ordinary_entry_fixture;
+
 fn fixture_root(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
@@ -31,6 +33,7 @@ fn copied_fixture(name: &str) -> PathBuf {
     let root = worth_harness::tooling::fixture_path::unique_path("boundary-rule");
     let _ = fs::remove_dir_all(&root);
     copy_tree(&fixture_root(name), &root);
+    query_ordinary_entry_fixture::write(&root);
     let snapshots = root.join("tools/boundary-check/snapshots");
     fs::create_dir_all(&snapshots).unwrap();
     fs::write(

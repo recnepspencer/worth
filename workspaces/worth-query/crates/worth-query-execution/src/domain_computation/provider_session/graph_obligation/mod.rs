@@ -13,7 +13,10 @@ mod session_identity;
 pub(in crate::domain_computation) use branch_affinity::WorthQueryGraphWorkBranchAffinity;
 pub use decision_read_set::WorthQueryGraphReadDependencyEvidence;
 pub(in crate::domain_computation) use decision_read_set::WorthQueryObservedGraphReadWork;
-pub use mutation_progression::WorthQueryMutationGraphWorkCompletion;
+pub use mutation_progression::{
+    WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
+    WorthQueryMutationGraphWorkCompletion,
+};
 pub(in crate::domain_computation) use mutation_progression::{
     WorthQueryMutationRunBinding, WorthQueryProviderSessionBoundMutationRun,
 };

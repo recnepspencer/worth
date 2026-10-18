@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_metrics` found for struct `CapabilitySnapshotDigest` in the current scope
- --> tests/ui/facade/lifecycle/snapshot_constructors/snapshot_digest_constructor_fails.rs:6:39
-  |
-6 |     let _ = CapabilitySnapshotDigest::from_metrics(metrics());
-  |                                       ^^^^^^^^^^^^ function or associated item not found in `CapabilitySnapshotDigest`

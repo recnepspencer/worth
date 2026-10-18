@@ -9,7 +9,7 @@ use worth_server::{
     WorthServerProductOperationSupportSnapshot,
 };
 
-use crate::fixture::schema_bound_json;
+use crate::shared_support_product_session_phase_ten_fixture::schema_bound_json;
 
 #[derive(Clone, Debug)]
 pub struct StatefulProductEditorBackend {

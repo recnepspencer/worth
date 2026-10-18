@@ -1,4 +1,4 @@
-use crate::world::supply_chain::*;
+use crate::relational_certification::world::supply_chain::*;
 
 #[test]
 fn schema_has_all_entity_and_relation_contracts() {

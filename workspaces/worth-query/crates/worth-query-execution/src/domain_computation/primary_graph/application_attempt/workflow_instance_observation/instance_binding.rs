@@ -210,7 +210,7 @@ pub(super) fn exact_u64(
     Ok(number)
 }
 
-pub(super) fn exact(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn exact(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -256,7 +256,7 @@ pub(super) fn adjacency(
     )
 }
 
-pub(super) fn adjacency_with_kind(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn adjacency_with_kind(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

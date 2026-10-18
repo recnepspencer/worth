@@ -1,9 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{
-    BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpCredential, BankHttpDenial,
-    BankHttpMutationControls, BankHttpProtocolVersion, BankHttpRecoveryStatus,
-};
+use super::{BankHttpCredential, BankHttpDenial, BankHttpEffectControls, BankHttpProtocolVersion};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -11,7 +8,7 @@ pub struct BankHttpEstateDisbursementRequest {
     pub protocol: BankHttpProtocolVersion,
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub estate: String,
     pub source_account: String,
@@ -23,12 +20,9 @@ pub struct BankHttpEstateDisbursementRequest {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpEstateDisbursementOutcome {
-    Applied {
-        request_id: String,
-        disposition: BankHttpCommitDisposition,
-        commit: BankHttpCommitDescription,
-        recovery: Option<String>,
-        recovery_status: BankHttpRecoveryStatus,
+    Owning {
+        #[serde(rename = "operation")]
+        outcome: super::BankHttpMutationOutcome,
     },
     Denied {
         request_id: Option<String>,

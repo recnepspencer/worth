@@ -133,3 +133,7 @@ pub use one_shot::{WorthQueryDependentPairReadContext, WorthQueryDerivedPairRead
 pub(in crate::domain_computation::primary_graph) use read_execution::dispatch_witness::{
     DispatchWitness, Interrupt as DispatchInterrupt, InterruptionPoint,
 };
+
+pub use observed_source::retained_dependencies::{
+    WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
+};

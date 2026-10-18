@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-reclaim-policy"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Roadmap 2 S.6 reclaim, punch-hole, trim, and cold-tier I/O posture admission."

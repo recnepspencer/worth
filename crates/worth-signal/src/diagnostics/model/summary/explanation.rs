@@ -104,10 +104,10 @@ impl ExplanationSummary {
             {
                 scope_provenance_kinds.push(format!("{:?}", link.scope.kind));
             }
-            if let Some(note) = &link.note {
-                if cause_note_samples.len() < detail_limit {
-                    cause_note_samples.push(note.clone());
-                }
+            if let Some(note) = &link.note
+                && cause_note_samples.len() < detail_limit
+            {
+                cause_note_samples.push(note.clone());
             }
             push_triage_class(
                 &mut triage_classes,

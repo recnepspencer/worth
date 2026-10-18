@@ -82,10 +82,9 @@ where
         self.graph.restore_snapshot_with_intent(snapshot, intent)?;
         if self.graph.captures_observation_surface(
             crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
-        ) {
-            if let Some(telemetry) = &snapshot.runtime_telemetry {
-                self.telemetry = *telemetry;
-            }
+        ) && let Some(telemetry) = &snapshot.runtime_telemetry
+        {
+            self.telemetry = *telemetry;
         }
         self.branches
             .set_branch_head_snapshot(restored_branch_id, snapshot.meta.snapshot_id);

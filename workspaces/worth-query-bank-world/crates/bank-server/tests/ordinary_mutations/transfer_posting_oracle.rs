@@ -129,12 +129,22 @@ fn public_transfer_posts_thirty_once_from_one_hundred_to_zero() {
                 request_scope(),
                 key("transfer-thirty"),
             ))
-            .execute()
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("transfer construction: {cause:?}"))
+    };
+    let scope = request_scope();
+    let request = world.runtime.request(&owner, &scope);
+    let history = std::num::NonZeroUsize::new(20_000).unwrap();
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
+        commit(send.clone()).advance(&request, history)
+    else {
+        panic!("fresh transfer")
     };
     assert!(matches!(
-        commit(send.clone()),
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+        done.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    assert!(done.close(&request).is_ok());
     assert_eq!(
         (balance(source, &owner), balance(destination, &recipient)),
         (70, 30)
@@ -176,17 +186,35 @@ fn public_transfer_posts_thirty_once_from_one_hundred_to_zero() {
         source_entries.last().unwrap().journal(),
         destination_entries.last().unwrap().journal()
     );
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(replay) =
+        commit(send.clone()).advance(&request, history)
+    else {
+        panic!("replay retains original commit delivery")
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(replay) =
+        replay.advance(&request, history)
+    else {
+        panic!("original historical delivery")
+    };
     assert!(matches!(
-        commit(send.clone()),
-        Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(_))
+        replay.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
     ));
-    assert!(matches!(
+    assert!(replay.close(&request).is_ok());
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(drift) =
         commit(SendMoney {
             amount: Money::from_minor(31).unwrap(),
             ..send
-        }),
-        Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
+        })
+        .advance(&request, history)
+    else {
+        panic!("native intent drift")
+    };
+    assert!(matches!(
+        drift.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
     ));
+    assert!(drift.close(&request).is_ok());
     assert_eq!(
         (balance(source, &owner), balance(destination, &recipient)),
         (70, 30)

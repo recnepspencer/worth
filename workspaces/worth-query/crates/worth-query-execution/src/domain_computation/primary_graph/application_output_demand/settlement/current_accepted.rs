@@ -64,7 +64,7 @@ impl WorthQueryOutputDemandSettlement {
             posture,
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
-            producer_identity: producer_identity.to_owned(),
+            producer_identity: producer_identity.to_owned().into(),
             output_family_identity: output_family_identity.to_owned(),
             receipt,
             stable,

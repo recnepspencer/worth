@@ -87,12 +87,12 @@ impl DemandRegistryState {
         &mut self,
         admission: &mut InvalidationEditAdmission,
     ) -> Option<RetiredForeignCleanup> {
-        if self.pending_cleanup_head.is_some() {
-            if let Some(retired) = admission.optional_cleanup_quote(|admission| {
+        if self.pending_cleanup_head.is_some()
+            && let Some(retired) = admission.optional_cleanup_quote(|admission| {
                 self.take_terminal_cleanup_step(admission, false)
-            }) {
-                return retired.map(RetiredForeignCleanup::terminal);
-            }
+            })
+        {
+            return retired.map(RetiredForeignCleanup::terminal);
         }
         debug_assert_eq!(FOREIGN_CLOSED_DRAIN_QUOTA, 1);
         let note = self.closed_cleanup.front()?;

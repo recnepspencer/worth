@@ -158,15 +158,15 @@ pub(super) fn replace_elevation_resource(
     let selected = world.selected_product(&(phase_custody).test_host_request());
     let relation = handle.with_runtime_mut(execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
-        let relation = runtime
+
+        runtime
             .read_truth()
             .visible_relations_of_kind(execution, relation_kind, snapshot.version_id())
             .expect("fixture read request remains live")
             .into_iter()
             .find(|record| record.source == elevation.entity_id())
             .expect("the elevation has one current direct resource")
-            .relation_id;
-        relation
+            .relation_id
     });
     let mut batch = WorkerIntentBatch::new("replace-elevation-resource").push(
         MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {

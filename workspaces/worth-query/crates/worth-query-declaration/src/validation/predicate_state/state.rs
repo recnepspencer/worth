@@ -143,10 +143,10 @@ impl FieldPredicateState {
 
         let mut normalized = Vec::new();
 
-        if let (Some(gt), Some(lt)) = (&self.strongest_gt, &self.weakest_lt) {
-            if comparison_scalar(&gt.0) >= comparison_scalar(&lt.0) {
-                contradictory(aspect, field, "empty-range", counters, rejection_matrix)?;
-            }
+        if let (Some(gt), Some(lt)) = (&self.strongest_gt, &self.weakest_lt)
+            && comparison_scalar(&gt.0) >= comparison_scalar(&lt.0)
+        {
+            contradictory(aspect, field, "empty-range", counters, rejection_matrix)?;
         }
 
         if let Some(membership) = membership {
@@ -190,14 +190,14 @@ impl FieldPredicateState {
             ));
         }
 
-        if normalized.is_empty() {
-            if let Some(presence) = self.presence {
-                normalized.push(ValidatedPredicateEntry::from_canonical(
-                    &presence.0,
-                    presence.1,
-                    presence.2,
-                ));
-            }
+        if normalized.is_empty()
+            && let Some(presence) = self.presence
+        {
+            normalized.push(ValidatedPredicateEntry::from_canonical(
+                &presence.0,
+                presence.1,
+                presence.2,
+            ));
         }
 
         normalized.sort();
@@ -221,40 +221,40 @@ fn apply_equality_constraints(
     rejection_matrix: &mut ValidationRejectionMatrix,
 ) -> Result<(), ValidationFailureArtifact> {
     let equality = constraints.equality;
-    if let Some(gt) = constraints.strongest_gt {
-        if scalar_operand(&equality.0).as_native() <= comparison_scalar(&gt.0) {
-            return contradictory(
-                aspect,
-                field,
-                "equality-violates-greater-than",
-                counters,
-                rejection_matrix,
-            );
-        }
+    if let Some(gt) = constraints.strongest_gt
+        && scalar_operand(&equality.0).as_native() <= comparison_scalar(&gt.0)
+    {
+        return contradictory(
+            aspect,
+            field,
+            "equality-violates-greater-than",
+            counters,
+            rejection_matrix,
+        );
     }
 
-    if let Some(lt) = constraints.weakest_lt {
-        if scalar_operand(&equality.0).as_native() >= comparison_scalar(&lt.0) {
-            return contradictory(
-                aspect,
-                field,
-                "equality-violates-less-than",
-                counters,
-                rejection_matrix,
-            );
-        }
+    if let Some(lt) = constraints.weakest_lt
+        && scalar_operand(&equality.0).as_native() >= comparison_scalar(&lt.0)
+    {
+        return contradictory(
+            aspect,
+            field,
+            "equality-violates-less-than",
+            counters,
+            rejection_matrix,
+        );
     }
 
-    if let Some(membership) = constraints.membership {
-        if !membership_values_set(&membership.0).contains(scalar_operand(&equality.0)) {
-            return contradictory(
-                aspect,
-                field,
-                "equality-outside-membership",
-                counters,
-                rejection_matrix,
-            );
-        }
+    if let Some(membership) = constraints.membership
+        && !membership_values_set(&membership.0).contains(scalar_operand(&equality.0))
+    {
+        return contradictory(
+            aspect,
+            field,
+            "equality-outside-membership",
+            counters,
+            rejection_matrix,
+        );
     }
 
     if let worth_foundational::facade::AspectValue::String(

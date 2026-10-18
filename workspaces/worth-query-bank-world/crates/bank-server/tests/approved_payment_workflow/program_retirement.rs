@@ -30,7 +30,11 @@ fn p2_adoption_does_not_reopen_ordinary_payment_approval() {
         .prepare_branch_program_adoption::<BankApplicationP2>(&approver, &scope, branch, 128)
         .expect("a branch without outstanding workflow custody can adopt P2");
     assert!(matches!(
-        prepared.publish(),
+        runtime
+            .request(&approver, &scope)
+            .on_branch(branch)
+            .programs()
+            .publish(prepared),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
     let adopted = runtime
@@ -41,6 +45,7 @@ fn p2_adoption_does_not_reopen_ordinary_payment_approval() {
     let ordinary = runtime
         .request(&approver, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(ApprovePayment {
             payment: fixture.payment,
             approver: principal_id(APPROVER),
@@ -93,6 +98,6 @@ fn p2_retirement_waits_for_the_exact_workflow_instance_to_finish() {
     );
     assert!(matches!(
         denied,
-        Err(BankProgramAdoptionPreparationDenial::LiveWorkflowInstances)
+        Err(BankProgramAdoptionPreparationDenial::Query(denial)) if matches!(*denial, worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected))
     ));
 }

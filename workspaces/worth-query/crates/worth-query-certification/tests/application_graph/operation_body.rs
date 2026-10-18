@@ -181,6 +181,7 @@ fn invoke_input<const DESTINATION: u64>(
     let scope = request_scope();
     let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
     app.request(&principal, &scope)
+        .advanced()
         .mutate(binding::BodyIntent(input))
         .without_source()
         .idempotency(&key)
@@ -283,6 +284,7 @@ fn authored_body_captured_dependency_stales_before_publication() {
     let key = 83_u64;
     let mut request = app
         .request(&principal, &scope)
+        .advanced()
         .mutate(binding::BodyIntent(SetRetentionInput {
             identity: DOCUMENT_IDENTITY.to_owned(),
             retention_days: 99,

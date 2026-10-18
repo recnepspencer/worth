@@ -108,13 +108,187 @@ let transfer = runtime
     .mutate(mutations::send_money(input))
     .as_principal(&principal)
     .controls(BankMutationControls::new(mutation_request, idempotency_key))
-    .execute();
+    .retain_operation()?;
+let advancement = transfer.advance(
+    &runtime.request(&fresh_principal, &fresh_scope), maximum_history_work,
+);
 ```
 
-Every ordinary call follows the same shape: choose a typed operation, supply a
-fresh authenticated principal, supply caller-owned controls, then execute. The
-runtime owns admission, projection, provider work, and outcome construction.
+Ordinary reads and the remaining native mutation callers supply a typed operation,
+a fresh authenticated principal and caller-owned controls. The runtime owns
+admission, projection, provider work, and outcome construction.
 The caller cannot insert a read set, proposal, provider session, or receipt.
+
+### Own account, access and payment completion
+
+Personal and business account creation, access grant/revocation, payment initiation
+and rejection use `retain_operation()` after their existing `mutate(...).as_principal(...).controls(...)` builders.
+They return an owned native SourceCompletion operation. Construction transfers the
+original input, typed conditions and idempotency key, and retains no principal or
+request scope. Each `advance(&fresh_request)` opens one native phase; preserve the
+returned owner on progress or refusal. A completed or terminal owner must be
+closed with fresh authority, and a refused close returns its custody.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let operation = runtime
+    .mutate(mutations::create_personal_account(input))
+    .as_principal(&teller)
+    .controls(controls)
+    .retain_operation()?;
+let outcome = operation.advance(&fresh_request);
+```
+
+Fresh completion carries the actual account, authorization or payment handler
+result. Recovered completion carries the authoritative receipt and native
+recovery evidence; it does not manufacture the original domain result. Read the
+published account or payment with independently fresh query authorization.
+`BankPendingPaymentContinuation::from_summary` constructs only a descriptive
+payment identity from an authorized pending-payment read. Its rejection builder
+resolves the supplied actor into the original rejection input; every subsequent
+attempt must still pass native authorization and actor checks. Approval remains
+in the approved-payment workflow, and a continuation grants no approval authority.
+
+Receipt output correspondences describe created, preserved or retired entities.
+They do not erase required-output source inventory: installed required-output
+actions must use their declared fixed/discovered lane. These six completion
+bindings share the installed Bank application and existing role policies.
+
+### Own estate sources, funding, reversal and deployment revocation
+
+Estate notification, retransmission, freeze, case opening, executor recognition,
+release and disbursement use their typed `mutations` constructors and
+`retain_operation()`. Each advance admits the binding's installed capability
+against the current selected program; the owner retains the original command,
+key and typed conditions. A receipt correspondence or `NoOutputGraph` does not
+substitute for the actual installed output-source inventory.
+
+Capability request selectors use the installed operation's scope and decision-read
+contracts. Declare related/context selector fields through `operation_read_field`
+(or an existing whole-entity decision read); governed elevation uses its installed
+identity field. Query checks this footprint before resolving the selector. During
+program adoption, the native candidate maintains these exact dependencies and
+capability grant joins from its authentic predecessor. This preparation grants no
+permission: an ordinary action removed by the successor still refuses, while an
+exact performed-effect handle requires fresh authorization for recovery.
+
+Funding and journal reversal retain their existing RetainedCommit delivery:
+every advance takes fresh request authority and an explicit history-work bound.
+The returned observation is the genuine original World basis. Deployment grant
+revocation uses `retain_program_deployment_revocation` with its original u64 key
+and typed conditions; a recorded issuer relationship, not an employee role,
+authorizes the fresh attempt.
+
+After completion, `close_with_evidence(&fresh_request)` releases the same native
+cleanup collection before transferring `(closed, completion)`. On refusal, keep
+the returned owner. `BankCommitReceipt::from_closed_source` publishes the original
+receipt from that tuple; cloning borrowed descriptive evidence cannot transfer
+the performed-change witness. Fresh handler results remain distinct from recovered
+receipt and publication evidence.
+
+Only after source completion and lawful close may notification/disbursement
+receipts enter the existing published-effect recovery APIs. Those native handles
+own outbox/rail reconciliation or compensation; they are not permission to rerun
+the source handler. Source cleanup uses its native issuer custody and does not
+reacquire revoked business permission. Business retries and redispatch still
+require their applicable fresh native authorization. Elevation and approved-payment
+workflow transitions keep their separate issued native owners. Delegation and
+capability revocation retain the kernel-command owners described below.
+
+### Own capability delegation and revocation
+
+`retain_estate_capability_delegation` and `retain_estate_capability_revocation`
+consume the original action and owned key. Capture refusal returns the original
+input, key, repeatable projection preparation and typed native denial; it does
+not discard them or mint a partially admitted command.
+
+Advance the returned command with `advance(&bank.request(&principal, &scope))`.
+Keep the same owner on `Progress` or `Refused`, with its exact native cause.
+`Completed` owns either fresh receipt evidence or recovered receipt/publication
+evidence. Use `close_with_evidence(&fresh_request)` before transferring that
+receipt through `BankCommitReceipt::from_closed_capability_command`; a refused
+close returns the same completion. `Terminal` exposes original native posture
+and lawful close, never an effect retry. Cleanup does not reacquire a revoked
+business command grant, but preserves original principal/runtime/branch affinity.
+
+Each effect or recovery attempt freshly admits the command. A retained command
+cannot be retargeted to another principal, even when that person is independently
+authorized. Separate newly retained commands may use the same client key under
+different native principal scopes. Exact completed delegation can recover after
+its parent expires or is revoked only while current command admission permits
+it; that receipt does not authorize another child or partial recovery. Exact
+revocation recovery does not require its already-revoked target to become active.
+Never resubmit an incomplete command or interpret `AlreadyCommitted` in an
+ordinary caller loop. The existing native command owns those decisions.
+
+A freeze command enters through the same ordinary mutation frontdoor. Construction
+retains the command; it does not admit the business capability or execute an effect.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let owner = bank.mutate(mutations::freeze_estate_account(input))
+    .as_principal(&specialist)
+    .controls(BankMutationControls::new(scope.clone(), key))
+    .retain_operation()?;
+let outcome = owner.advance(&bank.request(&specialist, &scope));
+```
+
+For a publication interruption, retain the native `Progress` owner. A fresh
+unauthorized recovery returns that owner in `Refused`; recovery under an authorized
+request returns progress and then `Completed` with `Recovered` evidence. It supplies
+no replacement handler result. The [owning estate courts](../crates/bank-server/tests/ordinary_mutations/estate_operations/owning_sources.rs)
+exercise this flow, independent account truth, refusal during close, and witness transfer.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+match completed.close_with_evidence(&bank.request(&specialist, &fresh_scope)) {
+    Ok(closed_completion) => {
+        let receipt = BankCommitReceipt::from_closed_source(closed_completion);
+        // Published-effect recovery consumes this receipt through its own native owner.
+    }
+    Err((completed, denial)) => {
+        // Retain completed, including its original evidence, for a fresh lawful close.
+    }
+}
+```
+
+### Own a retained deposit
+
+The deposit builder also provides `retain_operation()`: call it after
+`mutate(mutations::deposit(input)).as_principal(&principal).controls(controls)`.
+It transfers the original input, typed preconditions and owned idempotency key
+into the installed `BankApplication` deposit action. Construction retains no
+principal or request scope. The five money actions declare distinct retained
+delivery contracts. Deposit, withdrawal and send-money builders expose owning
+construction; opening funding and reversal consumer cutovers remain separate.
+
+Advance the returned operation with `operation.advance(&fresh_request,
+maximum_history_work)`, using `runtime.request(&fresh_principal, &fresh_scope)`
+and an explicit `NonZeroUsize` history bound for that attempt. Keep the owner
+returned by `Progress` or `Refused`. Native unpublished recovery uses fresh
+authorization and adopts the original journal/posting effects without executing
+the deposit handler again. A fresh stranger cannot recover a teller's deposit.
+
+On completion, `Fresh` evidence includes the actual `MoneyMovementResult`;
+`Recovered` evidence includes native receipt/publication evidence and the original
+retained World observation, without recreating the handler result. Use that
+observation with the saved account activity request's `retained` read under fresh
+read authority. Later deposits change current activity without retargeting the
+original retained observation. Keep completed custody if `close(&fresh_request)`
+refuses and retry with lawful fresh context.
+
+The [owning deposit court](../crates/bank-server/tests/ordinary_mutations/owning_deposit.rs)
+executes the real append-partial, unauthorized recovery, authorized recovery,
+historical read and cancelled-close/fresh-close journey. It also verifies all five
+installed money deliveries and preserves the deployed program capability meaning.
+HTTP stores these actual owning money operations in finite transport custody.
+Use the [owning HTTP money contract](http-owning-money.md) for create, resume,
+historical read, close and independent listener-loss continuation. Remaining
+Bank consumers still require their owning cutovers. Do not hide advancement in a
+loop or reconstruct original meaning to discard returned custody.
 
 ## Workflow, history, and live target
 
@@ -272,16 +446,16 @@ available at a user node without a credential field; that process supplies its
 own authenticated session. Linear undo/redo routes remain provisional
 Milestone 9.18 experiments rather than a Bank Phase 5 product contract.
 
-Every Bank server request body declares `"protocol": "v3"`. The server admits
-that one version and refuses any other as `unsupported_protocol`. Version 3
-adds the mutation `previously_committed` outcome. It names the original commit
-and asks the caller to refresh current state, carrying no live receipt or
-invented commit counters. Version 1 and 2 decoders cannot read this outcome,
-so those requests are refused before effects. Route paths keep their `/v1/`
-prefix; the body field is the negotiated version.
+Every Bank server request body declares `"protocol": "v4"`. The server admits
+that one version and refuses earlier versions before effects. Money commands
+retain actual native custody and distinguish pending, refusal, completion,
+terminal custody and a queued command with unknown outcome. A timeout cannot
+assert that a mutation did not land. Route paths retain their `/v1/` prefix.
 
-The estate `notify-death` and approved-payment responses establish authorized
-dispatch commits. The rail can report `Completed` synchronously, or send the
+Estate `notify-death` and disbursement first return owning SourceCompletion
+custody. Fresh resume, physical release and close commands retain that owner;
+only its actual completed witness establishes the original dispatch commit.
+Approved-payment responses follow their separate workflow-owned dispatch path. The rail can report `Completed` synchronously, or send the
 same effect's signed completion through Bank's private callback route later.
 Both observations meet at the original Query owner and one World terminal.
 The approved-payment workflow's `await_inbound` node names that payment
@@ -335,3 +509,50 @@ is the authoritative terminal surface.
 - [Banking Product Contract](banking-product-contract.md)
 - [Async Identity Courtroom](async-identity-courtroom.md)
 - [Front-Door Closure Ledger](front-door-closure-ledger.md)
+
+
+## Retain native HTTP cleanup evidence
+
+The listener-independent mutation continuation owns actual SourceOnly money and
+estate operations, plus native cleanup returned by the four elevation transitions.
+Every command authenticates freshly. `release_cleanup` releases the native physical
+collection on its original execution thread; it never asserts a business commit.
+A release refusal preserves the original owner, and pending cleanup blocks shutdown.
+The local host handoff `take_released_cleanup` transfers original uncommitted evidence
+with an exact installed-runtime keeper after lawful physical release. Reply loss
+before host receipt returns the evidence through a reserved transport slot.
+See [owning HTTP commands](http-owning-money.md#estate-and-native-cleanup-custody)
+for current wire and host usage. Abandonment has no disposal or crash-durability promise.
+
+
+## Guarded payment operation ownership
+
+`approved_business_payment(..).retain_apply(&required, input, owned_key)`
+constructs the original declared no-output action without an effect. Its Query
+owner accepts a fresh request on every `advance`, retaining actual source,
+unpublished or dispatch custody on refusal. `Fresh` includes the real handler
+result; `Recovered` reports native evidence without inventing that result.
+`accept_owned_applied` returns the same completed owner on refusal and retains it
+alongside native workflow progression on success. Close that owner explicitly.
+
+`retain_payment_assessment` owns a separate admitted observation and
+`advance_payment_assessment` supplies the current authenticated request. Closing
+that observer may release actual failed producer cleanup; it does not accept
+assessment evidence, approve payment or complete the workflow. Deliberate native
+payment operation controls are available through `advanced()`, not an ordinary
+manual pump wrapper.
+
+### Explicit recovery disposal
+
+`dispose_commit_recovery(handle, &fresh_principal, action, &fresh_scope)` consumes
+one actual Bank recovery owner. Opening, current-authority and native disposal
+refusals return `BankRecoveryDisposalDenial`; `into_parts()` returns its cause and
+the same live handle when custody remains. Only native terminal consumption can
+return no handle. Keep the returned owner for a later fresh authorized attempt.
+
+Success returns the owning `BankRecoveryDisposalReceipt`. Its
+`native_disposal_receipt()` is the actual native terminal proof;
+`transition_receipt()` is only the Bank operation description. `into_parts()`
+transfers both without cloning. Disposal does not rerun business effects, settle
+a workflow or release an unrelated producer's physical cleanup. No HTTP disposal
+route is implied by this explicit runtime capability.

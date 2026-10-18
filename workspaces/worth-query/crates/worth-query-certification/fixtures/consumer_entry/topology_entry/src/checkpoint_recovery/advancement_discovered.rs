@@ -98,6 +98,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
             )));
             let before_mutation = reads();
             let cause = request
+                .advanced()
                 .mutate(PlanarSourceAdjustment {
                     scope_key: "anchor-a".into(),
                     replacement_y: length(2),
@@ -130,6 +131,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
             bound(None);
             let before_mutation = reads();
             let observed_outcome = request
+                .advanced()
                 .mutate(PlanarSourceAdjustment {
                     scope_key: "anchor-a".into(),
                     replacement_y: length(2),
@@ -174,6 +176,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
             let performed = failure.performed();
             let before = reads();
             let denial = request
+                .advanced()
                 .recover_discovered_required_outputs::<DiscoveredProgram, DiscoveredRoot>(
                     &application,
                     &receipt,
@@ -212,6 +215,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                 .observed_sources()[0]
                 .clone();
             let Outcome::Performed(performed) = request
+                .advanced()
                 .mutate(PlanarSourceAdjustment {
                     scope_key: "anchor-a".into(),
                     replacement_y: length(3),
@@ -229,6 +233,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
             let receipt = performed.receipt().clone();
             reports();
             let mut recovered = request
+                .advanced()
                 .recover_discovered_required_outputs::<DiscoveredProgram, DiscoveredRoot>(
                     &application,
                     &receipt,
