@@ -1520,7 +1520,8 @@ accept `.at(observation)`. Resume with the token itself and a fresh request:
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled. The application declares read_children and the query.
+// Illustrative: not compiled.
+// The application declares read_children and the query.
 let first = original_request.query(read_children.clone()).page(width, work)?;
 let (owned_rows, continuation, _) = first.into_parts();
 let token = continuation.expect("another child page");

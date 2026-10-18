@@ -95,25 +95,27 @@ impl CourtroomWorld {
             .into_parts()
             })
             .expect("installed host call opens");
-        let reads = self
+        let mut effects = self
             .application
             .with_host_advancement(|phase| {
-                self
-            .application
-            .begin_projected_application_read_attempt(
-                &phase, admission,
-                projection,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
+                let reads = self
+                    .application
+                    .begin_projected_application_read_attempt(
+                        &phase,
+                        admission,
+                        projection,
+                        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap();
+                reads
+                    .complete_projected_dependencies(
+                        &phase,
+                        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .begin_effect_program()
             })
             .expect("installed host call opens");
-        let mut effects = self.application.with_host_advancement(|phase| reads
-            .complete_projected_dependencies(
-                &phase, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .begin_effect_program()).expect("installed host call opens");
         let mapping = effects.projected_entity(&target).unwrap();
         effects
             .write_field(
@@ -254,10 +256,10 @@ pub(crate) fn projection_target_is_bound_to_exact_admission() {
                 .into_parts()
         })
         .expect("installed host call opens");
-    let reads = world
+    let effects = world
         .application
         .with_host_advancement(|phase| {
-            world
+            let reads = world
                 .application
                 .begin_projected_application_read_attempt(
                     &phase,
@@ -265,12 +267,7 @@ pub(crate) fn projection_target_is_bound_to_exact_admission() {
                     current_projection,
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
-                .unwrap()
-        })
-        .expect("installed host call opens");
-    let effects = world
-        .application
-        .with_host_advancement(|phase| {
+                .unwrap();
             reads
                 .complete_projected_dependencies(
                     &phase,
