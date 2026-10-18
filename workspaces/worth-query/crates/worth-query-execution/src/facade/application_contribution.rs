@@ -45,7 +45,9 @@ pub use crate::domain_computation::primary_graph::{
 pub use worth_execution::{CanonicalBits, ChargedBytes, PartitionItemId};
 pub use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
 
-pub use crate::domain_computation::primary_graph::with_bootstrap_advancement;
+pub use crate::domain_computation::primary_graph::{
+    with_bootstrap_advancement, with_bootstrap_advancement_from_request,
+};
 
 pub use crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase;
 

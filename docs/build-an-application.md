@@ -1601,6 +1601,38 @@ activation to name a supported program. For an app-owned predecessor mapping,
 through the ordinary program/roster installation path. The predecessor rendering
 never becomes a program revision or a roster member.
 
+When installation belongs to an already admitted execution attempt, borrow its
+`ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
+and pass the resulting phase to
+`host::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement`.
+This variant takes the existing transition arguments with the phase first and no
+independent capture policy. It borrows the original cancellation/deadline and
+remaining cumulative work through construction, roster admission, native transition,
+final assembly and capture. Native nested scopes charge the original parent; they
+do not renew its allowance. Capture derives allocation from that same leased backing.
+A bare serial backing has no admitted capture allocation policy and refuses before
+effects with `ExecutionDenied(ResourceEnvelopeMismatch)`, rather than falling back
+to SystemAllocation. The ordinary convenience constructor retains its explicit
+owned-request/policy contract.
+
+The bootstrap phase cannot escape its callback or stand in for an installed-runtime
+phase. `OpeningCustody` still refuses a second Query opening from a host advancement
+or managed computation. The opener preserves a callback result that ran: completion
+owners check the original request before success or domain failure, and a generic
+outer stop must not discard a performed transition's recovery capsule.
+
+For that capsule, call `repair_to_checkpoint_with_request(original_request)`.
+It holds itself outside the opening callback until entry succeeds; refusal returns
+the same capsule, including on entry cancellation or exhausted work. Its typed
+`capture_denial()` may contain `Execution` with the original Query execution cause;
+the original `finalization_denial()` remains distinct. Fresh-request retry repairs
+the same successor without reauthoring. The existing phase/policy repair method
+remains available for its explicit contract. The runnable
+[original request fixture](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
+uses the real nonempty native transition; its
+[deferred repair companion](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
+retains the native capsule across stopped attempts.
+
 Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
 and relations between entities created in that batch. It currently cannot read or
 rewrite recovered records, or link a new record to an existing endpoint. Query

@@ -121,6 +121,9 @@ impl WorthQueryCheckpointTransitionRecovery {
         let request = phase.execution_request();
         let execution = &request;
         self.capture_denial = None;
+        if self.consult_request(request).is_err() {
+            return Err(self);
+        }
         if let Err(error) = policy.check_live() {
             self.retain_capture_denial(error.into());
             return Err(self);
@@ -143,6 +146,7 @@ impl WorthQueryCheckpointTransitionRecovery {
                     Err(error) => {
                         self.detail = format!("{:?}", error.cause());
                         self.settlement = Some(Settlement::Deferred(error.into_transition()));
+                        let _ = self.consult_request(request);
                         return Err(self);
                     }
                 }
@@ -150,6 +154,9 @@ impl WorthQueryCheckpointTransitionRecovery {
             Settlement::Acknowledged(authority) => {
                 self.settlement = Some(Settlement::Acknowledged(authority))
             }
+        }
+        if self.consult_request(request).is_err() {
+            return Err(self);
         }
         match policy
             .check_live()
@@ -170,12 +177,30 @@ impl WorthQueryCheckpointTransitionRecovery {
                 )
                 .map(|(checkpoint, _)| checkpoint)
             }) {
-            Ok(checkpoint) => Ok(checkpoint),
+            Ok(checkpoint) => {
+                if self.consult_request(request).is_err() {
+                    Err(self)
+                } else {
+                    Ok(checkpoint)
+                }
+            }
             Err(error) => {
-                self.retain_capture_denial(error);
+                if self.consult_request(request).is_ok() {
+                    self.retain_capture_denial(error);
+                }
                 Err(self)
             }
         }
+    }
+
+    fn consult_request(
+        &mut self,
+        request: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), ()> {
+        request.consult().map_err(|stop| {
+            self.retain_capture_denial(WorthQueryCheckpointCaptureDenial::Execution(
+                super::super::request_denial(crate::domain_computation::primary_graph::application_contribution::advancement_denial(stop))));
+        })
     }
 
     fn retain_capture_denial(&mut self, denial: WorthQueryCheckpointCaptureDenial) {
@@ -187,3 +212,5 @@ impl WorthQueryCheckpointTransitionRecovery {
 }
 
 mod certification_controls;
+
+mod request;

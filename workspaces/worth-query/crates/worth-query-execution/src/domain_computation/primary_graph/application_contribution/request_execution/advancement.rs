@@ -77,6 +77,8 @@ impl WorthQueryAdvancementDenial {
 mod phase_custody;
 use phase_custody::ActiveAdvancement;
 pub use phase_custody::{WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase};
+mod bootstrap_opening;
+pub use bootstrap_opening::with_bootstrap_advancement_from_request;
 mod bootstrap_custody;
 pub use bootstrap_custody::WorthQueryBootstrapAdvancementPhase;
 mod opening_custody;
@@ -198,6 +200,21 @@ pub fn with_bootstrap_advancement<R>(
     policy: worth_foundational::ExecutionRequestPolicy,
     body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
 ) -> Result<R, WorthQueryAdvancementDenial> {
+    with_owned_bootstrap_advancement(policy, |phase| {
+        body(WorthQueryBootstrapAdvancementPhase::new(
+            phase
+                .active
+                .execution
+                .execution_request()
+                .expect("owned bootstrap was admitted"),
+        ))
+    })
+}
+
+fn with_owned_bootstrap_advancement<R>(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+) -> Result<R, WorthQueryAdvancementDenial> {
     let _custody = OpeningCustody::enter()?;
     let cancellation = worth_execution::CancellationToken::new();
     let execution = QueryRequestExecution {
@@ -207,11 +224,7 @@ pub fn with_bootstrap_advancement<R>(
         certified_seed: super::test_placement::certifying(),
         form: super::serial_placement::form(policy, cancellation, None),
     };
-    execution.run_advancement(None, None, |phase| {
-        body(WorthQueryBootstrapAdvancementPhase {
-            active: phase.active,
-        })
-    })
+    execution.run_advancement(None, None, body)
 }
 
 impl WorthQueryAdvancementDenial {
@@ -268,8 +281,8 @@ pub(crate) fn with_test_advancement<R>(
     let policy =
         crate::domain_computation::execution_runtime::product_world::test_product_world_resources()
             .execution_policy();
-    with_bootstrap_advancement(policy, |bootstrap| {
-        body(test_host_policy::TestHostRequest::new(bootstrap.active))
+    with_owned_bootstrap_advancement(policy, |phase| {
+        body(test_host_policy::TestHostRequest::new(phase.active))
     })
     .expect("the declared fixture policy admits its host call")
 }

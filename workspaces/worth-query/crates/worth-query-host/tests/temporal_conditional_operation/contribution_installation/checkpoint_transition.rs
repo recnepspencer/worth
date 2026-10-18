@@ -1,13 +1,14 @@
 //! Real native predecessor -> target World -> ordinary target reopen journey.
 #[path = "checkpoint_transition/admission.rs"]
 mod admission;
+#[path = "checkpoint_transition/original_request.rs"]
+mod original_request;
 use super::*;
 use application_installation::{
     WorthQueryCheckpointProgramPredecessor as Predecessor,
     WorthQueryCheckpointTransitionResources as Resources,
 };
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
-
 struct LegacyTemporalProgram;
 impl ApplicationProgramDefinition<TemporalHostSchema> for LegacyTemporalProgram {
     type Contributions = <TemporalHostSchema as ApplicationSchemaComposition>::Contributions;
@@ -19,7 +20,6 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for LegacyTemporalProgram 
         TemporalInstallationProgram::feature_specs()
     }
 }
-
 fn configuration() -> (TemporalContributionConfiguration,) {
     let contacts = ContactCounters::default();
     let (installation_predicate, _) = Predicate::controlled(contacts.clone());
