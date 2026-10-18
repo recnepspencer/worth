@@ -424,6 +424,18 @@ Handle `AwaitingProposal(RequiredWorkflowProposal)` as a typed need: inspect its
 
 <!-- consumer-prohibitions end -->
 
+For installation and checkpoint-transition work inside an already admitted original
+execution request, use `host::application_contribution::with_bootstrap_advancement_from_request`.
+Its bootstrap phase borrows the same cancellation/deadline and cumulative native work.
+Call `host::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement`
+with that phase; capture funding derives from its request. The capture-bearing path
+requires leased backing and refuses unsupported serial backing with the existing
+`ExecutionDenied(ResourceEnvelopeMismatch)` vocabulary, before effects. Bootstrap
+custody cannot admit installed-runtime execution. A performed recovery capsule's
+`repair_to_checkpoint_with_request(original)` returns that same capsule on opening,
+settlement or capture refusal. Existing convenience constructors still own their
+explicit bootstrap request and capture policy. See [original-request transitions](build-an-application.md#44-checkpoint-program-transitions).
+
 ## Known gaps
 
 **Compiler-derived implementation editions.** Automatic producer/output/partition

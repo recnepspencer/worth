@@ -1,4 +1,4 @@
-use super::{ActiveAdvancement, ExecutionRequest};
+use super::ExecutionRequest;
 
 /// Installation custody cannot fund an already installed runtime's public doors.
 /// Only an installation callback can borrow this phase; it cannot escape the call.
@@ -62,15 +62,42 @@ use super::{ActiveAdvancement, ExecutionRequest};
 /// }
 /// ```
 pub struct WorthQueryBootstrapAdvancementPhase<'scope> {
-    pub(super) active: &'scope ActiveAdvancement<'scope>,
+    request: ExecutionRequest<'scope, 'scope>,
+    _thread: std::marker::PhantomData<std::rc::Rc<()>>,
 }
 
 impl WorthQueryBootstrapAdvancementPhase<'_> {
     /// Borrows the same installation request at an execution owner's boundary.
     pub fn execution_request(&self) -> ExecutionRequest<'_, '_> {
-        self.active
-            .execution
-            .execution_request()
-            .expect("an active bootstrap was admitted")
+        self.request
+    }
+}
+
+impl WorthQueryBootstrapAdvancementPhase<'_> {
+    pub(in crate::domain_computation::primary_graph) fn funded_capture_policy(
+        &self,
+    ) -> Result<
+        worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+    > {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryPrimaryGraphInstallationDenial as D,
+            WorthQueryPrimaryGraphInstallationDenialKind as K,
+        };
+        if !self.request.is_leased() {
+            return Err(D::new(K::ExecutionDenied {
+                kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ResourceEnvelopeMismatch,
+            }, "original-request checkpoint capture requires leased backing; serial system allocation is unsupported"));
+        }
+        Ok(self.request.allocation_policy())
+    }
+}
+
+impl<'scope> WorthQueryBootstrapAdvancementPhase<'scope> {
+    pub(super) fn new(request: ExecutionRequest<'scope, 'scope>) -> Self {
+        Self {
+            request,
+            _thread: std::marker::PhantomData,
+        }
     }
 }

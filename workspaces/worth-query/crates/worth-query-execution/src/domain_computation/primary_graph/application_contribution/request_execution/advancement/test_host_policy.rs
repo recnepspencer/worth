@@ -42,9 +42,7 @@ impl<'scope> TestHostRequest<'scope> {
     }
 
     pub(crate) fn bootstrap_for_test(&self) -> WorthQueryBootstrapAdvancementPhase<'_> {
-        WorthQueryBootstrapAdvancementPhase {
-            active: self.active,
-        }
+        WorthQueryBootstrapAdvancementPhase::new(self.borrowed_request_for_test())
     }
 
     pub(crate) fn phase_for_application<Schema: ApplicationSchema>(

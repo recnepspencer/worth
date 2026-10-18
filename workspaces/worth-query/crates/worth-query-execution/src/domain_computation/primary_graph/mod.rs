@@ -160,7 +160,9 @@ pub(crate) use application_contribution::{
     drain_test_advancement_observations, with_test_advancement, TestHostRequest,
 };
 
-pub use application_contribution::with_bootstrap_advancement;
+pub use application_contribution::{
+    with_bootstrap_advancement, with_bootstrap_advancement_from_request,
+};
 
 pub use application_contribution::WorthQueryBootstrapAdvancementPhase;
 
