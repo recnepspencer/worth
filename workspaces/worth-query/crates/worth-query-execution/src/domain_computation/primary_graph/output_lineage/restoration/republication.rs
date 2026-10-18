@@ -100,6 +100,7 @@ impl WorthQueryApplicationOutputLineage {
         suspended_facts: &super::super::RetainedSourceFacts,
         witness: Arc<OnceLock<SealedNativeOutputWitness>>,
         admission: &mut InvalidationEditAdmission,
+        control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
     ) -> Option<RepublishedOutput> {
         let source = SemanticSource {
             runtime_authority,
@@ -142,12 +143,13 @@ impl WorthQueryApplicationOutputLineage {
             // republished row seals its own witness instead.
             let (facts, capacity) = performed_fact_sequence(
                 suspended_facts.postconditions(),
+                &suspended.stable_fact_spans(suspended_facts.postconditions())?,
                 boundary.handler_fact_count(),
-                origin.native_output_witness()?,
                 &self.retention,
                 admission,
+                control,
             )?;
-            (facts.into(), Some(capacity))
+            (facts, Some(capacity))
         };
         if boundary.handler_fact_count() > facts.len() {
             return None;

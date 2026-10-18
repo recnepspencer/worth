@@ -114,17 +114,16 @@ impl PreparedObservedSourceExpectation {
 }
 
 impl BoundStableObservedSourceFacts {
-    /// Moves only the checked source suffix into a caller-prepared fact buffer.
-    /// The caller retains its sealed cutoff and owns the final admission.
-    pub(in crate::domain_computation::primary_graph) fn append_into_stable_facts<
+    /// Consume the exact operation binding after the publisher retained its
+    /// newly funded suffix. No descriptive payload can issue this binding.
+    pub(in crate::domain_computation::primary_graph) fn finish_stable<
         Schema,
         Operation,
         Input,
         Scope,
     >(
-        mut self,
+        self,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        target: &mut Vec<WorthQueryApplicationObservedFact>,
     ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial> {
         if !self.matches_operation(admission) {
             return Err(WorthQuerySourceExpectationDenial::new(
@@ -132,13 +131,6 @@ impl BoundStableObservedSourceFacts {
                 "prepared source expectation",
             ));
         }
-        if target.capacity().saturating_sub(target.len()) < self.facts.len() {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
-                "prepared source expectation",
-            ));
-        }
-        target.append(&mut self.facts);
         Ok(self.bound)
     }
 

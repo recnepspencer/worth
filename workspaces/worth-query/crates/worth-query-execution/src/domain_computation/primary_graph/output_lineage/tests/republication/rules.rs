@@ -201,13 +201,22 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         let alias_facts: Arc<[Fact]> = Arc::from(combined);
         stage.retain(
             suspended_generation,
-            |row| RecordedOutput {
-                native_prior_checkpoint: None,
-                computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
-                performed_origin: Some(Arc::clone(&origin)),
-                consumed_outputs: Arc::clone(&consumed),
-                prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
-                ..row
+            |row| {
+                let mut row = RecordedOutput {
+                    native_prior_checkpoint: None,
+                    computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
+                    performed_origin: Some(Arc::clone(&origin)),
+                    consumed_outputs: Arc::clone(&consumed),
+                    prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
+                    ..row
+                };
+                let spans = crate::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::StableFactSpans::new(
+                    alias_facts.clone().into(), 1, alias_facts.len() - 2).unwrap();
+                let mutable = row.mutable.get_mut().unwrap();
+                // Local representation proof: real witness projection above,
+                // no source/currentness authority is manufactured by spans.
+                mutable.set_stable_fact_spans(spans);
+                row
             },
             &alias_facts,
         );

@@ -68,6 +68,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 &producer.observed_source_facts,
                 witness,
                 &mut admission,
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None),
             )?;
             Some((republished, read_basis))
         });

@@ -284,6 +284,7 @@ impl Stage<'_> {
             &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(facts)),
             Arc::clone(witness),
             admission,
+            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
         )?;
         let record = self.lineage.record_republished_restoration(
             self.lineage.binding_type(&self.source.output_binding),

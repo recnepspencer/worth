@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact 
 mod checkpoint;
 mod equality;
 mod fact_coverage;
+mod fact_projection;
 mod preparation;
 mod retirement;
 use retirement::RetirementMetadata;
