@@ -79,24 +79,28 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
         PreparedPostingOrdinals::prepare(&source, Some(&output), &mut None, &mut admission)
             .unwrap();
     let mut state = MarkState::initial();
-    let (ordinals, _) = prepared
-        .install(&mut state, &identity, &mut admission)
+    let resources = resources();
+    let projection = prepared
+        .into_projection(
+            0,
+            source.len(),
+            output.len(),
+            None,
+            &resources,
+            &mut admission,
+        )
         .unwrap();
+    super::super::posting_bindings::bind(&mut state, &projection, &identity, &mut admission)
+        .unwrap();
+    let ordinals = &projection.ordinals;
     let key = FactPostingKey::EntityLifecycle(entity);
     let own = ordinals.get(&key).unwrap();
     assert_eq!(own.iter().copied().collect::<Vec<_>>(), vec![0, 1]);
     let global = state.postings.get(&key).unwrap();
-    assert_eq!(global.len(), 2);
-    assert_eq!(
-        global
-            .iter()
-            .map(|posting| posting.ordinal)
-            .collect::<Vec<_>>(),
-        vec![0, 1]
-    );
-    assert!(global
-        .iter()
-        .all(|posting| Arc::ptr_eq(&posting.settlement, &identity)));
+    assert_eq!(global.iter().copied().collect::<Vec<_>>(), vec![0]);
+    let binding = state.posting_bindings.get(&0).unwrap();
+    assert_eq!(binding.settlements.len(), 1);
+    assert!(binding.settlements.contains(&identity));
 }
 
 #[test]
@@ -129,54 +133,46 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
                 .unwrap()
                 + index_capacity::retained_forest_bytes::<usize, ()>(keys * copies, keys).unwrap()
                 + (keys as u64) * index_capacity::arc_bytes::<FactPostingKey>().unwrap();
-        assert_eq!(admission.charged_index_bytes(), expected);
-        assert!(admission.charged_bytes() > expected);
+        assert_eq!(prepared.retained_bytes, expected);
+        assert!(admission.charged_bytes() >= expected);
         let (_, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+        let resources = resources();
         let mut state = MarkState::initial();
         let prior = state.postings.clone();
-        let before_index = admission.charged_index_bytes();
-        let before_preparation = admission.charged_bytes();
-        prepared
-            .install(&mut state, &identity, &mut admission)
+        let projection = prepared
+            .into_projection(0, facts.len(), 0, None, &resources, &mut admission)
+            .unwrap();
+        assert!(resources.retained_capacity_bytes() >= expected);
+        super::super::posting_bindings::bind(&mut state, &projection, &identity, &mut admission)
             .unwrap();
         assert!(prior.is_empty());
-        assert_eq!(state.posting_count, keys * copies);
+        assert_eq!(state.posting_count, keys);
         assert_eq!(state.postings.len(), keys);
-        assert!(state.postings.values().all(|postings| {
-            postings.len() == copies
-                && postings
-                    .iter()
-                    .all(|posting| Arc::ptr_eq(&posting.settlement, &identity))
-        }));
-        // The new global tree and every independently rooted posting bucket
-        // fit their final stable trees, even after many paths were prepared.
-        let whole = index_capacity::retained_map_bytes::<
-            Arc<FactPostingKey>,
-            im::OrdSet<super::super::super::mark_state::FactPosting>,
-        >(keys)
-        .unwrap()
-            + keys as u64
-                * index_capacity::retained_map_bytes::<
-                    super::super::super::mark_state::FactPosting,
-                    (),
-                >(copies)
-                .unwrap();
-        let installed = admission.charged_index_bytes() - before_index;
-        assert!(installed > 0 && installed <= whole);
-        // Preparation covers what survives, and stays within what each
-        // tree's insertions can allocate together, however many paths ran.
-        let prepared = admission.charged_bytes() - before_preparation;
-        let sequences = index_capacity::insertion_sequence_bytes::<
-            Arc<FactPostingKey>,
-            im::OrdSet<super::super::super::mark_state::FactPosting>,
-        >(keys)
-        .unwrap()
-            + keys as u64
-                * index_capacity::insertion_sequence_bytes::<
-                    super::super::super::mark_state::FactPosting,
-                    (),
-                >(copies)
-                .unwrap();
-        assert!(prepared >= installed && prepared <= sequences);
+        assert!(state
+            .postings
+            .values()
+            .all(|groups| groups.iter().copied().collect::<Vec<_>>() == vec![0]));
+        drop(state);
+        assert!(
+            resources.retained_capacity_bytes() > 0,
+            "the projection handle keeps its direct grant"
+        );
+        drop(projection);
+        assert_eq!(resources.retained_capacity_bytes(), 0);
     }
 }
+
+fn resources() -> crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources{
+    use crate::domain_computation::execution_runtime::source_invalidation::{
+        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
+    };
+    WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation::bounded(
+        1_000_000,
+        64 * 1024 * 1024,
+        128 * 1024 * 1024,
+        16,
+    ))
+    .unwrap()
+}
+
+mod bindings;

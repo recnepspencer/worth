@@ -14,6 +14,9 @@ type Endpoints =
     crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
 pub(super) struct SelectedRebase {
     facts: FactPayload,
+    posting_basis: Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostingRebaseBasis,
+    >,
     ordinals: im::OrdSet<usize>,
     moved: Arc<[usize]>,
     endpoints: Option<ExecutionArray<(usize, Option<Endpoints>)>>,
@@ -25,12 +28,14 @@ pub(super) struct SelectedRebase {
     _resolution_memory: Option<ExecutionMemoryReservation>,
 }
 impl SelectedRebase {
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn prepare(
         facts: FactPayload,
         moved: Arc<[usize]>,
         carry: PostconditionCarry,
         ordinals: im::OrdSet<usize>,
         selection_memory: Option<ExecutionMemoryReservation>,
+        posting_basis: crate::domain_computation::primary_graph::output_lineage::invalidation::PostingRebaseBasis,
         admission: &mut InvalidationEditAdmission,
         control: StorageControl<'_, '_>,
     ) -> Result<Self, PreparedRebaseDenial> {
@@ -43,7 +48,7 @@ impl SelectedRebase {
             .baseline()
             .slice(0..carry.prefix())
             .append_completed(suffix, control)?;
-        Self::prepare_body(
+        let mut prepared = Self::prepare_body(
             facts,
             moved,
             base,
@@ -51,7 +56,9 @@ impl SelectedRebase {
             ordinals,
             selection_memory,
             control,
-        )
+        )?;
+        prepared.posting_basis = Some(posting_basis);
+        Ok(prepared)
     }
     pub(super) fn prepare_full(
         facts: FactPayload,
@@ -110,6 +117,7 @@ impl SelectedRebase {
         let superseded = ExecutionArrayBuilder::allocate(ordinals.len(), control.policy())?;
         Ok(Self {
             facts,
+            posting_basis: None,
             ordinals,
             moved,
             endpoints: Some(endpoints.seal()?),
@@ -247,7 +255,47 @@ impl SelectedRebase {
             Ok(ordinals) => Arc::new(ordinals),
             Err(cause) => return rebase_walk::storage_stopped(cause, own),
         };
+        let posting_continuation = match self.posting_basis {
+            None => None,
+            Some(basis) => {
+                let after = match runtime.read_truth().positioned_snapshot_admitted(
+                    snapshot,
+                    |work, bytes| {
+                        admission.charge_external_work(work)?;
+                        admission.admit_read_scratch(bytes)
+                    },
+                ) {
+                    Ok(after) => after,
+                    Err(stop) => {
+                        if let Err(interrupted) = control.check_live() {
+                            return storage_stop(interrupted, own);
+                        }
+                        use worth_relational::facade::runtime::RelationalSnapshotPositionAdmissionStop as Stop;
+                        let reason = match stop {
+                            Stop::Admission(stop) => {
+                                RebaseVerificationReason::AdmissionDenied(stop)
+                            }
+                            Stop::AccountingOverflow => RebaseVerificationReason::AdmissionDenied(
+                                CompanionPreflightStop::WorkCounterOverflow,
+                            ),
+                            Stop::Position(_) => {
+                                RebaseVerificationReason::NativeRevisionUnavailable
+                            }
+                        };
+                        return RebasedSourceFacts::VerificationRequired {
+                            reason,
+                            own_effect: own,
+                        };
+                    }
+                };
+                match basis.seal(facts.clone(), after, self._selection_memory, control) {
+                    Ok(completed) => Some(completed),
+                    Err(stop) => return storage_stop(stop, own),
+                }
+            }
+        };
         RebasedSourceFacts::Cached {
+            posting_continuation,
             facts,
             payload_bytes: self.payload_bytes,
             ordinals,

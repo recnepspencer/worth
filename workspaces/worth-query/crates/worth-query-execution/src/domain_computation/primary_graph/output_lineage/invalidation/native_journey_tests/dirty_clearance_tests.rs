@@ -284,7 +284,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                 let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(request_execution.allocation_policy(), None);
                 let carry = changes.carry(&original, 1, &OrdSet::new(), &latest_handle, control).unwrap().unwrap();
                 let empty = worth_relational::facade::history::RelationalDescriptiveTouchGraph::Exact(Vec::new());
-                let (selected, _) = carry.select(&empty, 1, &[], control).unwrap().unwrap();
+                let selected = carry.select(&empty, 1, &[], control).unwrap().unwrap().ordinals;
                 assert_eq!(selected.iter().copied().collect::<Vec<_>>(), [0], "ABA frontier survives zero fresh calls and exact-empty candidate touches");
                 assert!(carry.select(&worth_relational::facade::history::RelationalDescriptiveTouchGraph::Unavailable, 1, &[], control).unwrap().is_none(), "unavailable is never exact empty");
                 let foreign = Arc::<[WorthQueryApplicationObservedFact]>::from(original.iter().cloned().collect::<Vec<_>>()).into();

@@ -227,9 +227,15 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
         );
         assert!(
             runs[0].posting_fact_visits > 0 && runs[0].posting_registration_visits > 0,
-            "{size}: remaining full posting work stays visible: {:?}",
+            "{size}: checked projection and exact binding work stays visible: {:?}",
             runs[0]
         );
+        assert_eq!(
+            runs[0].posting_fact_visits, first.posting_fact_visits,
+            "{size}: posting projection follows changed native ordinals and output roles"
+        );
+        assert_eq!(runs[0].posting_registration_visits, first.posting_registration_visits,
+            "{size}: exact successor installation and predecessor retirement do not visit unchanged postings");
         assert_eq!(runs[0].completed_fact_moves, first.completed_fact_moves,
             "{size}: current source suffix is moved once; carried decision facts stay in their backing");
         assert_eq!(

@@ -1,52 +1,62 @@
-//! Remove one row's posting memberships without retaining intermediate trees.
+//! Detach one exact settlement; physical keys leave only with the final binding.
 use super::super::admission::PreparedTreeEdits;
-use super::{
-    debit, index_capacity, Arc, CompanionPreflightStop, FactPosting, FactPostingKey, MarkState,
-    OrdSet, RecordedSettlementIdentity, RetainedIndexAdmission, SettlementMarks,
-};
+use super::*;
 
 pub(super) fn remove(
     state: &mut MarkState,
     identity: &Arc<RecordedSettlementIdentity>,
-    row: &SettlementMarks,
+    projection: &Arc<PostingProjection>,
     admission: &mut impl RetainedIndexAdmission,
 ) -> Result<(), CompanionPreflightStop> {
-    let mut map_edits = PreparedTreeEdits::<Arc<FactPostingKey>, OrdSet<FactPosting>>::new();
-    for (key, ordinals) in &row.posting_ordinals {
+    crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
+    let id = projection.id;
+    admission.ordered_read(state.posting_bindings.len())?;
+    let Some(existing) = state.posting_bindings.get(&id) else {
+        return Err(CompanionPreflightStop::SelectedSourceMismatch);
+    };
+    if !Arc::ptr_eq(&existing.projection, projection) || !existing.settlements.contains(identity) {
+        return Err(CompanionPreflightStop::SelectedSourceMismatch);
+    }
+    let mut binding = (**existing).clone();
+    admission.index_remove::<Arc<RecordedSettlementIdentity>, ()>(binding.settlements.len())?;
+    binding.settlements.remove(identity);
+    if !binding.settlements.is_empty() {
+        admission.index_bytes(
+            index_capacity::arc_bytes::<PostingBindings>()
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        )?;
+        admission.index_edit::<u64, Arc<PostingBindings>>(state.posting_bindings.len())?;
+        state.posting_bindings.insert(id, Arc::new(binding));
+        return Ok(());
+    }
+    let mut map_edits = PreparedTreeEdits::<Arc<FactPostingKey>, OrdSet<u64>>::new();
+    for key in projection.ordinals.keys() {
         crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
-        admission.work(1)?;
         admission.key_read(key, state.postings.len())?;
-        let Some(mut postings) = state.postings.get(key).cloned() else {
-            continue;
+        let Some(mut groups) = state.postings.get(key).cloned() else {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
         };
-        let mut set_edits = PreparedTreeEdits::<FactPosting, ()>::new();
-        for ordinal in ordinals {
-            crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
-            let posting = FactPosting {
-                settlement: Arc::clone(identity),
-                ordinal: *ordinal,
-            };
-            admission.work(1)?;
-            set_edits.remove(postings.len(), admission)?;
-            if postings.remove(&posting).is_some() {
-                debit(&mut state.posting_count, 1)?;
-            }
+        let mut edits = PreparedTreeEdits::<u64, ()>::new();
+        edits.remove(groups.len(), admission)?;
+        if groups.remove(&id).is_none() {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
         }
-        if postings.is_empty() {
+        debit(&mut state.posting_count, 1)?;
+        if groups.is_empty() {
             map_edits.key_remove(key, state.postings.len(), admission)?;
             state.postings.remove(key);
-            let key_bytes = key
-                .owned_payload_capacity_bytes()
-                .and_then(|n| n.checked_add(index_capacity::arc_bytes::<FactPostingKey>()?))
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            debit(&mut state.key_payload_bytes, key_bytes)?;
-            // The removed bucket and its edited set are dropped here. Its old
-            // image remains owned by the predecessor; no new set survives.
+            debit(
+                &mut state.key_payload_bytes,
+                super::postings::key_payload_bytes(key)?,
+            )?;
         } else {
-            set_edits.retain(postings.len(), admission)?;
+            edits.retain(groups.len(), admission)?;
             map_edits.key_insert(key, state.postings.len(), admission)?;
-            state.postings.insert(Arc::clone(key), postings);
+            state.postings.insert(Arc::clone(key), groups);
         }
     }
-    map_edits.retain(state.postings.len(), admission)
+    map_edits.retain(state.postings.len(), admission)?;
+    admission.index_remove::<u64, Arc<PostingBindings>>(state.posting_bindings.len())?;
+    state.posting_bindings.remove(&id);
+    Ok(())
 }

@@ -14,15 +14,21 @@ use super::delivery;
 use super::fact_key::FactPostingKey;
 use super::index_capacity;
 use super::logical_marking::WorthQueryNativeMarkingWork;
-use super::mark_state::{
-    FactPosting, FullVerificationReason, MarkState, OutputFactCoverage, SettlementMarks,
-};
+use super::mark_state::{FullVerificationReason, MarkState, OutputFactCoverage, SettlementMarks};
 use super::output_facts::RegisteredOutputFacts;
 use super::source_alignment::{BranchMarkRoot, EqualOutputCurrentness, SnapshotAlignedMarkState};
 use super::InvalidationEditAdmission;
 
+mod posting_bindings;
+mod posting_continuation;
+mod posting_projection;
 mod posting_removal;
 mod postings;
+pub(super) use posting_bindings::PostingBindings;
+pub(in crate::domain_computation::primary_graph) use posting_continuation::{
+    PostingContinuation, PostingRebaseBasis,
+};
+pub(super) use posting_projection::{PostingComputationStorage, PostingProjection};
 
 pub(super) enum SettlementReadAlignment {
     Current,
@@ -59,6 +65,7 @@ pub(super) fn insert(
     image: &CompanionBranchImage<BranchMarkRoot>,
     alignment: SettlementReadAlignment,
     output_coverage: OutputFactCoverage,
+    resources: &crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), CompanionPreflightStop> {
     let AdmittedSettlementRegistration {
@@ -69,7 +76,7 @@ pub(super) fn insert(
         computation,
         work_membership,
         identity,
-        facts,
+        mut facts,
         output_facts,
         read_basis,
         stale_at_read_basis,
@@ -81,15 +88,48 @@ pub(super) fn insert(
         .and_then(|bytes| bytes.checked_add(read_basis.branch_id().0.capacity() as u64))
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     state.maximum_basis_allocation_bytes = state.maximum_basis_allocation_bytes.max(basis_bytes);
-    remove(state, identity, admission)?;
     let mut verification_requirement = requirement;
-    let prepared = postings::PreparedPostingOrdinals::prepare(
-        facts.postconditions(),
-        output_facts.as_ref().map(|set| set.facts.as_ref()),
-        &mut verification_requirement,
-        admission,
-    )?;
-    let (ordinals, posting_payload_bytes) = prepared.install(state, identity, admission)?;
+    let posting_continuation = facts.take_posting_continuation();
+    let projection = posting_continuation
+        .as_ref()
+        .map(|continuation| {
+            continuation.checked_projection(
+                state,
+                &facts,
+                output_facts.as_ref(),
+                &read_basis,
+                admission,
+            )
+        })
+        .transpose()?
+        .flatten();
+    // The continuation is checked before removal. Both edits remain in this
+    // unpublished candidate image; an admission stop publishes neither.
+    let projection = match projection {
+        Some(projection) => projection,
+        None => {
+            let prepared = postings::PreparedPostingOrdinals::prepare(
+                facts.postconditions(),
+                output_facts.as_ref().map(|set| set.facts.as_ref()),
+                &mut verification_requirement,
+                admission,
+            )?;
+            let id = state.next_posting_projection;
+            state.next_posting_projection = id
+                .checked_add(1)
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+            prepared.into_projection(
+                id,
+                facts.len(),
+                output_facts.as_ref().map_or(0, |set| set.facts.len()),
+                verification_requirement,
+                resources,
+                admission,
+            )?
+        }
+    };
+    remove(state, identity, admission)?;
+    posting_bindings::bind(state, &projection, identity, admission)?;
     // These source sets were already prepared before this edit's marker. They
     // now survive in the row; original facts/basis retain their separate ticket.
     let source_sets =
@@ -127,8 +167,7 @@ pub(super) fn insert(
         computation_frontier,
         work_membership,
         _fact_capacity: fact_capacity,
-        posting_payload_bytes,
-        posting_ordinals: ordinals,
+        posting_projection: projection,
         consumed_upstream: upstream,
         facts,
         output_facts,
@@ -142,10 +181,6 @@ pub(super) fn insert(
     };
     let replayed_stale = matches!(alignment, SettlementReadAlignment::Retained)
         && replay(&mut row, image.payload(), admission)?;
-    state.settlement_key_payload_bytes = state
-        .settlement_key_payload_bytes
-        .checked_add(posting_payload_bytes)
-        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     let aligned = SnapshotAlignedMarkState::observe_registration_image(image, &row.read_basis);
     for upstream in &row.consumed_upstream {
         admission.work(1)?;
@@ -249,8 +284,8 @@ fn replay(
         };
         for key in keys.iter() {
             admission.work(1)?;
-            admission.key_read(key, row.posting_ordinals.len())?;
-            let Some(ordinals) = row.posting_ordinals.get(key) else {
+            admission.key_read(key, row.posting_projection.ordinals.len())?;
+            let Some(ordinals) = row.posting_projection.ordinals.get(key) else {
                 continue;
             };
             for ordinal in ordinals {
@@ -276,7 +311,7 @@ pub(super) fn remove(
     let Some(row) = state.settlements.get(identity).cloned() else {
         return Ok(());
     };
-    posting_removal::remove(state, identity, &row, admission)?;
+    posting_removal::remove(state, identity, &row.posting_projection, admission)?;
     for upstream in &row.consumed_upstream {
         admission.work(1)?;
         admission.ordered_read(state.downstream.len())?;
@@ -301,10 +336,7 @@ pub(super) fn remove(
     )?;
     debit(&mut state.dirty_ordinal_count, row.dirty_ordinals.len())?;
     debit(&mut state.pending_edge_count, row.pending_upstream.len())?;
-    debit(
-        &mut state.settlement_key_payload_bytes,
-        row.posting_payload_bytes,
-    )?;
+
     admission.index_remove::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
         state.settlements.len(),
     )?;

@@ -82,8 +82,7 @@ pub(super) struct SettlementMarks {
     pub(super) computation_frontier: Option<OrdSet<usize>>,
     pub(super) work_membership: Option<Arc<RequiredWorkMembership>>,
     pub(super) _fact_capacity: Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>,
-    pub(super) posting_payload_bytes: u64,
-    pub(super) posting_ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
+    pub(super) posting_projection: Arc<super::settlement::PostingProjection>,
     pub(super) consumed_upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
     pub(super) facts: super::super::RetainedSourceFacts,
     pub(super) output_facts: Option<super::output_facts::RegisteredOutputFacts>,
@@ -137,7 +136,8 @@ pub(super) struct MarkState {
     pub(super) retained_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
     pub(super) posting_count: usize,
     pub(super) key_payload_bytes: u64,
-    pub(super) settlement_key_payload_bytes: u64,
+    pub(super) next_posting_projection: u64,
+    pub(super) posting_bindings: OrdMap<u64, Arc<super::settlement::PostingBindings>>,
     /// Whole-index upper bound for carried basis allocations. Registration's
     /// initial basis has its own fact ticket; a carried clone is index-owned.
     pub(super) maximum_basis_allocation_bytes: u64,
@@ -147,7 +147,7 @@ pub(super) struct MarkState {
     pub(super) pending_edge_count: usize,
     pub(super) delivery_epoch: DeliveryEpoch,
     pub(super) last_discontinuity: Option<FullVerificationReason>,
-    pub(super) postings: OrdMap<Arc<FactPostingKey>, OrdSet<FactPosting>>,
+    pub(super) postings: OrdMap<Arc<FactPostingKey>, OrdSet<u64>>,
     pub(super) settlements: OrdMap<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>,
     pub(super) downstream:
         OrdMap<Arc<RecordedSettlementIdentity>, OrdSet<Arc<RecordedSettlementIdentity>>>,
@@ -169,7 +169,8 @@ impl MarkState {
             retained_capacity: None,
             posting_count: 0,
             key_payload_bytes: 0,
-            settlement_key_payload_bytes: 0,
+            next_posting_projection: 0,
+            posting_bindings: OrdMap::new(),
             maximum_basis_allocation_bytes: 0,
             downstream_edge_count: 0,
             dirty_ordinal_count: 0,

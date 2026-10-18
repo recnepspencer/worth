@@ -200,6 +200,14 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn posting_continuation(
+        &self,
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation,
+    > {
+        self.observed_source_facts.posting_continuation()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn source_payload_bytes(&self) -> Option<u64> {
         self.observed_source_facts.payload_bytes()
     }

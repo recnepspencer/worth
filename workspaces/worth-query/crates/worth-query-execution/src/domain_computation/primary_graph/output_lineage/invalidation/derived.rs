@@ -327,6 +327,7 @@ impl SourceInvalidationOwner {
             &image,
             alignment,
             output_coverage,
+            &self.resources,
             admission,
         )?;
         if let Some(equality) = equality {

@@ -7,6 +7,14 @@ use crate::domain_computation::primary_graph::{
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder, ExecutionMemoryReservation};
 use worth_relational::facade::history::RelationalDescriptiveTouchGraph;
 
+/// Candidate-derived coverage and its allocation custody move together.
+pub(in crate::domain_computation::primary_graph) struct SelectedPostconditionRebase {
+    pub(in crate::domain_computation::primary_graph) ordinals: OrdSet<usize>,
+    pub(in crate::domain_computation::primary_graph) memory: Option<ExecutionMemoryReservation>,
+    pub(in crate::domain_computation::primary_graph) basis:
+        super::super::settlement::PostingRebaseBasis,
+}
+
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct PostconditionCarry {
     changes: ComputationChanges,
@@ -59,6 +67,18 @@ impl ComputationChanges {
     }
 }
 impl PostconditionCarry {
+    fn posting_basis(
+        &self,
+        selected: &OrdSet<usize>,
+    ) -> super::super::settlement::PostingRebaseBasis {
+        super::super::settlement::PostingRebaseBasis::from_carry(
+            Arc::clone(&self.changes.identity),
+            self.changes.postconditions.clone(),
+            self.changes.storage.clone(),
+            selected.clone(),
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn matches_publication_source(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -105,7 +125,7 @@ impl PostconditionCarry {
         count: usize,
         moved: &[usize],
         control: StorageControl<'_, '_>,
-    ) -> Result<Option<(OrdSet<usize>, Option<ExecutionMemoryReservation>)>, StoreDenial> {
+    ) -> Result<Option<SelectedPostconditionRebase>, StoreDenial> {
         let Some(touches) = touches.exact_touches() else {
             return Ok(None);
         };
@@ -124,7 +144,14 @@ impl PostconditionCarry {
             control.check_live()?;
             visit(touch, control, |key| {
                 maximum = maximum
-                    .checked_add(self.changes.postings.get(&key).map_or(0, OrdSet::len))
+                    .checked_add(
+                        self.changes
+                            .storage
+                            .projection
+                            .ordinals()
+                            .get(&key)
+                            .map_or(0, OrdSet::len),
+                    )
                     .ok_or(StoreDenial::Representability)?;
                 Ok(())
             })?;
@@ -154,7 +181,7 @@ impl PostconditionCarry {
         }
         for touch in touches {
             visit(touch, control, |key| {
-                if let Some(ordinals) = self.changes.postings.get(&key) {
+                if let Some(ordinals) = self.changes.storage.projection.ordinals().get(&key) {
                     for &ordinal in ordinals {
                         control.check_live()?;
                         if ordinal < self.prefix {
@@ -165,7 +192,12 @@ impl PostconditionCarry {
                 Ok(())
             })?;
         }
-        Ok(Some((selected, memory)))
+        let basis = self.posting_basis(&selected);
+        Ok(Some(SelectedPostconditionRebase {
+            ordinals: selected,
+            memory,
+            basis,
+        }))
     }
 }
 fn visit(
