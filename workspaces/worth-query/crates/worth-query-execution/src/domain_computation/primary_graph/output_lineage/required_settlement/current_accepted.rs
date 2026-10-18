@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::{
     SourceInvalidationOwner,
 };
 
+mod consumer_identity;
 mod consumption;
 mod decision_input;
 #[cfg(test)]
@@ -98,20 +99,6 @@ pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedStop {
 }
 
 impl AcceptedCurrentCandidate {
-    pub(in crate::domain_computation::primary_graph) fn retain_recorded_identity(
-        &self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<
-        std::sync::Arc<super::super::RecordedSettlementIdentity>,
-        worth_relational::facade::mvcc::CompanionPreflightStop,
-    > {
-        admission.charge_external_work(
-            (std::mem::size_of::<std::sync::Arc<super::super::RecordedSettlementIdentity>>() + 1)
-                as u64,
-        )?;
-        Ok(std::sync::Arc::clone(self.selected.settlement_identity()))
-    }
-
     /// A changed Native correspondence cannot support this consumer's cutoff.
     /// Check it before retaining or re-verifying a successor that must run Fresh.
     pub(in crate::domain_computation::primary_graph) fn matches_consumed_output(

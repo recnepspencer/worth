@@ -195,7 +195,16 @@ impl DemandRegistryState {
                     .state()
                     .records
                     .get(&key)
-                    .is_some_and(|record| record.framework_required_count != 0)
+                    .is_some_and(|record| {
+                        let claimed = record.framework_required_count != 0;
+                        if !claimed {
+                            crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
+                                crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::CachedReclamation,
+                                record.settlements.len(), record.prerequisites.len(),
+                            );
+                        }
+                        claimed
+                    })
                 {
                     return Ok(false);
                 }

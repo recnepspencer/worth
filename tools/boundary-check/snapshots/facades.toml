@@ -880,6 +880,8 @@ exports = [
     "WorthQueryRecoveryReconcileAdmission",
     "WorthQueryRecoverySafeRetryAdmission",
     "WorthQueryRecoverySafeRetryDenial",
+    "WorthQueryRegistryCustodyForTest",
+    "WorthQueryRegistryCustodyTransitionForTest",
     "WorthQueryRequestedElevation",
     "WorthQueryRequiredOutputConnectionDenial",
     "WorthQueryRequiredOutputSourcePreparationFailure",

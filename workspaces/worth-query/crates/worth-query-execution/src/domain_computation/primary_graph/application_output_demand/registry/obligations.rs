@@ -148,6 +148,10 @@ impl DemandRegistryState {
         let prior = std::mem::take(&mut record.prerequisites);
         let checkpoint = record.checkpoint_prerequisites.take();
         let settlements = std::mem::take(&mut record.settlements);
+        crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
+            crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::PostingRelease,
+            settlements.len(), prior.len(),
+        );
         record.finish();
         let mut refund = settlements
             .capacity()
@@ -229,6 +233,10 @@ impl DemandRegistryState {
             }
         }
         for settled in &settlements {
+            crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
+                crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::PostingRelease,
+                settled.len(), 0,
+            );
             self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(
                 settled.capacity()
                     * std::mem::size_of::<(Arc<RecordedSettlementIdentity>, usize)>(),

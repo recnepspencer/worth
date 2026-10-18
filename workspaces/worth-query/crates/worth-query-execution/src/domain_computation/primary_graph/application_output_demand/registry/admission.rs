@@ -16,6 +16,7 @@ mod occurrence_notes;
 mod performed;
 mod semantic_join;
 pub(super) use semantic_join::{accepts_semantic_join, newest_semantic_key};
+mod cached_ready;
 mod selected_output;
 pub(super) use obligation_capacity::performed_obligation_capacity_denial;
 pub(in crate::domain_computation::primary_graph) use selected_output::SelectedOutputAdmission;
@@ -170,8 +171,19 @@ impl WorthQueryOutputDemandRegistry {
             Some(key)
         } else if let Some(key) = matching_delivery {
             Some(key)
+        } else if successor_of.is_none() && admission_kind != DemandAdmissionKind::Recovery {
+            // Schedule the real cached predecessor before replacing it. Ready
+            // certification still decides currentness; its existing refresh
+            // owns the accepted authority and consumed-output handoff.
+            cached_ready::predecessor(
+                &state,
+                &requested_key,
+                source_scope,
+                product_occurrence,
+                admission,
+            )?
         } else {
-            matching_delivery
+            None
         };
         let existing_record = existing_key.is_some();
         let key = existing_key

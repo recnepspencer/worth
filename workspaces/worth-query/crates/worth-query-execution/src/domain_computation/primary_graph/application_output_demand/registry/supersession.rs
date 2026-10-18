@@ -53,6 +53,10 @@ pub(super) fn supersede_predecessors(
                 && key.replacement_order(successor) == Some(std::cmp::Ordering::Less)
             {
                 let mut record = state.records.get_mut(key).expect("occurrence key exists");
+                crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
+                    crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::AdmissionSupersession,
+                    record.settlements.len(), record.prerequisites.len(),
+                );
                 let denial = superseded_denial(&key.producer);
                 match &mut record.state {
                     DemandState::Output(output) => output.stop(denial),
