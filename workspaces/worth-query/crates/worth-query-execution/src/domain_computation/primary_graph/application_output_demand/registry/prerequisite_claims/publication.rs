@@ -76,6 +76,10 @@ impl PreparedPrerequisiteClaims {
         record
             .settlements
             .push((Arc::clone(&identity), self.context.retained_bytes()));
+        crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
+            crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::SettlementPublished,
+            record.settlements.len(), self.predecessors.len(),
+        );
         if let Some(batch) = &self.claim_batch {
             batch.publish();
         }

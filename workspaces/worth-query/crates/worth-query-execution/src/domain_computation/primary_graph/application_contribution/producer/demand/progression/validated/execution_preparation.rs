@@ -71,6 +71,25 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 )
                 .map(ExecutionPreparation::Reached);
         }
+        if !schedule_progression.is_selected()
+            && self.released_predecessor_needs_source(
+                demand,
+                disclosed_source,
+                request_admission,
+            )?
+        {
+            self.refresh_output_demand(
+                &execution,
+                demand,
+                disclosed_value,
+                disclosed_source.clone(),
+                None,
+                request_admission,
+            )?;
+            return Ok(ExecutionPreparation::Reached(OwnStages::Refreshed(
+                disclosure,
+            )));
+        }
         if schedule_progression.is_selected() {
             // Validate the immutable selected input before changing registry state.
             entry::validate_progression_resources(

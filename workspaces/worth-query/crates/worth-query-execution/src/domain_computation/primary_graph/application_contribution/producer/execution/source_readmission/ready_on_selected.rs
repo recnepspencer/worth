@@ -259,8 +259,15 @@ where
                     CurrentAcceptedResult::PendingUnresolved =>
                         Ok(ReadyInspection::PendingUnresolved.into()),
                     CurrentAcceptedResult::NeedsDisclosure => {
+                        let matched = if candidate.consumes_outputs() {
+                            let consumer = candidate.retain_recorded_identity(admission)
+                                .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
+                            Some(MatchedRequiredPredecessors::retain_consumer(
+                                &runtime.output_demands, &consumer, positioned, admission,
+                            ).map_err(ProducerExecutionStop::ExecutionStopped)?)
+                        } else { None };
                         drop(sealed);
-                        on_disclosure(permission, None, admission)
+                        on_disclosure(permission, matched, admission)
                     }
                 }
             },

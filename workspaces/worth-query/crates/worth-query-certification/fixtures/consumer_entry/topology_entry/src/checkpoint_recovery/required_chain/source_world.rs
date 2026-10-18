@@ -6,7 +6,9 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphBootstrap,
 };
 
-pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
+pub(super) fn seed<Schema: TopologySchemaBinding>(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+) {
     for (name, x, y) in [
         ("a", 1, 1),
         ("b", 10, 15),
@@ -17,14 +19,11 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>
         let key = format!("anchor-{name}");
         graph
             .bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Body::reference::<CheckpointSchema>(),
-                    entity_key(&key),
-                )
-                .field(BodyKey::reference::<CheckpointSchema>(), key)
-                .field(Length::reference::<CheckpointSchema>(), length(y + 1))
-                .field(PositionX::reference::<CheckpointSchema>(), length(x))
-                .field(PositionY::reference::<CheckpointSchema>(), length(y)),
+                WorthQueryApplicationEntitySeed::new(Body::reference::<Schema>(), entity_key(&key))
+                    .field(BodyKey::reference::<Schema>(), key)
+                    .field(Length::reference::<Schema>(), length(y + 1))
+                    .field(PositionX::reference::<Schema>(), length(x))
+                    .field(PositionY::reference::<Schema>(), length(y)),
             )
             .unwrap();
     }
@@ -40,7 +39,7 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>
     ] {
         graph
             .bind_relation(WorthQueryApplicationRelationSeed::new(
-                PlanarSuccessor::reference::<CheckpointSchema>(),
+                PlanarSuccessor::reference::<Schema>(),
                 format!("anchor-{from}-to-{to}"),
                 entity_key(&format!("anchor-{from}")),
                 entity_key(&format!("anchor-{to}")),
@@ -49,6 +48,8 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>
     }
 }
 
-fn entity_key(key: &str) -> WorthQueryApplicationEntityKey<CheckpointSchema, Body> {
+fn entity_key<Schema: TopologySchemaBinding>(
+    key: &str,
+) -> WorthQueryApplicationEntityKey<Schema, Body> {
     WorthQueryApplicationEntityKey::new(key.to_owned()).unwrap()
 }

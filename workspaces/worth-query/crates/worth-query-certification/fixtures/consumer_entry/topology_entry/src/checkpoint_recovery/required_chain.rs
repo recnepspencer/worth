@@ -8,6 +8,7 @@ use worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_t
 
 mod binding;
 mod contact_readings;
+mod custody_source;
 mod diamond;
 mod exact_invalidation;
 mod mixed_mode;
@@ -55,14 +56,16 @@ pub(crate) fn declare<Schema: TopologySchemaBinding>(
         Schema,
     >,
 ) -> worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema> {
-    binding::declare(schema)
+    custody_source::declare(binding::declare(schema))
 }
 
 pub(crate) fn contracts<Schema: TopologySchemaBinding>(
     contracts: &mut worth_query_host::facade::application_contribution::WorthQueryApplicationContributionContracts<Schema>,
 ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
     contracts.producer::<ChainProducer<Schema>>()?;
+    custody_source::contracts(contracts)?;
     contracts.conditional::<readiness::ChainReadiness<Schema>>()?;
+
     Ok(())
 }
 
@@ -71,7 +74,10 @@ pub(crate) fn configure<Schema: TopologySchemaBinding>(
     uniform_decimal_key_width: bool,
 ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
     setup.handler::<ChainBinding<Schema>, _>(ChainHandler)?;
+    custody_source::configure(setup)?;
+
     setup.producer::<ChainProducer<Schema>>(ChainProvider::new(uniform_decimal_key_width))?;
+
     setup.conditional::<readiness::ChainReadiness<Schema>>(())
 }
 
