@@ -82,11 +82,10 @@ impl<Schema, Operation, Input, Scope>
         control
             .check_live()
             .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
-        self.output_currentness_facts = Some(complete_content_currentness_facts(
-            dependency_facts,
-            moved,
-            content.reusable(),
-        ));
+        self.output_currentness_facts = Some(
+            complete_content_currentness_facts(dependency_facts, moved, content.reusable())
+                .with_rebase_carry(self.read_set.postcondition_carry.clone()),
+        );
         self.read_set
             .admission
             .retain_execution_canonical_work(cold_work.combine(normalization_work).combine(work));

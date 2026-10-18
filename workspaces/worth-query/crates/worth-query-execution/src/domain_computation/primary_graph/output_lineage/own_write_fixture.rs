@@ -282,10 +282,11 @@ fn commit_own_write(
         .observe_completed_application(receipt.commit_reference())
         .unwrap();
     assert!(
-        !completed
+        completed
             .commit_evidence()
             .source_facts_superseded_by_own_effect()
-            .is_empty(),
+            .next()
+            .is_some(),
         "the actual commit carries the computation's own-write staleness"
     );
     test(&world, receipt, cell, resources);

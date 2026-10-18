@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::{
 pub(in crate::domain_computation::primary_graph) struct RetainedSourceFacts {
     source: ComputationSourceEvidence,
     facts: FactPayload,
+    payload_bytes: Option<u64>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct ComparableSourceFacts {
@@ -26,7 +27,15 @@ impl RetainedSourceFacts {
         Self {
             source,
             facts: facts.into(),
+            payload_bytes: None,
         }
+    }
+    pub(super) fn with_payload_bytes(mut self, bytes: Option<u64>) -> Self {
+        self.payload_bytes = bytes;
+        self
+    }
+    pub(super) fn cached_payload_bytes(&self) -> Option<u64> {
+        self.payload_bytes
     }
     pub(in crate::domain_computation::primary_graph) fn for_comparison(
         &self,

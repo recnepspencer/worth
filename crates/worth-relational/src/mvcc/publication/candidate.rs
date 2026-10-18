@@ -55,6 +55,23 @@ pub(crate) enum PreparedRelationalCandidateAdmissionStop {
 }
 
 impl PreparedRelationalCommitCandidate {
+    /// Borrows the exact, already-prepared touch graph without copying it.
+    /// The callback must not reenter this candidate. Consumed or revoked
+    /// candidates return `None`, distinct from an available exact-empty graph.
+    /// The graph describes this candidate; it grants no source currentness.
+    pub fn with_prepared_descriptive_touches<T>(
+        &self,
+        visit: impl FnOnce(&crate::history::data::RelationalDescriptiveTouchGraph) -> T,
+    ) -> Option<T> {
+        let payload = self
+            ._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        payload
+            .as_ref()
+            .map(|payload| visit(payload.execution.descriptive_touches()))
+    }
+
     /// Borrows the exact records already prepared for publication. The callback
     /// must not reenter this candidate. Consumed or revoked candidates have no
     /// prepared records; the callback is not invoked in that state.

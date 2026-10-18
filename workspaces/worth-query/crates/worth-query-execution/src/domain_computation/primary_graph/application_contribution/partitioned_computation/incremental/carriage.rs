@@ -47,16 +47,18 @@ impl ComputationPrior {
         }
         Ok(())
     }
-    pub(in crate::domain_computation::primary_graph) fn changed_ordinals(
+    pub(in crate::domain_computation::primary_graph) fn changes_at_snapshot(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Option<&im::OrdSet<usize>> {
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
+    > {
         let changes = self.changes.as_ref()?;
         if !self.record.as_ref()?.matches_changes(changes) {
             return None;
         }
-        changes.at_snapshot(runtime, snapshot)
+        changes.for_snapshot(runtime, snapshot)
     }
     /// The record the state was selected from.
     pub(in crate::domain_computation::primary_graph) fn into_record(

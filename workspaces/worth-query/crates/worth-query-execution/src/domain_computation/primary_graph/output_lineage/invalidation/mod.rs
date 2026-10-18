@@ -5,6 +5,7 @@ mod admission;
 mod canonical_binding_order;
 mod commit_touches;
 mod computation_changes;
+pub(in crate::domain_computation::primary_graph) use computation_changes::PostconditionCarry;
 pub(in crate::domain_computation::primary_graph) use computation_changes::{
     ComputationChanges, ComputationRegistration,
 };
@@ -73,7 +74,7 @@ pub(in crate::domain_computation::primary_graph) use edit_admission::{
 };
 pub(in crate::domain_computation::primary_graph::output_lineage) use fact_retention::arc_slice_bytes;
 
-pub(in crate::domain_computation::primary_graph::output_lineage) fn retained_fact_payload_bytes(
+pub(in crate::domain_computation::primary_graph) fn retained_fact_payload_bytes(
     fact: &crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<u64, worth_relational::facade::mvcc::CompanionPreflightStop> {

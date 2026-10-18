@@ -136,6 +136,19 @@ impl ComputationFactAttribution {
 }
 
 impl NativeReadRefresh {
+    pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn postcondition_carry(&self, changed: &im::OrdSet<usize>, snapshot: &SnapshotHandle, control: StorageControl<'_, '_>) -> Result<Option<crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry>, StoreDenial>{
+        let Some(changes) = self._custody.rebase_changes() else {
+            observation::native_completion_decline("postcondition-custody");
+            return Ok(None);
+        };
+        changes.carry(
+            &self.prior.original,
+            self.layout.decision_count,
+            changed,
+            snapshot,
+            control,
+        )
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn position(
         &self,
         key: &WorthQueryApplicationFactKey,

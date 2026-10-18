@@ -7,6 +7,7 @@ mod concatenation;
 mod iteration;
 mod native;
 mod patch;
+pub(in crate::domain_computation::primary_graph) use patch::NativeFactPatchBuilder;
 mod sequence;
 #[cfg(test)]
 mod tests;

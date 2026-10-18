@@ -16,9 +16,26 @@ use super::super::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
     facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     moved_by_own_effect: std::sync::Arc<[usize]>,
+    carry: Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
+    >,
 }
 
 impl OutputCurrentnessFacts {
+    pub(in crate::domain_computation::primary_graph) fn rebase_carry(
+        &self,
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
+    > {
+        self.carry.clone()
+    }
+    pub(super) fn with_rebase_carry(
+        mut self,
+        carry: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry>,
+    ) -> Self {
+        self.carry = carry;
+        self
+    }
     pub(in crate::domain_computation::primary_graph) const fn facts(
         &self,
     ) -> &crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
@@ -37,6 +54,7 @@ impl From<std::sync::Arc<[WorthQueryApplicationObservedFact]>> for OutputCurrent
     fn from(facts: std::sync::Arc<[WorthQueryApplicationObservedFact]>) -> Self {
         Self {
             facts: facts.into(),
+            carry: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -52,6 +70,7 @@ impl From<crate::domain_computation::primary_graph::output_lineage::ComparableSo
     ) -> Self {
         Self {
             facts: facts.facts().clone(),
+            carry: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -65,11 +84,13 @@ pub(super) fn complete_content_currentness_facts(
     if reusable {
         OutputCurrentnessFacts {
             facts,
+            carry: None,
             moved_by_own_effect: moved.into(),
         }
     } else {
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
+            carry: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -83,6 +104,7 @@ pub(super) fn complete_output_currentness_facts(
     if facts.iter().all(is_output_currentness_fact) {
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from(facts).into(),
+            carry: None,
             moved_by_own_effect: moved_by_own_effect.into(),
         }
     } else {
@@ -91,6 +113,7 @@ pub(super) fn complete_output_currentness_facts(
         // dependency digest still governs idempotency separately.
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
+            carry: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }

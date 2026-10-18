@@ -38,6 +38,12 @@ pub(crate) struct PreparedIndexRefreshBasis {
 }
 
 impl PreparedRelationalPublication {
+    pub(crate) fn descriptive_touches(
+        &self,
+    ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
+        self.publication.envelope.descriptive_touches()
+    }
+
     pub(crate) fn root(&self) -> &Arc<crate::branch::RelationalBranchRoot> {
         &self.publication.root
     }

@@ -5,9 +5,12 @@ use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFact
 
 use super::super::{DirtyReverification, InvalidationEditAdmission, SettlementVerificationStop};
 use super::*;
+#[path = "dirty_clearance_funding.rs"]
+mod funding;
 use crate::domain_computation::primary_graph::tests::fixture::{
     AccountBlocked, PrincipalIdentityField,
 };
+use funding::assert_carriage_funding;
 use worth_relational::facade::{
     identity::PartitionId,
     mvcc::{CompanionPreflightBudget, CompanionPreflightStop},
@@ -276,6 +279,31 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                 let changes = owner.computation_changes(runtime, &latest_handle, &identity, &tracked_facts, &mut owner.edit_admission()).unwrap().expect("ordinary clear preserves original computation frontier");
                 assert_eq!(changes.at_snapshot(runtime, &latest_handle).unwrap().iter().copied().collect::<Vec<_>>(), [0]);
                 assert!(changes.at_snapshot(runtime, &basis_handle).is_none(), "later evidence cannot bless an earlier source snapshot");
+                let original = tracked_facts.for_comparison().unwrap().facts().clone();
+                let changes = changes.bind_original(original.clone());
+                let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(request_execution.allocation_policy(), None);
+                let carry = changes.carry(&original, 1, &OrdSet::new(), &latest_handle, control).unwrap().unwrap();
+                let empty = worth_relational::facade::history::RelationalDescriptiveTouchGraph::Exact(Vec::new());
+                let (selected, _) = carry.select(&empty, 1, &[], control).unwrap().unwrap();
+                assert_eq!(selected.iter().copied().collect::<Vec<_>>(), [0], "ABA frontier survives zero fresh calls and exact-empty candidate touches");
+                assert!(carry.select(&worth_relational::facade::history::RelationalDescriptiveTouchGraph::Unavailable, 1, &[], control).unwrap().is_none(), "unavailable is never exact empty");
+                let foreign = Arc::<[WorthQueryApplicationObservedFact]>::from(original.iter().cloned().collect::<Vec<_>>()).into();
+                assert!(changes.carry(&foreign, 1, &OrdSet::new(), &latest_handle, control).unwrap().is_none(), "equal data cannot substitute original backing");
+                assert!(changes.carry(&original, 1, &OrdSet::new(), &basis_handle, control).unwrap().is_none(), "original body does not substitute the selected native pin");
+                assert_carriage_funding(owner, &latest, &changes, &original, &latest_handle);
+                let (reader_handle, reader_position) = snapshot(runtime);
+                assert_ne!(reader_handle, latest_handle, "a new reader owns a new native pin");
+                assert_eq!(reader_position, latest);
+                assert!(changes.carry(&original, 1, &OrdSet::new(), &reader_handle, control).unwrap().is_none(), "raw cutoff custody cannot substitute the reader pin");
+                let reader_changes = changes.for_snapshot(runtime, &reader_handle).unwrap();
+                assert_eq!(reader_changes.ordinals(), changes.ordinals());
+                assert!(reader_changes.matches_publication_source(runtime, &reader_handle, &mut owner.edit_admission()).unwrap());
+                assert!(!reader_changes.matches_publication_source(runtime, &basis_handle, &mut owner.edit_admission()).unwrap(), "provider readmission cannot carry revisions across a different native position");
+                let mut no_work = InvalidationEditAdmission::new(CompanionPreflightBudget { maximum_work_visits: 0, maximum_preparation_bytes: 64 * 1024 });
+                assert!(matches!(reader_changes.matches_publication_source(runtime, &reader_handle, &mut no_work), Err(CompanionPreflightStop::WorkExhausted { .. })), "the real publication source check cannot skip native admission");
+                assert!(reader_changes.carry(&original, 1, &OrdSet::new(), &reader_handle, control).unwrap().is_some(), "the marking owner's actual position validation carries exact reader custody");
+                assert!(changes.for_snapshot(runtime, &basis_handle).is_none());
+                runtime.snapshots().release_snapshot(&reader_handle).unwrap();
                 let old = owner.computation_changes(runtime, &basis_handle, &identity, &tracked_facts, &mut owner.edit_admission()).unwrap().unwrap();
                 assert!(old.at_snapshot(runtime, &basis_handle).unwrap().is_empty(), "historical native frontier stays immutable");
                 let different_backing = RetainedSourceFacts::for_test(false, Arc::from([]));

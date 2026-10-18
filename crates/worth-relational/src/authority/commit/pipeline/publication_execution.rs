@@ -294,6 +294,12 @@ impl PreparedCommitPublicationCompletion {
 }
 
 impl PreparedCommitPublicationExecution {
+    pub(crate) fn descriptive_touches(
+        &self,
+    ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
+        self.publication.descriptive_touches()
+    }
+
     pub(crate) fn changed_record_count(&self) -> usize {
         self.publication.changed_record_count()
     }

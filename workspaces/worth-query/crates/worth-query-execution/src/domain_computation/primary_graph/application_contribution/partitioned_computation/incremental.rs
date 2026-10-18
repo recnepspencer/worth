@@ -137,6 +137,9 @@ pub(super) struct IncrementalRun<Key, Item, Reduced> {
     marked: BTreeSet<PartitionIdentity>,
     calls: Arc<crate::domain_computation::primary_graph::application_attempt::ComputationFactIndex>,
     validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
+    rebase_changes: Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
+    >,
 }
 
 /// Compares the state the producer handed the reader with this attempt's
@@ -189,6 +192,7 @@ where
         return full(basis, WorthQueryPartitionedComputationFullCause::Unretained);
     }
     let changes = reader.computation_changes(&COMPARATOR, &prior);
+    let rebase_changes = changes.clone();
     let retained = match prior.retained {
         Ok(retained) => retained,
         Err(cause) => return full(basis, cause),
@@ -216,6 +220,7 @@ where
         moved_items: BTreeSet::new(),
         marked: BTreeSet::new(),
         calls: retained.facts.call_index(),
+        rebase_changes,
         validated_at: changes
             .as_ref()
             .map(|_| reader.computation_snapshot(&COMPARATOR)),
@@ -227,7 +232,7 @@ where
         .flatten();
     let dirty = changes
         .iter()
-        .flat_map(|ordinals| ordinals.iter())
+        .flat_map(|changes| changes.ordinals().iter())
         .filter_map(|ordinal| retained.facts.at_ordinal(*ordinal));
     for (key, fact, readers) in all.chain(dirty) {
         super::super::super::fact_verification_observation::retained_computation();

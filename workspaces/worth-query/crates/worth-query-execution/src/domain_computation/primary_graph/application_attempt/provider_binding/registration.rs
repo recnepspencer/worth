@@ -106,28 +106,17 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             );
         }
     };
-    let (source_facts, moved_by_own_effect) = match &output_currentness_facts {
-        Some(facts) => (
-            facts.facts().iter().cloned().collect(),
-            facts.moved_by_own_effect(),
-        ),
-        None => (
-            decision_facts
-                .facts()
-                .values()
-                .filter_map(|fact| fact.observed_source_fact().cloned())
-                .collect(),
-            std::sync::Arc::from([]),
-        ),
-    };
-    // Preserve producer source order or authorization-merged decision fact order.
-    // Temporary Vec/other nested heaps remain separately uncharged.
     let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
-    let source_fact_rebase = match crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
-        source_facts,
-        moved_by_own_effect,
-        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request())),
-    ) {
+    let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request()));
+    let source_fact_rebase = match match &output_currentness_facts {
+        Some(facts) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_output(
+            facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(), control,
+        ),
+        None => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
+            decision_facts.facts().values().filter_map(|fact| fact.observed_source_fact().cloned()).collect(),
+            std::sync::Arc::from([]), control,
+        ),
+    } {
         Ok(prepared) => prepared,
         Err(denial) => {
             let _ = staged.abort();

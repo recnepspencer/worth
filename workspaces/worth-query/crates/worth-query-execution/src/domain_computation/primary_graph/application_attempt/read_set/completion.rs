@@ -203,6 +203,7 @@ impl<Schema, Operation, Input, Scope, Phase>
             retained,
         );
         Ok(WorthQueryCompleteApplicationReadSet {
+            postcondition_carry: None,
             admission: self.admission,
             lease: self.lease,
             installed_read_scopes,

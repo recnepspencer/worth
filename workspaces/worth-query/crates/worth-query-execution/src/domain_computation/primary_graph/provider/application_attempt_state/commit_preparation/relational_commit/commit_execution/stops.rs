@@ -224,3 +224,61 @@ fn publication_failure(
 mod leased_requests;
 #[cfg(test)]
 mod tests;
+
+pub(super) fn source_rebase_preparation_stop(
+    cause: super::super::PreparedRebaseDenial,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use super::super::PreparedRebaseDenial as Denial;
+    use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+    use crate::domain_computation::{
+        WorthQueryProviderSessionCommitControlStopped as Control,
+        WorthQueryProviderSessionCommitStop as Stop,
+        WorthQueryProviderSessionControlStopKind as Kind,
+    };
+    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interrupted;
+    if let Denial::Admission(stop) = &cause {
+        if let worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) = stop {
+            return relational_execution_stop(*cause, None);
+        }
+        if let worth_relational::facade::mvcc::CompanionPreflightStop::Interrupted(event) = stop {
+            return Stop::ControlStopped(interruption_control_stopped(*event));
+        }
+        return Stop::Deferred(crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
+            crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::RelationalDeferred(
+                worth_relational::facade::mvcc::RelationalPublicationDeferred::CompanionPreflight(*stop)),
+            "source rebase selection refused before publication"));
+    }
+    if let Denial::Retention(StoreDenial::RequestInterruption(interruption)) = &cause {
+        return Stop::ControlStopped(Control::new(
+            match interruption {
+                Interrupted::Cancelled => Kind::Cancelled,
+                Interrupted::DeadlineExceeded => Kind::TimedOut,
+            },
+            "source rebase preparation interrupted",
+        ));
+    }
+    if let Denial::Retention(StoreDenial::Allocation(allocation)) = cause {
+        use worth_execution::{
+            ExecutionAllocationDenialClass as Class, MapKernelStop as Kernel,
+            WorkCeilingDenial as Work,
+        };
+        if let Class::Request(Work::Stopped(stop @ (Kernel::Cancelled | Kernel::DeadlineElapsed))) =
+            allocation.classify()
+        {
+            return Stop::ControlStopped(Control::new(
+                if stop == Kernel::Cancelled {
+                    Kind::Cancelled
+                } else {
+                    Kind::TimedOut
+                },
+                "source rebase preparation interrupted",
+            ));
+        }
+        return Stop::PreEffectDenied(WorthQueryProviderSessionFailure::allocation_denied(
+            allocation,
+        ));
+    }
+    Stop::PreEffectDenied(failure(
+        "source rebase preparation refused before publication",
+    ))
+}

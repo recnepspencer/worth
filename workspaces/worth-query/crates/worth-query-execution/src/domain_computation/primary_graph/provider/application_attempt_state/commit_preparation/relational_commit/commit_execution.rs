@@ -140,6 +140,9 @@ pub(super) fn commit(
         &mut publication_admission,
         allocation_policy,
     )?;
+    let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(), &mut publication_admission,
+        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, Some(attempt.affinity().publication_request())),
+    )).map_err(stops::source_rebase_preparation_stop)?;
     let ordinary_index_budget =
         crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
     #[cfg(test)]

@@ -86,6 +86,12 @@ pub struct WorthQueryFactVerificationForTest {
     /// Postcommit capacity and endpoint preparation walks over source facts.
     /// A fact walked in both passes counts twice.
     pub rebase_preparation_visits: u64,
+    pub provider_application_fact_visits: u64,
+    pub effect_index_fact_visits: u64,
+    pub posting_fact_visits: u64,
+    pub posting_registration_visits: u64,
+    pub retained_fact_size_visits: u64,
+    pub rebase_touch_key_visits: u64,
     /// Postcommit resolution walk, before skipping facts after a failure.
     pub rebase_resolution_visits: u64,
     /// Unanswered source-fact classification, including short-circuit prefixes.
@@ -125,6 +131,7 @@ thread_local! {
         carried_call_records: 0, fresh_read_key_records: 0, handler_read_key_records: 0, carried_key_expansion_visits: 0, fallback_carried_metadata_visits: 0,
         completion_call_roster_visits: 0, completion_fresh_key_visits: 0, native_completion_last_decline: None,
         source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,
+        provider_application_fact_visits: 0, effect_index_fact_visits: 0, posting_fact_visits: 0, posting_registration_visits: 0, retained_fact_size_visits: 0, rebase_touch_key_visits: 0,
         rebase_preparation_visits: 0, rebase_resolution_visits: 0, rebase_unanswered_visits: 0,
         value_comparison_visits: 0, retained_bound_visits: 0,
         retained_computation_visits: 0, retained_native_visits: 0, carried_seal_visits: 0,
@@ -329,4 +336,24 @@ pub(super) fn content_pair() {
 
 pub(super) fn content_field_index() {
     record(|observed| add(&mut observed.content_field_index_visits, 1));
+}
+
+pub(super) fn provider_application_fact() {
+    record(|observed| add(&mut observed.provider_application_fact_visits, 1));
+}
+pub(super) fn effect_index_fact() {
+    record(|observed| add(&mut observed.effect_index_fact_visits, 1));
+}
+pub(super) fn posting_fact() {
+    record(|observed| add(&mut observed.posting_fact_visits, 1));
+}
+pub(super) fn retained_fact_size() {
+    record(|observed| add(&mut observed.retained_fact_size_visits, 1));
+}
+pub(super) fn rebase_touch_key() {
+    record(|observed| add(&mut observed.rebase_touch_key_visits, 1));
+}
+
+pub(super) fn posting_registration() {
+    record(|observed| add(&mut observed.posting_registration_visits, 1));
 }

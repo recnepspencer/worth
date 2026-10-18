@@ -44,6 +44,7 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
             selections: BTreeMap::new(),
         };
         for (position, fact) in facts.iter().enumerate() {
+            crate::domain_computation::primary_graph::fact_verification_observation::effect_index_fact();
             match fact {
                 WorthQueryApplicationObservedFact::Entity { entity_id, .. } => {
                     index.entities.entry(*entity_id).or_insert(position);

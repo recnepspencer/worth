@@ -115,6 +115,9 @@ impl<Schema, Operation, Input, Scope, Phase>
                 worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
             ),
         };
+        let postcondition_carry = refresh
+            .postcondition_carry(&changed, self.lease.snapshot(), control)
+            .map_err(|cause| cause.into_attempt_denial(operation))?;
         let (metadata, installed_read_scopes, computation_fact_ordinals, decision_count) =
             refresh.finish(facts.clone(), content.clone());
         check_request_live(self.admission.publication_request(), operation)?;
@@ -135,6 +138,7 @@ impl<Schema, Operation, Input, Scope, Phase>
         );
         self.admission.retain_execution_canonical_work(content_work);
         Ok(WorthQueryCompleteApplicationReadSet {
+            postcondition_carry,
             admission: self.admission,
             lease: self.lease,
             installed_read_scopes,

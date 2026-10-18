@@ -79,6 +79,7 @@ impl PreparedPostingOrdinals {
             u64::try_from(fact_count).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
         )?;
         for fact in facts.iter().chain(output_facts.into_iter().flatten()) {
+            crate::domain_computation::primary_graph::fact_verification_observation::posting_fact();
             maximum = maximum
                 .checked_add(
                     maximum_keys(fact)
@@ -100,6 +101,7 @@ impl PreparedPostingOrdinals {
         let meter = RefCell::new(admission);
         let output = output_facts.into_iter().flatten();
         for (ordinal, fact) in facts.iter().chain(output).enumerate() {
+            crate::domain_computation::primary_graph::fact_verification_observation::posting_fact();
             meter.borrow_mut().work(1)?;
             let result = fact_keys::visit(
                 fact,
@@ -195,6 +197,7 @@ impl PreparedPostingOrdinals {
         } = self;
         let mut map_edits = PreparedTreeEdits::<Arc<FactPostingKey>, OrdSet<FactPosting>>::new();
         for (key, own) in &ordinals {
+            crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
             admission.work(1)?;
             admission.key_read(key, state.postings.len())?;
             let (stored, mut postings, new_key) = match state.postings.get_key_value(key) {
@@ -205,6 +208,7 @@ impl PreparedPostingOrdinals {
             let mut changed = false;
             let mut set_edits = PreparedTreeEdits::<FactPosting, ()>::new();
             for ordinal in own {
+                crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
                 admission.work(1)?;
                 let posting = FactPosting {
                     settlement: Arc::clone(identity),
