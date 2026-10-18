@@ -56,6 +56,8 @@ fn accepted_created_canonical_output_refuses_unsupported_transition_without_chan
     assert_eq!(expected.tags, ["left", "right"]);
     assert_eq!(host::read(&host), authored);
     let runtime = host.runtime();
+    let retained_catalogue = host.installed_schema().value_bindings().clone();
+    assert!(retained_catalogue.same_installation_as(host.installed_schema().value_bindings()));
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = runtime
@@ -127,6 +129,7 @@ fn accepted_created_canonical_output_refuses_unsupported_transition_without_chan
     drop(demand);
     drop(host);
     let restored = host::restore(checkpoint);
+    assert!(!retained_catalogue.same_installation_as(restored.installed_schema().value_bindings()));
     assert_eq!(
         host::source_id(&restored),
         source_id,

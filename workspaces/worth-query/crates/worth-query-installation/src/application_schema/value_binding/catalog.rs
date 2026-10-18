@@ -19,6 +19,15 @@ pub enum AdmittedFieldBindingStop<E> {
 }
 
 impl WorthQueryInstalledApplicationValueBindingCatalog {
+    /// Whether both catalogues retain the same immutable installed backing.
+    ///
+    /// Cloning retains this identity; independently installing equal bindings
+    /// does not. This comparison grants no request, snapshot or publication
+    /// authority.
+    pub fn same_installation_as(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.bindings, &other.bindings)
+    }
+
     pub(crate) fn new(
         bindings: BTreeMap<
             ApplicationFieldBindingLocus,
