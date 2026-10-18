@@ -100,7 +100,11 @@ impl super::KernelContext<'_, '_> {
     /// must be taken before returning Ok or taking another checkpoint.
     /// Request stops cannot be taken, and joined work/span never change.
     pub fn take_nested_computation_stop(&mut self) -> Option<NestedComputationStop> {
-        self.meter.borrow_mut().nested_stop.take()
+        let mut meter = self.meter.borrow_mut();
+        if let Some(capture) = &mut meter.capture {
+            capture.invalidate();
+        }
+        meter.nested_stop.take()
     }
 
     /// Kernel adapters preserve ownership before wrapping a typed cause as data.

@@ -168,7 +168,7 @@ pub(super) struct RetainedPartition<Key> {
     /// The key's canonical encoding length: what retaining it is charged.
     pub(super) key_bytes: u64,
     pub(super) gather: ComputationCallCharge,
-    pub(super) kernel_steps: super::KernelSteps,
+    pub(super) kernel_receipt: super::ExecutionKernelReceipt,
 }
 
 /// The typed state: everything a later run of the same owner needs to skip
@@ -213,7 +213,7 @@ where
             .values()
             .try_fold(item_keys, |sum, partition| {
                 sum.checked_add(size(std::mem::size_of::<RetainedPartition<Key>>())?)?
-                    .checked_add(partition.kernel_steps.additional_charged_bytes())?
+                    .checked_add(partition.kernel_receipt.additional_charged_bytes())?
                     .checked_add(partition.key_bytes)?
                     .checked_add(partition.gather.additional_bytes()?)
             })?;
@@ -262,7 +262,6 @@ pub(in crate::domain_computation) struct SealedComputationRun {
 pub(in crate::domain_computation) struct RunTreeMemory {
     pub(super) _held: QueryMemoryReservation,
     pub(super) _routing: Option<QueryMemoryReservation>,
-    pub(super) _steps: Option<QueryMemoryReservation>,
 }
 
 /// The owner calls a run carried from `prior` without making them.
@@ -297,8 +296,6 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     /// The request memory a routing the run built holds, `None` when it
     /// built none.
     pub(super) routing_memory: Option<QueryMemoryReservation>,
-    /// Accepted-step allocations remain held until lineage custody takes them.
-    pub(super) steps_memory: Option<QueryMemoryReservation>,
 }
 
 #[cfg(test)]

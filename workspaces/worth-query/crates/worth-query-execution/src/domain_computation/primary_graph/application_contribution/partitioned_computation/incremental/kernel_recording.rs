@@ -1,94 +1,58 @@
-//! Optional checkpoint retention owns and reserves its in-flight allocations.
-use super::super::super::request_execution::{QueryMemoryReservation, QueryRequestExecution};
-use super::KernelSteps;
+//! Query retains only receipts issued and funded by the native kernel meter.
+use super::super::super::request_execution::QueryRequestExecution;
+use super::ExecutionKernelReceipt;
 use std::collections::BTreeMap;
 use std::sync::Mutex;
+use worth_execution::{ExecutionKernelReceiptStorage, MapKernelContext, MapKernelFailure};
 use worth_foundational::PartitionIdentity;
 
 pub(in super::super) struct KernelRecording {
-    memory: Mutex<Option<QueryMemoryReservation>>,
-    receipts: Mutex<BTreeMap<PartitionIdentity, Option<KernelSteps>>>,
+    storage: Option<ExecutionKernelReceiptStorage>,
+    receipts: Mutex<BTreeMap<PartitionIdentity, Option<ExecutionKernelReceipt>>>,
 }
 impl KernelRecording {
     pub(in super::super) fn new(request: &QueryRequestExecution<'_>, retain: bool) -> Self {
-        Self {
-            // Preparation already admitted this request's lease. room::check
-            // tests requested > room, so a zero-byte hold cannot be refused,
-            // even with a full lineage or a cancelled request.
-            memory: Mutex::new(retain.then(|| {
-                request
+        let storage = retain
+            .then(|| {
+                // The existing admitted request's zero-byte reservation is genuine
+                // custody. Execution admits every subsequent receipt allocation.
+                let memory = request
                     .reserve(0)
-                    .expect("an admitted request reserves zero bytes")
-            })),
+                    .expect("an admitted request reserves zero bytes");
+                ExecutionKernelReceiptStorage::new(memory.into_native()).ok()
+            })
+            .flatten();
+        Self {
+            storage,
             receipts: Mutex::new(BTreeMap::new()),
         }
     }
-    pub(in super::super) fn start(&self) -> Option<KernelSteps> {
-        self.memory
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .as_ref()
-            .map(|_| KernelSteps::default())
-    }
-    pub(in super::super) fn accepted(&self, steps: &mut Option<KernelSteps>, work: u64) {
-        let Some(recorded) = steps else {
-            return;
-        };
-        // At most 2 * accepted work + 1 RLE entries, paid before growth by
-        // the request's memory ledger. These framework checkpoints are not
-        // owner result bytes: a scalar result may hold less than one entry.
-        if !recorded.accepted(work, |bytes| {
-            let mut memory = self
-                .memory
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            memory.as_mut().is_some_and(|held| held.grow(bytes).is_ok())
-        }) {
-            *steps = None;
-        }
-    }
-    pub(in super::super) fn finish(
+
+    pub(in super::super) fn record<R, E>(
         &self,
         identity: PartitionIdentity,
-        steps: Option<KernelSteps>,
-        cost: (u64, u64),
-    ) {
-        if self
-            .memory
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .is_none()
-        {
-            return;
-        }
-        // A nested public pattern can add cost not represented by owner advances.
-        // Such a kernel cannot be replayed and leaves the next run unretained.
-        let steps = steps.filter(|s| {
-            let units = s.units();
-            cost == (units, units)
-        });
+        context: &mut MapKernelContext<'_, '_>,
+        kernel: impl FnOnce(&mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>>,
+    ) -> Result<R, MapKernelFailure<E>> {
+        let Some(storage) = &self.storage else {
+            return kernel(context);
+        };
+        let (result, receipt) = context.record_kernel(storage, kernel);
         self.receipts
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .insert(identity, steps);
+            .insert(identity, receipt);
+        result
     }
+
     pub(in super::super) fn take(
         &self,
-    ) -> (
-        BTreeMap<PartitionIdentity, Option<KernelSteps>>,
-        Option<QueryMemoryReservation>,
-    ) {
-        (
-            std::mem::take(
-                &mut *self
-                    .receipts
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner),
-            ),
-            self.memory
+    ) -> BTreeMap<PartitionIdentity, Option<ExecutionKernelReceipt>> {
+        std::mem::take(
+            &mut *self
+                .receipts
                 .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .take(),
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
         )
     }
 }

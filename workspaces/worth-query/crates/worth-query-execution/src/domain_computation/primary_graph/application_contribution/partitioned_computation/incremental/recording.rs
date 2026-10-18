@@ -114,15 +114,12 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
         }
     }
 
-    /// The completed run keeps replayable kernel steps and its reduced tree.
-    /// A nested cost with no owner-step representation leaves no retention.
+    /// The completed run keeps native kernel cost receipts and its reduced tree.
+    /// A context-dependent or nested kernel leaves no reusable receipt.
     /// `tree_memory` holds the tree until it is charged.
     pub(in super::super) fn complete<Reduced>(
         self,
-        (mut steps, steps_memory): (
-            BTreeMap<PartitionIdentity, Option<super::KernelSteps>>,
-            Option<QueryMemoryReservation>,
-        ),
+        mut steps: BTreeMap<PartitionIdentity, Option<super::ExecutionKernelReceipt>>,
         tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
         tree_memory: QueryMemoryReservation,
         cause: WorthQueryPartitionedComputationFullCause,
@@ -140,12 +137,12 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
             .partitions
             .into_iter()
             .map(|(identity, (key, key_bytes, gather))| {
-                steps.remove(&identity).flatten().map(|kernel_steps| {
+                steps.remove(&identity).flatten().map(|kernel_receipt| {
                     let partition = RetainedPartition {
                         key,
                         key_bytes,
                         gather,
-                        kernel_steps,
+                        kernel_receipt,
                     };
                     (identity, Arc::new(partition))
                 })
@@ -176,7 +173,6 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
             carried: None,
             tree_memory,
             routing_memory,
-            steps_memory,
         })
     }
 }

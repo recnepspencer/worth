@@ -200,7 +200,7 @@ where
             )
         })?;
         let mut values = settled_wave.values;
-        let (mut receipts, steps_memory) = recording.take();
+        let mut receipts = recording.take();
         let mut results_held = 0_u64;
         for (identity, disposition) in dispositions {
             let marked = match disposition {
@@ -233,14 +233,14 @@ where
             if replaced {
                 results.insert(identity, value);
             }
-            let kernel_steps = receipts.remove(&identity).flatten();
-            match marked.gather.zip(kernel_steps) {
-                Some((gather, kernel_steps)) => {
+            let kernel_receipt = receipts.remove(&identity).flatten();
+            match marked.gather.zip(kernel_receipt) {
+                Some((gather, kernel_receipt)) => {
                     let partition = RetainedPartition {
                         key: marked.key,
                         key_bytes: marked.key_bytes,
                         gather,
-                        kernel_steps,
+                        kernel_receipt,
                     };
                     partitions.insert(identity, Arc::new(partition));
                 }
@@ -360,7 +360,6 @@ where
                     }),
                     tree_memory: results_memory,
                     routing_memory: next.routing_memory,
-                    steps_memory,
                 }),
             },
         })

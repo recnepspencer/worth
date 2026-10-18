@@ -82,23 +82,13 @@ where
                 execution
                     .reserve(0)
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
-                |input, context| {
-                    match input.disposition {
-                        Disposition::Carried(partition) => {
-                            let units = partition.kernel_steps.units();
-                            if units <= context.remaining_work() {
-                                context.checkpoint(units)?;
-                            } else {
-                                // The full kernel's accepted steps run in its original
-                                // canonical slot. Settlement owns the global prefix;
-                                // no width-dependent second ledger selects this slot.
-                                partition.kernel_steps.replay(context)?;
-                            }
-                            Ok(SettledPartition::Carried)
-                        }
-                        Disposition::Recomputed(marked) => {
-                            kernel(&marked.value, context).map(SettledPartition::Computed)
-                        }
+                |input, context| match input.disposition {
+                    Disposition::Carried(partition) => {
+                        context.carry_kernel(&partition.kernel_receipt)?;
+                        Ok(SettledPartition::Carried)
+                    }
+                    Disposition::Recomputed(marked) => {
+                        kernel(&marked.value, context).map(SettledPartition::Computed)
                     }
                 },
             )

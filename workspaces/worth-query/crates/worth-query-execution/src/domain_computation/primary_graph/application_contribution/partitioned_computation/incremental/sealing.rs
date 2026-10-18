@@ -103,7 +103,6 @@ impl CompletedComputationRun {
             tree_memory: RunTreeMemory {
                 _held: self.tree_memory,
                 _routing: self.routing_memory,
-                _steps: self.steps_memory,
             },
         }))
     }

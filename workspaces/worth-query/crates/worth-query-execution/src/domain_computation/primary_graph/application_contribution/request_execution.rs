@@ -180,6 +180,12 @@ pub(super) struct QueryMemoryReservation {
 }
 
 impl QueryMemoryReservation {
+    /// Transfer the same genuine native hold to an Execution-owned allocation.
+    pub(super) fn into_native(self) -> ExecutionMemoryReservation {
+        self.held
+            .expect("Query requests always hold a native lease")
+    }
+
     pub(super) const fn bytes(&self) -> u64 {
         self.bytes
     }

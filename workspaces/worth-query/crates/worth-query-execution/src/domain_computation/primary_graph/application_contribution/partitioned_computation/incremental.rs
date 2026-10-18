@@ -21,8 +21,7 @@
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
-mod kernel_steps;
-pub(super) use kernel_steps::KernelSteps;
+pub(super) use worth_execution::ExecutionKernelReceipt;
 mod kernel_recording;
 pub(super) use kernel_recording::KernelRecording;
 mod carriage;
