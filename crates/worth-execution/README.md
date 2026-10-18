@@ -224,10 +224,80 @@ captures only; it is not value equality or freshness. A cost receipt alone
 cannot create a retained result. Content equality cannot replace the owning
 runtime's source, authorization, edition or settlement checks.
 
-These APIs still admit and dispatch every slot of the supplied checked map.
-They do not provide a persistent sparse run, avoid caller roster construction,
-update collection membership, or maintain a retained reduction tree by delta.
+These explicit-map APIs still admit and dispatch every supplied slot. They do
+not avoid caller roster construction, update collection membership, or maintain
+a retained reduction tree by delta.
 Allocation bounds include live old/new overlap and do not promise global
 deduplication, full heap/RSS accounting or persistence of execution handles.
 Current-format recovery reconstructs native execution through its owning
 runtime rather than decoding a fabricated result handle.
+
+### Persistent native runs
+
+A platform owner with independently qualified input changes can retain a
+keyless native run. Cold issue uses the real full map; later attempts supply
+only changed inputs and canonical removed identities. The owner must check
+source, authorization, installation, edition, snapshot and settlement before
+omitting an input. Native result custody establishes none of those facts.
+
+```rust
+use std::collections::BTreeMap;
+use worth_execution::{ExecutionMap, ExecutionRequest, ExecutionWorkCeiling,
+    KeylessPartition, MapKernelFailure, RetainedRunOutcome};
+use worth_foundational::PartitionIdentity;
+use worth_proof::CanonicalUniqueVec;
+
+fn example(initial_request: ExecutionRequest<'_, '_>, fresh_request: ExecutionRequest<'_, '_>) {
+let id = PartitionIdentity::new(1);
+let initial = ExecutionMap::<_, ()>::from_keyless_partitions(BTreeMap::from([
+    (id, KeylessPartition { value: 7_u64,
+        kernel_scratch_bytes: 0, max_result_bytes: 0 }),
+])).unwrap();
+let first = initial.run_retained_run(initial_request, ExecutionWorkCeiling::new(100),
+    |value, context| {
+        context.checkpoint(3)?;
+        Ok::<_, MapKernelFailure<()>>(*value * 10)
+    }).unwrap();
+if let RetainedRunOutcome::Complete { run: prior, .. } = first {
+    // Obtain this request afresh from the current host call. No request is
+    // stored in `prior`; this example only shows the borrowed call shape.
+    let changes = BTreeMap::from([(id, KeylessPartition { value: 9_u64,
+        kernel_scratch_bytes: 0, max_result_bytes: 0 })]);
+    let removed = CanonicalUniqueVec::try_from_sorted_unique(Vec::new()).unwrap();
+    let next = prior.advance(fresh_request, ExecutionWorkCeiling::new(100),
+        changes, removed, |value, context| {
+            context.checkpoint(3)?;
+            Ok::<_, MapKernelFailure<()>>(*value * 10)
+        }).unwrap();
+    match next {
+        RetainedRunOutcome::Complete { run, .. } => {
+            assert_eq!(*run.result(id).unwrap().value(), 90);
+        }
+        RetainedRunOutcome::Stopped { completed_prefix, boundary, .. } => {
+            // Inspect accepted values; a prefix has no advance method.
+            let _ = (completed_prefix.partition_count(), boundary);
+        }
+    }
+}
+}
+```
+
+Unchanged slots keep the exact funded native value cells. Cached work/span and
+range summaries belong to the persistent native tree. Fitting ranges skip
+individual dispatch; a tight range descends to native slot evaluation and its
+original checkpoints. Changed inputs use the existing scheduler, evaluator
+and canonical settlement, including request ownership of a discarded suffix.
+`RetainedRunMetrics` reports actual supplied inputs, edit/range visits, copied
+nodes and individually evaluated carried slots separately from logical work.
+
+Each copied node owns its backing grant; old/new roots share unchanged nodes
+without retaining a chain of parent runs. A fresh request re-admits the cached
+incoming backing, and refusal borrows and preserves the prior run. Removal,
+insertion and a move expressed as remove-plus-insert use this same path. No
+request/session borrow survives the call. Context-sensitive results can be
+inspected after completion, but an unqualified unchanged slot returns
+`RequiresExecution` before a new kernel runs; gather current inputs and execute
+them. Arbitrary declared access-key maps do not qualify for sparse keyless
+advancement. Cold issue and recovery remain full; no execution handle is a
+persisted recovery record. Query's roster, publication and membership cutover
+is a separate downstream obligation.

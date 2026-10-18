@@ -54,6 +54,9 @@ impl<R> Clone for ExecutionRetainedResult<R> {
 }
 
 impl<R> ExecutionRetainedResult<R> {
+    pub(crate) fn same_backing(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
     pub fn value(&self) -> &R {
         &self.0.value
     }
@@ -128,7 +131,8 @@ where
     F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
 {
     let records = SettlementRecords::admit::<R>(batch.declaration(), lease)?;
-    let outcome = run_checked_batch_recording(lease, batch, backend, &records, inputs, kernel);
+    let outcome =
+        run_checked_batch_recording(lease, batch, backend, &records, inputs, kernel, None);
     Ok(finish(batch.identities(), outcome, records, fresh))
 }
 
@@ -184,6 +188,7 @@ where
                 Ok(Pending::Carried(prior.clone()))
             }
         },
+        None,
     );
     Ok(finish(
         batch.identities(),
@@ -194,6 +199,34 @@ where
             Pending::Carried(value) => value,
         },
     ))
+}
+
+pub(crate) fn run_retained_sparse_batch<T, R, E, F>(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    batch: &AdmittedBatch<T>,
+    backend: BackendKind,
+    tree: &crate::reduction::RunTree<R>,
+    metrics: &mut crate::RetainedRunMetrics,
+    kernel: &F,
+) -> Result<BatchOutcome<ExecutionRetainedResult<R>, E>, ResultStorageDenial>
+where
+    T: ChargedBytes + Sync,
+    R: ChargedBytes + Send + Sync,
+    E: ChargedBytes + Send,
+    F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
+{
+    let records = SettlementRecords::admit::<R>(batch.declaration(), lease)?;
+    let mut retained = super::settlement::RetainedSettlement::new(tree, metrics);
+    let outcome = run_checked_batch_recording(
+        lease,
+        batch,
+        backend,
+        &records,
+        None,
+        kernel,
+        Some(&mut retained),
+    );
+    Ok(finish(batch.identities(), outcome, records, fresh))
 }
 
 fn fresh<R: ChargedBytes>(

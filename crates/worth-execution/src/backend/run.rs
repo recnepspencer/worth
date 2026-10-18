@@ -26,6 +26,7 @@ pub(super) fn run_batch<I, R, E, F>(
     prepared: Option<PreparedBatchResources>,
     taken: Option<ExecutionMemoryReservation>,
     records: Option<&settlement::records::SettlementRecords>,
+    retained: Option<&mut settlement::RetainedSettlement<'_, R>>,
 ) -> BatchOutcome<R, E>
 where
     I: InputMode,
@@ -73,7 +74,7 @@ where
     } else {
         None
     };
-    if batch.len() == 0 {
+    if batch.len() == 0 && retained.is_none() {
         let physical = if custody.prepared.is_some() {
             ExecutionPhysicalReport::new(
                 limits.worker_high_watermark(),
@@ -103,7 +104,10 @@ where
         .expect("inputs precede accounting")
         .memory_bytes::<R, E>(batch)
         .and_then(|bytes| {
-            bytes.checked_add(limits.framework_context_bytes(batch.len(), max_workers)?)
+            // Retained settlement may enter one native carried-slot context
+            // after all changed workers join, including an empty frontier.
+            let contexts = batch.len().checked_add(usize::from(retained.is_some()))?;
+            bytes.checked_add(limits.framework_context_bytes(contexts, max_workers)?)
         });
     let Some(memory_bytes) = memory_bytes else {
         let outcome = denied(LeaseDenial::charged_bytes_overflow());
@@ -224,6 +228,8 @@ where
             None
         },
         fallback,
+        retained,
+        lease,
     );
     custody.finish(outcome, batch, charge_parent)
 }

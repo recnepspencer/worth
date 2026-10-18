@@ -85,6 +85,7 @@ pub(crate) fn run_checked_batch_recording<T, R, E, F>(
     records: &super::settlement::records::SettlementRecords,
     inputs: Option<ExecutionMemoryReservation>,
     kernel: &F,
+    retained: Option<&mut super::settlement::RetainedSettlement<'_, R>>,
 ) -> BatchOutcome<R, E>
 where
     T: ChargedBytes + Sync,
@@ -102,6 +103,7 @@ where
         None,
         inputs,
         Some(records),
+        retained,
     )
 }
 
@@ -173,6 +175,7 @@ where
         prepared,
         taken,
         None,
+        None,
     )
 }
 
@@ -199,6 +202,7 @@ where
         true,
         None,
         taken,
+        None,
         None,
     )
 }
@@ -229,6 +233,7 @@ where
         BackendKind::Perturbation(seed),
         kernel,
         true,
+        None,
         None,
         None,
         None,

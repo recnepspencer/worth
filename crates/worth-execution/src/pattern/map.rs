@@ -15,8 +15,13 @@ mod owned;
 mod prepared;
 mod retained;
 mod retained_input;
+mod retained_run;
 pub use retained::RetainedMapDenial;
 pub use retained_input::RetainedMapInput;
+pub use retained_run::{
+    ExecutionRetainedPrefix, ExecutionRetainedRun, RetainedRunDenial, RetainedRunMetrics,
+    RetainedRunOutcome,
+};
 mod storage;
 use access::access_memory_bytes;
 use declarations::{check_read_key_order, check_read_write_conflicts};

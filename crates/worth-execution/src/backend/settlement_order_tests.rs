@@ -73,6 +73,7 @@ fn least_key_failure_wins_after_larger_key_is_handed_to_settlement() {
         None,
         None,
         None,
+        None,
     );
     drop(_serial);
     assert_eq!(
@@ -102,6 +103,7 @@ fn success_values_publish_in_key_order_after_larger_key_is_handed_off() {
             Ok::<_, KernelFailure<()>>(value * 10)
         },
         true,
+        None,
         None,
         None,
         None,

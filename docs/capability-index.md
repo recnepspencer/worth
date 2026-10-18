@@ -70,6 +70,16 @@ Use `RetainedMapInput` with `run_retained_inputs` for a mixed current plan, or
 `run_reduce_retained_holding` for genuine leaf results beside the canonical
 tree. See [retained native results](../crates/worth-execution/README.md#retained-native-results).
 
+For a platform owner's keyless map, `run_retained_run` issues an opaque
+`ExecutionRetainedRun` after real native completion. `prior.advance` accepts
+changed inputs and canonical removed identities only; native settlement
+consumes cached unchanged ranges and executes a tight slot's original native
+checkpoint prefix. The caller must independently qualify unchanged inputs.
+Stopped prefixes cannot advance, and context-unqualified slots require real
+execution. This does not make Query roster, source validation, publication or
+collection membership processing sparse. See
+[persistent native runs](../crates/worth-execution/README.md#persistent-native-runs).
+
 For bounded nested persisted values, use the existing value-binding macro's
 `scalar: String, canonical: ValueDecodeBounds::new(...)` arm with Query-free
 `WorthValue` derivation. The installed value-binding catalog retains the derived

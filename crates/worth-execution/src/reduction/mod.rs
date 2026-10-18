@@ -1,5 +1,6 @@
 mod plan;
 mod tree;
+pub(crate) use tree::{RunRange, RunTree};
 
 pub use plan::{ReductionDenial, ReductionPlan};
 pub(crate) use tree::ScheduledReductionError;
