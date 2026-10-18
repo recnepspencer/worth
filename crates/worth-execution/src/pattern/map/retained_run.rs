@@ -121,12 +121,12 @@ impl<R, E> RetainedRunOutcome<R, E> {
     }
 }
 
-fn finish<R, E>(
+pub(in crate::pattern) fn finish_native_outcome<R, E>(
     mut tree: RunTree<R>,
     outcome: crate::backend::BatchOutcome<ExecutionRetainedResult<R>, E>,
     lease: Option<&crate::ExecutionResourceLease<'_>>,
     mut metrics: RetainedRunMetrics,
-) -> Result<RetainedRunOutcome<R, E>, RetainedRunDenial> {
+) -> Result<RetainedRunOutcome<R, E>, LeaseDenial> {
     if outcome.stop.is_some() {
         if let Some(boundary) = outcome.prefix_boundary {
             tree.prefix(boundary, lease, &mut metrics)?;

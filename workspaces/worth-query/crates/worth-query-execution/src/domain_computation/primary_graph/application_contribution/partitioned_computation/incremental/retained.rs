@@ -12,7 +12,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
-use worth_foundational::facade::PartitionIdentity;
 
 use super::super::super::request_execution::QueryMemoryReservation;
 use super::super::items::{ItemDigests, Items};
@@ -181,12 +180,11 @@ pub(super) struct RetainedCall {
 }
 
 /// One partition of a run.
-pub(super) struct RetainedPartition<Key, Reduced> {
+pub(super) struct RetainedPartition<Key> {
     pub(super) key: Arc<Key>,
     /// The key's canonical encoding length: what retaining it is charged.
     pub(super) key_bytes: u64,
     pub(super) gather: ComputationCallCharge,
-    pub(super) kernel_result: worth_execution::ExecutionRetainedResult<Reduced>,
 }
 
 /// The typed state: everything a later run of the same owner needs to skip
@@ -201,7 +199,8 @@ pub(super) struct RetainedPartitions<Key, Item, Reduced> {
     /// Every item's partition: the one routing a partition's members are read
     /// from.
     pub(super) routing: Arc<ComputationPartitionRouting>,
-    pub(super) partitions: BTreeMap<PartitionIdentity, Arc<RetainedPartition<Key, Reduced>>>,
+    pub(super) partitions: super::partition_metadata::PartitionMetadata<Key>,
+    pub(super) native_run: worth_execution::ExecutionRetainedRun<Reduced>,
     pub(super) tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
 }
 
@@ -218,24 +217,19 @@ where
         let size = |bytes: usize| u64::try_from(bytes).ok();
         let digest = size(std::mem::size_of::<(PartitionItemId, [u8; 32])>())?;
         let items = self.items.values().try_fold(0_u64, |sum, item| {
+            super::super::super::super::fact_verification_observation::computation_retained_size();
             sum.checked_add(size(std::mem::size_of::<(PartitionItemId, Item)>())?)?
                 .checked_add(item.additional_charged_bytes())?
                 .checked_add(digest)
         })?;
         let item_keys = self.item_keys.values().try_fold(items, |sum, call| {
+            super::super::super::super::fact_verification_observation::computation_retained_size();
             sum.checked_add(size(std::mem::size_of::<(PartitionItemId, RetainedCall)>())?)?
                 .checked_add(call.charge.additional_bytes()?)
         })?;
-        let partitions = self
-            .partitions
-            .values()
-            .try_fold(item_keys, |sum, partition| {
-                sum.checked_add(size(std::mem::size_of::<RetainedPartition<Key, Reduced>>())?)?
-                    .checked_add(partition.kernel_result.additional_charged_bytes())?
-                    .checked_add(partition.key_bytes)?
-                    .checked_add(partition.gather.additional_bytes()?)
-            })?;
-        partitions
+        item_keys
+            .checked_add(self.partitions.bytes()?)?
+            .checked_add(self.native_run.additional_charged_bytes())?
             .checked_add(self.membership.charge.additional_bytes()?)?
             .checked_add(self.routing.charged_bytes()?)?
             .checked_add(self.tree.additional_charged_bytes())
@@ -288,7 +282,7 @@ pub(super) struct CarriedCalls {
     pub(super) prior: Arc<CustodiedComputation>,
     pub(super) membership: bool,
     pub(super) items: BTreeSet<PartitionItemId>,
-    pub(super) partitions: BTreeSet<PartitionIdentity>,
+    pub(super) partitions: super::carried_partitions::CarriedPartitions,
 }
 
 impl CarriedCalls {

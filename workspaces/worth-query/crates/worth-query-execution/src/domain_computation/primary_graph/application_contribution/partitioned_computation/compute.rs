@@ -256,12 +256,7 @@ where
                             cause,
                         )
                         .map_err(WorthQueryPartitionedComputationDenial::from_retained_reduce)?;
-                    Ok((
-                        reduced.tree,
-                        reduced.report,
-                        reduced.metrics,
-                        reduced.partition_results,
-                    ))
+                    Ok((reduced.tree, reduced.report, reduced.metrics, reduced.run))
                 })?;
                 if let Some(observer) = &self.kernel_observation_for_test {
                     observer.record(
@@ -277,9 +272,16 @@ where
                 }
                 let reduced = tree.result().clone();
                 let completed = match recording {
-                    Ok(recording) => {
-                        recording.complete(partition_results, tree, tree_memory, cause, report)
-                    }
+                    Ok(recording) => recording
+                        .complete(
+                            partition_results,
+                            tree,
+                            tree_memory,
+                            execution.request,
+                            cause,
+                            report,
+                        )
+                        .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
                     Err(reason) => {
                         observe_unretained(cause, report);
                         CompletedComputationRetention::Absent(PriorAbsence::Suppressed(reason))

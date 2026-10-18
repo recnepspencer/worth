@@ -10,37 +10,34 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
             remaining_work: _,
             declared_bytes: _,
             partitions,
+            removed,
             next,
             basis: _,
             prior,
         } = self;
-        let mut bytes = (partitions.len()
-            * size_of::<(PartitionIdentity, Disposition<Key, Gathered, Reduced>)>())
-            as u64;
-        for disposition in partitions.values() {
-            match disposition {
-                Disposition::Carried(_) => {} // The prior's state custody remains held.
-                Disposition::Recomputed(Recomputed {
-                    value,
-                    key: _,
-                    key_bytes,
-                    gather,
-                    memory,
-                }) => {
-                    bytes = bytes
-                        .saturating_add(
-                            value
-                                .additional_charged_bytes()
-                                .saturating_sub(memory.held_bytes()),
-                        )
-                        .saturating_add(*key_bytes)
-                        .saturating_add(
-                            gather
-                                .as_ref()
-                                .map_or(0, |call| call.additional_bytes().unwrap_or(u64::MAX)),
-                        );
-                }
-            }
+        let mut bytes =
+            (partitions.len() * size_of::<(PartitionIdentity, Recomputed<Key, Gathered>)>()) as u64;
+        bytes = bytes.saturating_add(std::mem::size_of_val(removed.as_slice()) as u64);
+        for Recomputed {
+            value,
+            key: _,
+            key_bytes,
+            gather,
+            memory,
+        } in partitions.values()
+        {
+            bytes = bytes
+                .saturating_add(
+                    value
+                        .additional_charged_bytes()
+                        .saturating_sub(memory.held_bytes()),
+                )
+                .saturating_add(*key_bytes)
+                .saturating_add(
+                    gather
+                        .as_ref()
+                        .map_or(0, |call| call.additional_bytes().unwrap_or(u64::MAX)),
+                );
         }
         let NextPartitioning {
             items,
@@ -80,6 +77,6 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
         bytes.saturating_add((carried_items.len() * size_of::<PartitionItemId>()) as u64)
     }
     pub(in super::super::super) fn partition_count(&self) -> usize {
-        self.partitions.len()
+        self.next.routing.partitions().len()
     }
 }

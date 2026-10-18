@@ -3,7 +3,8 @@ use super::super::{
     RetainedMapDenial,
 };
 use super::{
-    finish, ExecutionRetainedRun, RetainedRunDenial, RetainedRunMetrics, RetainedRunOutcome,
+    finish_native_outcome, ExecutionRetainedRun, RetainedRunDenial, RetainedRunMetrics,
+    RetainedRunOutcome,
 };
 use crate::{
     backend::run_retained_sparse_batch, ChargedBytes, ExecutionRequest, ExecutionWorkCeiling,
@@ -76,7 +77,8 @@ impl<R: ChargedBytes + Send + Sync> ExecutionRetainedRun<R> {
                     &kernel,
                 )
                 .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::storage(cause)))?;
-                finish(tree, outcome, lease, metrics)
+                finish_native_outcome(tree, outcome, lease, metrics)
+                    .map_err(RetainedRunDenial::from)
             })
             .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::Request(cause)))?
             .0;

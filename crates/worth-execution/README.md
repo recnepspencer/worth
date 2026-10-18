@@ -211,7 +211,11 @@ available inside a native kernel and returns `None` for this same fallback.
 ### Canonical reduction and inspection
 
 `run_reduce_retained_holding` returns a `RetainedReduceOutcome`. Only a complete
-canonical reduction returns its tree and genuine native partition results.
+canonical reduction returns its tree and genuine native custody in `run`.
+Keyless maps receive `Some(ExecutionRetainedRun)` from their actual native
+settlement. Access-key maps still complete their reduction but receive `None`;
+their declarations require full checking on later calls. There is no conversion
+from the public reduction DTO, an arbitrary result vector or a report to a run.
 Pass the caller's input and tree reservations for atomic handoff, as with
 `run_reduce_holding`; a retained tree still needs its tree reservation. A tree
 refusal publishes no successful reduction. Map reports and reduction metrics
@@ -299,5 +303,10 @@ inspected after completion, but an unqualified unchanged slot returns
 `RequiresExecution` before a new kernel runs; gather current inputs and execute
 them. Arbitrary declared access-key maps do not qualify for sparse keyless
 advancement. Cold issue and recovery remain full; no execution handle is a
-persisted recovery record. Query's roster, publication and membership cutover
-is a separate downstream obligation.
+persisted recovery record. Query's ordinary partitioned computation retains
+the run issued by successful reduction and advances it with a fresh descendant
+request, changed inputs and actual removals. Its source, installation, input,
+edition and read closure qualify independently. Query still prepares and charges
+its full call roster, sizes item/call state and processes publication metadata;
+membership changes and explicit tree rebuilds still construct a full shape plan.
+Native sparse advancement does not make those remaining Query paths sparse.

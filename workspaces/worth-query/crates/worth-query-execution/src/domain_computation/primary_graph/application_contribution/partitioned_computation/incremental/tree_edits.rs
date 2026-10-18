@@ -1,21 +1,19 @@
 //! Ongoing retained-path edits consume their accumulated work on every exit.
 use super::super::super::request_execution::{QueryMemoryReservation, QueryRequestExecution};
 use super::super::WorthQueryPartitionedComputationDenial as Denial;
-use super::retained::RetainedPartitions;
 use super::tree_attempt::{EditDisposition, TreeAttempt};
 use super::tree_report::WorthQueryPartitionedTreeRebuildCause as Cause;
 use std::collections::BTreeMap;
 use worth_execution::{
     ChargedBytes, MapKernelStop, ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError,
-    ReductionPlan, ReductionRunFailure, ReductionTree,
+    ReductionRunFailure, ReductionTree,
 };
 use worth_foundational::facade::PartitionIdentity;
 
 type Tree<Reduced> = ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>;
-pub(super) fn apply<Key, Item, Reduced, Stopped>(
+pub(super) fn apply<Reduced, Stopped>(
     mut attempt: TreeAttempt<Tree<Reduced>, ReductionRunFailure<MapKernelStop>>,
-    retained: &RetainedPartitions<Key, Item, Reduced>,
-    plan: &ReductionPlan,
+    removed: &worth_proof::CanonicalUniqueVec<PartitionIdentity>,
     results: &BTreeMap<PartitionIdentity, Reduced>,
     declared_bytes: u64,
     mut held: u64,
@@ -26,10 +24,9 @@ where
     Reduced: Clone + ChargedBytes + worth_execution::CanonicalBits,
 {
     // `None` deletes the partition; a result puts it.
-    let mut edits = retained
-        .partitions
-        .keys()
-        .filter(|identity| plan.identities().binary_search(identity).is_err())
+    let mut edits = removed
+        .as_slice()
+        .iter()
         .map(|identity| (*identity, None))
         .collect::<BTreeMap<_, _>>();
     edits.extend(

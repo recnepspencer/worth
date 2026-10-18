@@ -219,8 +219,23 @@ fn retained_reduction_matches_the_full_native_tree_and_refusal_keeps_no_successf
             expected_metrics
         )
     );
-    assert_eq!(*actual.partition_results[0].value(), 70);
-    assert_eq!(actual.partition_results[0].charged_work(), 3);
+    let run = actual.run.unwrap();
+    assert_eq!(*run.result(PartitionIdentity::new(1)).unwrap().value(), 70);
+    assert_eq!(run.charged_work(), 3);
+    let advanced = run
+        .advance(
+            ExecutionRequest::serial(&serial),
+            ExecutionWorkCeiling::new(100),
+            BTreeMap::new(),
+            worth_proof::CanonicalUniqueVec::try_from_sorted_unique(Vec::new()).unwrap(),
+            |_: &u64, _| -> Result<u64, KernelFailure<()>> { panic!("unchanged native run") },
+        )
+        .unwrap();
+    let crate::RetainedRunOutcome::Complete { run, report, .. } = advanced else {
+        panic!("native complete")
+    };
+    assert_eq!(*run.result(PartitionIdentity::new(1)).unwrap().value(), 70);
+    assert_eq!(report.charged_work(), 3);
     let stopped = source.run_reduce_retained_holding(
         ExecutionRequest::serial(&serial),
         ExecutionWorkCeiling::new(3),
@@ -290,4 +305,43 @@ fn surviving_result_uses_the_same_deep_bound_checked_by_native_evaluation() {
     assert_eq!(values[0].value().bytes.len(), 4_000);
     assert!(values[0].additional_charged_bytes() > 4_000);
     assert_eq!(measurements.load(Ordering::Relaxed), 1);
+}
+
+#[test]
+fn retained_reduction_with_access_keys_completes_without_a_keyless_advance_capability() {
+    let serial = serial();
+    let source = ExecutionMap::try_from_declared_partitions(
+        vec![PartitionIdentity::new(1)],
+        vec![crate::MapPartition {
+            identity: PartitionIdentity::new(1),
+            value: 7_u64,
+            read_keys: vec![99_u64],
+            write_keys: Vec::new(),
+            kernel_scratch_bytes: 0,
+            max_result_bytes: 0,
+        }],
+    )
+    .unwrap();
+    let completed = source
+        .run_reduce_retained_holding(
+            ExecutionRequest::serial(&serial),
+            ExecutionWorkCeiling::new(100),
+            None,
+            None,
+            |value, context| {
+                context.checkpoint(3)?;
+                Ok::<_, KernelFailure<()>>(*value * 10)
+            },
+            0_u64,
+            |a, b| a + b,
+            1_000,
+            0,
+        )
+        .result
+        .unwrap();
+    assert_eq!(*completed.tree.result(), 70);
+    assert!(
+        completed.run.is_none(),
+        "declared keys need full access checking"
+    );
 }

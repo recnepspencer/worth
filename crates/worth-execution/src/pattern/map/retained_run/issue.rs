@@ -1,7 +1,7 @@
 use super::super::{
     backend_for, ExecutionMap, MapKernelContext, MapKernelFailure, RetainedMapDenial,
 };
-use super::{finish, RetainedRunDenial, RetainedRunMetrics, RetainedRunOutcome};
+use super::{finish_native_outcome, RetainedRunDenial, RetainedRunMetrics, RetainedRunOutcome};
 use crate::{
     backend::run_retained_batch, reduction::RunTree, ChargedBytes, ExecutionRequest,
     ExecutionWorkCeiling,
@@ -24,13 +24,7 @@ impl<T: ChargedBytes + Sync, K> ExecutionMap<T, K> {
     {
         let result = request
             .run(ceiling, |lease| {
-                if self._read_sets.iter().any(|keys| !keys.is_empty())
-                    || self
-                        ._write_sets
-                        .members()
-                        .iter()
-                        .any(|(_, keys)| !keys.is_empty())
-                {
+                if !self.has_keyless_retention() {
                     return Err(RetainedRunDenial::RequiresKeyless);
                 }
                 let outcome =
@@ -38,7 +32,7 @@ impl<T: ChargedBytes + Sync, K> ExecutionMap<T, K> {
                         .map_err(|cause| {
                             RetainedRunDenial::Native(RetainedMapDenial::storage(cause))
                         })?;
-                finish(
+                finish_native_outcome(
                     RunTree::empty(),
                     outcome,
                     lease,
@@ -47,6 +41,7 @@ impl<T: ChargedBytes + Sync, K> ExecutionMap<T, K> {
                         ..Default::default()
                     },
                 )
+                .map_err(RetainedRunDenial::from)
             })
             .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::Request(cause)))?
             .0;
@@ -54,5 +49,16 @@ impl<T: ChargedBytes + Sync, K> ExecutionMap<T, K> {
             .check_live()
             .map_err(|stop| RetainedRunDenial::Native(RetainedMapDenial::interruption(stop)))?;
         result
+    }
+}
+
+impl<T, K> ExecutionMap<T, K> {
+    pub(in crate::pattern) fn has_keyless_retention(&self) -> bool {
+        self._read_sets.iter().all(Vec::is_empty)
+            && self
+                ._write_sets
+                .members()
+                .iter()
+                .all(|(_, keys)| keys.is_empty())
     }
 }

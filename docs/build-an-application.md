@@ -705,14 +705,25 @@ The completion consumes carried-fact validation only at the same pinned reader
 snapshot, after the ordinary declared read closure and preconditions pass.
 Applications supply no dirty list or freshness declaration.
 
-This reduces prior-fact comparison. Current read-set construction and sealing
-metadata, call charging, item and partition walks, map transport, tree deletions,
-and retained-size measurement still perform their existing work. Membership
-changes still enumerate membership; fewer gathers or kernels do not establish
-whole-computation locality.
+The successful native reduction also retains its actual Execution run. On the
+next qualified attempt, Query supplies a fresh descendant request and only
+changed partition inputs and removed identities. Unchanged native result cells
+and fitting cost ranges remain in the native run; Query neither constructs a
+full carry map nor collects every result again. For fixed membership, the
+retained reduction tree supplies its cached full-build cost and receives only
+changed leaves, without constructing a whole reduction plan or scanning for
+deletions. These are runtime behaviors; application code still calls the same
+installed computation and supplies no reuse handle or dirty hints.
+
+Current read-set construction, call charging, item and partition preparation,
+provider/session and effect processing, postcommit rebase, and item/call
+retained-size measurement still perform their existing work. Membership changes
+still enumerate membership and construct a full tree shape plan. Recovery and
+an explicit rebuild fallback also remain full. Sparse native dispatch and
+prior-fact comparison do not establish whole-computation locality.
 
 A run's result, charged work, structural span, and the
-partition a work ceiling names never depend on reuse: carried charges replay in a full run's
+partition a work ceiling names never depend on reuse: native carried charges settle in a full run's
 order, `charged_work()` counts every partition's kernel and every combine
 whether the partition was computed again or carried, and a work ceiling names
 the partition a full run would name. Execution issues and retains each

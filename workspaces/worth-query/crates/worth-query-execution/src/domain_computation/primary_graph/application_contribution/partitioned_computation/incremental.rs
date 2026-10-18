@@ -39,6 +39,8 @@ pub use published_state::{
     published_partitioned_computations_on_this_thread_for_test,
     WorthQueryPublishedComputationStateForTest,
 };
+mod carried_partitions;
+mod partition_metadata;
 mod recording;
 mod retained;
 mod sealing;
@@ -50,6 +52,7 @@ pub(in crate::domain_computation) use prior_absence::{
 };
 mod tree_attempt;
 mod tree_edits;
+mod tree_membership;
 mod tree_report;
 mod tree_update;
 pub(in super::super) use observed::observe_retained_full_tree;

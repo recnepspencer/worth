@@ -3,6 +3,25 @@ use super::*;
 use worth_execution::{ExecutionAllocationDenialClass, RetainedMapDenial, RetainedReduceDenial};
 
 impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
+    pub(in super::super) fn from_retained_run(denial: worth_execution::RetainedRunDenial) -> Self {
+        use worth_execution::RetainedRunDenial as Denial;
+        match denial {
+            Denial::Native(cause) => Self::from_retained_map(cause),
+            Denial::Map(cause) => Self::from_map_overflow(cause),
+            Denial::RequiresKeyless => {
+                Self::ReductionInputInvalid(ReductionInput::RetainedRunRequiresKeyless)
+            }
+            Denial::UnknownRemoval(partition) => {
+                Self::ReductionInputInvalid(ReductionInput::RetainedRunUnknownRemoval { partition })
+            }
+            Denial::ChangedAndRemoved(partition) => {
+                Self::ReductionInputInvalid(ReductionInput::RetainedRunChangedAndRemoved {
+                    partition,
+                })
+            }
+        }
+    }
+
     pub(in super::super) fn from_retained_map(denial: RetainedMapDenial) -> Self {
         match denial {
             RetainedMapDenial::Request(cause) => {

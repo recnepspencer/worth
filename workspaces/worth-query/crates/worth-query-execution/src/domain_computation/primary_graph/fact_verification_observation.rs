@@ -21,6 +21,16 @@ pub struct WorthQueryFactVerificationForTest {
     pub computation_dispatch_plan_visits: u64,
     /// Actual settled native result cells consumed, including carried cells.
     pub computation_result_receiver_visits: u64,
+    /// Partition routing entries inspected by the real preparation owner.
+    pub computation_prepared_partition_visits: u64,
+    /// Identities materialized for an explicit full tree shape/rebuild plan.
+    pub computation_tree_plan_visits: u64,
+    /// Item/call entries visited by the retained state's remaining flat sizing.
+    pub computation_retained_size_visits: u64,
+    /// Actual warm native retained-run maintenance, outside Query preparation.
+    pub computation_native_range_visits: u64,
+    pub computation_native_copied_nodes: u64,
+    pub computation_native_carried_slot_visits: u64,
     /// Actual registry transitions, including those before cutoff preparation.
     pub registry_custody: [Option<WorthQueryRegistryCustodyForTest>; 32],
     /// Further transitions are explicitly unobserved.
@@ -95,6 +105,8 @@ pub struct WorthQueryFactVerificationForTest {
 thread_local! {
     static OBSERVED: Cell<WorthQueryFactVerificationForTest> = const { Cell::new(WorthQueryFactVerificationForTest {
         computation_dispatch_plan_visits: 0, computation_result_receiver_visits: 0,
+        computation_prepared_partition_visits: 0, computation_tree_plan_visits: 0, computation_retained_size_visits: 0,
+        computation_native_range_visits: 0, computation_native_copied_nodes: 0, computation_native_carried_slot_visits: 0,
         registry_custody: [None; 32], registry_custody_omitted: 0,
         input_cutoffs: [None; 32], input_cutoffs_omitted: 0,
         content_field_index_visits: 0, content_leaf_derivations: 0, content_pair_derivations: 0,
@@ -121,6 +133,33 @@ pub fn fact_verification_on_this_thread_for_test() -> WorthQueryFactVerification
 
 pub(super) fn source_admission() {
     record(|observed| add(&mut observed.source_admission_visits, 1));
+}
+
+pub(super) fn computation_prepared_partition() {
+    record(|observed| add(&mut observed.computation_prepared_partition_visits, 1));
+}
+pub(super) fn computation_tree_plan() {
+    record(|observed| add(&mut observed.computation_tree_plan_visits, 1));
+}
+pub(super) fn computation_retained_size() {
+    record(|observed| add(&mut observed.computation_retained_size_visits, 1));
+}
+
+pub(super) fn computation_native_run(metrics: worth_execution::RetainedRunMetrics) {
+    record(|observed| {
+        add(
+            &mut observed.computation_native_range_visits,
+            metrics.range_visits,
+        );
+        add(
+            &mut observed.computation_native_copied_nodes,
+            metrics.copied_nodes,
+        );
+        add(
+            &mut observed.computation_native_carried_slot_visits,
+            metrics.carried_slot_visits,
+        );
+    });
 }
 
 pub(super) fn computation_dispatch_plan() {

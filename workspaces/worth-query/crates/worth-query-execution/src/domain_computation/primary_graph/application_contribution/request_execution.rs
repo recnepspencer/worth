@@ -9,10 +9,10 @@
 use worth_execution::{
     CanonicalBits, ChargedBytes, ExecutionMap, ExecutionMemoryReservation, ExecutionResourceLease,
     ExecutionWorkCeiling, LeaseDenial, LeaseRequest, MapKernelContext, MapKernelFailure,
-    MapKernelStop, MapOutcome, ReductionTree, WorkCeilingDenial,
+    MapKernelStop, ReductionTree, WorkCeilingDenial,
 };
 #[cfg(test)]
-use worth_execution::{ReduceInputDenial, ReductionMetrics};
+use worth_execution::{MapOutcome, ReduceInputDenial, ReductionMetrics};
 use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;

@@ -126,13 +126,23 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
                 examined.completion_call_roster_visits >= size as u64,
                 "{size}: still-full native call roster checks remain visible: {examined:?}"
             );
+            assert_eq!(examined.computation_dispatch_plan_visits, 1,
+                "{size}: only the actually changed partition constructs a native input: {examined:?}");
+            assert_eq!(
+                examined.computation_result_receiver_visits, 1,
+                "{size}: only that changed native result is looked up: {examined:?}"
+            );
+            assert_eq!(examined.computation_tree_plan_visits, 0,
+                "{size}: an ordinary fixed-membership edit constructs no full tree plan: {examined:?}");
+            assert_eq!(examined.computation_native_carried_slot_visits, 0,
+                "{size}: fitting unchanged native ranges dispatch no individual slots: {examined:?}");
             assert!(
-                examined.computation_dispatch_plan_visits >= size as u64,
-                "{size}: the supplied native dispatch plan is still full: {examined:?}"
+                examined.computation_prepared_partition_visits >= size as u64,
+                "{size}: still-full Query call preparation remains visible: {examined:?}"
             );
             assert!(
-                examined.computation_result_receiver_visits >= size as u64,
-                "{size}: native returned result staging is still full: {examined:?}"
+                examined.computation_retained_size_visits >= size as u64,
+                "{size}: still-full item/call retained sizing remains visible: {examined:?}"
             );
             assert!(
                 examined.source_admission_visits > 0,

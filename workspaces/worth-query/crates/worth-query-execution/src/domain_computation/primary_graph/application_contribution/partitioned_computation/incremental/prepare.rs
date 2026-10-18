@@ -222,6 +222,16 @@ where
             Some(copy) => (Arc::new(copy), Some(routing_memory)),
             None => (Arc::clone(&retained.routing), None),
         };
+        let removed_partitions = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(
+            moved
+                .iter()
+                .copied()
+                .filter(|id| {
+                    routing.digest(*id).is_none() && retained.routing.digest(*id).is_some()
+                })
+                .collect(),
+        )
+        .expect("changed routing identities remain canonical");
         let mut prepared = PreparedIncremental::new(
             remaining_work,
             declared_bytes,
@@ -238,8 +248,10 @@ where
                 carried_membership,
                 carried_items,
             },
+            removed_partitions,
         );
         for identity in routing.partitions() {
+            super::super::super::super::fact_verification_observation::computation_prepared_partition();
             let read = ComputationRead::Partition(identity);
             // An emptied old partition frees its compact identity for a
             // different full digest. Neither its typed key nor its result
@@ -253,7 +265,6 @@ where
                 && reader.carry(&COMPARATOR, &prior.gather)
             {
                 enter(reader, self.calls.keys(read), read);
-                prepared.carried(identity, prior);
                 continue;
             }
             // A partition with the same full digest keeps its key. Any other

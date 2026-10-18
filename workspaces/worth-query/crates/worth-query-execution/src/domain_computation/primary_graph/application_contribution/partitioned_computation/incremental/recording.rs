@@ -13,7 +13,7 @@ use super::super::items::{ItemDigests, Items};
 use super::super::routing::ComputationPartitionRouting;
 use super::observed::observe;
 use super::retained::{
-    CompletedComputationRun, RetainedCall, RetainedPartition, RetainedPartitions,
+    CompletedComputationRun, RetainedCall, RetainedPartitions,
     WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRunForTest,
 };
 use super::{CompletedComputationRetention, PriorAbsence, RetainedBasisToken};
@@ -116,12 +116,16 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// `tree_memory` holds the tree until it is charged.
     pub(in super::super) fn complete<Reduced>(
         self,
-        results: Vec<worth_execution::ExecutionRetainedResult<Reduced>>,
+        results: Option<worth_execution::ExecutionRetainedRun<Reduced>>,
         tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
         tree_memory: QueryMemoryReservation,
+        execution: &super::super::super::request_execution::QueryRequestExecution<'_>,
         cause: WorthQueryPartitionedComputationFullCause,
         report: ExecutionReport,
-    ) -> CompletedComputationRetention
+    ) -> Result<
+        CompletedComputationRetention,
+        super::super::super::WorthQueryManagedComputationResourceDenial,
+    >
     where
         Item: Send + Sync + ChargedBytes + 'static,
         Reduced: Send + Sync + ChargedBytes + 'static,
@@ -130,30 +134,31 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
             WorthQueryPartitionedComputationRunForTest::Full(cause),
             Some(report),
         );
-        let mut results = results.into_iter();
-        let partitions = self
-            .partitions
-            .into_iter()
-            .map(|(identity, (key, key_bytes, gather))| {
-                results
-                    .next()
-                    .filter(|result| {
-                        result.identity() == identity && result.native_reuse_available()
-                    })
-                    .map(|kernel_result| {
-                        let partition = RetainedPartition {
-                            key,
-                            key_bytes,
-                            gather,
-                            kernel_result,
-                        };
-                        (identity, Arc::new(partition))
-                    })
+        let Some(native_run) = results.filter(|run| {
+            run.partition_count() == self.partitions.len() && run.requires_execution().is_none()
+        }) else {
+            return Ok(CompletedComputationRetention::Absent(
+                PriorAbsence::Unmeasured,
+            ));
+        };
+        if !self.partitions.keys().all(|identity| {
+            native_run.result(*identity).is_some_and(|result| {
+                result.identity() == *identity && result.native_reuse_available()
             })
-            .collect::<Option<BTreeMap<_, _>>>();
-        if results.next().is_some() {
-            return CompletedComputationRetention::Absent(PriorAbsence::Unmeasured);
+        }) {
+            return Ok(CompletedComputationRetention::Absent(
+                PriorAbsence::Unmeasured,
+            ));
         }
+        if !self.measured || self.membership.is_none() || self.routing.is_none() {
+            return Ok(CompletedComputationRetention::Absent(
+                PriorAbsence::Unmeasured,
+            ));
+        }
+        let partitions = Some(super::partition_metadata::PartitionMetadata::from_recorded(
+            self.partitions,
+            execution,
+        )?);
         let (routing, routing_memory) = self.routing.unzip();
         let typed = match (self.membership, routing, partitions) {
             (Some((membership, items, digests)), Some(routing), Some(partitions))
@@ -166,20 +171,27 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                     item_keys: Arc::new(self.item_keys),
                     routing: Arc::new(routing),
                     partitions,
+                    native_run,
                     tree,
                 }
             }
-            _ => return CompletedComputationRetention::Absent(PriorAbsence::Unmeasured),
+            _ => {
+                return Ok(CompletedComputationRetention::Absent(
+                    PriorAbsence::Unmeasured,
+                ))
+            }
         };
         let typed_bytes = typed.charged_bytes();
-        CompletedComputationRetention::Produced(CompletedComputationRun {
-            basis: self.basis.0,
-            typed: Arc::new(typed),
-            typed_bytes,
-            carried: None,
-            tree_memory,
-            routing_memory,
-        })
+        Ok(CompletedComputationRetention::Produced(
+            CompletedComputationRun {
+                basis: self.basis.0,
+                typed: Arc::new(typed),
+                typed_bytes,
+                carried: None,
+                tree_memory,
+                routing_memory,
+            },
+        ))
     }
 }
 

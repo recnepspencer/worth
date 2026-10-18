@@ -136,8 +136,10 @@ fn edit_encoding_and_result_capacity_denials_rebuild_and_match_reuse_off() {
             .collect(),
     )
     .unwrap();
-    let worth_execution::MapOutcome::Complete { values, .. } = map
-        .run_retained(
+    let worth_execution::RetainedRunOutcome::Complete {
+        run: native_run, ..
+    } = map
+        .run_retained_run(
             worth_execution::ExecutionRequest::serial(&native),
             worth_execution::ExecutionWorkCeiling::new(u64::MAX),
             |_, context| {
@@ -147,32 +149,16 @@ fn edit_encoding_and_result_capacity_denials_rebuild_and_match_reuse_off() {
         )
         .unwrap()
     else {
-        panic!("real native Value results")
+        panic!("real native Value run")
     };
-    let partitions = prior
-        .partitions
-        .into_iter()
-        .zip(values)
-        .map(|((id, partition), kernel_result)| {
-            assert_eq!(id, kernel_result.identity());
-            (
-                id,
-                Arc::new(super::super::super::retained::RetainedPartition {
-                    key: Arc::clone(&partition.key),
-                    key_bytes: partition.key_bytes,
-                    gather: partition.gather.clone(),
-                    kernel_result,
-                }),
-            )
-        })
-        .collect();
     let retained = RetainedPartitions {
         items: prior.items,
         digests: prior.digests,
         membership: prior.membership,
         item_keys: prior.item_keys,
         routing: prior.routing,
-        partitions,
+        partitions: prior.partitions,
+        native_run,
         tree: ValueTree::try_from_declared(
             plan(&keys),
             keys.iter().map(|id| (*id, value(1))).collect(),

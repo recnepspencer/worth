@@ -1,10 +1,15 @@
 //! Canonical reduction and its genuine, independently funded native leaves.
 use super::*;
-use crate::{ExecutionRequest, ExecutionRetainedResult, ExecutionWorkCeiling, RetainedMapDenial};
+use crate::{
+    ExecutionRequest, ExecutionRetainedRun, ExecutionWorkCeiling, RetainedMapDenial,
+    RetainedRunMetrics, RetainedRunOutcome,
+};
 
 pub struct RetainedReduction<R, F> {
     pub tree: ReductionTree<R, F>,
-    pub partition_results: Vec<ExecutionRetainedResult<R>>,
+    /// Actual successful keyless map custody. Access-key maps and context
+    /// fallbacks still produce their reduction; only keyless maps issue a run.
+    pub run: Option<ExecutionRetainedRun<R>>,
     pub report: ExecutionReport,
     pub metrics: ReductionMetrics,
 }
@@ -22,7 +27,7 @@ pub enum RetainedReduceDenial<E> {
 }
 
 pub(super) struct RetentionCapture<R> {
-    results: Vec<ExecutionRetainedResult<R>>,
+    run: Option<ExecutionRetainedRun<R>>,
     denial: Option<RetainedMapDenial>,
     report: Option<ExecutionReport>,
 }
@@ -63,18 +68,44 @@ impl<R: Clone + ChargedBytes + Send + Sync> RetentionCapture<R> {
                 KernelFailure::Stop(KernelStop::NestedStopped)
             })?;
         self.report = Some(outcome.report);
-        Ok(match MapOutcome::from(outcome) {
-            MapOutcome::Complete { values, report } => {
-                // The reduction scope has already admitted its full input and
-                // tree bounds. New native values remain independently funded
-                // while these tree inputs are copied, including old/new peak.
-                let copied = values.iter().map(|value| value.value().clone()).collect();
-                self.results = values;
-                MapOutcome::Complete {
+        if outcome.stop.is_none() {
+            // Only this actual native completion can issue a run. The public
+            // reduction DTO, a report and a vector of old cells cannot do so.
+            let copied = outcome
+                .values
+                .iter()
+                .map(|value| value.value().clone())
+                .collect();
+            if map.has_keyless_retention() {
+                let completed = super::super::map::finish_native_outcome(
+                    crate::reduction::RunTree::empty(),
+                    outcome,
+                    lease,
+                    RetainedRunMetrics {
+                        supplied_inputs: map.partition_count() as u64,
+                        ..Default::default()
+                    },
+                )
+                .map_err(|cause| {
+                    context.record_nested_stop_owner(crate::backend::NestedStopOwner::Request);
+                    self.denial = Some(RetainedMapDenial::Admission(cause));
+                    KernelFailure::Stop(KernelStop::NestedStopped)
+                })?;
+                let RetainedRunOutcome::Complete { run, report, .. } = completed else {
+                    unreachable!("only successful native settlement entered completion")
+                };
+                self.run = Some(run);
+                return Ok(MapOutcome::Complete {
                     values: copied,
                     report,
-                }
+                });
             }
+            return Ok(MapOutcome::Complete {
+                values: copied,
+                report: outcome.report,
+            });
+        }
+        Ok(match MapOutcome::from(outcome) {
             MapOutcome::Stopped {
                 boundary,
                 reason,
@@ -86,6 +117,7 @@ impl<R: Clone + ChargedBytes + Send + Sync> RetentionCapture<R> {
                 reason,
                 report,
             },
+            MapOutcome::Complete { .. } => unreachable!("stopped native settlement"),
         })
     }
 }
@@ -113,7 +145,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         Combine: Fn(&R, &R) -> R + Sync,
     {
         let mut capture = RetentionCapture {
-            results: Vec::new(),
+            run: None,
             denial: None,
             report: None,
         };
@@ -167,7 +199,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
             })?;
             Ok(RetainedReduction {
                 tree,
-                partition_results: capture.results,
+                run: capture.run,
                 report,
                 metrics,
             })

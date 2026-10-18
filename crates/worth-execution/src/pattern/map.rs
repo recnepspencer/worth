@@ -18,6 +18,7 @@ mod retained_input;
 mod retained_run;
 pub use retained::RetainedMapDenial;
 pub use retained_input::RetainedMapInput;
+pub(super) use retained_run::finish_native_outcome;
 pub use retained_run::{
     ExecutionRetainedPrefix, ExecutionRetainedRun, RetainedRunDenial, RetainedRunMetrics,
     RetainedRunOutcome,

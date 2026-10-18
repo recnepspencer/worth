@@ -1,18 +1,21 @@
 //! Current member requests lend fresh native result execution authority.
 use super::*;
 use worth_execution::{
-    ExecutionRequest, ExecutionRetainedResult, RetainedMapDenial, RetainedMapInput,
-    RetainedReduceDenial, RetainedReduction,
+    ExecutionRequest, RetainedMapDenial, RetainedReduceDenial, RetainedReduction,
 };
 
 impl QueryDispatch<'_> {
-    pub(in super::super) fn map_retained<T, K, R, E, F>(
+    pub(in super::super) fn advance_retained<T, R, E, F>(
         &self,
         ceiling: u64,
-        map: &ExecutionMap<RetainedMapInput<T, R>, K>,
-        inputs: QueryMemoryReservation,
+        prior: &worth_execution::ExecutionRetainedRun<R>,
+        changes: std::collections::BTreeMap<
+            worth_foundational::facade::PartitionIdentity,
+            worth_execution::KeylessPartition<T>,
+        >,
+        removed: worth_proof::CanonicalUniqueVec<worth_foundational::facade::PartitionIdentity>,
         kernel: F,
-    ) -> Result<MapOutcome<ExecutionRetainedResult<R>, E>, RetainedMapDenial>
+    ) -> Result<worth_execution::RetainedRunOutcome<R, E>, worth_execution::RetainedRunDenial>
     where
         T: ChargedBytes + Sync,
         R: ChargedBytes + Send + Sync,
@@ -20,10 +23,11 @@ impl QueryDispatch<'_> {
         F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
     {
         let DispatchForm::Leased(lease) = &self.form;
-        map.run_retained_inputs(
+        prior.advance(
             ExecutionRequest::leased(lease),
             ExecutionWorkCeiling::new(ceiling),
-            inputs.held,
+            changes,
+            removed,
             kernel,
         )
     }

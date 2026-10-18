@@ -87,6 +87,12 @@ pub enum WorthQueryPartitionedComputationDenial<Stopped> {
 /// cause, as execution names it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryReductionInputDenial {
+    /// An access-key map cannot be advanced as keyless retained work.
+    RetainedRunRequiresKeyless,
+    /// The requested removal names no successful native slot.
+    RetainedRunUnknownRemoval { partition: PartitionIdentity },
+    /// A slot cannot be both replaced and removed in one native advance.
+    RetainedRunChangedAndRemoved { partition: PartitionIdentity },
     /// The identities were not sorted and unique.
     IdentitiesNotCanonical,
     /// The map gave a different number of values than identities.

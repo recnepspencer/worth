@@ -40,7 +40,7 @@ impl CompletedComputationRetention {
                 && carried.validated_at.as_ref() == Some(&reads.snapshot)
                 && carried.membership.then_some(ComputationRead::Membership).into_iter()
                     .chain(carried.items.iter().copied().map(ComputationRead::ItemKey))
-                    .chain(carried.partitions.iter().copied().map(ComputationRead::Partition))
+                    .chain(carried.partitions.iter().map(ComputationRead::Partition))
                     .inspect(|_| crate::domain_computation::primary_graph::fact_verification_observation::completion_call_roster())
                     .eq(calls.iter().copied())
         })
