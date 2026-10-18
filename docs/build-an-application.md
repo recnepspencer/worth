@@ -667,9 +667,12 @@ A run's result, charged work, structural span, and the
 partition a work ceiling names never depend on reuse: carried charges replay in a full run's
 order, `charged_work()` counts every partition's kernel and every combine
 whether the partition was computed again or carried, and a work ceiling names
-the partition a full run would name. A carried partition replays its accepted
-kernel charges; if the remaining ceiling lies inside those charges, it replays
-the original checkpoint steps to preserve the full run's stop. Memory reserves
+the partition a full run would name. Execution issues and retains each
+checkpoint-only kernel's native cost receipt; Query supplies no checkpoint tape.
+The native owner consumes its cached cost or descends the original accepted
+checkpoint prefix at a tight ceiling. Context questions, nested stages and
+non-checkpoint accounting require actual execution and leave no reusable kernel
+receipt. Memory reserves
 what is physically held, so a memory denial may depend on reuse. An in-flight
 cancellation or deadline can also distinguish physical runs; neither is a
 promise that a computation reaches the same checkpoint at the same time.

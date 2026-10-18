@@ -29,7 +29,10 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 
 #[cfg(test)]
 mod tests;
-pub use backend::{ExecutionOwnerContext, NestedComputationStop};
+pub use backend::{
+    ExecutionKernelReceipt, ExecutionKernelReceiptStorage, ExecutionOwnerContext,
+    NestedComputationStop,
+};
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
     KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId,

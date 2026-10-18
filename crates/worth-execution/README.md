@@ -64,3 +64,35 @@ maps/sets, temporary provider collections and compression/transport remain
 separate owners. Only callers that explicitly admit this contiguous backing
 retain its charge. This is neither full heap/RSS accounting nor removal of
 domain count gates.
+
+
+## Native kernel cost receipts
+
+Platform runtimes retain `ExecutionKernelReceipt` from
+`MapKernelContext::record_kernel(&storage, kernel)`. The callback executes on
+that same native context; its successful accepted checkpoints, not caller
+supplied units, create the receipt. `ExecutionKernelReceiptStorage::new` takes
+an existing genuine `ExecutionMemoryReservation`. Capture admits fresh backing
+before allocation, including simultaneous old/new backing during growth. Clones
+retain the original backing and funding; dropping the last receipt releases it.
+The quoted retained bytes include the receipt and shared storage wrappers
+conservatively, without a global deduplication promise.
+
+`context.carry_kernel(&receipt)` consults the current native request. It uses the
+cached cost when the whole receipt fits and descends the original accepted
+checkpoint sequence when the ceiling falls inside it. Work, span and the first
+checkpoint refusal therefore follow actual execution. Cancellation/deadline and
+untaken nested/request stops remain the existing meter's decisions.
+
+These receipts currently admit checkpoint-only kernels. A remaining-work or
+absolute-cost question, nested outcome, completed-work accounting, or another
+carried stage prevents receipt issuance. Such a kernel executes normally and
+leaves no reusable retained state; a context-dependent result is never certified
+by summing its checkpoints. A failed/panicking kernel also issues no receipt.
+
+A receipt grants no input equality, graph currentness, installation identity,
+output correspondence or publication authority. Equality compares only cost
+sequences. Query's existing retained-computation owners must independently prove
+which kernel inputs may be carried. The current map still dispatches all slots;
+this cost owner is a prerequisite to sparse retained-map settlement, not that
+capability or whole-computation locality.

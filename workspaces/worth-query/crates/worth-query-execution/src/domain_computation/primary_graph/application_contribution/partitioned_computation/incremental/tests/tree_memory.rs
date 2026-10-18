@@ -29,7 +29,7 @@ const DECLARED: u64 = 4096;
 /// unit of work short of the combines the retained tree charges, so the tree
 /// is built again. Placed under `memory`, leased, then serial, each
 /// with the combines it ran.
-fn rebuilt_under(memory: Option<u64>, leased: bool) -> Vec<(Outcome, usize)> {
+fn rebuilt_under(memory: Option<u64>, leased: bool) -> Vec<(Outcome, usize, u64)> {
     let placements: Vec<Box<dyn Fn() -> RuntimeWorldExecutionPlacement<'static>>> = match memory {
         None => vec![Box::new(|| {
             RuntimeWorldExecutionPlacement::Serial(
@@ -66,15 +66,38 @@ fn rebuilt_under(memory: Option<u64>, leased: bool) -> Vec<(Outcome, usize)> {
             *installed.owner.bump.lock().unwrap() = 10;
             *installed.owner.work.lock().unwrap() = [usize::try_from(moved).unwrap(), 1];
             COMBINES.store(0, Ordering::Relaxed);
-            let run = attempt_placed(
+            let mut live_scope_bytes = None;
+            let run = projected_attempt::attempt_placed_observing(
                 &world,
                 &installed,
                 Some(prior_of(first, true)),
                 &live_scope(),
                 placement(),
+                |execution| {
+                    let request = execution.execution_request().unwrap();
+                    let worth_execution::ExecutionAllocationPolicy::Execution(lease) =
+                        request.allocation_policy()
+                    else {
+                        panic!("the actual request holds its native lease");
+                    };
+                    let dispatch = execution.dispatch().unwrap();
+                    let tree_scope =
+                        worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(
+                            Some(dispatch.native_lease_for_test()),
+                            None,
+                        )
+                        .unwrap();
+                    // Real projection admission also remains live. Measure that
+                    // custody, then quote the tree scope in its actual lineage.
+                    live_scope_bytes = Some(lease.charged_memory_bytes() + tree_scope);
+                },
             );
             assert_eq!(run.gathered, [1], "only the moved partition gathers again");
-            (run.outcome, COMBINES.load(Ordering::Relaxed))
+            (
+                run.outcome,
+                COMBINES.load(Ordering::Relaxed),
+                live_scope_bytes.unwrap(),
+            )
         })
         .collect()
 }
@@ -104,7 +127,7 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let unbounded = rebuilt_under(None, false);
-    let [(outcome, reached)] = unbounded.as_slice() else {
+    let [(outcome, reached, _)] = unbounded.as_slice() else {
         panic!("one unbounded placement");
     };
     let reached = *reached;
@@ -147,45 +170,41 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
                 cancellation: token,
             })
             .unwrap();
-        let child = root
-            .child(worth_execution::LeaseRequest {
-                policy,
-                deadline: None,
-                cancellation: worth_execution::CancellationToken::new(),
-            })
-            .unwrap();
-        // Both the owned host scope and its nested tree-stage scope remain live.
-        // Quote the nested scope under that actual parent checkpoint lineage.
-        let host_scope =
-            worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(Some(&root), None)
-                .unwrap();
-        let (tree_scope, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
-            .run(&root, || {
-                worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(
-                    Some(&child),
-                    None,
-                )
-                .unwrap()
-            })
-            .unwrap();
-        let scope = host_scope + tree_scope;
+        let baseline = rebuilt_under(Some(1 << 30), leased);
+        let [(baseline_outcome, baseline_combines, scope)] = baseline.as_slice() else {
+            panic!("one actual placement");
+        };
+        assert_eq!(baseline_outcome, outcome);
+        assert_eq!(*baseline_combines, reached);
         let build = ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_serial_build_memory_bound(
             4, DECLARED,
         )
         .unwrap();
         // The rebuild holds its tree bound, four inline leaf copies, one
-        // replacement result, and both live one-stage framework scopes.
+        // replacement result, actual projection custody and tree scope.
         // The recomputed kernel records one RLE run (all advances are one
         // unit). Its reserved vector remains live through the rebuild.
-        let mut steps = super::super::KernelSteps::default();
-        assert!(steps.accepted(1, |_| true));
-        let checkpoint_hold = worth_execution::ChargedBytes::additional_charged_bytes(&steps);
+        let storage =
+            worth_execution::ExecutionKernelReceiptStorage::new(root.reserve_memory(0).unwrap())
+                .unwrap();
+        let (receipt, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+            .run_with_checkpoint(Some(&root), None, |context| {
+                let (result, receipt) = context.record_kernel(&storage, |context| {
+                    context.checkpoint(1)?;
+                    Ok::<_, worth_execution::MapKernelFailure<()>>(())
+                });
+                result.unwrap();
+                receipt.unwrap()
+            })
+            .unwrap();
+        let checkpoint_hold = worth_execution::ChargedBytes::additional_charged_bytes(&receipt);
+        drop((receipt, storage));
         let admitted = build
             + 5 * u64::try_from(size_of::<(worth_foundational::PartitionIdentity, u64)>()).unwrap()
-            + scope
+            + *scope
             + checkpoint_hold;
         let refused = admitted - 1;
-        for (outcome, combines) in rebuilt_under(Some(refused), leased) {
+        for (outcome, combines, _) in rebuilt_under(Some(refused), leased) {
             let requested = refused_by_memory(&outcome)
                 .unwrap_or_else(|| panic!("one byte short is a memory refusal: {outcome:?}"));
             assert!(
@@ -194,7 +213,7 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
             );
             assert_eq!(combines, 0, "nothing is combined before the bound is held");
         }
-        for (outcome, combines) in rebuilt_under(Some(admitted), leased) {
+        for (outcome, combines, _) in rebuilt_under(Some(admitted), leased) {
             assert_eq!(combines, reached, "with its bound held the rebuild runs: leased={leased} build={build} scope={scope} steps={checkpoint_hold} admitted={admitted} outcome={outcome:?}");
         }
     }

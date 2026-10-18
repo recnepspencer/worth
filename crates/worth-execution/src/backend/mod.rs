@@ -35,7 +35,9 @@ pub(crate) use meter::MemoryActivityGuard;
 pub use meter::NestedComputationStop;
 pub(crate) use meter::RunLimits;
 pub(crate) use meter::StructuralSpanFailure;
-pub use meter::{KernelContext, KernelFailure, KernelStop};
+pub use meter::{
+    ExecutionKernelReceipt, ExecutionKernelReceiptStorage, KernelContext, KernelFailure, KernelStop,
+};
 pub(crate) use ordered::{
     ordered_memory_requirement, run_ordered, run_ordered_until, OrderedOutcome, OrderedStep,
 };

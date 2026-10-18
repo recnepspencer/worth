@@ -10,6 +10,9 @@ pub(crate) enum StructuralSpanFailure {
 impl KernelContext<'_, '_> {
     /// The work and structural span already admitted on this kernel.
     pub fn charged_cost(&self) -> (u64, u64) {
+        if let Some(capture) = &mut self.meter.borrow_mut().capture {
+            capture.invalidate();
+        }
         self.cost()
     }
 

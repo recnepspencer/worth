@@ -176,14 +176,12 @@ where
         let recording_steps = super::incremental::KernelRecording::new(execution.request, retain);
         let compute_kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                               context: &mut MapKernelContext<'_, '_>,
-                              steps: &mut Option<super::incremental::KernelSteps>,
                               #[cfg(test)] native: Option<
             &worth_execution::ExecutionResourceLease<'_>,
         >| {
             let (computed, refused) = {
                 let mut charge = |work| {
                     context.checkpoint(work)?;
-                    recording_steps.accepted(steps, work);
                     Ok(())
                 };
                 let checkpoint =
@@ -204,26 +202,23 @@ where
         };
         let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                       context: &mut MapKernelContext<'_, '_>| {
-            let mut steps = recording_steps.start();
-            let result = compute_kernel(
-                partition,
-                context,
-                &mut steps,
-                #[cfg(test)]
-                None,
-            );
-            recording_steps.finish(partition.identity, steps, context.charged_cost());
-            result
+            recording_steps.record(partition.identity, context, |context| {
+                compute_kernel(
+                    partition,
+                    context,
+                    #[cfg(test)]
+                    None,
+                )
+            })
         };
         // Certification reruns the same owner without touching request retention
-        // or its memory reservations. The original kernel alone records steps.
+        // or its memory reservations. The original native kernel alone issues receipts.
         let diagnostic_kernel =
             |partition: &Gathered<Schema, Feature, Computation, Owner>,
              context: &mut MapKernelContext<'_, '_>| {
                 compute_kernel(
                     partition,
                     context,
-                    &mut None,
                     #[cfg(test)]
                     None,
                 )
@@ -248,15 +243,9 @@ where
                 #[cfg(test)]
                 let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                               context: &mut MapKernelContext<'_, '_>| {
-                    let mut steps = recording_steps.start();
-                    let result = compute_kernel(
-                        partition,
-                        context,
-                        &mut steps,
-                        Some(dispatch.native_lease_for_test()),
-                    );
-                    recording_steps.finish(partition.identity, steps, context.charged_cost());
-                    result
+                    recording_steps.record(partition.identity, context, |context| {
+                        compute_kernel(partition, context, Some(dispatch.native_lease_for_test()))
+                    })
                 };
                 // The map's admission takes over the gathered partitions' hold,
                 // and the tree is handed to `tree_memory` as the run ends.
