@@ -120,6 +120,26 @@ fn index<Schema: ApplicationSchema>() -> WorthQueryInstalledPackageIndex {
 }
 
 #[test]
+fn catalogue_identity_retains_clones_but_declines_independent_installations() {
+    let declaration = NestedSchema::declaration().unwrap();
+    let index = index::<NestedSchema>();
+    let first = index.bind_application_schema(declaration.clone()).unwrap();
+    let retained = first.value_bindings().clone();
+    assert!(first.value_bindings().same_installation_as(&retained));
+    let rebound = index.bind_application_schema(declaration.clone()).unwrap();
+    let independent = self::index::<NestedSchema>()
+        .bind_application_schema(declaration)
+        .unwrap();
+    for other in [&rebound, &independent] {
+        assert_eq!(
+            first.value_meaning().unwrap(),
+            other.value_meaning().unwrap()
+        );
+        assert!(!retained.same_installation_as(other.value_bindings()));
+    }
+}
+
+#[test]
 fn canonical_admission_dispatch_is_the_exact_installed_binding_and_shared_catalogue() {
     let schema = index::<NestedSchema>()
         .bind_application_schema(NestedSchema::declaration().unwrap())

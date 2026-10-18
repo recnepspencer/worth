@@ -72,6 +72,9 @@ calls borrow the original pin and refuse the entire output after an ignored
 decode failure or late cancellation.
 The installed `value_meaning()` roster checks executable and native field
 contracts; native canonical codec digests carry the same emitted meaning.
+Use the retained catalogue's `same_installation_as(&other)` to compare its actual
+immutable backing. Clones match; independent installation or restore does not,
+even with equal field meaning. This grants no request, snapshot or settlement authority.
 Producer readiness uses the actual output-role carrier and its emitted meaning.
 Predecessor comparison requires explicit semantic aspect revision advancement
 for changed meaning and grants no recovered-transition permission.
