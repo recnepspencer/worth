@@ -4,7 +4,9 @@ use super::{
     admission::IndexAdmission, source_alignment::SnapshotAlignedMarkState,
     InvalidationEditAdmission, SourceInvalidationOwner,
 };
+mod postcondition_carry;
 use im::OrdSet;
+pub(in crate::domain_computation::primary_graph) use postcondition_carry::PostconditionCarry;
 use std::sync::Arc;
 use worth_relational::facade::{
     mvcc::CompanionPreflightStop, runtime::RelationalRuntime, snapshots::SnapshotHandle,
@@ -25,8 +27,65 @@ pub(in crate::domain_computation::primary_graph) struct ComputationChanges {
     selected: worth_relational::facade::runtime::PositionedRelationalSnapshot,
     _image: Arc<super::source_alignment::BranchMarkRoot>,
     ordinals: OrdSet<usize>,
+    original: Option<
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    >,
+    postconditions:
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    snapshot: SnapshotHandle,
+    payload_bytes: u64,
+    postings: im::OrdMap<Arc<super::fact_key::FactPostingKey>, OrdSet<usize>>,
 }
 impl ComputationChanges {
+    /// A publication can readmit after computation. Only the native owner can
+    /// establish that its genuine before-image still names this captured source.
+    pub(in crate::domain_computation::primary_graph) fn matches_publication_source(
+        &self,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, CompanionPreflightStop> {
+        if snapshot.runtime_instance_id() != self.selected.runtime_instance_id()
+            || snapshot.branch_id() != self.selected.branch_id()
+        {
+            return Ok(false);
+        }
+        let actual = runtime
+            .read_truth()
+            .positioned_snapshot_admitted(snapshot, |work, bytes| {
+                admission.work(work)?;
+                admission.bytes(bytes)
+            });
+        use worth_relational::facade::runtime::RelationalSnapshotPositionAdmissionStop as Stop;
+        match actual {
+            Ok(actual) => Ok(actual == self.selected),
+            Err(Stop::Admission(stop)) => Err(stop),
+            Err(Stop::AccountingOverflow) => Err(CompanionPreflightStop::WorkCounterOverflow),
+            Err(Stop::Position(_)) => Ok(false),
+        }
+    }
+    /// The same native-position check lends this image to the reader's exact
+    /// live pin. The cutoff's separate snapshot handle is never substituted.
+    pub(in crate::domain_computation::primary_graph) fn for_snapshot(
+        &self,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+    ) -> Option<Self> {
+        self.at_snapshot(runtime, snapshot)?;
+        let mut selected = self.clone();
+        selected.snapshot = snapshot.clone();
+        Some(selected)
+    }
+    pub(in crate::domain_computation::primary_graph) fn ordinals(&self) -> &OrdSet<usize> {
+        &self.ordinals
+    }
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn bind_original(
+        mut self,
+        original: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    ) -> Self {
+        self.original = Some(original);
+        self
+    }
     pub(in crate::domain_computation::primary_graph) fn at_snapshot(
         &self,
         runtime: &RelationalRuntime,
@@ -74,9 +133,18 @@ impl SourceInvalidationOwner {
             return Ok(None);
         };
         admission.ordered_read(aligned.settlement_count())?;
+        let Some(comparable) = facts.for_comparison() else {
+            return Ok(None);
+        };
         let Some(ordinals) = aligned.computation_frontier(identity, facts) else {
             return Ok(None);
         };
+        let Some(payload_bytes) = aligned.computation_payload_bytes(identity) else {
+            return Ok(None);
+        };
+        let postings = aligned
+            .computation_postings(identity, facts)
+            .expect("same aligned row");
         // Prepay the reader's bounded native-position identity check, beside
         // the capture's admitted lookup. No fact population is visited there.
         admission.work(10 + 5 * snapshot.branch_id().0.len() as u64)?;
@@ -88,6 +156,11 @@ impl SourceInvalidationOwner {
             selected,
             _image: retained_image,
             ordinals,
+            original: None,
+            postconditions: comparable.facts().clone(),
+            snapshot: snapshot.clone(),
+            payload_bytes,
+            postings,
         }))
     }
 }

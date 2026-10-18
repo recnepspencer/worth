@@ -232,6 +232,29 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         SettlementCurrentness::Clean
     }
 
+    pub(super) fn computation_payload_bytes(
+        &self,
+        identity: &RecordedSettlementIdentity,
+    ) -> Option<u64> {
+        let row = self.state.settlements.get(identity)?;
+        row._fact_capacity
+            .bytes()
+            .checked_sub(row.facts.postconditions().retained_storage_bytes()?)?
+            .checked_sub(super::index_capacity::arc_bytes::<
+                PositionedRelationalSnapshot,
+            >()?)?
+            .checked_sub(u64::try_from(row.read_basis.branch_id().0.capacity()).ok()?)
+    }
+    pub(super) fn computation_postings(
+        &self,
+        identity: &RecordedSettlementIdentity,
+        facts: &super::super::RetainedSourceFacts,
+    ) -> Option<im::OrdMap<Arc<super::fact_key::FactPostingKey>, im::OrdSet<usize>>> {
+        let row = self.state.settlements.get(identity)?;
+        row.facts
+            .same_binding(facts)
+            .then(|| row.posting_ordinals.clone())
+    }
     pub(super) fn computation_frontier(
         &self,
         identity: &RecordedSettlementIdentity,

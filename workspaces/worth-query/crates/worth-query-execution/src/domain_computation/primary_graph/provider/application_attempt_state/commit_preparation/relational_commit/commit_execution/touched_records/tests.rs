@@ -133,6 +133,15 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
                 })
             })
             .expect("the fixture read owns its installed host call");
+        let touches = candidate
+            .with_prepared_descriptive_touches(Clone::clone)
+            .expect("live candidate retains its exact prepared graph");
+        assert!(
+            touches
+                .exact_touches()
+                .is_some_and(|touches| !touches.is_empty()),
+            "actual create has native touches"
+        );
         let exact = candidate
             .with_prepared_changed_records(|records| records.to_vec())
             .unwrap();
@@ -263,6 +272,11 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
             .component_results()
             .relational_commit_result()
             .expect("the performed product publication includes the native commit");
+        assert_eq!(
+            &touches,
+            committed.envelope().descriptive_touches(),
+            "the SAME candidate performs the prepared native touch graph"
+        );
         let published = prepared.verify_performed(&committed.changed_records);
         drop(performed.consume());
         assert!(Arc::ptr_eq(&published, &retained));

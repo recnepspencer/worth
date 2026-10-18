@@ -9,6 +9,9 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 pub(in crate::domain_computation::primary_graph) struct NativeComputationReads {
     prior: Arc<CustodiedComputation>,
     snapshot: SnapshotHandle,
+    rebase_changes: Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
+    >,
 }
 impl NativeComputationReads {
     pub(in crate::domain_computation::primary_graph) fn same_native(&self, other: &Self) -> bool {
@@ -28,7 +31,25 @@ impl NativeComputationReads {
             .cloned()
     }
     pub(super) fn new(prior: Arc<CustodiedComputation>, snapshot: SnapshotHandle) -> Self {
-        Self { prior, snapshot }
+        Self {
+            prior,
+            snapshot,
+            rebase_changes: None,
+        }
+    }
+    pub(super) fn with_rebase_changes(
+        mut self,
+        changes: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges>,
+    ) -> Self {
+        self.rebase_changes = changes;
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) fn rebase_changes(
+        &self,
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
+    > {
+        self.rebase_changes.clone()
     }
     pub(in crate::domain_computation::primary_graph) fn facts(&self) -> &SealedComputationFacts {
         &self.prior.facts

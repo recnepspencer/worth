@@ -23,6 +23,13 @@ The product center is:
 
 ## Main doors
 
+Prepared runtime integrations can inspect an unconsumed candidate with
+`with_prepared_descriptive_touches(|graph| ...)`. It borrows the exact graph
+already prepared for that candidate. `None` means its payload was consumed or
+revoked; `Some` can contain an exact-empty or unavailable graph. The callback
+must not reenter the candidate. Touches describe the candidate and confer no
+source currentness or publication authority.
+
 ### Setup
 
 - `RelationalRuntimeApi::builder()`

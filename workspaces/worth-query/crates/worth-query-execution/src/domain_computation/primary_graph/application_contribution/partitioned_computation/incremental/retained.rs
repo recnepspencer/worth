@@ -245,6 +245,11 @@ pub(in crate::domain_computation) struct RetainedComputation {
 }
 
 impl RetainedComputation {
+    pub(in crate::domain_computation::primary_graph) fn original_facts(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
+        self.facts.original_payload()
+    }
     /// The completed state's payload charge. Custody adds its own Arc
     /// allocation, and every holder shares that full ticket until final release.
     /// `None` when the payload sum overflows: the incoming state is evicted.

@@ -22,7 +22,8 @@ use encoding::FactBytes;
 mod payload;
 mod record;
 pub(in crate::domain_computation::primary_graph) use payload::{
-    CodecPayloadReservation, FactPayload, FactSequence, NativeFactPayloadBuilder,
+    CodecPayloadReservation, FactPayload, FactSequence, NativeFactPatchBuilder,
+    NativeFactPayloadBuilder,
 };
 mod stream;
 pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;

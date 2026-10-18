@@ -140,10 +140,10 @@ impl<Schema, Operation>
         &self,
         _: &Comparator,
         prior: &crate::domain_computation::primary_graph::application_contribution::ComputationPrior,
-    ) -> Option<im::OrdSet<usize>> {
-        prior
-            .changed_ordinals(self.reader.runtime, self.reader.snapshot)
-            .cloned()
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
+    > {
+        prior.changes_at_snapshot(self.reader.runtime, self.reader.snapshot)
     }
     pub(in crate::domain_computation::primary_graph) fn computation_snapshot(
         &self,

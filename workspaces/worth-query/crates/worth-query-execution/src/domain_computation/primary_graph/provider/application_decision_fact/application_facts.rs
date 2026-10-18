@@ -81,6 +81,7 @@ impl CompletedApplicationFacts {
         let installed_count = self.installed.len();
         let mut facts: Vec<_> = (0..installed_count)
             .map(|ordinal| {
+                crate::domain_computation::primary_graph::fact_verification_observation::provider_application_fact();
                 Decision::application(
                     SharedReadScope {
                         backing: ScopeBacking::Installed {
@@ -104,6 +105,7 @@ impl CompletedApplicationFacts {
             return Err("application decision facts contain duplicate structural locators");
         }
         for ordinal in installed_count..self.original.len() {
+            crate::domain_computation::primary_graph::fact_verification_observation::provider_application_fact();
             let source = SharedObservedFact {
                 payload: self.original.clone(),
                 ordinal,

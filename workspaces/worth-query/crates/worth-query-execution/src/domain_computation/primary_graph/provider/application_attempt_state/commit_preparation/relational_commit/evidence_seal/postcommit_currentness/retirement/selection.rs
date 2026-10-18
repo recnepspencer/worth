@@ -186,6 +186,7 @@ fn sealed_rebase(
                 true,
                 64,
                 &mut admission(),
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None),
             ))
         })
 }

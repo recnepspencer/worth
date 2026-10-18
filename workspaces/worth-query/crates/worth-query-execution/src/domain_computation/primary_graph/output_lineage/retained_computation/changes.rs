@@ -26,13 +26,15 @@ impl PriorComputationRecord {
         let Some(facts) = record.observed_source_facts() else {
             return Ok(None);
         };
-        owner.computation_changes(
-            runtime,
-            snapshot,
-            &record.settlement_identity,
-            &facts,
-            admission,
-        )
+        owner
+            .computation_changes(
+                runtime,
+                snapshot,
+                &record.settlement_identity,
+                &facts,
+                admission,
+            )
+            .map(|changes| changes.map(|changes| changes.bind_original(state.original_facts())))
     }
     pub(in crate::domain_computation::primary_graph) fn matches_changes(
         &self,

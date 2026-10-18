@@ -16,6 +16,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt::read_set) 
 }
 
 impl SealedComputationFacts {
+    pub(in crate::domain_computation::primary_graph) fn original_payload(&self) -> FactPayload {
+        self.original.clone()
+    }
+
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn prepare<
         'a,
     >(

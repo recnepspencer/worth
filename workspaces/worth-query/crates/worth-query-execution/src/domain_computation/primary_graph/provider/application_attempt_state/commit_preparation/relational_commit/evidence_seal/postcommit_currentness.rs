@@ -15,6 +15,13 @@ mod retirement;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum RebasedSourceFacts {
     Exact(FactPayload),
+    /// Exact selected native rebase, paired with the unchanged owner capacity rule.
+    Cached {
+        facts: FactPayload,
+        payload_bytes: u64,
+        ordinals: Arc<worth_execution::ExecutionArray<Option<usize>>>,
+        superseded_count: usize,
+    },
     /// Every fact is exact, and the committed effect moved the facts at these
     /// ordinals past what was read: a source query's read past its revision,
     /// or a field an owner call of the producer's partitioned computation
@@ -89,61 +96,13 @@ pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
     AdmissionDenied(CompanionPreflightStop),
 }
 
-/// Capacity for the selected-snapshot fact transition is acquired while the
-/// candidate is still pre-effect custody. The postcommit path only fills the
-/// already allocated action and result buffers.
+mod full_preparation;
+use full_preparation::FullSourceFactRebase;
+mod preparation;
+mod selected;
+use preparation::Preparation;
 pub(in crate::domain_computation::primary_graph) struct PreparedSourceFactRebase {
-    facts: Vec<WorthQueryApplicationObservedFact>,
-    /// The ordinals, ascending, of the facts an owner call read that the
-    /// commit's own effect replaced.
-    moved_by_own_effect: Arc<[usize]>,
-    endpoints: worth_execution::ExecutionArray<(
-        usize,
-        crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
-    )>,
-    actions: Vec<resolution::PreparedFactRebase>,
-    rebased: NativeFactPayloadBuilder,
-    superseded: Vec<usize>,
-}
-
-impl PreparedSourceFactRebase {
-    pub(in crate::domain_computation::primary_graph) fn admit(
-        facts: Vec<WorthQueryApplicationObservedFact>,
-        moved_by_own_effect: Arc<[usize]>,
-        control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
-    ) -> Result<Self, PreparedRebaseDenial> {
-        control.check_live()?;
-        let endpoint_count = facts.iter().try_fold(0usize, |count, fact| {
-            fact_verification_observation::rebase_preparation();
-            control.check_live()?;
-            if matches!(fact, WorthQueryApplicationObservedFact::Relation { .. } | WorthQueryApplicationObservedFact::Adjacency { .. }) {
-                count.checked_add(1).ok_or(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability)
-            } else { Ok(count) }
-        })?;
-        let mut endpoints =
-            worth_execution::ExecutionArrayBuilder::allocate(endpoint_count, control.policy())?;
-        for (ordinal, fact) in facts.iter().enumerate() {
-            fact_verification_observation::rebase_preparation();
-            control.check_live()?;
-            if let Some(payload) = adjacency::prepare_endpoints(fact, control)? {
-                endpoints.push((ordinal, payload))?;
-            }
-        }
-        let endpoints = endpoints.seal()?;
-        let mut actions = Vec::new();
-        actions.try_reserve_exact(facts.len())?;
-        let rebased = NativeFactPayloadBuilder::allocate(facts.len(), control)?;
-        let mut superseded = Vec::new();
-        superseded.try_reserve_exact(facts.len())?;
-        Ok(Self {
-            facts,
-            moved_by_own_effect,
-            endpoints,
-            actions,
-            rebased,
-            superseded,
-        })
-    }
+    preparation: Preparation,
 }
 
 impl OwnEffectOnReads {
@@ -190,11 +149,19 @@ impl OwnEffectOnReads {
 }
 
 impl RebasedSourceFacts {
+    pub(super) fn payload_bytes(&self) -> Option<u64> {
+        match self {
+            Self::Cached { payload_bytes, .. } => Some(*payload_bytes),
+            _ => None,
+        }
+    }
     /// The facts the commit retains, or the rebase that failed and left it
     /// none.
     pub(super) fn retained(&self) -> Result<FactPayload, FailedRebase> {
         match self {
-            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => Ok(facts.clone()),
+            Self::Exact(facts)
+            | Self::Cached { facts, .. }
+            | Self::SupersededByOwnEffect { facts, .. } => Ok(facts.clone()),
             Self::VerificationRequired { reason, own_effect } => Err(FailedRebase {
                 reason: *reason,
                 own_effect: *own_effect,
@@ -207,11 +174,22 @@ impl RebasedSourceFacts {
         self.retained().ok()
     }
 
-    pub(super) fn superseded_by_own_effect(&self) -> &[usize] {
-        match self {
-            Self::SupersededByOwnEffect { ordinals, .. } => ordinals,
-            Self::Exact(_) | Self::VerificationRequired { .. } => &[],
-        }
+    pub(super) fn superseded_by_own_effect(&self) -> impl Iterator<Item = usize> + '_ {
+        let (full, selected): (Option<&[usize]>, Option<&[Option<usize>]>) = match self {
+            Self::Cached {
+                ordinals,
+                superseded_count,
+                ..
+            } => (None, (*superseded_count > 0).then(|| ordinals.elements())),
+            Self::SupersededByOwnEffect { ordinals, .. } => (Some(ordinals.as_ref()), None),
+            Self::Exact(_) | Self::VerificationRequired { .. } => (None, None),
+        };
+        full.into_iter().flatten().copied().chain(
+            selected
+                .into_iter()
+                .flatten()
+                .filter_map(|ordinal| *ordinal),
+        )
     }
 }
 
@@ -229,6 +207,7 @@ pub(super) fn rebase_output(
     producer_output: bool,
     maximum_indexed_rebase_work: usize,
     admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
 ) -> RebasedSourceFacts {
     let changed_entities = changed_records
         .iter()
@@ -241,7 +220,7 @@ pub(super) fn rebase_output(
         .retired_entity_ids()
         .filter(|entity| changed_entities.contains(entity))
         .collect();
-    rebase(
+    preparation::rebase(
         execution,
         runtime,
         snapshot,
@@ -250,11 +229,26 @@ pub(super) fn rebase_output(
         producer_output,
         maximum_indexed_rebase_work,
         admission,
+        control,
     )
 }
 
+#[cfg(test)]
+#[allow(clippy::too_many_arguments)]
+fn rebase(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    prepared: PreparedSourceFactRebase,
+    retired: &BTreeSet<EntityId>,
+    producer: bool,
+    maximum: usize,
+    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+) -> RebasedSourceFacts {
+    preparation::rebase(execution, runtime, snapshot, prepared, retired, producer, maximum, admission,
+        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None))
+}
 mod rebase_walk;
-use rebase_walk::rebase;
 
 #[cfg(test)]
 #[path = "postcommit_currentness/tests.rs"]
@@ -265,6 +259,7 @@ mod undecided_tests;
 /// Exact physical source refusal stays distinct from legacy temporary Vec refusal.
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum PreparedRebaseDenial {
+    Admission(CompanionPreflightStop),
     Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial),
     Temporary(std::collections::TryReserveError),
 }

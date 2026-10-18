@@ -66,6 +66,12 @@ pub(super) struct PreparedPublicationCompletion {
 }
 
 impl PreparedPublicationPhase {
+    pub(super) fn descriptive_touches(
+        &self,
+    ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
+        self.prepared_history.descriptive_touches()
+    }
+
     pub(super) fn changed_record_count(&self) -> usize {
         self.changed_records.len()
     }

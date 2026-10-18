@@ -302,8 +302,9 @@ impl SourceInvalidationOwner {
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
         let mut state = (*image.payload().current).clone();
-        let fact_capacity = super::fact_retention::reserve(
+        let fact_capacity = super::fact_retention::reserve_with_payload(
             registration.facts.postconditions(),
+            registration.facts.cached_payload_bytes(),
             &registration.read_basis,
             &self.resources,
             admission,

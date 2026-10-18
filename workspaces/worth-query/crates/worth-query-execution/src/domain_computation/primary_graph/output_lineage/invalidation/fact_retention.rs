@@ -21,10 +21,21 @@ pub(super) fn reserve(
     resources: &WorthQueryInvalidationResources,
     admission: &mut impl IndexAdmission,
 ) -> Result<Arc<RetainedInvalidationCapacity>, CompanionPreflightStop> {
+    reserve_with_payload(facts, None, read_basis, resources, admission)
+}
+
+pub(super) fn reserve_with_payload(
+    facts: &(impl FactSequence + ?Sized),
+    payload: Option<u64>,
+    read_basis: &PositionedRelationalSnapshot,
+    resources: &WorthQueryInvalidationResources,
+    admission: &mut impl IndexAdmission,
+) -> Result<Arc<RetainedInvalidationCapacity>, CompanionPreflightStop> {
     let count =
         u64::try_from(facts.len()).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
     admission.work(
-        count
+        payload
+            .map_or(count, |_| 0)
             .checked_add(1)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
     )?;
@@ -36,11 +47,17 @@ pub(super) fn reserve(
         })
         .and_then(|base| base.checked_add(u64::try_from(read_basis.branch_id().0.capacity()).ok()?))
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    for fact in facts.iter() {
-        let payload = fact_payload_bytes(fact, admission)?;
+    if let Some(payload) = payload {
         bytes = bytes
             .checked_add(payload)
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+    } else {
+        for fact in facts.iter() {
+            let payload = fact_payload_bytes(fact, admission)?;
+            bytes = bytes
+                .checked_add(payload)
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+        }
     }
     admission.bytes(bytes)?;
     retention::reserve(resources, bytes, admission)
@@ -50,6 +67,7 @@ pub(super) fn fact_payload_bytes(
     fact: &WorthQueryApplicationObservedFact,
     admission: &mut impl IndexAdmission,
 ) -> Result<u64, CompanionPreflightStop> {
+    crate::domain_computation::primary_graph::fact_verification_observation::retained_fact_size();
     use WorthQueryApplicationObservedFact as Fact;
     match fact {
         Fact::SourceEntity { .. }

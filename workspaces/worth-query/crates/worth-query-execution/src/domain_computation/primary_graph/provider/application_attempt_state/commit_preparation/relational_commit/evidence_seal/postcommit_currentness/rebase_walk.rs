@@ -4,13 +4,13 @@ pub(super) fn rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    prepared: PreparedSourceFactRebase,
+    prepared: FullSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer_output: bool,
     maximum_indexed_rebase_work: usize,
     admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
-    let PreparedSourceFactRebase {
+    let FullSourceFactRebase {
         facts,
         moved_by_own_effect,
         endpoints,
@@ -138,7 +138,7 @@ fn stopped(
     }
 }
 
-fn storage_stopped(
+pub(super) fn storage_stopped(
     cause: worth_execution::ExecutionAllocationDenial,
     own_effect: OwnEffectOnReads,
 ) -> RebasedSourceFacts {

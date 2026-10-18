@@ -750,8 +750,18 @@ current effect scope; unrelated old calls grant no reach. Immutable item/call
 bounds remain paired with their retained backing. Applications provide neither
 a call roster nor a cached authorization declaration.
 
-Provider/session and effect processing, postcommit source rebase and other
-source comparisons still perform their existing work. Membership or item-key
+On a qualified fixed-shape native attempt, Query pairs original computation
+facts with the previous settlement's revision-bearing postconditions. The exact
+snapshot-aligned frontier includes ABA even when no gather reruns. Fresh reads,
+the fresh source suffix, own writes, retirement and actual native candidate
+touches select postcommit revision work. Unchanged postconditions share their
+funded backing; original pre-effect facts remain separate. The selected native
+result also carries its exact retained payload bound into source registration.
+Missing custody, history, supported fact coverage or source continuity retains
+full reconstruction. Content equality and cached bounds grant no currentness.
+
+Fresh provider/session authorization, effect indexing, posting registration and
+other source comparisons still perform their existing work. Membership or item-key
 changes retain full preparation, and membership changes construct a full tree
 shape plan. Recovery, an unqualified reader basis and explicit rebuild fallbacks
 also remain full. Sparse call/native dispatch and prior-fact comparison do not

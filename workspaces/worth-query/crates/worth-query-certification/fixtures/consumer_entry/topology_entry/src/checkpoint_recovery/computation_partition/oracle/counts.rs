@@ -81,8 +81,8 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
                 "{size}: same pinned carriage is consumed at seal"
             );
             assert!(
-                examined.native_payload_fact_moves >= size as u64,
-                "{size}: real postcommit facts reach the native carrier: {examined:?}"
+                examined.native_payload_fact_moves > 0,
+                "{size}: real changed-leaf postcommit facts reach the native carrier: {examined:?}"
             );
             assert!(
                 examined.native_payload_chunks > 0,
@@ -192,6 +192,30 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
             "{size}: comparison depends on the edited facts, not retained population"
         );
         assert_eq!(runs[0].retained_native_visits, first.retained_native_visits);
+        assert!(runs[0].rebase_preparation_visits <= first.rebase_preparation_visits * 4,
+            "{size}: pre-effect rebase preparation follows refreshed facts/native matches, not every retained fact: {:?}", runs[0]);
+        assert!(
+            runs[0].rebase_resolution_visits <= first.rebase_resolution_visits * 4,
+            "{size}: native rebase resolves only the complete selected frontier: {:?}",
+            runs[0]
+        );
+        assert!(
+            runs[0].native_payload_size_visits
+                <= 32
+                    * (runs[0].fresh_read_key_records
+                        + runs[0].handler_read_key_records
+                        + 2 * runs[0].rebase_resolution_visits)
+                    + runs[0].completed_fact_moves,
+            "{size}: postcommit sizing follows bounded changed leaf granules: {:?}",
+            runs[0]
+        );
+        assert!(
+            runs[0].provider_application_fact_visits > 0
+                && runs[0].effect_index_fact_visits > 0
+                && runs[0].posting_fact_visits > 0,
+            "{size}: remaining provider/effect/posting full work stays visible: {:?}",
+            runs[0]
+        );
         assert_eq!(runs[0].completed_fact_moves, first.completed_fact_moves,
             "{size}: current source suffix is moved once; carried decision facts stay in their backing");
         assert_eq!(

@@ -13,6 +13,7 @@ pub(super) fn remove(
 ) -> Result<(), CompanionPreflightStop> {
     let mut map_edits = PreparedTreeEdits::<Arc<FactPostingKey>, OrdSet<FactPosting>>::new();
     for (key, ordinals) in &row.posting_ordinals {
+        crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
         admission.work(1)?;
         admission.key_read(key, state.postings.len())?;
         let Some(mut postings) = state.postings.get(key).cloned() else {
@@ -20,6 +21,7 @@ pub(super) fn remove(
         };
         let mut set_edits = PreparedTreeEdits::<FactPosting, ()>::new();
         for ordinal in ordinals {
+            crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
             let posting = FactPosting {
                 settlement: Arc::clone(identity),
                 ordinal: *ordinal,

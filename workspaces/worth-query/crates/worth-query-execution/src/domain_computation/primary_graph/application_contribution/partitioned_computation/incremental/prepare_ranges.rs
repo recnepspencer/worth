@@ -33,7 +33,8 @@ impl<
         let native = NativeComputationReads::new(
             self.prior.retain_state(),
             self.validated_at.as_ref().unwrap().clone(),
-        );
+        )
+        .with_rebase_changes(self.rebase_changes.clone());
         if native.call_binding(&retained.call_sequence).is_none() {
             return false;
         }
@@ -85,7 +86,8 @@ impl<
         let native = NativeComputationReads::new(
             self.prior.retain_state(),
             self.validated_at.as_ref().unwrap().clone(),
-        );
+        )
+        .with_rebase_changes(self.rebase_changes.clone());
         let binding = native
             .call_binding(&sequence)
             .expect("range preparation checked actual sealed shape");
