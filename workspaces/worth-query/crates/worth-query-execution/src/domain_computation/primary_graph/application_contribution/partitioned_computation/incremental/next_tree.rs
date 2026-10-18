@@ -55,6 +55,10 @@ pub(in super::super) struct PreparedIncremental<Key, Item, Reduced, Gathered> {
     basis: RetainedBasis,
     prior: TypedPrior<Key, Item, Reduced>,
     validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
+    transition: Option<
+        Arc<crate::domain_computation::primary_graph::invariant_projection::CallShapeTransition>,
+    >,
+    key_memory: Option<QueryMemoryReservation>,
     rekeyed: worth_execution::ExecutionOrderedMap<PartitionItemId, ()>,
     ranges: Option<
         Arc<crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage>,
@@ -111,6 +115,8 @@ where
             validated_at,
             ranges,
             rekeyed,
+            transition,
+            key_memory: _key_memory,
         } = self;
         let retained = prior.typed();
         let mut remaining = remaining_work;
@@ -160,29 +166,30 @@ where
         })?;
         let native_run = settled_wave.native_run;
         let patched_calls = if ranges.is_some() {
-            Some(
-                retained
-                    .call_sequence
-                    .patched(
-                        rekeyed
-                            .keys()
-                            .map(|item| {
-                                let call = &next.item_keys[item];
-                                (
-                                    ComputationRead::ItemKey(*item),
-                                    &call.charge,
-                                    call.declared_units,
-                                )
-                            })
-                            .chain(recomputed.iter().filter_map(|(id, marked)| {
-                                marked
-                                    .gather
-                                    .as_ref()
-                                    .map(|charge| (ComputationRead::Partition(*id), charge, 0))
-                            })),
-                        execution,
+            let changes = rekeyed
+                .keys()
+                .map(|item| {
+                    let call = &next.item_keys[item];
+                    (
+                        ComputationRead::ItemKey(*item),
+                        &call.charge,
+                        call.declared_units,
                     )
-                    .map_err(WorthQueryPartitionedComputationDenial::from_call_sequence)?,
+                })
+                .chain(recomputed.iter().filter_map(|(id, marked)| {
+                    marked
+                        .gather
+                        .as_ref()
+                        .map(|charge| (ComputationRead::Partition(*id), charge, 0))
+                }));
+            Some(
+                match &transition {
+                    Some(transition) => retained
+                        .call_sequence
+                        .edited(transition, changes, execution),
+                    None => retained.call_sequence.patched(changes, execution),
+                }
+                .map_err(WorthQueryPartitionedComputationDenial::from_call_sequence)?,
             )
         } else {
             None
@@ -250,7 +257,9 @@ where
             Arc::clone(&next.routing),
             removed,
             identities_unchanged,
-        );
+            &results,
+            execution,
+        )?;
         let reduction_work = target.full_work();
         let (tree, tree_bill) = transport.call(|| {
             execution

@@ -78,7 +78,10 @@ tree. See [retained native results](../crates/worth-execution/README.md#retained
 
 Platform-owned ordered retained metadata uses `ExecutionOrderedMap<K, V>`:
 shared-root cloning, canonical iteration and policy-admitted changed paths retain
-their own grants. This storage supplies no result, source or request authority.
+their own grants. `rank_of`/`entry_at` use cached counts rather than prefix scans.
+Native reduction shape-cost inspection accepts exact removals/insertions through
+`checked_full_build_cost_after_edits`, reusing native edit traversal without
+combining values. This storage/cost information supplies no result, source or request authority.
 See [funded ordered storage](../crates/worth-execution/README.md#funded-ordered-storage).
 
 For a platform owner's keyless map, `run_retained_run` issues an opaque

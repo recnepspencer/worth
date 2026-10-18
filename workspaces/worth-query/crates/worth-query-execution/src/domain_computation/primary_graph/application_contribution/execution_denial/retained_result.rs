@@ -7,8 +7,24 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
         cause: crate::domain_computation::primary_graph::invariant_projection::CallSequenceDenial,
     ) -> Self {
         match cause {
+            crate::domain_computation::primary_graph::invariant_projection::CallSequenceDenial::InvalidEdit=>Self::ReductionInputInvalid(super::ReductionInput::CoverageMismatch),
             crate::domain_computation::primary_graph::invariant_projection::CallSequenceDenial::Resource(cause)=>Self::Resource(cause),
             crate::domain_computation::primary_graph::invariant_projection::CallSequenceDenial::Storage(cause)=>Self::from_ordered(cause),
+        }
+    }
+    pub(in super::super) fn from_shape_cost(
+        cause: worth_execution::ReductionShapeCostDenial,
+    ) -> Self {
+        match cause {
+            worth_execution::ReductionShapeCostDenial::Allocation(cause) => {
+                Self::from_retained_map(RetainedMapDenial::Allocation(cause))
+            }
+            worth_execution::ReductionShapeCostDenial::Structural(cause) => {
+                Self::from_reduction_denial(cause)
+            }
+            worth_execution::ReductionShapeCostDenial::CapacityOverflow => {
+                Self::Resource(Resource::CapacityOverflow)
+            }
         }
     }
     pub(in super::super) fn from_ordered(

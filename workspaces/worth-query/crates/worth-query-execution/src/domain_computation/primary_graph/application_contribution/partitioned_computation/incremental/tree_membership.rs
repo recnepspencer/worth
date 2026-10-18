@@ -11,7 +11,6 @@ pub(super) enum TreeTarget {
         routing: Arc<ComputationPartitionRouting>,
         removed: CanonicalUniqueVec<PartitionIdentity>,
         work: Option<u64>,
-        full: Option<ReductionPlan>,
     },
     Declared(ReductionPlan),
 }
@@ -21,25 +20,49 @@ impl From<ReductionPlan> for TreeTarget {
     }
 }
 impl TreeTarget {
-    pub(super) fn new<Key, Item, Reduced>(
+    pub(super) fn new<Key, Item, Reduced, Stopped>(
         retained: &RetainedPartitions<Key, Item, Reduced>,
         routing: Arc<ComputationPartitionRouting>,
         removed: CanonicalUniqueVec<PartitionIdentity>,
         identities_unchanged: bool,
-    ) -> Self {
-        // This condition is derived from actual removals and changed native
-        // slot lookups. It establishes only the tree's shape, never freshness.
-        let full = (!identities_unchanged).then(|| plan(&routing));
-        let work = match &full {
-            Some(plan) => plan.checked_build_work(),
-            None => retained.tree.checked_full_build_cost().map(|cost| cost.0),
+        results: &std::collections::BTreeMap<PartitionIdentity, Reduced>,
+        execution: &super::super::super::request_execution::QueryRequestExecution<'_>,
+    ) -> Result<Self, super::super::WorthQueryPartitionedComputationDenial<Stopped>>
+    where
+        Reduced: Clone + worth_execution::ChargedBytes + worth_execution::CanonicalBits,
+    {
+        use super::super::WorthQueryPartitionedComputationDenial as D;
+        let work = if identities_unchanged {
+            retained.tree.checked_full_build_cost().map(|cost| cost.0)
+        } else {
+            let bytes = results.len().checked_mul(size_of::<PartitionIdentity>())
+                .and_then(|n|u64::try_from(n).ok()).ok_or(D::Resource(super::super::super::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+            let _memory = execution.reserve(bytes).map_err(D::Resource)?;
+            let inserted = CanonicalUniqueVec::try_from_sorted_unique(
+                results
+                    .keys()
+                    .copied()
+                    .filter(|id| retained.tree.leaf(*id).is_none())
+                    .collect(),
+            )
+            .expect("changed native results are canonical");
+            Some(
+                retained
+                    .tree
+                    .checked_full_build_cost_after_edits(
+                        &removed,
+                        &inserted,
+                        execution.allocation_policy().map_err(D::Resource)?,
+                    )
+                    .map_err(D::from_shape_cost)?
+                    .0,
+            )
         };
-        Self::Current {
+        Ok(Self::Current {
             routing,
             removed,
             work,
-            full,
-        }
+        })
     }
     pub(super) fn full_work(&self) -> Option<u64> {
         match self {
@@ -68,10 +91,7 @@ impl TreeTarget {
     }
     pub(super) fn into_plan(self) -> ReductionPlan {
         match self {
-            Self::Declared(plan)
-            | Self::Current {
-                full: Some(plan), ..
-            } => plan,
+            Self::Declared(plan) => plan,
             Self::Current { routing, .. } => plan(&routing),
         }
     }

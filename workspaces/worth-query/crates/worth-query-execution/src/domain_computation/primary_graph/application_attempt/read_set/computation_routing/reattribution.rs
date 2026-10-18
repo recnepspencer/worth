@@ -74,9 +74,6 @@ impl SealedComputationFacts {
                 }
             }
         }
-        if changes.is_empty() {
-            return Ok(Some(self.clone()));
-        }
         let mut metadata = (*self.metadata).clone();
         for (key, (removed, added)) in changes {
             control.check_live()?;
@@ -122,6 +119,13 @@ impl SealedComputationFacts {
         for read in calls {
             control.check_live()?;
             let keys = fresh.get(read);
+            if keys.is_none_or(|keys| keys.is_empty()) {
+                index
+                    .calls
+                    .remove_in(read, control.policy())
+                    .map_err(storage_denial)?;
+                continue;
+            }
             let mut quote = keys
                 .map_or(0, |v| v.len())
                 .checked_mul(size_of::<WorthQueryApplicationFactKey>())

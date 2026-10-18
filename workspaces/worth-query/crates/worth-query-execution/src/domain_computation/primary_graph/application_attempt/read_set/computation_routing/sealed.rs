@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::read_set) 
     >,
     handlers: Option<BTreeMap<WorthQueryApplicationFactKey, usize>>,
     decision_count: usize,
-    calls: BTreeSet<ComputationRead>,
+    calls: worth_execution::ExecutionOrderedMap<ComputationRead, ()>,
 }
 
 impl SealedComputationFacts {
@@ -76,12 +76,18 @@ impl SealedComputationFacts {
                 .insert_cloned_in(key, value, policy)
                 .map_err(super::reattribution::storage_denial)?;
         }
+        let mut calls = worth_execution::ExecutionOrderedMap::default();
+        for read in &attribution.calls {
+            calls
+                .insert_cloned_in(read, &(), policy)
+                .map_err(super::reattribution::storage_denial)?;
+        }
         Ok(PreparedComputationFacts {
             index,
             metadata: Arc::new(retained_metadata),
             handlers: handler.map(|_| handlers),
             decision_count,
-            calls: attribution.calls,
+            calls,
         })
     }
 

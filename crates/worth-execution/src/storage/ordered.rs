@@ -61,6 +61,38 @@ impl<K, V> ExecutionOrderedMap<K, V> {
     }
 }
 impl<K: Ord, V> ExecutionOrderedMap<K, V> {
+    /// Canonical zero-based position, without enumerating preceding entries.
+    pub fn rank_of(&self, key: &K) -> Option<usize> {
+        let (mut next, mut before) = (self.root.as_deref(), 0_usize);
+        while let Some(node) = next {
+            let left = node.left.as_ref().map_or(0, |child| child.count);
+            match key.cmp(&node.entry.key) {
+                std::cmp::Ordering::Less => next = node.left.as_deref(),
+                std::cmp::Ordering::Equal => return before.checked_add(left),
+                std::cmp::Ordering::Greater => {
+                    before = before.checked_add(left)?.checked_add(1)?;
+                    next = node.right.as_deref();
+                }
+            }
+        }
+        None
+    }
+    /// Entry at a canonical position. Missing positions allocate nothing.
+    pub fn entry_at(&self, mut rank: usize) -> Option<(&K, &V)> {
+        let mut next = self.root.as_deref();
+        while let Some(node) = next {
+            let left = node.left.as_ref().map_or(0, |child| child.count);
+            match rank.cmp(&left) {
+                std::cmp::Ordering::Less => next = node.left.as_deref(),
+                std::cmp::Ordering::Equal => return Some((&node.entry.key, &node.entry.value)),
+                std::cmp::Ordering::Greater => {
+                    rank -= left + 1;
+                    next = node.right.as_deref();
+                }
+            }
+        }
+        None
+    }
     /// First ordered entry at or above a key, without allocating a range.
     pub fn first_at_or_after(&self, key: &K) -> Option<(&K, &V)> {
         let (mut next, mut found) = (self.root.as_deref(), None);

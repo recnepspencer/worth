@@ -9,6 +9,8 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
             validated_at: _,
             ranges: _,
             rekeyed: _,
+            transition: _,
+            key_memory: _,
             remaining_work: _,
             declared_bytes: _,
             partitions,

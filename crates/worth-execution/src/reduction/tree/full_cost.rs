@@ -14,14 +14,22 @@ impl<T, F> ReductionTree<T, F> {
             })
             .count()
         };
-        let n = u64::try_from(self.len).ok()?;
         let ends = u64::try_from(spine(true))
             .ok()?
             .checked_add(u64::try_from(spine(false)).ok()?)?;
-        let work = n.checked_mul(9)?.checked_sub(ends)?;
-        let shape = n.checked_mul(5)?.checked_sub(ends)?;
-        let span =
-            shape.checked_add(self.root.as_ref().map_or(0, |root| root.full_subtree_span))?;
-        Some((work, span))
+        checked_cost(
+            self.len,
+            ends,
+            self.root.as_ref().map_or(0, |root| root.full_subtree_span),
+        )
     }
+}
+pub(super) fn checked_cost(count: usize, ends: u64, subtree_span: u64) -> Option<(u64, u64)> {
+    let n = u64::try_from(count).ok()?;
+    let work = n.checked_mul(9)?.checked_sub(ends)?;
+    let span = n
+        .checked_mul(5)?
+        .checked_sub(ends)?
+        .checked_add(subtree_span)?;
+    Some((work, span))
 }

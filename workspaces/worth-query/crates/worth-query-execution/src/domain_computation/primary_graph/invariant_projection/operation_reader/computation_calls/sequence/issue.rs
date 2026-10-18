@@ -1,4 +1,5 @@
 //! Cold admission checks each actual deep bound before any copy.
+use super::funding::shape_bound;
 use super::*;
 impl ComputationCallSequence {
     pub(in crate::domain_computation::primary_graph) fn build<'a, I>(
@@ -64,25 +65,23 @@ impl ComputationCallSequence {
             entries.windows(2).all(|w| w[0].0 < w[1].0),
             "measured calls are canonical and unique"
         );
-        let shape = Arc::new(CallShape {
-            bytes: shape_bytes,
-            _memory: shape_memory,
-            ordinals: entries
-                .iter()
-                .enumerate()
-                .map(|(i, (read, _))| (*read, i))
-                .collect(),
-            prefix: entries
-                .iter()
-                .take_while(|(read, _)| !matches!(read, ComputationRead::Partition(_)))
-                .count(),
-        });
+        let policy = execution.allocation_policy()?;
+        let mut order = worth_execution::ExecutionOrderedMap::default();
+        for (read, _) in &entries {
+            order.insert_cloned_in(read, &(), policy)?;
+        }
+        let prefix = entries
+            .iter()
+            .take_while(|(read, _)| !matches!(read, ComputationRead::Partition(_)))
+            .count();
+        let shape = CallShape::issue(order, prefix, execution)?;
+        drop(shape_memory);
         let mut reached = ReachedCalls::default();
         let policy = execution.allocation_policy()?;
-        for (ordinal, (_, (charge, _))) in entries.iter().enumerate() {
+        for (read, (charge, _)) in &entries {
             for entity in charge.reached.iter() {
                 observed::computation_call_reach();
-                reached.insert(*entity, ordinal, policy)?;
+                reached.insert(*entity, *read, policy)?;
             }
         }
         let root = build(0, &entries, execution)?;
@@ -91,7 +90,7 @@ impl ComputationCallSequence {
         let memory = execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64)?;
         let bytes = memory
             .bytes()
-            .checked_add(shape_bytes)
+            .checked_add(shape.bytes)
             .and_then(|v| v.checked_add(root.as_ref().map_or(0, |n| n.bytes)))
             .and_then(|v| v.checked_add(reached.bytes()))
             .ok_or(Resource::CapacityOverflow)?;

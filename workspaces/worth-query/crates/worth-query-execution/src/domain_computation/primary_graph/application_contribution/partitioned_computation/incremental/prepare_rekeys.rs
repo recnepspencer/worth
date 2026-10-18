@@ -1,7 +1,7 @@
-//! Checked existing-group rekeys preserve native call order and exact custody.
+//! Checked fixed-member rekeys preserve native call order and exact custody.
+mod gathers;
 use super::super::{
-    compute::Denial, gather_memory::GatheredMemory, items::route_item, InputValue,
-    WorthQueryComputationPartitionMembers, WorthQueryComputationReader,
+    compute::Denial, items::route_item, InputValue, WorthQueryComputationReader,
     WorthQueryPartitionedComputationDenial as D, WorthQueryPartitionedComputationOwner,
 };
 use super::next_tree::NextPartitioning;
@@ -78,6 +78,8 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
         let mut routing = (*retained.routing).clone();
         let mut item_keys = (*retained.item_keys).clone();
         let mut affected = self.marked.clone();
+        let mut key_memory = execution.reserve(0).map_err(D::Resource)?;
+        let mut fresh_keys = std::collections::BTreeMap::new();
         let mut rekeyed = ExecutionOrderedMap::default();
         let mut unsupported = false;
         sequence.visit(0..sequence.prefix(), &marked, &mut |visit| -> Result<
@@ -115,7 +117,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
                     let key = key?;
                     let before = remaining;
                     let previous = routing.partition_of(item);
-                    let (next, _) = match route_item(
+                    let (next, key_bytes) = match route_item(
                         item,
                         &key,
                         &mut routing,
@@ -131,10 +133,19 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
                     };
                     affected.extend(previous);
                     affected.insert(next);
-                    if retained.routing.digest(next) != routing.digest(next)
-                        || previous.is_some_and(|id| routing.digest(id).is_none())
+                    if retained.routing.digest(next).is_some()
+                        && retained.routing.digest(next) != routing.digest(next)
                     {
                         unsupported = true;
+                    }
+                    if retained.routing.digest(next).is_none() && !fresh_keys.contains_key(&next) {
+                        // The existing typed-key retention contract uses the
+                        // checked canonical length. Only a new key allocation
+                        // needs this hold, never a shared old group's key.
+                        let bytes = key_bytes.checked_add((size_of::<K>() + 2 * size_of::<usize>()) as u64)
+                            .ok_or(D::Resource(super::super::super::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+                        key_memory.grow(bytes).map_err(D::Resource)?;
+                        fresh_keys.insert(next, (Arc::new(key), key_bytes));
                     }
                     let Some((charge, declared_units)) = charge.zip(remaining.spent_since(before))
                     else {
@@ -162,6 +173,30 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
             reader.restart(&COMPARATOR, start);
             return Ok(None);
         }
+        let removed = affected
+            .iter()
+            .copied()
+            .filter(|id| routing.digest(*id).is_none())
+            .collect::<std::collections::BTreeSet<_>>();
+        let inserted = affected
+            .iter()
+            .copied()
+            .filter(|id| retained.routing.digest(*id).is_none() && routing.digest(*id).is_some())
+            .map(ComputationRead::Partition)
+            .collect();
+        let retired = removed
+            .iter()
+            .copied()
+            .map(ComputationRead::Partition)
+            .collect();
+        let transition = sequence
+            .shape()
+            .prepare_transition(&inserted, &retired, execution)
+            .map_err(D::from_call_sequence)?;
+        if !reader.select_call_shape_transition(&COMPARATOR, Arc::clone(&transition)) {
+            reader.restart(&COMPARATOR, start);
+            return Ok(None);
+        }
         let item_keys = Arc::new(item_keys);
         let routing = Arc::new(routing);
         let mut prepared = PreparedIncremental::new(
@@ -182,35 +217,24 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
                 carried_membership: true,
                 carried_items: CarriedItems::All(item_keys),
             },
-            worth_proof::CanonicalUniqueVec::try_from_sorted_unique(Vec::new()).unwrap(),
+            worth_proof::CanonicalUniqueVec::from_btree_set(removed),
         );
-        let marked = affected
-            .iter()
-            .map(|id| {
-                sequence
-                    .shape()
-                    .ordinal(ComputationRead::Partition(*id))
-                    .expect("existing groups retain canonical call slots")
-            })
-            .collect();
-        sequence.visit(sequence.prefix()..sequence.shape().len(),&marked,&mut |visit|{
-            match visit {
-                CallVisit::Range(range,summary)=>reader.carry_call_range(&COMPARATOR,&sequence,range,summary,execution).map_err(D::Resource),
-                CallVisit::Leaf(_,read,_,_)=>{
-                    let ComputationRead::Partition(id)=read else {unreachable!("gather phase")};
-                    super::super::super::super::fact_verification_observation::computation_prepared_partition();
-                    let prior=retained.partitions.get(&id).expect("existing group descriptor");
-                    let mut memory=GatheredMemory::new(execution,declared)?;
-                    memory.before_members(execution,routing.members(id).count())?;
-                    let members=routing.members(id).collect::<Arc<[_]>>();
-                    let (gathered,charge)=reader.measured(read,|reader|owner.gather(&mut WorthQueryComputationReader::lend(reader),input,WorthQueryComputationPartitionMembers::new(id,&prior.key,&members,&retained.items)));
-                    let gathered=gathered.map_err(|reason|D::gathering(id,reason))?;
-                    prepared.gathered(id,Arc::clone(&prior.key),prior.key_bytes,members,gathered,charge,memory)?;
-                    Ok(true)
-                }
-            }
-        })?;
-        prepared.rekeyed(rekeyed);
+        gathers::prepare(
+            owner,
+            reader,
+            execution,
+            input,
+            retained,
+            &sequence,
+            &routing,
+            &transition,
+            &affected,
+            fresh_keys,
+            declared,
+            &mut prepared,
+        )?;
+        prepared.transition(transition);
+        prepared.rekeyed(rekeyed, key_memory);
         prepared.ranges(
             reader
                 .close_call_ranges(&COMPARATOR, execution)

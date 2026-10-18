@@ -80,6 +80,7 @@ impl CompletedComputationRetention {
                     .as_ref()
                     .is_some_and(|closed| Arc::ptr_eq(closed, ranges))
                 && ranges.same_native(reads)
+                && ranges.matches_target(run.call_sequence.shape())
         })
     }
     /// A descriptive layout cannot authorize carriage without the successful

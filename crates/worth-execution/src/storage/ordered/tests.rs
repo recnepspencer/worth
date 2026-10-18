@@ -4,6 +4,30 @@ use std::num::NonZeroUsize;
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+#[test]
+fn ranks_follow_native_edits_without_changing_historical_order_or_funding() {
+    let lease = lease(2_000_000);
+    let policy = ExecutionAllocationPolicy::Execution(&lease);
+    let mut map = ExecutionOrderedMap::default();
+    for key in [9u64, 1, 7, 3, 5] {
+        map.insert_cloned_in(&key, &key, policy).unwrap();
+    }
+    let historical = map.clone();
+    map.remove_in(&3, policy).unwrap();
+    map.insert_cloned_in(&4, &40, policy).unwrap();
+    let before = lease.charged_memory_bytes();
+    for (rank, key) in [1u64, 4, 5, 7, 9].into_iter().enumerate() {
+        assert_eq!(map.rank_of(&key), Some(rank));
+        assert_eq!(map.entry_at(rank).map(|(key, _)| *key), Some(key));
+    }
+    assert_eq!(map.rank_of(&3), None);
+    assert_eq!(map.entry_at(5), None);
+    assert_eq!(historical.entry_at(1), Some((&3, &3)));
+    assert_eq!(lease.charged_memory_bytes(), before);
+    drop(map);
+    drop(historical);
+    assert_eq!(lease.charged_memory_bytes(), 0);
+}
 fn lease(bytes: u64) -> ExecutionResourceLease<'static> {
     ExecutionResourceLease::serial(LeaseRequest {
         policy: ExecutionRequestPolicy::new(

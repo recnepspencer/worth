@@ -25,13 +25,25 @@ where
             validated_at,
             ranges: None,
             rekeyed: Default::default(),
+            transition: None,
+            key_memory: None,
         }
+    }
+    pub(in super::super) fn transition(
+        &mut self,
+        transition: Arc<
+            crate::domain_computation::primary_graph::invariant_projection::CallShapeTransition,
+        >,
+    ) {
+        self.transition = Some(transition);
     }
     pub(in super::super) fn rekeyed(
         &mut self,
         calls: worth_execution::ExecutionOrderedMap<worth_execution::PartitionItemId, ()>,
+        memory: QueryMemoryReservation,
     ) {
         self.rekeyed = calls;
+        self.key_memory = Some(memory);
     }
     pub(in super::super) fn ranges(
         &mut self,
