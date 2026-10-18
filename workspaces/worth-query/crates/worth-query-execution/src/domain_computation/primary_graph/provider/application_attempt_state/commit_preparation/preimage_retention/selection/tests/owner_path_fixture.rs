@@ -68,13 +68,14 @@ pub(super) fn owner_path_fixture() -> (
         .cloned()
         .expect("installed operation carries the exact field read scope");
     let fact = WorthQueryPrimaryGraphApplicationDecisionFact::application(
-        read_scope,
+        read_scope.into(),
         WorthQueryApplicationObservedFact::Field {
             entity_id: account.entity_id(),
             kind: account.entity_kind(),
             locator: locator.clone(),
             value: AspectValue::String(InternedString::from("open")),
-        },
+        }
+        .into(),
     );
     let footprint = world
         .application

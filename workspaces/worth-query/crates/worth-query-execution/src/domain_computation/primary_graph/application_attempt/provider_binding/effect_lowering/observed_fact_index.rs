@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{
@@ -15,8 +16,9 @@ use super::super::{
 /// previous first-match semantics while avoiding a full fact scan per effect.
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) struct ObservedFactIndex<
     'facts,
+    Facts: FactSequence + ?Sized,
 > {
-    facts: &'facts [WorthQueryApplicationObservedFact],
+    facts: &'facts Facts,
     fields: BTreeMap<EntityId, BTreeMap<AspectFieldLocator, usize>>,
     entities: BTreeMap<EntityId, usize>,
     relations: BTreeMap<RelationId, usize>,
@@ -30,9 +32,9 @@ type SelectionKey = (
     CanonicalAspectValueIdentityBasis,
 );
 
-impl<'facts> ObservedFactIndex<'facts> {
+impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) fn new(
-        facts: &'facts [WorthQueryApplicationObservedFact],
+        facts: &'facts Facts,
     ) -> Self {
         let mut index = Self {
             facts,
@@ -107,7 +109,7 @@ impl<'facts> ObservedFactIndex<'facts> {
             .fields
             .get(&entity_id)
             .and_then(|fields| fields.get(locator))
-            .map(|position| &self.facts[*position])
+            .map(|position| self.facts.get(*position).expect("indexed observed fact"))
         {
             Some(
                 WorthQueryApplicationObservedFact::Field { kind, .. }
@@ -135,7 +137,7 @@ impl<'facts> ObservedFactIndex<'facts> {
         match self
             .selections
             .get(&key)
-            .map(|position| &self.facts[*position])
+            .map(|position| self.facts.get(*position).expect("indexed observed fact"))
         {
             Some(WorthQueryApplicationObservedFact::IndexedEntitySelection {
                 candidates, ..
@@ -152,7 +154,12 @@ impl<'facts> ObservedFactIndex<'facts> {
         self.fields
             .get(&entity_id)
             .and_then(|fields| fields.get(locator))
-            .map(|position| self.facts[*position].locator_identity())
+            .map(|position| {
+                self.facts
+                    .get(*position)
+                    .expect("indexed observed fact")
+                    .locator_identity()
+            })
             .ok_or_else(progression_denial)
     }
 
@@ -162,7 +169,12 @@ impl<'facts> ObservedFactIndex<'facts> {
     ) -> Result<String, WorthQueryApplicationAttemptDenial> {
         self.entities
             .get(&entity_id)
-            .map(|position| self.facts[*position].locator_identity())
+            .map(|position| {
+                self.facts
+                    .get(*position)
+                    .expect("indexed observed fact")
+                    .locator_identity()
+            })
             .ok_or_else(progression_denial)
     }
 
@@ -172,7 +184,12 @@ impl<'facts> ObservedFactIndex<'facts> {
     ) -> Result<String, WorthQueryApplicationAttemptDenial> {
         self.relations
             .get(&relation_id)
-            .map(|position| self.facts[*position].locator_identity())
+            .map(|position| {
+                self.facts
+                    .get(*position)
+                    .expect("indexed observed fact")
+                    .locator_identity()
+            })
             .ok_or_else(progression_denial)
     }
 }

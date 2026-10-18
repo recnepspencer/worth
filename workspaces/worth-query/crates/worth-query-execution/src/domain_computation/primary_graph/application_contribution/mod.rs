@@ -44,6 +44,7 @@ pub use partitioned_computation::{
 };
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
     Comparator, CompletedComputationRetention, ComputationDeposit, ComputationRetention,
+    NativeComputationReads,
 };
 pub(in crate::domain_computation) use partitioned_computation::{
     ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,

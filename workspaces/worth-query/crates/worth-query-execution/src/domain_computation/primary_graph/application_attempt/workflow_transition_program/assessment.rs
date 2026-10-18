@@ -163,62 +163,82 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     check_request_live(read_set.admission.publication_request(), subject)?;
     ensure_current(execution, read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
-    // This unchanged workflow seam selects explicit system allocation. The
-    // empty replacement is sealed custody, never a mutable/default extraction.
-    let empty = super::super::read_set::admit_array(
-        0,
-        std::iter::empty(),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        subject,
-        || {
-            read_set
-                .admission
-                .validate_current_authority()
-                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
-        },
-    )?;
-    let original = std::mem::replace(&mut read_set.facts, empty);
-    for fact in original {
+    // Full canonical workflow merge, retaining original bodies by position.
+    for (ordinal, fact) in read_set.facts.iter().enumerate() {
         let locator = fact.dependency_key();
         match merged.entry(locator) {
             std::collections::btree_map::Entry::Vacant(entry) => {
-                entry.insert(fact);
+                entry.insert((false, ordinal));
             }
-            std::collections::btree_map::Entry::Occupied(entry) if entry.get() != &fact => {
-                return Err(WorthQueryApplicationAttemptDenial::new(
-                    WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
-                    subject,
-                ));
+            std::collections::btree_map::Entry::Occupied(entry) => {
+                let (_, existing) = *entry.get();
+                if read_set.facts.get(existing) != Some(fact) {
+                    return Err(currentness_mismatch(subject));
+                }
             }
-            std::collections::btree_map::Entry::Occupied(_) => {}
         }
     }
-    for fact in currentness_facts.iter() {
-        let locator = fact.dependency_key();
-        if merged
-            .insert(locator, fact.clone())
-            .is_some_and(|existing| existing != *fact)
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
-                subject,
-            ));
+    let mut appended = Vec::new();
+    for (ordinal, fact) in currentness_facts.iter().enumerate() {
+        match merged.entry(fact.dependency_key()) {
+            std::collections::btree_map::Entry::Vacant(entry) => {
+                entry.insert((true, appended.len()));
+                appended.push(ordinal);
+            }
+            std::collections::btree_map::Entry::Occupied(entry) => {
+                let (additional, position) = *entry.get();
+                let existing = if additional {
+                    currentness_facts.get(appended[position])
+                } else {
+                    read_set.facts.get(position)
+                };
+                if existing != Some(fact) {
+                    return Err(currentness_mismatch(subject));
+                }
+            }
         }
     }
-    // Temporary keyed merge backing/nested values remain uncharged. Its exact
-    // canonical value order moves into the final admitted inline array.
-    read_set.facts = super::super::read_set::admit_array(
-        merged.len(),
-        merged.into_values(),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    // New evidence is an explicit full workflow owner; original Fact bodies
+    // are never recopied merely to put them in canonical locator order.
+    let policy = worth_execution::ExecutionAllocationPolicy::SystemAllocation;
+    let request = read_set.admission.publication_request();
+    let check = || {
+        read_set
+            .admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
+    };
+    let tail = super::super::read_set::admit_completed_facts(
+        appended.len(),
+        appended.into_iter().map(|ordinal| {
+            currentness_facts
+                .get(ordinal)
+                .expect("indexed currentness fact")
+                .clone()
+        }),
+        policy,
+        request,
         subject,
-        || {
-            read_set
-                .admission
-                .validate_current_authority()
-                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
-        },
+        check,
     )?;
+    let control = super::super::retained_decision_facts::StorageControl::new(policy, Some(request));
+    let mut joined = super::super::read_set::admit_completed_facts(
+        0,
+        std::iter::empty(),
+        policy,
+        request,
+        subject,
+        check,
+    )?;
+    for (additional, ordinal) in merged.into_values() {
+        check()?;
+        let backing = if additional { &tail } else { &read_set.facts };
+        joined = joined
+            .append_completed(backing.slice(ordinal..ordinal + 1), control)
+            .map_err(|cause| cause.into_attempt_denial(subject))?;
+    }
+    check()?;
+    read_set.facts = joined;
     Ok(())
 }
 
@@ -343,4 +363,11 @@ fn projection_with_locator(
         publication_identity: meaning.publication_identity,
         output_content_identity: meaning.output_content_identity,
     }
+}
+
+fn currentness_mismatch(subject: &str) -> WorthQueryApplicationAttemptDenial {
+    WorthQueryApplicationAttemptDenial::new(
+        WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
+        subject,
+    )
 }

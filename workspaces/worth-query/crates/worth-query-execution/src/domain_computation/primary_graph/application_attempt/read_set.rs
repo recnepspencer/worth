@@ -1,12 +1,11 @@
-use std::collections::{BTreeMap, BTreeSet};
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use worth_execution::ExecutionArray;
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
-    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
-    WorthQueryOperationGraphReadScope, WritePosture,
+    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads, WritePosture,
 };
 
 use super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
@@ -24,9 +23,12 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod admitted_arrays;
+mod completed_facts;
+pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
 mod binding_proof;
 mod completion;
 mod computation_routing;
+mod native_completion;
 mod value_decode;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
@@ -35,7 +37,11 @@ pub(in crate::domain_computation::primary_graph) use computation_routing::{
 };
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;
+mod scope_bindings;
 pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
+pub(in crate::domain_computation::primary_graph) use scope_bindings::{
+    CompletedReadScopes, InstalledScopePosition,
+};
 mod decision_reuse;
 mod fact_observation;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
@@ -80,7 +86,7 @@ pub struct WorthQueryApplicationReadAttempt<
     layout: Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
     read_scope: WorthQueryApplicationReadScope,
-    expected_facts: Option<BTreeSet<WorthQueryApplicationFactKey>>,
+    expected_facts: Option<crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys>,
     /// What a partitioned computation read of the expected facts, and where
     /// it left its completed run when a producer ran it.
     computation_reads: (
@@ -88,10 +94,11 @@ pub struct WorthQueryApplicationReadAttempt<
         crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention,
     ),
     installed_read_scopes:
-        BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
+        BTreeMap<WorthQueryApplicationFactKey, InstalledScopePosition>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
     source_facts: SourceFacts,
     consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
+    native_completion: Option<computation_routing::NativeReadRefresh>,
     _phase: PhantomData<fn() -> Phase>,
 }
 
@@ -111,15 +118,15 @@ pub struct WorthQueryCompleteApplicationReadSet<
 > {
     pub(super) admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     pub(super) lease: WorthQueryApplicationSnapshotLease,
-    pub(super) installed_read_scopes: ExecutionArray<WorthQueryOperationGraphReadScope>,
-    pub(super) facts: ExecutionArray<WorthQueryApplicationObservedFact>,
+    pub(super) installed_read_scopes: CompletedReadScopes,
+    pub(super) facts: FactPayload,
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     /// The facts the owner calls read, when the handler ran one partitioned
     /// computation.
     #[cfg(test)]
     pub(super) computation_facts: Option<SealedComputationFacts>,
     /// The ordinals in `facts`, ascending, of the facts an owner call read.
-    pub(super) computation_fact_ordinals: Box<[usize]>,
+    pub(super) computation_fact_ordinals: Arc<[usize]>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
@@ -187,6 +194,7 @@ where
             facts: BTreeMap::new(),
             source_facts,
             consumed_outputs: Vec::new(),
+            native_completion: None,
             _phase: PhantomData,
         })
     }
@@ -342,6 +350,7 @@ where
             facts: BTreeMap::new(),
             source_facts,
             consumed_outputs,
+            native_completion: None,
             _phase: PhantomData,
         })
     }

@@ -16,12 +16,17 @@ impl<Schema, Operation, Input, Scope, Phase>
     pub(super) fn admit_target(
         &self,
         target: &ApplicationOperationDecisionReadTarget,
-    ) -> Result<WorthQueryOperationGraphReadScope, WorthQueryApplicationAttemptDenial> {
+    ) -> Result<super::InstalledScopePosition, WorthQueryApplicationAttemptDenial> {
         crate::domain_computation::application_contract_admission::installed_read_scope_for_target(
             self.admission.allowed_graph_contract().graph_reads(),
             target,
         )
-        .cloned()
+        .and_then(|scope| {
+            super::InstalledScopePosition::from_installed(
+                self.admission.allowed_graph_contract(),
+                scope,
+            )
+        })
         .ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,

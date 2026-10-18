@@ -36,6 +36,7 @@ pub use traversal_denial::{
 /// It resolves entities by identity field, reads fields, traverses relations,
 /// and summarizes aggregates. Every read is charged to the projection's work.
 pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
+    pub(super) value_bindings: &'runtime worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     pub(super) value_decode: &'runtime super::super::value_decode::ValueDecodeSession<'runtime>,
     pub(super) execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
     pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
@@ -191,6 +192,7 @@ where
                 self.graph.with_runtime_mut(execution, |runtime| {
             catch_unwind(AssertUnwindSafe(|| {
                 let mut reader = WorthQueryApplicationInvariantProjectionReader {
+                    value_bindings: &self.value_bindings,
                     value_decode,
                     execution,
                     runtime,

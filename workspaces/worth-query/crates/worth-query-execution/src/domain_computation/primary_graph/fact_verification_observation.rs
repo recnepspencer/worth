@@ -27,12 +27,35 @@ pub struct WorthQueryFactVerificationForTest {
     pub input_cutoffs_omitted: u64,
     /// Owned facts moved into pre-admitted native publication chunks.
     pub native_payload_fact_moves: u64,
-    /// Native chunks sealed after successful postcommit resolution.
+    /// Native chunks sealed for patched completion or postcommit publication.
     pub native_payload_chunks: u64,
     /// Pre-admitted two-child joins sealed for those chunks.
     pub native_payload_joins: u64,
+    /// Facts examined to cache deep clone bounds at cold/changed native leaves.
+    pub native_payload_size_visits: u64,
+    /// Original/decoded flat payload entries visited for cached resident sizing.
+    pub original_payload_size_visits: u64,
+    /// Actual nodes visited during sparse patch preparation/application.
+    pub native_patch_path_visits: u64,
+    /// Original native Fact bodies deep-cloned after their admission.
+    pub native_patch_fact_clones: u64,
     /// Current sealed computation facts visited while constructing ordinal/call metadata.
     pub sealed_computation_index_visits: u64,
+    /// Cold/changed completion metadata entries visited for admission, payload
+    /// construction and cached retained-bound maintenance. Counts repeated walks.
+    pub completion_metadata_visits: u64,
+    pub completed_fact_moves: u64,
+    pub completed_fact_chunks: u64,
+    pub completed_fact_joins: u64,
+    pub carried_call_records: u64,
+    pub fresh_read_key_records: u64,
+    pub handler_read_key_records: u64,
+    pub carried_key_expansion_visits: u64,
+    pub fallback_carried_metadata_visits: u64,
+    pub completion_call_roster_visits: u64,
+    pub completion_fresh_key_visits: u64,
+    /// Last refusal of an existing native completion candidate; no fact data.
+    pub native_completion_last_decline: Option<&'static str>,
     /// Admitted source facts walked before interruption/validation filtering.
     pub source_admission_visits: u64,
     /// Postcommit capacity and endpoint preparation walks over source facts.
@@ -66,7 +89,12 @@ thread_local! {
         registry_custody: [None; 32], registry_custody_omitted: 0,
         input_cutoffs: [None; 32], input_cutoffs_omitted: 0,
         native_payload_fact_moves: 0, native_payload_chunks: 0, native_payload_joins: 0,
-        sealed_computation_index_visits: 0, source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,
+        native_payload_size_visits: 0, original_payload_size_visits: 0, native_patch_path_visits: 0, native_patch_fact_clones: 0,
+        sealed_computation_index_visits: 0, completion_metadata_visits: 0,
+        completed_fact_moves: 0, completed_fact_chunks: 0, completed_fact_joins: 0,
+        carried_call_records: 0, fresh_read_key_records: 0, handler_read_key_records: 0, carried_key_expansion_visits: 0, fallback_carried_metadata_visits: 0,
+        completion_call_roster_visits: 0, completion_fresh_key_visits: 0, native_completion_last_decline: None,
+        source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,
         rebase_preparation_visits: 0, rebase_resolution_visits: 0, rebase_unanswered_visits: 0,
         value_comparison_visits: 0, retained_bound_visits: 0,
         retained_computation_visits: 0, retained_native_visits: 0, carried_seal_visits: 0,
@@ -83,6 +111,58 @@ pub fn fact_verification_on_this_thread_for_test() -> WorthQueryFactVerification
 
 pub(super) fn source_admission() {
     record(|observed| add(&mut observed.source_admission_visits, 1));
+}
+
+pub(super) fn completion_metadata() {
+    record(|observed| add(&mut observed.completion_metadata_visits, 1));
+}
+
+pub(super) fn completed_fact_move() {
+    record(|observed| add(&mut observed.completed_fact_moves, 1));
+}
+pub(super) fn completed_fact_chunk() {
+    record(|observed| add(&mut observed.completed_fact_chunks, 1));
+}
+pub(super) fn completed_fact_join() {
+    record(|observed| add(&mut observed.completed_fact_joins, 1));
+}
+pub(super) fn carried_call_record() {
+    record(|observed| add(&mut observed.carried_call_records, 1));
+}
+pub(super) fn fresh_read_key_record() {
+    record(|observed| add(&mut observed.fresh_read_key_records, 1));
+}
+pub(super) fn handler_read_key_record() {
+    record(|observed| add(&mut observed.handler_read_key_records, 1));
+}
+pub(super) fn carried_key_expansion() {
+    record(|observed| add(&mut observed.carried_key_expansion_visits, 1));
+}
+pub(super) fn fallback_carried_metadata() {
+    record(|observed| add(&mut observed.fallback_carried_metadata_visits, 1));
+}
+pub(super) fn completion_call_roster() {
+    record(|observed| add(&mut observed.completion_call_roster_visits, 1));
+}
+pub(super) fn completion_fresh_key() {
+    record(|observed| add(&mut observed.completion_fresh_key_visits, 1));
+}
+pub(super) fn native_completion_decline(reason: &'static str) {
+    record(|observed| observed.native_completion_last_decline = Some(reason));
+}
+
+pub(super) fn original_payload_size() {
+    record(|observed| add(&mut observed.original_payload_size_visits, 1));
+}
+
+pub(super) fn native_payload_size() {
+    record(|observed| add(&mut observed.native_payload_size_visits, 1));
+}
+pub(super) fn native_patch_path() {
+    record(|observed| add(&mut observed.native_patch_path_visits, 1));
+}
+pub(super) fn native_patch_clone() {
+    record(|observed| add(&mut observed.native_patch_fact_clones, 1));
 }
 
 pub(super) fn native_payload_fact_move() {

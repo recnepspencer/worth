@@ -3,6 +3,7 @@
 //! hold that value's indexed selection; the unique law then decides at
 //! lowering. A selection the decision already observed is not repeated.
 
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeSet;
 
 use worth_foundational::facade::{
@@ -68,32 +69,13 @@ impl<Schema, Operation, Input, Scope>
                 })
             },
         )?;
-        let operation = self.admission.operation();
-        let count = self
-            .facts
-            .len()
-            .checked_add(appended.len())
-            .ok_or_else(|| {
-                super::super::retained_decision_facts::StoreDenial::Representability
-                    .into_attempt_denial(operation)
-            })?;
-        self.facts = super::super::read_set::admit_array(
-            count,
-            self.facts.iter().cloned().chain(appended),
-            allocation_policy,
-            operation,
-            || {
-                self.admission
-                    .validate_current_authority()
-                    .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
-            },
-        )?;
+        self.append_completed_facts(appended, allocation_policy)?;
         Ok(())
     }
 }
 
 fn observe_created_values(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     unique: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<'_>,
     effects: &[WorthQueryApplicationRealizedEffect],
     mut observe: impl FnMut(

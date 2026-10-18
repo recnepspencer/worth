@@ -18,6 +18,14 @@ impl<Schema, Operation, Input, Scope, Phase>
         WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
         WorthQueryApplicationAttemptDenial,
     > {
+        self.check_completion_live()?;
+        if let Some(refresh) = self.native_completion.take() {
+            return self.complete_native(refresh, allocation_policy);
+        }
+        self.complete_full(allocation_policy)
+    }
+
+    pub(super) fn check_completion_live(&self) -> Result<(), WorthQueryApplicationAttemptDenial> {
         // No ignored ordinary decode refusal can seal/attribute facts, retain
         // completed input, or advance to an effect/candidate owner.
         self.check_value_decode()?;
@@ -33,6 +41,16 @@ impl<Schema, Operation, Input, Scope, Phase>
             self.admission.publication_request(),
             self.admission.operation(),
         )?;
+        Ok(())
+    }
+
+    fn complete_full(
+        mut self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
+        WorthQueryApplicationAttemptDenial,
+    > {
         if self
             .expected_facts
             .as_ref()
@@ -52,15 +70,11 @@ impl<Schema, Operation, Input, Scope, Phase>
             .zip(self.facts.keys())
             .all(|((scope_key, scope), fact_key)| {
                 scope_key == fact_key
-                    && observation_admission::graph_read_scope_matches_key(scope, fact_key)
-                    && self
-                        .admission
-                        .allowed_graph_contract()
-                        .graph_reads()
-                        .roles()
-                        .iter()
-                        .flat_map(|role| role.read_scopes())
-                        .any(|installed| installed == scope)
+                    && scope
+                        .resolve(self.admission.allowed_graph_contract())
+                        .is_some_and(|scope| {
+                            observation_admission::graph_read_scope_matches_key(scope, fact_key)
+                        })
             });
         if self.installed_read_scopes.len() != self.facts.len()
             || !installed_scopes_close_over_facts
@@ -96,8 +110,11 @@ impl<Schema, Operation, Input, Scope, Phase>
         allocation_policy.check_live().map_err(|cause| {
             WorthQueryApplicationAttemptDenial::allocation_denied(self.admission.operation(), cause)
         })?;
+        // The expected-key view and attribution shared the projection's maps.
+        // Close the view before ownership moves into retained metadata.
+        drop(self.expected_facts.take());
         let (reads, mut completed) = self.computation_reads;
-        let computation_fact_ordinals = reads.ordinals(&self.facts);
+        let computation_fact_ordinals: std::sync::Arc<[usize]> = reads.ordinals(&self.facts).into();
         let attribution = reads.into_attribution();
         let _temporary_index_memory = attribution.as_ref().map(|reads| {
             reads.index_bytes().ok_or(
@@ -112,25 +129,8 @@ impl<Schema, Operation, Input, Scope, Phase>
                 ), self.admission.operation(),
             ))?;
         let computation_facts =
-            attribution.map(|reads| SealedComputationFacts::at_seal(reads, &self.facts));
-        // Seal only validates carried reads. Absence was already written
-        // where the decision or computation dropped its state.
-        let retained = completed
-            .seal_at(computation_facts.clone(), self.lease.snapshot())
-            .map_err(|()| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                    self.admission.operation(),
-                )
-            })?;
-        // All decision reads, including dependent query and indexed-selection
-        // facts, precede producer-source facts whose equality the prepared input proves.
-        self.admission.record_completed_handler_facts(
-            CompletedHandlerFactBoundary::from_completed_read(
-                self.facts.len() + self.source_facts.handler_len(),
-            ),
-            retained,
-        );
+            attribution.map(|reads| SealedComputationFacts::prepare(reads, self.facts.keys()));
+        let handler_fact_count = self.facts.len() + self.source_facts.handler_len();
         let operation = self.admission.operation();
         let fact_count = self
             .facts
@@ -152,15 +152,43 @@ impl<Schema, Operation, Input, Scope, Phase>
             operation,
             check_authority,
         )?;
-        let facts = super::admit_array(
+        let facts = super::admit_completed_facts(
             fact_count,
             self.facts
                 .into_values()
                 .chain(self.source_facts.into_values()),
             allocation_policy,
+            self.admission.publication_request(),
             operation,
             check_authority,
         )?;
+        let installed_read_scopes = super::CompletedReadScopes::from_completed(
+            self.admission.retain_graph_contract(),
+            installed_read_scopes,
+        );
+        let computation_facts = computation_facts.map(|metadata| {
+            metadata.bind(
+                facts.clone(),
+                self.admission.retain_graph_contract(),
+                installed_read_scopes.clone(),
+                self.admission.scope_entity_id(),
+                std::sync::Arc::clone(&computation_fact_ordinals),
+            )
+        });
+        // Original facts and their checked metadata exist before retention seals;
+        // postcommit facts are authored later into a distinct carrier.
+        let retained = completed
+            .seal_at(computation_facts.clone(), self.lease.snapshot())
+            .map_err(|()| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
+                    self.admission.operation(),
+                )
+            })?;
+        self.admission.record_completed_handler_facts(
+            CompletedHandlerFactBoundary::from_completed_read(handler_fact_count),
+            retained,
+        );
         Ok(WorthQueryCompleteApplicationReadSet {
             admission: self.admission,
             lease: self.lease,
@@ -196,7 +224,7 @@ impl<Schema, Operation, Input, Scope, Phase>
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn decision_facts(
         &self,
-    ) -> &[super::WorthQueryApplicationObservedFact] {
-        &self.facts
+    ) -> Vec<super::WorthQueryApplicationObservedFact> {
+        self.facts.iter().cloned().collect()
     }
 }

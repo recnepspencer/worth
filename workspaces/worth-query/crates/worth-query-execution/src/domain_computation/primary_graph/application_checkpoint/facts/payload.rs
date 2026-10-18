@@ -2,8 +2,11 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionMemoryReservation, MemoryLimitLevel};
+mod chunk;
+mod concatenation;
 mod iteration;
 mod native;
+mod patch;
 mod sequence;
 #[cfg(test)]
 mod tests;
@@ -44,6 +47,8 @@ pub(in crate::domain_computation::primary_graph) struct FactPayload {
     start: usize,
     length: usize,
     storage_bytes: Option<u64>,
+    resident_bytes: Option<u64>,
+    height: usize,
 }
 #[derive(Clone, Debug)]
 enum FactStorage {
@@ -52,7 +57,7 @@ enum FactStorage {
         facts: Arc<[Fact]>,
         _funding: Arc<CodecPayloadReservation>,
     },
-    Native(Arc<worth_execution::ExecutionArray<Fact>>),
+    Native(Arc<chunk::NativeFactChunk>),
     Joined {
         children: Arc<worth_execution::ExecutionArray<FactPayload>>,
     },
@@ -67,14 +72,17 @@ impl FactPayload {
                 >()?,
             )
         });
+        let resident_bytes = resident_bytes(&facts, storage_bytes);
         Self {
             storage_bytes,
+            resident_bytes,
             storage: FactStorage::Decoded {
                 facts: facts.into(),
                 _funding: funding,
             },
             start: 0,
             length,
+            height: 0,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn same_backing(&self, other: &Self) -> bool {
@@ -97,6 +105,13 @@ impl FactPayload {
         &self,
     ) -> Option<u64> {
         self.storage_bytes
+    }
+    /// Whole retained backing and nested payload, conservatively counting
+    /// shared owners per held path; no global deduplication promise.
+    pub(in crate::domain_computation::primary_graph) fn retained_resident_bytes(
+        &self,
+    ) -> Option<u64> {
+        self.resident_bytes
     }
     pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         self.length
@@ -132,21 +147,19 @@ impl FactPayload {
         assert!(range.start <= range.end && range.end <= self.length);
         Self {
             storage_bytes: self.storage_bytes,
+            resident_bytes: self.resident_bytes,
             storage: self.storage.clone(),
             start: self.start + range.start,
             length: range.len(),
+            height: self.height,
         }
     }
-    fn native(facts: worth_execution::ExecutionArray<Fact>) -> Self {
-        let length = facts.len();
-        let storage_bytes = array_storage_bytes::<Fact>(length);
-        Self {
-            storage_bytes,
-            storage: FactStorage::Native(Arc::new(facts)),
-            start: 0,
-            length,
-        }
+    pub(in crate::domain_computation::primary_graph) fn native(
+        facts: worth_execution::ExecutionArray<Fact>,
+    ) -> Self {
+        Self::copied_native(facts, None, None)
     }
+
     fn joined(children: worth_execution::ExecutionArray<Self>) -> Self {
         assert_eq!(children.len(), 2);
         let length = children[0]
@@ -158,13 +171,21 @@ impl FactPayload {
                 .checked_add(children[0].storage_bytes?)?
                 .checked_add(children[1].storage_bytes?)
         });
+        let resident_bytes = array_storage_bytes::<Self>(2).and_then(|bytes| {
+            bytes
+                .checked_add(children[0].resident_bytes?)?
+                .checked_add(children[1].resident_bytes?)
+        });
+        let height = children[0].height.max(children[1].height) + 1;
         Self {
             storage_bytes,
+            resident_bytes,
             storage: FactStorage::Joined {
                 children: Arc::new(children),
             },
             start: 0,
             length,
+            height,
         }
     }
     fn chunk_at(&self, ordinal: usize) -> (usize, &[Fact]) {
@@ -173,7 +194,7 @@ impl FactPayload {
             FactStorage::Original(facts) | FactStorage::Decoded { facts, .. } => {
                 (0, facts.as_ref())
             }
-            FactStorage::Native(facts) => (0, facts.elements()),
+            FactStorage::Native(chunk) => (0, chunk.facts.elements()),
             FactStorage::Joined { children, .. } => {
                 let left = children[0].len();
                 if ordinal < left {
@@ -195,11 +216,14 @@ impl From<Arc<[Fact]>> for FactPayload {
     fn from(facts: Arc<[Fact]>) -> Self {
         let length = facts.len();
         let storage_bytes = original_storage_bytes(length);
+        let resident_bytes = resident_bytes(&facts, storage_bytes);
         Self {
             storage_bytes,
+            resident_bytes,
             storage: FactStorage::Original(facts),
             start: 0,
             length,
+            height: 0,
         }
     }
 }
@@ -246,4 +270,14 @@ fn array_storage_bytes<T>(count: usize) -> Option<u64> {
     use crate::domain_computation::primary_graph::output_lineage::invalidation::arc_bytes;
     arc_bytes::<worth_execution::ExecutionArray<T>>()?
         .checked_add(u64::try_from(std::mem::size_of::<T>().checked_mul(count)?).ok()?)
+}
+
+// Original/decoded construction is explicitly cold/full. Warm native patch
+// never enters this loop; changed native leaves cache the same bound locally.
+fn resident_bytes(facts: &[Fact], backing: Option<u64>) -> Option<u64> {
+    use worth_execution::ChargedBytes;
+    facts.iter().try_fold(backing?, |bytes, fact| {
+        crate::domain_computation::primary_graph::fact_verification_observation::original_payload_size();
+        bytes.checked_add(fact.additional_charged_bytes())
+    })
 }

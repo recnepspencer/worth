@@ -10,18 +10,40 @@ use worth_execution::{ExecutionAllocationDenial, ExecutionArray, ExecutionArrayB
 const CHUNK: usize = 32;
 type AuthorSlots<T> = ExecutionArray<RefCell<Option<T>>>;
 
+#[derive(Clone, Copy)]
+enum BuildStage {
+    CompletedRead,
+    Postcommit,
+}
+
 pub(in crate::domain_computation::primary_graph) struct NativeFactPayloadBuilder {
     chunks: AuthorSlots<ExecutionArrayBuilder<Fact>>,
     joins: AuthorSlots<ExecutionArrayBuilder<FactPayload>>,
     roots: AuthorSlots<FactPayload>,
     count: usize,
     written: usize,
+    stage: BuildStage,
 }
 
 impl NativeFactPayloadBuilder {
     pub(in crate::domain_computation::primary_graph) fn allocate(
         count: usize,
         control: StorageControl<'_, '_>,
+    ) -> Result<Self, StoreDenial> {
+        Self::allocate_at(count, control, BuildStage::Postcommit)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn allocate_completed_read(
+        count: usize,
+        control: StorageControl<'_, '_>,
+    ) -> Result<Self, StoreDenial> {
+        Self::allocate_at(count, control, BuildStage::CompletedRead)
+    }
+
+    fn allocate_at(
+        count: usize,
+        control: StorageControl<'_, '_>,
+        stage: BuildStage,
     ) -> Result<Self, StoreDenial> {
         control.check_live()?;
         let chunk_count = count.div_ceil(CHUNK).max(1);
@@ -46,6 +68,7 @@ impl NativeFactPayloadBuilder {
             roots,
             count,
             written: 0,
+            stage,
         })
     }
 
@@ -59,7 +82,10 @@ impl NativeFactPayloadBuilder {
             .as_mut()
             .expect("unsealed native chunk")
             .push(fact)?;
-        fact_verification_observation::native_payload_fact_move();
+        match self.stage {
+            BuildStage::CompletedRead => fact_verification_observation::completed_fact_move(),
+            BuildStage::Postcommit => fact_verification_observation::native_payload_fact_move(),
+        }
         self.written += 1;
         Ok(())
     }
@@ -74,7 +100,10 @@ impl NativeFactPayloadBuilder {
                 .expect("one admitted native chunk")
                 .seal()?;
             *self.roots[index].borrow_mut() = Some(FactPayload::native(chunk));
-            fact_verification_observation::native_payload_chunk();
+            match self.stage {
+                BuildStage::CompletedRead => fact_verification_observation::completed_fact_chunk(),
+                BuildStage::Postcommit => fact_verification_observation::native_payload_chunk(),
+            }
         }
         // Pair adjacent subtrees in the pre-admitted scratch slots. Taking each
         // child moves its admission; no fact copy or new policy admission occurs.
@@ -100,7 +129,14 @@ impl NativeFactPayloadBuilder {
                     children.push(left)?;
                     children.push(right)?;
                     let root = FactPayload::joined(children.seal()?);
-                    fact_verification_observation::native_payload_join();
+                    match self.stage {
+                        BuildStage::CompletedRead => {
+                            fact_verification_observation::completed_fact_join()
+                        }
+                        BuildStage::Postcommit => {
+                            fact_verification_observation::native_payload_join()
+                        }
+                    }
                     root
                 } else {
                     left

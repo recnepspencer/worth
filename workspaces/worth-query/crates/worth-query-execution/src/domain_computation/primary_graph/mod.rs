@@ -105,7 +105,7 @@ pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQ
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(crate) use provider::WorthQueryRetainedPreImageSeal;
 pub(crate) use provider::WorthQueryPrimaryGraphProvider;
-pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicationDecisionFact;
+pub(in crate::domain_computation) use provider::{CompletedApplicationFacts, WorthQueryPrimaryGraphApplicationDecisionFact};
 pub(in crate::domain_computation) use provider::WorthQueryAftermathCausalityReadDenial;
 pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation) use application_branch::primary_relational_branch_id;

@@ -94,9 +94,29 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
                     "native publication consumes joined storage, not just a flat counterpart"
                 );
             }
+            assert_eq!(
+                examined.sealed_computation_index_visits, 0,
+                "{size}: native completion consumes checked original metadata: {examined:?}"
+            );
+            assert_eq!(
+                examined.carried_key_expansion_visits, 0,
+                "{size}: carried calls do not expand every prior key at completion: {examined:?}"
+            );
+            assert_eq!(examined.fallback_carried_metadata_visits, 0,
+                "{size}: fixed native completion does not hide a fallback metadata walk: {examined:?}");
             assert!(
-                examined.sealed_computation_index_visits >= size as u64,
-                "{size}: current sealed metadata still visits the population: {examined:?}"
+                examined.native_patch_path_visits > 0 && examined.native_patch_fact_clones > 0,
+                "{size}: actual ordinary publication consumes a funded native patch: {examined:?}"
+            );
+            let refreshed_keys =
+                examined.handler_read_key_records + examined.fresh_read_key_records;
+            assert!(
+                examined.native_patch_fact_clones <= 32 * refreshed_keys,
+                "{size}: copies follow changed leaf granules and actual fresh reads: {examined:?}"
+            );
+            assert!(
+                examined.completion_call_roster_visits >= size as u64,
+                "{size}: still-full native call roster checks remain visible: {examined:?}"
             );
             assert!(
                 examined.source_admission_visits > 0,
@@ -136,6 +156,12 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
             "{size}: comparison depends on the edited facts, not retained population"
         );
         assert_eq!(runs[0].retained_native_visits, first.retained_native_visits);
+        assert_eq!(runs[0].completed_fact_moves, first.completed_fact_moves,
+            "{size}: current source suffix is moved once; carried decision facts stay in their backing");
+        assert_eq!(
+            runs[0].completion_fresh_key_visits, first.completion_fresh_key_visits,
+            "{size}: current key-set validation follows newly executed reads"
+        );
     }
     eprintln!(
         "native dirty comparison and remaining current-read/meta work at 1/10/100: {growth:?}"

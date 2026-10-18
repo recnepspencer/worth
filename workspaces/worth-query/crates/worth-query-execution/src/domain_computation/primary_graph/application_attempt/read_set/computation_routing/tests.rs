@@ -207,3 +207,65 @@ fn ordinal_alignment_includes_handler_gaps_and_retains_shared_call_keys() {
     );
     assert_eq!(sealed.observation_work_bound(), Some(2));
 }
+
+#[test]
+fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
+    use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+    use crate::domain_computation::primary_graph::application_checkpoint::facts::{
+        FactPayload, NativeFactPayloadBuilder,
+    };
+    let observed: BTreeMap<_, _> = (1..=5)
+        .map(|slot| {
+            (
+                key(slot),
+                WorthQueryApplicationObservedFact::Entity {
+                    entity_id: entity(slot),
+                    kind: KindId::new(slot as u32),
+                },
+            )
+        })
+        .collect();
+    let mut reads = ComputationFactAttribution::default();
+    reads.record(key(2), partition(7));
+    reads.record(key(2), partition(9));
+    reads.record(key(4), ComputationRead::Membership);
+    let metadata = SealedComputationFacts::prepare(reads, observed.keys());
+    let mut body = NativeFactPayloadBuilder::allocate_completed_read(
+        observed.len(),
+        StorageControl::new(
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            None,
+        ),
+    )
+    .unwrap();
+    for fact in observed.values().cloned() {
+        body.push(fact).unwrap();
+    }
+    let body: FactPayload = body.seal().unwrap();
+    let sealed = metadata.bind_fixture(body.clone());
+    assert!(std::ptr::eq(
+        body.get(1).unwrap(),
+        sealed.fact(&key(2)).unwrap()
+    ));
+    assert!(std::ptr::eq(
+        body.get(3).unwrap(),
+        sealed.at_ordinal(3).unwrap().1
+    ));
+    assert!(sealed.at_ordinal(0).is_none(), "handler gap remains exact");
+    let cloned = sealed.clone();
+    assert!(std::sync::Arc::ptr_eq(&sealed.index, &cloned.index));
+    assert!(std::sync::Arc::ptr_eq(&sealed.metadata, &cloned.metadata));
+    assert!(sealed.original.same_backing(&cloned.original));
+    let replacement = WorthQueryApplicationObservedFact::Entity {
+        entity_id: entity(2),
+        kind: KindId::new(99),
+    };
+    let mut adversarial = cloned;
+    adversarial.replace_fact(&key(2), replacement.clone());
+    assert_eq!(adversarial.fact(&key(2)), Some(&replacement));
+    assert_eq!(
+        sealed.fact(&key(2)),
+        body.get(1),
+        "another observer cannot alter original comparator facts"
+    );
+}

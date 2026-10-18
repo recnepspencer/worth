@@ -110,11 +110,13 @@ impl Eq for ComputationInstallation {}
 /// producer edition and the input value's digest. The installation fixes
 /// the feature, computation and owner types, so a state is never another
 /// owner's, nor another installation's of the same owner type.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub(super) struct RetainedBasis {
     installation: ComputationInstallation,
     edition: InstalledProducerEdition,
     input_digest: [u8; 32],
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
 }
 
 impl RetainedBasis {
@@ -122,11 +124,13 @@ impl RetainedBasis {
         installation: ComputationInstallation,
         edition: InstalledProducerEdition,
         input_digest: [u8; 32],
+        value_bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     ) -> Self {
         Self {
             installation,
             edition,
             input_digest,
+            value_bindings,
         }
     }
 
@@ -139,18 +143,32 @@ impl RetainedBasis {
         }
     }
 
+    #[cfg(test)]
+    pub(super) fn with_value_bindings_for_test(
+        &self,
+        value_bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    ) -> Self {
+        Self {
+            value_bindings,
+            ..self.clone()
+        }
+    }
+
     /// Why `prior` is not this run's basis, or `None` when it is.
     pub(super) fn drift(&self, prior: &Self) -> Option<WorthQueryPartitionedComputationFullCause> {
-        if self == prior {
-            return None;
-        }
-        Some(if self.installation != prior.installation {
-            WorthQueryPartitionedComputationFullCause::OtherInstallation
+        if self.installation != prior.installation
+            || !self
+                .value_bindings
+                .same_installation_as(&prior.value_bindings)
+        {
+            Some(WorthQueryPartitionedComputationFullCause::OtherInstallation)
         } else if self.edition != prior.edition {
-            WorthQueryPartitionedComputationFullCause::OtherEdition
+            Some(WorthQueryPartitionedComputationFullCause::OtherEdition)
+        } else if self.input_digest != prior.input_digest {
+            Some(WorthQueryPartitionedComputationFullCause::InputChanged)
         } else {
-            WorthQueryPartitionedComputationFullCause::InputChanged
-        })
+            None
+        }
     }
 }
 

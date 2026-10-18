@@ -62,7 +62,7 @@ impl<'a> Cursor<'a> {
                 FactStorage::Original(facts) | FactStorage::Decoded { facts, .. } => {
                     self.leaf = facts[start..end].iter();
                 }
-                FactStorage::Native(facts) => self.leaf = facts.elements()[start..end].iter(),
+                FactStorage::Native(chunk) => self.leaf = chunk.facts.elements()[start..end].iter(),
                 FactStorage::Joined { children } => {
                     let left = children[0].len();
                     let right_start = start.saturating_sub(left);

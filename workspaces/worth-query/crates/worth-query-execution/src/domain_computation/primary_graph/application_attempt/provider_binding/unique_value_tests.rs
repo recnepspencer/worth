@@ -215,14 +215,8 @@ fn lower(
         fixture.fields(),
         PartitionId::main(),
         effects.len(),
-        super::super::read_set::admit_array(
-            0,
-            [],
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            "read scopes",
-            || Ok(()),
-        )
-        .unwrap(),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture,
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(
         super::super::read_set::admit_array(
             facts.len(),
             facts,
@@ -230,7 +224,8 @@ fn lower(
             "unique fixture",
             || Ok(()),
         )
-        .unwrap(),
+        .unwrap()
+        ),
         Vec::new(),
         effects,
         0,

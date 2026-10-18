@@ -6,13 +6,13 @@ use worth_foundational::{
 };
 use worth_relational::facade::identity::PartitionId;
 
-fn fact(ordinal: usize) -> Fact {
+pub(super) fn fact(ordinal: usize) -> Fact {
     Fact::SourceEntity {
         entity_id: EntityId::new(PartitionId::main(), (ordinal % 17) as u64, 1),
     }
 }
 
-fn native(count: usize, control: StorageControl<'_, '_>) -> FactPayload {
+pub(super) fn native(count: usize, control: StorageControl<'_, '_>) -> FactPayload {
     let mut builder = NativeFactPayloadBuilder::allocate(count, control).unwrap();
     for ordinal in 0..count {
         builder.push(fact(ordinal)).unwrap();

@@ -28,6 +28,9 @@ impl<Key, Item, Reduced> TypedPrior<Key, Item, Reduced> {
         drop(typed);
         state
     }
+    pub(super) fn retain_state(&self) -> Arc<CustodiedComputation> {
+        Arc::clone(&self.state)
+    }
 }
 
 impl<Key: Send + Sync + 'static, Item: Send + Sync + 'static, Reduced: Send + Sync + 'static>
