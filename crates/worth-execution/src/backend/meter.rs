@@ -147,6 +147,9 @@ impl Drop for WorkerActivityGuard {
 }
 
 impl RunLimits {
+    pub(crate) fn poll_request(&self) -> Result<(), KernelStop> {
+        self.safe_point(&mut NestedStop::Clear)
+    }
     pub(crate) fn work_stop_owner(&self) -> NestedStopOwner {
         self.ceiling_owner
     }

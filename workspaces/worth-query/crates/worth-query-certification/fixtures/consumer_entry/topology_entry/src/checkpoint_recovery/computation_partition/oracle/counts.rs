@@ -104,6 +104,14 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
             );
             assert_eq!(examined.fallback_carried_metadata_visits, 0,
                 "{size}: fixed native completion does not hide a fallback metadata walk: {examined:?}");
+            assert_eq!(
+                examined.content_field_index_visits, 0,
+                "{size}: value edits share the checked address lookup: {examined:?}"
+            );
+            assert!(
+                examined.content_leaf_derivations > 0 && examined.content_pair_derivations > 0,
+                "{size}: real native publication consumes the new content rule: {examined:?}"
+            );
             assert!(
                 examined.native_patch_path_visits > 0 && examined.native_patch_fact_clones > 0,
                 "{size}: actual ordinary publication consumes a funded native patch: {examined:?}"
@@ -117,6 +125,24 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
             assert!(
                 examined.completion_call_roster_visits >= size as u64,
                 "{size}: still-full native call roster checks remain visible: {examined:?}"
+            );
+            assert_eq!(examined.computation_dispatch_plan_visits, 1,
+                "{size}: only the actually changed partition constructs a native input: {examined:?}");
+            assert_eq!(
+                examined.computation_result_receiver_visits, 1,
+                "{size}: only that changed native result is looked up: {examined:?}"
+            );
+            assert_eq!(examined.computation_tree_plan_visits, 0,
+                "{size}: an ordinary fixed-membership edit constructs no full tree plan: {examined:?}");
+            assert_eq!(examined.computation_native_carried_slot_visits, 0,
+                "{size}: fitting unchanged native ranges dispatch no individual slots: {examined:?}");
+            assert!(
+                examined.computation_prepared_partition_visits >= size as u64,
+                "{size}: still-full Query call preparation remains visible: {examined:?}"
+            );
+            assert!(
+                examined.computation_retained_size_visits >= size as u64,
+                "{size}: still-full item/call retained sizing remains visible: {examined:?}"
             );
             assert!(
                 examined.source_admission_visits > 0,
@@ -152,6 +178,10 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
     let first = growth[0].1[0];
     for (size, runs) in &growth {
         assert_eq!(
+            runs[0].content_leaf_derivations, first.content_leaf_derivations,
+            "{size}: logical leaves derive only at refreshed ordinals and the fresh source suffix"
+        );
+        assert_eq!(
             runs[0].retained_computation_visits, first.retained_computation_visits,
             "{size}: comparison depends on the edited facts, not retained population"
         );
@@ -164,7 +194,7 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
         );
     }
     eprintln!(
-        "native dirty comparison and remaining current-read/meta work at 1/10/100: {growth:?}"
+        "native dirty comparison, result staging and remaining current-read/meta work at 1/10/100: {growth:?}"
     );
 }
 

@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn derive_identity(
+pub(in crate::domain_computation::primary_graph::application_attempt::dependency_identity) fn derive_identity(
     rule_version: &str,
     entries: Vec<CanonicalBasisEntry>,
     maximum_canonical_bytes: usize,

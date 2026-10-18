@@ -126,6 +126,7 @@ impl PreparedComputationFacts {
         scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
         root: worth_relational::facade::identity::EntityId,
         computation_ordinals: Arc<[usize]>,
+        content: Option<super::super::super::FactContent>,
     ) -> SealedComputationFacts {
         let layout = CheckedReadLayout::new(
             contracts,
@@ -141,6 +142,7 @@ impl PreparedComputationFacts {
         self.finish(
             original,
             layout::SealedReadLayout::Checked(Arc::new(layout)),
+            content,
         )
     }
 
@@ -148,11 +150,13 @@ impl PreparedComputationFacts {
         self,
         original: FactPayload,
         layout: layout::SealedReadLayout,
+        content: Option<super::super::super::FactContent>,
     ) -> SealedComputationFacts {
         let mut result = SealedComputationFacts {
             index: self.index,
             metadata: self.metadata,
             original,
+            content,
             charged: None,
             layout,
         };
@@ -162,6 +166,6 @@ impl PreparedComputationFacts {
 
     #[cfg(test)]
     pub(super) fn bind_fixture(self, original: FactPayload) -> SealedComputationFacts {
-        self.finish(original, layout::SealedReadLayout::OwnerFixture)
+        self.finish(original, layout::SealedReadLayout::OwnerFixture, None)
     }
 }

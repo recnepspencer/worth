@@ -12,6 +12,8 @@ use super::retained::RetainedPartitions;
 use super::tree_attempt::{EditDisposition, TreeAttempt};
 use super::tree_report::{ReportedTree, WorthQueryPartitionedTreeRebuildCause as Cause};
 
+pub(super) use super::tree_membership::TreeTarget;
+
 type Tree<Reduced> = ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>;
 
 /// Only this entry/preparation owner can mint a zero-work beginning.
@@ -35,7 +37,7 @@ pub(super) struct TreeBeginning(());
 /// exists unreserved; the caller then settles the hold to the tree it keeps.
 pub(super) fn next_tree<Key, Item, Reduced, Stopped>(
     retained: &RetainedPartitions<Key, Item, Reduced>,
-    plan: ReductionPlan,
+    target: impl Into<TreeTarget>,
     reduction_work: Option<u64>,
     mut results: BTreeMap<PartitionIdentity, Reduced>,
     remaining: u64,
@@ -49,9 +51,18 @@ where
 {
     // A failed edit's transient hold is not part of the rebuild's input
     // results. Preserve their original charge before any path copies exist.
+    let target = target.into();
+    let removed = target.removed(retained);
     let results_bytes = memory.bytes();
     let edit = if reduction_work.is_some_and(|work| work <= remaining) {
-        edited(retained, &plan, &results, declared_bytes, execution, memory)
+        edited(
+            retained,
+            &removed,
+            &results,
+            declared_bytes,
+            execution,
+            memory,
+        )
     } else {
         let cause = Cause::WorkCeiling;
         TreeAttempt::unstarted(TreeBeginning(()), Ok(EditDisposition::Rebuild(cause)))
@@ -59,7 +70,7 @@ where
     edit.resolve(|| {
         rebuild(
             retained,
-            plan,
+            target.into_plan(),
             &mut results,
             remaining,
             results_bytes,
@@ -157,7 +168,7 @@ where
 /// owned outcome and metrics before success, interruption, or rebuild selection.
 fn edited<Key, Item, Reduced, Stopped>(
     retained: &RetainedPartitions<Key, Item, Reduced>,
-    plan: &ReductionPlan,
+    removed: &worth_proof::CanonicalUniqueVec<PartitionIdentity>,
     results: &BTreeMap<PartitionIdentity, Reduced>,
     declared_bytes: u64,
     execution: &QueryRequestExecution<'_>,
@@ -176,8 +187,7 @@ where
     let attempt = TreeAttempt::unstarted(TreeBeginning(()), Ok(retained.tree.clone()));
     super::tree_edits::apply(
         attempt,
-        retained,
-        plan,
+        removed,
         results,
         declared_bytes,
         held,

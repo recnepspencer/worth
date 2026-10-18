@@ -10,6 +10,60 @@ use crate::{oracle::CanonicalBits, report::ChargedBytes};
 
 use super::{node_bytes, Link, Node, ReductionMetrics, ReductionRunFailure, ReductionRunStop};
 
+/// One node policy; both reduction values and native settled slots use the
+/// same Cartesian insertion, path copying, deletion and merge machinery.
+pub(super) trait NodeEngine<T, E> {
+    fn inspect(&mut self) {}
+    fn validate(&self, value: &T) -> Result<(), ReductionRunStop<E>>;
+    fn same(&self, left: &T, right: &T) -> Result<bool, ReductionRunStop<E>>;
+    fn build(
+        &mut self,
+        identity: PartitionIdentity,
+        value: T,
+        left: Link<T>,
+        right: Link<T>,
+    ) -> Result<Arc<Node<T>>, ReductionRunStop<E>>;
+    fn carry(
+        &mut self,
+        old: &Arc<Node<T>>,
+        value: T,
+        left: Link<T>,
+        right: Link<T>,
+    ) -> Result<Arc<Node<T>>, ReductionRunStop<E>>;
+}
+
+impl<T, F, H, E> NodeEngine<T, E> for Engine<'_, T, F, H>
+where
+    T: Clone + ChargedBytes + CanonicalBits,
+    F: Fn(&T, &T) -> T,
+    H: FnMut() -> Result<(), E>,
+{
+    fn validate(&self, value: &T) -> Result<(), ReductionRunStop<E>> {
+        self.validate(value)
+    }
+    fn same(&self, left: &T, right: &T) -> Result<bool, ReductionRunStop<E>> {
+        self.same(left, right)
+    }
+    fn build(
+        &mut self,
+        id: PartitionIdentity,
+        value: T,
+        left: Link<T>,
+        right: Link<T>,
+    ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
+        self.build(id, value, left, right)
+    }
+    fn carry(
+        &mut self,
+        old: &Arc<Node<T>>,
+        value: T,
+        left: Link<T>,
+        right: Link<T>,
+    ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
+        Engine::carry(self, old, value, left, right)
+    }
+}
+
 pub(super) struct Engine<'a, T, F, H> {
     identity: &'a T,
     combine: &'a F,
@@ -143,6 +197,7 @@ fn make_node<T: ChargedBytes, E>(
         right,
         retained_bytes,
         full_subtree_span,
+        _memory: None,
     }))
 }
 

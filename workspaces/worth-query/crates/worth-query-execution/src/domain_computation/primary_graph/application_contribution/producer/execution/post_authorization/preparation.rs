@@ -262,29 +262,17 @@ where
                 |denial| provider.domain_denial_reason(denial),
             )?;
             let (mut program, _) = completed.into_parts(); // Retries bind the complete typed dependency set.
+            let identity_execution = phase.execution_request_for(&runtime.product_runtime)
+                .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer content phase"))?;
             let (key_identity, dependency_identity) = program
         .producer_idempotency_identities::<Operation<Schema, Binding>>(
             runtime,
             *identities.key_identity(),
             successor_of,
             request_admission,
+            identity_execution.allocation_policy(),
         )
-        .map_err(|identity_denial| {
-            if identity_denial
-                == crate::domain_computation::primary_graph::application_attempt::WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded
-            {
-                // This admitted demand cannot increase its limit; execution closes terminally.
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    Binding::IDENTITY,
-                )
-            } else {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                    format!("{}: {identity_denial:?}", Binding::IDENTITY),
-                )
-            }
-        })?;
+        .map_err(|identity_denial| super::super::denial::identity_failed(Binding::IDENTITY, identity_denial))?;
             let idempotency = bound_source
                 .bind_idempotency(
                     WorthQueryApplicationIdempotencyBinding::new(

@@ -7,13 +7,17 @@ use crate::{oracle::CanonicalBits, report::ChargedBytes};
 use super::plan::{ReductionDenial, ReductionPlan};
 
 mod construction;
+mod denial;
+use denial::{failure, pure_denial};
 mod edit;
 mod full_cost;
 mod memory;
 mod recombine;
+mod retained_run;
 mod scheduled;
 mod staged;
 mod structural_span;
+pub(crate) use retained_run::{RunRange, RunTree};
 
 use construction::Shape;
 use edit::{contains, delete, insert, update};
@@ -32,6 +36,9 @@ pub(super) struct Node<T> {
     pub(super) right: Link<T>,
     pub(super) retained_bytes: u64,
     pub(super) full_subtree_span: u64,
+    // Native retained slots fund each copied node independently. Ordinary
+    // reductions retain their existing enclosing tree reservation.
+    pub(super) _memory: Option<crate::ExecutionMemoryReservation>,
 }
 
 /// Completed node recombinations and entered combine calls for one operation.
@@ -376,22 +383,5 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
     ) -> Result<ReductionMetrics, ReductionDenial> {
         self.delete_checked(partition, u64::MAX, || Ok::<_, ()>(()))
             .map_err(pure_denial)
-    }
-}
-
-fn failure<E>(reason: ReductionRunStop<E>) -> ReductionRunFailure<E> {
-    ReductionRunFailure {
-        reason,
-        metrics: ReductionMetrics::default(),
-    }
-}
-
-fn pure_denial(failure: ReductionRunFailure<()>) -> ReductionDenial {
-    match failure.reason {
-        ReductionRunStop::Denial(denial) => denial,
-        ReductionRunStop::Panic => ReductionDenial::ReducerPanic,
-        ReductionRunStop::Hook(()) => unreachable!("infallible structural hook"),
-        ReductionRunStop::ResultCapacityExceeded => ReductionDenial::ResultCapacityExceeded,
-        ReductionRunStop::WorkCounterOverflow => ReductionDenial::WorkCounterOverflow,
     }
 }

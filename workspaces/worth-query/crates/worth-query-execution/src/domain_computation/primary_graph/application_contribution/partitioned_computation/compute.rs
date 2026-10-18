@@ -167,13 +167,6 @@ where
             WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
         )
         .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-        let retain = match &self.run {
-            PreparedRun::Full { recording, .. } => {
-                recording.as_ref().is_ok_and(FullRecording::can_retain)
-            }
-            PreparedRun::Incremental(prepared) => prepared.can_retain(),
-        };
-        let recording_steps = super::incremental::KernelRecording::new(execution.request, retain);
         let compute_kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                               context: &mut MapKernelContext<'_, '_>,
                               #[cfg(test)] native: Option<
@@ -202,14 +195,12 @@ where
         };
         let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                       context: &mut MapKernelContext<'_, '_>| {
-            recording_steps.record(partition.identity, context, |context| {
-                compute_kernel(
-                    partition,
-                    context,
-                    #[cfg(test)]
-                    None,
-                )
-            })
+            compute_kernel(
+                partition,
+                context,
+                #[cfg(test)]
+                None,
+            )
         };
         // Certification reruns the same owner without touching request retention
         // or its memory reservations. The original native kernel alone issues receipts.
@@ -243,9 +234,7 @@ where
                 #[cfg(test)]
                 let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                               context: &mut MapKernelContext<'_, '_>| {
-                    recording_steps.record(partition.identity, context, |context| {
-                        compute_kernel(partition, context, Some(dispatch.native_lease_for_test()))
-                    })
+                    compute_kernel(partition, context, Some(dispatch.native_lease_for_test()))
                 };
                 // The map's admission takes over the gathered partitions' hold,
                 // and the tree is handed to `tree_memory` as the run ends.
@@ -253,9 +242,9 @@ where
                     .request
                     .reserve(0)
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-                let (tree, report, metrics) = transport.call(|| {
+                let (tree, report, metrics, partition_results) = transport.call(|| {
                     let reduced = dispatch
-                        .reduce(
+                        .reduce_retained(
                             remaining_work,
                             &map,
                             memory.into_held(),
@@ -266,15 +255,8 @@ where
                             declared_bytes,
                             cause,
                         )
-                        .map_err(|denial| {
-                            // The reduce pattern contains its kernels' panics:
-                            // what is left is the reducer's.
-                            WorthQueryPartitionedComputationDenial::from_work_ceiling(
-                                denial,
-                                WorthQueryPartitionedComputationDenial::ReducerPanicked,
-                            )
-                        })?;
-                    reduced.map_err(WorthQueryPartitionedComputationDenial::from_reduce)
+                        .map_err(WorthQueryPartitionedComputationDenial::from_retained_reduce)?;
+                    Ok((reduced.tree, reduced.report, reduced.metrics, reduced.run))
                 })?;
                 if let Some(observer) = &self.kernel_observation_for_test {
                     observer.record(
@@ -290,9 +272,16 @@ where
                 }
                 let reduced = tree.result().clone();
                 let completed = match recording {
-                    Ok(recording) => {
-                        recording.complete(recording_steps.take(), tree, tree_memory, cause, report)
-                    }
+                    Ok(recording) => recording
+                        .complete(
+                            partition_results,
+                            tree,
+                            tree_memory,
+                            execution.request,
+                            cause,
+                            report,
+                        )
+                        .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
                     Err(reason) => {
                         observe_unretained(cause, report);
                         CompletedComputationRetention::Absent(PriorAbsence::Suppressed(reason))
@@ -308,7 +297,6 @@ where
                 } = prepared.compute(
                     execution.request,
                     kernel,
-                    &recording_steps,
                     self.kernel_observation_for_test.as_ref(),
                     &reducer,
                     transport,

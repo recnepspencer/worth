@@ -9,9 +9,10 @@
 use worth_execution::{
     CanonicalBits, ChargedBytes, ExecutionMap, ExecutionMemoryReservation, ExecutionResourceLease,
     ExecutionWorkCeiling, LeaseDenial, LeaseRequest, MapKernelContext, MapKernelFailure,
-    MapKernelStop, MapOutcome, ReduceInputDenial, ReductionMetrics, ReductionTree,
-    WorkCeilingDenial,
+    MapKernelStop, ReductionTree, WorkCeilingDenial,
 };
+#[cfg(test)]
+use worth_execution::{MapOutcome, ReduceInputDenial, ReductionMetrics};
 use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
@@ -36,6 +37,7 @@ pub use test_authority::query_test_execution_authority_for_test;
 type Resource = WorthQueryManagedComputationResourceDenial;
 
 mod descendants;
+mod retained_dispatch;
 mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
 pub(in crate::domain_computation::primary_graph) mod advancement;
@@ -180,12 +182,6 @@ pub(super) struct QueryMemoryReservation {
 }
 
 impl QueryMemoryReservation {
-    /// Transfer the same genuine native hold to an Execution-owned allocation.
-    pub(super) fn into_native(self) -> ExecutionMemoryReservation {
-        self.held
-            .expect("Query requests always hold a native lease")
-    }
-
     pub(super) const fn bytes(&self) -> u64 {
         self.bytes
     }
@@ -230,6 +226,7 @@ pub(super) struct QueryDispatch<'d> {
 }
 
 /// What a reduction produced, as `run_reduce` returns it.
+#[cfg(test)]
 pub(super) type Reduced<R, Combine, E> =
     Result<(ReductionTree<R, Combine>, ExecutionReport, ReductionMetrics), ReduceInputDenial<E>>;
 
@@ -242,6 +239,7 @@ impl QueryDispatch<'_> {
     /// Maps every partition of `map` inside `ceiling`. The map's admission
     /// takes over `inputs`, the request memory held for its partitions, in
     /// one ledger step: no byte of them is unreserved between the two holds.
+    #[cfg(test)]
     pub(super) fn map<T, K, R, E, Kernel>(
         &self,
         ceiling: u64,
@@ -272,6 +270,7 @@ impl QueryDispatch<'_> {
     /// to `tree` in one ledger step, so the tree is held from its build until
     /// `tree` drops. Where a test chose certification, a completed reduction
     /// is then certified outside the ceiling.
+    #[cfg(test)]
     pub(super) fn reduce<T, K, R, E, Kernel, Diagnostic, Combine>(
         &self,
         ceiling: u64,

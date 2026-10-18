@@ -317,15 +317,18 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
         ),
         &request,
     );
-    let result = recording.complete(
-        BTreeMap::new(),
-        typed.tree.clone(),
-        execution
-            .reserve(typed.tree.additional_charged_bytes())
-            .unwrap(),
-        Cause::FirstRun,
-        report,
-    );
+    let result = recording
+        .complete(
+            None,
+            typed.tree.clone(),
+            execution
+                .reserve(typed.tree.additional_charged_bytes())
+                .unwrap(),
+            &execution,
+            Cause::FirstRun,
+            report,
+        )
+        .unwrap();
     assert!(matches!(
         result,
         CompletedComputationRetention::Absent(PriorAbsence::Unmeasured)

@@ -21,9 +21,6 @@
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
-pub(super) use worth_execution::ExecutionKernelReceipt;
-mod kernel_recording;
-pub(super) use kernel_recording::KernelRecording;
 mod carriage;
 mod native_reads;
 pub(in crate::domain_computation::primary_graph) use native_reads::NativeComputationReads;
@@ -42,6 +39,8 @@ pub use published_state::{
     published_partitioned_computations_on_this_thread_for_test,
     WorthQueryPublishedComputationStateForTest,
 };
+mod carried_partitions;
+mod partition_metadata;
 mod recording;
 mod retained;
 mod sealing;
@@ -53,9 +52,12 @@ pub(in crate::domain_computation) use prior_absence::{
 };
 mod tree_attempt;
 mod tree_edits;
+mod tree_membership;
 mod tree_report;
 mod tree_update;
+pub(in super::super) use observed::observe_retained_full_tree;
 pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
+#[cfg(test)]
 pub(in super::super) use observed::{observe_full_tree, FullTreeMapWork};
 pub use tree_report::{
     WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,

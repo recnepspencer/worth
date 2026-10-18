@@ -31,7 +31,7 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 mod tests;
 pub use backend::{
     ExecutionKernelReceipt, ExecutionKernelReceiptStorage, ExecutionOwnerContext,
-    NestedComputationStop,
+    ExecutionRetainedResult, NestedComputationStop,
 };
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
@@ -42,11 +42,14 @@ pub use pattern::{
     BackInput, DecomposeCertificationFailure, DecomposeComplete, DecomposeFailure,
     DecomposeInputDenial, DecomposeKernelEditions, DecomposeReuse, DecomposeRunFailure,
     DecomposeStage, ExecutionDecompose, ExecutionForkJoin, ExecutionMap, ExecutionReduce,
-    ExecutionRounds, ExecutionScan, ExecutionWorkCeiling, ForkChild, ForkJoinDenial,
-    ForkJoinOutcome, InterfaceSolution, InteriorResult, KeylessPartition, MapDenial,
-    MapKernelContext, MapKernelFailure, MapKernelStop, MapMemoryOverflow, MapOutcome, MapPartition,
-    MapStop, OracleMismatch, PreparedExecutionMap, ReduceCertificationFailure, ReduceInputDenial,
-    RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome, WorkCeilingDenial,
+    ExecutionRetainedPrefix, ExecutionRetainedRun, ExecutionRounds, ExecutionScan,
+    ExecutionWorkCeiling, ForkChild, ForkJoinDenial, ForkJoinOutcome, InterfaceSolution,
+    InteriorResult, KeylessPartition, MapDenial, MapKernelContext, MapKernelFailure, MapKernelStop,
+    MapMemoryOverflow, MapOutcome, MapPartition, MapStop, OracleMismatch, PreparedExecutionMap,
+    ReduceCertificationFailure, ReduceInputDenial, RetainedMapDenial, RetainedMapInput,
+    RetainedReduceDenial, RetainedReduceOutcome, RetainedReduction, RetainedRunDenial,
+    RetainedRunMetrics, RetainedRunOutcome, RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome,
+    WorkCeilingDenial,
 };
 pub use reduction::{
     ReductionDenial, ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError,

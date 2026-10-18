@@ -1,15 +1,24 @@
 use super::WorthQueryApplicationEffectProgram;
 
 mod canonical_encoding;
+mod content_rule;
+mod content_tree;
 mod output_postcondition;
 
-use canonical_encoding::{dependency_identity, lineage_identity};
+use super::retained_decision_facts::{StorageControl, StoreDenial};
+use canonical_encoding::lineage_identity;
+#[cfg(test)]
+use content_tree::dependency_identity;
+pub(in crate::domain_computation::primary_graph) use content_tree::FactContent;
+use output_postcondition::complete_content_currentness_facts;
+#[cfg(test)]
+use output_postcondition::normalized_output_facts;
 pub(in crate::domain_computation::primary_graph) use output_postcondition::OutputCurrentnessFacts;
-use output_postcondition::{complete_output_currentness_facts, normalized_output_facts};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentityDenial {
     DependencyByteCapacityUnsupported,
+    DependencyStorage(StoreDenial),
     DependencyCanonicalizationRejected,
     MissingSourcePartition,
     LineageLookupBudgetExceeded,
@@ -29,11 +38,31 @@ impl<Schema, Operation, Input, Scope>
         declared_key: [u8; 32],
         successor_of: Option<[u8; 32]>,
         request_admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial>
     where
         OutputBinding: 'static,
     {
-        let dependency_facts = normalized_output_facts(&self.read_set.facts, &self.effects);
+        let control =
+            StorageControl::new(policy, Some(self.read_set.admission.publication_request()));
+        control
+            .check_live()
+            .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
+        let (original_content, cold_work) = match &self.read_set.content {
+            Some(content) if content.same_body(&self.read_set.facts) => (
+                content.clone(),
+                worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
+            ),
+            _ => FactContent::build(self.read_set.facts.clone(), control)
+                .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?,
+        };
+        let (dependency_facts, content, moved, normalization_work) = original_content
+            .postcondition(
+                &self.effects,
+                &self.read_set.computation_fact_ordinals,
+                control,
+            )
+            .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
         let maximum_dependency_bytes = usize::try_from(
             runtime
                 .runtime
@@ -41,21 +70,26 @@ impl<Schema, Operation, Input, Scope>
                 .maximum_producer_dependency_bytes(),
         )
         .map_err(|_| WorthQueryProducerIdentityDenial::DependencyByteCapacityUnsupported)?;
-        let (dependency, work) =
-            dependency_identity(declared_key, &dependency_facts, maximum_dependency_bytes)
-                .map_err(|_| {
-                    WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected
-                })?;
-        // An owner call read its facts before this effect, so a field the
-        // effect replaced is one the computation has not seen.
-        let moved = (self.read_set.computation_fact_ordinals.iter().copied())
-            .filter(|&ordinal| dependency_facts[ordinal] != self.read_set.facts[ordinal])
-            .collect();
-        self.output_currentness_facts =
-            Some(complete_output_currentness_facts(dependency_facts, moved));
+        let root_funding = control.policy().reserve_memory(8_192);
+        control
+            .check_live()
+            .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
+        let _root_funding = root_funding
+            .map_err(|cause| WorthQueryProducerIdentityDenial::DependencyStorage(cause.into()))?;
+        let (dependency, work) = content
+            .identity(declared_key, maximum_dependency_bytes)
+            .map_err(|_| WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected)?;
+        control
+            .check_live()
+            .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
+        self.output_currentness_facts = Some(complete_content_currentness_facts(
+            dependency_facts,
+            moved,
+            content.reusable(),
+        ));
         self.read_set
             .admission
-            .retain_execution_canonical_work(work);
+            .retain_execution_canonical_work(cold_work.combine(normalization_work).combine(work));
         // The lineage head lookup is framework preparation on the request
         // meter, reserved before it reads.
         let partition = self

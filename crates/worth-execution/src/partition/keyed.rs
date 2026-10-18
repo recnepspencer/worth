@@ -73,7 +73,7 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
     }
 
     /// Every partition that holds an item, in ascending identity order.
-    pub fn partitions(&self) -> impl Iterator<Item = PartitionIdentity> + '_ {
+    pub fn partitions(&self) -> impl ExactSizeIterator<Item = PartitionIdentity> + '_ {
         self.identities.keys().copied()
     }
 

@@ -4,7 +4,9 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 
+mod content_identity;
 mod source_readmission;
+pub(super) use content_identity::identity_failed;
 pub(super) use source_readmission::{query_admission_denied, query_execution_denied};
 
 /// A rejected caller cannot terminally fail the output shared by other callers.

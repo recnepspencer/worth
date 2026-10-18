@@ -12,55 +12,37 @@ use super::super::WorthQueryApplicationObservedFact;
 mod canonical_digest;
 mod indexed_selection;
 mod workflow_fact;
-use canonical_digest::derive_identity;
+pub(super) use canonical_digest::derive_identity;
 
 const DOMAIN: CanonicalBasisDomain =
-    CanonicalBasisDomain::Future("worth-query.application-producer-dependencies");
-const RULE_VERSION: &str = "worth-query-application-producer-dependencies-v1";
-const INDEX_GUARD_RULE_VERSION: &str =
-    "worth-query-application-producer-dependencies-v2-index-definition";
-const LINEAGE_RULE_VERSION: &str = "worth-query-application-producer-lineage-v1";
+    CanonicalBasisDomain::Future("worth-query.application-producer-content-tree");
+const LINEAGE_RULE_VERSION: &str = "worth-query-application-producer-lineage-v2-content-tree";
 const MAXIMUM_LINEAGE_CANONICAL_BYTES: usize = 4 * 1_024 * 1_024;
 
-pub(super) fn dependency_identity(
-    declared_key: [u8; 32],
-    facts: &[WorthQueryApplicationObservedFact],
-    maximum_canonical_bytes: usize,
-) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), ()> {
-    let mut entries = Vec::new();
-    push(
-        &mut entries,
-        "declared-key".to_owned(),
-        CanonicalBasisEntryKind::Identity,
-        CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(declared_key)),
-    );
-    push(
-        &mut entries,
-        "fact-count".to_owned(),
-        CanonicalBasisEntryKind::Shape,
-        unsigned(u64::try_from(facts.len()).unwrap_or(u64::MAX)),
-    );
-    for (index, fact) in facts.iter().enumerate() {
-        let prefix = format!("fact.{index}");
-        push(
-            &mut entries,
-            format!("{prefix}.locator"),
-            CanonicalBasisEntryKind::Locator,
-            text(fact.locator_identity()),
-        );
-        append_fact(&mut entries, &prefix, fact);
+/// One logical ordinal, independently of payload chunking or edit history.
+pub(super) fn fact_entries(
+    index: usize,
+    fact: &WorthQueryApplicationObservedFact,
+) -> Result<Vec<CanonicalBasisEntry>, ()> {
+    if let WorthQueryApplicationObservedFact::IndexedEntitySelection { definition, .. } = fact {
+        // This fact is native entity-field selection, not another index family.
+        if !matches!(
+            definition.kind,
+            worth_relational::facade::indexes::DerivedIndexKind::EntityField { .. }
+        ) {
+            return Err(());
+        }
     }
-    let rule = if facts.iter().any(|fact| {
-        matches!(
-            fact,
-            WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
-        )
-    }) {
-        INDEX_GUARD_RULE_VERSION
-    } else {
-        RULE_VERSION
-    };
-    derive_identity(rule, entries, maximum_canonical_bytes)
+    let mut entries = Vec::new();
+    let prefix = format!("fact.{index}");
+    push(
+        &mut entries,
+        format!("{prefix}.locator"),
+        CanonicalBasisEntryKind::Locator,
+        text(fact.locator_identity()),
+    );
+    append_fact(&mut entries, &prefix, fact);
+    Ok(entries)
 }
 
 pub(super) fn lineage_identity(
@@ -363,7 +345,7 @@ fn number_u64(entries: &mut Vec<CanonicalBasisEntry>, prefix: &str, field: &str,
     );
 }
 
-fn unsigned(value: u64) -> CanonicalBasisValue {
+pub(super) fn unsigned(value: u64) -> CanonicalBasisValue {
     CanonicalBasisValue::UnsignedInteger {
         width: CanonicalIntegerWidth::Bits64,
         value: u128::from(value),
@@ -374,7 +356,7 @@ fn text(value: impl Into<String>) -> CanonicalBasisValue {
     CanonicalBasisValue::ExactText(value.into().into())
 }
 
-fn push(
+pub(super) fn push(
     entries: &mut Vec<CanonicalBasisEntry>,
     locus: String,
     kind: CanonicalBasisEntryKind,

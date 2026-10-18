@@ -2,11 +2,11 @@ use std::{cmp::Ordering, sync::Arc};
 
 use worth_foundational::PartitionIdentity;
 
-use crate::{oracle::CanonicalBits, report::ChargedBytes};
+use crate::report::ChargedBytes;
 
 use super::{
     super::plan::{priority, ReductionDenial},
-    recombine::Engine,
+    recombine::NodeEngine,
     Link, ReductionRunStop,
 };
 
@@ -72,17 +72,16 @@ fn merge_depth<T>(left: &Link<T>, right: &Link<T>) -> usize {
     }
 }
 
-pub(super) fn insert<T, F, H, E>(
+pub(super) fn insert<T, E>(
     root: &Link<T>,
     partition: PartitionIdentity,
     value: T,
-    engine: &mut Engine<'_, T, F, H>,
+    engine: &mut impl NodeEngine<T, E>,
 ) -> Result<Link<T>, ReductionRunStop<E>>
 where
-    T: Clone + ChargedBytes + CanonicalBits,
-    F: Fn(&T, &T) -> T,
-    H: FnMut() -> Result<(), E>,
+    T: Clone + ChargedBytes,
 {
+    engine.inspect();
     let Some(node) = root else {
         return engine.build(partition, value, None, None).map(Some);
     };
@@ -139,17 +138,16 @@ where
     }
 }
 
-pub(super) fn update<T, F, H, E>(
+pub(super) fn update<T, E>(
     root: &Link<T>,
     partition: PartitionIdentity,
     value: T,
-    engine: &mut Engine<'_, T, F, H>,
+    engine: &mut impl NodeEngine<T, E>,
 ) -> Result<Updated<T>, ReductionRunStop<E>>
 where
-    T: Clone + ChargedBytes + CanonicalBits,
-    F: Fn(&T, &T) -> T,
-    H: FnMut() -> Result<(), E>,
+    T: Clone + ChargedBytes,
 {
+    engine.inspect();
     let node = root
         .as_ref()
         .ok_or(ReductionRunStop::Denial(ReductionDenial::UnknownIdentity(
@@ -217,16 +215,15 @@ where
     })
 }
 
-pub(super) fn delete<T, F, H, E>(
+pub(super) fn delete<T, E>(
     root: &Link<T>,
     partition: PartitionIdentity,
-    engine: &mut Engine<'_, T, F, H>,
+    engine: &mut impl NodeEngine<T, E>,
 ) -> Result<Link<T>, ReductionRunStop<E>>
 where
-    T: Clone + ChargedBytes + CanonicalBits,
-    F: Fn(&T, &T) -> T,
-    H: FnMut() -> Result<(), E>,
+    T: Clone + ChargedBytes,
 {
+    engine.inspect();
     let node = root
         .as_ref()
         .ok_or(ReductionRunStop::Denial(ReductionDenial::UnknownIdentity(
@@ -249,16 +246,15 @@ where
     }
 }
 
-fn merge<T, F, H, E>(
+fn merge<T, E>(
     left: &Link<T>,
     right: &Link<T>,
-    engine: &mut Engine<'_, T, F, H>,
+    engine: &mut impl NodeEngine<T, E>,
 ) -> Result<Link<T>, ReductionRunStop<E>>
 where
-    T: Clone + ChargedBytes + CanonicalBits,
-    F: Fn(&T, &T) -> T,
-    H: FnMut() -> Result<(), E>,
+    T: Clone + ChargedBytes,
 {
+    engine.inspect();
     match (left, right) {
         (None, other) | (other, None) => Ok(other.clone()),
         (Some(left), Some(right)) if priority(left.identity) < priority(right.identity) => {
@@ -279,4 +275,23 @@ where
                 .map(Some)
         }
     }
+}
+
+/// Persistent canonical prefix, using the same funded node policy as edits.
+pub(super) fn prefix<T: Clone, E>(
+    root: &Link<T>,
+    before: PartitionIdentity,
+    engine: &mut impl NodeEngine<T, E>,
+) -> Result<Link<T>, ReductionRunStop<E>> {
+    let Some(node) = root else {
+        return Ok(None);
+    };
+    engine.inspect();
+    if node.identity >= before {
+        return prefix(&node.left, before, engine);
+    }
+    let right = prefix(&node.right, before, engine)?;
+    engine
+        .build(node.identity, node.value.clone(), node.left.clone(), right)
+        .map(Some)
 }

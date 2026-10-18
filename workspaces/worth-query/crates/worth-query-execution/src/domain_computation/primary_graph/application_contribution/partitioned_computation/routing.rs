@@ -98,7 +98,7 @@ impl ComputationPartitionRouting {
     }
 
     /// Every partition in ascending identity order.
-    pub(super) fn partitions(&self) -> impl Iterator<Item = PartitionIdentity> + '_ {
+    pub(super) fn partitions(&self) -> impl ExactSizeIterator<Item = PartitionIdentity> + '_ {
         self.partitioner.partitions()
     }
 

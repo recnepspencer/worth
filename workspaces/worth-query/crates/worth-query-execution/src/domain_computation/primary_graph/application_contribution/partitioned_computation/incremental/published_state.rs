@@ -155,7 +155,13 @@ impl WorthQueryPublishedComputationStateForTest {
                 b.partitions.get(identity).is_some_and(|next| {
                     same_key(&partition.key, &next.key)
                         && partition.key_bytes == next.key_bytes
-                        && partition.kernel_receipt == next.kernel_receipt
+                        && a.native_run
+                            .result(*identity)
+                            .zip(b.native_run.result(*identity))
+                            .is_some_and(|(left, right)| {
+                                left.has_same_native_cost(right)
+                                    && bits(left.value()) == bits(right.value())
+                            })
                         && a.tree.leaf(*identity).map(bits) == b.tree.leaf(*identity).map(bits)
                 })
             })

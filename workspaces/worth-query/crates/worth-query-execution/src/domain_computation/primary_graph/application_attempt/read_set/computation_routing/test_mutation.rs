@@ -25,6 +25,7 @@ impl SealedComputationFacts {
         let mut values: Vec<_> = self.original.iter().cloned().collect();
         values[ordinal] = fact;
         self.original = Arc::<[_]>::from(values).into();
+        self.content = None;
         self.layout = super::layout::SealedReadLayout::OwnerFixture;
         self.charged = self.calculate_charged_bytes();
     }
@@ -75,6 +76,7 @@ impl SealedComputationFacts {
         self.index = Arc::new(ComputationFactIndex::build(&metadata));
         self.metadata = Arc::new(metadata);
         self.original = Arc::<[_]>::from(values).into();
+        self.content = None;
         self.layout = super::layout::SealedReadLayout::OwnerFixture;
         self.charged = self.calculate_charged_bytes();
     }

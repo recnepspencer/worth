@@ -154,23 +154,45 @@ impl NativeReadRefresh {
     ) -> Option<&super::super::super::WorthQueryApplicationObservedFact> {
         self.prior.original.get(self.ordinal(key)?)
     }
+    pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn content(
+        &self,
+    ) -> Option<super::super::super::FactContent> {
+        self.prior
+            .content
+            .clone()
+            .filter(|content| content.same_body(&self.prior.original))
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn finish(
         mut self,
         original: FactPayload,
+        content: Option<super::super::super::FactContent>,
     ) -> (
         SealedComputationFacts,
         crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
         Arc<[usize]>,
         usize,
     ) {
+        let old_content = self
+            .prior
+            .content
+            .as_ref()
+            .map_or(Some(0), |value| value.charged_bytes());
+        let new_content = content
+            .as_ref()
+            .map_or(Some(0), |value| value.charged_bytes());
         self.prior.charged = self
             .prior
             .charged
             .zip(self.prior.original.retained_resident_bytes())
             .and_then(|(total, old)| total.checked_sub(old))
             .zip(original.retained_resident_bytes())
-            .and_then(|(metadata, body)| metadata.checked_add(body));
+            .and_then(|(metadata, body)| metadata.checked_add(body))
+            .zip(old_content)
+            .and_then(|(total, old)| total.checked_sub(old))
+            .zip(new_content)
+            .and_then(|(total, new)| total.checked_add(new));
         self.prior.original = original;
+        self.prior.content = content;
         (
             self.prior,
             self.layout.scopes.clone(),

@@ -33,6 +33,10 @@ impl std::error::Error for WorthQueryAdvancementDenial {}
 impl WorthQueryAdvancementDenial {
     pub const fn is_transient(self) -> bool {
         match self {
+            Self::Resource(Resource::NativeAllocationRefused { kind, .. }) => matches!(
+                kind,
+                worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator
+            ),
             Self::Resource(Resource::MemoryLimit { level, .. }) => match level {
                 crate::domain_computation::primary_graph::WorthQueryMemoryLimitLevel::Process => {
                     true
