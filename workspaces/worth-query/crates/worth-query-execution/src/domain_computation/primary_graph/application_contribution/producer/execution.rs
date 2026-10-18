@@ -6,7 +6,8 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationIntent, ApplicationMutationScopeResolution, WorthQueryApplicationOutputRole,
+    ApplicationMutationInputScope, ApplicationMutationScopeResolution,
+    WorthQueryApplicationOutputRole,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, TypedMutationPreconditions,

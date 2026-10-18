@@ -232,6 +232,9 @@ where
         for (identity, conditional) in &self.conditionals {
             validate_identity(identity)?;
             validate_identity(conditional.contract.node_identity())?;
+            if let Some(stage) = conditional.contract.target().stage_identity() {
+                validate_identity(stage)?;
+            }
             for producer in &conditional.required_producers {
                 validate_required_producer(
                     producer,
@@ -249,7 +252,18 @@ where
         &self,
         mut package: WorthQueryPortableDomainPackage,
     ) -> WorthQueryPortableDomainPackage {
+        // Separate installed readiness bindings can use the same authored
+        // operation/node contract (for example Initial and Preserve). Emit
+        // that complete portable meaning once, while retaining each binding's
+        // own exact producer dependencies and installation scope. Conflicting
+        // contracts and explicit duplicates in the incoming package still
+        // reach the ordinary package validator.
+        let mut composed = Vec::new();
         for binding in self.conditionals.values() {
+            if composed.contains(&&binding.contract) {
+                continue;
+            }
+            composed.push(&binding.contract);
             package = package
                 .domain_operation(binding.contract.domain_operation())
                 .conditional_application_operation_erased(binding.contract.operation_binding());

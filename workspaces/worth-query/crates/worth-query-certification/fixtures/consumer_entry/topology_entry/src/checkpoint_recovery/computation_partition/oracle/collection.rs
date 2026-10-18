@@ -1,5 +1,6 @@
 //! One checked collection uses the real graph-bound region producer and retained tree.
 use super::*;
+pub(in crate::checkpoint_recovery::computation_partition) mod lifecycle;
 use worth_query_decl::facade::application_program::{
     ApplicationCollectionCompleteness, ApplicationCollectionContributor,
     ApplicationCollectionGrouping, ApplicationCollectionIncompletePosture,
@@ -9,8 +10,21 @@ use worth_query_decl::facade::application_program::{
 pub(super) const CHECKED: u8 = 5;
 const MISSING: u8 = 6;
 pub(super) const MISBOUND: u8 = 7;
+pub(super) const LIFECYCLE: u8 = 8;
+pub(super) const CONFLICTING_READINESS: u8 = 9;
+pub(super) const ORPHAN_OPERATION: u8 = 10;
+pub(super) const ORPHAN_STAGE: u8 = 11;
 pub(super) const fn declared(mode: u8) -> bool {
-    matches!(mode, CHECKED | MISSING | MISBOUND)
+    matches!(
+        mode,
+        CHECKED
+            | MISSING
+            | MISBOUND
+            | LIFECYCLE
+            | CONFLICTING_READINESS
+            | ORPHAN_OPERATION
+            | ORPHAN_STAGE
+    )
 }
 
 pub(super) struct Contributors;

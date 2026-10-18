@@ -10,10 +10,10 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
 use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
-    WorthQueryNamedClock, WorthQueryNamedClockSource,
-    WorthQueryPortableApplicationConditionalOperationBinding, WorthQueryTemporalIntentProjector,
-    WritableCapability, WritePosture,
+    WorthQueryConditionalNodeLocation, WorthQueryHostConditionalPredicateProvider,
+    WorthQueryInstalledTemporalConditionalOperation, WorthQueryNamedClock,
+    WorthQueryNamedClockSource, WorthQueryPortableApplicationConditionalOperationBinding,
+    WorthQueryTemporalIntentProjector, WritableCapability, WritePosture,
 };
 mod clock_handle;
 pub(in crate::domain_computation::primary_graph) use clock_handle::ConditionalClockLease;
@@ -35,7 +35,7 @@ type InstalledOutputProducers<Schema> =
 struct ApplicationConditionalBindingScope {
     binding: WorthQueryPortableApplicationConditionalOperationBinding,
     operation_type: TypeId,
-    node_identity: String,
+    target: WorthQueryConditionalNodeLocation,
     initial_binding_count: usize,
     initial_readiness_count: usize,
     required_producers: Vec<String>,
@@ -346,10 +346,45 @@ where
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
+        // Direct native temporal installation binds each portable node once.
+        let expected = self
+            .publication
+            .runtime
+            .installed_packages()
+            .installed_conditional_node_count_for_schema(
+                self.publication.installed_schema.owner(),
+                self.publication.installed_schema.schema_name(),
+            );
+        self.publish_with_inventory(phase, expected)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn publish_contributions(
+        self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        conditionals: &super::super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
+    ) -> Result<
+        WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        WorthQueryConditionalRuntimeInstallationDenial,
+    > {
+        // Issued only after exact configuration/declaration matching and each
+        // singleton binding scope's successful one-route completion. Several
+        // such bindings may instantiate one identical portable node contract.
+        self.publish_with_inventory(phase, conditionals.binding_count())
+    }
+
+    fn publish_with_inventory(
+        self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        expected: usize,
+    ) -> Result<
+        WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        WorthQueryConditionalRuntimeInstallationDenial,
+    > {
         super::super::application_runtime::installation::publish_application_runtime_with_conditionals(phase,
             self.publication,
             self.bindings,
             self.output_readiness,
+            expected,
             &self.output_producers,
         )
     }

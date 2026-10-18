@@ -1,5 +1,5 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    ApplicationMutationBinding, ApplicationMutationInputScope, ApplicationMutationScopeResolution,
     ApplicationQueryMutationSource, WorthQueryApplicationOutputRole, WorthQueryExactlyOneOutput,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -239,7 +239,7 @@ where
         >,
     >,
     <Self::Operation as ApplicationMutationBinding<Schema>>::Input:
-        ApplicationMutationIntent<Schema, Binding = Self::Operation> + Clone + Send + Sync,
+        ApplicationMutationInputScope<Schema, Self::Operation> + Clone + Send + Sync,
     <Self::Operation as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
             Schema,

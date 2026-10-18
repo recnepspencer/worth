@@ -188,6 +188,13 @@ where
     .map_err(Denial::Contributions)?;
     let (mut invariants, handlers, producers, conditionals) =
         configured.into_parts().map_err(Denial::Contributions)?;
+    conditionals
+        .validate_target_coverage(
+            runtime.installed_packages(),
+            installed.owner(),
+            installed.schema_name(),
+        )
+        .map_err(Denial::Contributions)?;
     if let Some(support) = &admitted_program_support {
         handlers
             .validate_managed_computations(&support.features)
@@ -341,7 +348,7 @@ where
                 .install_all(&producers, &mut publication)
                 .map_err(Denial::ConditionalPublication)?;
             let application = publication
-                .publish(phase)
+                .publish_contributions(phase, &installed_conditionals)
                 .map_err(Denial::ConditionalPublication)?;
             (application, installed_conditionals)
         };

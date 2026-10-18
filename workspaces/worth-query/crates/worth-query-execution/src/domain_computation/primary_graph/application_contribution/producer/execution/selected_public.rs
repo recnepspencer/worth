@@ -2,7 +2,7 @@
 
 use worth_query_declaration::facade::{
     application_operation::{
-        ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
+        ApplicationMutationBinding, ApplicationMutationInputScope, ApplicationMutationScopeBinding,
         ApplicationMutationScopeResolution, ApplicationMutationScopeResolutionMode,
     },
     application_schema::ApplicationEntityMarkerIdentity,
@@ -127,11 +127,13 @@ where
         // owner. This selected route refuses before scope or graph effects.
         return Err(Stop::UnsupportedScopeMode);
     }
-    // operation_input and scope_binding are authored producer callbacks. For
+    // operation_input and scope_for_binding are authored producer callbacks. For
     // InputField, into_field_parts moves the already supplied field/value;
     // it performs no framework clone of the principal identity.
-    let (field, value) = input
-        .scope_binding()
+    let (field, value) =
+        <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(
+            input,
+        )
         .into_field_parts(principal.principal().principal_identity());
     let scope = selected
         .resolve_mutation_scope_issued(execution, field, value, request, admission)

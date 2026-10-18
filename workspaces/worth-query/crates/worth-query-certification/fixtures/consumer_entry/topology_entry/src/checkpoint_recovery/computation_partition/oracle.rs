@@ -34,7 +34,7 @@ use super::*;
 
 mod absence;
 mod advancement_custody;
-mod collection;
+pub(super) mod collection;
 mod counts;
 mod courtroom;
 mod cutoff;

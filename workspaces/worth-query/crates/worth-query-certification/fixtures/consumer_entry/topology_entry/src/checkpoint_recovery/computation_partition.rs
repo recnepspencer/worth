@@ -139,8 +139,8 @@ trait RegionTotalsBinding: 'static {
 pub(crate) fn declare<Schema: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    entry_correction::declare(entry_edit::declare(region_output::declare(
-        demand::declare(schema),
+    oracle::collection::lifecycle::declare(entry_correction::declare(entry_edit::declare(
+        region_output::declare(demand::declare(schema)),
     )))
 }
 
@@ -159,6 +159,7 @@ pub(crate) fn configure<Schema: TopologySchemaBinding>(
 fn idle_entry_handlers<Schema: TopologySchemaBinding>(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
 ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+    oracle::collection::lifecycle::idle(setup)?;
     setup.handler::<region_output::RegionOutputBinding<Schema>, _>(
         region_output::RegionOutputHandler::idle(),
     )?;

@@ -5,7 +5,8 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationSchema, WorthQueryPortableApplicationConditionalOperationBinding,
+    ApplicationSchema, WorthQueryConditionalNodeLocation,
+    WorthQueryPortableApplicationConditionalOperationBinding,
     WorthQueryPortableDomainOperationDefinition,
 };
 
@@ -22,6 +23,7 @@ use super::producer::WorthQueryInstalledApplicationProducerRegistry;
 mod producer_access;
 pub use producer_access::WorthQueryApplicationConditionalProducerAccess;
 mod dependency;
+mod target_coverage;
 pub(super) use dependency::validate_required_producer;
 mod output_readiness_contract;
 pub use output_readiness_contract::{
@@ -32,7 +34,7 @@ pub use output_readiness_contract::{
 pub struct WorthQueryApplicationConditionalPackageContract {
     domain_operation: WorthQueryPortableDomainOperationDefinition,
     operation_binding: WorthQueryPortableApplicationConditionalOperationBinding,
-    node_identity: String,
+    target: WorthQueryConditionalNodeLocation,
 }
 
 impl WorthQueryApplicationConditionalPackageContract {
@@ -44,8 +46,20 @@ impl WorthQueryApplicationConditionalPackageContract {
         Self {
             domain_operation,
             operation_binding,
-            node_identity: node_identity.into(),
+            target: WorthQueryConditionalNodeLocation::Operation {
+                node_identity: node_identity.into(),
+            },
         }
+    }
+
+    /// Authors a workflow-stage location for this declaration's node. This is
+    /// selection only; complete installed coverage and native binding validate it.
+    pub fn in_workflow_stage(mut self, stage_identity: impl Into<String>) -> Self {
+        self.target = WorthQueryConditionalNodeLocation::WorkflowStage {
+            stage_identity: stage_identity.into(),
+            node_identity: self.target.node_identity().to_owned(),
+        };
+        self
     }
 
     pub(super) fn domain_operation(&self) -> WorthQueryPortableDomainOperationDefinition {
@@ -59,7 +73,11 @@ impl WorthQueryApplicationConditionalPackageContract {
     }
 
     pub(super) fn node_identity(&self) -> &str {
-        &self.node_identity
+        self.target.node_identity()
+    }
+
+    pub(super) fn target(&self) -> &WorthQueryConditionalNodeLocation {
+        &self.target
     }
 }
 
@@ -121,6 +139,10 @@ where
         &self,
     ) -> impl Iterator<Item = TypeId> + '_ {
         self.entries.values().map(|entry| entry.operation_type)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn binding_count(&self) -> usize {
+        self.entries.len()
     }
 
     pub(in crate::domain_computation::primary_graph) fn contains_operation<Operation: 'static>(
@@ -188,7 +210,7 @@ where
         installation.begin_application_binding_scope(
             declaration.contract.operation_binding(),
             TypeId::of::<Binding::Operation>(),
-            declaration.contract.node_identity().to_owned(),
+            declaration.contract.target().clone(),
             declaration.required_producers.clone(),
         );
         let installed = match Binding::install(self.configuration, &access, installation) {
@@ -284,6 +306,15 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
         self.configured.is_empty()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn validate_target_coverage(
+        &self,
+        index: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
+        owner: &str,
+        schema: &str,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        target_coverage::validate(&self.declared, index, owner, schema)
     }
 
     pub(in crate::domain_computation::primary_graph) fn install_all(

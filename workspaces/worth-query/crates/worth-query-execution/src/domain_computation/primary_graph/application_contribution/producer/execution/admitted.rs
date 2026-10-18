@@ -69,9 +69,11 @@ where
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .map_err(|error| principal_rejected(Binding::IDENTITY, error))?;
-    let (scope_field, scope_value) = input
-        .scope_binding()
-        .into_field_parts(principal.principal_identity());
+    let (scope_field, scope_value) = <_ as ApplicationMutationInputScope<
+        Schema,
+        Operation<Schema, Binding>,
+    >>::scope_for_binding(&input)
+    .into_field_parts(principal.principal_identity());
     let scope = selected
         .resolve_entity_with_request(
             execution,

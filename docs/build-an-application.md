@@ -961,6 +961,60 @@ replace the producing computation or establish aggregate completeness. The
 executes the checked binding through real publication and retained canonical
 reduction, with missing/misbound installation and completion-refusal twins.
 
+Initial/Create and Preserve/Preserve producers can share one operation, input
+type and installed checked owner. Each producer selects its own mutation binding
+and fixed exactly-one output role. The shared input implements
+`ApplicationMutationInputScope<Schema, Binding>` for each selected binding;
+it needs no ordinary mutation intent. This is authored selection, not a resolved
+identity or an authorization grant. Query still resolves the installed binding,
+scope, principal and source before contacting the handler.
+
+Use the concrete installed schema for explicit associations. The region
+fixture keeps its existing ordinary intent and adds these two associations:
+
+<!-- compiled: checkpoint_recovery/computation_partition/oracle/collection/lifecycle/binding.rs -->
+```rust
+impl ApplicationMutationInputScope<CheckpointSchema, InitialBinding<CheckpointSchema>>
+    for RegionOutputInput
+{
+    fn scope_for_binding(&self) -> PlanarMutationScope<CheckpointSchema> {
+        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    }
+}
+impl ApplicationMutationInputScope<CheckpointSchema, PreserveBinding<CheckpointSchema>>
+    for RegionOutputInput
+{
+    fn scope_for_binding(&self) -> PlanarMutationScope<CheckpointSchema> {
+        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    }
+}
+```
+
+The [lifecycle fixture](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle.rs)
+installs the collection once and clones its installed handle for the two typed
+handlers. The [native journey](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/custody.rs)
+checks real entry edits, output incarnation and retained comparison. Producer
+edition changes may require a cold preparation before same-edition reuse.
+The selected producer role stays fixed and exactly-one; the fixture also
+publishes and preserves the two supporting members required by its native
+planar topology, including their original incarnations.
+Each producer has its own readiness binding with that exact singleton
+`REQUIRED_PRODUCERS` dependency, even when the operation and checked owner are shared.
+When their complete portable package contracts are identical, contribution
+composition emits that operation/node contract once; each binding still installs
+and validates its own route. Different meanings for the same operation remain a
+package conflict, refused before initial effects.
+Publication validates the issued contribution-binding inventory, with exactly
+one admitted route per binding; it does not mistake the number of shared
+portable definitions for the number of separately installed bindings.
+Before initialization, composition independently compares every installed
+operation and workflow-stage target with the distinct declared targets. An
+unbound target refuses even when every declared binding is configured. Stage
+declarations select their full location with `package_contract.in_workflow_stage(stage)`;
+a same-named operation node cannot stand in for a workflow-stage node.
+`installed_conditional_targets_for_schema` exposes those complete read-only
+locations for inspection; they grant no binding or execution authority.
+
 A managed computation declares only itself. `managed_computation` adds its
 declaration to the feature; the feature's operations, ports, and artifacts are
 declared on the same builder. Program validation refuses a computation whose
@@ -1739,6 +1793,14 @@ contribution registers the handler with `setup.handler::<Binding, _>(..)`
 ([§2](#2-declare-the-schema-and-its-contributions)).
 `worth_query_mutation_binding!` (decl facade) writes the binding for you in
 common cases.
+
+Ordinary `mutate(intent)` continues to dispatch through
+`ApplicationMutationIntent`. When a producer already selects that binding and
+its input is itself the intent, `ApplicationMutationInputScope` delegates to the
+existing scope expression. Explicit downstream associations generic over a
+schema can overlap this blanket, even without a current intent implementation;
+author them for the concrete installed schema instead. This does not add mutation dispatch or
+change the binding's source, permissions or output contract.
 
 The input and idempotency key types derive `serde::Serialize`, and that is all
 a binding says about retries. Query derives both identities from a canonical

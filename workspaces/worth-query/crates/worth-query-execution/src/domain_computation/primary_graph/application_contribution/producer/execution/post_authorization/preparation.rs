@@ -129,7 +129,7 @@ where
         .prepare_application_source_expectation::<Operation<Schema, Binding>, _>(
             &admission,
             observed_source,
-            identities.mutation_input().input(),
+            identities.mutation_input(),
             request_admission,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -36,8 +36,18 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
         <TopologyContribution as WorthQueryApplicationContribution<CheckpointSchema>>::contracts(
             contracts,
         )?;
-        contracts.producer::<RegionOutputProducer<CheckpointSchema, REUSE, MODE>>()?;
-        contracts.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>()?;
+        if matches!(
+            MODE,
+            collection::LIFECYCLE
+                | collection::CONFLICTING_READINESS
+                | collection::ORPHAN_OPERATION
+                | collection::ORPHAN_STAGE
+        ) {
+            collection::lifecycle::contracts::<MODE>(contracts)?;
+        } else {
+            contracts.producer::<RegionOutputProducer<CheckpointSchema, REUSE, MODE>>()?;
+            contracts.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>()?;
+        }
         Ok(())
     }
 
@@ -45,35 +55,48 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        let installed = if MODE == collection::CHECKED {
-            setup.derived_collection::<PlanarFinalOutputFeature, collection::RegionCollection<WORK>, _>(OracleOwner::<MODE>)?
-        } else if MODE == collection::MISBOUND {
-            setup.derived_collection::<PlanarFinalOutputFeature, collection::MisboundCollection<WORK>, _>(OracleOwner::<MODE>)?
+        if matches!(
+            MODE,
+            collection::LIFECYCLE
+                | collection::CONFLICTING_READINESS
+                | collection::ORPHAN_OPERATION
+                | collection::ORPHAN_STAGE
+        ) {
+            collection::lifecycle::configure::<WORK, MODE>(setup)?;
+            setup
+                .handler::<RegionOutputBinding<CheckpointSchema>, _>(RegionOutputHandler::idle())?;
         } else {
-            setup.partitioned_computation::<PlanarFinalOutputFeature, OracleTotals<WORK>, _>(
-                OracleOwner::<MODE>,
-            )?
-        };
-        let handler = RegionOutputHandler::running(move |reader, set| {
-            let mut plan =
-                worth_query_host::facade::primary_graph::WorthQueryDecisionPlan::immediate(
-                    worth_query_host::facade::primary_graph::HandlerResult::Completed(None),
-                );
-            for _ in 0..RUNS {
-                decision_plan::begin();
-                let prepared = if MODE == 3 || super::differential::reference::model_replay() {
-                    installed.prepare_without_reuse_for_test(reader, set)
-                } else if super::branch_sharing::reinstallation_requested() {
-                    installed.prepare_after_reinstallation_for_test(reader, set)
-                } else {
-                    installed.prepare(reader, set)
-                };
-                plan = plan
-                    .zip(decision_plan::prepared(prepared, |_| {}))
-                    .map(|(_, value)| value);
-            }
-            if collection::declared(MODE) {
-                plan.and_then(|value| match value {
+            collection::lifecycle::idle(setup)?;
+            let installed = if MODE == collection::CHECKED {
+                setup.derived_collection::<PlanarFinalOutputFeature, collection::RegionCollection<WORK>, _>(OracleOwner::<MODE>)?
+            } else if MODE == collection::MISBOUND {
+                setup.derived_collection::<PlanarFinalOutputFeature, collection::MisboundCollection<WORK>, _>(OracleOwner::<MODE>)?
+            } else {
+                setup.partitioned_computation::<PlanarFinalOutputFeature, OracleTotals<WORK>, _>(
+                    OracleOwner::<MODE>,
+                )?
+            };
+            let handler = RegionOutputHandler::running(move |reader, set| {
+                let mut plan =
+                    worth_query_host::facade::primary_graph::WorthQueryDecisionPlan::immediate(
+                        worth_query_host::facade::primary_graph::HandlerResult::Completed(None),
+                    );
+                for _ in 0..RUNS {
+                    decision_plan::begin();
+                    let prepared = if MODE == 3 || super::differential::reference::model_replay() {
+                        installed.prepare_without_reuse_for_test(reader, set)
+                    } else if super::branch_sharing::reinstallation_requested() {
+                        installed.prepare_after_reinstallation_for_test(reader, set)
+                    } else {
+                        installed.prepare(reader, set)
+                    };
+                    plan = plan
+                        .zip(decision_plan::prepared(prepared, |_| {}))
+                        .map(|(_, value)| value);
+                }
+                if collection::declared(MODE) {
+                    plan.and_then(|value| {
+                        match value {
                     Some(value) => {
                         worth_query_host::facade::primary_graph::HandlerResult::Completed(Some(
                             value,
@@ -82,26 +105,28 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                     None => worth_query_host::facade::primary_graph::HandlerResult::DomainDenied(
                         worth_query_consumer_values::PlanarMutationDenial::MissingCoordinate,
                     ),
-                })
+                }
+                    })
+                } else {
+                    plan
+                }
+            });
+            let handler = if MODE == 2 {
+                handler.with_generated_payload()
             } else {
-                plan
-            }
-        });
-        let handler = if MODE == 2 {
-            handler.with_generated_payload()
-        } else {
-            handler.preserving_payload()
-        };
-        setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(handler)?;
+                handler.preserving_payload()
+            };
+            setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(handler)?;
+            setup.producer::<RegionOutputProducer<CheckpointSchema, REUSE, MODE>>(
+                RegionOutputProvider::<MODE>,
+            )?;
+            setup.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>(())?;
+        }
         let unretained =
             owner::running::<program::UnretainedTotals<WORK>, _>(setup, owner::RegionTotalsOwner)?;
         setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(unretained)?;
         setup.handler::<EntryEditBinding<CheckpointSchema>, _>(EntryEditHandler)?;
         super::super::entry_correction::configure(setup)?;
-        setup.producer::<RegionOutputProducer<CheckpointSchema, REUSE, MODE>>(
-            RegionOutputProvider::<MODE>,
-        )?;
-        setup.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>(())?;
         if MODE == 4 {
             let provider = crate::InitialPlanarProvider::new(
                 std::sync::Arc::clone(&configuration.producer_authorization_denials),
