@@ -3216,7 +3216,6 @@ dependencies = [
  "rayon",
  "worth-foundational",
  "worth-proof",
- "worth-value-shape-derive",
 ]
 
 [[package]]
