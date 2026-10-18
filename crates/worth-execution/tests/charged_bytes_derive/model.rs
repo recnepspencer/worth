@@ -1,6 +1,8 @@
-use worth_execution::{CanonicalBits, ChargedBytes};
+use worth_execution::CanonicalBits;
+use worth_foundational::facade::ChargedBytes;
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, ChargedBytes)]
+#[charged_bytes(crate = "worth_foundational::facade")]
 pub struct ResidentValue {
     pub total: u64,
     pub labels: Vec<String>,

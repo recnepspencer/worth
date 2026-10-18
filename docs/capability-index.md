@@ -99,7 +99,9 @@ currentness or codec-transition permission.
 Managed computation values derive resident accounting with Host's existing
 `application_contribution::ChargedBytes` trait and derive. Every resident field
 counts, independently of Serde visibility; named opaque/shared owners retain
-their native contracts. See [resident value accounting](build-an-application.md#resident-value-accounting).
+their native contracts. Pure schema owners use the same trait and derive from
+`worth_foundational::facade` without an Execution dependency. See
+[resident value accounting](build-an-application.md#resident-value-accounting).
 
 "Guide" links to the section that shows the exact calls. The "Never build"
 column names the substitute that this capability makes wrong.

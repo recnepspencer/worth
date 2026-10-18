@@ -1255,7 +1255,6 @@ dependencies = [
  "trybuild",
  "worth-foundational",
  "worth-proof",
- "worth-value-shape-derive",
 ]
 
 [[package]]

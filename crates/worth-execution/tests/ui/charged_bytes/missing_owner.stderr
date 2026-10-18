@@ -13,9 +13,9 @@ error[E0277]: the trait bound `Arc<Vec<String>>: ChargedBytes` is not satisfied
             BackInput<I, B>
             Box<T>
             DecomposeFailure<E>
+            ExecutionKernelReceipt
             ExecutionMap<T, K>
             InterfaceSolution<S, B>
-            InteriorResult<I, C>
           and $N others
 
 error[E0277]: the trait bound `HashMap<String, String>: ChargedBytes` is not satisfied
@@ -33,7 +33,7 @@ error[E0277]: the trait bound `HashMap<String, String>: ChargedBytes` is not sat
             BackInput<I, B>
             Box<T>
             DecomposeFailure<E>
+            ExecutionKernelReceipt
             ExecutionMap<T, K>
             InterfaceSolution<S, B>
-            InteriorResult<I, C>
           and $N others

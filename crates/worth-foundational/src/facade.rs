@@ -686,10 +686,11 @@ pub use crate::values::{
 };
 
 pub use crate::budget_limits::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
+pub use crate::resident_value::ChargedBytes;
 pub use crate::responsibilities::{foundational_responsibilities, ResponsibilityArea};
 pub use crate::value_shape::{
     decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
     CanonicalValue, CanonicalValueSeed, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds,
     ValueFieldShape, ValuePrimitive, ValueShape, ValueVariantShape,
 };
-pub use worth_value_shape_derive::WorthValue;
+pub use worth_value_shape_derive::{ChargedBytes, WorthValue};

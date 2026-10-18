@@ -246,6 +246,12 @@ not determine resident size. Unsupported heap owners fail compilation: provide
 a named opaque/shared owner's native `ChargedBytes` implementation rather than
 skipping its field. Generic owners and unions require an explicit owner contract.
 
+Pure schema owners import the same trait and derive from
+`worth_foundational::facade` and select it with
+`#[charged_bytes(crate = "worth_foundational::facade")]`. They need no Execution
+dependency. Execution and Host re-export that single description contract;
+their runtime admission responsibilities stay with the runtime owners.
+
 This description does not allocate, reserve memory, infer kernel work bounds or
 deduplicate shared pointers. Existing map/reduction admission, bounded checkpoints,
 tree sharing and retained reservations continue to own those responsibilities.

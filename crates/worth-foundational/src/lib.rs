@@ -51,6 +51,7 @@ pub mod performance_api;
 pub mod physical_integrity_observation;
 mod profiles;
 pub mod profiles_api;
+mod resident_value;
 mod responsibilities;
 mod transitions;
 mod value_shape;

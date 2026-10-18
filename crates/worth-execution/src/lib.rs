@@ -53,7 +53,6 @@ pub use reduction::{
     ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop, ReductionTree,
 };
 pub use report::ChargedBytes;
-pub use worth_value_shape_derive::ChargedBytes;
 
 pub use authority::consult_observation::{
     with_request_consult_observer_for_test, RequestConsultObservationForTest,
