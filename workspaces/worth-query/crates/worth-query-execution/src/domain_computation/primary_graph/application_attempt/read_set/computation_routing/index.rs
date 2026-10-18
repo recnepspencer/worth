@@ -8,14 +8,12 @@ pub(in crate::domain_computation::primary_graph) struct ComputationFactIndex {
     pub(super) observation_work: Option<u64>,
 }
 impl ComputationFactIndex {
-    pub(super) fn build<'a>(
+    pub(super) fn build(
         facts: &BTreeMap<WorthQueryApplicationFactKey, SealedComputationFact>,
-        ordered: impl Iterator<Item = &'a WorthQueryApplicationFactKey>,
     ) -> Self {
-        let ordinals = ordered
-            .enumerate()
-            .filter(|(_, key)| facts.contains_key(*key))
-            .map(|(ordinal, key)| (ordinal, key.clone()))
+        let ordinals = facts
+            .iter()
+            .map(|(key, value)| (value.ordinal, key.clone()))
             .collect();
         let mut calls: BTreeMap<_, Vec<_>> = BTreeMap::new();
         let mut observation_work = Some(0_u64);
@@ -43,6 +41,7 @@ impl ComputationFactIndex {
     pub(super) fn charged_bytes(&self) -> Option<u64> {
         let mut bytes = u64::try_from(size_of::<Self>() + 2 * size_of::<usize>()).ok()?;
         for key in self.ordinals.values() {
+            super::super::super::super::fact_verification_observation::completion_metadata();
             bytes = bytes
                 .checked_add(
                     (11 * size_of::<(usize, WorthQueryApplicationFactKey)>()
@@ -51,6 +50,7 @@ impl ComputationFactIndex {
                 .checked_add(key.additional_charged_bytes())?;
         }
         for keys in self.calls.values() {
+            super::super::super::super::fact_verification_observation::completion_call_roster();
             bytes = bytes
                 .checked_add(
                     (11 * size_of::<(ComputationRead, Vec<WorthQueryApplicationFactKey>)>()
@@ -60,6 +60,7 @@ impl ComputationFactIndex {
                     (keys.capacity() * size_of::<WorthQueryApplicationFactKey>()) as u64,
                 )?;
             for key in keys {
+                super::super::super::super::fact_verification_observation::completion_metadata();
                 bytes = bytes.checked_add(key.additional_charged_bytes())?;
             }
         }

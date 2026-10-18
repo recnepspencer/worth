@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use worth_relational::facade::identity::EntityId;
 
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
@@ -91,7 +92,7 @@ fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool 
 }
 
 pub(super) fn normalized_output_facts(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     effects: &[WorthQueryApplicationRealizedEffect],
 ) -> Vec<WorthQueryApplicationObservedFact> {
     facts

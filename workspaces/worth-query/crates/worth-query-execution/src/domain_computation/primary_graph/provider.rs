@@ -74,7 +74,9 @@ pub(super) use super::application_attempt::WorthQueryPrimaryGraphApplicationAtte
 use super::WorthQueryPrimaryGraphIntegrationHandle;
 pub(super) use application_attempt_state::WorthQueryPrimaryGraphCommittedApplication;
 pub(crate) use application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
-pub(in crate::domain_computation) use application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
+pub(in crate::domain_computation) use application_decision_fact::{
+    CompletedApplicationFacts, WorthQueryPrimaryGraphApplicationDecisionFact,
+};
 #[cfg(test)]
 pub(in crate::domain_computation) use committed_dispatch_outbox::{
     commit_distinct_records_and_admit_fixture, commit_observe_and_admit_fixture,

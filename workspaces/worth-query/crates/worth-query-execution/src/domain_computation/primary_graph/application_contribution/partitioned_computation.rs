@@ -49,7 +49,7 @@ pub use incremental::{
     WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use incremental::{
-    Comparator, CompletedComputationRetention, ComputationDeposit,
+    Comparator, CompletedComputationRetention, ComputationDeposit, NativeComputationReads,
 };
 pub(in crate::domain_computation) use incremental::{
     ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,

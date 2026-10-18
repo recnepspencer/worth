@@ -58,7 +58,8 @@ impl ExecutionAllocationDenialKind {
     }
 }
 
-/// Owner-produced refusal; a quote exists only after checked payload layout.
+/// Owner-produced refusal; a quote exists after an explicit payload byte bound
+/// or a physical backing layout has been checked.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecutionAllocationDenial {
     kind: ExecutionAllocationDenialKind,

@@ -1,4 +1,4 @@
-use worth_execution::ExecutionArray;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 mod effect_accumulator;
 pub(in crate::domain_computation::primary_graph) use effect_accumulator::WorthQueryExpectedEffectStepPreparationWork;
 mod effect_lowering;
@@ -27,8 +27,8 @@ use super::{
 
 pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    facts: FactPayload,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
@@ -100,10 +100,8 @@ pub(super) fn prepare_provider_attempt(
     >,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     application_effect_count: usize,
-    installed_read_scopes: ExecutionArray<
-        worth_query_installation::facade::WorthQueryOperationGraphReadScope,
-    >,
-    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    facts: FactPayload,
     consumed_outputs: Vec<
         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     >,
@@ -156,7 +154,8 @@ pub(super) fn prepare_program_migration_batch(
         '_,
     >,
     mutation_partition: worth_relational::facade::identity::PartitionId,
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence
+          + ?Sized),
     effects: Vec<WorthQueryApplicationRealizedEffect>,
 ) -> Result<
     worth_relational::facade::transactions::WorkerIntentBatch,

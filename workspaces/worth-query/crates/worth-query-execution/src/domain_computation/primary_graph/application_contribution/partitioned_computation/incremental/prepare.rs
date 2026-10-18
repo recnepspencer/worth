@@ -81,6 +81,12 @@ where
     {
         let resource = WorthQueryPartitionedComputationDenial::Resource;
         let start = reader.run_start(&COMPARATOR);
+        if let Some(snapshot) = &self.validated_at {
+            reader.begin_native_carriage(
+                &COMPARATOR,
+                super::NativeComputationReads::new(self.prior.retain_state(), snapshot.clone()),
+            );
+        }
         let retained_prior = self.prior.clone();
         let retained = retained_prior.typed();
         let carried_membership =

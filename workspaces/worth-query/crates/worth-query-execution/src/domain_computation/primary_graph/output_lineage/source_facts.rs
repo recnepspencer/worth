@@ -79,6 +79,9 @@ impl Deref for ComparableSourceFacts {
 }
 
 impl FactSequence for ComparableSourceFacts {
+    fn get(&self, ordinal: usize) -> Option<&Fact> {
+        self.facts().get(ordinal)
+    }
     fn len(&self) -> usize {
         self.facts().len()
     }

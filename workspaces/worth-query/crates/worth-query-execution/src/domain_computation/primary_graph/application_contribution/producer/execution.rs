@@ -211,6 +211,7 @@ where
             ValidatedOutputDisclosure::Fresh(proof) => execute_fresh::<Schema, Binding>(
                 &execution,
                 phase,
+                self,
                 runtime,
                 principal,
                 request_scope,
@@ -251,6 +252,7 @@ where
                 execute_fresh::<Schema, Binding>(
                     &execution,
                     phase,
+                    self,
                     runtime,
                     principal,
                     request_scope,

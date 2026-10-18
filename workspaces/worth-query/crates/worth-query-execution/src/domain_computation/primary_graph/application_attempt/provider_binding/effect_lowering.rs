@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -94,7 +95,7 @@ impl CreatedEffectReferences {
 }
 
 pub(super) fn lower_provider_effect(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     unique: &mut UniqueValueWrites<'_>,
     created: &CreatedEffectReferences,
     mutation_partition: worth_relational::facade::identity::PartitionId,
@@ -167,7 +168,7 @@ fn lower_create_entity(
 }
 
 fn lower_update_entity(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     unique: &mut UniqueValueWrites<'_>,
     entity_id: EntityId,
     fields: BTreeMap<AspectFieldLocator, AspectValue>,
@@ -195,7 +196,7 @@ fn lower_update_entity(
 }
 
 fn lower_delete_entity(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     entity_id: EntityId,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     mutation(
@@ -249,7 +250,7 @@ fn lower_create_relation(
 }
 
 fn lower_delete_relation(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     relation_id: RelationId,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     mutation(

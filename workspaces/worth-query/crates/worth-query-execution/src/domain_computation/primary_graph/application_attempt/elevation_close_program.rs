@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension;
@@ -159,7 +160,7 @@ fn validate_installed_contract<Schema, Operation, Input, Scope>(
 
 fn validate_lifecycle_facts(
     binding: &WorthQueryElevationCloseBinding,
-    facts: &[super::WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let requested = binding.approved().request_binding();
     if lifecycle_facts_are_exact(

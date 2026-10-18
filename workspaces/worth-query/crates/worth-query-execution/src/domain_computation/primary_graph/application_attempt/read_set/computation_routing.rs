@@ -15,7 +15,7 @@ use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 use worth_proof::CanonicalUniqueVec;
 
-use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
+use super::super::fact::WorthQueryApplicationFactKey;
 
 /// One owner call of a partitioned computation that reads through the lent
 /// reader.
@@ -39,6 +39,18 @@ struct ComputationFactReads {
 }
 
 impl ComputationFactReads {
+    fn reads(&self) -> impl Iterator<Item = ComputationRead> + '_ {
+        self.membership
+            .then_some(ComputationRead::Membership)
+            .into_iter()
+            .chain(self.item_keys.iter().copied().map(ComputationRead::ItemKey))
+            .chain(
+                self.partitions
+                    .iter()
+                    .copied()
+                    .map(ComputationRead::Partition),
+            )
+    }
     fn record(&mut self, read: ComputationRead) {
         match read {
             ComputationRead::Membership => self.membership = true,
@@ -119,14 +131,107 @@ impl ComputationFactReaders {
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct ComputationFactAttribution {
     readers: BTreeMap<WorthQueryApplicationFactKey, ComputationFactReads>,
+    handler: Option<std::sync::Arc<BTreeSet<WorthQueryApplicationFactKey>>>,
+    calls: BTreeSet<ComputationRead>,
+    fresh_calls: BTreeSet<ComputationRead>,
+    carried: BTreeSet<ComputationRead>,
+    native: Option<
+        crate::domain_computation::primary_graph::application_contribution::NativeComputationReads,
+    >,
 }
 
 impl ComputationFactAttribution {
+    pub(in crate::domain_computation::primary_graph) fn begin_fresh(
+        &mut self,
+        read: ComputationRead,
+    ) {
+        self.calls.insert(read);
+        self.fresh_calls.insert(read);
+    }
+    pub(in crate::domain_computation::primary_graph) fn begin_native(
+        &mut self,
+        native: crate::domain_computation::primary_graph::application_contribution::NativeComputationReads,
+    ) {
+        assert!(
+            self.native.is_none(),
+            "one native computation prior per projection"
+        );
+        self.native = Some(native);
+    }
+    pub(in crate::domain_computation::primary_graph) fn carry_native(
+        &mut self,
+        read: ComputationRead,
+    ) -> bool {
+        if self.native.is_none() {
+            return false;
+        }
+        super::super::super::fact_verification_observation::carried_call_record();
+        self.calls.insert(read);
+        self.carried.insert(read);
+        true
+    }
+    pub(in crate::domain_computation::primary_graph) fn materialize_carried(&mut self) {
+        let Some(native) = self.native.take() else {
+            return;
+        };
+        let calls = native.facts().call_index();
+        for read in std::mem::take(&mut self.carried) {
+            for key in calls.keys(read) {
+                super::super::super::fact_verification_observation::carried_key_expansion();
+                self.record(key.clone(), read);
+            }
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn carried_keys(
+        &self,
+    ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
+        self.native
+            .iter()
+            .flat_map(|native| native.facts().metadata.iter())
+            .inspect(|_| {
+                super::super::super::fact_verification_observation::fallback_carried_metadata()
+            })
+            .filter(|(_, fact)| {
+                fact.readers
+                    .reads()
+                    .any(|read| self.carried.contains(&read))
+            })
+            .map(|(key, _)| key)
+    }
+    pub(in crate::domain_computation::primary_graph) fn retain_handler(
+        &mut self,
+        handler: std::sync::Arc<BTreeSet<WorthQueryApplicationFactKey>>,
+    ) {
+        self.handler = Some(handler);
+    }
+
     /// Conservative pre-allocation bound: each read may have its own B-tree
     /// root and key vector. Key clones reserve their declared nested payload.
     pub(super) fn index_bytes(&self) -> Option<u64> {
         use worth_execution::ChargedBytes;
         let mut bytes = (size_of::<index::ComputationFactIndex>() + 2 * size_of::<usize>()) as u64;
+        bytes = bytes
+            .checked_add(
+                (self
+                    .calls
+                    .len()
+                    .checked_mul(11 * size_of::<ComputationRead>() + 16 * size_of::<usize>())?)
+                    as u64,
+            )?
+            .checked_add((self.readers.len().checked_mul(size_of::<usize>())?) as u64)?;
+        if let Some(handler) = &self.handler {
+            bytes = bytes.checked_add(
+                (size_of::<layout::CheckedReadLayout>() + 2 * size_of::<usize>()) as u64,
+            )?;
+            for key in handler.iter() {
+                bytes = bytes
+                    .checked_add(
+                        (11 * size_of::<(WorthQueryApplicationFactKey, usize)>()
+                            + 16 * size_of::<usize>()) as u64,
+                    )?
+                    .checked_add(key.additional_charged_bytes())?;
+            }
+        }
         for (key, reads) in &self.readers {
             let key_bytes = (size_of::<WorthQueryApplicationFactKey>() as u64)
                 .checked_add(key.additional_charged_bytes())?;
@@ -157,6 +262,8 @@ impl ComputationFactAttribution {
         key: WorthQueryApplicationFactKey,
         read: ComputationRead,
     ) {
+        super::super::super::fact_verification_observation::fresh_read_key_record();
+        self.begin_fresh(read);
         self.readers.entry(key).or_default().record(read);
     }
 
@@ -165,6 +272,13 @@ impl ComputationFactAttribution {
         key: &WorthQueryApplicationFactKey,
     ) -> bool {
         self.readers.contains_key(key)
+            || self.native.as_ref().is_some_and(|native| {
+                native.facts().metadata.get(key).is_some_and(|fact| {
+                    fact.readers
+                        .reads()
+                        .any(|read| self.carried.contains(&read))
+                })
+            })
     }
 
     pub(in crate::domain_computation::primary_graph) fn keys(
@@ -174,157 +288,33 @@ impl ComputationFactAttribution {
     }
 }
 
-/// One fact an owner call read, as the attempt observed it before its own
-/// effect, with every call that read it.
+/// A fact's exact position in the completed original payload, and its readers.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct SealedComputationFact {
-    fact: WorthQueryApplicationObservedFact,
+struct SealedComputationFact {
+    ordinal: usize,
     readers: ComputationFactReaders,
 }
 
-/// Every fact the owner calls of one attempt read, by key, as sealed.
-///
-/// These are the facts themselves, not the record's: a record's facts are
-/// rebased to source revisions at commit, so they cannot be compared by
-/// content and they hide the attempt's own effect.
+/// Original pre-effect facts with checked ordinal/call correspondence.
+/// Postcommit rebasing never replaces this payload.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
     index: std::sync::Arc<index::ComputationFactIndex>,
-    facts: BTreeMap<WorthQueryApplicationFactKey, SealedComputationFact>,
-}
-
-impl SealedComputationFacts {
-    /// Takes, for every key an owner call read, the fact seal observed for it.
-    /// Seal observed every expected key, and every key a call read is one.
-    pub(super) fn at_seal(
-        attribution: ComputationFactAttribution,
-        sealed: &BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
-    ) -> Self {
-        let facts = attribution
-            .readers
-            .into_iter()
-            .map(|(key, readers)| {
-                let fact = sealed
-                    .get(&key)
-                    .expect("seal observed every owner key")
-                    .clone();
-                (
-                    key,
-                    SealedComputationFact {
-                        fact,
-                        readers: readers.in_order(),
-                    },
-                )
-            })
-            .collect();
-        let index = std::sync::Arc::new(index::ComputationFactIndex::build(&facts, sealed.keys()));
-        Self { facts, index }
-    }
-
-    /// The fact seal observed for `key`, when an owner call read it.
-    pub(in crate::domain_computation::primary_graph) fn fact(
-        &self,
-        key: &WorthQueryApplicationFactKey,
-    ) -> Option<&WorthQueryApplicationObservedFact> {
-        self.facts.get(key).map(|sealed| &sealed.fact)
-    }
-
-    /// Stands `fact` in for what seal observed for `key`, as if it had moved
-    /// since.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn replace_fact(
-        &mut self,
-        key: &WorthQueryApplicationFactKey,
-        fact: WorthQueryApplicationObservedFact,
-    ) {
-        self.facts
-            .get_mut(key)
-            .expect("an owner call read the key")
-            .fact = fact;
-    }
-
-    /// Files a copy of what seal observed for `key` under `to`, as if the
-    /// calls that read it had also read that key.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn copy_key(
-        &mut self,
-        key: &WorthQueryApplicationFactKey,
-        to: WorthQueryApplicationFactKey,
-    ) {
-        let sealed = self
-            .facts
-            .get(key)
-            .expect("an owner call read the key")
-            .clone();
-        self.facts.insert(to, sealed);
-        self.index = std::sync::Arc::new(index::ComputationFactIndex::build(
-            &self.facts,
-            self.facts.keys(),
-        ));
-    }
-
-    /// Files what seal observed for `key` under `to`, as if a call had read
-    /// that key instead.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn rename_key(
-        &mut self,
-        key: &WorthQueryApplicationFactKey,
-        to: WorthQueryApplicationFactKey,
-    ) {
-        let sealed = self.facts.remove(key).expect("an owner call read the key");
-        self.facts.insert(to, sealed);
-        self.index = std::sync::Arc::new(index::ComputationFactIndex::build(
-            &self.facts,
-            self.facts.keys(),
-        ));
-    }
-
-    /// The most work observing every fact the calls read can take, or
-    /// `None` when a fact's observation has no bound or the sum overflows.
-    pub(in crate::domain_computation::primary_graph) fn observation_work_bound(
-        &self,
-    ) -> Option<u64> {
-        self.index.observation_work
-    }
-
-    /// Each fact a call read, in key order, with every call that read it.
-    pub(in crate::domain_computation::primary_graph) fn facts(
-        &self,
-    ) -> impl Iterator<
-        Item = (
-            &WorthQueryApplicationFactKey,
-            &WorthQueryApplicationObservedFact,
-            &ComputationFactReaders,
-        ),
-    > {
-        self.facts
-            .iter()
-            .map(|(key, sealed)| (key, &sealed.fact, &sealed.readers))
-    }
+    metadata: std::sync::Arc<BTreeMap<WorthQueryApplicationFactKey, SealedComputationFact>>,
+    original: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    charged: Option<u64>,
+    layout: layout::SealedReadLayout,
 }
 
 mod charged;
+mod layout;
+mod reuse;
+pub(in crate::domain_computation::primary_graph::application_attempt::read_set) use layout::CheckedReadLayout;
+pub(in crate::domain_computation::primary_graph) use reuse::NativeReadRefresh;
+mod index;
+mod sealed;
+#[cfg(test)]
+mod test_mutation;
 #[cfg(test)]
 mod tests;
-
-mod index;
 pub(in crate::domain_computation::primary_graph) use index::ComputationFactIndex;
-impl SealedComputationFacts {
-    pub(in crate::domain_computation::primary_graph) fn call_index(
-        &self,
-    ) -> std::sync::Arc<ComputationFactIndex> {
-        std::sync::Arc::clone(&self.index)
-    }
-    pub(in crate::domain_computation::primary_graph) fn at_ordinal(
-        &self,
-        ordinal: usize,
-    ) -> Option<(
-        &WorthQueryApplicationFactKey,
-        &WorthQueryApplicationObservedFact,
-        &ComputationFactReaders,
-    )> {
-        let key = self.index.ordinals.get(&ordinal)?;
-        let value = self.facts.get(key)?;
-        Some((key, &value.fact, &value.readers))
-    }
-}

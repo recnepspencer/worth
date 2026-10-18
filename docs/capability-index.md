@@ -88,6 +88,12 @@ Managed computation values derive resident accounting with Host's existing
 counts, independently of Serde visibility; named opaque/shared owners retain
 their native contracts. See [resident value accounting](build-an-application.md#resident-value-accounting).
 
+Platform storage owners separately admit newly copied nested payload through
+`ExecutionAllocationPolicy::reserve_memory(bytes)` before copying, retaining
+the returned reservation with that payload. Fixed arrays still admit inline
+backing only. See [Execution payload custody](../crates/worth-execution/README.md)
+for the ownership and refusal contract; this grants no graph or publication authority.
+
 "Guide" links to the section that shows the exact calls. The "Never build"
 column names the substitute that this capability makes wrong.
 

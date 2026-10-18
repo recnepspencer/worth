@@ -1,4 +1,8 @@
+mod application_facts;
 use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
+pub(in crate::domain_computation) use application_facts::{
+    CompletedApplicationFacts, SharedObservedFact, SharedReadScope,
+};
 use std::sync::Arc;
 
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;
@@ -6,15 +10,15 @@ use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDepe
 #[derive(Clone)]
 pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecisionFact {
     Application {
-        read_scope: worth_query_installation::facade::WorthQueryOperationGraphReadScope,
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        read_scope: SharedReadScope,
+        fact: SharedObservedFact,
     },
     ObservedSource {
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        fact: SharedObservedFact,
     },
     ApplicationObservedSource {
-        read_scope: worth_query_installation::facade::WorthQueryOperationGraphReadScope,
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        read_scope: SharedReadScope,
+        fact: SharedObservedFact,
     },
     Principal(WorthQueryPrincipalCurrentnessDependency),
     Authorization {
@@ -26,8 +30,8 @@ pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecision
 
 impl WorthQueryPrimaryGraphApplicationDecisionFact {
     pub(in crate::domain_computation) const fn application(
-        read_scope: worth_query_installation::facade::WorthQueryOperationGraphReadScope,
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        read_scope: SharedReadScope,
+        fact: SharedObservedFact,
     ) -> Self {
         Self::Application { read_scope, fact }
     }
@@ -38,22 +42,24 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         Self::Principal(dependency)
     }
 
-    pub(in crate::domain_computation) const fn observed_source(
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
-    ) -> Self {
+    pub(in crate::domain_computation) const fn observed_source(fact: SharedObservedFact) -> Self {
         Self::ObservedSource { fact }
     }
 
     pub(in crate::domain_computation) fn retain_observed_source_role(
         self,
-        source: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        source: SharedObservedFact,
     ) -> Result<Self, &'static str> {
         match self {
-            Self::Application { read_scope, fact } if fact == source => {
+            Self::Application { read_scope, fact } if fact.as_ref() == source.as_ref() => {
                 Ok(Self::ApplicationObservedSource { read_scope, fact })
             }
-            Self::ObservedSource { fact } if fact == source => Ok(Self::ObservedSource { fact }),
-            Self::ApplicationObservedSource { read_scope, fact } if fact == source => {
+            Self::ObservedSource { fact } if fact.as_ref() == source.as_ref() => {
+                Ok(Self::ObservedSource { fact })
+            }
+            Self::ApplicationObservedSource { read_scope, fact }
+                if fact.as_ref() == source.as_ref() =>
+            {
                 Ok(Self::ApplicationObservedSource { read_scope, fact })
             }
             _ => Err("decision facts disagree at one structural locator"),
@@ -112,7 +118,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
     ) -> Option<&super::super::application_attempt::WorthQueryApplicationObservedFact> {
         match self {
             Self::ObservedSource { fact } | Self::ApplicationObservedSource { fact, .. } => {
-                Some(fact)
+                Some(fact.as_ref())
             }
             _ => None,
         }

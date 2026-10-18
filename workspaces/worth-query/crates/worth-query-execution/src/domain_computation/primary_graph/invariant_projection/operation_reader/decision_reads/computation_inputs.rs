@@ -7,8 +7,8 @@ use std::collections::BTreeMap;
 
 pub(in crate::domain_computation::primary_graph) enum ObservedComputationInputs {
     None,
-    One(ComputationFactAttribution),
-    Several(ComputationFactAttribution),
+    One(std::sync::Arc<ComputationFactAttribution>),
+    Several(std::sync::Arc<ComputationFactAttribution>),
 }
 impl ObservedComputationInputs {
     pub(in crate::domain_computation::primary_graph) fn ordinals(
@@ -33,7 +33,14 @@ impl ObservedComputationInputs {
         self,
     ) -> Option<ComputationFactAttribution> {
         match self {
-            Self::One(attribution) => Some(attribution),
+            Self::One(attribution) => {
+                let mut attribution =
+                    std::sync::Arc::try_unwrap(attribution).unwrap_or_else(|_| {
+                        panic!("expected key view releases attribution before sealing")
+                    });
+                attribution.materialize_carried();
+                Some(attribution)
+            }
             Self::None | Self::Several(_) => None,
         }
     }

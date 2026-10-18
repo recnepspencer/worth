@@ -77,6 +77,7 @@ impl<Schema, Operation>
     ) {
         self.reader.work = start.work;
         self.reader.work_budget = start.work_budget;
+        self.decision_facts.materialize_carried();
     }
 
     /// Makes one owner call, recording every fact key it reads as that call's,
@@ -88,6 +89,7 @@ impl<Schema, Operation>
         call: impl FnOnce(&mut Self) -> Output,
     ) -> (Output, Option<ComputationCallCharge>) {
         let work = self.reader.work;
+        self.decision_facts.begin_fresh_call(read);
         let remaining = self.reader.work_budget.remaining();
         self.reader.work_budget.begin_call();
         self.reader.realized_scope.begin_call();
@@ -142,6 +144,15 @@ impl<Schema, Operation>
         _: &Comparator,
     ) -> worth_relational::facade::snapshots::SnapshotHandle {
         self.reader.snapshot.clone()
+    }
+
+    /// The immutable installed backing which also issued this reader's decode
+    /// session. Identity alone grants no source, snapshot or session custody.
+    pub(in crate::domain_computation::primary_graph) fn computation_value_bindings(
+        &self,
+        _: &Comparator,
+    ) -> worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog {
+        self.reader.value_bindings.clone()
     }
 
     /// The fact `key` names at this projection's snapshot, comparable only

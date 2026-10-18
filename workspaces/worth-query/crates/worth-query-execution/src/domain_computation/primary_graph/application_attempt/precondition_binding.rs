@@ -149,14 +149,20 @@ impl WorthQueryBoundMutationPreconditions {
         &self,
         facts: &BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
     ) -> Result<(), ()> {
+        self.validate_observations_with(|key| facts.get(key))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn validate_observations_with<'a>(
+        &self,
+        fact: impl Fn(&WorthQueryApplicationFactKey) -> Option<&'a WorthQueryApplicationObservedFact>,
+    ) -> Result<(), ()> {
         self.entries.iter().try_for_each(|precondition| {
             let key = WorthQueryApplicationFactKey::Field {
                 entity: precondition.entity.clone(),
                 entity_id: precondition.entity_id,
                 locator: precondition.locator.clone(),
             };
-            facts
-                .get(&key)
+            fact(&key)
                 .filter(|fact| {
                     fact.observed_field_value()
                         .is_some_and(|value| value == &precondition.expected_value)

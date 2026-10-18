@@ -25,6 +25,8 @@ pub(super) use worth_execution::ExecutionKernelReceipt;
 mod kernel_recording;
 pub(super) use kernel_recording::KernelRecording;
 mod carriage;
+mod native_reads;
+pub(in crate::domain_computation::primary_graph) use native_reads::NativeComputationReads;
 mod deposit;
 mod next_tree;
 mod observed;
@@ -167,7 +169,12 @@ where
             });
         }
     };
-    let basis = RetainedBasis::new(installation.clone(), prior.edition, input_digest);
+    let basis = RetainedBasis::new(
+        installation.clone(),
+        prior.edition,
+        input_digest,
+        reader.computation_value_bindings(&COMPARATOR),
+    );
     let full = |basis, cause| {
         Ok(Begun::Full {
             basis: Ok(RetainedBasisToken(basis)),
@@ -261,6 +268,9 @@ fn enter<'key, Schema, Operation>(
     keys: impl IntoIterator<Item = &'key WorthQueryApplicationFactKey>,
     read: ComputationRead,
 ) {
+    if reader.enter_native_carried(&COMPARATOR, read) {
+        return;
+    }
     for key in keys {
         reader.enter_carried(&COMPARATOR, key.clone(), read);
     }

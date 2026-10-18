@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
@@ -9,8 +10,7 @@ use super::effect_lowering::{
 };
 use super::{
     retained_bytes_denial, WorthQueryAdmittedApplicationEmissionBatch,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-    WorthQueryApplicationRealizedEffect,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields;
@@ -20,8 +20,9 @@ mod expected_steps;
 pub(in crate::domain_computation::primary_graph) use expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 use expected_steps::WorthQueryExpectedEffectSteps;
 
-pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout> {
-    facts: ObservedFactIndex<'facts>,
+pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: FactSequence + ?Sized>
+{
+    facts: ObservedFactIndex<'facts, Facts>,
     unique: UniqueValueWrites<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     created: CreatedEffectReferences,
@@ -36,9 +37,11 @@ pub(super) struct WorthQueryRegisteredProviderEffects {
     mutation_partition: worth_relational::facade::identity::PartitionId,
 }
 
-impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
+impl<'facts, 'layout, Facts: FactSequence + ?Sized>
+    WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts>
+{
     pub(super) fn new(
-        facts: &'facts [WorthQueryApplicationObservedFact],
+        facts: &'facts Facts,
         unique_fields: WorthQueryUniqueFields<'layout>,
         effects: &[WorthQueryApplicationRealizedEffect],
         mutation_partition: worth_relational::facade::identity::PartitionId,

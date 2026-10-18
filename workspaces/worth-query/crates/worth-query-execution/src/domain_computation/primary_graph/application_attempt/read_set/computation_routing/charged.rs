@@ -82,9 +82,7 @@ impl ChargedBytes for ComputationFactReaders {
 
 impl ChargedBytes for SealedComputationFact {
     fn additional_charged_bytes(&self) -> u64 {
-        self.fact
-            .additional_charged_bytes()
-            .saturating_add(self.readers.additional_charged_bytes())
+        self.readers.additional_charged_bytes()
     }
 }
 
@@ -92,17 +90,27 @@ impl SealedComputationFacts {
     /// What retaining the facts holds: every entry's key, fact and readers
     /// inline, and what each owns beyond that. `None` when the sum overflows.
     pub(in crate::domain_computation::primary_graph) fn charged_bytes(&self) -> Option<u64> {
+        self.charged
+    }
+
+    pub(super) fn calculate_charged_bytes(&self) -> Option<u64> {
         let entry = u64::try_from(
             std::mem::size_of::<WorthQueryApplicationFactKey>()
                 + std::mem::size_of::<SealedComputationFact>(),
         )
         .ok()?;
-        self.facts
-            .iter()
-            .try_fold(self.index.charged_bytes()?, |sum, (key, sealed)| {
+        let backing = self.original.retained_resident_bytes()?;
+        self.metadata.iter().try_fold(
+            self.index
+                .charged_bytes()?
+                .checked_add(backing)?
+                .checked_add(self.layout.charged_bytes()?)?,
+            |sum, (key, sealed)| {
+                super::super::super::super::fact_verification_observation::completion_metadata();
                 sum.checked_add(entry)?
                     .checked_add(key.additional_charged_bytes())?
                     .checked_add(sealed.additional_charged_bytes())
-            })
+            },
+        )
     }
 }

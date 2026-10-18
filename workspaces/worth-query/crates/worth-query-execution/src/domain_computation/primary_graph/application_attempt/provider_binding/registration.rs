@@ -88,7 +88,11 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         Ok(affinity) => affinity,
         Err(()) => return abort_registration(staged, DenialStage::ProviderPlan),
     };
-    let decision_facts = match authorization.bind_application_facts(installed_read_scopes, facts) {
+    let application = crate::domain_computation::primary_graph::CompletedApplicationFacts::new(
+        installed_read_scopes,
+        facts,
+    );
+    let decision_facts = match authorization.bind_application_facts(application) {
         Ok(bound) => bound,
         Err(detail) => {
             let _ = staged.abort();

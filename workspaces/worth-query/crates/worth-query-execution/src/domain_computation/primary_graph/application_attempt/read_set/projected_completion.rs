@@ -1,7 +1,5 @@
 use worth_execution::ExecutionAllocationPolicy;
-use worth_query_installation::facade::{
-    ApplicationRelationRef, OperationReads, WorthQueryOperationGraphReadScope,
-};
+use worth_query_installation::facade::{ApplicationRelationRef, OperationReads};
 
 use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 use super::super::read_phase::WorthQueryProjectedApplicationMutation;
@@ -22,8 +20,10 @@ impl<Schema, Operation, Input, Scope>
         WorthQueryProjectedApplicationMutation,
     >
 {
-    /// Re-observes exactly the decision dependencies carried by the sealed
-    /// operation projection. No caller can add, remove, or replace a fact key.
+    /// Completes exactly the sealed projection's dependencies at its pinned
+    /// snapshot. A qualified native run carries unchanged facts under their
+    /// original custody; other paths observe every dependency again. Callers
+    /// cannot add, remove, or replace a dependency key.
     pub fn complete_projected_dependencies(
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
@@ -60,13 +60,54 @@ impl<Schema, Operation, Input, Scope>
         >,
         WorthQueryApplicationAttemptDenial,
     > {
+        self.check_completion_live()?;
+        self.admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let expected = self.expected_facts.as_ref().ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
                 self.admission.operation(),
             )
         })?;
-        for key in expected {
+        let native = expected
+            .attribution()
+            .native_refresh(
+                &self.computation_reads.1,
+                &self.admission.retain_graph_contract(),
+                self.admission.scope_entity_id(),
+                self.lease.snapshot(),
+                super::super::retained_decision_facts::StorageControl::new(
+                    allocation_policy,
+                    Some(self.admission.publication_request()),
+                ),
+            )
+            .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?;
+        if let Some(native) = native {
+            for key in expected.refresh_keys() {
+                self.admission
+                    .validate_current_authority()
+                    .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
+                allocation_policy.check_live().map_err(|cause| {
+                    WorthQueryApplicationAttemptDenial::allocation_denied(
+                        self.admission.operation(),
+                        cause,
+                    )
+                })?;
+                let scope = native.position(key).ok_or_else(|| {
+                    denial(
+                        WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
+                        self.admission.operation(),
+                    )
+                })?;
+                let fact = self.observe_scoped_projected_fact(execution, key, scope)?;
+                self.installed_read_scopes.insert(key.clone(), scope);
+                self.facts.insert(key.clone(), fact);
+            }
+            self.native_completion = Some(native);
+            return self.complete(allocation_policy);
+        }
+        for key in expected.iter() {
             self.admission
                 .validate_current_authority()
                 .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
@@ -89,7 +130,7 @@ impl<Schema, Operation, Input, Scope>
         key: &WorthQueryApplicationFactKey,
     ) -> Result<
         (
-            WorthQueryOperationGraphReadScope,
+            super::InstalledScopePosition,
             WorthQueryApplicationObservedFact,
         ),
         WorthQueryApplicationAttemptDenial,
@@ -101,6 +142,35 @@ impl<Schema, Operation, Input, Scope>
             ));
         }
         let read_scope = self.projected_read_scope(key)?;
+        Ok((
+            read_scope,
+            self.observe_scoped_projected_fact(execution, key, read_scope)?,
+        ))
+    }
+
+    fn observe_scoped_projected_fact(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        key: &WorthQueryApplicationFactKey,
+        scope: super::InstalledScopePosition,
+    ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+        if !key_entities_are_in_scope(key, &self.read_scope) {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
+                self.admission.operation(),
+            ));
+        }
+        if !scope
+            .resolve(self.admission.allowed_graph_contract())
+            .is_some_and(|scope| {
+                super::observation_admission::graph_read_scope_matches_key(scope, key)
+            })
+        {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
+                self.admission.operation(),
+            ));
+        }
         let fact = self.lease.handle().with_runtime(execution, |runtime| {
             super::fact_observation::observe_fact(
                 execution,
@@ -110,13 +180,13 @@ impl<Schema, Operation, Input, Scope>
                 key,
             )
         })?;
-        Ok((read_scope, fact))
+        Ok(fact)
     }
 
     fn projected_read_scope(
         &self,
         key: &WorthQueryApplicationFactKey,
-    ) -> Result<WorthQueryOperationGraphReadScope, WorthQueryApplicationAttemptDenial> {
+    ) -> Result<super::InstalledScopePosition, WorthQueryApplicationAttemptDenial> {
         self.admission
             .allowed_graph_contract()
             .graph_reads()
@@ -124,7 +194,12 @@ impl<Schema, Operation, Input, Scope>
             .iter()
             .flat_map(|role| role.read_scopes())
             .find(|scope| super::observation_admission::graph_read_scope_matches_key(scope, key))
-            .cloned()
+            .and_then(|scope| {
+                super::InstalledScopePosition::from_installed(
+                    self.admission.allowed_graph_contract(),
+                    scope,
+                )
+            })
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,

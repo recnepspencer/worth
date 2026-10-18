@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension;
@@ -110,7 +111,7 @@ fn validate_installed_program(
 fn validate_target<Schema, Entity, Operation, Input, Scope>(
     binding: &crate::domain_computation::authorization::WorthQueryCapabilityRevocationBinding,
     target: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     admission: &crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,

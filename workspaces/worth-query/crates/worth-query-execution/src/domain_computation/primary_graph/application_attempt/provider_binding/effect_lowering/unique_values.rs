@@ -3,6 +3,7 @@
 //! and that selection found no live entity but the one written. A program
 //! writes each unique value at most once.
 
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeSet;
 
 use worth_foundational::facade::{
@@ -43,7 +44,7 @@ impl<'layout> UniqueValueWrites<'layout> {
     /// Admits `writer` (none for a create) setting `locator` to `value`.
     pub(super) fn admit(
         &mut self,
-        facts: &ObservedFactIndex<'_>,
+        facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
         kind: KindId,
         writer: Option<EntityId>,
         locator: &AspectFieldLocator,

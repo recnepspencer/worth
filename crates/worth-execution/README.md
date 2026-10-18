@@ -50,6 +50,16 @@ the originating lease or World; it grants no further permission to execute.
 Moved-out array values own their separate nested resources. The physical owner
 charges only the contiguous element layout, not allocations nested inside T.
 
+Platform storage owners reserve newly owned nested payload with
+`policy.reserve_memory(bytes)` **before** allocating or copying it. Execution
+returns the genuine `ExecutionMemoryReservation`; explicit system allocation
+returns `None`. The method performs no allocation or retrospective funding.
+It uses the same live-status checks, typed refusal and payload quote as fixed
+backing. The payload owner retains that reservation after its data fields so
+the data drops first, and shared roots keep the complete owner alive. A cached
+copy bound must cover every newly copied nested allocation; shared existing
+owners keep their original custody.
+
 `ExecutionImmutableBytes::from_external_bytes(Arc<Box<[u8]>>)` retains already
 allocated external bytes without copying or retrospectively admitting them.
 `charged_payload_bytes()` returns `None` for external/system storage and the

@@ -28,7 +28,7 @@ pub use decision_plan::{
     WorthQueryPreparedEntitySelection,
 };
 pub(in crate::domain_computation::primary_graph) use decision_reads::{
-    DecisionReads, ObservedComputationInputs,
+    DecisionReads, ExpectedFactKeys, ObservedComputationInputs,
 };
 pub use prior_output::WorthQueryPriorOutputFamilyMember;
 pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;

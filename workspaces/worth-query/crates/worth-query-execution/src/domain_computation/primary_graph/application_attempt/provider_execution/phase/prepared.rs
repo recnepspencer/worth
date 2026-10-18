@@ -1,5 +1,5 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use worth_execution::ExecutionArray;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::provider_binding::installed_preimage_demand;
@@ -19,7 +19,7 @@ use crate::domain_computation::authorization::WorthQueryProviderCommitAuthorizat
 use crate::domain_computation::primary_graph::application_attempt::{
     effect_program::WorthQueryApplicationRealizedEffect,
     provider_binding::WorthQueryPreparedApplicationProviderAttempt,
-    snapshot_lease::WorthQueryApplicationSnapshotLease, WorthQueryApplicationObservedFact,
+    snapshot_lease::WorthQueryApplicationSnapshotLease,
 };
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
 use crate::domain_computation::primary_graph::{
@@ -112,8 +112,8 @@ impl<Schema, Operation, Input, Scope>
 
 struct WorthQueryProviderAttemptPreparation {
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    facts: FactPayload,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
     application_effect_count: usize,

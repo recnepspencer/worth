@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 pub(super) fn execute_fresh<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
+    installed: &TypedInstalledProducer<Schema, Binding>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -54,10 +55,11 @@ where
     let resources = provider.demand_resources(&source);
     super::super::demand::validate_retained_resources(resources, Binding::IDENTITY, limits)?;
     let input = provider.operation_input(&source);
-    let binding = runtime
-        .installed_schema()
-        .installed_mutation_binding::<Operation<Schema, Binding>>()
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
+    // The producer installed this exact binding once. Ordinary authorization
+    // below still checks its current runtime/schema/operation authority; fresh
+    // principal and graph-work sessions are issued for this request. Rebuilding
+    // a second installed object here split cold and selected descriptor custody.
+    let binding = &installed.mutation;
     let principal = selected
         .resolve_authenticated_principal_with_request(
             execution,
