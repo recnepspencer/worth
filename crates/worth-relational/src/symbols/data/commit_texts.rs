@@ -144,7 +144,9 @@ fn visit_intent(intent: &MutationIntent, symbols: &mut BTreeSet<Symbol>) {
             RelationMutationIntent::ApplyAspectPatch(update) => {
                 portable(&update.aspect_patch, symbols)
             }
-            RelationMutationIntent::UpdateEndpoints(_) | RelationMutationIntent::Delete(_) => {}
+            RelationMutationIntent::UpdateEndpoints(_)
+            | RelationMutationIntent::Delete(_)
+            | RelationMutationIntent::Revalidate(_) => {}
         },
         MutationIntent::Materialization(materialization) => match materialization {
             MaterializationMutationIntent::RematerializeEntity(entity) => {

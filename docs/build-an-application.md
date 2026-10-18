@@ -1512,10 +1512,12 @@ never becomes a program revision or a roster member.
 Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
 and relations between entities created in that batch. It currently cannot read or
 rewrite recovered records, or link a new record to an existing endpoint. Query
-commits those effects, the target activation and complete supported entity
-revalidation in one native candidate before exposing a World. Retained workflows
-and relation-scoped rules remain unsupported. Native candidate/publication limits
-remain in force alongside explicit selection and authoring bounds.
+commits those effects, the target activation and complete supported entity and
+relation revalidation in one native candidate before exposing a World. Surviving
+relations are judged through native read demands that preserve their fields,
+endpoints and record versions. Rules overlapping retired relations still refuse;
+retained workflows remain unsupported. Native candidate/publication limits remain
+in force alongside explicit selection and authoring bounds.
 
 For a derived-only codec change, use that same entry point with the target schema
 and program and an empty author callback (`|_, _| Ok(())`). Native recovery must

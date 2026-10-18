@@ -28,6 +28,9 @@ impl IndexRow {
             (IndexKey::Entity(id), true) => Some(Read::Existing(
                 crate::transactions::data::RecordRef::Entity(*id),
             )),
+            (IndexKey::Relation(id), true) => Some(Read::Existing(
+                crate::transactions::data::RecordRef::Relation(*id),
+            )),
             _ => None,
         }
     }

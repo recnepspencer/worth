@@ -62,7 +62,10 @@ pub(crate) fn branch_local_delete_allowance_for_plan(
             }
             MutationIntent::Create(_)
             | MutationIntent::Entity(_)
-            | MutationIntent::Materialization(_) => {}
+            | MutationIntent::Materialization(_)
+            | MutationIntent::Relation(
+                crate::transactions::data::RelationMutationIntent::Revalidate(_),
+            ) => {}
         }
     }
 

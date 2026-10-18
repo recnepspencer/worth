@@ -212,6 +212,10 @@ fn validated_application_touch(
             .is_application_entity_kind(*kind))
         .then_some(None)
         .ok_or(()),
+        ValidatedMutationTouch::RevalidateRelation { kind } => (!layout
+            .is_application_relation_kind(*kind))
+        .then_some(None)
+        .ok_or(()),
         ValidatedMutationTouch::UnrepresentableEntityMutation { kind } => (!layout
             .is_application_entity_kind(*kind))
         .then_some(None)

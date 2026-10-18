@@ -106,7 +106,12 @@ pub(super) fn derive_closed_relations(
                 .iter()
                 .any(|patch| patch.target == RecordRef::Relation(id))
                 && !envelope.merged_plan.merged_intents.iter().any(|intent| {
-                    intent.existing_record_target() == Some(ExistingRecordTarget::Relation(id))
+                    !matches!(
+                        intent,
+                        crate::transactions::data::MutationIntent::Relation(
+                            crate::transactions::data::RelationMutationIntent::Revalidate(_)
+                        )
+                    ) && intent.existing_record_target() == Some(ExistingRecordTarget::Relation(id))
                 })
             {
                 position += 1;

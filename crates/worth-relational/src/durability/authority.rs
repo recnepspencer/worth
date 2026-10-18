@@ -76,6 +76,19 @@ impl RecoveredRelationalRuntimeAuthority {
             .is_some_and(|closure| closure.entities.contains(&entity))
     }
 
+    /// Observe whether native codec admission already retires this exact relation.
+    /// This cannot add a relation to the staged or performed closure.
+    pub fn codec_transition_retires_relation(
+        &self,
+        relation: crate::identity::data::RelationId,
+    ) -> bool {
+        self.codec_transition
+            .as_ref()
+            .and_then(|state| state.retirement.as_ref())
+            .or(self.performed_codec_retirement.as_ref())
+            .is_some_and(|closure| closure.relations.contains(&relation))
+    }
+
     /// Native performed output origins retained by exact retirement admission.
     /// Callers may compare these descriptions to their installed producer
     /// roster; descriptions alone cannot add a record to the native closure.

@@ -2,12 +2,14 @@
 //! semantics. Newly cloned nested keys remain explicitly outside backing admission.
 use super::{
     index_row::{IndexKey, IndexRow, IntentLocation},
-    intent_locus::{entity_intent_locus, EntityIntentLocus},
+    intent_locus::{
+        entity_intent_locus, relation_intent_locus, EntityIntentLocus, RelationIntentLocus,
+    },
     RelationalTransactionStagingDenial as Denial,
 };
 use crate::transactions::data::{
     CreateIntent, CreatedEntityRef, CreatedRelationRef, MutationIntent, RecordRef,
-    RelationMutationIntent, WorkerIntentBatch,
+    WorkerIntentBatch,
 };
 
 pub(super) fn index_batch(
@@ -44,14 +46,10 @@ fn index_intent(
             EntityIntentLocus::Write(id) => emit(IndexKey::Entity(id), false)?,
             EntityIntentLocus::Read(id) => emit(IndexKey::Entity(id), true)?,
         },
-        MutationIntent::Relation(relation) => {
-            let id = match relation {
-                RelationMutationIntent::UpdateEndpoints(intent) => intent.relation_id,
-                RelationMutationIntent::ApplyAspectPatch(intent) => intent.relation_id,
-                RelationMutationIntent::Delete(intent) => intent.relation_id,
-            };
-            emit(IndexKey::Relation(id), false)?;
-        }
+        MutationIntent::Relation(relation) => match relation_intent_locus(relation) {
+            RelationIntentLocus::Write(id) => emit(IndexKey::Relation(id), false)?,
+            RelationIntentLocus::Read(id) => emit(IndexKey::Relation(id), true)?,
+        },
         MutationIntent::Materialization(intent) => match intent.record() {
             RecordRef::Entity(id) => emit(IndexKey::Entity(id), false)?,
             RecordRef::Relation(id) => emit(IndexKey::Relation(id), false)?,

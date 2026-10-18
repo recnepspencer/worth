@@ -70,12 +70,18 @@ pub(crate) fn inspect_staging_surface(
                     }
                 }
                 MutationIntent::Relation(relation_intent) => {
-                    intent_counts.relation_mutation_count += 1;
+                    if !matches!(relation_intent, RelationMutationIntent::Revalidate(_)) {
+                        intent_counts.relation_mutation_count += 1;
+                    }
                     match relation_intent {
                         RelationMutationIntent::UpdateEndpoints(intent) => {
                             touched_records.insert(RecordRef::Relation(intent.relation_id));
                         }
                         RelationMutationIntent::ApplyAspectPatch(intent) => {
+                            touched_records.insert(RecordRef::Relation(intent.relation_id));
+                        }
+                        RelationMutationIntent::Revalidate(intent) => {
+                            intent_counts.relation_revalidation_count += 1;
                             touched_records.insert(RecordRef::Relation(intent.relation_id));
                         }
                         RelationMutationIntent::Delete(intent) => {

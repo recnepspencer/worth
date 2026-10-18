@@ -92,7 +92,13 @@ output records when both endpoints are independently proven in that same
 publication. Related ordering can survive when its key codec stays unchanged.
 External or rewritten relations, protected or partly classified fields, affected
 invariants, changed ordering keys and join consequences refuse before
-publication; ordinary restore remains exact. An existing continuation resumes
+publication; ordinary restore remains exact. Surviving application relations
+are selected with the same bounded native reads as entities and rejudged through
+`RelationMutationIntent::Revalidate(RevalidateRelationIntent { relation_id })`.
+This native read demand schedules installed rules against the actual preimage;
+it changes no endpoint, field, record version or lineage and claims no write or
+rollback restoration. Rules that overlap retired relations remain refused.
+An existing continuation resumes
 through its original runtime and retained index generation, while a new target
 request reads only genuinely regenerated target output. See the
 [historical query lifecycle](build-an-application.md#44-checkpoint-program-transitions).

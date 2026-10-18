@@ -74,6 +74,7 @@ impl RelationalTransactionFootprint {
                     }
                     RelationMutationIntent::ApplyAspectPatch(intent) => intent.relation_id,
                     RelationMutationIntent::Delete(intent) => intent.relation_id,
+                    RelationMutationIntent::Revalidate(intent) => intent.relation_id,
                 };
                 self.record_read(
                     RelationalTransactionReadLocus::Existing(RecordRef::Relation(record)),

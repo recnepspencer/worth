@@ -20,8 +20,8 @@ use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 use worth_relational::facade::transactions::{
-    AspectFieldPatch, EntityMutationIntent, MutationIntent, RevalidateEntityIntent,
-    UpdateEntityFieldsIntent, WorkerIntentBatch,
+    AspectFieldPatch, EntityMutationIntent, MutationIntent, RelationMutationIntent,
+    RevalidateEntityIntent, RevalidateRelationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
 };
 
 /// Borrowed installed target consumers, never independent migration authority.
@@ -53,7 +53,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
     })?;
     let codec_pending = recovered.codec_transition_pending();
     let expected = AspectValue::String(InternedString::from(transition.predecessor.0.as_str()));
-    let (basis, identity, entities) = graph
+    let (basis, identity, records) = graph
         .graph
         .integration_handle()
         .with_runtime(execution, |runtime| {
@@ -76,15 +76,14 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 "recovered program activation does not match the expected checkpoint predecessor",
                 |rendering| *rendering == expected,
             )?;
-            let entities = selection::select(
+            let records = selection::select(
                 execution,
                 &branch,
                 &layout,
-                installed,
                 transition.resources.maximum_selection_work,
                 work,
             )?;
-            Ok((basis, identity, entities))
+            Ok((basis, identity, records))
         })
         .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
     let native_transaction = super::codec::begin(
@@ -146,13 +145,21 @@ fn prepare_transition<Schema: ApplicationSchema>(
         std::mem::take(&mut graph.entity_rows),
         std::mem::take(&mut graph.relation_rows),
     );
-    for entity_id in entities {
+    for entity_id in records.entities {
         if recovered.codec_transition_retires(entity_id) {
             continue;
         }
         batch = batch.push(MutationIntent::Entity(EntityMutationIntent::Revalidate(
             RevalidateEntityIntent { entity_id },
         )));
+    }
+    for relation_id in records.relations {
+        if recovered.codec_transition_retires_relation(relation_id) {
+            continue;
+        }
+        batch = batch.push(MutationIntent::Relation(
+            RelationMutationIntent::Revalidate(RevalidateRelationIntent { relation_id }),
+        ));
     }
     transition.capture_policy.check_live().map_err(|error| {
         WorthQueryInMemoryApplicationDenial::CheckpointTransitionPolicyStopped(error.into())

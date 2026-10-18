@@ -44,6 +44,10 @@ pub enum ValidatedMutationTouch {
     RevalidateEntity {
         kind: KindId,
     },
+    /// One unchanged relation brought back under judgment, without an edge write.
+    RevalidateRelation {
+        kind: KindId,
+    },
     UnrepresentableRelationMutation {
         kind: KindId,
     },
@@ -59,6 +63,7 @@ impl ValidatedMutationTouch {
             | Self::UnlinkRelation { kind }
             | Self::UnrepresentableEntityMutation { kind }
             | Self::RevalidateEntity { kind }
+            | Self::RevalidateRelation { kind }
             | Self::UnrepresentableRelationMutation { kind } => *kind,
         }
     }
@@ -269,6 +274,10 @@ fn project_relation(
         RelationMutationIntent::ApplyAspectPatch(spec) => {
             let kind = relation_kind(state, spec.relation_id, work)?;
             touches.insert(ValidatedMutationTouch::UnrepresentableRelationMutation { kind });
+        }
+        RelationMutationIntent::Revalidate(spec) => {
+            let kind = relation_kind(state, spec.relation_id, work)?;
+            touches.insert(ValidatedMutationTouch::RevalidateRelation { kind });
         }
         RelationMutationIntent::Delete(spec) => {
             let kind = relation_kind(state, spec.relation_id, work)?;

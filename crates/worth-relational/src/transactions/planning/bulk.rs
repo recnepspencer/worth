@@ -53,6 +53,7 @@ pub(crate) fn bulk_mutation_scope(intents: &[MutationIntent]) -> BulkMutationSco
             MutationIntent::Entity(EntityMutationIntent::UpdateFields(_))
             | MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(_))
             | MutationIntent::Entity(EntityMutationIntent::Revalidate(_))
+            | MutationIntent::Relation(RelationMutationIntent::Revalidate(_))
             | MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_)) => {}
             MutationIntent::Materialization(_) => {
                 saw_topology_rewrite = true;
@@ -114,7 +115,8 @@ pub(crate) fn bulk_mutation_locality(intents: &[MutationIntent]) -> BulkMutation
             }
             MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(_))
             | MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_))
-            | MutationIntent::Relation(RelationMutationIntent::Delete(_)) => {
+            | MutationIntent::Relation(RelationMutationIntent::Delete(_))
+            | MutationIntent::Relation(RelationMutationIntent::Revalidate(_)) => {
                 relation_target_count += 1;
             }
             MutationIntent::Materialization(intent) => match intent.record() {
@@ -162,6 +164,7 @@ pub(crate) fn bulk_mutation_naming(intents: &[MutationIntent]) -> BulkMutationNa
             | MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_))
             | MutationIntent::Entity(EntityMutationIntent::Delete(_))
             | MutationIntent::Entity(EntityMutationIntent::Revalidate(_))
+            | MutationIntent::Relation(RelationMutationIntent::Revalidate(_))
             | MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(_))
             | MutationIntent::Relation(RelationMutationIntent::Delete(_)) => {}
             MutationIntent::Materialization(_) => {}
@@ -261,6 +264,7 @@ pub(crate) fn bulk_mutation_lineage(intents: &[MutationIntent]) -> BulkMutationL
             MutationIntent::Entity(EntityMutationIntent::UpdateFields(_))
             | MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(_))
             | MutationIntent::Entity(EntityMutationIntent::Revalidate(_))
+            | MutationIntent::Relation(RelationMutationIntent::Revalidate(_))
             | MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_))
             | MutationIntent::Materialization(_) => {}
         }

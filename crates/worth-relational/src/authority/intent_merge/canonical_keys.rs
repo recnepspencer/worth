@@ -17,6 +17,7 @@ pub(crate) enum CanonicalIntentKey {
     },
     UpdateEntityFields(EntityId),
     RevalidateEntity(EntityId),
+    RevalidateRelation(RelationId),
     ReplaceEntity {
         entity_id: EntityId,
         replacement_partition_id: crate::identity::data::PartitionId,
@@ -120,6 +121,9 @@ pub(crate) fn canonical_intent_key(intent: &MutationIntent) -> CanonicalIntentKe
         }
         MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => {
             CanonicalIntentKey::UpdateRelationEndpoints(spec.relation_id)
+        }
+        MutationIntent::Relation(RelationMutationIntent::Revalidate(spec)) => {
+            CanonicalIntentKey::RevalidateRelation(spec.relation_id)
         }
         MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
             CanonicalIntentKey::DeleteRelation(spec.relation_id)
