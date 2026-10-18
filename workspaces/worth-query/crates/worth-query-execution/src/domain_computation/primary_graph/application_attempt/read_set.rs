@@ -33,7 +33,8 @@ mod value_decode;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use computation_routing::{
-    ComputationFactAttribution, ComputationFactIndex, ComputationRead, SealedComputationFacts,
+    CheckedCallShape, ComputationFactAttribution, ComputationFactIndex, ComputationRead,
+    NativeCallCarriage, SealedComputationFacts,
 };
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;

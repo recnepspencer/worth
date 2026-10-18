@@ -138,6 +138,8 @@ pub(in crate::domain_computation::primary_graph) struct ComputationFactAttributi
     native: Option<
         crate::domain_computation::primary_graph::application_contribution::NativeComputationReads,
     >,
+    range_progress: Option<ranges::CallRangeProgress>,
+    range_closed: Option<std::sync::Arc<ranges::NativeCallCarriage>>,
 }
 
 impl ComputationFactAttribution {
@@ -146,7 +148,11 @@ impl ComputationFactAttribution {
         read: ComputationRead,
     ) {
         self.calls.insert(read);
-        self.fresh_calls.insert(read);
+        if self.fresh_calls.insert(read)
+            && let Some(progress) = &mut self.range_progress
+        {
+            progress.fresh(read);
+        }
     }
     pub(in crate::domain_computation::primary_graph) fn begin_native(
         &mut self,
@@ -175,6 +181,17 @@ impl ComputationFactAttribution {
             return;
         };
         let calls = native.facts().call_index();
+        if let Some(progress) = self.range_progress.take() {
+            let fresh = self.fresh_calls.clone();
+            for read in progress.carried(&fresh) {
+                self.calls.insert(read);
+                for key in calls.keys(read) {
+                    super::super::super::fact_verification_observation::carried_key_expansion();
+                    self.record(key.clone(), read);
+                }
+            }
+        }
+        self.range_closed = None;
         for read in std::mem::take(&mut self.carried) {
             for key in calls.keys(read) {
                 super::super::super::fact_verification_observation::carried_key_expansion();
@@ -191,11 +208,7 @@ impl ComputationFactAttribution {
             .inspect(|_| {
                 super::super::super::fact_verification_observation::fallback_carried_metadata()
             })
-            .filter(|(_, fact)| {
-                fact.readers
-                    .reads()
-                    .any(|read| self.carried.contains(&read))
-            })
+            .filter(|(_, fact)| fact.readers.reads().any(|read| self.is_carried(read)))
             .map(|(key, _)| key)
     }
     pub(in crate::domain_computation::primary_graph) fn retain_handler(
@@ -273,11 +286,11 @@ impl ComputationFactAttribution {
     ) -> bool {
         self.readers.contains_key(key)
             || self.native.as_ref().is_some_and(|native| {
-                native.facts().metadata.get(key).is_some_and(|fact| {
-                    fact.readers
-                        .reads()
-                        .any(|read| self.carried.contains(&read))
-                })
+                native
+                    .facts()
+                    .metadata
+                    .get(key)
+                    .is_some_and(|fact| fact.readers.reads().any(|read| self.is_carried(read)))
             })
     }
 
@@ -309,6 +322,9 @@ pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
 
 mod charged;
 mod layout;
+mod ranges;
+pub(in crate::domain_computation::primary_graph) use layout::CheckedCallShape;
+pub(in crate::domain_computation::primary_graph) use ranges::NativeCallCarriage;
 mod reuse;
 pub(in crate::domain_computation::primary_graph::application_attempt::read_set) use layout::CheckedReadLayout;
 pub(in crate::domain_computation::primary_graph) use reuse::NativeReadRefresh;

@@ -374,5 +374,6 @@ pub(super) fn sealed_run_for_lineage_test() -> SealedComputationRun {
 mod comparison_read_stop;
 mod transport_memory;
 
+mod call_sequence_memory;
 #[path = "tests/metadata_memory.rs"]
 mod metadata_memory;

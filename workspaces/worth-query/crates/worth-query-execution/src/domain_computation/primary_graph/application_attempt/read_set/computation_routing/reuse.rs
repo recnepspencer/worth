@@ -35,7 +35,15 @@ impl ComputationFactAttribution {
             observation::native_completion_decline("snapshot");
             return Ok(None);
         }
-        if !completed.closes_native_reads(native, &self.carried) {
+        let ranges = self.range_closed.as_ref();
+        let closes = match ranges {
+            Some(ranges) => {
+                ranges.closes(native, &self.fresh_calls)
+                    && completed.closes_native_ranges(native, ranges)
+            }
+            None => completed.closes_native_reads(native, &self.carried),
+        };
+        if !closes {
             observation::native_completion_decline("completed-carried-calls");
             return Ok(None);
         }
@@ -56,16 +64,17 @@ impl ComputationFactAttribution {
             observation::native_completion_decline("scope-root");
             return Ok(None);
         }
-        if !self
-            .calls
-            .iter()
-            .inspect(|_| observation::completion_call_roster())
-            .eq(layout.calls.iter())
+        if ranges.is_none()
+            && !self
+                .calls
+                .iter()
+                .inspect(|_| observation::completion_call_roster())
+                .eq(layout.calls.iter())
         {
             observation::native_completion_decline("call-roster");
             return Ok(None);
         }
-        if !self.carried.is_disjoint(&self.fresh_calls) {
+        if ranges.is_none() && !self.carried.is_disjoint(&self.fresh_calls) {
             observation::native_completion_decline("fresh-carried-overlap");
             return Ok(None);
         }

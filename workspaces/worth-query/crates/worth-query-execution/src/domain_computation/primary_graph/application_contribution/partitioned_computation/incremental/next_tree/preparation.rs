@@ -23,7 +23,16 @@ where
             basis,
             prior,
             validated_at,
+            ranges: None,
         }
+    }
+    pub(in super::super) fn ranges(
+        &mut self,
+        ranges: Arc<
+            crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage,
+        >,
+    ) {
+        self.ranges = Some(ranges);
     }
 
     pub(in super::super::super) const fn remaining_work(&self) -> RemainingWork {

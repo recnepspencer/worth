@@ -7,6 +7,7 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
     pub(in super::super::super) fn transport_bytes(&self) -> u64 {
         let Self {
             validated_at: _,
+            ranges: _,
             remaining_work: _,
             declared_bytes: _,
             partitions,
@@ -48,6 +49,8 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
             routing_memory: _,
             carried_membership,
             carried_items,
+            item_bytes: _,
+            item_call_bytes: _,
         } = next;
         let retained = prior.typed();
         if !Arc::ptr_eq(items, &retained.items) {
@@ -68,13 +71,20 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
                     .map_or(0, |call| call.charge.additional_bytes().unwrap_or(u64::MAX)),
             );
         }
-        for (item, call) in item_keys {
-            bytes = bytes.saturating_add(size_of::<(PartitionItemId, RetainedCall)>() as u64);
-            if !carried_items.contains(item) {
-                bytes = bytes.saturating_add(call.charge.additional_bytes().unwrap_or(u64::MAX));
+        if !Arc::ptr_eq(item_keys, &retained.item_keys) {
+            for (item, call) in item_keys.iter() {
+                bytes = bytes.saturating_add(size_of::<(PartitionItemId, RetainedCall)>() as u64);
+                if !carried_items.contains(item) {
+                    bytes =
+                        bytes.saturating_add(call.charge.additional_bytes().unwrap_or(u64::MAX));
+                }
             }
         }
-        bytes.saturating_add((carried_items.len() * size_of::<PartitionItemId>()) as u64)
+        let explicit = match carried_items {
+            super::super::retained::CarriedItems::Selected(items) => items.len(),
+            super::super::retained::CarriedItems::All(_) => 0,
+        };
+        bytes.saturating_add((explicit * size_of::<PartitionItemId>()) as u64)
     }
     pub(in super::super::super) fn partition_count(&self) -> usize {
         self.next.routing.partitions().len()

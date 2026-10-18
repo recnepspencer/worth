@@ -8,6 +8,9 @@ mod producer;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
 pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
 mod request_execution;
+pub(in crate::domain_computation::primary_graph) use request_execution::{
+    QueryMemoryReservation, QueryRequestExecution,
+};
 mod setup;
 
 pub use composition::{
@@ -77,7 +80,6 @@ pub use producer::{
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use request_execution::query_test_execution_authority_for_test;
-pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;
 pub use request_execution::{
     bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,

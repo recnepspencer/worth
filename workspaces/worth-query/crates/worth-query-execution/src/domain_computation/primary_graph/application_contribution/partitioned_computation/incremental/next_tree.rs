@@ -1,11 +1,15 @@
 //! The next tree of an incremental run: every partition carried or computed
 //! again, in a full run's order and with a full run's charges.
 
+mod call_recording;
 mod partition_wave;
 mod preparation;
 mod transport;
 
-use std::collections::{BTreeMap, BTreeSet};
+use crate::domain_computation::primary_graph::{
+    application_attempt::ComputationRead, invariant_projection::ComputationCallSequence,
+};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use worth_execution::{KeylessPartition, MapKernelContext, MapKernelFailure, PartitionItemId};
@@ -52,12 +56,14 @@ pub(super) struct NextPartitioning<Item> {
     /// `None` when the membership or an item's key was made again and its
     /// charge did not measure: the run cannot be carried again.
     pub(super) membership: Option<RetainedCall>,
-    pub(super) item_keys: BTreeMap<PartitionItemId, RetainedCall>,
+    pub(super) item_keys: Arc<BTreeMap<PartitionItemId, RetainedCall>>,
+    pub(super) item_bytes: Option<u64>,
+    pub(super) item_call_bytes: Option<u64>,
     pub(super) routing: Arc<ComputationPartitionRouting>,
     /// The request memory a routing the run built holds.
     pub(super) routing_memory: Option<QueryMemoryReservation>,
     pub(super) carried_membership: bool,
-    pub(super) carried_items: BTreeSet<PartitionItemId>,
+    pub(super) carried_items: super::retained::CarriedItems,
 }
 
 /// An incremental run after `prepare`: every partition carried or gathered
@@ -72,6 +78,9 @@ pub(in super::super) struct PreparedIncremental<Key, Item, Reduced, Gathered> {
     basis: RetainedBasis,
     prior: TypedPrior<Key, Item, Reduced>,
     validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
+    ranges: Option<
+        Arc<crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage>,
+    >,
 }
 
 /// What computing an incremental run produced.
@@ -91,14 +100,10 @@ where
         self.remaining_work.restrict(ceiling);
     }
 
-    /// Settles every partition through one independent map, computing only
-    /// marked partitions. Carried kernels contribute retained work and span;
-    /// a recomputed result with the
-    /// retained result's canonical bits replaces nothing, a new partition's
-    /// is a new leaf, and a partition the run no longer has leaves the
-    /// tree. A recomputed kernel's work
-    /// is execution's admitted receipt in that same wave. The private declared
-    /// budget spends that receipt, which also settles on the member meter.
+    /// Advances the genuine native run with changed gathers and removals.
+    /// Native settlement owns full logical charges and first-stop prefixes.
+    /// Only changed results reach tree maintenance; the declared budget
+    /// spends the admitted native kernel and tree receipts.
     pub(in super::super) fn compute<Stopped, Kernel>(
         self,
         execution: &QueryRequestExecution<'_>,
@@ -134,6 +139,7 @@ where
             basis,
             prior,
             validated_at,
+            ranges,
         } = self;
         let retained = prior.typed();
         let mut remaining = remaining_work;
@@ -182,6 +188,24 @@ where
             )
         })?;
         let native_run = settled_wave.native_run;
+        let patched_calls = if ranges.is_some() {
+            Some(
+                retained
+                    .call_sequence
+                    .patched(
+                        recomputed.iter().filter_map(|(id, marked)| {
+                            marked
+                                .gather
+                                .as_ref()
+                                .map(|charge| (ComputationRead::Partition(*id), charge, 0))
+                        }),
+                        execution,
+                    )
+                    .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
+            )
+        } else {
+            None
+        };
         let mut partitions = retained
             .partitions
             .fork(execution)
@@ -319,6 +343,14 @@ where
         let reduced = tree.result().clone();
         // A call made again whose charge did not measure cannot be carried
         // again, so the run retains nothing.
+        let call_sequence = call_recording::complete(
+            &next,
+            &partitions,
+            patched_calls,
+            gathers_measured,
+            execution,
+        )
+        .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let typed = next
             .membership
             .filter(|_| gathers_measured)
@@ -326,7 +358,10 @@ where
                 items: next.items,
                 digests: next.digests,
                 membership,
-                item_keys: Arc::new(next.item_keys),
+                item_keys: next.item_keys,
+                item_bytes: next.item_bytes,
+                item_call_bytes: next.item_call_bytes,
+                call_sequence: Arc::clone(call_sequence.as_ref().unwrap()),
                 routing: next.routing,
                 partitions,
                 native_run,
@@ -345,6 +380,7 @@ where
                 Some(typed) => CompletedComputationRetention::Produced(CompletedComputationRun {
                     basis,
                     typed_bytes: typed.charged_bytes(),
+                    call_sequence: Arc::clone(call_sequence.as_ref().unwrap()),
                     typed: Arc::new(typed),
                     carried: Some(CarriedCalls {
                         validated_at,
@@ -352,6 +388,7 @@ where
                         membership: next.carried_membership,
                         items: next.carried_items,
                         partitions: carried,
+                        ranges,
                     }),
                     tree_memory: results_memory,
                     routing_memory: next.routing_memory,

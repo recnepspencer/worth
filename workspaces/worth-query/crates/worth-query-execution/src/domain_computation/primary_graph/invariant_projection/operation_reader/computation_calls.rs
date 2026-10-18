@@ -24,6 +24,12 @@ use crate::domain_computation::primary_graph::application_contribution::Comparat
 use crate::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget;
 use crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork;
 
+mod ranges;
+mod sequence;
+pub(in crate::domain_computation::primary_graph) use sequence::{
+    CallShape, CallSummary, CallVisit, ComputationCallSequence,
+};
+
 /// The work one owner call charged and the entities it reached.
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct ComputationCallCharge {

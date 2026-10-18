@@ -27,7 +27,7 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     /// not hold, so a handler or owner call that swallowed the failure has an
     /// outcome nothing retained, and the projection seals nothing.
     failed: Option<WorthQueryApplicationFactKey>,
-    computation: ComputationFactAttribution,
+    pub(super) computation: ComputationFactAttribution,
     reading: Option<ComputationRead>,
     runs: ComputationRuns,
     /// What the producer that runs the projection retained, for the first

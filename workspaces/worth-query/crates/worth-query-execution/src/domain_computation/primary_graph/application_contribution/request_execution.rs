@@ -140,7 +140,10 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// Holds `bytes` on the request's memory until the reservation drops.
-    pub(super) fn reserve(&self, bytes: u64) -> Result<QueryMemoryReservation, Resource> {
+    pub(in crate::domain_computation::primary_graph) fn reserve(
+        &self,
+        bytes: u64,
+    ) -> Result<QueryMemoryReservation, Resource> {
         let held = match &self.form {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
@@ -176,18 +179,21 @@ impl<'a> QueryRequestExecution<'a> {
 }
 
 /// Bytes held against the request's lease lineage until the reservation drops.
-pub(super) struct QueryMemoryReservation {
+pub(in crate::domain_computation::primary_graph) struct QueryMemoryReservation {
     held: Option<ExecutionMemoryReservation>,
     bytes: u64,
 }
 
 impl QueryMemoryReservation {
-    pub(super) const fn bytes(&self) -> u64 {
+    pub(in crate::domain_computation::primary_graph) const fn bytes(&self) -> u64 {
         self.bytes
     }
 
     /// Holds `bytes` in place of what was held; a refusal keeps what was.
-    pub(super) fn resize(&mut self, bytes: u64) -> Result<(), Resource> {
+    pub(in crate::domain_computation::primary_graph) fn resize(
+        &mut self,
+        bytes: u64,
+    ) -> Result<(), Resource> {
         if let Some(held) = &mut self.held {
             held.resize(bytes).map_err(memory_denial)?;
         }
