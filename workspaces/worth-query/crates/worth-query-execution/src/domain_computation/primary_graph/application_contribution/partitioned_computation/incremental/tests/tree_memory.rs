@@ -182,23 +182,34 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
         .unwrap();
         // The rebuild holds its tree bound, four inline leaf copies, one
         // replacement result, actual projection custody and tree scope.
-        // The recomputed kernel records one RLE run (all advances are one
-        // unit). Its reserved vector remains live through the rebuild.
-        let storage =
-            worth_execution::ExecutionKernelReceiptStorage::new(root.reserve_memory(0).unwrap())
-                .unwrap();
-        let (receipt, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
-            .run_with_checkpoint(Some(&root), None, |context| {
-                let (result, receipt) = context.record_kernel(&storage, |context| {
+        // The recomputed kernel keeps its real native value and one RLE run
+        // (all advances are one unit), independently funded through rebuild.
+        let map = worth_execution::ExecutionMap::<_, u64>::from_keyless_partitions(
+            std::collections::BTreeMap::from([(
+                worth_foundational::PartitionIdentity::new(0),
+                worth_execution::KeylessPartition {
+                    value: (),
+                    kernel_scratch_bytes: 0,
+                    max_result_bytes: 0,
+                },
+            )]),
+        )
+        .unwrap();
+        let worth_execution::MapOutcome::Complete { values, .. } = map
+            .run_retained(
+                worth_execution::ExecutionRequest::leased(&root),
+                worth_execution::ExecutionWorkCeiling::new(u64::MAX),
+                |_, context| {
                     context.checkpoint(1)?;
-                    Ok::<_, worth_execution::MapKernelFailure<()>>(())
-                });
-                result.unwrap();
-                receipt.unwrap()
-            })
-            .unwrap();
-        let checkpoint_hold = worth_execution::ChargedBytes::additional_charged_bytes(&receipt);
-        drop((receipt, storage));
+                    Ok::<_, worth_execution::MapKernelFailure<()>>(0_u64)
+                },
+            )
+            .unwrap()
+        else {
+            panic!("native scalar settlement")
+        };
+        let checkpoint_hold = worth_execution::ChargedBytes::additional_charged_bytes(&values[0]);
+        drop(values);
         let admitted = build
             + 5 * u64::try_from(size_of::<(worth_foundational::PartitionIdentity, u64)>()).unwrap()
             + *scope

@@ -59,6 +59,17 @@ Do all five steps, in order.
 
 ## Task index
 
+Platform runtime owners retaining actual native map results use
+`ExecutionMap::run_retained` with a fresh `ExecutionRequest` and declared work
+ceiling. Its opaque `ExecutionRetainedResult` holds the accepted value and its
+funding; `try_carry` uses the native meter's original checkpoint prefix or
+requires actual execution when context observations were not reusable. This
+grants no model, source, session or edition authority. Arbitrary checked maps
+still perform full admission and dispatch; this is not sparse map settlement.
+Use `RetainedMapInput` with `run_retained_inputs` for a mixed current plan, or
+`run_reduce_retained_holding` for genuine leaf results beside the canonical
+tree. See [retained native results](../crates/worth-execution/README.md#retained-native-results).
+
 For bounded nested persisted values, use the existing value-binding macro's
 `scalar: String, canonical: ValueDecodeBounds::new(...)` arm with Query-free
 `WorthValue` derivation. The installed value-binding catalog retains the derived

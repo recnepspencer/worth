@@ -31,7 +31,7 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 mod tests;
 pub use backend::{
     ExecutionKernelReceipt, ExecutionKernelReceiptStorage, ExecutionOwnerContext,
-    NestedComputationStop,
+    ExecutionRetainedResult, NestedComputationStop,
 };
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
@@ -46,7 +46,8 @@ pub use pattern::{
     ForkJoinOutcome, InterfaceSolution, InteriorResult, KeylessPartition, MapDenial,
     MapKernelContext, MapKernelFailure, MapKernelStop, MapMemoryOverflow, MapOutcome, MapPartition,
     MapStop, OracleMismatch, PreparedExecutionMap, ReduceCertificationFailure, ReduceInputDenial,
-    RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome, WorkCeilingDenial,
+    RetainedMapDenial, RetainedMapInput, RetainedReduceDenial, RetainedReduceOutcome,
+    RetainedReduction, RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome, WorkCeilingDenial,
 };
 pub use reduction::{
     ReductionDenial, ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError,

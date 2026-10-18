@@ -1,39 +1,23 @@
-//! Carried and recomputed kernels settle through one independent map.
+//! Actual retained values and recomputed kernels settle in the native owner.
 use super::*;
-use worth_execution::ChargedBytes;
+use crate::domain_computation::primary_graph::fact_verification_observation as observed;
+use worth_execution::{ChargedBytes, ExecutionRetainedResult, RetainedMapInput};
 
-struct BorrowedPartition<'a, Key, Gathered> {
-    disposition: &'a Disposition<Key, Gathered>,
-}
-impl<Key, Gathered> ChargedBytes for BorrowedPartition<'_, Key, Gathered> {
+struct BorrowedGather<'a, Key, Gathered>(&'a GatheredComputationPartition<Key, Gathered>);
+impl<Key, Gathered> ChargedBytes for BorrowedGather<'_, Key, Gathered> {
     fn additional_charged_bytes(&self) -> u64 {
-        // GatheredMemory and the prior already hold the borrowed data.
         0
-    }
-}
-
-enum SettledPartition<Reduced> {
-    Carried,
-    Computed(Reduced),
-}
-impl<Reduced: ChargedBytes> ChargedBytes for SettledPartition<Reduced> {
-    fn additional_charged_bytes(&self) -> u64 {
-        match self {
-            Self::Carried => 0,
-            Self::Computed(value) => value.additional_charged_bytes(),
-        }
-    }
+    } // Existing gather custody holds the referent.
 }
 
 pub(super) struct SettledPartitions<Reduced> {
-    pub values: BTreeMap<PartitionIdentity, Reduced>,
+    pub values: BTreeMap<PartitionIdentity, ExecutionRetainedResult<Reduced>>,
     pub work: u64,
     pub span: u64,
 }
 
-pub(super) fn run<Key, Item, Gathered, Reduced, Stopped>(
-    dispositions: &BTreeMap<PartitionIdentity, Disposition<Key, Gathered>>,
-    _retained: &RetainedPartitions<Key, Item, Reduced>,
+pub(super) fn run<Key, Gathered, Reduced, Stopped>(
+    dispositions: &BTreeMap<PartitionIdentity, Disposition<Key, Gathered, Reduced>>,
     execution: &QueryRequestExecution<'_>,
     ceiling: u64,
     declared_bytes: u64,
@@ -53,51 +37,48 @@ where
     Reduced: Clone + Send + Sync + ChargedBytes + worth_execution::CanonicalBits,
     Stopped: Send + ChargedBytes,
 {
+    // This supplied roster is deliberately still full. The native owner, not
+    // Query cost replay, executes every carried slot and canonical prefix.
     let map = ExecutionMap::<_, u64>::from_keyless_partitions(
         dispositions
             .iter()
             .map(|(identity, disposition)| {
+                observed::computation_dispatch_plan();
+                let (value, max_result_bytes) = match disposition {
+                    Disposition::Carried(partition) => (
+                        RetainedMapInput::Carry(partition.kernel_result.clone()),
+                        partition.kernel_result.additional_charged_bytes(),
+                    ),
+                    Disposition::Recomputed(marked) => (
+                        RetainedMapInput::Evaluate(BorrowedGather(&marked.value)),
+                        declared_bytes,
+                    ),
+                };
                 (
                     *identity,
                     KeylessPartition {
-                        value: BorrowedPartition { disposition },
+                        value,
                         kernel_scratch_bytes: 0,
-                        max_result_bytes: match disposition {
-                            Disposition::Carried(_) => 0,
-                            Disposition::Recomputed(_) => declared_bytes,
-                        },
+                        max_result_bytes,
                     },
                 )
             })
             .collect(),
     )
     .map_err(WorthQueryPartitionedComputationDenial::from_map_overflow)?;
-    let outcome = transport.call(|| {
+    let (values, report) = transport.call(|| {
         execution
             .dispatch()
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?
-            .map(
+            .map_retained(
                 ceiling,
                 &map,
                 execution
                     .reserve(0)
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
-                |input, context| match input.disposition {
-                    Disposition::Carried(partition) => {
-                        context.carry_kernel(&partition.kernel_receipt)?;
-                        Ok(SettledPartition::Carried)
-                    }
-                    Disposition::Recomputed(marked) => {
-                        kernel(&marked.value, context).map(SettledPartition::Computed)
-                    }
-                },
+                |input, context| kernel(input.0, context),
             )
-            .map_err(|denial| {
-                WorthQueryPartitionedComputationDenial::from_work_ceiling(
-                    denial,
-                    WorthQueryPartitionedComputationDenial::ReducerPanicked,
-                )
-            })
+            .map_err(WorthQueryPartitionedComputationDenial::from_retained_map)
             .and_then(|outcome| match outcome {
                 MapOutcome::Complete { values, report } => Ok((values, report)),
                 MapOutcome::Stopped { reason, .. } => Err(
@@ -106,17 +87,15 @@ where
             })
     })?;
     Ok(SettledPartitions {
-        values: map
-            .identities()
+        values: dispositions
             .iter()
-            .copied()
-            .zip(outcome.0)
-            .filter_map(|(identity, value)| match value {
-                SettledPartition::Carried => None,
-                SettledPartition::Computed(value) => Some((identity, value)),
+            .zip(values)
+            .filter_map(|((identity, disposition), value)| {
+                observed::computation_result_receiver();
+                matches!(disposition, Disposition::Recomputed(_)).then_some((*identity, value))
             })
             .collect(),
-        work: outcome.1.charged_work(),
-        span: outcome.1.charged_span(),
+        work: report.charged_work(),
+        span: report.charged_span(),
     })
 }

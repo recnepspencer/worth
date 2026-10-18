@@ -106,3 +106,128 @@ sequences. Query's existing retained-computation owners must independently prove
 which kernel inputs may be carried. The current map still dispatches all slots;
 this cost owner is a prerequisite to sparse retained-map settlement, not that
 capability or whole-computation locality.
+
+## Retained native results
+
+Platform runtime owners use `ExecutionMap::run_retained` when later execution
+needs the actual successful value as well as its native meter capture. Query
+applications continue to use the declaration and host facades; Query qualifies
+their source, inputs, snapshot, installation, edition and authorization.
+
+`ExecutionRetainedResult<R>` owns one accepted value, its original native
+checkpoint capture when eligible, and its surviving backing grants. Native
+evaluation checks the declared deep result bound once; retained custody consumes
+that same checked bound. There is no constructor from an arbitrary value,
+receipt, report, digest or success flag. The native map settles identities in
+canonical order before issuing handles; a stopped suffix issues none.
+
+```rust
+use worth_execution::{
+    ExecutionMap, ExecutionRequest, ExecutionRetainedResult, ExecutionWorkCeiling,
+    MapKernelFailure, MapOutcome, RetainedMapDenial,
+};
+
+fn evaluate(
+    map: &ExecutionMap<u64, u64>,
+    request: ExecutionRequest<'_, '_>,
+) -> Result<MapOutcome<ExecutionRetainedResult<u64>, ()>, RetainedMapDenial> {
+    map.run_retained(request, ExecutionWorkCeiling::new(100), |input, context| {
+        context.checkpoint(3)?;
+        Ok::<_, MapKernelFailure<()>>(*input * 10)
+    })
+}
+```
+
+The request is borrowed for this call. Its lease, session and run limits are
+not stored in a result. `value()` borrows the actual accepted value; cloning a
+handle shares that value and its grants without cloning R or retaining a parent
+batch. Each unrelated result can drop independently. The final handle releases
+its value before its funding. R retains responsibility for its own interior
+mutability and nested ownership contract.
+
+### Carrying a value with a current input
+
+After the application owner has independently qualified the original inputs,
+use `RetainedMapInput::Carry` for that same partition identity and `Evaluate`
+for a freshly gathered input. The native backend performs the carry itself.
+This example assumes the prior result belongs to partition 1; partition 2 has
+a new input. Planning and runtime refusals remain distinct.
+
+```rust
+use std::collections::BTreeMap;
+use worth_execution::{
+    ChargedBytes, ExecutionMap, ExecutionRequest, ExecutionRetainedResult,
+    ExecutionWorkCeiling, KeylessPartition, MapKernelFailure, MapMemoryOverflow,
+    MapOutcome, RetainedMapDenial, RetainedMapInput,
+};
+use worth_foundational::PartitionIdentity;
+
+enum UpdateError {
+    Plan(MapMemoryOverflow),
+    Run(RetainedMapDenial),
+}
+
+fn update_two(
+    prior: ExecutionRetainedResult<u64>,
+    changed: u64,
+    request: ExecutionRequest<'_, '_>,
+) -> Result<MapOutcome<ExecutionRetainedResult<u64>, ()>, UpdateError> {
+    let carried_bytes = prior.additional_charged_bytes();
+    let plan = ExecutionMap::<_, u64>::from_keyless_partitions(BTreeMap::from([
+        (PartitionIdentity::new(1), KeylessPartition {
+            value: RetainedMapInput::Carry(prior),
+            kernel_scratch_bytes: 0,
+            max_result_bytes: carried_bytes,
+        }),
+        (PartitionIdentity::new(2), KeylessPartition {
+            value: RetainedMapInput::Evaluate(changed),
+            kernel_scratch_bytes: 0,
+            max_result_bytes: 0,
+        }),
+    ])).map_err(UpdateError::Plan)?;
+    plan.run_retained_inputs(request, ExecutionWorkCeiling::new(100), None,
+        |input, context| {
+            context.checkpoint(3)?;
+            Ok::<_, MapKernelFailure<()>>(*input * 10)
+        },
+    ).map_err(UpdateError::Run)
+}
+```
+
+Carried inputs retain the same value cell. A fitting capture takes a real
+checkpoint on the fresh request; a tight ceiling descends the original native
+checkpoint prefix. The existing canonical settlement, speculative suffix,
+first-stop and request latches decide the outcome. Cancellation/deadline
+observed at the final boundary also latch on an invoking kernel, even if it
+handles the returned error.
+
+Context questions, nested stages or capture refusal can leave a successful
+value without reusable native cost. `native_reuse_available()` describes that
+capture only. An unqualified or differently keyed carried result returns
+`RequiresExecution` before any new kernel runs. Gather the real current input
+and evaluate it; a cached value cannot reconstruct that input. `try_carry` is
+available inside a native kernel and returns `None` for this same fallback.
+
+### Canonical reduction and inspection
+
+`run_reduce_retained_holding` returns a `RetainedReduceOutcome`. Only a complete
+canonical reduction returns its tree and genuine native partition results.
+Pass the caller's input and tree reservations for atomic handoff, as with
+`run_reduce_holding`; a retained tree still needs its tree reservation. A tree
+refusal publishes no successful reduction. Map reports and reduction metrics
+remain available from their actual completed stages, so observers do not ask
+live kernels about remaining work and accidentally change capture eligibility.
+
+Inspect `identity()`, `charged_work()`, `charged_span()` and the returned reports
+for their respective native meanings. `has_same_native_cost` compares meter
+captures only; it is not value equality or freshness. A cost receipt alone
+cannot create a retained result. Content equality cannot replace the owning
+runtime's source, authorization, edition or settlement checks.
+
+These APIs still admit and dispatch every slot of the supplied checked map.
+They do not provide a persistent sparse run, avoid caller roster construction,
+update collection membership, or maintain a retained reduction tree by delta.
+Allocation bounds include live old/new overlap and do not promise global
+deduplication, full heap/RSS accounting or persistence of execution handles.
+Current-format recovery reconstructs native execution through its owning
+runtime rather than decoding a fabricated result handle.

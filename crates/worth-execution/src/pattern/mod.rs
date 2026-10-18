@@ -15,8 +15,12 @@ pub use fork_join::{ExecutionForkJoin, ForkChild, ForkJoinDenial, ForkJoinOutcom
 pub use map::{
     ExecutionMap, KeylessPartition, MapDenial, MapKernelContext, MapKernelFailure, MapKernelStop,
     MapMemoryOverflow, MapOutcome, MapPartition, MapStop, OracleMismatch, PreparedExecutionMap,
+    RetainedMapDenial, RetainedMapInput,
 };
-pub use reduce::{ExecutionReduce, ReduceCertificationFailure, ReduceInputDenial};
+pub use reduce::{
+    ExecutionReduce, ReduceCertificationFailure, ReduceInputDenial, RetainedReduceDenial,
+    RetainedReduceOutcome, RetainedReduction,
+};
 pub use rounds::{ExecutionRounds, RoundsDenial, RoundsOutcome};
 pub use scan::{ExecutionScan, ScanDenial, ScanOutcome};
 pub use work_ceiling::{ExecutionWorkCeiling, WorkCeilingDenial};

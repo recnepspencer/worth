@@ -18,6 +18,11 @@ pub enum WorthQueryManagedComputationResourceDenial {
     ResultCapacityExceeded,
     /// A declared byte count does not fit a byte count.
     CapacityOverflow,
+    /// Native backing failed after its request cause was classified.
+    NativeAllocationRefused {
+        kind: worth_execution::ExecutionPhysicalAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
     /// The authority could not add a charged reservation to its byte counter.
     ChargedBytesOverflow,
     /// A memory limit refused a reservation. `level` names the limit, the

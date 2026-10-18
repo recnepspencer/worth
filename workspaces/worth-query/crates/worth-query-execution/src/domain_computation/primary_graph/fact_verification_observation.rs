@@ -1,4 +1,4 @@
-//! Actual retained-fact examination at its owners, apart from request billing.
+//! Actual retained-fact and computation handoff work, apart from request billing.
 use std::cell::Cell;
 pub(super) mod input_cutoff;
 mod registry_custody;
@@ -17,6 +17,10 @@ use crate::domain_computation::execution_observation;
 /// double-count facts examined in several phases. These are not admission units.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryFactVerificationForTest {
+    /// Current partition entries read to construct the native dispatch plan.
+    pub computation_dispatch_plan_visits: u64,
+    /// Actual settled native result cells consumed, including carried cells.
+    pub computation_result_receiver_visits: u64,
     /// Actual registry transitions, including those before cutoff preparation.
     pub registry_custody: [Option<WorthQueryRegistryCustodyForTest>; 32],
     /// Further transitions are explicitly unobserved.
@@ -90,6 +94,7 @@ pub struct WorthQueryFactVerificationForTest {
 
 thread_local! {
     static OBSERVED: Cell<WorthQueryFactVerificationForTest> = const { Cell::new(WorthQueryFactVerificationForTest {
+        computation_dispatch_plan_visits: 0, computation_result_receiver_visits: 0,
         registry_custody: [None; 32], registry_custody_omitted: 0,
         input_cutoffs: [None; 32], input_cutoffs_omitted: 0,
         content_field_index_visits: 0, content_leaf_derivations: 0, content_pair_derivations: 0,
@@ -116,6 +121,13 @@ pub fn fact_verification_on_this_thread_for_test() -> WorthQueryFactVerification
 
 pub(super) fn source_admission() {
     record(|observed| add(&mut observed.source_admission_visits, 1));
+}
+
+pub(super) fn computation_dispatch_plan() {
+    record(|observed| add(&mut observed.computation_dispatch_plan_visits, 1));
+}
+pub(super) fn computation_result_receiver() {
+    record(|observed| add(&mut observed.computation_result_receiver_visits, 1));
 }
 
 pub(super) fn completion_metadata() {

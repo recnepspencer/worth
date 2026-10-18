@@ -1,5 +1,7 @@
 use std::sync::Mutex;
 
+pub(crate) mod records;
+
 use worth_foundational::{
     ExecutionFallbackCause, ExecutionPhysicalReport, ExecutionPosture, ExecutionReport,
 };

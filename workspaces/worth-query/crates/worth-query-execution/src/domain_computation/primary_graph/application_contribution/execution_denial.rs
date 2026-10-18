@@ -131,6 +131,7 @@ pub(super) fn kernel_failure<Stopped>(
             | Resource::ChargedBytesOverflow
             | Resource::ResultCapacityExceeded
             | Resource::CapacityOverflow
+            | Resource::NativeAllocationRefused { .. }
             | Resource::MemoryLimit { .. }
             | Resource::WorkerLimit
             | Resource::PolicyMemoryLimit
@@ -268,6 +269,7 @@ impl<Stopped> WorthQueryComputationPartitionStop<Stopped> {
 mod tests;
 
 mod publication;
+mod retained_result;
 pub(in crate::domain_computation::primary_graph) use publication::publication_execution_kind;
 
 /// Native lifecycle owners keep the original admitted request's exact stop cause.

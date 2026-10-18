@@ -50,8 +50,8 @@ struct Recomputed<Key, Gathered> {
 
 /// How one partition of the run is had: carried from the retained run, or
 /// gathered again for its kernel.
-enum Disposition<Key, Gathered> {
-    Carried(Arc<RetainedPartition<Key>>),
+enum Disposition<Key, Gathered, Reduced> {
+    Carried(Arc<RetainedPartition<Key, Reduced>>),
     Recomputed(Recomputed<Key, Gathered>),
 }
 
@@ -76,7 +76,7 @@ pub(super) struct NextPartitioning<Item> {
 pub(in super::super) struct PreparedIncremental<Key, Item, Reduced, Gathered> {
     remaining_work: RemainingWork,
     declared_bytes: u64,
-    partitions: BTreeMap<PartitionIdentity, Disposition<Key, Gathered>>,
+    partitions: BTreeMap<PartitionIdentity, Disposition<Key, Gathered, Reduced>>,
     next: NextPartitioning<Item>,
     basis: RetainedBasis,
     prior: TypedPrior<Key, Item, Reduced>,
@@ -99,13 +99,6 @@ where
     pub(in super::super) fn restrict_compute_ceiling(&mut self, ceiling: u64) {
         self.remaining_work.restrict(ceiling);
     }
-    pub(in super::super) fn can_retain(&self) -> bool {
-        self.next.membership.is_some()
-            && self.partitions.values().all(|p| match p {
-                Disposition::Carried(_) => true,
-                Disposition::Recomputed(p) => p.gather.is_some(),
-            })
-    }
 
     /// Settles every partition through one independent map, computing only
     /// marked partitions. Carried kernels contribute retained work and span;
@@ -119,7 +112,6 @@ where
         self,
         execution: &QueryRequestExecution<'_>,
         kernel: Kernel,
-        recording: &super::KernelRecording,
         observer: Option<&super::super::compute::kernel_observation::KernelCostObservationForTest>,
         reducer: &WorthQueryDeterministicReducer<Reduced>,
         transport: &mut NestedFailureTransport<'_>,
@@ -187,7 +179,6 @@ where
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let settled_wave = partition_wave::run(
             &dispositions,
-            retained,
             execution,
             remaining.remaining(),
             declared_bytes,
@@ -200,7 +191,6 @@ where
             )
         })?;
         let mut values = settled_wave.values;
-        let mut receipts = recording.take();
         let mut results_held = 0_u64;
         for (identity, disposition) in dispositions {
             let marked = match disposition {
@@ -211,15 +201,16 @@ where
                 }
                 Disposition::Recomputed(marked) => marked,
             };
-            let value = values
+            let kernel_result = values
                 .remove(&identity)
                 .expect("every recomputed partition settles once");
+            let value = kernel_result.value();
             let settled = results_held;
             // A partition the retained tree does not hold is a new leaf.
             let replaced = retained
                 .tree
                 .leaf(identity)
-                .is_none_or(|leaf| !same_bits(leaf, &value));
+                .is_none_or(|leaf| !same_bits(leaf, value));
             let kept = if replaced {
                 u64::try_from(size_of::<(PartitionIdentity, Reduced)>())
                     .ok()
@@ -231,16 +222,18 @@ where
             };
             results_held = kept.map_err(WorthQueryPartitionedComputationDenial::Resource)?;
             if replaced {
-                results.insert(identity, value);
+                results.insert(identity, value.clone());
             }
-            let kernel_receipt = receipts.remove(&identity).flatten();
-            match marked.gather.zip(kernel_receipt) {
-                Some((gather, kernel_receipt)) => {
+            match marked
+                .gather
+                .filter(|_| kernel_result.native_reuse_available())
+            {
+                Some(gather) => {
                     let partition = RetainedPartition {
                         key: marked.key,
                         key_bytes: marked.key_bytes,
                         gather,
-                        kernel_receipt,
+                        kernel_result,
                     };
                     partitions.insert(identity, Arc::new(partition));
                 }

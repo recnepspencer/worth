@@ -181,12 +181,12 @@ pub(super) struct RetainedCall {
 }
 
 /// One partition of a run.
-pub(super) struct RetainedPartition<Key> {
+pub(super) struct RetainedPartition<Key, Reduced> {
     pub(super) key: Arc<Key>,
     /// The key's canonical encoding length: what retaining it is charged.
     pub(super) key_bytes: u64,
     pub(super) gather: ComputationCallCharge,
-    pub(super) kernel_receipt: super::ExecutionKernelReceipt,
+    pub(super) kernel_result: worth_execution::ExecutionRetainedResult<Reduced>,
 }
 
 /// The typed state: everything a later run of the same owner needs to skip
@@ -201,7 +201,7 @@ pub(super) struct RetainedPartitions<Key, Item, Reduced> {
     /// Every item's partition: the one routing a partition's members are read
     /// from.
     pub(super) routing: Arc<ComputationPartitionRouting>,
-    pub(super) partitions: BTreeMap<PartitionIdentity, Arc<RetainedPartition<Key>>>,
+    pub(super) partitions: BTreeMap<PartitionIdentity, Arc<RetainedPartition<Key, Reduced>>>,
     pub(super) tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
 }
 
@@ -230,8 +230,8 @@ where
             .partitions
             .values()
             .try_fold(item_keys, |sum, partition| {
-                sum.checked_add(size(std::mem::size_of::<RetainedPartition<Key>>())?)?
-                    .checked_add(partition.kernel_receipt.additional_charged_bytes())?
+                sum.checked_add(size(std::mem::size_of::<RetainedPartition<Key, Reduced>>())?)?
+                    .checked_add(partition.kernel_result.additional_charged_bytes())?
                     .checked_add(partition.key_bytes)?
                     .checked_add(partition.gather.additional_bytes()?)
             })?;

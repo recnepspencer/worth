@@ -78,6 +78,33 @@ where
     run_checked_batch_inner(lease, batch, backend, kernel, charge_parent, None, None)
 }
 
+pub(crate) fn run_checked_batch_recording<T, R, E, F>(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    batch: &AdmittedBatch<T>,
+    backend: BackendKind,
+    records: &super::settlement::records::SettlementRecords,
+    inputs: Option<ExecutionMemoryReservation>,
+    kernel: &F,
+) -> BatchOutcome<R, E>
+where
+    T: ChargedBytes + Sync,
+    R: ChargedBytes + Send,
+    E: ChargedBytes + Send,
+    F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
+{
+    run_batch(
+        lease,
+        batch.declaration(),
+        BorrowedInputs(batch.values()),
+        backend,
+        kernel,
+        true,
+        None,
+        inputs,
+        Some(records),
+    )
+}
+
 /// A run whose memory admission takes over `taken`, the caller's reservation
 /// for the run's inputs: it becomes the run's own, at the run's exact bytes,
 /// so the inputs are never unreserved between the two.
@@ -145,6 +172,7 @@ where
         charge_parent,
         prepared,
         taken,
+        None,
     )
 }
 
@@ -171,6 +199,7 @@ where
         true,
         None,
         taken,
+        None,
     )
 }
 
@@ -200,6 +229,7 @@ where
         BackendKind::Perturbation(seed),
         kernel,
         true,
+        None,
         None,
         None,
     );

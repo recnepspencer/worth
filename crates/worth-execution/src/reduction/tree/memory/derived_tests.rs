@@ -2,7 +2,7 @@ use super::*;
 use crate::{CanonicalBits, ReductionRunStop};
 use std::sync::Weak;
 
-#[derive(Clone, worth_value_shape_derive::ChargedBytes)]
+#[derive(Clone, worth_foundational::facade::ChargedBytes)]
 #[charged_bytes(crate = "crate")]
 struct Payload {
     count: u64,

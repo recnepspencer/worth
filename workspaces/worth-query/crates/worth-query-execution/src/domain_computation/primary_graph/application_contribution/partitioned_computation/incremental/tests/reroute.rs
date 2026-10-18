@@ -318,7 +318,7 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
         &request,
     );
     let result = recording.complete(
-        BTreeMap::new(),
+        Vec::new(),
         typed.tree.clone(),
         execution
             .reserve(typed.tree.additional_charged_bytes())

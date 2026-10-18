@@ -74,6 +74,7 @@ fn serial_handoff<E: ChargedBytes + Send>(
         true,
         None,
         None,
+        None,
     );
     drop(serial);
     assert_eq!(

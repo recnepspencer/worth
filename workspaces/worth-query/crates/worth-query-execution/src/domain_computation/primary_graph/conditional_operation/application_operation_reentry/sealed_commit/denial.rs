@@ -73,6 +73,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                             | Resource::ScratchCapacityExceeded
                             | Resource::ResultCapacityExceeded
                             | Resource::CapacityOverflow
+                            | Resource::NativeAllocationRefused { .. }
                             | Resource::ChargedBytesOverflow
                             | Resource::WorkerLimit
                             | Resource::PolicyMemoryLimit
@@ -142,6 +143,7 @@ fn classify_kind(kind: Kind) -> Outcome {
             | Resource::WorkCounterOverflow
             | Resource::ChargedBytesOverflow
             | Resource::CapacityOverflow
+            | Resource::NativeAllocationRefused { .. }
             | Resource::NestedLeaseMisuse
             | Resource::NoActiveExecutionScope
             | Resource::ScratchCapacityExceeded => Outcome::RetryableCommitFailure(kind),

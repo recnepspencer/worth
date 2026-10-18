@@ -13,6 +13,10 @@ mod declarations;
 mod keyless;
 mod owned;
 mod prepared;
+mod retained;
+mod retained_input;
+pub use retained::RetainedMapDenial;
+pub use retained_input::RetainedMapInput;
 mod storage;
 use access::access_memory_bytes;
 use declarations::{check_read_key_order, check_read_write_conflicts};
@@ -27,7 +31,7 @@ pub use crate::oracle::OracleMismatch;
 
 /// A leased run under an automatic posture runs native; every other run is
 /// serial.
-fn backend_for(lease: Option<&ExecutionResourceLease<'_>>) -> BackendKind {
+pub(super) fn backend_for(lease: Option<&ExecutionResourceLease<'_>>) -> BackendKind {
     if lease.is_some_and(|value| value.resolved_posture() == ExecutionPosture::Automatic) {
         BackendKind::Native
     } else {

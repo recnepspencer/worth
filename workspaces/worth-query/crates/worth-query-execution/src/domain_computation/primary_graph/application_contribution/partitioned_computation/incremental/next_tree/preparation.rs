@@ -32,7 +32,7 @@ where
     pub(in super::super) fn carried(
         &mut self,
         identity: PartitionIdentity,
-        partition: &Arc<RetainedPartition<Key>>,
+        partition: &Arc<RetainedPartition<Key, Reduced>>,
     ) {
         self.partitions
             .insert(identity, Disposition::Carried(Arc::clone(partition)));

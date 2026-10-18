@@ -127,6 +127,14 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
                 "{size}: still-full native call roster checks remain visible: {examined:?}"
             );
             assert!(
+                examined.computation_dispatch_plan_visits >= size as u64,
+                "{size}: the supplied native dispatch plan is still full: {examined:?}"
+            );
+            assert!(
+                examined.computation_result_receiver_visits >= size as u64,
+                "{size}: native returned result staging is still full: {examined:?}"
+            );
+            assert!(
                 examined.source_admission_visits > 0,
                 "ordinary read admission remains real"
             );
@@ -176,7 +184,7 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
         );
     }
     eprintln!(
-        "native dirty comparison and remaining current-read/meta work at 1/10/100: {growth:?}"
+        "native dirty comparison, result staging and remaining current-read/meta work at 1/10/100: {growth:?}"
     );
 }
 

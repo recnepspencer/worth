@@ -76,6 +76,8 @@ pub enum WorthQueryPartitionedComputationDenial<Stopped> {
     ReducerPanicked,
     /// A reduced value's canonical bits disagree with the length it declares.
     ReducedEncodingInvalid,
+    /// A retained native result did not qualify for its declared partition.
+    RetainedResultUnqualified { partition: PartitionIdentity },
     /// The reduction refused the identities or values the map gave it.
     /// Execution builds both from one canonical list, so no run has met it.
     ReductionInputInvalid(WorthQueryReductionInputDenial),

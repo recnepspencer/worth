@@ -53,7 +53,7 @@ pub(super) fn retained(sealed: &SealedComputationRun) -> Retained {
                     *identity,
                     key,
                     partition.key_bytes,
-                    partition.kernel_receipt.charged_work(),
+                    partition.kernel_result.charged_work(),
                 )
             })
             .collect(),

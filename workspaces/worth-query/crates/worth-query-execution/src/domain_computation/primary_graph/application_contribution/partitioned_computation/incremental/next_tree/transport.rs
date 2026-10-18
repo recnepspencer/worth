@@ -15,7 +15,7 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
             prior,
         } = self;
         let mut bytes = (partitions.len()
-            * size_of::<(PartitionIdentity, Disposition<Key, Gathered>)>())
+            * size_of::<(PartitionIdentity, Disposition<Key, Gathered, Reduced>)>())
             as u64;
         for disposition in partitions.values() {
             match disposition {

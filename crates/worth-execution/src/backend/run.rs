@@ -25,6 +25,7 @@ pub(super) fn run_batch<I, R, E, F>(
     charge_parent: bool,
     prepared: Option<PreparedBatchResources>,
     taken: Option<ExecutionMemoryReservation>,
+    records: Option<&settlement::records::SettlementRecords>,
 ) -> BatchOutcome<R, E>
 where
     I: InputMode,
@@ -164,8 +165,17 @@ where
     let outcomes: Vec<Mutex<Option<TaskOutcome<R, E>>>> =
         (0..batch.len()).map(|_| Mutex::new(None)).collect();
     let execute = |(index, input)| {
-        let outcome =
-            evaluation::evaluate(input, lease, &limits, batch.result_capacity(index), kernel);
+        let (outcome, receipt, result_heap) = evaluation::evaluate(
+            input,
+            lease,
+            &limits,
+            batch.result_capacity(index),
+            records.map(|records| records.storage()),
+            kernel,
+        );
+        if let Some(records) = records {
+            records.record(index, &outcome, receipt, result_heap);
+        }
         let mut slot = outcomes[index]
             .lock()
             .unwrap_or_else(|error| error.into_inner());

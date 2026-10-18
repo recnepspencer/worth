@@ -31,9 +31,6 @@ pub(in super::super) struct FullRecording<Key, Item> {
 }
 
 impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
-    pub(in super::super) fn can_retain(&self) -> bool {
-        self.measured
-    }
     /// Records a full run that retains under `basis`, when a producer runs it.
     pub(in super::super) fn new(basis: RetainedBasisToken) -> Self {
         Self {
@@ -119,7 +116,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// `tree_memory` holds the tree until it is charged.
     pub(in super::super) fn complete<Reduced>(
         self,
-        mut steps: BTreeMap<PartitionIdentity, Option<super::ExecutionKernelReceipt>>,
+        results: Vec<worth_execution::ExecutionRetainedResult<Reduced>>,
         tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
         tree_memory: QueryMemoryReservation,
         cause: WorthQueryPartitionedComputationFullCause,
@@ -133,21 +130,30 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
             WorthQueryPartitionedComputationRunForTest::Full(cause),
             Some(report),
         );
+        let mut results = results.into_iter();
         let partitions = self
             .partitions
             .into_iter()
             .map(|(identity, (key, key_bytes, gather))| {
-                steps.remove(&identity).flatten().map(|kernel_receipt| {
-                    let partition = RetainedPartition {
-                        key,
-                        key_bytes,
-                        gather,
-                        kernel_receipt,
-                    };
-                    (identity, Arc::new(partition))
-                })
+                results
+                    .next()
+                    .filter(|result| {
+                        result.identity() == identity && result.native_reuse_available()
+                    })
+                    .map(|kernel_result| {
+                        let partition = RetainedPartition {
+                            key,
+                            key_bytes,
+                            gather,
+                            kernel_result,
+                        };
+                        (identity, Arc::new(partition))
+                    })
             })
             .collect::<Option<BTreeMap<_, _>>>();
+        if results.next().is_some() {
+            return CompletedComputationRetention::Absent(PriorAbsence::Unmeasured);
+        }
         let (routing, routing_memory) = self.routing.unzip();
         let typed = match (self.membership, routing, partitions) {
             (Some((membership, items, digests)), Some(routing), Some(partitions))

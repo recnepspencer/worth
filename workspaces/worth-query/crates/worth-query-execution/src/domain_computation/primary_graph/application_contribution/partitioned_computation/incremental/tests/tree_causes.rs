@@ -115,13 +115,64 @@ fn edit_encoding_and_result_capacity_denials_rebuild_and_match_reuse_off() {
     let source = template();
     let keys: Vec<_> = (0..8).map(Id::new).collect();
     let prior = retained(&source, &keys);
+    let native_policy = test_policy(std::num::NonZeroUsize::MIN, 1 << 30);
+    let native = worth_execution::SerialRequest::from_policy(
+        &native_policy,
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let map = worth_execution::ExecutionMap::<_, u64>::from_keyless_partitions(
+        keys.iter()
+            .map(|id| {
+                (
+                    *id,
+                    worth_execution::KeylessPartition {
+                        value: (),
+                        kernel_scratch_bytes: 0,
+                        max_result_bytes: 0,
+                    },
+                )
+            })
+            .collect(),
+    )
+    .unwrap();
+    let worth_execution::MapOutcome::Complete { values, .. } = map
+        .run_retained(
+            worth_execution::ExecutionRequest::serial(&native),
+            worth_execution::ExecutionWorkCeiling::new(u64::MAX),
+            |_, context| {
+                context.checkpoint(1)?;
+                Ok::<_, worth_execution::MapKernelFailure<()>>(value(1))
+            },
+        )
+        .unwrap()
+    else {
+        panic!("real native Value results")
+    };
+    let partitions = prior
+        .partitions
+        .into_iter()
+        .zip(values)
+        .map(|((id, partition), kernel_result)| {
+            assert_eq!(id, kernel_result.identity());
+            (
+                id,
+                Arc::new(super::super::super::retained::RetainedPartition {
+                    key: Arc::clone(&partition.key),
+                    key_bytes: partition.key_bytes,
+                    gather: partition.gather.clone(),
+                    kernel_result,
+                }),
+            )
+        })
+        .collect();
     let retained = RetainedPartitions {
         items: prior.items,
         digests: prior.digests,
         membership: prior.membership,
         item_keys: prior.item_keys,
         routing: prior.routing,
-        partitions: prior.partitions,
+        partitions,
         tree: ValueTree::try_from_declared(
             plan(&keys),
             keys.iter().map(|id| (*id, value(1))).collect(),

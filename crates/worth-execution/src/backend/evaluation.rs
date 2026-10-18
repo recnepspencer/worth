@@ -12,8 +12,13 @@ pub(super) fn evaluate<I, R, E, F>(
     lease: Option<&ExecutionResourceLease<'_>>,
     limits: &RunLimits,
     result_capacity: u64,
+    capture: Option<&super::ExecutionKernelReceiptStorage>,
     kernel: &F,
-) -> TaskOutcome<R, E>
+) -> (
+    TaskOutcome<R, E>,
+    Option<super::ExecutionKernelReceipt>,
+    Option<u64>,
+)
 where
     R: ChargedBytes,
     E: ChargedBytes,
@@ -22,6 +27,7 @@ where
     let newly_active_worker = lease.is_some_and(|value| !value.is_current_worker_in_lineage());
     let _worker_context = lease.map(ExecutionResourceLease::enter_worker_context);
     let mut context = KernelContext::new(limits.clone());
+    let mut receipt = None;
     let result = match context.safe_point() {
         Err(stop) => {
             // Entry safe points already latch these request facts, even if
@@ -41,8 +47,15 @@ where
         Ok(()) => {
             let _physical_worker = limits.enter_physical_worker(newly_active_worker);
             let _meter_context = context.enter();
-            contain(AssertUnwindSafe(|| kernel(input, &mut context)))
-                .unwrap_or(Err(KernelFailure::Panic))
+            contain(AssertUnwindSafe(|| match capture {
+                Some(storage) => {
+                    let captured = context.record_kernel(storage, |context| kernel(input, context));
+                    receipt = captured.1;
+                    captured.0
+                }
+                None => kernel(input, &mut context),
+            }))
+            .unwrap_or(Err(KernelFailure::Panic))
         }
     };
     let result = if let Some(stop) = context.checkpoint_stop() {
@@ -52,9 +65,16 @@ where
     } else {
         result
     };
+    let mut result_heap = None;
     let result = match result {
-        Ok(value) if value.additional_charged_bytes() > result_capacity => {
-            Err(KernelFailure::ResultCapacityExceeded)
+        Ok(value) => {
+            let heap = value.additional_charged_bytes();
+            if heap > result_capacity {
+                Err(KernelFailure::ResultCapacityExceeded)
+            } else {
+                result_heap = Some(heap);
+                Ok(value)
+            }
         }
         Err(KernelFailure::Domain(error)) if error.additional_charged_bytes() > result_capacity => {
             Err(KernelFailure::ResultCapacityExceeded)
@@ -63,9 +83,16 @@ where
     };
     let (work, span) = context.cost();
     let stop_owner = context.settle_result(&result, |failure| context.failure_owner(failure));
-    TaskOutcome {
-        result: super::task_result::TaskResult::new(result, stop_owner),
-        work,
-        span,
+    if result.is_err() {
+        receipt = None;
     }
+    (
+        TaskOutcome {
+            result: super::task_result::TaskResult::new(result, stop_owner),
+            work,
+            span,
+        },
+        receipt,
+        result_heap,
+    )
 }
