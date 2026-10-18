@@ -1,6 +1,9 @@
+#[cfg(test)]
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
+#[cfg(test)]
 use worth_relational::facade::identity::EntityId;
 
+#[cfg(test)]
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::super::WorthQueryApplicationObservedFact;
 
@@ -54,6 +57,25 @@ impl From<crate::domain_computation::primary_graph::output_lineage::ComparableSo
     }
 }
 
+pub(super) fn complete_content_currentness_facts(
+    facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    moved: Vec<usize>,
+    reusable: bool,
+) -> OutputCurrentnessFacts {
+    if reusable {
+        OutputCurrentnessFacts {
+            facts,
+            moved_by_own_effect: moved.into(),
+        }
+    } else {
+        OutputCurrentnessFacts {
+            facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
+            moved_by_own_effect: std::sync::Arc::from([]),
+        }
+    }
+}
+
+#[cfg(test)]
 pub(super) fn complete_output_currentness_facts(
     facts: Vec<WorthQueryApplicationObservedFact>,
     moved_by_own_effect: Vec<usize>,
@@ -74,7 +96,7 @@ pub(super) fn complete_output_currentness_facts(
     }
 }
 
-fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool {
+pub(super) fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool {
     matches!(
         fact,
         WorthQueryApplicationObservedFact::RetiredOutputEntity { .. }
@@ -91,6 +113,7 @@ fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool 
     )
 }
 
+#[cfg(test)]
 pub(super) fn normalized_output_facts(
     facts: &(impl FactSequence + ?Sized),
     effects: &[WorthQueryApplicationRealizedEffect],
@@ -140,6 +163,7 @@ pub(super) fn normalized_output_facts(
         .collect()
 }
 
+#[cfg(test)]
 fn replacement_field_value<'effect>(
     entity_id: EntityId,
     locator: &worth_foundational::facade::AspectFieldLocator,

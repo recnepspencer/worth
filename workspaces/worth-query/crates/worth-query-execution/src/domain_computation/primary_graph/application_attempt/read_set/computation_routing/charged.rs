@@ -99,7 +99,11 @@ impl SealedComputationFacts {
                 + std::mem::size_of::<SealedComputationFact>(),
         )
         .ok()?;
-        let backing = self.original.retained_resident_bytes()?;
+        let backing = self.original.retained_resident_bytes()?.checked_add(
+            self.content
+                .as_ref()
+                .map_or(Some(0), |content| content.charged_bytes())?,
+        )?;
         self.metadata.iter().try_fold(
             self.index
                 .charged_bytes()?

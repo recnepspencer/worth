@@ -204,6 +204,7 @@ fn commit_own_write(
             [11; 32],
             None,
             &mut owner.edit_admission(),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
     } else {
         program.producer_idempotency_identities::<RetentionOutputs>(
@@ -211,6 +212,7 @@ fn commit_own_write(
             [11; 32],
             None,
             &mut owner.edit_admission(),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
     .unwrap();

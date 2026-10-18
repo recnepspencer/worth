@@ -27,6 +27,10 @@ pub struct WorthQueryFactVerificationForTest {
     pub input_cutoffs_omitted: u64,
     /// Owned facts moved into pre-admitted native publication chunks.
     pub native_payload_fact_moves: u64,
+    /// Actual canonical leaf and pair derivations, including cold construction.
+    pub content_leaf_derivations: u64,
+    pub content_pair_derivations: u64,
+    pub content_field_index_visits: u64,
     /// Native chunks sealed for patched completion or postcommit publication.
     pub native_payload_chunks: u64,
     /// Pre-admitted two-child joins sealed for those chunks.
@@ -88,6 +92,7 @@ thread_local! {
     static OBSERVED: Cell<WorthQueryFactVerificationForTest> = const { Cell::new(WorthQueryFactVerificationForTest {
         registry_custody: [None; 32], registry_custody_omitted: 0,
         input_cutoffs: [None; 32], input_cutoffs_omitted: 0,
+        content_field_index_visits: 0, content_leaf_derivations: 0, content_pair_derivations: 0,
         native_payload_fact_moves: 0, native_payload_chunks: 0, native_payload_joins: 0,
         native_payload_size_visits: 0, original_payload_size_visits: 0, native_patch_path_visits: 0, native_patch_fact_clones: 0,
         sealed_computation_index_visits: 0, completion_metadata_visits: 0,
@@ -236,4 +241,15 @@ fn clear() {
 
 pub(super) fn sealed_computation_index() {
     record(|observed| add(&mut observed.sealed_computation_index_visits, 1));
+}
+
+pub(super) fn content_leaf() {
+    record(|observed| add(&mut observed.content_leaf_derivations, 1));
+}
+pub(super) fn content_pair() {
+    record(|observed| add(&mut observed.content_pair_derivations, 1));
+}
+
+pub(super) fn content_field_index() {
+    record(|observed| add(&mut observed.content_field_index_visits, 1));
 }

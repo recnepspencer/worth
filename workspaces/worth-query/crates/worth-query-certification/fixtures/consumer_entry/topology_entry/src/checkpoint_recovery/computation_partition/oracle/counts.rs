@@ -104,6 +104,14 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
             );
             assert_eq!(examined.fallback_carried_metadata_visits, 0,
                 "{size}: fixed native completion does not hide a fallback metadata walk: {examined:?}");
+            assert_eq!(
+                examined.content_field_index_visits, 0,
+                "{size}: value edits share the checked address lookup: {examined:?}"
+            );
+            assert!(
+                examined.content_leaf_derivations > 0 && examined.content_pair_derivations > 0,
+                "{size}: real native publication consumes the new content rule: {examined:?}"
+            );
             assert!(
                 examined.native_patch_path_visits > 0 && examined.native_patch_fact_clones > 0,
                 "{size}: actual ordinary publication consumes a funded native patch: {examined:?}"
@@ -151,6 +159,10 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
     }
     let first = growth[0].1[0];
     for (size, runs) in &growth {
+        assert_eq!(
+            runs[0].content_leaf_derivations, first.content_leaf_derivations,
+            "{size}: logical leaves derive only at refreshed ordinals and the fresh source suffix"
+        );
         assert_eq!(
             runs[0].retained_computation_visits, first.retained_computation_visits,
             "{size}: comparison depends on the edited facts, not retained population"

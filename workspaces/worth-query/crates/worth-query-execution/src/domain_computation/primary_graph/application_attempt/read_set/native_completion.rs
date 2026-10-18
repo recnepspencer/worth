@@ -98,8 +98,25 @@ impl<Schema, Operation, Input, Scope, Phase>
         drop(self.expected_facts.take());
         let (inputs, completed) = self.computation_reads;
         drop(inputs);
+        let (content, content_work) = match refresh.content() {
+            Some(prior) => {
+                let decisions = refresh.decisions();
+                // Original source suffix is replaced, not confused with the
+                // new source authority. Every fresh suffix ordinal is derived.
+                let mut content_changed = changed.clone();
+                content_changed.extend(decisions.len()..facts.len());
+                let (content, work) = prior
+                    .refresh(facts.clone(), content_changed, control)
+                    .map_err(|cause| cause.into_attempt_denial(operation))?;
+                (Some(content), work)
+            }
+            None => (
+                None,
+                worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
+            ),
+        };
         let (metadata, installed_read_scopes, computation_fact_ordinals, decision_count) =
-            refresh.finish(facts.clone());
+            refresh.finish(facts.clone(), content.clone());
         check_request_live(self.admission.publication_request(), operation)?;
         let retained = completed
             .seal_at(Some(metadata.clone()), self.lease.snapshot())
@@ -116,11 +133,13 @@ impl<Schema, Operation, Input, Scope, Phase>
             CompletedHandlerFactBoundary::from_completed_read(handler_count),
             retained,
         );
+        self.admission.retain_execution_canonical_work(content_work);
         Ok(WorthQueryCompleteApplicationReadSet {
             admission: self.admission,
             lease: self.lease,
             installed_read_scopes,
             facts,
+            content,
             consumed_outputs: self.consumed_outputs,
             #[cfg(test)]
             computation_facts: Some(metadata),

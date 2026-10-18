@@ -1,6 +1,7 @@
 mod admission_denial;
 mod aggregate;
 mod consumed_output;
+mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
 mod field_projection;
 mod identity_encoding;

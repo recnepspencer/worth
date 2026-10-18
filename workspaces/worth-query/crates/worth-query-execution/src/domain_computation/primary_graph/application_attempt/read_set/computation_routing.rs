@@ -302,6 +302,7 @@ pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
     index: std::sync::Arc<index::ComputationFactIndex>,
     metadata: std::sync::Arc<BTreeMap<WorthQueryApplicationFactKey, SealedComputationFact>>,
     original: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    content: Option<super::super::FactContent>,
     charged: Option<u64>,
     layout: layout::SealedReadLayout,
 }

@@ -120,6 +120,7 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) lease: WorthQueryApplicationSnapshotLease,
     pub(super) installed_read_scopes: CompletedReadScopes,
     pub(super) facts: FactPayload,
+    pub(super) content: Option<super::FactContent>,
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     /// The facts the owner calls read, when the handler ran one partitioned
     /// computation.

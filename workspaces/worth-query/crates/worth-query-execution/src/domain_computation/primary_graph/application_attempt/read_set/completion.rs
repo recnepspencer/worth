@@ -166,6 +166,18 @@ impl<Schema, Operation, Input, Scope, Phase>
             self.admission.retain_graph_contract(),
             installed_read_scopes,
         );
+        let content = if computation_facts.is_some() {
+            let control = super::super::retained_decision_facts::StorageControl::new(
+                allocation_policy,
+                Some(self.admission.publication_request()),
+            );
+            let (content, work) = super::super::FactContent::build(facts.clone(), control)
+                .map_err(|cause| cause.into_attempt_denial(operation))?;
+            self.admission.retain_execution_canonical_work(work);
+            Some(content)
+        } else {
+            None
+        };
         let computation_facts = computation_facts.map(|metadata| {
             metadata.bind(
                 facts.clone(),
@@ -173,6 +185,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                 installed_read_scopes.clone(),
                 self.admission.scope_entity_id(),
                 std::sync::Arc::clone(&computation_fact_ordinals),
+                content.clone(),
             )
         });
         // Original facts and their checked metadata exist before retention seals;
@@ -194,6 +207,7 @@ impl<Schema, Operation, Input, Scope, Phase>
             lease: self.lease,
             installed_read_scopes,
             facts,
+            content,
             consumed_outputs: self.consumed_outputs,
             #[cfg(test)]
             computation_facts,
