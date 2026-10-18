@@ -234,12 +234,22 @@ impl WorthQueryApplicationBasisLease {
     }
 
     pub fn is_live(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> bool {
-        self.core().basis.is_some()
-            && self.core().snapshot.as_ref().is_some_and(|snapshot| {
-                self.core().graph.with_runtime(execution, |runtime| {
-                    runtime.read_truth().project_snapshot(snapshot).is_some()
-                })
-            })
+        self.core()
+            .graph
+            .with_runtime(execution, |runtime| self.is_live_at(runtime))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn is_live_at(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> bool {
+        self.identity.runtime_instance_id() == runtime.main_branch_identity().runtime_instance_id()
+            && self.core().basis.is_some()
+            && self
+                .core()
+                .snapshot
+                .as_ref()
+                .is_some_and(|snapshot| runtime.read_truth().project_snapshot(snapshot).is_some())
     }
 
     pub fn release(self) -> WorthQueryApplicationBasisReleaseReceipt {

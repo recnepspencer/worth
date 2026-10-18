@@ -9,7 +9,9 @@ pub(super) use family_heads::FamilyPublicationHead;
 mod history_retirement;
 mod newest;
 mod preparation;
+mod source_coverage;
 mod stable_publication;
+pub(super) use source_coverage::SourcePartitionPublication;
 pub(super) use stable_publication::PreparedStablePartitionLocator;
 
 use worth_runtime_world::facade::ProductBranchIncarnation;

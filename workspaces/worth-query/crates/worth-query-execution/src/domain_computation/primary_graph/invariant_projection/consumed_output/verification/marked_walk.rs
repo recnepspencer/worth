@@ -29,7 +29,7 @@ impl ConsumedOutputEvidence {
             }
             visited.insert(Arc::clone(evidence.identity));
             if !at_observation::reads_at_or_after(selected, evidence.selected_native_root) {
-                return Ok(ConsumedOutputVerification::ChangedUpstream);
+                return Ok(ConsumedOutputVerification::Unaligned);
             }
             let currentness = owner
                 .consumed_output_currentness(selected, evidence.identity, admission)
@@ -53,7 +53,7 @@ impl ConsumedOutputEvidence {
                     )? {
                         return Ok(changed);
                     }
-                    return Err(ConsumedOutputVerificationStop::PendingUpstream);
+                    return Ok(ConsumedOutputVerification::PendingUpstream);
                 }
                 ConsumedOutputCurrentness::FullVerificationRequired => {
                     let recovered = Self::compare_equal_chain(
@@ -79,7 +79,7 @@ impl ConsumedOutputEvidence {
                     )? {
                         return Ok(changed);
                     }
-                    return Err(ConsumedOutputVerificationStop::PendingUpstream);
+                    return Ok(ConsumedOutputVerification::PendingUpstream);
                 }
                 // As for a foreign selection above.
                 SourceSettlementCurrentness::Foreign => {

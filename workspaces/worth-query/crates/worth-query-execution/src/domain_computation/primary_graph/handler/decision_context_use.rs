@@ -11,6 +11,7 @@ impl DecisionContextUse {
     const OPAQUE_READER: u8 = 8;
     const MANAGED_COMPUTATION: u8 = 16;
     const REQUEST_CONTEXT: u8 = 32;
+    const SOURCE_QUERY_PERMISSION: u8 = 64;
 
     pub(super) const fn key(self) -> Self {
         Self(self.0 | Self::KEY)
@@ -32,6 +33,12 @@ impl DecisionContextUse {
         Self(self.0 | Self::MANAGED_COMPUTATION)
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn source_query_permission(
+        self,
+    ) -> Self {
+        Self(self.0 | Self::SOURCE_QUERY_PERMISSION)
+    }
+
     #[cfg(test)]
     pub(super) const fn request_context(self) -> Self {
         Self(self.0 | Self::REQUEST_CONTEXT)
@@ -42,7 +49,12 @@ impl DecisionContextUse {
     }
 
     pub(in crate::domain_computation::primary_graph) const fn has_untracked_context(self) -> bool {
-        self.0 & (Self::OPAQUE_READER | Self::MANAGED_COMPUTATION | Self::REQUEST_CONTEXT) != 0
+        self.0
+            & (Self::OPAQUE_READER
+                | Self::MANAGED_COMPUTATION
+                | Self::REQUEST_CONTEXT
+                | Self::SOURCE_QUERY_PERMISSION)
+            != 0
     }
 
     #[cfg(test)]

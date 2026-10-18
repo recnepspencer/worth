@@ -2,7 +2,7 @@
 
 use super::*;
 
-pub(in crate::domain_computation::primary_graph::invariant_projection) fn map_admission_stop(
+pub(in crate::domain_computation::primary_graph) fn map_admission_stop(
     stop: CompanionPreflightStop,
 ) -> ConsumedOutputVerificationStop {
     match stop {
@@ -43,6 +43,9 @@ pub(super) fn map_verification_stop(
     stop: SettlementVerificationStop,
 ) -> ConsumedOutputVerificationStop {
     match stop {
+        SettlementVerificationStop::SourceRead(
+            WorthQuerySourceCurrentnessFailure::OutputObservation(stop),
+        ) => stop,
         SettlementVerificationStop::SourceRead(WorthQuerySourceCurrentnessFailure::Execution(
             cause,
         )) => ConsumedOutputVerificationStop::Execution(cause),
@@ -71,7 +74,7 @@ pub(super) fn charge_external(
         .map_err(map_admission_stop)
 }
 
-pub(super) fn reserve_pending<T>(
+pub(in crate::domain_computation::primary_graph) fn reserve_pending<T>(
     pending: &mut Vec<T>,
     additional: usize,
     admission: &mut InvalidationEditAdmission,
@@ -118,6 +121,7 @@ pub(super) fn fact_is_current(
         .source_currentness_in(runtime, execution, snapshot, admission)
         .map_err(map_admission_stop)?
     {
+        Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => Err(stop),
         Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
             Err(ConsumedOutputVerificationStop::Execution(cause))
         }

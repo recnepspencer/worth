@@ -50,6 +50,9 @@ fn backing_stop(stop: ConsumedOutputVerificationStop) -> ApplicationAttemptRegis
         ConsumedOutputVerificationStop::Interrupted(event) => {
             ApplicationAttemptRegistrationStop::Interrupted(event.interruption())
         }
+        ConsumedOutputVerificationStop::SourceQueryAuthorization(_) => {
+            "source query authorization cannot admit consumed backing".into()
+        }
         ConsumedOutputVerificationStop::WorkExhausted => {
             "consumed output backing exceeds request work".into()
         }

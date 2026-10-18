@@ -12,6 +12,8 @@
 //! use these owners through `worth_query_host::facade::application_entry`.
 
 #![forbid(unsafe_code)]
+// The native source-read closure participates in the runtime auto-trait graph.
+#![recursion_limit = "256"]
 
 mod application_aftermath;
 mod application_authorization;

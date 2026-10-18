@@ -129,7 +129,7 @@ where
         application_readiness_schema_token,
         publication: graph.publication,
         checkpoint_restore_work: graph.checkpoint_restore_work,
-        authorization,
+        authorization: std::sync::Arc::new(authorization),
         authorization_clock,
         authentication_clock: WorthQueryAuthenticationClock::system(),
         relational_branch_identity: graph.relational_branch_identity,

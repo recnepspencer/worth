@@ -41,9 +41,13 @@ pub(in crate::domain_computation::primary_graph) use readiness::{
     TypedPendingOutputReadiness, WorthQueryInstalledOutputReadinessRoutes,
 };
 mod scheduling;
+mod source_qualification;
 pub(in crate::domain_computation::primary_graph) use scheduling::{
     schedule_output_producer, schedule_output_producer_on_selected,
     WorthQueryInstalledOutputProducerRoutes,
+};
+pub(in crate::domain_computation::primary_graph) use source_qualification::{
+    OutputSourceAddress, QualifiedOutputSource,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

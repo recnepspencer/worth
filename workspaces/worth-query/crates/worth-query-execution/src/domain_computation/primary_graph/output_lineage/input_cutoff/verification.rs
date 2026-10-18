@@ -226,6 +226,9 @@ impl RetainedInputCutoffCandidate {
                     Err(ConsumedOutputVerificationStop::CapacityExhausted(_)) => {
                         return Err(InputCutoffVerificationStop::CapacityExhausted);
                     }
+                    Err(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => {
+                        return Err(InputCutoffVerificationStop::OutputObservation(stop))
+                    }
                     Err(ConsumedOutputVerificationStop::Execution(cause)) => {
                         return Err(InputCutoffVerificationStop::Execution(cause))
                     }
@@ -310,6 +313,14 @@ impl RetainedInputCutoffCandidate {
             admission,
         ) {
             Ok(ConsumedOutputVerification::Current) => {}
+            Err(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => {
+                return Err(InputCutoffVerificationStop::OutputObservation(stop))
+            }
+            Ok(
+                ConsumedOutputVerification::PendingUpstream
+                | ConsumedOutputVerification::ChangedOutput
+                | ConsumedOutputVerification::Unaligned,
+            ) => return Ok(None),
             Ok(
                 ConsumedOutputVerification::ChangedDirectFact(_)
                 | ConsumedOutputVerification::ChangedUpstream,

@@ -1,6 +1,8 @@
 //! The reader an owner reads its input through, lent from the handler that
 //! runs the computation.
 
+mod output_availability;
+
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
     ApplicationRelationRef, ApplicationSchema, DeclaredApplicationFieldValue, OperationReads,
@@ -115,6 +117,7 @@ where
 /// Why a read through the lent reader was refused.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryComputationReadDenial {
+    OutputAvailability(Box<crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial>),
     /// The retained computation's fact comparison stopped under its request.
     RetainedFact(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind),
     Field(WorthQueryInvariantDecisionPlanDenial),
@@ -139,6 +142,8 @@ impl<Stopped> From<WorthQueryComputationReadDenial> for WorthQueryComputationInp
 impl worth_execution::ChargedBytes for WorthQueryComputationReadDenial {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
+            Self::OutputAvailability(stop) => (std::mem::size_of_val(stop.as_ref()) as u64)
+                .saturating_add(stop.additional_charged_bytes()),
             Self::RetainedFact(_) => 0,
             Self::Field(denial) => denial.additional_charged_bytes(),
             Self::Relations(denial) => denial.additional_charged_bytes(),

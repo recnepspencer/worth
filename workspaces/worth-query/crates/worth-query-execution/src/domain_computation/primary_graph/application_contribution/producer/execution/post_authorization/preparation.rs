@@ -9,10 +9,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
     runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    selected: &'owner crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+    shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
         '_,
         Schema,
     >,
+    external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request_scope: &WorthQueryRequestScope,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         Schema,
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Principal,
@@ -49,6 +51,7 @@ where
             SourceQuery<Schema, Binding>,
         >,
 {
+    let selected = shared.selected();
     require_selected_program(selected, &commit_authority, request_admission)?;
 
     let application_identity = crate::domain_computation::execution_observation::is_installed().then(|| {
@@ -202,21 +205,30 @@ where
     let bound_source = prepared_source
         .consume_into(&mut admission)
         .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let prepared = runtime.prepare_mutation_handler_plan::<Operation<Schema, Binding>>(
-        phase,
-        &identities,
-        principal.principal_identity(),
-        admission,
-        || {
-            *producer_contacts += 1;
+    let source_query =
+        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess {
+            application: runtime,
+            shared,
+            principal: external_principal,
+            request: request_scope,
+        };
+    let prepared = runtime
+        .prepare_mutation_handler_plan_with_source_access::<Operation<Schema, Binding>>(
+            phase,
+            &identities,
+            principal.principal_identity(),
+            Some(&source_query),
+            admission,
+            || {
+                *producer_contacts += 1;
 
-            super::super::contact_observation::record(
-                runtime.runtime.authority_identity().as_u64(),
-                contact_root,
-            );
-        },
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
+                super::super::contact_observation::record(
+                    runtime.runtime.authority_identity().as_u64(),
+                    contact_root,
+                );
+            },
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     let (requests, completion, inputs) = match prepared {
         Ok(prepared) => prepared.into_parts(
             &runtime.output_demands,

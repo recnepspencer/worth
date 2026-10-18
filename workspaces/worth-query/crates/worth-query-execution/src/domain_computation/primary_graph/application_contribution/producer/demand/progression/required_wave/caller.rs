@@ -123,6 +123,14 @@ where
                     == Some(FactlessCurrentness::Superseded)
         );
         match pending {
+            Err(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => {
+                return Err(
+                    crate::domain_computation::primary_graph::output_reuse::verification_denial(
+                        stop,
+                        "required source",
+                    ),
+                )
+            }
             Ok(Some(_)) => {}
 
             Err(ConsumedOutputVerificationStop::CapacityExhausted(cause)) => {

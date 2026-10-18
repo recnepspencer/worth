@@ -188,7 +188,8 @@ pub(super) fn charge_initialized_clone(
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), CompanionPreflightStop> {
     let work = match fact {
-        Fact::SourceEntity { .. }
+        Fact::SourcePublication { .. }
+        | Fact::SourceEntity { .. }
         | Fact::Entity { .. }
         | Fact::WorkflowDefinitionPredecessor { .. }
         | Fact::WorkflowDefinitionCurrent { .. } => 0,

@@ -50,6 +50,9 @@ pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
     unavailable: &str,
 ) -> WorthQueryOutputDemandDenial {
     match stop {
+        RetainedFactStop::OutputObservation(stop) => {
+            super::verification_denial(stop, unavailable.to_owned())
+        }
         RetainedFactStop::Work => work_denial(),
         RetainedFactStop::Memory => memory_denial(),
         RetainedFactStop::Execution(cause) => read_denial(cause),
@@ -69,6 +72,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
 pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
+    OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
     Memory,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
@@ -90,6 +94,9 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
         match fact.source_currentness_in(runtime, execution, snapshot, admission) {
             Ok(Ok(movement)) if movement.movement() == Movement::Moved => return Ok(Some(fact)),
             Ok(Ok(_)) => {}
+            Ok(Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop))) => {
+                return Err(RetainedFactStop::OutputObservation(stop))
+            }
             Ok(Err(WorthQuerySourceCurrentnessFailure::Execution(cause))) => {
                 return Err(RetainedFactStop::Execution(cause))
             }

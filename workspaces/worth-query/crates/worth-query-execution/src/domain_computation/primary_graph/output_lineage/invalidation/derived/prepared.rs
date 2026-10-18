@@ -28,11 +28,13 @@ pub(super) struct PreparedRegistrationWorkCue {
 pub(in crate::domain_computation::primary_graph) struct PreparedSettlementRegistration {
     native: PreparedCompanionDerivedRoot<BranchMarkRoot>,
     work_cue: Option<PreparedRegistrationWorkCue>,
+    completion_cues: Option<super::completion_cues::PreparedCompletionCues>,
 }
 
 /// Both old and new image references stay alive until the caller has left its
 /// outer publication guards. Their last-owner Drop cannot run inside cutover.
 pub(in crate::domain_computation::primary_graph) struct SettlementRegistrationCleanup {
+    _completion_cues: Option<super::completion_cues::PublishedCompletionCues>,
     _image: CompanionBranchImage<BranchMarkRoot>,
     _native: CompanionDerivedRootCleanup<BranchMarkRoot>,
     _prior_work_hint: Option<crate::domain_computation::primary_graph::application_output_demand::ReplacedRequiredWorkHint>,
@@ -41,6 +43,7 @@ pub(in crate::domain_computation::primary_graph) struct SettlementRegistrationCl
 pub(in crate::domain_computation::primary_graph) struct StoppedSettlementRegistration {
     native: CompanionDerivedRootStopped<BranchMarkRoot>,
     work_cue: Option<PreparedRegistrationWorkCue>,
+    completion_cues: Option<super::completion_cues::PreparedCompletionCues>,
 }
 
 impl StoppedSettlementRegistration {
@@ -57,12 +60,20 @@ impl StoppedSettlementRegistration {
             PreparedSettlementRegistration {
                 native,
                 work_cue: self.work_cue,
+                completion_cues: self.completion_cues,
             },
         )
     }
 }
 
 impl PreparedSettlementRegistration {
+    pub(super) fn retain_completion_cues(
+        &mut self,
+        cues: Option<super::completion_cues::PreparedCompletionCues>,
+    ) {
+        self.completion_cues = cues;
+    }
+
     pub(super) fn retain_work_cue(
         &mut self,
         membership: Arc<RequiredWorkMembership>,
@@ -80,14 +91,26 @@ impl PreparedSettlementRegistration {
     pub(in crate::domain_computation::primary_graph) fn install(
         self,
     ) -> Result<SettlementRegistrationCleanup, StoppedSettlementRegistration> {
-        let PreparedSettlementRegistration { native, work_cue } = self;
+        let PreparedSettlementRegistration {
+            native,
+            work_cue,
+            completion_cues,
+        } = self;
         let installed = match native.install() {
             Ok(installed) => installed,
-            Err(native) => return Err(StoppedSettlementRegistration { native, work_cue }),
+            Err(native) => {
+                return Err(StoppedSettlementRegistration {
+                    native,
+                    work_cue,
+                    completion_cues,
+                })
+            }
         };
         let (image, native) = installed.into_parts();
         let prior_work_hint = work_cue.map(|cue| cue.membership.mark_local_required(cue.identity));
         Ok(SettlementRegistrationCleanup {
+            _completion_cues: completion_cues
+                .map(super::completion_cues::PreparedCompletionCues::publish),
             _image: image,
             _native: native,
             _prior_work_hint: prior_work_hint,
@@ -176,6 +199,7 @@ impl SourceInvalidationOwner {
         Ok(PreparedSettlementRegistration {
             native,
             work_cue: None,
+            completion_cues: None,
         })
     }
 }

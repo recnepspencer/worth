@@ -120,6 +120,7 @@ impl WorthQueryApplicationOutputLineage {
         republished: &mut Option<republication::RepublishedOutput>,
         computation_source: super::ComputationSourceEvidence,
     ) -> Option<RestoredRecord> {
+        self.invalidate_source_publication_coverage();
         let observed_source_facts = observed_source_facts.into();
         let source = SemanticSource {
             runtime_authority,

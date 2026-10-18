@@ -267,7 +267,7 @@ fn mapping_projection_scope(
     ])
 }
 
-fn authoritative(
+pub(in crate::domain_computation::primary_graph) fn authoritative(
     locator: &worth_foundational::facade::AspectFieldLocator,
 ) -> worth_foundational::facade::AspectFieldLocator {
     worth_foundational::facade::AspectFieldLocator::new(

@@ -2900,6 +2900,17 @@ abandonment, not a successful close. Performed-source required and
 discovered aggregate completion rules, including fixed-leaf unavailable
 completion, are unchanged.
 
+#### Observe a member without progressing its producer
+
+A checked computation that must publish complete Count alongside Pending volume
+uses the same-reader [source-aligned availability](../workspaces/worth-query/crates/worth-query/docs/capabilities/source-aligned-output-availability.md)
+route. Its candidate `reader.output_availability(&native_member, typed_demand)`
+retains the actual source Query permission/session and native completion fact
+through the original publication attempt. Native consumer qualification remains
+open. Ordinary demand advancement remains driving; a denial or missing output
+cannot be converted to publishable Pending. This route changes neither original
+output custody nor the current delivery checks above.
+
 #### Delivery after native close
 
 When final publication must follow cleanup, call the settled parent's

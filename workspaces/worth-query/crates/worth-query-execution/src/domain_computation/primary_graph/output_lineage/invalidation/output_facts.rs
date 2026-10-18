@@ -24,7 +24,7 @@ impl SourceInvalidationOwner {
     /// This fallible derived preparation runs after the performed publication.
     /// A stop requires full verification on the recorded lineage row; it never
     /// turns an incomplete output posting set into an authoritative Clean row.
-    pub(super) fn prepare_performed_output_facts(
+    pub(in crate::domain_computation::primary_graph) fn prepare_performed_output_facts(
         &self,
         witness: &SealedNativeOutputWitness,
         admission: &mut InvalidationEditAdmission,
@@ -59,5 +59,11 @@ impl SourceInvalidationOwner {
             facts,
             _capacity: capacity,
         }))
+    }
+}
+
+impl RegisteredOutputFacts {
+    pub(in crate::domain_computation::primary_graph) fn facts(&self) -> &[Fact] {
+        &self.facts
     }
 }

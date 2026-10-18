@@ -1,3 +1,5 @@
+mod verification_denial;
+pub(in crate::domain_computation::primary_graph) use verification_denial::verification_denial;
 mod dependency;
 mod selection;
 
@@ -9,5 +11,5 @@ pub(super) use selection::{
 };
 
 pub(in crate::domain_computation::primary_graph) use selection::{
-    preflight_stop, retained_fact_denial,
+    owner_read, preflight_stop, retained_fact_denial,
 };

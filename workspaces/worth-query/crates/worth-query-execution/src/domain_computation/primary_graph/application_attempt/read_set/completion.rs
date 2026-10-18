@@ -67,14 +67,34 @@ impl<Schema, Operation, Input, Scope, Phase>
         let installed_scopes_close_over_facts = self
             .installed_read_scopes
             .iter()
-            .zip(self.facts.keys())
-            .all(|((scope_key, scope), fact_key)| {
-                scope_key == fact_key
-                    && scope
-                        .resolve(self.admission.allowed_graph_contract())
-                        .is_some_and(|scope| {
-                            observation_admission::graph_read_scope_matches_key(scope, fact_key)
-                        })
+            .zip(self.facts.iter())
+            .all(|((scope_key, scope), (fact_key, fact))| {
+                if scope_key != fact_key {
+                    return false;
+                }
+                if let (
+                    super::InstalledScopePosition::SourceQuery,
+                    super::super::fact::WorthQueryApplicationFactKey::SourcePublication(read),
+                    super::super::fact::WorthQueryApplicationObservedFact::SourcePublication {
+                        observation,
+                    },
+                ) = (scope, fact_key, fact)
+                {
+                    // The tag/key cannot grant Query authority. Consume only
+                    // the exact native read retained by this original reader.
+                    return read
+                        .admits_observation(self.admission.admission_identity(), observation)
+                        && self
+                            .expected_facts
+                            .as_ref()
+                            .and_then(|expected| expected.source_publication(read))
+                            .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
+                }
+                scope
+                    .resolve(self.admission.allowed_graph_contract())
+                    .is_some_and(|scope| {
+                        observation_admission::graph_read_scope_matches_key(scope, fact_key)
+                    })
             });
         if self.installed_read_scopes.len() != self.facts.len()
             || !installed_scopes_close_over_facts

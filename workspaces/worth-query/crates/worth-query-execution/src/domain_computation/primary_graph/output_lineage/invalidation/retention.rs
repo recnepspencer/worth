@@ -61,6 +61,7 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
     let rows = state.settlements.len();
     let postings = state.posting_count;
     arc_bytes::<MarkState>()?
+        .checked_add(super::output_availability::retained_bytes(state)?)?
         .checked_add(state.key_payload_bytes)?
         .checked_add(state.settlement_key_payload_bytes)?
         // A whole-index quote includes one live basis allocation per row.

@@ -1,3 +1,4 @@
+pub(in crate::mvcc) use cell::CompanionReadCondition;
 mod cell;
 mod preflight;
 mod registration;

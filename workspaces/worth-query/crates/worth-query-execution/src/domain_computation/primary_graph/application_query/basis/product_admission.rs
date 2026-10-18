@@ -45,6 +45,22 @@ pub(super) fn admit_selected_permission_basis<Schema>(
     product: WorthQueryProductObservationLease,
     application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
+    admit_selected_permission_basis_with_native_access(
+        execution,
+        application,
+        product,
+        application_basis,
+        &mut super::super::ApplicationQueryNativeAccess::acquire(),
+    )
+}
+
+pub(super) fn admit_selected_permission_basis_with_native_access<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: WorthQueryProductObservationLease,
+    application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
+    native: &mut super::super::ApplicationQueryNativeAccess<'_>,
+) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     if product.observation().owner_identity() != application.product_runtime.owner.owner_identity()
     {
         return Err(admission_denial(
@@ -52,7 +68,24 @@ pub(super) fn admit_selected_permission_basis<Schema>(
             "product World owner",
         ));
     }
-    if !application_basis.is_live(execution) {
+    let graph = application.runtime.primary_graph().ok_or_else(|| {
+        admission_denial(
+            WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
+            "primary graph",
+        )
+    })?;
+    let live = native.with_runtime_mut(
+        graph,
+        execution,
+        || {
+            admission_denial(
+                WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
+                "query native owner",
+            )
+        },
+        |runtime| Ok(application_basis.is_live_at(runtime)),
+    )?;
+    if !live {
         return Err(admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
             "retained product snapshot",

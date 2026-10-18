@@ -169,6 +169,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 /// borrows that same cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
+    OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
     None,
     RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
@@ -344,9 +345,12 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
     }
 }
 
+mod output_observation;
+
 impl std::error::Error for WorthQueryApplicationAttemptDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.cause {
+            AttemptDenialCause::OutputObservation(stop) => Some(stop.as_ref()),
             AttemptDenialCause::NativeQueryRead(stop) => Some(stop.as_ref()),
             AttemptDenialCause::RetainedSource(denial) => Some(denial.as_ref()),
             AttemptDenialCause::Allocation(denial) => Some(denial.as_ref()),

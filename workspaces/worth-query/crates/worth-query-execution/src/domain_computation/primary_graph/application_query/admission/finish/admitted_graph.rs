@@ -189,11 +189,12 @@ fn inventory_stop(
 }
 
 fn resource_denial(stop: CompanionPreflightStop) -> WorthQueryApplicationQueryAdmissionDenial {
-    match stop {
+    let denial = match stop {
         CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow => memory_unavailable(),
         _ => work_overflow(),
-    }
+    };
+    denial.with_preparation_stop(stop)
 }
 
 fn work_overflow() -> WorthQueryApplicationQueryAdmissionDenial {

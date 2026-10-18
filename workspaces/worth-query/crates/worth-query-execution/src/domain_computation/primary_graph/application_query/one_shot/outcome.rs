@@ -1,7 +1,3 @@
-use std::marker::PhantomData;
-
-use worth_query_declaration::facade::application_schema::ApplicationSchema;
-
 use super::custody_work::RetainedCustodyWork;
 use super::{
     admit_request, denial, validate_authentication_lifetime, validate_basis_lifetime,
@@ -20,13 +16,17 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-
+use std::marker::PhantomData;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
 mod ordinary;
-pub(in crate::domain_computation::primary_graph::application_query) use ordinary::finalize_one_shot;
+pub(in crate::domain_computation::primary_graph::application_query) use ordinary::{
+    complete_one_shot, finalize_one_shot, finalize_one_shot_with_decode,
+};
+mod completed;
+pub(in crate::domain_computation::primary_graph::application_query) use completed::CompletedOneShotRead;
 mod decode_denial;
 pub(in crate::domain_computation::primary_graph::application_query) use decode_denial::value_decode_denial;
-
-pub(in crate::domain_computation::primary_graph::application_query) fn finalize_one_shot_with_decode<
+pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_decode<
     Schema,
     Query,
     Parameters,
@@ -52,10 +52,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn finalize_
     authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
     read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-) -> Result<
-    WorthQueryApplicationOneShotResult<Query, QueryResult>,
-    WorthQueryApplicationOneShotDenial,
->
+) -> Result<CompletedOneShotRead<Query, QueryResult>, WorthQueryApplicationOneShotDenial>
 where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
@@ -390,11 +387,14 @@ where
         plan.governance.receipt(),
         kernel_receipt,
     );
-    Ok(WorthQueryApplicationOneShotResult {
-        rows,
-        observed_sources,
-        result_set_observation,
-        request_affinity,
-        receipt,
+    Ok(CompletedOneShotRead {
+        read: WorthQueryApplicationOneShotResult {
+            rows,
+            observed_sources,
+            result_set_observation,
+            request_affinity,
+            receipt,
+        },
+        authorization: plan.authorization,
     })
 }

@@ -4,6 +4,7 @@
 use std::collections::BTreeSet;
 mod computation_inputs;
 mod expected_keys;
+mod source_publications;
 pub(in crate::domain_computation::primary_graph) use computation_inputs::ObservedComputationInputs;
 pub(in crate::domain_computation::primary_graph) use expected_keys::ExpectedFactKeys;
 
@@ -23,6 +24,7 @@ use crate::domain_computation::primary_graph::application_contribution::{
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
+    source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
     /// The first read that failed. Its outcome depends on what its fact does
     /// not hold, so a handler or owner call that swallowed the failure has an
     /// outcome nothing retained, and the projection seals nothing.
@@ -138,6 +140,7 @@ impl DecisionReads {
     > {
         let Self {
             handler,
+            source_publications,
             failed,
             mut computation,
             runs,
@@ -150,7 +153,11 @@ impl DecisionReads {
         let handler = std::sync::Arc::new(handler);
         computation.retain_handler(std::sync::Arc::clone(&handler));
         let computation = std::sync::Arc::new(computation);
-        let expected = ExpectedFactKeys::new(handler, std::sync::Arc::clone(&computation));
+        let expected = ExpectedFactKeys::new(
+            handler,
+            std::sync::Arc::clone(&computation),
+            source_publications,
+        );
         let result = match runs {
             ComputationRuns::None => (
                 ObservedComputationInputs::None,

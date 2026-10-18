@@ -83,6 +83,7 @@ where
         if selected_product.is_some() {
             source_selection.admit_selected_producer::<Family>(&selected, registry_admission)?;
         }
+
         // Selection already returned the exact immutable entry from its sole
         // matching iterator. Retain that entry for this demand's Interest.
         registry_admission

@@ -16,6 +16,7 @@ impl PreparedCanonicalBranchMovement {
         companion_epoch: &super::super::CompanionRegistrationEpoch<'_>,
     ) -> Result<PreparedBranchPublicationPreflight, RelationalPublicationOutcome> {
         let PreparedRelationalPublicationParts {
+            companion_read,
             runtime_instance_id,
             candidate_id,
             publication_binding,
@@ -79,6 +80,13 @@ impl PreparedCanonicalBranchMovement {
                 }
             };
         let (companion, companion_binding) = match companion_epoch.active() {
+            Ok(None) if companion_read.is_some() => {
+                return Err(companion_stop_outcome(
+                    super::super::CompanionPreflightStop::RegistrationChanged,
+                    &publication_cell,
+                    &expected,
+                ))
+            }
             Ok(None) => (None, None),
             Err(super::super::PublicationCompanionRegistrationStop::RebindRequired) => {
                 return Err(RelationalPublicationOutcome::deferred(
@@ -142,6 +150,11 @@ impl PreparedCanonicalBranchMovement {
                 effect
                     .matches(&binding)
                     .map_err(|stop| companion_stop_outcome(stop, &publication_cell, &expected))?;
+                if let Some(condition) = &companion_read {
+                    effect.matches_read_condition(condition).map_err(|stop| {
+                        companion_stop_outcome(stop, &publication_cell, &expected)
+                    })?;
+                }
                 (Some(effect), Some(binding))
             }
         };

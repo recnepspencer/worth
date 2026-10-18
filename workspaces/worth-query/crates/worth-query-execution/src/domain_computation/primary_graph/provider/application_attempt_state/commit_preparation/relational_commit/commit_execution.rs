@@ -1,5 +1,7 @@
 //! The single authoritative Relational commit transition.
 
+mod availability;
+
 mod consumed_output;
 mod managed_unpublished;
 mod managed_views;
@@ -96,6 +98,13 @@ pub(super) fn commit(
         mut publication_admission,
         mut required_prerequisites,
     } = consumed_output::verify(&execution, provider, &mut attempt, before.as_snapshot())?;
+    let availability_fence = availability::prepare(
+        &execution,
+        provider,
+        &attempt,
+        before.as_snapshot(),
+        &mut publication_admission,
+    )?;
     let prepared_output_witness =
         crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
             &attempt,
@@ -135,6 +144,11 @@ pub(super) fn commit(
                 stop => stop,
             }
         })?;
+    if let Some(fence) = availability_fence {
+        fence
+            .bind(&mut candidate)
+            .map_err(native_output_witness_stop)?;
+    }
     let prepared_touched_records = touched_records::PreparedTouchedRecords::prepare(
         &candidate,
         &mut publication_admission,

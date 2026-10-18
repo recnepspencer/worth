@@ -14,6 +14,9 @@ impl WorthQueryApplicationObservedFact {
             return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
         }
         match self {
+            Self::SourcePublication { observation } => {
+                observation.remains_equal(runtime, execution, snapshot, maximum_work)
+            }
             Self::RetiredOutputEntity {
                 entity_id,
                 kind,

@@ -22,7 +22,10 @@ use super::{
 pub(super) fn reads_source(fact: &Fact) -> bool {
     matches!(
         fact,
-        Fact::SourceEntity { .. } | Fact::Entity { .. } | Fact::SourceFieldRevision { .. }
+        Fact::SourcePublication { .. }
+            | Fact::SourceEntity { .. }
+            | Fact::Entity { .. }
+            | Fact::SourceFieldRevision { .. }
     )
 }
 
@@ -73,6 +76,11 @@ impl PreparedFactRebase {
         if producer_output && reads_source(fact) {
             return Ok(
                 match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
+                    Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => match stop {
+                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Execution(cause) => Err(RebaseVerificationReason::Execution(cause)),
+                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Interrupted(event) => return Err(CompanionPreflightStop::Interrupted(event)),
+                        _ => Err(unavailable),
+                    },
                     Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
                         Err(RebaseVerificationReason::Execution(cause))
                     }

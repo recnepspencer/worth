@@ -135,7 +135,8 @@ pub(super) fn key_traversal_work(key: &super::fact_key::FactPostingKey) -> u64 {
         Key::FieldRevision { path, .. } | Key::IndexMembership { path, .. } => {
             path.fields().len() as u64 + 1
         }
-        Key::EntityLifecycle(_)
+        Key::SourcePublication(_)
+        | Key::EntityLifecycle(_)
         | Key::AspectRevision { .. }
         | Key::RelationMembership { .. }
         | Key::Adjacency { .. }

@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use super::{
     index_capacity, AppliedNativeMarking, CommitId, CompanionPreflightStop, DeliveryEpoch,
-    FactPostingKey, FullVerificationReason, IndexAdmission, MarkState, MarkingMeter,
-    NativeMarkingReport, RecordedSettlementIdentity, RetainedIndexAdmission, SettlementMarks,
+    FactPostingKey, FullVerificationReason, MarkState, MarkingMeter, NativeMarkingReport,
+    RecordedSettlementIdentity, RetainedIndexAdmission, SettlementMarks,
     WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
 };
 use im::OrdSet;
@@ -32,11 +32,32 @@ pub(super) fn apply(
             },
         });
     };
+    let affected = mark_keys(state, keys, meter, counts)?;
+    let affected = propagate(state, affected, meter, counts)?;
+    counts.visited_vertices =
+        u64::try_from(affected.len()).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
+    Ok(AppliedNativeMarking {
+        affected,
+        report: NativeMarkingReport {
+            commit,
+            precision: WorthQueryNativeMarkingPrecision::Exact(*counts),
+        },
+    })
+}
+
+/// The same native fact-ordinal marking for physical source publication and
+/// owner-issued publication completion. No second consumer registry is used.
+pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn mark_keys(
+    state: &mut MarkState,
+    keys: &[FactPostingKey],
+    meter: &mut impl RetainedIndexAdmission,
+    counts: &mut WorthQueryNativeMarkingWork,
+) -> Result<OrdSet<Arc<RecordedSettlementIdentity>>, CompanionPreflightStop> {
     let mut affected = OrdSet::new();
     for key in keys {
         // Probing the admitted commit's own keys is linear in that commit.
         // Marking work is spent only on matched postings and their closure.
-        meter.checkpoint()?;
+        meter.work(0)?;
         counts.posting_key_lookups = counts
             .posting_key_lookups
             .checked_add(1)
@@ -94,16 +115,7 @@ pub(super) fn apply(
             affected.insert(Arc::clone(&posting.settlement));
         }
     }
-    let affected = propagate(state, affected, meter, counts)?;
-    counts.visited_vertices =
-        u64::try_from(affected.len()).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-    Ok(AppliedNativeMarking {
-        affected,
-        report: NativeMarkingReport {
-            commit,
-            precision: WorthQueryNativeMarkingPrecision::Exact(*counts),
-        },
-    })
+    Ok(affected)
 }
 
 pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn propagate(

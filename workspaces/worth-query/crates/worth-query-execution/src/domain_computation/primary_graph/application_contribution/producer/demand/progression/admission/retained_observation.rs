@@ -249,6 +249,7 @@ where
                             retry(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
                                 .with_capacity_stop(Some(cause)),
                         ),
+                        Err(ConsumedOutputVerificationStop::SourceQueryAuthorization(kind)) => Err(crate::domain_computation::primary_graph::output_reuse::verification_denial(ConsumedOutputVerificationStop::SourceQueryAuthorization(kind), Family::IDENTITY)),
                         Err(ConsumedOutputVerificationStop::Unavailable) => Err(unavailable()),
                     }
                 })?;
@@ -274,6 +275,7 @@ where
             0, // This retained-read admission starts a new handle with no executions.
         );
         let mut admission = self.demand_request_admission();
+
         let observed_source = self
             .output_demands
             .retain_readmission_source(observed_source, limits, None, &mut admission)

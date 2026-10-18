@@ -22,6 +22,7 @@ use super::super::{
 use super::invariant::DecisionReader;
 
 mod indexed_selection;
+mod output_availability;
 mod prepared_selection;
 mod prior_member;
 

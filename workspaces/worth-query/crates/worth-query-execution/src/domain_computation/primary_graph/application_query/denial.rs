@@ -108,6 +108,7 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
 pub struct WorthQueryApplicationQueryAdmissionDenial {
     kind: WorthQueryApplicationQueryAdmissionDenialKind,
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
+    preparation_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     subject: String,
 }
 
@@ -119,6 +120,7 @@ impl WorthQueryApplicationQueryAdmissionDenial {
         Self {
             kind,
             authorization_denial: None,
+            preparation_stop: None,
             subject: subject.into(),
         }
     }
@@ -130,7 +132,18 @@ impl WorthQueryApplicationQueryAdmissionDenial {
             // would add an unretained allocation to the admitted path.
             subject: String::new(),
             authorization_denial: Some(Box::new(denial)),
+            preparation_stop: None,
         }
+    }
+
+    /// Keep the actual native refusal rather than erasing its required/maximum
+    /// amounts at the Query translation. This payload grants no read authority.
+    pub(in crate::domain_computation::primary_graph) fn with_preparation_stop(
+        mut self,
+        stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+    ) -> Self {
+        self.preparation_stop = Some(stop);
+        self
     }
 
     pub const fn kind(&self) -> WorthQueryApplicationQueryAdmissionDenialKind {
@@ -166,3 +179,15 @@ impl std::fmt::Display for WorthQueryApplicationQueryAdmissionDenial {
 }
 
 impl std::error::Error for WorthQueryApplicationQueryAdmissionDenial {}
+
+impl worth_execution::ChargedBytes for WorthQueryApplicationQueryAdmissionDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        (self.subject.capacity() as u64).saturating_add(self.authorization_denial.as_ref().map_or(
+            0,
+            |stop| {
+                (std::mem::size_of_val(stop.as_ref()) as u64)
+                    .saturating_add(stop.additional_charged_bytes())
+            },
+        ))
+    }
+}

@@ -31,9 +31,16 @@ mod governance_affinity_tests;
 mod graph_read_plan_binding;
 mod installed_schema_currentness;
 mod live;
+mod native_access;
+pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;
 pub(in crate::domain_computation::primary_graph) mod observed_source;
 mod one_shot;
+mod output_source_observation;
 pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;
+pub(in crate::domain_computation::primary_graph) use output_source_observation::{
+    ObservedQuerySource, SourceQueryObservationStop, SourceQueryReadClosure,
+    SourceQueryReaderAccess,
+};
 mod projection;
 mod read_execution;
 pub use read_execution::{

@@ -11,6 +11,11 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 /// revision evidence; a match identifies the retained fact to verify.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(super) enum FactPostingKey {
+    SourcePublication(
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress,
+        >,
+    ),
     EntityLifecycle(EntityId),
     AspectRevision {
         entity: EntityId,
@@ -47,6 +52,7 @@ impl FactPostingKey {
     /// returned bytes before cloning the key.
     pub(super) fn owned_payload_capacity_bytes(&self) -> Option<u64> {
         let (aspect, path, value) = match self {
+            Self::SourcePublication(_) => return Some(0),
             Self::AspectRevision { aspect, .. } => (Some(aspect), None, None),
             Self::FieldRevision { aspect, path, .. } => (Some(aspect), Some(path), None),
             Self::IndexMembership {
@@ -88,6 +94,7 @@ impl FactPostingKey {
         // One visit for the discriminant and each fixed scalar. EntityId has
         // partition, slot and generation; its phantom domain has no work.
         match self {
+            Self::SourcePublication(_) => Some(8 + 4 * 32),
             Self::EntityLifecycle(_) => Some(4),
             Self::IndexDefinition(_) => Some(2),
             Self::RelationMembership { .. } => Some(8),

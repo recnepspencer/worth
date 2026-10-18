@@ -27,6 +27,40 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
 where
     Schema: ApplicationSchema,
 {
+    validate_one_shot_plan_with_native_access(
+        execution,
+        application,
+        plan,
+        &mut super::super::ApplicationQueryNativeAccess::acquire(),
+    )
+}
+
+pub(in crate::domain_computation::primary_graph::application_query) fn validate_one_shot_plan_with_native_access<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    plan: &WorthQueryAdmittedApplicationQueryPlan<
+        '_,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >,
+    native: &mut super::super::ApplicationQueryNativeAccess<'_>,
+) -> Result<(), WorthQueryApplicationOneShotDenial>
+where
+    Schema: ApplicationSchema,
+{
     validate_plan_owner(application, plan)?;
     if plan.controls.lane()
         != worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane::OneShot
@@ -41,7 +75,26 @@ where
     admit_request(request, plan.query.name())?;
     validate_basis_lifetime(&plan.controls, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
-    if !plan.basis.is_live(execution) {
+    let graph = application.runtime.primary_graph().ok_or_else(|| {
+        denial(
+            WorthQueryApplicationOneShotDenialKind::ForeignPlan,
+            plan.query.name(),
+            plan.query.name(),
+        )
+    })?;
+    let live = native.with_runtime_mut(
+        graph,
+        execution,
+        || {
+            denial(
+                WorthQueryApplicationOneShotDenialKind::ForeignPlan,
+                plan.query.name(),
+                plan.query.name(),
+            )
+        },
+        |runtime| Ok(plan.basis.is_live_at(runtime)),
+    )?;
+    if !live {
         return Err(denial(
             WorthQueryApplicationOneShotDenialKind::BasisUnavailable,
             plan.query.name(),

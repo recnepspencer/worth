@@ -100,6 +100,7 @@ pub(super) fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFac
     matches!(
         fact,
         WorthQueryApplicationObservedFact::RetiredOutputEntity { .. }
+            | WorthQueryApplicationObservedFact::SourcePublication { .. }
             | WorthQueryApplicationObservedFact::SourceEntity { .. }
             | WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
             | WorthQueryApplicationObservedFact::SourceFieldRevision { .. }

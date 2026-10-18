@@ -81,3 +81,9 @@ impl std::fmt::Display for WorthQueryEntityResolutionDenial {
 }
 
 impl std::error::Error for WorthQueryEntityResolutionDenial {}
+
+impl worth_execution::ChargedBytes for WorthQueryEntityResolutionDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.subject.capacity() as u64
+    }
+}

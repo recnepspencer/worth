@@ -43,31 +43,70 @@ pub(super) fn verify(
             .iter()
             .try_for_each(|consumed| {
                 consumed
-                    .establish_restored_before_commit(execution, &provider.graph.source_owner, &mut admission)
+                    .establish_restored_before_commit(
+                        execution,
+                        &provider.graph.source_owner,
+                        &mut admission,
+                    )
                     .map_err(PrecommitOutputStop::Verification)
             })
-            .and_then(|()| provider
-        .graph
-        .with_runtime(execution, |runtime| {
-            let selected = runtime
-                .read_truth()
-                .positioned_snapshot(before)
-                .map_err(|_| PrecommitOutputStop::SelectedUnavailable)?;
-            let current = ConsumedOutputEvidence::verify_many_with_admission(execution,
-                attempt.consumed_outputs(),
+            .and_then(|()| {
+                provider.graph.with_runtime(execution, |runtime| {
+                    let selected = runtime
+                        .read_truth()
+                        .positioned_snapshot(before)
+                        .map_err(|_| PrecommitOutputStop::SelectedUnavailable)?;
+                    let current = ConsumedOutputEvidence::verify_many_with_admission(
+                        execution,
+                        attempt.consumed_outputs(),
+                        owner,
+                        runtime,
+                        before,
+                        &selected,
+                        &mut admission,
+                    )
+                    .map_err(PrecommitOutputStop::Verification)?;
+                    if current != ConsumedOutputVerification::Current {
+                        return Err(PrecommitOutputStop::Changed);
+                    }
+                    Ok::<(), PrecommitOutputStop>(())
+                })
+            })
+            .map_err(publication_stop)?;
+    }
+    let required_prerequisites = if let Some(context) = context {
+        let prepared = context
+            .prepare_prerequisites(
+                attempt.consumed_outputs().iter(),
                 owner,
-                runtime,
-                before,
-                &selected,
                 &mut admission,
             )
-            .map_err(PrecommitOutputStop::Verification)?;
-            if current != ConsumedOutputVerification::Current {
-                return Err(PrecommitOutputStop::Changed);
-            }
-            Ok::<(), PrecommitOutputStop>(())
-        }))
-        .map_err(|stop| match stop {
+            .map_err(|denial| {
+                WorthQueryProviderSessionCommitStop::Deferred(
+                    crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
+                        denial,
+                        "required output prerequisites could not be admitted before publication",
+                    ),
+                )
+            })?;
+        Some(prepared)
+    } else {
+        None
+    };
+    Ok(VerifiedConsumedOutputPublication {
+        publication_admission: admission,
+        required_prerequisites,
+    })
+}
+
+pub(super) fn verification_stop(
+    stop: ConsumedOutputVerificationStop,
+) -> WorthQueryProviderSessionCommitStop {
+    publication_stop(PrecommitOutputStop::Verification(stop))
+}
+
+fn publication_stop(stop: PrecommitOutputStop) -> WorthQueryProviderSessionCommitStop {
+    match stop {
             PrecommitOutputStop::Verification(
                 ConsumedOutputVerificationStop::RetryCurrentness(cause),
             ) => WorthQueryProviderSessionCommitStop::Deferred(
@@ -82,9 +121,28 @@ pub(super) fn verify(
                 super::stops::interruption_control_stopped(event),
             ),
             PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(cause)) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
+            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::SourceQueryAuthorization(kind)) => {
+                use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Authorization;
+                let detail = "source query authorization is no longer current";
+                match kind {
+                    Authorization::Stopped(Err(control)) => WorthQueryProviderSessionCommitStop::ControlStopped(
+                        crate::domain_computation::WorthQueryProviderSessionCommitControlStopped::new(control, detail),
+                    ),
+                    Authorization::Stopped(Ok(denial)) => WorthQueryProviderSessionCommitStop::PreEffectDenied(
+                        crate::domain_computation::WorthQueryProviderSessionFailure::checked_read_stopped(
+                            Ok(denial), WorthQueryProviderSessionProtocolStage::Commit, detail,
+                        ).with_source_query_authorization_stop(kind),
+                    ),
+                    Authorization::Refused(_) => WorthQueryProviderSessionCommitStop::PreEffectDenied(
+                        provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail)
+                            .with_source_query_authorization_stop(kind),
+                    ),
+                }
+            }
             other => {
                 let detail = match other {
                     PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(_)) => unreachable!("request execution routed above"),
+                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => unreachable!("source query authorization routed above"),
                     PrecommitOutputStop::SelectedUnavailable => {
                         "selected native root is unavailable for output evidence"
                     }
@@ -113,29 +171,5 @@ pub(super) fn verify(
                     detail,
                 ))
             }
-        })?;
     }
-    let required_prerequisites = if let Some(context) = context {
-        let prepared = context
-            .prepare_prerequisites(
-                attempt.consumed_outputs().iter(),
-                owner,
-                &mut admission,
-            )
-            .map_err(|denial| {
-                WorthQueryProviderSessionCommitStop::Deferred(
-                    crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
-                        denial,
-                        "required output prerequisites could not be admitted before publication",
-                    ),
-                )
-            })?;
-        Some(prepared)
-    } else {
-        None
-    };
-    Ok(VerifiedConsumedOutputPublication {
-        publication_admission: admission,
-        required_prerequisites,
-    })
 }

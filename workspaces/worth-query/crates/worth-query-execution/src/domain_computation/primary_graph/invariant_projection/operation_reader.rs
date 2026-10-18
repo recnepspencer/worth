@@ -9,6 +9,7 @@ use worth_query_installation::facade::{
     WorthQueryOperationGraphReadContract, WritePosture,
 };
 
+mod admitted_projection;
 mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
 mod computation_calls;
@@ -16,6 +17,11 @@ mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;
 mod decision_plan;
 mod decision_reads;
+mod output_availability;
+pub use output_availability::{
+    WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
+    WorthQueryOutputAvailabilityState,
+};
 mod prior_output;
 
 pub(in crate::domain_computation::primary_graph) use computation_calls::{
@@ -61,6 +67,8 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     Operation,
 > {
     reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
+    source_query: Option<&'reader crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<'reader, Schema>>,
+    source_context_use: Option<&'reader std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
     admitted_graph_reads: Option<&'reader WorthQueryOperationGraphReadContract>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
@@ -150,6 +158,8 @@ where
                 let mut operation_reader =
                     WorthQueryApplicationOperationInvariantProjectionReader {
                         reader,
+                        source_query: None,
+                        source_context_use: None,
                         admitted_graph_reads: None,
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
@@ -197,6 +207,8 @@ where
                 let mut operation_reader =
                     WorthQueryApplicationOperationInvariantProjectionReader {
                         reader,
+                        source_query: None,
+                        source_context_use: None,
                         admitted_graph_reads: None,
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
@@ -276,69 +288,14 @@ where
         WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output>,
         WorthQueryOperationProjectionDenial,
     > {
-        admission.validate_projection_authority(self.runtime_authority, &self.binding_identity)?;
-        let product = admission
-            .graph_work()
-            .mutation_lease()
-            .expect("admitted operation retains its selected mutation lease")
-            .product()
-            .retained_clone();
-        let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
-        let completed = self
-            .project_bounded(
-                execution,
-                admission.allowed_graph_contract().projection_work_budget(),
-                product.relational_basis().clone(),
-                |reader| {
-                    reader.selected_product_occurrence =
-                        Some(product.observation().lifecycle_incarnation());
-                    reader.selected_product_generation =
-                        Some(product.observation().reference_generation().get());
-                    reader.selected_source_partition_identity =
-                        admission.source_partition_identity();
-                    let mut decision_facts = admission
-                        .computation_prior()
-                        .map_or_else(DecisionReads::default, DecisionReads::with_prior);
-                    let mut operation_reader =
-                        WorthQueryApplicationOperationInvariantProjectionReader {
-                            reader,
-                            admitted_graph_reads: Some(
-                                admission.allowed_graph_contract().graph_reads(),
-                            ),
-                            runtime_authority: self.runtime_authority,
-                            binding_identity: &self.binding_identity,
-                            admission_identity: Some(admission.admission_identity()),
-                            operation_scope: Some(admission.operation_scope_binding().clone()),
-                            decision_facts: &mut decision_facts,
-                            _operation: PhantomData,
-                            request_local: PhantomData,
-                        };
-                    operation_reader
-                        .reader
-                        .realized_scope
-                        .record(admission.scope_entity_id());
-                    let scope = WorthQueryInvariantEntityIdentity {
-                        entity_id: admission.scope_entity_id(),
-                        kind: admission.scope_entity_kind(),
-                        entity: Arc::from(admission.scope_entity_name()),
-                        authority_identity: operation_reader.reader.authority_identity,
-                        _marker: PhantomData,
-                    };
-                    let output = projection(&mut operation_reader, &scope);
-                    (output, decision_facts)
-                },
-                Some(admission.publication_request()),
-                allocation_control.policy(),
-            )
-            .map_err(|denial| {
-                WorthQueryOperationProjectionDenial::from_invariant(denial, admission.operation())
-            })?;
-        Ok(WorthQueryCompletedOperationInvariantProjection {
-            completed,
-            admission_identity: admission.admission_identity(),
-            product,
-            _operation: PhantomData,
-        })
+        self.project_admitted_operation_with_source_access(
+            execution,
+            admission,
+            projection,
+            allocation_policy,
+            None,
+            None,
+        )
     }
 }
 

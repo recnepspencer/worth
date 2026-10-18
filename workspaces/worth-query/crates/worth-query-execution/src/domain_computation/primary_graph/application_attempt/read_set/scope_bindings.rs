@@ -8,9 +8,13 @@ use worth_query_installation::facade::{
 
 /// Descriptive position only. No source, permission or currentness grant.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct InstalledScopePosition {
-    role: usize,
-    scope: usize,
+pub(in crate::domain_computation::primary_graph) enum InstalledScopePosition {
+    Physical {
+        role: usize,
+        scope: usize,
+    },
+    /// Descriptive only; the sealed native read validates its own query authority.
+    SourceQuery,
 }
 impl InstalledScopePosition {
     pub(super) fn from_installed(contracts: &Contracts, scope: &Scope) -> Option<Self> {
@@ -24,16 +28,19 @@ impl InstalledScopePosition {
                     .read_scopes()
                     .iter()
                     .position(|candidate| std::ptr::eq(candidate, scope))
-                    .map(|scope| Self { role, scope })
+                    .map(|scope| Self::Physical { role, scope })
             })
     }
     pub(super) fn resolve(self, contracts: &Contracts) -> Option<&Scope> {
+        let Self::Physical { role, scope } = self else {
+            return None;
+        };
         contracts
             .graph_reads()
             .roles()
-            .get(self.role)?
+            .get(role)?
             .read_scopes()
-            .get(self.scope)
+            .get(scope)
     }
 }
 

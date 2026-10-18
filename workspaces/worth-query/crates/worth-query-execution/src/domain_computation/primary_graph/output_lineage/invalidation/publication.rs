@@ -76,7 +76,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
     )?;
     let stale_at_read_basis = own_effect_stale_ordinals(application, admission).map_err(stopped)?;
     owner
-        .register_settlement(
+        .register_completed_settlement(
             SettlementRegistration {
                 computation,
                 work_membership,
@@ -88,6 +88,10 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
                 requirement: None,
                 upstream,
             },
+            application
+                .commit_evidence()
+                .idempotency()
+                .source_partition_identity(),
             admission,
         )
         .map_err(registration_reason)

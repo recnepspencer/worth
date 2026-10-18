@@ -137,7 +137,10 @@ pub(super) fn execution_failed(
 ) -> ProducerExecutionStop {
     let error = match error {
         MutationHandlerExecutionDenial::Handler(error) => {
-            return handler_execution_failed(subject, error).into()
+            if let Some(stop) = availability_stop(&error) {
+                return request_admission_rejected(stop);
+            }
+            return handler_execution_failed(subject, error).into();
         }
         error => error,
     };
@@ -246,6 +249,9 @@ pub(super) fn handler_execution_failed(
     subject: &str,
     error: crate::domain_computation::primary_graph::HandlerExecutionDenial,
 ) -> WorthQueryOutputDemandDenial {
+    if let Some(stop) = availability_stop(&error) {
+        return stop;
+    }
     match error
         .downcast::<crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial>()
     {
@@ -260,6 +266,19 @@ pub(super) fn handler_execution_failed(
         }
         Err(error) => failed(subject, error),
     }
+}
+
+fn availability_stop(
+    error: &(dyn std::error::Error + 'static),
+) -> Option<WorthQueryOutputDemandDenial> {
+    let mut source = Some(error);
+    while let Some(error) = source {
+        if let Some(stop) = error.downcast_ref::<crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial>() {
+            return Some(stop.demand_stop());
+        }
+        source = error.source();
+    }
+    None
 }
 
 /// The producer's key or input did not encode; the denial names which one.

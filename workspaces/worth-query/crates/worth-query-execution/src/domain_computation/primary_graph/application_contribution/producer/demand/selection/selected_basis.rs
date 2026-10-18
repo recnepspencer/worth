@@ -36,6 +36,33 @@ where
             admission,
             retained_program_basis,
             Some(shared),
+            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire(),
+        )
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn select_output_producer_for_observation<
+        Family,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &WorthQueryObservedSource<
+            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
+        >,
+        profile_kind: &'static str,
+        admission: &mut InvalidationEditAdmission,
+        shared: &SharedSelectedProductOperation<'_, Schema>,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        self.select_output_producer_with_remaining_core::<Family>(
+            execution,
+            source,
+            profile_kind,
+            admission,
+            None,
+            Some(shared),
+            native,
         )
     }
 }

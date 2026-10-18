@@ -23,6 +23,9 @@ pub enum WorthQueryCurrentOutputDenialKind {
     /// The projection has no selected product, or the output family is not
     /// installed for this operation's binding.
     FamilyUnavailable,
+    SourceQueryAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
     /// No recorded output is current: each was produced from source state that
     /// has since changed. A change to the producer itself reports
     /// `OutputUnavailable` instead.
@@ -93,3 +96,13 @@ impl std::fmt::Display for WorthQueryCurrentOutputDenial {
 }
 
 impl std::error::Error for WorthQueryCurrentOutputDenial {}
+
+impl worth_execution::ChargedBytes for WorthQueryCurrentOutputDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        if self.requested_output.is_some() {
+            u64::MAX
+        } else {
+            self.subject.capacity() as u64
+        }
+    }
+}

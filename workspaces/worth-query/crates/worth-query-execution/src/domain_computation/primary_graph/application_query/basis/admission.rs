@@ -39,15 +39,35 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_app
 where
     Schema: ApplicationSchema,
 {
+    admit_application_query_permission_basis_with_native_access(
+        execution,
+        application,
+        basis,
+        &mut super::super::ApplicationQueryNativeAccess::acquire(),
+    )
+}
+
+pub(in crate::domain_computation::primary_graph::application_query) fn admit_application_query_permission_basis_with_native_access<
+    Schema,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    basis: WorthQueryApplicationQueryBasis,
+    native: &mut super::super::ApplicationQueryNativeAccess<'_>,
+) -> Result<super::WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial>
+where
+    Schema: ApplicationSchema,
+{
     match basis {
         WorthQueryApplicationQueryBasis::Selected {
             product,
             application_basis,
-        } => super::product_admission::admit_selected_permission_basis(
+        } => super::product_admission::admit_selected_permission_basis_with_native_access(
             execution,
             application,
             product,
             application_basis,
+            native,
         ),
         WorthQueryApplicationQueryBasis::RetainedContinuation { .. } => {
             Err(super::admission_denial::admission_denial(

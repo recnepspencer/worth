@@ -1,3 +1,4 @@
+mod read_condition;
 use std::cell::Cell;
 use std::marker::PhantomData;
 
@@ -24,6 +25,7 @@ pub struct PreparedRelationalCommitCandidate {
 }
 
 pub(crate) struct CandidatePayload {
+    companion_read: Option<super::companion::CompanionReadCondition>,
     expected_basis: crate::branch::RelationalBranchBasisDescriptor,
     expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
     publication_cell: crate::branch::RelationalBranchPublicationCell,
@@ -34,6 +36,7 @@ pub(crate) struct CandidatePayload {
 }
 
 pub(super) struct PreparedRelationalPublicationParts {
+    pub(super) companion_read: Option<super::companion::CompanionReadCondition>,
     pub(super) runtime_instance_id: u64,
     pub(super) candidate_id: u64,
     pub(super) publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
@@ -102,6 +105,7 @@ impl PreparedRelationalCommitCandidate {
             .unwrap_or_else(std::time::Instant::now);
         let reservation_count = execution.reservation_count();
         let payload = std::sync::Arc::new(std::sync::Mutex::new(Some(CandidatePayload {
+            companion_read: None,
             expected_basis,
             expected_root,
             publication_cell,
@@ -271,6 +275,7 @@ impl PreparedRelationalCommitCandidate {
         self.consumed = true;
         let (movement, completion) = payload.execution.split(payload.published_snapshot_slot);
         Ok(PreparedRelationalPublicationParts {
+            companion_read: payload.companion_read,
             runtime_instance_id: self.runtime_instance_id,
             candidate_id: self.candidate_id,
             publication_binding: self.publication_binding.clone(),

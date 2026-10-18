@@ -21,6 +21,13 @@ pub struct PreparedPublicationCompanionEffect {
 }
 
 impl PreparedPublicationCompanionEffect {
+    pub(in crate::mvcc) fn matches_read_condition(
+        &self,
+        condition: &super::super::cell::CompanionReadCondition,
+    ) -> Result<(), super::CompanionPreflightStop> {
+        condition.matches_reserved(&self.cell, &self.pinned_image)
+    }
+
     /// The caller funds this scheduling observer before native publication.
     /// It never changes the authority or selected-image checks of the effect.
     pub fn attach_completion_observer(

@@ -1,6 +1,10 @@
+mod output_availability_candidate;
+pub(in crate::domain_computation::primary_graph) use output_availability_candidate::{
+    ObservedOutputCandidate, ObservedOutputPosture,
+};
 mod admission_denial;
 mod aggregate;
-mod consumed_output;
+pub(in crate::domain_computation::primary_graph) mod consumed_output;
 mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
 mod field_projection;
@@ -11,6 +15,10 @@ mod inventory;
 mod locked_reader;
 mod operation_projection_denial;
 mod operation_reader;
+pub use operation_reader::{
+    WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
+    WorthQueryOutputAvailabilityState,
+};
 mod realized_scope;
 mod relation_identity;
 mod traversal;

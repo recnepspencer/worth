@@ -1,3 +1,5 @@
+#[path = "leased_preparation/companion_read.rs"]
+mod companion_read;
 use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 #[path = "leased_preparation/declared_index_ceiling.rs"]
 mod leased_preparation_declared_index_ceiling;

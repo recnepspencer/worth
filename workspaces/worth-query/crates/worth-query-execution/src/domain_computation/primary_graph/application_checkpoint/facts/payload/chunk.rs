@@ -100,7 +100,8 @@ pub(super) fn deep_clone_bytes(fact: &Fact) -> Option<u64> {
             .checked_add(size(value.owned_allocation_capacity_bytes())?)?
             .checked_add(bytes(candidates)?),
         Fact::WorkflowInstanceCapacity { instances, .. } => bytes(instances),
-        Fact::SourceEntity { .. }
+        Fact::SourcePublication { .. }
+        | Fact::SourceEntity { .. }
         | Fact::Entity { .. }
         | Fact::SourceAdjacencyRevision { .. }
         | Fact::WorkflowDefinitionPredecessor { .. }

@@ -25,12 +25,6 @@ pub(in crate::domain_computation::primary_graph) struct PreparedApplicationQuery
 }
 
 impl<'a, Schema> PreparedApplicationQuerySourceReadmission<'a, Schema> {
-    pub(in crate::domain_computation::primary_graph) fn query_identity(
-        &self,
-    ) -> &WorthQueryInstalledApplicationQueryIdentity {
-        &self.query_identity
-    }
-
     pub(in crate::domain_computation::primary_graph) fn into_parts(
         self,
     ) -> (
@@ -40,13 +34,14 @@ impl<'a, Schema> PreparedApplicationQuerySourceReadmission<'a, Schema> {
         (self.parameters, self.controls)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn selected_basis(
-        &self,
-    ) -> Option<(
-        &crate::basis::WorthQueryProductObservationLease,
-        &worth_relational::facade::snapshots::SnapshotHandle,
-    )> {
-        self.controls.selected_basis()
+    pub(in crate::domain_computation::primary_graph::application_query) fn into_permission_parts(
+        self,
+    ) -> (
+        WorthQueryInstalledApplicationQueryIdentity,
+        WorthQueryAdmittedApplicationQueryParameters,
+        WorthQueryApplicationQueryControls<'a, Schema>,
+    ) {
+        (self.query_identity, self.parameters, self.controls)
     }
 }
 

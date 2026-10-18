@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalK
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
-    pub(in crate::domain_computation::primary_graph) fn resolve_entity_admitted<
+    pub(in crate::domain_computation::primary_graph) fn resolve_entity_admitted_with_native_access<
         Aspect,
         Entity,
         Field,
@@ -28,6 +28,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         value: Value,
         request: &WorthQueryRequestScope,
         admission: &mut InvalidationEditAdmission,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
         Field: DeclaredApplicationFieldValue<Value = Value>,
@@ -140,7 +141,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .admit_read_scratch(copy_bytes)
             .and_then(|()| admission.charge_external_work(copy_work))
             .map_err(|stop| selected_index_admission_denial(stop, field.field()))?;
-        self.resolve_encoded_entity_admitted(
+        self.resolve_encoded_entity_admitted_with_native_access(
             execution,
             field.entity(),
             field.field(),
@@ -149,6 +150,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             index,
             installed_field,
             admission,
+            native,
         )
     }
 }

@@ -107,9 +107,7 @@ where
         Ok(receipt) => receipt,
         Err(failure) => {
             let _ = staged.abort();
-            return WorthQueryProviderReadSetProgression::Terminal(Progression::Denied(
-                WorthQueryApplicationCommitDenial::decision_read_set_denied(failure),
-            ));
+            return WorthQueryProviderReadSetProgression::Terminal(read_set_failure(failure));
         }
     };
     match authority.provider().compare_application_read_set(execution,
@@ -130,7 +128,7 @@ where
         }
         Err(failure) => {
             let _ = staged.abort();
-            WorthQueryProviderReadSetProgression::Terminal(Progression::Denied(WorthQueryApplicationCommitDenial::decision_read_set_denied(failure)))
+            WorthQueryProviderReadSetProgression::Terminal(read_set_failure(failure))
         }
     }
 }
@@ -286,5 +284,21 @@ where
                 ),
             ))
         }
+    }
+}
+
+/// The read owner already identified the original request's first stop.
+/// Preserve that control outcome instead of terminalizing its producer row.
+fn read_set_failure(
+    failure: crate::domain_computation::WorthQueryDecisionReadSetFailure,
+) -> Progression {
+    use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
+    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+    match failure.kind() {
+        Kind::RequestInterrupted(Stop::Cancelled) => Progression::Cancelled,
+        Kind::RequestInterrupted(Stop::DeadlineExceeded) => Progression::TimedOut,
+        _ => Progression::Denied(WorthQueryApplicationCommitDenial::decision_read_set_denied(
+            failure,
+        )),
     }
 }

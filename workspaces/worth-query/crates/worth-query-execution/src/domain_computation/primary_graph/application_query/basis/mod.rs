@@ -11,6 +11,7 @@ mod truth_view_admission;
 
 pub(super) use admission::{
     admit_application_query_basis, admit_application_query_permission_basis,
+    admit_application_query_permission_basis_with_native_access,
 };
 pub(super) use admission_denial::admission_denial;
 #[cfg(test)]
@@ -19,5 +20,7 @@ pub(in crate::domain_computation::primary_graph) use execution_custody::WorthQue
 #[cfg(test)]
 pub(crate) use historical_authority::WorthQueryApplicationHistoricalRead;
 pub(super) use index_currency_denial::map_index_currency_denial;
-pub(super) use selected_indexes::ensure_selected_read_indexes_admitted;
 pub(in crate::domain_computation::primary_graph) use selected_indexes::PreparedSelectedReadIndexes;
+pub(super) use selected_indexes::{
+    ensure_selected_read_indexes_admitted, ensure_selected_read_indexes_admitted_with_native_access,
+};

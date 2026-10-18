@@ -285,3 +285,15 @@ mod tests {
         );
     }
 }
+
+impl worth_execution::ChargedBytes for WorthQueryPrincipalResolutionDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        // The shared native read-stop has no resident transport contract here.
+        // Refuse retained error storage rather than underquote its native backing.
+        if self.native_query_read_stop.is_some() {
+            u64::MAX
+        } else {
+            self.binding.capacity() as u64
+        }
+    }
+}

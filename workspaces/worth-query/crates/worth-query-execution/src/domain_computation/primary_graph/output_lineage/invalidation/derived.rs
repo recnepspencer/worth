@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
+mod completion_cues;
 mod exceptional_epoch;
+mod output_publication;
 
 use im::OrdSet;
 use worth_relational::facade::{
@@ -30,7 +32,7 @@ pub(in crate::domain_computation::primary_graph) use prepared::{
     PreparedSettlementRegistration, SettlementRegistrationCleanup, StoppedSettlementRegistration,
 };
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum SettlementRegistrationStop {
     Alignment(FullVerificationReason),
     /// The registration's basis or equality belongs to another source.
@@ -246,6 +248,7 @@ impl SourceInvalidationOwner {
             registration,
             RegistrationReadBasis::RetainedReadAllowed,
             None,
+            None,
             admission,
         )
     }
@@ -255,6 +258,7 @@ impl SourceInvalidationOwner {
         registration: SettlementRegistration,
         basis: RegistrationReadBasis,
         equality: Option<&StableEqualityConsequence<'_>>,
+        publication_partition: Option<[u8; 32]>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedSettlementRegistration, SettlementRegistrationStop> {
         let selected = &registration.read_basis;
@@ -331,6 +335,19 @@ impl SourceInvalidationOwner {
         if let Some(equality) = equality {
             equality::certify(&mut state, equality, admission)?;
         }
+        let completion_cues = if let Some(partition) = publication_partition {
+            let affected = super::output_availability::record_completion(
+                &mut state,
+                &registered_identity,
+                partition,
+                admission,
+            )?;
+            Some(completion_cues::PreparedCompletionCues::prepare(
+                self, &state, &affected, admission,
+            )?)
+        } else {
+            None
+        };
         admission.work(3)?;
         admission.ordered_read(state.settlements.len())?;
         let work_cue = state.settlements.get(&registered_identity).and_then(|row| {
@@ -350,6 +367,7 @@ impl SourceInvalidationOwner {
             admission,
         )?;
         let mut prepared = self.prepare_root_replacement(cell, image, Arc::new(root), admission)?;
+        prepared.retain_completion_cues(completion_cues);
         if let Some(membership) = work_cue {
             prepared.retain_work_cue(membership, registered_identity);
         }

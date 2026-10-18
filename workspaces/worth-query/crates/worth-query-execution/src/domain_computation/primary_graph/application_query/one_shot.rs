@@ -27,9 +27,8 @@ use denial::{authorization_denial, denial};
 pub use denial::{WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind};
 
 use super::authorized_read::{
-    execute_authorized_read, execute_selected_authorized_read, refresh_governed_authorization,
-    SelectedAuthorizationCurrentnessStop, SelectedAuthorizedReadStop,
-    WorthQueryAuthorizedApplicationReadDenial,
+    execute_authorized_read, refresh_governed_authorization, SelectedAuthorizationCurrentnessStop,
+    SelectedAuthorizedReadStop, WorthQueryAuthorizedApplicationReadDenial,
 };
 use super::read_execution::{
     read_bounded_root_rows, OneShotReadWorkObservation,
@@ -59,6 +58,7 @@ pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
 
 /// The admitted read keeps its original semantic denial and accounts for
 /// newly performed Query execution work on either outcome.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryAdmittedOneShotStop {
     Admission(CompanionPreflightStop),
     WorkUnavailable,

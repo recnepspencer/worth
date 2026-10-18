@@ -7,7 +7,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use super::*;
 use crate::domain_computation::primary_graph::application_query::{
     admission::permission::PreparedApplicationQueryPermission,
-    basis::ensure_selected_read_indexes_admitted, disclosure::WorthQueryApplicationQueryGovernance,
+    disclosure::WorthQueryApplicationQueryGovernance,
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::provider_session::WorthQueryAdmittedQuerySessionStartStop;
@@ -39,6 +39,46 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Scope,
         >,
         admission: &mut InvalidationEditAdmission,
+    ) -> Result<
+        WorthQueryAdmittedApplicationQueryPlan<
+            'a,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        WorthQueryApplicationQueryAdmissionDenial,
+    > {
+        self.finish_prepared_application_query_permission_with_native_access(execution, permission, admission,
+            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn finish_prepared_application_query_permission_with_native_access<
+        'a,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        permission: PreparedApplicationQueryPermission<
+            'a,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        admission: &mut InvalidationEditAdmission,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<
         WorthQueryAdmittedApplicationQueryPlan<
             'a,
@@ -94,12 +134,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             disclosure,
             admission,
         )?;
-        let indexes = ensure_selected_read_indexes_admitted(
+        let indexes = crate::domain_computation::primary_graph::application_query::basis::ensure_selected_read_indexes_admitted_with_native_access(
             execution,
             graph,
             query,
             basis.selected_product().relational_basis(),
             admission,
+            native,
         )?;
         let index_posture = WorthQueryQueryIndexPosture::SelectedInstalled(indexes);
         validate_admission_request(controls.request_scope(), query.name())?;
@@ -286,5 +327,5 @@ fn prepared_session_resource_denial(
         }
         _ => WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
     };
-    denial(kind, String::new())
+    denial(kind, String::new()).with_preparation_stop(stop)
 }

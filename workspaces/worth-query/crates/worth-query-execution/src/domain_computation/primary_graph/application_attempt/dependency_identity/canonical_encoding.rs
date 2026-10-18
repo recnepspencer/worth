@@ -11,6 +11,7 @@ use super::super::WorthQueryApplicationObservedFact;
 
 mod canonical_digest;
 mod indexed_selection;
+mod source_publication;
 mod workflow_fact;
 pub(super) use canonical_digest::derive_identity;
 
@@ -77,6 +78,9 @@ fn append_fact(
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::SourcePublication { observation } => {
+            source_publication::append(entries, prefix, observation)
+        }
         WorthQueryApplicationObservedFact::RetiredOutputEntity {
             entity_id,
             kind: entity_kind,

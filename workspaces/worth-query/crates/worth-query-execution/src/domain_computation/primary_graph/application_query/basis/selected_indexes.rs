@@ -29,6 +29,30 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
     basis: &AdmittedRelationalBranchBasis,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<PreparedSelectedReadIndexes, WorthQueryApplicationQueryAdmissionDenial> {
+    ensure_selected_read_indexes_admitted_with_native_access(
+        execution,
+        graph,
+        query,
+        basis,
+        admission,
+        &mut super::super::ApplicationQueryNativeAccess::acquire(),
+    )
+}
+
+pub(in crate::domain_computation::primary_graph::application_query) fn ensure_selected_read_indexes_admitted_with_native_access<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Scope,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &WorthQueryPrimaryGraph,
+    query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    basis: &AdmittedRelationalBranchBasis,
+    admission: &mut InvalidationEditAdmission,
+    native: &mut super::super::ApplicationQueryNativeAccess<'_>,
+) -> Result<PreparedSelectedReadIndexes, WorthQueryApplicationQueryAdmissionDenial> {
     // Installed contract, root-selection mode, and optional live-target visits.
     admission
         .charge_external_work(3)
@@ -60,8 +84,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
         .charge_external_work(5)
         .map_err(|_| work_denial(query.name()))?;
     let retained_basis = basis.clone();
-    graph
-        .with_runtime(execution, |runtime| {
+    native.with_runtime_mut(graph, execution, || SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::ForeignCell), |runtime| {
             ensure_selected_field_indexes_admitted(execution, runtime, basis, [root, target], admission)
         })
         .map_err(|stop| match stop {

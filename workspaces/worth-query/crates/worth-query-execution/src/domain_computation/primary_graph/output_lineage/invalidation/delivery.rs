@@ -22,7 +22,7 @@ use super::{fact_key::FactPostingKey, touch_keys};
 use super::{index_capacity, retention};
 
 mod affected;
-pub(super) use affected::propagate;
+pub(super) use affected::{mark_keys, propagate};
 mod meter;
 use meter::MarkingMeter;
 pub(super) use meter::PrepaidAdmission;

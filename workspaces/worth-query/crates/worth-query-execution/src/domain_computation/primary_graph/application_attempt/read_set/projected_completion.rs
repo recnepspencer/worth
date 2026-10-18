@@ -135,6 +135,28 @@ impl<Schema, Operation, Input, Scope>
         ),
         WorthQueryApplicationAttemptDenial,
     > {
+        if let WorthQueryApplicationFactKey::SourcePublication(read) = key {
+            return self.lease.handle().with_runtime(execution, |_runtime| {
+                if !read.admits(self.admission.admission_identity()) {
+                    return Err(denial(
+                        WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
+                        self.admission.operation(),
+                    ));
+                }
+                // This exact native observation was issued by the same reader
+                // at this pinned root and original admission. Publication
+                // revalidates its native fact and Query authorization together;
+                // no second query or copied permission is admitted here.
+                Ok((
+                    super::InstalledScopePosition::SourceQuery,
+                    WorthQueryApplicationObservedFact::SourcePublication {
+                        observation: std::sync::Arc::clone(self.expected_facts.as_ref()
+                            .and_then(|expected|expected.source_publication(read))
+                            .ok_or_else(||denial(WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,self.admission.operation()))?),
+                    },
+                ))
+            });
+        }
         if !key_entities_are_in_scope(key, &self.read_scope) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
@@ -260,6 +282,7 @@ fn key_entities_are_in_scope(
     scope: &super::super::read_scope::WorthQueryApplicationReadScope,
 ) -> bool {
     match key {
+        WorthQueryApplicationFactKey::SourcePublication(_) => false,
         WorthQueryApplicationFactKey::Entity { entity_id, .. }
         | WorthQueryApplicationFactKey::Field { entity_id, .. } => scope.admits(*entity_id),
         WorthQueryApplicationFactKey::Relation { from, to, .. } => {
