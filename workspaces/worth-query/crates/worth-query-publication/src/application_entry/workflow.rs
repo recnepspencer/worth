@@ -1,7 +1,10 @@
 mod approval;
 mod birth;
+mod succession;
 pub use birth::WorthQueryWorkflowBirthBindingDenial;
+pub use succession::WorthQueryWorkflowSuccessionBindingDenial;
 pub use worth_query_execution::publication_boundary::workflow_birth::RequiredWorkflowBirth;
+pub use worth_query_execution::publication_boundary::workflow_succession::RequiredWorkflowSuccession;
 mod assessment;
 mod condition;
 mod definition;

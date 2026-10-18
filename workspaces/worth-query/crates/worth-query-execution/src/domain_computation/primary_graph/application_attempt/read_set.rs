@@ -117,6 +117,8 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) workflow_birth_binding:
         Option<super::workflow_instance_program::WorkflowBirthBindingProof>,
+    pub(super) workflow_succession_binding:
+        Option<super::workflow_instance_program::WorkflowSuccessionBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     pub(super) signed_creation: Option<super::signed_creation::SignedCreationState<Schema>>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps

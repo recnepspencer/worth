@@ -6,7 +6,8 @@ use base::operation_body_base_record;
 
 mod enrollment;
 mod related_source;
-pub(super) use related_source::operation_body_record;
+mod succession;
+pub(super) use succession::operation_body_record;
 
 fn operation_body_lifecycle_record(body: &ApplicationOperationBodyProgram) -> String {
     if let Some(lifecycle) = body

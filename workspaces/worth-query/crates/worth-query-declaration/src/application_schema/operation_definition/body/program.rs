@@ -139,6 +139,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) creation: Option<ApplicationOperationBodyCreation>,
     pub(super) requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
+    pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -233,6 +234,7 @@ impl ApplicationOperationBodyProgram {
             creation: None,
             requirements: Vec::new(),
             outputs: Vec::new(),
+            succession: None,
         }
     }
     pub fn from_untrusted_with_creation(
@@ -245,6 +247,7 @@ impl ApplicationOperationBodyProgram {
             creation,
             requirements: Vec::new(),
             outputs: Vec::new(),
+            succession: None,
         }
     }
     pub fn from_untrusted_with_requirements(
@@ -258,6 +261,7 @@ impl ApplicationOperationBodyProgram {
             creation,
             requirements,
             outputs: Vec::new(),
+            succession: None,
         }
     }
     /// Authority-free scope-bound description. Fresh readmission checks the scope
@@ -277,6 +281,7 @@ impl ApplicationOperationBodyProgram {
             creation,
             requirements,
             outputs: Vec::new(),
+            succession: None,
         }
     }
     pub fn explicit_scope_entity(&self) -> Option<&str> {
@@ -292,6 +297,16 @@ impl ApplicationOperationBodyProgram {
     }
     pub fn outputs(&self) -> &[super::ApplicationOperationBodyOutput] {
         &self.outputs
+    }
+    pub fn succession(&self) -> Option<&super::ApplicationOperationBodySuccession> {
+        self.succession.as_ref()
+    }
+    pub fn with_untrusted_succession(
+        mut self,
+        succession: Option<super::ApplicationOperationBodySuccession>,
+    ) -> Self {
+        self.succession = succession;
+        self
     }
     /// Creation changes no existing scope field; guards and requirements may read it.
     pub fn is_creation_only(&self) -> bool {

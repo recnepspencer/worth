@@ -83,6 +83,16 @@ impl WorthQueryPortableApplicationOperationContractRecord {
             work.observe_text(reconciliation.procedure_slot());
         }
         if let Some(body) = &self.body {
+            if let Some(succession) = body.succession() {
+                for text in [
+                    succession.workflow_spec(),
+                    succession.binding(),
+                    succession.role(),
+                ] {
+                    work.observe_text(text);
+                }
+                work.observe_fixed(1);
+            }
             for output in body.outputs() {
                 work.observe_text(&output.binding);
                 work.observe_text(&output.role.name);

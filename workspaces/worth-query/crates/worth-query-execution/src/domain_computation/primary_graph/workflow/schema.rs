@@ -15,6 +15,7 @@ mod proposal;
 mod proposal_coverage;
 mod relations;
 mod subject;
+mod succession;
 mod transition;
 pub(in crate::domain_computation::primary_graph) mod version;
 
@@ -334,7 +335,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[30],
         kinds[4],
         kinds[4],
-        relations::migration_successor_integrity(),
+        relations::single_successor_integrity(),
     )?;
     registry = register_relation(
         registry,
@@ -354,6 +355,8 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[4],
         subject_kinds,
     )?;
+    let (registry, succeeded_from_relation) =
+        succession::register(registry, schema_id, schema_version_id, first_kind, kinds[4])?;
     Ok((
         registry,
         WorthQueryWorkflowLayout {
@@ -390,6 +393,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             instance_migrated_from_relation: kinds[30],
             instance_prior_effect_relation: kinds[31],
             instance_subject_relation: subject_relation,
+            instance_succeeded_from_relation: succeeded_from_relation,
         },
     ))
 }

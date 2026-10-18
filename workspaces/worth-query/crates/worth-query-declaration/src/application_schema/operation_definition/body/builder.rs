@@ -19,6 +19,7 @@ pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     steps: Vec<ApplicationOperationBodyScopeField>,
     requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
+    pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -31,6 +32,7 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
             steps: Vec::new(),
             requirements: Vec::new(),
             outputs: Vec::new(),
+            succession: None,
             marker: PhantomData,
         }
     }
@@ -139,14 +141,19 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         if writes.is_empty() && creation.is_none() && self.outputs.is_empty() {
             return Err(ApplicationOperationBodyAuthoringDenial::Empty);
         }
+        let program = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            scope.to_owned(),
+            self.steps,
+            creation,
+            self.requirements,
+        )
+        .with_untrusted_outputs(self.outputs)
+        .with_untrusted_succession(self.succession);
+        if !super::succession::valid(&program) {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidWorkflowSuccession);
+        }
         Ok(ApplicationOperationBody {
-            program: ApplicationOperationBodyProgram::from_untrusted_in_scope(
-                scope.to_owned(),
-                self.steps,
-                creation,
-                self.requirements,
-            )
-            .with_untrusted_outputs(self.outputs),
+            program,
             marker: PhantomData,
         })
     }

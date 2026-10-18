@@ -88,6 +88,12 @@ pub mod workflow_birth {
         WorthQueryWorkflowBirthAdapter,
     };
 }
+pub mod workflow_succession {
+    pub use crate::domain_computation::primary_graph::application_attempt::{
+        RequiredWorkflowSuccession, WorkflowSuccessionAuthority, WorkflowSuccessionAuthoritySlot,
+        WorthQueryWorkflowSuccessionAdapter,
+    };
+}
 
 pub mod workflow_proposal {
     pub use crate::domain_computation::primary_graph::{

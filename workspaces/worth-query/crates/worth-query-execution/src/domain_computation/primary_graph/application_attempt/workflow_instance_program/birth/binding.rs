@@ -32,7 +32,7 @@ impl WorkflowBirthBindingProof {
             && handler.input_identity == self.input_identity
             && idempotency.key_identity() == &self.key_identity
             && idempotency.intent_identity() == &self.input_identity
-            && idempotency.matches_workflow_birth(&self.identity)
+            && idempotency.matches_workflow_instance(&self.identity)
     }
 }
 
@@ -68,6 +68,7 @@ impl<Schema, Operation, Input, Scope>
             || admission.governed_input_identity() != Some(&authority.input_identity)
             || self.read_set.lease.product().product_branch() != authority.branch
             || self.read_set.workflow_birth_binding.is_some()
+            || self.read_set.workflow_succession_binding.is_some()
             || self.read_set.workflow_authority_binding.is_some()
             || enrollment.binding() != authority.binding
             || enrollment.role() != authority.role

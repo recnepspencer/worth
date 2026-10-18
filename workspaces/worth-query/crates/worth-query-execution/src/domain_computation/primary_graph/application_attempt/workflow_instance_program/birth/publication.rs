@@ -19,7 +19,7 @@ impl RequiredWorkflowBirth {
             || receipt.principal_scope() != &self.scope
             || idempotency.key_identity() != &self.key_identity
             || idempotency.intent_identity() != &self.input_identity
-            || !idempotency.matches_workflow_birth(&self.identity)
+            || !idempotency.matches_workflow_instance(&self.identity)
             || !idempotency.is_for_mutation_binding(self.binding)
         {
             return Err(mismatch("receipt does not describe this birth request"));

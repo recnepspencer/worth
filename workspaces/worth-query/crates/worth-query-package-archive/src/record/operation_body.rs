@@ -14,6 +14,7 @@ mod related_source;
 mod requirements;
 mod signing;
 mod signing_lifecycle;
+mod succession;
 #[cfg(test)]
 mod tests;
 use crate::{
@@ -37,7 +38,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.creation().is_some_and(|creation| creation.fields().iter().any(|step| step.related_source().is_some())) { 20 }
+    let version = if body.succession().is_some() { 21 }
+    else if body.creation().is_some_and(|creation| creation.fields().iter().any(|step| step.related_source().is_some())) { 20 }
     else if body.creation().is_some_and(|creation| creation.links().iter().any(|link|
         link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle)) {
         19
@@ -206,6 +208,9 @@ pub(super) fn write(
             body.creation().and_then(|creation| creation.enrollment()),
         )?;
     }
+    if version >= 21 {
+        succession::write(output, body.succession())?;
+    }
     Ok(())
 }
 
@@ -214,7 +219,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=20) {
+    if !matches!(version, 1..=21) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -348,6 +353,11 @@ pub(super) fn decode(
         }
         None => return Err(Denial::new(Kind::InvalidRecordShape)),
     };
+    let succession = if version >= 21 {
+        succession::decode(input)?
+    } else {
+        None
+    };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
             scope,
@@ -355,7 +365,8 @@ pub(super) fn decode(
             creation,
             requirements,
         )
-        .with_untrusted_outputs(outputs))
+        .with_untrusted_outputs(outputs)
+        .with_untrusted_succession(succession))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             steps,

@@ -35,6 +35,9 @@ pub(crate) fn validate_operation_bodies(
         if !super::enrollment::valid(body) {
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
         }
+        if !super::succession::valid(body) {
+            return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+        }
         super::principal_validation::validate_principals(operation, body, members)?;
         super::creation_link_validation::validate_links(operation, body, members)?;
         if !super::signing_lifecycle::validate(body, members) {

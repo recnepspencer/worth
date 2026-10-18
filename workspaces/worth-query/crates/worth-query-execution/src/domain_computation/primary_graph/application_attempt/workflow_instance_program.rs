@@ -36,6 +36,14 @@ mod performed;
 mod preparation;
 mod publication;
 mod start_basis;
+mod succession;
+pub(in crate::domain_computation::primary_graph::application_attempt) use succession::{
+    guard_succession, WorkflowSuccessionBindingProof,
+};
+pub use succession::{
+    RequiredWorkflowSuccession, WorkflowSuccessionAuthority, WorkflowSuccessionAuthoritySlot,
+    WorthQueryWorkflowSuccessionAdapter,
+};
 mod supersession;
 
 pub use cancellation::{

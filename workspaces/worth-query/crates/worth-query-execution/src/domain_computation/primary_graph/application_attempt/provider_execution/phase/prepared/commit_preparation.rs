@@ -95,6 +95,10 @@ where
     ) {
         return terminal(WorthQueryApplicationCommitOutcome::Denied(denial));
     }
+    if let Err(denial) = crate::domain_computation::primary_graph::application_attempt::workflow_instance_program::guard_succession(
+        admission.allowed_graph_contract().body().and_then(|body| body.succession()),
+        read_set.workflow_succession_binding.as_ref(), mutation_proof.as_ref(), &idempotency,
+    ) { return terminal(WorthQueryApplicationCommitOutcome::Denied(denial)); }
     let ordinary_basis = conditional_definition.is_none()
         && aftermath_causality.is_none()
         && elevation_currentness.is_none();

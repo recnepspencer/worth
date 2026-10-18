@@ -39,6 +39,16 @@ where
                     Binding::IDENTITY,
                 )
             })?;
+        if installed
+            .operation()
+            .body()
+            .is_some_and(|body| body.succession().is_some())
+        {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::SuccessionBindingNotInstalled,
+                Binding::IDENTITY,
+            ));
+        }
         if installed.operation().body().is_some_and(|body| {
             body.creation()
                 .is_some_and(|creation| creation.enrollment().is_some())

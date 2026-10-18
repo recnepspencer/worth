@@ -87,6 +87,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowDefinitionRetired,
     WorkflowInstanceAffinityMismatch,
     WorkflowInstanceAuthorityMismatch,
+    WorkflowInstanceNotCompleted,
+    WorkflowInstanceAlreadySucceeded,
     WorkflowInstanceIntentIdentityUnavailable,
     /// The instance's lineage has taken its installed number of steps, or
     /// its retained progress would pass the installed byte budget. Recorded

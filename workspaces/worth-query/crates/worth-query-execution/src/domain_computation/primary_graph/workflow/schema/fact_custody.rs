@@ -20,16 +20,16 @@ use super::WorthQueryWorkflowLayout;
 #[derive(Clone, Copy)]
 struct WorkflowFactCustody {
     entity_kinds: [KindId; 3],
-    relation_kinds: [KindId; 10],
+    relation_kinds: [KindId; 11],
     /// `(new source kind, relation kind)` pairs that may attach to an
     /// existing fact. Every other existing-endpoint attachment is forbidden.
-    existing_target_links: [(KindId, KindId); 4],
+    existing_target_links: [(KindId, KindId); 5],
 }
 
 // The installed identity predates approval custody; retain its name across
 // semantic versions so diagnostics preserve the same rule lineage.
 const RULE_ID: &str = "worth-query.workflow.publication-immutability";
-const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 3);
+const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 4);
 const MAXIMUM_WORK_UNITS: u64 = 2_000_000;
 
 pub(in crate::domain_computation::primary_graph) const fn fact_custody_receipt_contract(
@@ -62,6 +62,7 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
             layout.approval_evidence_relation,
             layout.instance_migrated_from_relation,
             layout.instance_prior_effect_relation,
+            layout.instance_succeeded_from_relation,
         ],
         existing_target_links: [
             (
@@ -79,6 +80,10 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
             (
                 layout.instance.entity_kind,
                 layout.instance_prior_effect_relation,
+            ),
+            (
+                layout.instance.entity_kind,
+                layout.instance_succeeded_from_relation,
             ),
         ],
     })

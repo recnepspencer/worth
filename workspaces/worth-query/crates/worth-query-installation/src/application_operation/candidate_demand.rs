@@ -28,6 +28,24 @@ fn workflow_settlement_ceiling() -> ApplicationCandidateRequirements {
 }
 
 impl WorthQueryApplicationCandidateDemand {
+    pub(in crate::application_operation) fn with_workflow_succession(
+        mut self,
+        succeeds: bool,
+    ) -> Result<Self, ()> {
+        if succeeds {
+            if self.workflow_settlement_ceiling.is_some() {
+                return Err(());
+            }
+            // A fresh existing-subject instance, its three native links and the
+            // protected predecessor link, nine fields and optional deadline.
+            self.workflow_settlement_ceiling = Some(ApplicationCandidateRequirements::fixed_shape(
+                ApplicationCandidateCardinalityCeiling::fixed(1, 0, 4, 0, 10, 0),
+                ApplicationCandidateResourceCeiling::representation_bytes(65_536),
+            ));
+            self.include_platform_ceiling()?;
+        }
+        Ok(self)
+    }
     pub(in crate::application_operation) fn with_workflow_birth(
         mut self,
         enrolled: bool,

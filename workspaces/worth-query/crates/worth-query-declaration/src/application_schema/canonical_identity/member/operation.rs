@@ -14,7 +14,9 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.creation().is_some_and(|creation| creation.fields().iter().any(|step| step.related_source().is_some())) {
+        if body.succession().is_some() {
+            "operation-body-v13"
+        } else if body.creation().is_some_and(|creation| creation.fields().iter().any(|step| step.related_source().is_some())) {
             "operation-body-v12"
         } else if body.creation().is_some_and(|creation| creation.links().iter().any(|link|
             link.posture == crate::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle)) {
@@ -132,6 +134,12 @@ pub(super) fn append_body(
     }
     if let Some(creation) = body.creation() {
         creation::append(basis, prefix, creation);
+    }
+    if let Some(succession) = body.succession() {
+        basis.text(
+            format!("{prefix}.succession"),
+            &succession.canonical_record(),
+        );
     }
 }
 

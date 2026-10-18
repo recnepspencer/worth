@@ -87,7 +87,7 @@ where Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema> + Clo
         let input = self.encode_input().map_err(WorthQueryWorkflowBirthBindingDenial::Identity)?;
         let identities = self.identities_with_input(&input).map_err(WorthQueryWorkflowBirthBindingDenial::Identity)?;
         if !required.matches::<Schema, IntentBinding<Schema, Intent>, Role, Spec>(self.product_branch(), identities.key_identity(), identities.input_identity())
-            || self.workflow_transition_identity().is_some() || self.workflow_birth_identity().is_some() {
+            || self.workflow_transition_identity().is_some() || self.workflow_birth_identity().is_some() || self.workflow_succession_identity().is_some() {
             return Err(WorthQueryWorkflowBirthBindingDenial::RequirementMismatch);
         }
         Ok(self.bind_workflow_birth(*required.identity_bytes(), input, required.authority_slot()))

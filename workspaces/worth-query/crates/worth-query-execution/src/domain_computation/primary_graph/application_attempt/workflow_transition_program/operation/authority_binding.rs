@@ -35,6 +35,8 @@ impl<Schema, Operation, Input, Scope>
         let execution = &phase_request;
 
         if self.read_set.workflow_authority_binding.is_some()
+            || self.read_set.workflow_birth_binding.is_some()
+            || self.read_set.workflow_succession_binding.is_some()
             || self.read_set.admission.operation() != authority.operation
             || self.read_set.admission.runtime_authority().as_u64() != authority.runtime_authority
             || self.read_set.lease.product().product_branch()

@@ -17,6 +17,7 @@ mod birth;
 mod draft_vocabulary;
 mod installation;
 mod operation;
+mod succession;
 mod support_identity;
 pub use adoption_coverage::{
     WorthQueryWorkflowGlobalActionDependency, WorthQueryWorkflowNodeDependency,
@@ -34,6 +35,7 @@ pub enum WorthQueryApplicationWorkflowInstallationDenialKind {
     OperationNotInProgram,
     OperationNotInstalled,
     BirthBindingNotInstalled,
+    SuccessionBindingNotInstalled,
     AssessmentNotInstalled,
     ApprovalNotInstalled,
     AuthoringCapabilityNotInstalled,
@@ -93,6 +95,15 @@ pub(super) struct InstalledWorkflowOperation {
 
 #[derive(Clone)]
 pub(super) struct InstalledWorkflowBirth {
+    binding_type: TypeId,
+    binding_identity: &'static str,
+    role_type: TypeId,
+    role_name: &'static str,
+    entity_name: &'static str,
+    capability: InstalledWorkflowCapabilityBinding,
+}
+#[derive(Clone)]
+pub(super) struct InstalledWorkflowSuccession {
     binding_type: TypeId,
     binding_identity: &'static str,
     role_type: TypeId,
@@ -191,6 +202,7 @@ where
     pub(super) advance_capability: InstalledWorkflowAdvanceCapability,
     pub(super) operations: Box<[InstalledWorkflowOperation]>,
     pub(super) births: Box<[InstalledWorkflowBirth]>,
+    pub(super) successions: Box<[InstalledWorkflowSuccession]>,
     pub(super) assessments: Box<[InstalledWorkflowAssessment]>,
     pub(super) conditions: Box<[InstalledWorkflowCondition]>,
     pub(super) approvals: Box<[InstalledWorkflowApproval]>,

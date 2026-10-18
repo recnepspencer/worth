@@ -26,6 +26,8 @@ pub use signing_lifecycle::ApplicationOperationBodySigningLifecycleSpec;
 mod program;
 mod requirement;
 mod source_validation;
+mod succession;
+pub use succession::ApplicationOperationBodySuccession;
 mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;
@@ -75,6 +77,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     IncompatibleOutput,
     InvalidCreationLink,
     InvalidWorkflowEnrollment,
+    InvalidWorkflowSuccession,
     Requirement(ApplicationOperationBodyRequirementDenial),
 }
 

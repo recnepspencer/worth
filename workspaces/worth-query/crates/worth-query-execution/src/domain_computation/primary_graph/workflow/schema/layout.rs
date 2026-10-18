@@ -41,6 +41,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowLayout
     pub(in crate::domain_computation::primary_graph) evidence_dependency_relation: KindId,
     /// Successor instance to the instance its migration ended.
     pub(in crate::domain_computation::primary_graph) instance_migrated_from_relation: KindId,
+    /// Fresh lifecycle episode to its completed predecessor; not migrated effects.
+    pub(in crate::domain_computation::primary_graph) instance_succeeded_from_relation: KindId,
     /// Successor instance to each receipted transition it inherits as history.
     pub(in crate::domain_computation::primary_graph) instance_prior_effect_relation: KindId,
 }

@@ -185,11 +185,12 @@ pub use workflow_definition_program::{
 pub use workflow_instance_program::{
     PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
     PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
-    PublishedWorkflowInstanceRef, RequiredWorkflowBirth, RetiredWorkflowDefinitionStart,
-    SupersededWorkflowDefinitionStart, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
-    WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
-    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-    WorthQueryWorkflowBirthAdapter, WorthQueryWorkflowInstanceAdapter,
+    PublishedWorkflowInstanceRef, RequiredWorkflowBirth, RequiredWorkflowSuccession,
+    RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart, WorkflowBirthAuthority,
+    WorkflowBirthAuthoritySlot, WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
+    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowSuccessionAuthority,
+    WorkflowSuccessionAuthoritySlot, WorthQueryWorkflowBirthAdapter,
+    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowSuccessionAdapter,
 };
 pub use workflow_proposal_program::{
     PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,

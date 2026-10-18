@@ -158,6 +158,18 @@ where
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;
         }
+        if self.workflow_succession_identity.is_some() {
+            let authority = self
+                .workflow_succession_authority
+                .as_ref()
+                .and_then(|slot| slot.take())
+                .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?;
+            program = program
+                .bind_workflow_succession_authority(phase, authority, allocation_policy)
+                .map_err(
+                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
+                )?;
+        }
         if let Some(authority) = workflow_authority.as_ref() {
             program = program
                 .bind_workflow_operation_authority(phase, authority, allocation_policy)
