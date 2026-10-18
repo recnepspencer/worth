@@ -196,6 +196,11 @@ pub(super) struct RetainedPartitions<Key, Item, Reduced> {
     /// The membership's call, and the declared work its items' digests spent.
     pub(super) membership: RetainedCall,
     pub(super) item_keys: Arc<BTreeMap<PartitionItemId, RetainedCall>>,
+    pub(super) item_bytes: Option<u64>,
+    pub(super) item_call_bytes: Option<u64>,
+    pub(super) call_sequence: Arc<
+        crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
+    >,
     /// Every item's partition: the one routing a partition's members are read
     /// from.
     pub(super) routing: Arc<ComputationPartitionRouting>,
@@ -214,20 +219,9 @@ where
     /// partition's key at its canonical encoding length, and the reduction
     /// tree as execution charges it. `None` when the sum overflows.
     pub(super) fn charged_bytes(&self) -> Option<u64> {
-        let size = |bytes: usize| u64::try_from(bytes).ok();
-        let digest = size(std::mem::size_of::<(PartitionItemId, [u8; 32])>())?;
-        let items = self.items.values().try_fold(0_u64, |sum, item| {
-            super::super::super::super::fact_verification_observation::computation_retained_size();
-            sum.checked_add(size(std::mem::size_of::<(PartitionItemId, Item)>())?)?
-                .checked_add(item.additional_charged_bytes())?
-                .checked_add(digest)
-        })?;
-        let item_keys = self.item_keys.values().try_fold(items, |sum, call| {
-            super::super::super::super::fact_verification_observation::computation_retained_size();
-            sum.checked_add(size(std::mem::size_of::<(PartitionItemId, RetainedCall)>())?)?
-                .checked_add(call.charge.additional_bytes()?)
-        })?;
-        item_keys
+        self.item_bytes?
+            .checked_add(self.item_call_bytes?)?
+            .checked_add(self.call_sequence.bytes())?
             .checked_add(self.partitions.bytes()?)?
             .checked_add(self.native_run.additional_charged_bytes())?
             .checked_add(self.membership.charge.additional_bytes()?)?
@@ -243,6 +237,8 @@ pub(in crate::domain_computation) struct RetainedComputation {
     pub(super) basis: RetainedBasis,
     pub(super) typed: Arc<dyn Any + Send + Sync>,
     pub(super) facts: SealedComputationFacts,
+    pub(super) checked_calls:
+        Option<crate::domain_computation::primary_graph::application_attempt::CheckedCallShape>,
     /// What the state is charged on the lineage ledger, or `None` when the
     /// sum has no value.
     pub(super) bytes: Option<u64>,
@@ -281,13 +277,42 @@ pub(super) struct CarriedCalls {
     pub(super) validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
     pub(super) prior: Arc<CustodiedComputation>,
     pub(super) membership: bool,
-    pub(super) items: BTreeSet<PartitionItemId>,
+    pub(super) items: CarriedItems,
     pub(super) partitions: super::carried_partitions::CarriedPartitions,
+    pub(super) ranges: Option<
+        Arc<crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage>,
+    >,
+}
+
+pub(super) enum CarriedItems {
+    Selected(BTreeSet<PartitionItemId>),
+    All(Arc<BTreeMap<PartitionItemId, RetainedCall>>),
+}
+impl CarriedItems {
+    pub(super) fn contains(&self, item: &PartitionItemId) -> bool {
+        match self {
+            Self::Selected(items) => items.contains(item),
+            Self::All(items) => items.contains_key(item),
+        }
+    }
+    pub(super) fn iter(&self) -> impl Iterator<Item = &PartitionItemId> {
+        let (selected, all) = match self {
+            Self::Selected(items) => (Some(items), None),
+            Self::All(items) => (None, Some(items)),
+        };
+        selected
+            .into_iter()
+            .flat_map(|items| items.iter())
+            .chain(all.into_iter().flat_map(|items| items.keys()))
+    }
 }
 
 impl CarriedCalls {
     /// Whether the run carried `read`.
     pub(super) fn carried(&self, read: ComputationRead) -> bool {
+        if let Some(ranges) = &self.ranges {
+            return ranges.carried(read);
+        }
         match read {
             ComputationRead::Membership => self.membership,
             ComputationRead::ItemKey(item) => self.items.contains(&item),
@@ -302,6 +327,9 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     pub(super) typed: Arc<dyn Any + Send + Sync>,
     /// The typed state's bytes, `None` when the sum overflows.
     pub(super) typed_bytes: Option<u64>,
+    pub(super) call_sequence: Arc<
+        crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
+    >,
     pub(super) carried: Option<CarriedCalls>,
     /// The request memory the run's tree holds.
     pub(super) tree_memory: QueryMemoryReservation,

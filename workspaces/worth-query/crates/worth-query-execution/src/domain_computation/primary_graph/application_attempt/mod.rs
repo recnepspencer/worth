@@ -52,8 +52,9 @@ pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use read_set::{
-    observe_admitted_fact, CompletedDecisionReuseProof, ComputationFactAttribution,
-    ComputationFactIndex, ComputationRead, PreparedDecisionReuseContext, SealedComputationFacts,
+    observe_admitted_fact, CheckedCallShape, CompletedDecisionReuseProof,
+    ComputationFactAttribution, ComputationFactIndex, ComputationRead, NativeCallCarriage,
+    PreparedDecisionReuseContext, SealedComputationFacts,
 };
 mod retained_commit;
 pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;

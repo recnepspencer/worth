@@ -1,5 +1,8 @@
 //! What a full run under a producer records for the next run to carry.
 
+use crate::domain_computation::primary_graph::{
+    application_attempt::ComputationRead, invariant_projection::ComputationCallSequence,
+};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -155,6 +158,31 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                 PriorAbsence::Unmeasured,
             ));
         }
+        let membership = self.membership.as_ref().expect("measured membership");
+        let call_sequence = ComputationCallSequence::build(
+            || {
+                std::iter::once((
+                    ComputationRead::Membership,
+                    &membership.0.charge,
+                    membership.0.declared_units,
+                ))
+                .chain(self.item_keys.iter().map(|(item, call)| {
+                    (
+                        ComputationRead::ItemKey(*item),
+                        &call.charge,
+                        call.declared_units,
+                    )
+                }))
+                .chain(
+                    self.partitions
+                        .iter()
+                        .map(|(id, (_, _, charge))| (ComputationRead::Partition(*id), charge, 0)),
+                )
+            },
+            execution,
+        )?;
+        let item_bytes = super::item_bounds::items(&membership.1);
+        let item_call_bytes = super::item_bounds::calls(&self.item_keys);
         let partitions = Some(super::partition_metadata::PartitionMetadata::from_recorded(
             self.partitions,
             execution,
@@ -169,6 +197,9 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                     digests,
                     membership,
                     item_keys: Arc::new(self.item_keys),
+                    item_bytes,
+                    item_call_bytes,
+                    call_sequence: Arc::clone(&call_sequence),
                     routing: Arc::new(routing),
                     partitions,
                     native_run,
@@ -187,6 +218,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                 basis: self.basis.0,
                 typed: Arc::new(typed),
                 typed_bytes,
+                call_sequence,
                 carried: None,
                 tree_memory,
                 routing_memory,

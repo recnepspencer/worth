@@ -88,6 +88,12 @@ impl CompletedComputationRun {
                 return Err(());
             }
         }
+        let checked_calls = facts.bind_call_shape(
+            self.call_sequence.shape(),
+            self.carried
+                .as_ref()
+                .and_then(|carried| carried.prior.checked_calls.as_ref()),
+        );
         let bytes = self
             .typed_bytes
             .zip(facts.charged_bytes())
@@ -97,6 +103,7 @@ impl CompletedComputationRun {
                 basis: self.basis,
                 typed: self.typed,
                 facts,
+                checked_calls,
                 bytes,
             },
             cloned_from: self.carried.map(|carried| carried.prior),

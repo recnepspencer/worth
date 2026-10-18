@@ -18,7 +18,9 @@ mod decision_plan;
 mod decision_reads;
 mod prior_output;
 
-pub(in crate::domain_computation::primary_graph) use computation_calls::ComputationCallCharge;
+pub(in crate::domain_computation::primary_graph) use computation_calls::{
+    CallShape, CallVisit, ComputationCallCharge, ComputationCallSequence,
+};
 pub use current_output::{
     WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
     WorthQueryCurrentOutputSelection,

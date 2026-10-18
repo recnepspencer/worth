@@ -306,7 +306,10 @@ advancement. Cold issue and recovery remain full; no execution handle is a
 persisted recovery record. Query's ordinary partitioned computation retains
 the run issued by successful reduction and advances it with a fresh descendant
 request, changed inputs and actual removals. Its source, installation, input,
-edition and read closure qualify independently. Query still prepares and charges
-its full call roster, sizes item/call state and processes publication metadata;
-membership changes and explicit tree rebuilds still construct a full shape plan.
+edition and read closure qualify independently. Query's measured reader-call
+ranges preserve its ordinary preflights and charges under a separately checked
+completed layout. Those Query summaries supply no native result or first-stop
+authority. Query still processes provider/session, effects and source publication
+metadata; membership/key changes keep full preparation, and membership changes
+and explicit tree rebuilds still construct a full shape plan.
 Native sparse advancement does not make those remaining Query paths sparse.

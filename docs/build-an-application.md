@@ -715,12 +715,21 @@ changed leaves, without constructing a whole reduction plan or scanning for
 deletions. These are runtime behaviors; application code still calls the same
 installed computation and supplies no reuse handle or dirty hints.
 
-Current read-set construction, call charging, item and partition preparation,
-provider/session and effect processing, postcommit rebase, and item/call
-retained-size measurement still perform their existing work. Membership changes
-still enumerate membership and construct a full tree shape plan. Recovery and
-an explicit rebuild fallback also remain full. Sparse native dispatch and
-prior-fact comparison do not establish whole-computation locality.
+For fixed membership with unchanged item keys, Query also carries ranges of
+actually measured reader calls under the exact completed read layout. Their
+preflight demand, consumed work and declared encoding charges remain real. A
+tight gather range descends to the actual call rather than skipping its refusal.
+The carried ranges contribute exactly the entities their calls reached to the
+current effect scope; unrelated old calls grant no reach. Immutable item/call
+bounds remain paired with their retained backing. Applications provide neither
+a call roster nor a cached authorization declaration.
+
+Provider/session and effect processing, postcommit source rebase and other
+source comparisons still perform their existing work. Membership or item-key
+changes retain full preparation, and membership changes construct a full tree
+shape plan. Recovery, an unqualified reader basis and explicit rebuild fallbacks
+also remain full. Sparse call/native dispatch and prior-fact comparison do not
+establish whole-computation locality.
 
 A run's result, charged work, structural span, and the
 partition a work ceiling names never depend on reuse: native carried charges settle in a full run's

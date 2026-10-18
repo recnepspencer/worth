@@ -79,6 +79,18 @@ where
             PartitionResult = Reduced,
         >,
     {
+        if self.can_prepare_ranges(reader, remaining_work) {
+            return self
+                .prepare_ranges(
+                    owner,
+                    reader,
+                    execution,
+                    input,
+                    remaining_work,
+                    declared_bytes,
+                )
+                .map(Some);
+        }
         let resource = WorthQueryPartitionedComputationDenial::Resource;
         let start = reader.run_start(&COMPARATOR);
         if let Some(snapshot) = &self.validated_at {
@@ -242,11 +254,13 @@ where
                 items: Arc::clone(&items),
                 digests,
                 membership: membership.filter(|_| measured),
-                item_keys,
+                item_bytes: super::item_bounds::items(&items),
+                item_call_bytes: super::item_bounds::calls(&item_keys),
+                item_keys: Arc::new(item_keys),
                 routing: Arc::clone(&routing),
                 routing_memory,
                 carried_membership,
-                carried_items,
+                carried_items: super::retained::CarriedItems::Selected(carried_items),
             },
             removed_partitions,
         );

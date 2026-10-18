@@ -152,6 +152,9 @@ fn edit_encoding_and_result_capacity_denials_rebuild_and_match_reuse_off() {
         panic!("real native Value run")
     };
     let retained = RetainedPartitions {
+        item_bytes: prior.item_bytes,
+        item_call_bytes: prior.item_call_bytes,
+        call_sequence: Arc::clone(&prior.call_sequence),
         items: prior.items,
         digests: prior.digests,
         membership: prior.membership,

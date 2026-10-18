@@ -31,6 +31,13 @@ pub struct WorthQueryFactVerificationForTest {
     pub computation_native_range_visits: u64,
     pub computation_native_copied_nodes: u64,
     pub computation_native_carried_slot_visits: u64,
+    /// Actual cold measured-call construction and warm changed-path/range work.
+    pub computation_call_build_visits: u64,
+    pub computation_call_node_copies: u64,
+    pub computation_call_range_visits: u64,
+    pub computation_call_range_carries: u64,
+    pub computation_call_reach_visits: u64,
+    pub computation_call_scope_lookups: u64,
     /// Actual registry transitions, including those before cutoff preparation.
     pub registry_custody: [Option<WorthQueryRegistryCustodyForTest>; 32],
     /// Further transitions are explicitly unobserved.
@@ -107,6 +114,7 @@ thread_local! {
         computation_dispatch_plan_visits: 0, computation_result_receiver_visits: 0,
         computation_prepared_partition_visits: 0, computation_tree_plan_visits: 0, computation_retained_size_visits: 0,
         computation_native_range_visits: 0, computation_native_copied_nodes: 0, computation_native_carried_slot_visits: 0,
+        computation_call_build_visits: 0, computation_call_node_copies: 0, computation_call_range_visits: 0, computation_call_range_carries: 0, computation_call_reach_visits: 0, computation_call_scope_lookups: 0,
         registry_custody: [None; 32], registry_custody_omitted: 0,
         input_cutoffs: [None; 32], input_cutoffs_omitted: 0,
         content_field_index_visits: 0, content_leaf_derivations: 0, content_pair_derivations: 0,
@@ -137,6 +145,24 @@ pub(super) fn source_admission() {
 
 pub(super) fn computation_prepared_partition() {
     record(|observed| add(&mut observed.computation_prepared_partition_visits, 1));
+}
+pub(super) fn computation_call_reach() {
+    record(|o| add(&mut o.computation_call_reach_visits, 1));
+}
+pub(super) fn computation_call_scope() {
+    record(|o| add(&mut o.computation_call_scope_lookups, 1));
+}
+pub(super) fn computation_call_build() {
+    record(|o| add(&mut o.computation_call_build_visits, 1));
+}
+pub(super) fn computation_call_copy() {
+    record(|o| add(&mut o.computation_call_node_copies, 1));
+}
+pub(super) fn computation_call_range() {
+    record(|o| add(&mut o.computation_call_range_visits, 1));
+}
+pub(super) fn computation_call_carry() {
+    record(|o| add(&mut o.computation_call_range_carries, 1));
 }
 pub(super) fn computation_tree_plan() {
     record(|observed| add(&mut observed.computation_tree_plan_visits, 1));

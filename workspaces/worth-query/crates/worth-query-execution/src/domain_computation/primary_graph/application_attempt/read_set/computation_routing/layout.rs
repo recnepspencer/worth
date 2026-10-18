@@ -97,3 +97,56 @@ impl SealedReadLayout {
         }
     }
 }
+
+/// Exact correspondence established at a real completed read. Shape identity
+/// alone has no source/snapshot authority; this also holds its checked layout.
+#[derive(Clone)]
+pub(in crate::domain_computation::primary_graph) struct CheckedCallShape {
+    pub(super) shape:
+        Arc<crate::domain_computation::primary_graph::invariant_projection::CallShape>,
+    layout: Arc<CheckedReadLayout>,
+}
+impl CheckedCallShape {
+    pub(in crate::domain_computation::primary_graph) fn same_shape(
+        &self,
+        shape: &Arc<crate::domain_computation::primary_graph::invariant_projection::CallShape>,
+    ) -> bool {
+        Arc::ptr_eq(&self.shape, shape)
+    }
+}
+impl SealedComputationFacts {
+    pub(in crate::domain_computation::primary_graph) fn bind_call_shape(
+        &self,
+        shape: &Arc<crate::domain_computation::primary_graph::invariant_projection::CallShape>,
+        previous: Option<&CheckedCallShape>,
+    ) -> Option<CheckedCallShape> {
+        let layout = self.layout.checked()?;
+        if let Some(previous) = previous
+            && Arc::ptr_eq(&previous.shape, shape)
+            && Arc::ptr_eq(&previous.layout, layout)
+        {
+            return Some(previous.clone());
+        }
+        if !shape
+            .calls()
+            .inspect(|_| {
+                super::super::super::super::fact_verification_observation::completion_call_roster()
+            })
+            .eq(layout.calls.iter().copied())
+        {
+            return None;
+        }
+        Some(CheckedCallShape {
+            shape: Arc::clone(shape),
+            layout: Arc::clone(layout),
+        })
+    }
+    pub(in crate::domain_computation::primary_graph) fn has_call_shape(
+        &self,
+        binding: &CheckedCallShape,
+    ) -> bool {
+        self.layout
+            .checked()
+            .is_some_and(|layout| Arc::ptr_eq(layout, &binding.layout))
+    }
+}

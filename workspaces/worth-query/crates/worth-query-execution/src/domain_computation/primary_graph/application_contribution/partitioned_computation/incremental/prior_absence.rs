@@ -65,6 +65,10 @@ impl CompletedComputationRetention {
                 .typed_bytes
                 .unwrap_or(u64::MAX)
                 .saturating_sub(run.tree_memory.bytes().saturating_sub(tree_inline))
+                // The sequence carries its own grants through result handoff;
+                // counting it here again would reject lawful small-partition
+                // results. Its full resident charge remains in typed_bytes.
+                .saturating_sub(run.call_sequence.funded_bytes())
                 .saturating_sub(run.routing_memory.as_ref().map_or(0, |held| held.bytes())),
         }
     }
