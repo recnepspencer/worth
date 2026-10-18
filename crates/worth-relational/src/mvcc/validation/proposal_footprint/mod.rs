@@ -201,7 +201,9 @@ fn relation_targets(intent: &RelationMutationIntent) -> Vec<ValidatedFieldMutati
             RecordRef::Relation(update.relation_id),
             &update.aspect_patch,
         ),
-        RelationMutationIntent::UpdateEndpoints(_) => Vec::new(),
+        RelationMutationIntent::UpdateEndpoints(_) | RelationMutationIntent::Revalidate(_) => {
+            Vec::new()
+        }
         RelationMutationIntent::Delete(delete) => vec![ValidatedFieldMutationTarget::WholeRecord {
             record: RecordRef::Relation(delete.relation_id),
         }],

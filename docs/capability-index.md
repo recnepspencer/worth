@@ -83,7 +83,12 @@ collection membership processing sparse. See
 For bounded nested persisted values, use the existing value-binding macro's
 `scalar: String, canonical: ValueDecodeBounds::new(...)` arm with Query-free
 `WorthValue` derivation. The installed value-binding catalog retains the derived
-shape and constant bounds. Native canonical projection reads dispatch the exact
+shape and constant bounds. Guarded recursion uses finite bound references;
+`Box`, exact pair payloads and internally tagged unit/named variants use the
+same bounded seed path. Tag-first canonical objects never require an arbitrary
+object buffer. Complete closure admission rejects an unsupported opaque child,
+including an unselected variant. Pure schema owners need no Execution or Query
+dependency for these descriptions. Native canonical projection reads dispatch the exact
 installed codec under the original request's cumulative execution allowance; ignored
 admission failures veto completion. Opaque owners must supply admitted seeds.
 Continuation and live delivery retain decode custody through their native final
@@ -108,7 +113,19 @@ output records when both endpoints are independently proven in that same
 publication. Related ordering can survive when its key codec stays unchanged.
 External or rewritten relations, protected or partly classified fields, affected
 invariants, changed ordering keys and join consequences refuse before
-publication; ordinary restore remains exact. An existing continuation resumes
+publication; ordinary restore remains exact. Surviving application relations
+are selected with the same bounded native reads as entities and rejudged through
+`RelationMutationIntent::Revalidate(RevalidateRelationIntent { relation_id })`.
+This native read demand schedules installed rules against the actual preimage;
+it changes no endpoint, field, record version or lineage and claims no write or
+rollback restoration. Rules that overlap retired relations remain refused. Independently produced
+surviving output requires complete native original association and exact present
+identity/kind/payload plus compatible installed roles. It retains historical
+correspondence without readiness facts, through normal capture and the same
+funded deferred/acknowledged repair capsule. Every disposition first validates complete original native publication membership,
+including present optional outputs. Mixed or incomplete outputs refuse;
+only real installed producer publication can establish target currentness.
+An existing continuation resumes
 through its original runtime and retained index generation, while a new target
 request reads only genuinely regenerated target output. See the
 [historical query lifecycle](build-an-application.md#44-checkpoint-program-transitions).

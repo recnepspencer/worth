@@ -16,6 +16,7 @@ pub(crate) mod record_aspect_patch;
 mod relation_endpoint_candidate;
 mod replace_entity;
 mod revalidate_entity;
+mod revalidate_relation;
 mod update_entity_fields;
 mod update_relation_endpoints;
 

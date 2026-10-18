@@ -250,6 +250,9 @@ impl CandidateTouchedKinds {
                 RelationMutationIntent::ApplyAspectPatch(spec) => {
                     self.relation(spec.relation_id, proposed, before)
                 }
+                RelationMutationIntent::Revalidate(spec) => {
+                    self.relation(spec.relation_id, proposed, before)
+                }
                 RelationMutationIntent::Delete(_) => None,
             },
             MutationIntent::Materialization(materialization) => match materialization.record() {

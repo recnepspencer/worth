@@ -70,3 +70,9 @@ mod successor;
 fn heavy_value() -> model::NestedValue {
     journey::heavy()
 }
+
+#[path = "related/companion.rs"]
+mod companion;
+
+#[path = "related/companion_transition.rs"]
+mod companion_transition;

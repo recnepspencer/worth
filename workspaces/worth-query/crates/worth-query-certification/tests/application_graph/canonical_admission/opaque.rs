@@ -1,7 +1,7 @@
 //! An opaque owner deliberately swallowing the real admission callback's refusal.
 use super::model::NestedValue;
 use worth_foundational::facade::{
-    CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
+    CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShapeBody,
 };
 thread_local! { static IGNORED_REFUSALS: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
 pub fn reset() {
@@ -22,12 +22,9 @@ impl serde::Serialize for SwallowingValue {
     }
 }
 impl CanonicalValue for SwallowingValue {
-    const SHAPE_DEPTH: usize = NestedValue::SHAPE_DEPTH;
     const WIRE_NULLABLE: bool = NestedValue::WIRE_NULLABLE;
     const SUPPORTS_ADMISSION: bool = true;
-    fn value_shape() -> ValueShape {
-        NestedValue::value_shape()
-    }
+    const SHAPE_BODY: ValueShapeBody = { NestedValue::SHAPE_BODY };
     fn validate_bounds(&self, bounds: ValueDecodeBounds) -> Result<(), ValueCodecDenial> {
         self.0.validate_bounds(bounds)
     }

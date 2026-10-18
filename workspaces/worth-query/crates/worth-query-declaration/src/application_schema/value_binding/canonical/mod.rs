@@ -2,24 +2,27 @@
 pub use worth_foundational::facade::{
     decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
     CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
+    ValueShapeDefinition,
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationCanonicalValueContract {
     shape: ValueShape,
     bounds: ValueDecodeBounds,
+    supports_admission: bool,
 }
 
 impl ApplicationCanonicalValueContract {
     pub fn of<Value: CanonicalValue>(bounds: ValueDecodeBounds) -> Self {
-        assert!(
-            Value::SHAPE_DEPTH <= 64,
-            "canonical value shape must have finite supported nesting"
-        );
+        let definition = ValueShapeDefinition::of::<Value>();
         Self {
-            shape: Value::value_shape(),
+            shape: definition.materialize(),
             bounds,
+            supports_admission: definition.supports_admission(),
         }
+    }
+    pub const fn supports_admission(&self) -> bool {
+        self.supports_admission
     }
     pub const fn wire_protocol(&self) -> &'static str {
         "worth.canonical-json.v1"

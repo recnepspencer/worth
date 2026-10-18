@@ -9,6 +9,39 @@ pub enum ValueShape {
     Tuple(Vec<ValueShape>),
     Struct(Vec<ValueFieldShape>),
     Enum(Vec<ValueVariantShape>),
+    TaggedEnum {
+        tag: String,
+        variants: Vec<ValueTaggedVariantShape>,
+    },
+    /// A lexical binder. Only its canonical ordinal enters portable meaning.
+    Recursive {
+        binding: usize,
+        body: Box<ValueShape>,
+    },
+    Reference {
+        binding: usize,
+    },
+}
+
+/// Structural extent of the grammar, distinct from a value's decoding limit.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ValueShapeDepth {
+    Finite(usize),
+    Recursive,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct ValueTaggedVariantShape {
+    pub(crate) name: String,
+    pub(crate) fields: Vec<ValueFieldShape>,
+}
+impl ValueTaggedVariantShape {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn fields(&self) -> &[ValueFieldShape] {
+        &self.fields
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
@@ -29,7 +62,7 @@ pub enum ValuePrimitive {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct ValueFieldShape {
     name: String,
-    shape: ValueShape,
+    pub(crate) shape: ValueShape,
 }
 impl ValueFieldShape {
     pub fn new(name: &'static str, shape: ValueShape) -> Self {
@@ -49,7 +82,7 @@ impl ValueFieldShape {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct ValueVariantShape {
     name: String,
-    payload: Option<ValueShape>,
+    pub(crate) payload: Option<ValueShape>,
 }
 impl ValueVariantShape {
     pub fn newtype(name: &'static str, shape: ValueShape) -> Self {

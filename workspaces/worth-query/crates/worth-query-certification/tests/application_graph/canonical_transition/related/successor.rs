@@ -106,3 +106,10 @@ pub(super) mod schema;
 fn heavy_value() -> model::NestedValue {
     super::journey::heavy()
 }
+
+#[path = "companion.rs"]
+#[expect(
+    clippy::duplicate_mod,
+    reason = "the identical companion owners are installed against the actual successor schema"
+)]
+pub(super) mod companion;

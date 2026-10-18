@@ -33,7 +33,9 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
     .unwrap();
     let denied = installation::in_memory_rostered_program_from_checkpoint_with_transition(
         successor::host::program(),
-        installation::WorthQueryApplicationProgramRoster::new(),
+        installation::WorthQueryApplicationProgramRoster::new().support(
+            successor::companion::host::program::<successor::companion::program::TargetProgram>(),
+        ),
         successor::schema::CanonicalSchema::declaration().unwrap(),
         ((),),
         successor::host::limits(),

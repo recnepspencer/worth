@@ -69,6 +69,7 @@ impl ApplicationFieldBindingRecipe {
     pub(crate) fn of<Binding: ApplicationScalarValueBinding>(
         locus: ApplicationFieldBindingLocus,
     ) -> Self {
+        let canonical = Binding::canonical_contract();
         Self {
             locus,
             binding_identity: Binding::IDENTITY,
@@ -81,10 +82,13 @@ impl ApplicationFieldBindingRecipe {
             encode: erased_encode::<Binding>,
             decode: Binding::Decode::erased_decode(),
             admitted_decode: Binding::Decode::erased_admitted_decode(),
-            supports_admitted_decode: Binding::SUPPORTS_ADMITTED_DECODE,
+            supports_admitted_decode: Binding::SUPPORTS_ADMITTED_DECODE
+                && canonical
+                    .as_ref()
+                    .is_none_or(|contract| contract.supports_admission()),
             identity_capable: Binding::Identity::CAPABLE,
             signed_aggregate_decode: Binding::SignedAggregate::erased_decode(),
-            canonical: Binding::canonical_contract(),
+            canonical,
         }
     }
 

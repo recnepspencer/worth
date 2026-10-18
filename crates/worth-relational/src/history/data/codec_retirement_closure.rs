@@ -6,7 +6,9 @@ use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::{CodecFieldLocus, RelationalRuntime};
 use crate::transactions::data::RecordRef;
 
+mod output_correspondence;
 mod relations;
+pub(crate) use output_correspondence::validate_codec_output_correspondence;
 
 type OutputOrigin = (
     EntityId,

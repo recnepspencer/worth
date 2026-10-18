@@ -1,7 +1,7 @@
 //! Actual compiled V2 codec owner; the probe observes decoder entry only.
 use super::{model::NestedValue, schema::*, wire_model::DerivedV2 as WireV2};
 use worth_foundational::facade::{
-    CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
+    CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShapeBody,
 };
 use worth_query_decl::facade::worth_query_value_binding;
 use worth_query_host::facade::declaration::application_operation::*;
@@ -22,12 +22,9 @@ impl serde::Serialize for DerivedV2 {
     }
 }
 impl CanonicalValue for DerivedV2 {
-    const SHAPE_DEPTH: usize = WireV2::SHAPE_DEPTH;
     const WIRE_NULLABLE: bool = WireV2::WIRE_NULLABLE;
     const SUPPORTS_ADMISSION: bool = true;
-    fn value_shape() -> ValueShape {
-        WireV2::value_shape()
-    }
+    const SHAPE_BODY: ValueShapeBody = { WireV2::SHAPE_BODY };
     fn validate_bounds(&self, bounds: ValueDecodeBounds) -> Result<(), ValueCodecDenial> {
         self.0.validate_bounds(bounds)
     }

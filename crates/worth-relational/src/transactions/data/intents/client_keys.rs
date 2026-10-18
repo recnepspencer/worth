@@ -60,7 +60,8 @@ impl MutationIntent {
             Self::Entity(_)
             | Self::Materialization(_)
             | Self::Relation(RelationMutationIntent::ApplyAspectPatch(_))
-            | Self::Relation(RelationMutationIntent::Delete(_)) => {}
+            | Self::Relation(RelationMutationIntent::Delete(_))
+            | Self::Relation(RelationMutationIntent::Revalidate(_)) => {}
         };
         Ok(())
     }
@@ -108,7 +109,8 @@ impl MutationIntent {
             Self::Entity(_)
             | Self::Materialization(_)
             | Self::Relation(RelationMutationIntent::ApplyAspectPatch(_))
-            | Self::Relation(RelationMutationIntent::Delete(_)) => {}
+            | Self::Relation(RelationMutationIntent::Delete(_))
+            | Self::Relation(RelationMutationIntent::Revalidate(_)) => {}
         }
     }
 }

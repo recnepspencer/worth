@@ -7,8 +7,8 @@ struct UnboundedMap {
 }
 
 #[derive(WorthValue)]
-struct DirectlyRecursive {
-    children: Vec<DirectlyRecursive>,
+struct UnboundedShared {
+    children: std::sync::Arc<String>,
 }
 
 fn main() {}

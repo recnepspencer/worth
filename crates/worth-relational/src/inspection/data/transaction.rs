@@ -17,6 +17,7 @@ pub struct TransactionIntentCounts {
     pub entity_mutation_count: u64,
     pub entity_revalidation_count: u64,
     pub relation_mutation_count: u64,
+    pub relation_revalidation_count: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

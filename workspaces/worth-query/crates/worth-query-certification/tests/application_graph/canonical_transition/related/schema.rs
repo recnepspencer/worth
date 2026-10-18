@@ -1,4 +1,5 @@
 //! One independently installed source field using the generated canonical binding.
+use super::companion::{producer as cp, schema::*};
 use super::{binding::NestedBinding, derived_query, edit, model::*, output, producer, query};
 use declaration::{application_schema::*, authentication::*};
 use worth_query_host::facade::{declaration, *};
@@ -67,6 +68,31 @@ worth_query_application_contribution! {
                 .operation_unlink(super::retire::Retire::reference(), DerivedChildren::reference())
                 .operation_delete(super::retire::Retire::reference(), Derived::reference())
                 .application_mutation_binding::<super::retire::Binding>()
+                .entity(Companion::reference()).aspect(Companion::reference(), CompanionFacts::reference())
+                .field(Companion::reference(), CompanionIdentityField::reference()).field(Companion::reference(), CompanionValueField::reference())
+                .relation(CompanionLink::reference(), Companion::reference(), Companion::reference())
+                .invariant(super::companion::rule::definition())
+                .application_query_binding::<super::companion::read::ReadBinding>().application_query(super::companion::read::definition())
+                .operation(cp::CreateCompanion::reference().definition().no_external_effect().no_aftermath().finish())
+                .operation_projection_work_budget(cp::CreateCompanion::reference(), 32)
+                .operation_read_field(cp::CreateCompanion::reference(), DocumentIdentityField::reference())
+                .operation_read_field(cp::CreateCompanion::reference(), DocumentValueField::reference())
+                .operation_create(cp::CreateCompanion::reference(), Companion::reference())
+                .operation_create(cp::CreateCompanion::reference(), Derived::reference())
+                .operation_write(cp::CreateCompanion::reference(), DerivedIdentityField::reference())
+                .operation_write(cp::CreateCompanion::reference(), DerivedValueField::reference())
+                .operation_write(cp::CreateCompanion::reference(), CompanionIdentityField::reference())
+                .operation_write(cp::CreateCompanion::reference(), CompanionValueField::reference())
+                .operation_link(cp::CreateCompanion::reference(), CompanionLink::reference())
+                .application_mutation_binding::<cp::ProduceBinding>()
+                .operation(cp::preserve::PreserveCompanion::reference().definition().no_external_effect().no_aftermath().finish())
+                .operation_projection_work_budget(cp::preserve::PreserveCompanion::reference(), 32)
+                .operation_read_field(cp::preserve::PreserveCompanion::reference(), DocumentIdentityField::reference())
+                .operation_read_field(cp::preserve::PreserveCompanion::reference(), DocumentValueField::reference())
+                .operation_read_entity(cp::preserve::PreserveCompanion::reference(), Companion::reference())
+                .operation_read_field(cp::preserve::PreserveCompanion::reference(), CompanionValueField::reference())
+                .operation_write(cp::preserve::PreserveCompanion::reference(), CompanionValueField::reference())
+                .application_mutation_binding::<cp::preserve::Binding>()
         }
     }
 }

@@ -3,6 +3,8 @@
 mod admitted;
 #[path = "value_shape/compiler.rs"]
 mod compiler;
+#[path = "value_shape/recursive.rs"]
+mod recursive;
 
 use worth_foundational::facade::{
     decode_canonical_value, encode_canonical_value, CanonicalValue, ValueCodecDenial,
@@ -53,7 +55,12 @@ fn nested_nondefault_value_has_one_exact_wire_and_seed() {
         decode_canonical_value::<Packet>(RAW, BOUNDS).unwrap(),
         packet()
     );
-    assert_eq!(Packet::SHAPE_DEPTH, 4);
+    assert_eq!(
+        worth_foundational::facade::ValueShapeDefinition::of::<Packet>()
+            .inspect()
+            .unwrap(),
+        worth_foundational::facade::ValueShapeDepth::Finite(4)
+    );
 }
 
 #[derive(Debug, PartialEq, WorthValue)]

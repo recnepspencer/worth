@@ -1,11 +1,11 @@
-error: unsupported WorthValue shape; use concrete derived values, Vec, or Option; arrays, tuples, and custom containers require an explicit bounded owner codec
+error: unsupported WorthValue shape; use concrete derived values, Vec, Option, Box or an exact two-element tuple; other containers require a bounded owner codec
  --> tests/value_shape/ui/fail/unsupported_shapes.rs:6:14
   |
 6 |     entries: HashMap<String, String>,
   |              ^^^^^^^
 
-error: WorthValue requires a finite nonrecursive wire shape; recursive values require an explicit bounded owner codec
-  --> tests/value_shape/ui/fail/unsupported_shapes.rs:11:19
+error: unsupported WorthValue shape; use concrete derived values, Vec, Option, Box or an exact two-element tuple; other containers require a bounded owner codec
+  --> tests/value_shape/ui/fail/unsupported_shapes.rs:11:15
    |
-11 |     children: Vec<DirectlyRecursive>,
-   |                   ^^^^^^^^^^^^^^^^^
+11 |     children: std::sync::Arc<String>,
+   |               ^^^

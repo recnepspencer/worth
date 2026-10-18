@@ -65,6 +65,7 @@ pub enum ValueCodecDenial {
     NonCanonical,
     Admission,
     UnsupportedAdmission,
+    UnsupportedShape,
 }
 
 impl std::fmt::Display for ValueCodecDenial {
@@ -80,6 +81,9 @@ impl std::fmt::Display for ValueCodecDenial {
             Self::Admission => "canonical value request admission refused",
             Self::UnsupportedAdmission => {
                 "canonical value owner does not provide admitted decoding"
+            }
+            Self::UnsupportedShape => {
+                "canonical grammar has an unguarded recursive cycle or ambiguous optional payload"
             }
         })
     }

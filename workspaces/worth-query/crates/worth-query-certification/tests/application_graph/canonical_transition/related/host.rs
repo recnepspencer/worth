@@ -1,6 +1,7 @@
 //! Genuine installation, source seeding, authenticated reads and checkpoint recovery.
 use super::{model::NestedValue, producer, query::ReadValue, schema::*};
 use crate::document_retention_model::operator_identity::*;
+use worth_query_host::facade::declaration::application_schema::ApplicationInvariantMarkerIdentity;
 use worth_query_host::facade::{
     application_contribution::*,
     application_entry::*,
@@ -15,6 +16,10 @@ impl WorthQueryApplicationContribution<CanonicalSchema> for CanonicalContributio
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<CanonicalSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        contracts.producer::<super::companion::producer::Producer>()?;
+        contracts.producer::<super::companion::producer::preserve::Producer>()?;
+        contracts.conditional::<super::companion::readiness::CompanionReadiness>()?;
+        contracts.conditional::<super::companion::readiness::preserve::PreserveReadiness>()?;
         contracts.producer::<producer::Producer>()?;
         contracts.producer::<producer::preserve::Producer>()?;
         contracts.conditional::<super::readiness::DerivedReadiness>()?;
@@ -25,6 +30,21 @@ impl WorthQueryApplicationContribution<CanonicalSchema> for CanonicalContributio
         (): (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, CanonicalSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<super::companion::producer::ProduceBinding, _>(
+            super::companion::producer::Handler,
+        )?;
+        setup.handler::<super::companion::producer::preserve::Binding, _>(
+            super::companion::producer::preserve::Handler,
+        )?;
+        setup.producer::<super::companion::producer::Producer>(
+            super::companion::producer::Provider,
+        )?;
+        setup.producer::<super::companion::producer::preserve::Producer>(
+            super::companion::producer::preserve::Provider,
+        )?;
+        setup.conditional::<super::companion::readiness::CompanionReadiness>(())?;
+        setup.conditional::<super::companion::readiness::preserve::PreserveReadiness>(())?;
+        setup.invariant(super::companion::rule::CompanionRule::reference(), worth_query_host::facade::declaration::application_schema::ApplicationInvariantExecutionPoint::CommitBoundary, super::companion::rule::resolve)?;
         setup.handler::<producer::ProduceBinding, _>(producer::Handler)?;
         setup.handler::<producer::preserve::Binding, _>(producer::preserve::Handler)?;
         setup.handler::<super::edit::EditBinding, _>(super::edit::Handler)?;
@@ -74,10 +94,13 @@ fn install_owned(
     value: NestedValue,
     retain: impl FnOnce(&WorthQueryPrimaryGraphBootstrap<CanonicalSchema>),
 ) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
-    in_memory_program(
+    in_memory_rostered_program(
         ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
             .validated_program()
             .unwrap(),
+        WorthQueryApplicationProgramRoster::new().support(super::companion::host::program::<
+            super::companion::program::TargetProgram,
+        >()),
         CanonicalSchema::declaration().unwrap(),
         ((),),
         limits(),
@@ -114,10 +137,13 @@ fn install_owned(
     reason = "this shared schema-typed owner reopens V2; the original V1 owner stays live"
 )]
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
-    in_memory_program_from_checkpoint(
+    in_memory_rostered_program_from_checkpoint(
         ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
             .validated_program()
             .unwrap(),
+        WorthQueryApplicationProgramRoster::new().support(super::companion::host::program::<
+            super::companion::program::TargetProgram,
+        >()),
         CanonicalSchema::declaration().unwrap(),
         ((),),
         limits(),

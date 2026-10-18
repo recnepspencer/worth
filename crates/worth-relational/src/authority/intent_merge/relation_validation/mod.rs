@@ -74,6 +74,9 @@ pub(super) fn validate_relation_intent(
         MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => {
             relation_target_admission::validate_existing_relation_target(state, spec.relation_id)
         }
+        MutationIntent::Relation(RelationMutationIntent::Revalidate(spec)) => {
+            relation_target_admission::validate_existing_relation_target(state, spec.relation_id)
+        }
         MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
             relation_target_admission::validate_existing_relation_target(state, spec.relation_id)
         }

@@ -262,6 +262,11 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
     }
     phase_timing.draft_structural_summary_micros = summary_started.elapsed().as_micros() as u64;
     let clone_mode = match structural_summary.commit_topology {
+        // The read demand cannot use an entity-only image: real relation and
+        // endpoint preimages must reach judgment without claiming a graph write.
+        CommitTopology::FlatEntityBatch if merged_plan.revalidates_relations() => {
+            PartitionCloneMode::Full
+        }
         CommitTopology::FlatEntityBatch => PartitionCloneMode::EntityOnly,
         CommitTopology::GraphMutation => PartitionCloneMode::GraphSparseEntities,
         CommitTopology::BranchMerge => PartitionCloneMode::Full,

@@ -1,186 +1,131 @@
+use crate::grammar::{types::delegate, Field, Value, ValueKind};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::grammar::{Value, ValueKind};
-
 pub(crate) fn emit(value: &Value) -> TokenStream {
     let ident = &value.ident;
-    let shape = value_shape(value);
-    let depth = shape_depth(value);
-    let nullable = wire_nullable(value);
+    let shape = shape_body(value);
+    let nullable = match &value.kind {
+        ValueKind::Unit => quote!(true),
+        ValueKind::Newtype(ty) => {
+            let ty = delegate(ty).expect("validated type");
+            quote!(<#ty as ::worth_foundational::facade::ValueSeedDelegate>::WIRE_NULLABLE)
+        }
+        _ => quote!(false),
+    };
     let validation = validation(value);
     let decode = crate::seed::emit(value, false);
     let admitted_decode = crate::seed::emit(value, true);
-    let supports_admission = supports_admission(value);
     quote! {
         impl ::worth_foundational::facade::CanonicalValue for #ident {
-            const SUPPORTS_ADMISSION: bool = #supports_admission;
-            const SHAPE_DEPTH: usize = #depth;
+            const SUPPORTS_ADMISSION: bool = true;
             const WIRE_NULLABLE: bool = #nullable;
-
-            fn value_shape() -> ::worth_foundational::facade::ValueShape {
-                assert!(Self::SHAPE_DEPTH <= 64, "WorthValue shape exceeds supported finite nesting");
-                #shape
-            }
-
-            fn validate_bounds(
-                &self,
-                bounds: ::worth_foundational::facade::ValueDecodeBounds,
-            ) -> ::core::result::Result<(), ::worth_foundational::facade::ValueCodecDenial> {
-                #validation
-            }
-
-            fn deserialize_bounded<'de, D: ::serde::Deserializer<'de>>(
-                deserializer: D,
-                bounds: ::worth_foundational::facade::ValueDecodeBounds,
-            ) -> ::core::result::Result<Self, D::Error> {
-                #decode
-            }
-
-            fn deserialize_admitted<'de, D: ::serde::Deserializer<'de>>(
-                deserializer: D,
-                bounds: ::worth_foundational::facade::ValueDecodeBounds,
-                admission: &mut ::worth_foundational::facade::ValueDecodeAdmission<'_>,
-            ) -> ::core::result::Result<Self, D::Error> {
-                #admitted_decode
-            }
+            const SHAPE_BODY: ::worth_foundational::facade::ValueShapeBody = { #shape };
+            fn validate_bounds(&self, bounds: ::worth_foundational::facade::ValueDecodeBounds) -> Result<(), ::worth_foundational::facade::ValueCodecDenial> { #validation }
+            fn deserialize_bounded<'de, D: ::serde::Deserializer<'de>>(deserializer: D, bounds: ::worth_foundational::facade::ValueDecodeBounds) -> Result<Self, D::Error> { #decode }
+            fn deserialize_admitted<'de, D: ::serde::Deserializer<'de>>(deserializer: D, bounds: ::worth_foundational::facade::ValueDecodeBounds, admission: &mut ::worth_foundational::facade::ValueDecodeAdmission<'_>) -> Result<Self, D::Error> { #admitted_decode }
         }
     }
 }
-
-fn supports_admission(value: &Value) -> TokenStream {
-    let children = match &value.kind {
-        ValueKind::Struct(fields) => fields.iter().map(|field| &field.ty).collect::<Vec<_>>(),
-        ValueKind::Newtype(ty) => vec![ty],
-        ValueKind::Unit => vec![],
-        ValueKind::Enum(variants) => variants
-            .iter()
-            .filter_map(|variant| variant.payload.as_ref())
-            .collect(),
-    };
-    quote! { true #(&& <#children as ::worth_foundational::facade::CanonicalValue>::SUPPORTS_ADMISSION)* }
+fn fields_shape(fields: &[Field]) -> TokenStream {
+    let fields = fields.iter().map(|field| {
+        let name = &field.wire_name;
+        let ty = delegate(&field.ty).expect("validated type");
+        quote!(::worth_foundational::facade::ValueFieldDefinition { name: #name, value: <#ty as ::worth_foundational::facade::ValueSeedDelegate>::EDGE })
+    });
+    quote!(&[#(#fields),*])
 }
-
-fn wire_nullable(value: &Value) -> TokenStream {
+fn shape_body(value: &Value) -> TokenStream {
+    let facade = quote!(::worth_foundational::facade);
     match &value.kind {
-        ValueKind::Unit => quote! { true },
-        ValueKind::Newtype(ty) => quote! {
-            <#ty as ::worth_foundational::facade::CanonicalValue>::WIRE_NULLABLE
-        },
-        ValueKind::Struct(_) | ValueKind::Enum(_) => quote! { false },
-    }
-}
-
-fn shape_depth(value: &Value) -> TokenStream {
-    let children = match &value.kind {
-        ValueKind::Struct(fields) => fields.iter().map(|field| &field.ty).collect::<Vec<_>>(),
+        ValueKind::Struct(fields) => {
+            let fields = fields_shape(fields);
+            quote!(#facade::ValueShapeBody::Struct(#fields))
+        }
         ValueKind::Newtype(ty) => {
-            return quote! {
-                <#ty as ::worth_foundational::facade::CanonicalValue>::SHAPE_DEPTH
-            }
+            let ty = delegate(ty).expect("validated type");
+            quote!(#facade::ValueShapeBody::Transparent(<#ty as #facade::ValueSeedDelegate>::EDGE))
         }
-        ValueKind::Unit => return quote! { 0 },
-        ValueKind::Enum(variants) => variants
-            .iter()
-            .filter_map(|variant| variant.payload.as_ref())
-            .collect(),
-    };
-    quote! {{
-        let maximum = 0usize;
-        #(let maximum = {
-            let child = <#children as ::worth_foundational::facade::CanonicalValue>::SHAPE_DEPTH;
-            if child > maximum { child } else { maximum }
-        };)*
-        let depth = maximum + 1;
-        assert!(depth <= 64, "WorthValue requires a finite wire shape no deeper than 64 levels");
-        depth
-    }}
-}
-
-fn value_shape(value: &Value) -> TokenStream {
-    match &value.kind {
-        ValueKind::Struct(fields) => {
-            let names = fields.iter().map(|field| &field.wire_name);
-            let types = fields.iter().map(|field| &field.ty);
-            quote! {
-                ::worth_foundational::facade::ValueShape::Struct(::std::vec![
-                    #(::worth_foundational::facade::ValueFieldShape::new(
-                        #names,
-                        <#types as ::worth_foundational::facade::CanonicalValue>::value_shape(),
-                    )),*
-                ])
-            }
+        ValueKind::Unit => {
+            quote!(#facade::ValueShapeBody::Primitive(#facade::ValuePrimitive::Unit))
         }
-        ValueKind::Newtype(ty) => quote! {
-            <#ty as ::worth_foundational::facade::CanonicalValue>::value_shape()
-        },
-        ValueKind::Unit => unit_shape(),
         ValueKind::Enum(variants) => {
-            let descriptions = variants.iter().map(|variant| {
+            let variants = variants.iter().map(|variant| {
                 let name = &variant.wire_name;
-                match &variant.payload {
-                    Some(ty) => quote! {
-                        ::worth_foundational::facade::ValueVariantShape::newtype(
-                            #name,
-                            <#ty as ::worth_foundational::facade::CanonicalValue>::value_shape(),
-                        )
-                    },
-                    None => quote! {
-                        ::worth_foundational::facade::ValueVariantShape::unit(#name)
-                    },
-                }
+                let payload = match &variant.payload {
+                    Some(ty) => {
+                        let ty = delegate(ty).expect("validated type");
+                        quote!(Some(<#ty as #facade::ValueSeedDelegate>::EDGE))
+                    }
+                    None => quote!(None),
+                };
+                quote!(#facade::ValueVariantDefinition { name: #name, payload: #payload })
             });
-            quote! { ::worth_foundational::facade::ValueShape::Enum(::std::vec![#(#descriptions),*]) }
+            quote!(#facade::ValueShapeBody::Enum(&[#(#variants),*]))
+        }
+        ValueKind::TaggedEnum { tag, variants } => {
+            let variants = variants.iter().map(|variant| {
+                let name = &variant.wire_name;
+                let fields = fields_shape(&variant.fields);
+                quote!(#facade::ValueTaggedVariantDefinition { name: #name, fields: #fields })
+            });
+            quote!(#facade::ValueShapeBody::TaggedEnum { tag: #tag, variants: &[#(#variants),*] })
         }
     }
 }
-
-fn unit_shape() -> TokenStream {
-    quote! { ::worth_foundational::facade::ValueShape::Primitive(
-        ::worth_foundational::facade::ValuePrimitive::Unit,
-    ) }
+fn validate_fields(fields: &[Field], bindings: bool) -> TokenStream {
+    let statements = fields.iter().map(|field| {
+        let member = &field.ident;
+        let name = &field.wire_name;
+        let ty = delegate(&field.ty).expect("validated type");
+        let value = if bindings { quote!(#member) } else { quote!(&self.#member) };
+        quote! {
+            child_bounds.check_string_bytes(#name.len())?;
+            <#ty as ::worth_foundational::facade::ValueSeedDelegate>::validate(#value, child_bounds)?;
+        }
+    });
+    quote!(#(#statements)*)
 }
-
 fn validation(value: &Value) -> TokenStream {
-    let children = match &value.kind {
-        ValueKind::Struct(fields) => {
-            let statements = fields.iter().map(|field| {
-                let member = &field.ident;
-                let name = &field.wire_name;
-                quote! {
-                    child_bounds.check_string_bytes(#name.len())?;
-                    ::worth_foundational::facade::CanonicalValue::validate_bounds(&self.#member, child_bounds)?;
-                }
-            });
-            quote! { #(#statements)* }
+    let body = match &value.kind {
+        ValueKind::Struct(fields) => validate_fields(fields, false),
+        ValueKind::Newtype(ty) => {
+            let ty = delegate(ty).expect("validated type");
+            return quote!(<#ty as ::worth_foundational::facade::ValueSeedDelegate>::validate(&self.0, bounds));
         }
-        ValueKind::Newtype(_) => {
-            return quote! {
-                ::worth_foundational::facade::CanonicalValue::validate_bounds(&self.0, bounds)
-            }
-        }
-        ValueKind::Unit => return quote! { let _ = bounds; Ok(()) },
+        ValueKind::Unit => return quote!(let _ = bounds; Ok(())),
         ValueKind::Enum(variants) => {
             let arms = variants.iter().map(|variant| {
-                let ident = &variant.ident;
+                let member = &variant.ident;
                 let name = &variant.wire_name;
-                match variant.payload {
-                    Some(_) => quote! {
-                        Self::#ident(payload) => {
-                            child_bounds.check_string_bytes(#name.len())?;
-                            ::worth_foundational::facade::CanonicalValue::validate_bounds(payload, child_bounds)?;
-                        },
-                    },
-                    None => quote! { Self::#ident => child_bounds.check_string_bytes(#name.len())?, },
+                match &variant.payload {
+                    Some(ty) => { let ty = delegate(ty).expect("validated type"); quote!(Self::#member(payload) => {
+                        child_bounds.check_string_bytes(#name.len())?;
+                        <#ty as ::worth_foundational::facade::ValueSeedDelegate>::validate(payload, child_bounds)?;
+                    }) },
+                    None => quote!(Self::#member => child_bounds.check_string_bytes(#name.len())?),
                 }
             });
-            quote! { match self { #(#arms)* } }
+            quote!(match self { #(#arms),* })
+        }
+        ValueKind::TaggedEnum { tag, variants } => {
+            let arms = variants.iter().map(|variant| {
+                let member = &variant.ident;
+                let name = &variant.wire_name;
+                let fields = variant.fields.iter().map(|field| &field.ident);
+                let pattern = if variant.unit {
+                    quote!()
+                } else {
+                    quote!({ #(#fields),* })
+                };
+                let validate = validate_fields(&variant.fields, true);
+                quote!(Self::#member #pattern => {
+                    child_bounds.check_string_bytes(#name.len())?;
+                    #validate
+                })
+            });
+            quote!(child_bounds.check_string_bytes(#tag.len())?; match self { #(#arms),* })
         }
     };
-    quote! {
-        let child_bounds = bounds.descend()?;
-        let _ = child_bounds;
-        #children
-        Ok(())
-    }
+    quote!(let child_bounds = bounds.descend()?; let _ = child_bounds; #body Ok(()))
 }

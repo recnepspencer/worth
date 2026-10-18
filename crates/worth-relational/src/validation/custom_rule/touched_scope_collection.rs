@@ -288,6 +288,16 @@ pub(crate) fn collect_touched_structural_set(
                         access,
                     );
                 }
+                MutationIntent::Relation(RelationMutationIntent::Revalidate(spec)) => {
+                    include_affected_relation(
+                        &mut visible_entities,
+                        &mut visible_relations,
+                        spec.relation_id,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
+                }
                 MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
                     if include_affected_relation(
                         &mut visible_entities,

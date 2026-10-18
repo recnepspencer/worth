@@ -12,8 +12,8 @@
 //! path an id for a demand, and nothing but arm order would stop it being
 //! recorded as authored.
 
-use crate::identity::data::EntityId;
-use crate::transactions::data::EntityMutationIntent;
+use crate::identity::data::{EntityId, RelationId};
+use crate::transactions::data::{EntityMutationIntent, RelationMutationIntent};
 
 /// The one locus an entity intent claims, named together with its record.
 pub(super) enum EntityIntentLocus {
@@ -32,5 +32,24 @@ pub(super) const fn entity_intent_locus(intent: &EntityMutationIntent) -> Entity
         EntityMutationIntent::Replace(intent) => EntityIntentLocus::Write(intent.entity_id),
         EntityMutationIntent::Delete(intent) => EntityIntentLocus::Write(intent.entity_id),
         EntityMutationIntent::Revalidate(intent) => EntityIntentLocus::Read(intent.entity_id),
+    }
+}
+
+/// The one locus a relation intent claims, named together with its record.
+pub(super) enum RelationIntentLocus {
+    Write(RelationId),
+    Read(RelationId),
+}
+
+pub(super) const fn relation_intent_locus(intent: &RelationMutationIntent) -> RelationIntentLocus {
+    match intent {
+        RelationMutationIntent::UpdateEndpoints(intent) => {
+            RelationIntentLocus::Write(intent.relation_id)
+        }
+        RelationMutationIntent::ApplyAspectPatch(intent) => {
+            RelationIntentLocus::Write(intent.relation_id)
+        }
+        RelationMutationIntent::Delete(intent) => RelationIntentLocus::Write(intent.relation_id),
+        RelationMutationIntent::Revalidate(intent) => RelationIntentLocus::Read(intent.relation_id),
     }
 }

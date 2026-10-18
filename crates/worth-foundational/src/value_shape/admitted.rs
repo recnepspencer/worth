@@ -44,6 +44,7 @@ fn decode<Value: CanonicalValue>(
     admission: &mut ValueDecodeAdmission<'_>,
 ) -> Result<Value, D> {
     admission(raw.len(), json_decode_storage(raw.len(), bounds)?)?;
+    super::ValueShapeDefinition::of::<Value>().inspect_admitted(admission)?;
     let mut decoder = serde_json::Deserializer::from_str(raw);
     let value = CanonicalValueSeed::<Value>::with_admission(bounds, admission)
         .deserialize(&mut decoder)
@@ -84,7 +85,7 @@ fn json_decode_storage(input_bytes: usize, bounds: ValueDecodeBounds) -> Result<
         .and_then(|n| n.checked_add(16))
         .ok_or(D::Admission)?;
     // serde_json src/error.rs:435,484 formats one custom diagnostic, converts
-    // its String to Box<str>, then boxes ErrorImpl. serde_core 1.0.228
+    // its String to Box<str>, then boxes ErrorImpl. serde_core 1.0.229
     // src/de/mod.rs:401-423 Debug-formats unexpected strings: <=6 bytes per
     // input byte. 128 covers JSON labels and our fixed Expected/denial text.
     // Generated errors omit static field names/lists, whose size is unrelated
