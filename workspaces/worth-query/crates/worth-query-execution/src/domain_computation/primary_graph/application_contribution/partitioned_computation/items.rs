@@ -13,7 +13,7 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_declaration::facade::application_program::ApplicationComputationPartition;
 
-use super::super::request_execution::QueryMemoryReservation;
+use super::super::request_execution::QueryRequestExecution;
 use super::super::WorthQueryManagedComputationResourceDenial;
 use super::installed::encoding_resource_denial;
 use super::remaining_work::{EncodingMeter, RemainingWork};
@@ -73,14 +73,14 @@ where
 }
 
 /// Derives `item`'s partition from its `key` and routes it, spending the
-/// key's encoding and the route from the declared work. `memory` holds what
-/// the routing retains. Returns the partition and the key's canonical
+/// key's encoding and the route from the declared work. New routing cells
+/// hold their native grants. Returns the partition and the key's canonical
 /// encoding length.
 pub(super) fn route_item<Key, Stopped>(
     item: PartitionItemId,
     key: &Key,
     routing: &mut ComputationPartitionRouting,
-    memory: &mut QueryMemoryReservation,
+    execution: &QueryRequestExecution<'_>,
     remaining_work: &mut RemainingWork,
     declared_bytes: u64,
 ) -> Result<(PartitionIdentity, u64), WorthQueryPartitionedComputationDenial<Stopped>>
@@ -96,8 +96,13 @@ where
                 }
                 denial => encoding_resource_denial(denial),
             })?;
-    let (partition, routed) =
-        routing.route(item, *derived.digest(), |bound| memory.resize(bound))?;
+    let (partition, routed) = routing.route_in(
+        item,
+        *derived.digest(),
+        execution
+            .allocation_policy()
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
+    )?;
     remaining_work
         .spend(routed.units())
         .map_err(WorthQueryPartitionedComputationDenial::Resource)?;

@@ -28,7 +28,7 @@ fn calls() -> Vec<(ComputationRead, Call)> {
 fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
     use crate::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget as Budget;
     let calls = calls();
-    let tree = build(0, &calls).unwrap();
+    let tree = funded_tree(&calls);
     for start in 0..calls.len() {
         for end in start + 1..=calls.len() {
             for remaining in 0..40 {
@@ -69,7 +69,7 @@ fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
 fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
     use crate::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget as Budget;
     let calls = calls();
-    let tree = build(0, &calls).unwrap();
+    let tree = funded_tree(&calls);
     for remaining in 0..40 {
         let mut full = Budget::bounded(remaining);
         let stop = calls.iter().position(|(_, (charge, _))| {
@@ -105,4 +105,20 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
             (full.remaining(), full.exceeded())
         );
     }
+}
+
+fn funded_tree(calls: &[(ComputationRead, Call)]) -> Arc<Node> {
+    use crate::domain_computation::primary_graph::{
+        application_contribution::{test_policy, QueryRequestExecution},
+        tests::fixture::live_scope,
+    };
+    let request = live_scope();
+    let execution = QueryRequestExecution::open(
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
+            std::num::NonZeroUsize::MIN,
+            1 << 24,
+        )),
+        &request,
+    );
+    build(0, calls, &execution).unwrap().unwrap()
 }

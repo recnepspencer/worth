@@ -41,6 +41,7 @@ mod cutoff;
 mod decision_plan;
 mod handler_absence;
 pub(super) mod installation;
+mod live_group_move;
 mod republication;
 mod restoration;
 mod seeded_absence;

@@ -76,6 +76,11 @@ Use `RetainedMapInput` with `run_retained_inputs` for a mixed current plan, or
 `run_reduce_retained_holding` for genuine leaf results beside the canonical
 tree. See [retained native results](../crates/worth-execution/README.md#retained-native-results).
 
+Platform-owned ordered retained metadata uses `ExecutionOrderedMap<K, V>`:
+shared-root cloning, canonical iteration and policy-admitted changed paths retain
+their own grants. This storage supplies no result, source or request authority.
+See [funded ordered storage](../crates/worth-execution/README.md#funded-ordered-storage).
+
 For a platform owner's keyless map, `run_retained_run` issues an opaque
 `ExecutionRetainedRun` after real native completion. `prior.advance` accepts
 changed inputs and canonical removed identities only; native settlement

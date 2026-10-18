@@ -272,16 +272,14 @@ where
                 }
                 let reduced = tree.result().clone();
                 let completed = match recording {
-                    Ok(recording) => recording
-                        .complete(
-                            partition_results,
-                            tree,
-                            tree_memory,
-                            execution.request,
-                            cause,
-                            report,
-                        )
-                        .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
+                    Ok(recording) => recording.complete(
+                        partition_results,
+                        tree,
+                        tree_memory,
+                        execution.request,
+                        cause,
+                        report,
+                    )?,
                     Err(reason) => {
                         observe_unretained(cause, report);
                         CompletedComputationRetention::Absent(PriorAbsence::Suppressed(reason))

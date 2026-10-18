@@ -12,7 +12,24 @@ mod funding;
 mod issue;
 #[cfg(test)]
 mod tests;
-use funding::{bound, shape_bound};
+use funding::shape_bound;
+mod reached;
+use reached::ReachedCalls;
+#[derive(Debug)]
+pub(in crate::domain_computation::primary_graph) enum CallSequenceDenial {
+    Resource(Resource),
+    Storage(worth_execution::ExecutionOrderedMapDenial),
+}
+impl From<Resource> for CallSequenceDenial {
+    fn from(cause: Resource) -> Self {
+        Self::Resource(cause)
+    }
+}
+impl From<worth_execution::ExecutionOrderedMapDenial> for CallSequenceDenial {
+    fn from(cause: worth_execution::ExecutionOrderedMapDenial) -> Self {
+        Self::Storage(cause)
+    }
+}
 type Call = (ComputationCallCharge, u64);
 
 pub(in crate::domain_computation::primary_graph) struct CallShape {
@@ -67,6 +84,8 @@ struct Node {
     end: usize,
     summary: Option<CallSummary>,
     kind: Kind,
+    bytes: u64,
+    _memory: QueryMemoryReservation,
 }
 enum Kind {
     Leaf(ComputationRead, Call),
@@ -76,12 +95,12 @@ pub(in crate::domain_computation::primary_graph) enum CallVisit<'a> {
     Range(Range<usize>, &'a CallSummary),
     Leaf(usize, ComputationRead, &'a ComputationCallCharge, u64),
 }
-/// No request borrow or parent sequence is stored. Each root funds its whole
-/// representation; unchanged nodes and the exact ordinal shape may be shared.
+/// No request borrow or parent sequence is stored. Each cell funds its own
+/// representation; unchanged nodes and the exact ordinal shape share grants.
 pub(in crate::domain_computation::primary_graph) struct ComputationCallSequence {
     shape: Arc<CallShape>,
     root: Option<Arc<Node>>,
-    reached: im::OrdMap<EntityId, im::OrdSet<usize>>,
+    reached: ReachedCalls,
     pairs: usize,
     payload: u64,
     bytes: u64,
@@ -100,10 +119,7 @@ impl ComputationCallSequence {
     /// Already funded backing travelling with this immutable value. This is
     /// transport custody only; retention still charges the complete capacity.
     pub(in crate::domain_computation::primary_graph) fn funded_bytes(&self) -> u64 {
-        self._memory
-            .bytes()
-            .saturating_add(self.shape._memory.bytes())
-            .min(self.bytes)
+        self.bytes
     }
     pub(in crate::domain_computation::primary_graph) fn summary(
         &self,
@@ -117,9 +133,7 @@ impl ComputationCallSequence {
         range: &Range<usize>,
     ) -> bool {
         observed::computation_call_scope();
-        self.reached
-            .get(&entity)
-            .is_some_and(|ordinals| ordinals.range(range.clone()).next().is_some())
+        self.reached.contains_in(entity, range)
     }
     pub(in crate::domain_computation::primary_graph) fn visit<E>(
         &self,
@@ -136,7 +150,7 @@ impl ComputationCallSequence {
         self: &Arc<Self>,
         changes: I,
         execution: &QueryRequestExecution<'_>,
-    ) -> Result<Arc<Self>, Resource>
+    ) -> Result<Arc<Self>, CallSequenceDenial>
     where
         I: Iterator<Item = (ComputationRead, &'a ComputationCallCharge, u64)>,
     {
@@ -144,78 +158,46 @@ impl ComputationCallSequence {
         if changes.peek().is_none() {
             return Ok(Arc::clone(self));
         }
-        let mut memory = execution.reserve(
-            self.bytes
-                .checked_mul(2)
-                .ok_or(Resource::CapacityOverflow)?,
-        )?;
-        let (mut added_pairs, mut added_payload) = (0_usize, 0_u64);
-        let (mut root, mut reached, mut pairs, mut payload) = (
-            self.root.clone(),
-            self.reached.clone(),
-            self.pairs,
-            self.payload,
-        );
+        let mut root = self.root.clone();
+        let mut reached = self.reached.clone();
+        let (mut pairs, mut payload) = (self.pairs, self.payload);
+        let policy = execution.allocation_policy()?;
         for (read, charge, declared) in changes {
-            added_pairs = added_pairs
-                .checked_add(charge.reached.len())
-                .ok_or(Resource::CapacityOverflow)?;
-            added_payload = added_payload
-                .checked_add(
-                    charge
-                        .additional_bytes()
-                        .ok_or(Resource::CapacityOverflow)?,
-                )
-                .ok_or(Resource::CapacityOverflow)?;
-            let peak = bound(
-                self.shape.len(),
-                self.reached
-                    .len()
-                    .checked_add(added_pairs)
-                    .ok_or(Resource::CapacityOverflow)?,
-                self.pairs
-                    .checked_add(added_pairs)
-                    .ok_or(Resource::CapacityOverflow)?,
-                self.payload
-                    .checked_add(added_payload)
-                    .ok_or(Resource::CapacityOverflow)?,
-            )
-            .and_then(|bytes| bytes.checked_add(self.bytes))
-            .ok_or(Resource::CapacityOverflow)?;
-            if peak > memory.bytes() {
-                memory.resize(peak)?;
-            }
-            let call = (charge.clone(), declared);
+            policy
+                .check_live()
+                .map_err(worth_execution::ExecutionOrderedMapDenial::from)?;
             let ordinal = self.shape.ordinal(read).ok_or(Resource::CapacityOverflow)?;
-            let old = leaf(root.as_deref().expect("a known call has a root"), ordinal);
+            let old = leaf(root.as_deref().expect("known call root"), ordinal);
             for entity in old.0.reached.iter() {
                 observed::computation_call_reach();
-                let set = reached.get_mut(entity).expect("recorded reached identity");
-                set.remove(&ordinal);
-                if set.is_empty() {
-                    reached.remove(entity);
-                }
+                reached.remove(*entity, ordinal, policy)?;
             }
-            for entity in call.0.reached.iter() {
+            for entity in charge.reached.iter() {
                 observed::computation_call_reach();
-                reached.entry(*entity).or_default().insert(ordinal);
+                reached.insert(*entity, ordinal, policy)?;
             }
             pairs = pairs
                 .checked_sub(old.0.reached.len())
-                .and_then(|n| n.checked_add(call.0.reached.len()))
+                .and_then(|v| v.checked_add(charge.reached.len()))
                 .ok_or(Resource::CapacityOverflow)?;
             payload = payload
                 .checked_sub(old.0.additional_bytes().ok_or(Resource::CapacityOverflow)?)
-                .and_then(|n| n.checked_add(call.0.additional_bytes()?))
+                .and_then(|v| v.checked_add(charge.additional_bytes()?))
                 .ok_or(Resource::CapacityOverflow)?;
-            root = Some(patch(root.as_ref().unwrap(), ordinal, &call));
+            root = Some(patch(
+                root.as_ref().unwrap(),
+                ordinal,
+                &(charge.clone(), declared),
+                execution,
+            )?);
         }
-        let bytes = bound(self.shape.len(), reached.len(), pairs, payload)
-            .ok_or(Resource::CapacityOverflow)?;
-        let bytes = bytes
+        let memory = execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64)?;
+        let bytes = memory
+            .bytes()
             .checked_add(self.shape.bytes)
+            .and_then(|v| v.checked_add(root.as_ref().map_or(0, |n| n.bytes)))
+            .and_then(|v| v.checked_add(reached.bytes()))
             .ok_or(Resource::CapacityOverflow)?;
-        memory.resize(bytes)?;
         Ok(Arc::new(Self {
             shape: Arc::clone(&self.shape),
             root,
@@ -227,12 +209,16 @@ impl ComputationCallSequence {
         }))
     }
 }
+
 use crate::domain_computation::primary_graph::fact_verification_observation as observed;
-fn build(start: usize, entries: &[(ComputationRead, Call)]) -> Option<Arc<Node>> {
+fn build(
+    start: usize,
+    entries: &[(ComputationRead, Call)],
+    execution: &QueryRequestExecution<'_>,
+) -> Result<Option<Arc<Node>>, Resource> {
     if entries.is_empty() {
-        return None;
+        return Ok(None);
     }
-    observed::computation_call_copy();
     let end = start + entries.len();
     let (kind, summary) = if entries.len() == 1 {
         let (read, call) = &entries[0];
@@ -242,16 +228,43 @@ fn build(start: usize, entries: &[(ComputationRead, Call)]) -> Option<Arc<Node>>
         )
     } else {
         let split = entries.len() / 2;
-        let left = build(start, &entries[..split]).unwrap();
-        let right = build(start + split, &entries[split..]).unwrap();
-        let summary = left.summary.zip(right.summary).and_then(|(a, b)| a.then(b));
-        (Kind::Branch(left, right), summary)
+        let a = build(start, &entries[..split], execution)?.unwrap();
+        let b = build(start + split, &entries[split..], execution)?.unwrap();
+        let summary = a.summary.zip(b.summary).and_then(|(a, b)| a.then(b));
+        (Kind::Branch(a, b), summary)
     };
-    Some(Arc::new(Node {
+    funded_node(start, end, kind, summary, execution).map(Some)
+}
+fn funded_node(
+    start: usize,
+    end: usize,
+    kind: Kind,
+    summary: Option<CallSummary>,
+    execution: &QueryRequestExecution<'_>,
+) -> Result<Arc<Node>, Resource> {
+    let payload = match &kind {
+        Kind::Leaf(_, call) => call.0.additional_bytes(),
+        Kind::Branch(a, b) => a.bytes.checked_add(b.bytes),
+    }
+    .ok_or(Resource::CapacityOverflow)?;
+    let allocation = (size_of::<Node>() + 2 * size_of::<usize>()) as u64;
+    let retained = allocation
+        .checked_add(payload)
+        .ok_or(Resource::CapacityOverflow)?;
+    let held = if matches!(&kind, Kind::Leaf(..)) {
+        retained
+    } else {
+        allocation
+    };
+    let memory = execution.reserve(held)?;
+    observed::computation_call_copy();
+    Ok(Arc::new(Node {
         start,
         end,
-        summary,
         kind,
+        summary,
+        bytes: retained,
+        _memory: memory,
     }))
 }
 fn leaf(node: &Node, ordinal: usize) -> &Call {
@@ -260,8 +273,12 @@ fn leaf(node: &Node, ordinal: usize) -> &Call {
         Kind::Branch(a, b) => leaf(if ordinal < a.end { a } else { b }, ordinal),
     }
 }
-fn patch(node: &Arc<Node>, ordinal: usize, call: &Call) -> Arc<Node> {
-    observed::computation_call_copy();
+fn patch(
+    node: &Arc<Node>,
+    ordinal: usize,
+    call: &Call,
+    execution: &QueryRequestExecution<'_>,
+) -> Result<Arc<Node>, Resource> {
     let (kind, summary) = match &node.kind {
         Kind::Leaf(read, _) => (
             Kind::Leaf(*read, call.clone()),
@@ -269,20 +286,15 @@ fn patch(node: &Arc<Node>, ordinal: usize, call: &Call) -> Arc<Node> {
         ),
         Kind::Branch(a, b) => {
             let (a, b) = if ordinal < a.end {
-                (patch(a, ordinal, call), Arc::clone(b))
+                (patch(a, ordinal, call, execution)?, Arc::clone(b))
             } else {
-                (Arc::clone(a), patch(b, ordinal, call))
+                (Arc::clone(a), patch(b, ordinal, call, execution)?)
             };
             let summary = a.summary.zip(b.summary).and_then(|(a, b)| a.then(b));
             (Kind::Branch(a, b), summary)
         }
     };
-    Arc::new(Node {
-        start: node.start,
-        end: node.end,
-        summary,
-        kind,
-    })
+    funded_node(node.start, node.end, kind, summary, execution)
 }
 fn summary(node: &Node, range: &Range<usize>) -> Option<CallSummary> {
     observed::computation_call_range();

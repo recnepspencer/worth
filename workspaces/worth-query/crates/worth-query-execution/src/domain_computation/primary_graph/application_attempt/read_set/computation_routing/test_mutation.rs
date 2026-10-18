@@ -8,8 +8,13 @@ impl SealedComputationFacts {
         attribution: ComputationFactAttribution,
         observed: &BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
     ) -> Self {
-        Self::prepare(attribution, observed.keys())
-            .bind_fixture(Arc::<[_]>::from(observed.values().cloned().collect::<Vec<_>>()).into())
+        Self::prepare(
+            attribution,
+            observed.keys(),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+        .bind_fixture(Arc::<[_]>::from(observed.values().cloned().collect::<Vec<_>>()).into())
     }
 
     pub(in crate::domain_computation::primary_graph) fn replace_fact(
@@ -73,8 +78,24 @@ impl SealedComputationFacts {
             );
             values.push(fact);
         }
-        self.index = Arc::new(ComputationFactIndex::build(&metadata));
-        self.metadata = Arc::new(metadata);
+        self.index = Arc::new(
+            ComputationFactIndex::build(
+                &metadata,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap(),
+        );
+        let mut retained = worth_execution::ExecutionOrderedMap::default();
+        for (key, value) in metadata {
+            retained
+                .insert_cloned_in(
+                    &key,
+                    &value,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+        }
+        self.metadata = Arc::new(retained);
         self.original = Arc::<[_]>::from(values).into();
         self.content = None;
         self.layout = super::layout::SealedReadLayout::OwnerFixture;

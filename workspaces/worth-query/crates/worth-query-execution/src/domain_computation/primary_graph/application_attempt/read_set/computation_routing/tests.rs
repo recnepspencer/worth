@@ -10,18 +10,18 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact,
 };
 
-fn entity(slot: u64) -> EntityId {
+pub(super) fn entity(slot: u64) -> EntityId {
     EntityId::new(PartitionId::main(), slot, 1)
 }
 
-fn key(slot: u64) -> WorthQueryApplicationFactKey {
+pub(super) fn key(slot: u64) -> WorthQueryApplicationFactKey {
     WorthQueryApplicationFactKey::Entity {
         entity: "entry".to_owned(),
         entity_id: entity(slot),
     }
 }
 
-fn partition(identity: u64) -> ComputationRead {
+pub(super) fn partition(identity: u64) -> ComputationRead {
     ComputationRead::Partition(PartitionIdentity::new(identity))
 }
 
@@ -229,7 +229,12 @@ fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
     reads.record(key(2), partition(7));
     reads.record(key(2), partition(9));
     reads.record(key(4), ComputationRead::Membership);
-    let metadata = SealedComputationFacts::prepare(reads, observed.keys());
+    let metadata = SealedComputationFacts::prepare(
+        reads,
+        observed.keys(),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
     let mut body = NativeFactPayloadBuilder::allocate_completed_read(
         observed.len(),
         StorageControl::new(

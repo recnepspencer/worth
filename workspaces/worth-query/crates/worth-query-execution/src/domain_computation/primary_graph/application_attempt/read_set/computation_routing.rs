@@ -313,7 +313,9 @@ struct SealedComputationFact {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
     index: std::sync::Arc<index::ComputationFactIndex>,
-    metadata: std::sync::Arc<BTreeMap<WorthQueryApplicationFactKey, SealedComputationFact>>,
+    metadata: std::sync::Arc<
+        worth_execution::ExecutionOrderedMap<WorthQueryApplicationFactKey, SealedComputationFact>,
+    >,
     original: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     content: Option<super::super::FactContent>,
     charged: Option<u64>,
@@ -326,6 +328,7 @@ mod layout;
 mod ranges;
 pub(in crate::domain_computation::primary_graph) use layout::CheckedCallShape;
 pub(in crate::domain_computation::primary_graph) use ranges::NativeCallCarriage;
+mod reattribution;
 mod reuse;
 pub(in crate::domain_computation::primary_graph::application_attempt::read_set) use layout::CheckedReadLayout;
 pub(in crate::domain_computation::primary_graph) use reuse::NativeReadRefresh;
@@ -336,3 +339,12 @@ mod test_mutation;
 #[cfg(test)]
 mod tests;
 pub(in crate::domain_computation::primary_graph) use index::ComputationFactIndex;
+
+impl worth_execution::ChargedBytes for ComputationRead {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
+}
+
+#[cfg(test)]
+mod reattribution_tests;

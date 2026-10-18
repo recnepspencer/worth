@@ -25,6 +25,7 @@ mod carriage;
 mod item_bounds;
 mod native_reads;
 mod prepare_ranges;
+mod prepare_rekeys;
 pub(in crate::domain_computation::primary_graph) use native_reads::NativeComputationReads;
 mod deposit;
 mod next_tree;

@@ -1,8 +1,7 @@
-//! Real retained metadata admits a fresh view before sharing any root.
+//! Shared metadata keeps old grants; only changed paths need fresh room.
 use super::super::retained::RetainedPartitions;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy;
-use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial;
 
 #[test]
 fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_final_drop() {
@@ -23,39 +22,53 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
     let original = prior.partitions.get(&first_identity).unwrap().key.0;
     let request = live_scope();
     let narrow = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, bound - 1)),
+        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, 1)),
         &request,
     );
-    assert!(matches!(
-        prior.partitions.fork(&narrow),
-        Err(WorthQueryManagedComputationResourceDenial::MemoryLimit { .. })
+    let mut candidate = prior.partitions.fork();
+    assert!(std::ptr::eq(
+        prior.partitions.get(&first_identity).unwrap(),
+        candidate.get(&first_identity).unwrap()
     ));
+    let value = candidate.get(&first_identity).unwrap().clone();
+    assert!(candidate
+        .put(first_identity, value, narrow.allocation_policy().unwrap())
+        .is_err());
+    assert_eq!(candidate.len(), count);
+    assert!(std::ptr::eq(
+        prior.partitions.get(&first_identity).unwrap(),
+        candidate.get(&first_identity).unwrap()
+    ));
+    let capacity = bound * 4;
+    let fresh = QueryRequestExecution::open(
+        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, capacity)),
+        &request,
+    );
+    assert!(
+        fresh.reserve(capacity).is_ok(),
+        "sharing charged no unrelated backing"
+    );
+    let value = candidate.get(&first_identity).unwrap().clone();
+    candidate
+        .put(first_identity, value, fresh.allocation_policy().unwrap())
+        .unwrap();
+    let view = Arc::new(candidate);
+    let clone = Arc::clone(&view);
+    assert!(fresh.reserve(capacity).is_err());
+    drop(view);
+    assert!(
+        fresh.reserve(capacity).is_err(),
+        "a surviving view retains the changed path grant"
+    );
+    assert_eq!(clone.get(&first_identity).unwrap().key.0, original);
+    drop(clone);
+    assert!(
+        fresh.reserve(capacity).is_ok(),
+        "final changed view releases its grant"
+    );
     assert_eq!(prior.partitions.len(), count);
     assert_eq!(
         prior.partitions.get(&first_identity).unwrap().key.0,
         original
     );
-    let fresh = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, bound)),
-        &request,
-    );
-    let view = Arc::new(prior.partitions.fork(&fresh).unwrap());
-    assert!(Arc::ptr_eq(
-        prior.partitions.get(&first_identity).unwrap(),
-        view.get(&first_identity).unwrap()
-    ));
-    let clone = Arc::clone(&view);
-    assert!(fresh.reserve(bound).is_err());
-    drop(view);
-    assert!(
-        fresh.reserve(bound).is_err(),
-        "the surviving view still owns the new backing grant"
-    );
-    assert_eq!(clone.get(&first_identity).unwrap().key.0, original);
-    drop(clone);
-    assert!(
-        fresh.reserve(bound).is_ok(),
-        "the final view releases its own grant without affecting the prior"
-    );
-    assert_eq!(prior.partitions.len(), count);
 }

@@ -121,7 +121,14 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         key_bytes: partition.key_bytes,
         gather: partition.gather.clone(),
     };
-    typed.partitions.put(identity, replacement).unwrap();
+    typed
+        .partitions
+        .put(
+            identity,
+            replacement,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     typed
         .tree
         .update_checked(identity, 62, u64::MAX, || Ok::<(), ()>(()))

@@ -1,12 +1,12 @@
 //! Completed measured calls: retain patched custody or explicitly rebuild in full.
 use super::*;
-pub(super) fn complete<Key, Item>(
+pub(super) fn complete<Key, Item, Stopped>(
     next: &NextPartitioning<Item>,
     partitions: &super::super::partition_metadata::PartitionMetadata<Key>,
     patched: Option<Arc<ComputationCallSequence>>,
     measured: bool,
     execution: &QueryRequestExecution<'_>,
-) -> Result<Option<Arc<ComputationCallSequence>>, WorthQueryManagedComputationResourceDenial> {
+) -> Result<Option<Arc<ComputationCallSequence>>, WorthQueryPartitionedComputationDenial<Stopped>> {
     let Some(membership) = next.membership.as_ref().filter(|_| measured) else {
         return Ok(None);
     };
@@ -36,4 +36,5 @@ pub(super) fn complete<Key, Item>(
         execution,
     )
     .map(Some)
+    .map_err(WorthQueryPartitionedComputationDenial::from_call_sequence)
 }
