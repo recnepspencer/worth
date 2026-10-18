@@ -12,6 +12,8 @@ pub use crate::runtime::{
 };
 pub use observation::RelationalBranchObservation;
 pub(crate) use publication::PreparedCanonicalBranchMovement;
+pub use publication::RelationalInstalledApplicationPublicationAuthority;
+pub(crate) use publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use publication::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
     CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,

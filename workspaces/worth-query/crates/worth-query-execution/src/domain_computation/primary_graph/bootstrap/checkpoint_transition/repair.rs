@@ -25,6 +25,9 @@ pub struct WorthQueryCheckpointTransitionRecovery {
     settlement: Option<Settlement>,
     detail: String,
     capture_denial: Option<WorthQueryCheckpointCaptureDenial>,
+    finalization_denial: Option<
+        Box<crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial>,
+    >,
 }
 
 impl std::fmt::Debug for WorthQueryCheckpointTransitionRecovery {
@@ -49,6 +52,7 @@ impl WorthQueryCheckpointTransitionRecovery {
             settlement: Some(Settlement::Acknowledged(authority)),
             detail: format!("acknowledged target checkpoint capture stopped: {denial:?}"),
             capture_denial: Some(denial),
+            finalization_denial: None,
         }
     }
 
@@ -64,11 +68,36 @@ impl WorthQueryCheckpointTransitionRecovery {
             settlement: Some(Settlement::Deferred(deferred)),
             detail,
             capture_denial: None,
+            finalization_denial: None,
         }
     }
 
     pub fn detail(&self) -> &str {
         &self.detail
+    }
+
+    pub(super) fn finalization_stopped(
+        graph: WorthQueryPrimaryGraphIntegrationHandle,
+        publication: WorthQueryPrimaryGraphPublication,
+        authority: RecoveredRelationalRuntimeAuthority,
+        cause: crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+    ) -> Self {
+        Self {
+            graph,
+            publication,
+            settlement: Some(Settlement::Acknowledged(authority)),
+            detail: format!("acknowledged target finalization stopped: {cause:?}"),
+            capture_denial: None,
+            finalization_denial: Some(Box::new(cause)),
+        }
+    }
+
+    /// Original post-performance refusal. Capture retries never replace it.
+    pub fn finalization_denial(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial>
+    {
+        self.finalization_denial.as_deref()
     }
 
     /// Exact capture refusal from this capsule's latest attempt, if capture
@@ -138,7 +167,9 @@ impl WorthQueryCheckpointTransitionRecovery {
     }
 
     fn retain_capture_denial(&mut self, denial: WorthQueryCheckpointCaptureDenial) {
-        self.detail = format!("checkpoint capture stopped: {denial:?}");
+        if self.finalization_denial.is_none() {
+            self.detail = format!("checkpoint capture stopped: {denial:?}");
+        }
         self.capture_denial = Some(denial);
     }
 }

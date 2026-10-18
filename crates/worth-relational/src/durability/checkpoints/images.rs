@@ -12,14 +12,6 @@ mod bitset_image;
 
 use arena_images::{arena_from_image, arena_to_image};
 
-pub(crate) fn partition_to_image(
-    partition: PartitionState,
-    catalog: &AspectContractPlanCatalog,
-) -> Result<PartitionCheckpointImage, DurabilityError> {
-    let contracts = CheckpointAspectContractCatalog::from_plans(catalog)?;
-    partition_to_image_with_contracts(partition, catalog, &contracts)
-}
-
 pub(crate) fn partition_to_image_with_contracts(
     partition: PartitionState,
     catalog: &AspectContractPlanCatalog,

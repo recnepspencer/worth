@@ -7,6 +7,7 @@ pub struct DerivedFeature;
 pub struct SourcePort;
 pub struct DerivedInput;
 pub struct Connection;
+pub struct DerivedDelivery;
 pub type Root = ApplicationOutputGraph<
     ApplicationConnectionRef<
         CanonicalSchema,
@@ -52,6 +53,21 @@ impl WorthQueryApplicationRequiredOutputConnection<CanonicalSchema> for Connecti
         Ok(producer::Demand)
     }
 }
+impl WorthQueryApplicationRequiredOutputSource<CanonicalSchema, Connection> for edit::EditBinding {
+    fn demand_from_source(
+        source: &edit::Input,
+    ) -> Result<producer::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        <Connection as WorthQueryApplicationRequiredOutputConnection<CanonicalSchema>>::demand_from_source(source)
+    }
+}
+impl ApplicationActionDelivery<CanonicalSchema, edit::EditBinding> for DerivedDelivery {
+    type Mode = ApplicationFixedDeliveryMode<Root, ApplicationNoProjection>;
+    const IDENTITY: &'static str = "canonical-transition.derived-delivery.v1";
+}
+impl ApplicationFixedActionDelivery<CanonicalSchema, edit::EditBinding> for DerivedDelivery {
+    type Root = Root;
+    type Projection = ApplicationNoProjection;
+}
 impl ApplicationProgramDefinition<CanonicalSchema> for Program {
     type Contributions = (CanonicalContribution,);
     type Outputs = ApplicationProgramOutputs<Root>;
@@ -62,11 +78,12 @@ impl ApplicationProgramDefinition<CanonicalSchema> for Program {
         vec![
             ApplicationFeatureSpec::root::<CanonicalSchema, SourceFeature>()
                 .provides::<SourcePort>()
-                .native_action::<edit::EditBinding>()
+                .action::<edit::EditBinding, DerivedDelivery>()
                 .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<CanonicalSchema, DerivedFeature>()
                 .conditional_operation::<producer::Produce>()
+                .conditional_operation::<producer::preserve::Preserve>()
                 .finish(),
         ]
     }

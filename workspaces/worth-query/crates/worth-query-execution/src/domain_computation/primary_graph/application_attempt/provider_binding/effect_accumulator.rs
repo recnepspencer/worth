@@ -108,6 +108,13 @@ impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
 }
 
 impl WorthQueryRegisteredProviderEffects {
+    pub(in crate::domain_computation::primary_graph) fn native_created_output_targets(
+        &self,
+    ) -> impl Iterator<Item = &worth_relational::facade::transactions::CreatedEntityRef> + Clone
+    {
+        self.output_correspondence.native_created_output_targets()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
         &self,
     ) -> impl ExactSizeIterator<

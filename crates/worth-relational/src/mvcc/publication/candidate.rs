@@ -216,6 +216,21 @@ impl PreparedRelationalCommitCandidate {
         ))
     }
 
+    pub(crate) fn recovered_codec_publication_custody(
+        &self,
+    ) -> Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .and_then(|payload| {
+                payload
+                    .execution
+                    .recovered_codec_publication_custody()
+                    .cloned()
+            })
+    }
+
     pub(crate) fn indexes_already_prepared(&self) -> bool {
         self._payload
             .lock()

@@ -1,5 +1,9 @@
 use crate::durability::data::RelationalRecoveryStop;
+pub(crate) use codec_transition::{
+    AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody,
+};
 pub(super) mod admission;
+pub(super) mod codec_transition;
 
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::durability::data::{DurabilityError, RecoveryCoverage, RecoveryPlan};
@@ -19,6 +23,10 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
     {
         let outcome = self.restore_native_checkpoint(execution, checkpoint)?;
+        Ok((outcome, self.restored_runtime_authority()))
+    }
+
+    fn restored_runtime_authority(&self) -> RecoveredRelationalRuntimeAuthority {
         let recovered_branch_images = self
             .runtime
             .history()
@@ -26,11 +34,12 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
             .into_iter()
             .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
             .collect();
-        let authority = RecoveredRelationalRuntimeAuthority {
+        RecoveredRelationalRuntimeAuthority {
             runtime_instance_id: self.runtime.runtime_instance_id(),
             recovered_branch_images,
-        };
-        Ok((outcome, authority))
+            codec_transition: None,
+            performed_codec_retirement: None,
+        }
     }
 
     pub fn restore_native_checkpoint(
@@ -39,13 +48,34 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let native_bytes_read = checkpoint.bytes().len();
         let checkpoint = crate::durability::log::native_file_codec::decode_checkpoint(
             execution,
             checkpoint.bytes(),
         )?
         .checkpoint;
+        self.restore_decoded_native_checkpoint(execution, checkpoint, native_bytes_read)
+    }
+
+    pub(in crate::durability::authority) fn restore_decoded_native_checkpoint_with_authority(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        checkpoint: crate::durability::data::DurableCheckpoint,
+        native_bytes_read: usize,
+    ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
+    {
+        let outcome =
+            self.restore_decoded_native_checkpoint(execution, checkpoint, native_bytes_read)?;
+        Ok((outcome, self.restored_runtime_authority()))
+    }
+
+    fn restore_decoded_native_checkpoint(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        checkpoint: crate::durability::data::DurableCheckpoint,
+        native_bytes_read: usize,
+    ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
+        let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let native_envelopes_readmitted = checkpoint.envelopes.len();
         let plan = crate::durability::access::native_checkpoint_recovery_plan(
             self.runtime,

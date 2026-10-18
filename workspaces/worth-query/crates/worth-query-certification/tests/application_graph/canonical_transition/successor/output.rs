@@ -80,3 +80,18 @@ impl WorthQueryApplicationOutputRole for CreatedOutput {
 impl ApplicationMutationOutputContract<CanonicalSchema> for DerivedOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[CreatedOutput::DESCRIPTOR];
 }
+
+pub struct PreservedOutputs;
+pub struct PreservedOutput;
+impl WorthQueryApplicationOutputRole for PreservedOutput {
+    type Schema = CanonicalSchema;
+    type Contract = PreservedOutputs;
+    type Entity = Derived;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "derived-report";
+}
+impl ApplicationMutationOutputContract<CanonicalSchema> for PreservedOutputs {
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
+        &[PreservedOutput::DESCRIPTOR];
+}

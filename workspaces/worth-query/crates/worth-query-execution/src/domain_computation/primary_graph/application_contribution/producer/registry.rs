@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_operation::ApplicationMutationO
 use worth_query_installation::facade::ApplicationSchema;
 
 mod checkpoint;
+mod codec_transition;
 mod declaration;
 
 use super::{

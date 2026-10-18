@@ -7,7 +7,10 @@ use super::{
 };
 
 impl PreparedBranchPublicationPreflight {
-    pub(super) fn perform_cutover(mut self) -> RelationalPublicationOutcome {
+    pub(super) fn perform_cutover(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> RelationalPublicationOutcome {
         let _publication_lifecycle = self
             .movement
             .canonical_publication_route
@@ -116,6 +119,14 @@ impl PreparedBranchPublicationPreflight {
         let previous_head_version = observed_root
             .canonical_envelope()
             .map(|envelope| envelope.commit.version_id);
+        // Keep the caller's original request at the final pre-effect boundary;
+        // a separate operation-control token cannot replace its first cause.
+        if let Err(stop) = crate::authority::commit::pipeline::consult_stage_control(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Publication,
+        ) {
+            return RelationalPublicationOutcome::RequestStopped(stop);
+        }
         let next_head_version = self
             .movement
             .root

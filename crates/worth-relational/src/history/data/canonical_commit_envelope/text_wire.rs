@@ -15,6 +15,8 @@ use crate::transactions::data::{MergedCommitPlan, PublishedMergeExecutionAuthori
 
 #[derive(Deserialize)]
 pub(crate) struct CanonicalEnvelopeWire<'a> {
+    #[serde(default)]
+    required_output_origin: Option<std::sync::Arc<super::CanonicalRequiredOutputOrigin>>,
     commit: RelationalCommitReceipt,
     branch_context: BranchId,
     branch_cell_checkpoint: Option<crate::branch::RelationalBranchCellCheckpoint>,
@@ -62,6 +64,7 @@ impl CanonicalEnvelopeWire<'_> {
         }
         let symbol_texts = self.symbol_texts.readmit(execution)?;
         Ok(super::CanonicalCommitEnvelope {
+            required_output_origin: self.required_output_origin,
             commit: self.commit,
             branch_context: self.branch_context,
             branch_cell_checkpoint: self.branch_cell_checkpoint,

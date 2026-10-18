@@ -8,6 +8,9 @@ use worth_query_host::facade::{
     *,
 };
 
+#[path = "producer/preserve.rs"]
+pub mod preserve;
+
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Input {
     pub identity: String,
@@ -154,7 +157,8 @@ impl WorthQueryProducerOutputFamily<CanonicalSchema> for Family {
     type Source = query::ReadBinding;
     type Entity = Derived;
     const IDENTITY: &'static str = "canonical-transition.output-family.v1";
-    const SUPPORTED: &'static [WorthQueryProducerApplicability] = INITIAL;
+    const SUPPORTED: &'static [WorthQueryProducerApplicability] =
+        &[INITIAL[0], preserve::APPLICABILITY[0]];
     fn profile_kind(_: &NestedValue) -> &'static str {
         "derived-report"
     }

@@ -70,6 +70,24 @@ impl RelationalPublicationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: PreparedRelationalCommitCandidate,
     ) -> RelationalPublicationOutcome {
+        self.compare_and_publish_with_codec_admission(execution, candidate, None)
+    }
+
+    pub(crate) fn compare_and_publish_checkpoint_transition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        candidate: PreparedRelationalCommitCandidate,
+        admission: crate::durability::AdmittedRecoveredCodecPublication,
+    ) -> RelationalPublicationOutcome {
+        self.compare_and_publish_with_codec_admission(execution, candidate, Some(admission))
+    }
+
+    fn compare_and_publish_with_codec_admission(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        candidate: PreparedRelationalCommitCandidate,
+        admission: Option<crate::durability::AdmittedRecoveredCodecPublication>,
+    ) -> RelationalPublicationOutcome {
         if candidate.runtime_instance_id() != self.runtime_instance_id
             || !candidate.belongs_to_publication_owner(&self.publication_binding)
         {
@@ -90,7 +108,7 @@ impl RelationalPublicationPort {
         }
         self.history.record_publication_attempt(candidate.branch());
         let branch = candidate.branch().clone();
-        let outcome = self.compare_and_publish_consulted(candidate);
+        let outcome = self.compare_and_publish_consulted(execution, candidate, admission);
         if !matches!(outcome, RelationalPublicationOutcome::Performed(_)) {
             self.history.record_candidate_discard(&branch);
         }
@@ -99,8 +117,21 @@ impl RelationalPublicationPort {
 
     fn compare_and_publish_consulted(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: PreparedRelationalCommitCandidate,
+        admission: Option<crate::durability::AdmittedRecoveredCodecPublication>,
     ) -> RelationalPublicationOutcome {
+        let custody = candidate.recovered_codec_publication_custody();
+        let admitted = match (&custody, &admission) {
+            (None, None) => true,
+            (Some(custody), Some(admission)) => admission.admits(custody),
+            _ => false,
+        };
+        if !admitted {
+            return RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::RecoveredCodecTransitionRequired,
+            );
+        }
         let Some(_owner_operation) = self.owner_binding.admit() else {
             return RelationalPublicationOutcome::denied(
                 RelationalPublicationDenial::OwnerUnavailable {
@@ -168,6 +199,7 @@ impl RelationalPublicationPort {
             }
         };
         let outcome = PreparedCanonicalBranchMovement::linearize(
+            execution,
             parts,
             retention_binding,
             self.branch_head_versions.clone(),
@@ -195,18 +227,20 @@ impl PreparedCanonicalBranchMovement {
     }
 
     fn linearize(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         parts: PreparedRelationalPublicationParts,
         retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         companion_epoch: &super::CompanionRegistrationEpoch<'_>,
     ) -> RelationalPublicationOutcome {
         match Self::preflight(
+            execution,
             parts,
             retention_binding,
             branch_head_versions,
             companion_epoch,
         ) {
-            Ok(preflight) => preflight.perform_cutover(),
+            Ok(preflight) => preflight.perform_cutover(execution),
             Err(outcome) => outcome,
         }
     }

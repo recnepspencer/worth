@@ -11,19 +11,31 @@ pub enum RelationalSchemaTransitionAdmissionDenialKind {
     TargetBasisMismatch,
     TargetContractMismatch,
     InvalidTargetRegistry,
+    RecoveredAuthorityMismatch,
+    UnsupportedCodecConsequence,
+    CodecClosureRejected,
+    NativeExecution,
+    Staging,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RelationalSchemaTransitionAdmissionDenial {
     kind: RelationalSchemaTransitionAdmissionDenialKind,
     detail: String,
+    request_cause: Option<crate::execution::RelationalExecutionDenialCause>,
+    staging_cause: Option<crate::mvcc::RelationalTransactionStagingDenial>,
 }
 
 impl RelationalSchemaTransitionAdmissionDenial {
-    fn new(kind: RelationalSchemaTransitionAdmissionDenialKind, detail: impl Into<String>) -> Self {
+    pub(crate) fn new(
+        kind: RelationalSchemaTransitionAdmissionDenialKind,
+        detail: impl Into<String>,
+    ) -> Self {
         Self {
             kind,
             detail: detail.into(),
+            request_cause: None,
+            staging_cause: None,
         }
     }
 
@@ -33,6 +45,37 @@ impl RelationalSchemaTransitionAdmissionDenial {
 
     pub fn detail(&self) -> &str {
         &self.detail
+    }
+
+    pub fn request_cause(&self) -> Option<&crate::execution::RelationalExecutionDenialCause> {
+        self.request_cause.as_ref()
+    }
+
+    pub fn staging_cause(&self) -> Option<&crate::mvcc::RelationalTransactionStagingDenial> {
+        self.staging_cause.as_ref()
+    }
+
+    pub(crate) fn staging(cause: crate::mvcc::RelationalTransactionStagingDenial) -> Self {
+        if let Some(worth_execution::ExecutionAllocationDenialClass::Request(stop)) =
+            cause.allocation_denial().map(|denial| denial.classify())
+        {
+            return Self::request(stop.into());
+        }
+        Self {
+            kind: RelationalSchemaTransitionAdmissionDenialKind::Staging,
+            detail: format!("{cause:?}"),
+            request_cause: None,
+            staging_cause: Some(cause),
+        }
+    }
+
+    pub(crate) fn request(cause: crate::execution::RelationalExecutionDenialCause) -> Self {
+        Self {
+            kind: RelationalSchemaTransitionAdmissionDenialKind::NativeExecution,
+            detail: format!("{cause:?}"),
+            request_cause: Some(cause),
+            staging_cause: None,
+        }
     }
 }
 

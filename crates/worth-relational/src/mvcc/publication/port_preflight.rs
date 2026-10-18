@@ -9,6 +9,7 @@ use super::{
 
 impl PreparedCanonicalBranchMovement {
     pub(super) fn preflight(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         parts: PreparedRelationalPublicationParts,
         retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
@@ -128,8 +129,15 @@ impl PreparedCanonicalBranchMovement {
                     &control,
                     budget,
                 );
-                let effect = participant
-                    .prepare(&mut context)
+                let prepared = participant.prepare(&mut context);
+                // A companion cannot hide an original request stop behind
+                // either a successful preparation or its own refusal.
+                crate::authority::commit::pipeline::consult_stage_control(
+                    execution,
+                    crate::authority::commit::pipeline::CommitStage::Publication,
+                )
+                .map_err(RelationalPublicationOutcome::RequestStopped)?;
+                let effect = prepared
                     .map_err(|stop| companion_stop_outcome(stop, &publication_cell, &expected))?;
                 effect
                     .matches(&binding)

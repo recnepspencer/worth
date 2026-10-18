@@ -1,4 +1,7 @@
+mod application_publication;
 mod authority;
+pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
+pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
 mod candidate;
 mod candidate_consumption;
 mod candidate_preparation;

@@ -44,6 +44,9 @@ impl CanonicalCommitEnvelope {
             })
             .sum::<u64>();
         let authoritative_nested_bytes = (self.commit.branch_id.0.capacity() as u64)
+            .saturating_add(optional_canonical_nested_bytes(
+                &self.required_output_origin,
+            ))
             .saturating_add(commit_parents)
             .saturating_add(self.branch_context.0.capacity() as u64)
             .saturating_add(optional_canonical_nested_bytes(

@@ -1,3 +1,4 @@
+pub(crate) use authority::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub mod access;
 pub mod authority;
 pub use authority::{

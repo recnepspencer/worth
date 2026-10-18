@@ -15,6 +15,9 @@ use super::{
     schema::CanonicalSchema,
 };
 
+#[path = "readiness/preserve.rs"]
+pub mod preserve;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DerivedReadinessDomain;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

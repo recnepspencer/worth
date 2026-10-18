@@ -151,6 +151,7 @@ impl crate::runtime::RelationalRuntime {
             intent,
             merge_parent_bases: Vec::new(),
             schema_authority_input: None,
+            recovered_codec_publication_custody: None,
             schema_authority: basis.inner.root.retained_schema_authority(),
             overlay: super::DetachedRelationalTransactionOverlay::default(),
             maximum_savepoints: self.config.publication.policy.max_transaction_savepoints,

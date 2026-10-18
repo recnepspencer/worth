@@ -48,17 +48,25 @@ impl DurabilityRecoveryAuthority<'_> {
     pub fn commit_checkpoint_transition(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        recovered: RecoveredRelationalRuntimeAuthority,
-        candidate: PreparedRelationalCommitCandidate,
+        mut recovered: RecoveredRelationalRuntimeAuthority,
+        mut candidate: PreparedRelationalCommitCandidate,
     ) -> Result<RecoveredCheckpointTransition, RecoveredCheckpointTransitionError> {
         if let Err(denial) = self.admit_checkpoint_transition(&recovered, &candidate) {
             return Err(refused(recovered, denial));
         }
-        let performed = match self
-            .runtime
-            .publication_port()
-            .compare_and_publish(execution, candidate)
-        {
+        let codec_admission =
+            match self.prepare_recovered_codec_target(execution, &recovered, &mut candidate) {
+                Ok(admission) => admission,
+                Err(denial) => return Err(refused(recovered, denial)),
+            };
+        let port = self.runtime.publication_port();
+        let outcome = match codec_admission {
+            Some(admission) => {
+                port.compare_and_publish_checkpoint_transition(execution, candidate, admission)
+            }
+            None => port.compare_and_publish(execution, candidate),
+        };
+        let performed = match outcome {
             RelationalPublicationOutcome::Performed(performed) => performed,
             outcome => {
                 return Err(refused(
@@ -78,6 +86,7 @@ impl DurabilityRecoveryAuthority<'_> {
                     .expect(
                         "checkpoint transition releases its settled native snapshot exactly once",
                     );
+                self.install_acknowledged_codec_target(&mut recovered);
                 Ok(acknowledged(recovered, successor, committed.commit.clone()))
             }
             Err(cause) if cause.deferred_settlement().is_some() => {
@@ -99,7 +108,7 @@ impl DurabilityRecoveryAuthority<'_> {
     /// or reconstructing its successor from current runtime state.
     pub fn repair_checkpoint_transition(
         &mut self,
-        transition: DeferredRecoveredCheckpointTransition,
+        mut transition: DeferredRecoveredCheckpointTransition,
     ) -> Result<RecoveredCheckpointTransition, RecoveredCheckpointTransitionRepairError> {
         let settlement = transition
             .cause
@@ -109,11 +118,14 @@ impl DurabilityRecoveryAuthority<'_> {
             .runtime
             .repair_deferred_publication_settlement(settlement)
         {
-            Ok(receipt) => Ok(acknowledged(
-                transition.recovered,
-                transition.successor,
-                receipt,
-            )),
+            Ok(receipt) => {
+                self.install_acknowledged_codec_target(&mut transition.recovered);
+                Ok(acknowledged(
+                    transition.recovered,
+                    transition.successor,
+                    receipt,
+                ))
+            }
             Err(cause) => Err(RecoveredCheckpointTransitionRepairError {
                 transition: Box::new(transition),
                 cause,

@@ -2,6 +2,12 @@ mod aspect_history;
 mod branch_creation;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;
+mod codec_retirement_closure;
+mod codec_retirement_preservation;
+pub(crate) use codec_retirement_closure::{
+    derive_codec_retirement_closure, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+};
+pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 mod canonical_record_allocation;
 mod committed_version;
 mod merge_branch_basis;
