@@ -15,7 +15,7 @@ use crate::domain_computation::application_aftermath::{
     demanded_field_slot, WorthQueryPreImageRetentionDenial, WorthQueryRetainedPreImage,
 };
 
-use super::super::super::WorthQueryPrimaryGraphApplicationDecisionFact;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct WorthQueryObservedPreImageCandidate {

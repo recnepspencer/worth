@@ -245,6 +245,19 @@ impl WorthQueryApplicationAttemptBasis {
 }
 
 impl WorthQueryApplicationAttemptAffinity {
+    pub(in crate::domain_computation::primary_graph) fn owns_original_read(
+        &self,
+        read: &super::super::CompletedOriginalRead,
+    ) -> bool {
+        read.belongs_to_admission(self.basis.operation_attempt)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn binds_original_read(
+        &self,
+        read: &super::super::CompletedOriginalRead,
+    ) -> bool {
+        self.owns_original_read(read) && read.belongs_to_graph_work(self.basis.graph_work_session)
+    }
     pub(in crate::domain_computation::primary_graph) fn publication_request(
         &self,
     ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {

@@ -171,10 +171,23 @@ fn demanded_work_tracks_real_multi_intent_and_target_breadth() {
         assert_eq!(wide.preimage_demanded_loci_examined(), 1);
         assert_eq!(narrow.preimage_mutation_targets_materialized(), 1);
         assert_eq!(wide.preimage_mutation_targets_materialized(), 2);
-        assert_eq!(narrow.preimage_decision_facts_examined(), 3);
-        assert_eq!(wide.preimage_decision_facts_examined(), 4);
-        assert_eq!(narrow.preimage_candidates_materialized(), 1);
-        assert_eq!(wide.preimage_candidates_materialized(), 2);
+        assert_eq!(
+            narrow.preimage_candidates_materialized(),
+            narrow.preimage_demanded_loci_examined()
+        );
+        assert_eq!(
+            wide.preimage_candidates_materialized(),
+            narrow.preimage_candidates_materialized(),
+            "an unrelated record/field mutation supplies no demanded preimage"
+        );
+        assert_eq!(
+            narrow.preimage_decision_facts_examined(),
+            narrow.preimage_candidates_materialized()
+        );
+        assert_eq!(
+            wide.preimage_decision_facts_examined(),
+            wide.preimage_candidates_materialized()
+        );
         assert_eq!(narrow.preimage_validated_intents_examined(), 3);
         assert_eq!(wide.preimage_validated_intents_examined(), 4);
     }

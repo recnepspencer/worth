@@ -59,6 +59,9 @@ where
     {
         return terminal(WorthQueryApplicationCommitOutcome::Denied(denial));
     }
+    if !read_set.effect_routes.matches_body(&read_set.facts) {
+        return terminal(denied(DenialStage::DecisionReadSet));
+    }
     if let Err(outcome) = validate_operation_currentness(&admission) {
         return terminal(outcome);
     }
@@ -109,7 +112,9 @@ where
             provider: WorthQueryProviderAttemptPreparation {
                 required_output_demand,
                 installed_read_scopes: read_set.installed_read_scopes,
-                facts: read_set.facts,
+                effect_routes: read_set.effect_routes,
+                application_projection: read_set.application_projection,
+                original_read: read_set.original_read,
                 consumed_outputs: read_set.consumed_outputs,
                 application_effect_count: effects.len(),
                 effects,

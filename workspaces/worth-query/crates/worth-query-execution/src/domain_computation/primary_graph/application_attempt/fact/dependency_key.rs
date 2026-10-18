@@ -13,6 +13,32 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationFac
 }
 
 impl WorthQueryApplicationObservedFact {
+    pub(in crate::domain_computation::primary_graph) fn dependency_locator_byte_bound(
+        &self,
+    ) -> Option<u64> {
+        struct Count(usize);
+        impl std::fmt::Write for Count {
+            fn write_str(&mut self, text: &str) -> std::fmt::Result {
+                self.0 = self.0.checked_add(text.len()).ok_or(std::fmt::Error)?;
+                Ok(())
+            }
+        }
+        let mut count = Count(0);
+        self.write_dependency_locator(&mut count).ok()?;
+        let base = u64::try_from(count.0).ok()?;
+        match self {
+            Self::IndexedEntitySelection { value, .. } => base
+                .checked_add(
+                    (value
+                        .owned_allocation_capacity_bytes()
+                        .max(value.semantic_byte_width()) as u64)
+                        .checked_mul(16)?,
+                )?
+                .checked_add(512),
+            _ => base.checked_add(128),
+        }
+    }
+
     /// Exact predicate-aware key for provider ports that carry string locators.
     /// The descriptive locator and canonical dependency encoding stay unchanged.
     pub(in crate::domain_computation) fn dependency_locator_identity(&self) -> String {

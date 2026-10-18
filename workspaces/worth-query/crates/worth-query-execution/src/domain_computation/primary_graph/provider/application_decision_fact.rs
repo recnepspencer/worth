@@ -1,8 +1,10 @@
 mod application_facts;
+mod application_table;
 use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
 pub(in crate::domain_computation) use application_facts::{
     CompletedApplicationFacts, SharedObservedFact, SharedReadScope,
 };
+pub(in crate::domain_computation) use application_table::ApplicationFactTable;
 use std::sync::Arc;
 
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;

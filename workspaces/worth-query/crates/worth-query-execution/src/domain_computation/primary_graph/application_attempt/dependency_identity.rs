@@ -9,7 +9,9 @@ use super::retained_decision_facts::{StorageControl, StoreDenial};
 use canonical_encoding::lineage_identity;
 #[cfg(test)]
 use content_tree::dependency_identity;
-pub(in crate::domain_computation::primary_graph) use content_tree::FactContent;
+pub(in crate::domain_computation::primary_graph) use content_tree::{
+    CompletedFactRoutes, FactContent,
+};
 use output_postcondition::complete_content_currentness_facts;
 #[cfg(test)]
 use output_postcondition::normalized_output_facts;

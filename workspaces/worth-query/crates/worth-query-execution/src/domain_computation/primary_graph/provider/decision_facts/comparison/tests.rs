@@ -1,7 +1,5 @@
 use super::*;
-use crate::domain_computation::{
-    WorthQueryDecisionFactRequest, WorthQueryDecisionReadSetDenialKind,
-};
+use crate::domain_computation::WorthQueryDecisionReadSetDenialKind;
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
@@ -12,13 +10,20 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
-        requests: Vec<WorthQueryDecisionFactRequest>,
         request: &WorthQueryRequestScope,
         cancellation: &WorthQueryCancellationSource,
         foreign: &WorthQueryPrimaryGraphProvider,
     ) {
         let control =
             StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, Some(request));
+        let (table, _) = self
+            .attempts
+            .lock()
+            .unwrap()
+            .shared_observed_facts(authority.session())
+            .unwrap();
+        let requests: Vec<_> = table.requests().collect();
+        funding::assert_full_capture_funding(self, execution, authority, request, &table);
         let count = || {
             self.graph.with_runtime(execution, |runtime| {
                 runtime.retention().inspect_plan().active_snapshot_count
@@ -37,12 +42,48 @@ impl WorthQueryPrimaryGraphProvider {
             panic!("real unmodified facts must compare fresh");
         };
         let scoped = self
-            .compare_application_read_set(execution, authority, capture(), control)
+            .compare_application_read_set(
+                execution,
+                authority,
+                self.capture_application_read_set(execution, authority, control)
+                    .unwrap(),
+                control,
+            )
             .unwrap();
         let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(scoped) = scoped else {
             panic!("scoped comparison must agree with generic comparison");
         };
         assert_eq!(generic.counters(), scoped.counters());
+        for fact in table.values() {
+            assert!(scoped.contains_locator(&fact.locator_identity()));
+        }
+        assert!(!scoped.contains_locator("unregistered-same-count-substitution"));
+        let mut wrong_keys = requests.clone();
+        let family = wrong_keys[0].family_identity().to_owned();
+        wrong_keys[0] = crate::domain_computation::WorthQueryDecisionFactRequest::new(
+            family,
+            crate::domain_computation::WorthQueryDecisionFactLocator::structural_proof(
+                "unregistered-same-count-substitution",
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            authority
+                .capture_decision_read_set(wrong_keys, control.policy(), Some(request))
+                .err()
+                .unwrap()
+                .kind(),
+            WorthQueryDecisionReadSetDenialKind::ProviderRejected
+        );
+        let recomparison = self
+            .recompare_application_read_set(execution, authority, scoped, control)
+            .unwrap();
+        assert!(matches!(
+            recomparison,
+            WorthQueryDecisionReadSetFreshnessOutcome::Fresh(_)
+        ));
+        drop(recomparison);
         assert_eq!(
             count(),
             baseline,
@@ -115,6 +156,7 @@ impl WorthQueryPrimaryGraphProvider {
     }
 }
 
+mod funding;
 mod indexed;
 
 mod principal_staleness;

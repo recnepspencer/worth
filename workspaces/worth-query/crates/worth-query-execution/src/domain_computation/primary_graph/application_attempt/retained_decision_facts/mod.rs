@@ -16,7 +16,7 @@ mod streaming;
 mod tests;
 
 pub(in crate::domain_computation::primary_graph) use canonical_key::AdmittedFactKey;
-pub(in crate::domain_computation::primary_graph) use control::StorageControl;
+pub(in crate::domain_computation) use control::StorageControl;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use handoff::restore_authored_order;
 pub(in crate::domain_computation::primary_graph) use storage::RetainedFactStore;
@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) struct RetainedFact<T> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum StoreDenial {
+pub(in crate::domain_computation) enum StoreDenial {
     Allocation(ExecutionAllocationDenial),
     RequestInterruption(
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,

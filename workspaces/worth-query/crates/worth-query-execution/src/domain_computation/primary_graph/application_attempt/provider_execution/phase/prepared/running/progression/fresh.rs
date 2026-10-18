@@ -1,8 +1,8 @@
 use crate::domain_computation::primary_graph as graph;
 use crate::domain_computation::provider_session as session;
 use crate::domain_computation::{
-    WorthQueryDecisionFactRequest, WorthQueryDecisionReadSetFreshnessOutcome,
-    WorthQueryFreshDecisionReadSet, WorthQuerySessionBoundReadsAndEffects,
+    WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryFreshDecisionReadSet,
+    WorthQuerySessionBoundReadsAndEffects,
 };
 use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 use graph::application_attempt::provider_execution::outcome::{
@@ -76,7 +76,7 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
 pub(super) fn compare_provider_read_set<'run, Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     staged: WorthQuerySessionBoundReadsAndEffects<'run>,
-    requests: Vec<WorthQueryDecisionFactRequest>,
+
     authority: &super::WorthQueryApplicationCommitProgressionAuthority<
         '_,
         '_,
@@ -99,10 +99,13 @@ where
         authority.admission().publication_request(),
         allocation_policy,
     );
-    let receipt = match staged.read_authority().capture_decision_read_set(
-        requests,
-        allocation_control.policy(),
-        Some(authority.admission().publication_request()),
+    let receipt = match authority.provider().capture_application_read_set(
+        execution,
+        &staged.read_authority(),
+        graph::application_attempt::retained_decision_facts::StorageControl::new(
+            allocation_control.policy(),
+            Some(authority.admission().publication_request()),
+        ),
     ) {
         Ok(receipt) => receipt,
         Err(failure) => {

@@ -21,8 +21,9 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
         world.effects.len(),
-        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture,
-        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(world.facts)),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(world.facts)), crate::domain_computation::primary_graph::StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         world.effects,
         world.retained_bytes,
@@ -50,8 +51,9 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
         world.alternate_effects.len(),
-        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture,
-        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(world.facts)),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(world.facts)), crate::domain_computation::primary_graph::StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         world.alternate_effects,
         world.retained_bytes,
@@ -78,8 +80,9 @@ fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId(7),
         world.effects.len(),
-        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture,
-        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(world.facts)),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(world.facts)), crate::domain_computation::primary_graph::StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         world.effects,
         world.retained_bytes,
@@ -135,8 +138,9 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
         effects.len(),
-        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture,
-        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(facts)),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(facts)), crate::domain_computation::primary_graph::StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         effects,
         0,

@@ -8,8 +8,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::provider::{
-    dispatch_outbox::WorthQueryDispatchOutboxBasis, WorthQueryPrimaryGraphApplicationDecisionFact,
-    WorthQueryPrimaryGraphProvider,
+    dispatch_outbox::WorthQueryDispatchOutboxBasis, WorthQueryPrimaryGraphProvider,
 };
 
 #[path = "provider_registration/consumed_capacity.rs"]
@@ -80,15 +79,13 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) fn facts(
         &self,
-    ) -> &std::collections::BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact> {
+    ) -> &crate::domain_computation::primary_graph::ApplicationFactTable {
         self.decision_facts.facts()
     }
 
     pub(in crate::domain_computation::primary_graph) fn shared_facts(
         &self,
-    ) -> std::sync::Arc<
-        std::collections::BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>,
-    > {
+    ) -> std::sync::Arc<crate::domain_computation::primary_graph::ApplicationFactTable> {
         self.decision_facts.shared_facts()
     }
 
@@ -248,13 +245,12 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
 struct WorthQueryPreparedApplicationAttempt {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
-    requests: Vec<crate::domain_computation::WorthQueryDecisionFactRequest>,
+
     dispatch_outbox: Option<WorthQueryDispatchOutboxRecord>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptRegistrationCompletion
 {
-    requests: Vec<crate::domain_computation::WorthQueryDecisionFactRequest>,
     dispatch_outbox: Option<WorthQueryDispatchOutboxRecord>,
 }
 
@@ -268,7 +264,7 @@ impl WorthQueryApplicationAttemptRegistrationCompletion {
         crate::domain_computation::primary_graph::WorthQueryRegisteredProviderAttempt::from_registration(
             seal,
             staged,
-            self.requests,
+
             steps,
             self.dispatch_outbox,
         )
@@ -288,14 +284,11 @@ impl WorthQueryPrimaryGraphProvider {
         let prepared = self.prepare_application_attempt(registration)?;
         let WorthQueryPreparedApplicationAttempt {
             attempt,
-            requests,
+
             dispatch_outbox,
         } = prepared;
         reservation.complete(attempt)?;
-        Ok(WorthQueryApplicationAttemptRegistrationCompletion {
-            requests,
-            dispatch_outbox,
-        })
+        Ok(WorthQueryApplicationAttemptRegistrationCompletion { dispatch_outbox })
     }
 
     fn prepare_application_attempt<'a>(
@@ -306,7 +299,7 @@ impl WorthQueryPrimaryGraphProvider {
             mut required_output_demand,
             effect_owner: _effect_owner,
             affinity,
-            mut decision_facts,
+            decision_facts,
             effects,
             idempotency,
             outcome_identity,
@@ -343,7 +336,6 @@ impl WorthQueryPrimaryGraphProvider {
             &affinity.graph_work_session(),
             retained_authorization_fact_count,
         )?;
-        let requests = decision_facts.take_read_requests();
         let dispatch_outbox_record = dispatch_outbox
             .as_ref()
             .map(|pending| pending.record().clone());
@@ -375,7 +367,7 @@ impl WorthQueryPrimaryGraphProvider {
                 consumed_outputs: std::sync::Arc::from(consumed_outputs),
                 request_admission: Some(request_admission),
             },
-            requests,
+
             dispatch_outbox: dispatch_outbox_record,
         })
     }

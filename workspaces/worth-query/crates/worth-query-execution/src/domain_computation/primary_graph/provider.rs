@@ -4,6 +4,7 @@ pub(in crate::domain_computation) use aftermath_causality::WorthQueryAftermathCa
 mod application_attempt_state;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
+pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
 };
@@ -15,6 +16,7 @@ mod commit_causality;
 pub(super) mod committed_dispatch_outbox;
 mod completed_observation;
 mod decision_facts;
+pub(in crate::domain_computation) use decision_facts::PrimaryDecisionReadSetComparison;
 pub(in crate::domain_computation::primary_graph) mod dispatch_outbox;
 mod evidence_window;
 pub(in crate::domain_computation::primary_graph) mod fault_port;
@@ -75,7 +77,7 @@ use super::WorthQueryPrimaryGraphIntegrationHandle;
 pub(super) use application_attempt_state::WorthQueryPrimaryGraphCommittedApplication;
 pub(crate) use application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
 pub(in crate::domain_computation) use application_decision_fact::{
-    CompletedApplicationFacts, WorthQueryPrimaryGraphApplicationDecisionFact,
+    ApplicationFactTable, CompletedApplicationFacts, WorthQueryPrimaryGraphApplicationDecisionFact,
 };
 #[cfg(test)]
 pub(in crate::domain_computation) use committed_dispatch_outbox::{

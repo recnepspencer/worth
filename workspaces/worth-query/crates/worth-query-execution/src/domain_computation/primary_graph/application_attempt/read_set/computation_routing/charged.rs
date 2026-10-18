@@ -108,7 +108,8 @@ impl SealedComputationFacts {
             self.index
                 .charged_bytes()?
                 .checked_add(backing)?
-                .checked_add(self.layout.charged_bytes()?)?,
+                .checked_add(self.layout.charged_bytes()?)?
+                .checked_add(self.projection.as_ref().map_or(0, |p| p.bytes()))?,
             |sum, (key, sealed)| {
                 super::super::super::super::fact_verification_observation::completion_metadata();
                 sum.checked_add(entry)?
