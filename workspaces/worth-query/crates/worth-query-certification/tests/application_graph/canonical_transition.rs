@@ -35,6 +35,8 @@ mod program;
 mod query;
 #[path = "canonical_transition/readiness.rs"]
 mod readiness;
+#[path = "canonical_transition/related.rs"]
+mod related;
 #[path = "canonical_transition/schema.rs"]
 mod schema;
 #[path = "canonical_transition/successor.rs"]

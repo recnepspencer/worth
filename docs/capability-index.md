@@ -82,8 +82,15 @@ The existing [checkpoint transition](build-an-application.md#44-checkpoint-progr
 supports whole-output derived-codec retirement when native performed creates
 still cover every present field. It preserves authored bytes and identities on
 the same carrier and requires the installed target producer to rebuild output.
-Protected, partly classified, relation/invariant and unsupported index changes
-refuse before publication; ordinary restore remains exact.
+A closed set of native producer-created internal relations can retire with its
+output records when both endpoints are independently proven in that same
+publication. Related ordering can survive when its key codec stays unchanged.
+External or rewritten relations, protected or partly classified fields, affected
+invariants, changed ordering keys and join consequences refuse before
+publication; ordinary restore remains exact. An existing continuation resumes
+through its original runtime and retained index generation, while a new target
+request reads only genuinely regenerated target output. See the
+[historical query lifecycle](build-an-application.md#44-checkpoint-program-transitions).
 See [bounded canonical nested values](build-an-application.md#bounded-canonical-nested-values)
 for supported grammar, native checkpoint examples and the current package
 archive refusal. Representation limits do not grant request resources,

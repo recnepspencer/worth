@@ -1494,14 +1494,49 @@ the native retirement closure; a partially classified correspondence refuses.
 An empty callback, a role declaration, a revision advance, or a copied producer
 description grants no retirement permission.
 
-The first supported cutover retires whole output records and rebuilds native
-entity-field equality indexes. It refuses ordinary or subsequently overwritten
-payload, incident relations, affected custom invariants, ordering/join index
-consequences, and multiple current branch heads. Codec cutover cannot append
-authored rows. Historical roots and the original checkpoint keep their old
-meaning; they are not target-current output. Demand the output through the
-installed target producer after installation, then use ordinary edits and
-checkpoint capture/reopen. The linked V1/V2 journey is a complete example.
+The supported cutover retires whole output records and rebuilds native
+entity-field equality indexes. Native producer-created internal relations may
+retire in that same candidate when both endpoints are independently proven in
+that same performed publication's complete output closure and the present
+relation payload still matches its
+native creation. Retirement deletes the exact admitted relations before their
+entities. Related ordering indexes are prepared before publication and require
+unchanged ordering-key codecs. External or rewritten relations, ordinary or
+subsequently overwritten payload, affected custom invariants, changed ordering
+keys, join consequences and multiple current branch heads remain refused.
+Codec cutover cannot append authored rows.
+
+Historical roots and the original checkpoint keep their old meaning. Demand
+output through the installed target producer after installation, then use
+ordinary edits and checkpoint capture/reopen. Keep the original runtime
+available for requests that resume its existing continuations. Each token owns
+its historical selection and ordered-index generation; a fresh authorised
+request on that original runtime can consume it after current values advance.
+The target installation is a foreign owner. A token, observation or catalogue
+comparison cannot grant target-current authority.
+
+Start a page on the current branch with `.page(...)`; public paging does not
+accept `.at(observation)`. Resume with the token itself and a fresh request:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The application declares read_children and the query.
+let first = original_request.query(read_children.clone()).page(width, work)?;
+let (owned_rows, continuation, _) = first.into_parts();
+let token = continuation.expect("another child page");
+// Keep the original owner available while installing/regenerating the target.
+let second = fresh_original_request.query(read_children).resume(token, width, work)?;
+```
+
+The [related-output journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/related/continuation.rs)
+publishes three output roles and two internal relations. An original token still
+reads the old child total `12` after Preserve advances all three original outputs
+to `37`; the genuine target producer emits child total `1012`, then Preserve
+advances it to `1037` before current-format reopen. Live delivery, paired
+reconstruction and retained snapshot reads also retain their original request
+and decode custody through completion. A swallowed seed refusal or late
+cancellation denies the final page, image or successful delivery. Closing a
+live consumer and closing its publisher are separate lifecycle operations.
 
 A deferred native settlement returns `CheckpointTransitionDeferred` with the
 exact unpublished repair custody. Consuming `repair_to_checkpoint` returns a
