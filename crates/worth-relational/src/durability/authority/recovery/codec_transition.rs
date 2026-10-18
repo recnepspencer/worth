@@ -42,6 +42,14 @@ impl DurabilityRecoveryAuthority<'_> {
         RelationalRecoveryStop,
     > {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        let destination = self.runtime.admit_codec_recovery_destination();
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        destination.map_err(|detail| {
+            crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::ReplayFailure,
+                detail,
+            )
+        })?;
         let checkpoint = crate::durability::log::native_file_codec::decode_checkpoint(
             execution,
             native.bytes(),

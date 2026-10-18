@@ -50,6 +50,17 @@ impl RelationalRuntimeOwner {
     pub(super) fn binding(&self) -> RelationalRuntimeOwnerBinding {
         self.binding.clone()
     }
+
+    pub(super) fn held_only_by_owner_and_close(
+        &self,
+        close: &RelationalRuntimeOwnerBinding,
+    ) -> bool {
+        // These two concrete handles are installed together by from_state.
+        // Every service and in-flight operation adds its own strong handle.
+        Arc::ptr_eq(&self.binding.lifecycle, &close.lifecycle)
+            && Arc::strong_count(&self.binding.lifecycle) == 2
+            && Arc::weak_count(&self.binding.lifecycle) == 0
+    }
 }
 
 impl RelationalRuntimeOwnerBinding {

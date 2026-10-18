@@ -58,6 +58,23 @@ impl RelationalRuntimePublicationOwner {
     pub(super) fn binding(&self) -> RelationalRuntimePublicationBinding {
         self.binding.clone()
     }
+
+    pub(super) fn held_only_by_owner_and_close(
+        &self,
+        close: &RelationalRuntimePublicationBinding,
+    ) -> bool {
+        // State and its close authority are the two native owner handles.
+        // Prepared candidates and independently bound services retain another.
+        Arc::ptr_eq(&self.binding.lifecycle, &close.lifecycle)
+            && Arc::strong_count(&self.binding.lifecycle) == 2
+            && Arc::weak_count(&self.binding.lifecycle) == 0
+            && self
+                .binding
+                .lifecycle
+                .companion
+                .enter()
+                .is_ok_and(|epoch| matches!(epoch.active(), Ok(None)))
+    }
 }
 
 impl RelationalRuntimePublicationBinding {

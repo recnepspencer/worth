@@ -10,6 +10,10 @@ use crate::history::retention::{
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn has_detached_retention_obligations(&self) -> bool {
+        self.retention_owner.has_detached_obligations()
+    }
+
     #[cfg(test)]
     pub(crate) fn retired_branch_binding_count(&self) -> usize {
         self.retention_owner.retired_branch_binding_count()
