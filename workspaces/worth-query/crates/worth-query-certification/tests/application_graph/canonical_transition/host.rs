@@ -38,6 +38,36 @@ impl WorthQueryApplicationContribution<CanonicalSchema> for CanonicalContributio
 pub type Host = WorthQueryProgramApplicationRuntime<CanonicalSchema, Program>;
 
 pub fn install(value: NestedValue) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+    install_owned(value, |_| {})
+}
+
+#[allow(
+    dead_code,
+    reason = "V1 retains native projection authority; V2 compiles this same host fixture"
+)]
+pub fn install_with_projection(
+    value: NestedValue,
+) -> Result<
+    (
+        Host,
+        WorthQueryApplicationInvariantProjectionAuthority<CanonicalSchema>,
+    ),
+    WorthQueryInMemoryApplicationDenial,
+> {
+    let mut projection = None;
+    let host = install_owned(value, |graph| {
+        projection = Some(graph.retain_invariant_projection_authority());
+    })?;
+    Ok((
+        host,
+        projection.expect("the actual bootstrap issued its retained projection authority"),
+    ))
+}
+
+fn install_owned(
+    value: NestedValue,
+    retain: impl FnOnce(&WorthQueryPrimaryGraphBootstrap<CanonicalSchema>),
+) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
     in_memory_program(
         ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
             .validated_program()
@@ -46,6 +76,7 @@ pub fn install(value: NestedValue) -> Result<Host, WorthQueryInMemoryApplication
         ((),),
         limits(),
         |_, graph, installed| {
+            retain(graph);
             let binding = installed
                 .principal_binding(DocumentPrincipalBinding::reference())
                 .unwrap();

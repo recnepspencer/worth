@@ -22,6 +22,8 @@ mod derived_query;
     reason = "the successor compiles these declarations and native handlers against its distinct V2 schema and codec"
 )]
 mod edit;
+#[path = "successor/historical.rs"]
+mod historical;
 #[path = "host.rs"]
 #[expect(
     clippy::duplicate_mod,
