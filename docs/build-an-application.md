@@ -319,7 +319,15 @@ does not establish authentic predecessor or migration authority.
 Ordinary native recovery refuses changed codec meaning before exposing the
 recovered graph. Advancing the aspect revision alone does not authorize adoption.
 The explicit checkpoint transition below can retire a complete producer-created
-output whose present fields still match its performed native create. Native
+output whose present fields remain covered by its authenticated native
+Create/Preserve publication succession. Membership includes unpatched companions
+and executed no-data completions. New dynamic members require actual allocations;
+retired members require actual native retirement, and every prior live member
+must remain accounted for. An intervening ordinary overwrite, including equal
+bytes, revokes that producer ownership. Native
+codec retirement records its complete governed disposition before publication;
+target production starts a new ownership generation on that same route.
+Ordinary deletion and producer Retire alone do not authorize a fresh Birth. Native
 recovery preserves the same physical carrier and unchanged authored records,
 retires the old output before adopting target contracts and indexes, and leaves
 reconstruction to the installed target producer. The
@@ -1606,8 +1614,9 @@ in force alongside explicit selection and authoring bounds.
 For a derived-only codec change, use that same entry point with the target schema
 and program and an empty author callback (`|_, _| Ok(())`). Native recovery must
 first establish each affected present field's actual producer publication and
-complete payload coverage. The target must install that producer with a Create
-role for the same native output kind. Before any disposition, each accepted output must match the complete original
+complete payload coverage. The target must install the actual birth and successor
+producers with their complete output-role meaning for the same native kinds;
+a Preserve producer may itself create dynamic members. Before any disposition, each accepted output must match the complete original
 native publication; an optional role cannot be omitted when its native output
 is present. Each accepted output must then either retire completely or survive
 completely.
@@ -1625,7 +1634,7 @@ entity-field equality indexes. Native producer-created internal relations may
 retire in that same candidate when both endpoints are independently proven in
 that same performed publication's complete output closure and the present
 relation payload still matches its
-native creation. Retirement deletes the exact admitted relations before their
+native creation or authenticated producer succession. Retirement deletes the exact admitted relations before their
 entities. Related ordering indexes are prepared before publication and require
 unchanged ordering-key codecs. External or rewritten relations, ordinary or
 subsequently overwritten payload, affected custom invariants, changed ordering

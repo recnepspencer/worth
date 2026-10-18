@@ -2,21 +2,22 @@
 //! covered creates of this one installed output publication.
 use super::payload_coverage::{validate_created_relation_payload, OutputPayloadCoverageFailure};
 use super::{origin_request, CanonicalCommitEnvelope};
-use crate::history::data::CodecRetirementClosureStop;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::transactions::data::{
     CommitCreatedEntityBindings, CommitCreatedRelationBindings, EntityReference,
     TransactionCommitError,
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
-use worth_foundational::facade::AuthoritativeRecordAspectState;
 
-#[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub(crate) struct CanonicalRequiredOutputRelation {
     pub(crate) id: RelationId,
     pub(crate) kind: KindId,
     pub(crate) source: EntityId,
     pub(crate) target: EntityId,
+    pub(crate) birth: crate::history::data::CommitId,
+    pub(crate) before_write: Option<crate::identity::data::VersionId>,
+    pub(crate) after_write: crate::identity::data::VersionId,
 }
 
 pub(super) fn capture_created_relations(
@@ -25,6 +26,7 @@ pub(super) fn capture_created_relations(
     relations: &CommitCreatedRelationBindings,
     state: &crate::storage::overlay::WorkingState,
     outputs: &[EntityId],
+    prior_count: usize,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<CanonicalRequiredOutputRelation>, TransactionCommitError> {
@@ -44,29 +46,32 @@ pub(super) fn capture_created_relations(
     )
     .map_err(|stop| origin_request(crate::execution::denial::lease_denial(stop)))?;
     // The parent reserves this retained vector before either allocation.
-    let mut captured = Vec::with_capacity(relations.iter().len());
+    let mut captured = Vec::with_capacity(
+        relations
+            .iter()
+            .len()
+            .checked_add(prior_count)
+            .ok_or_else(overflow)?,
+    );
     for (created, id) in relations.iter() {
         context.checkpoint(1).map_err(origin_request)?;
-        let (EntityReference::Created(source), EntityReference::Created(target)) =
-            (&created.source, &created.target)
-        else {
-            continue;
+        let mut resolve = |reference: &EntityReference| match reference {
+            EntityReference::Existing(id) => Ok(*id),
+            EntityReference::Created(target) => {
+                context
+                    .checkpoint(
+                        entities
+                            .resolve_work_bound(target)
+                            .ok_or_else(work_overflow)?,
+                    )
+                    .map_err(origin_request)?;
+                entities.resolve(target).ok_or_else(|| {
+                    crate::mvcc::origin_denial("new relation lost its actual allocated endpoint")
+                })
+            }
         };
-        for endpoint in [source, target] {
-            context
-                .checkpoint(
-                    entities
-                        .resolve_work_bound(endpoint)
-                        .ok_or_else(work_overflow)?,
-                )
-                .map_err(origin_request)?;
-        }
-        let (Some(source), Some(target)) = (entities.resolve(source), entities.resolve(target))
-        else {
-            return Err(crate::mvcc::origin_denial(
-                "native relation create lost its allocated endpoints",
-            ));
-        };
+        let source = resolve(&created.source)?;
+        let target = resolve(&created.target)?;
         context
             .checkpoint(2 * u64::from(usize::BITS - outputs.len().leading_zeros()) + 2)
             .map_err(origin_request)?;
@@ -101,8 +106,15 @@ pub(super) fn capture_created_relations(
                 kind: created.kind_id,
                 source,
                 target,
+                birth: envelope.commit.commit_id,
+                before_write: None,
+                after_write: envelope.commit.version_id,
             }),
-            Err(OutputPayloadCoverageFailure::Unsupported) => continue,
+            Err(OutputPayloadCoverageFailure::Unsupported) => {
+                return Err(crate::mvcc::origin_denial(
+                    "native output relation has unsupported present cells",
+                ))
+            }
             Err(OutputPayloadCoverageFailure::Request(cause)) => return Err(origin_request(cause)),
             Err(OutputPayloadCoverageFailure::Corrupt(detail)) => {
                 return Err(crate::mvcc::origin_denial(detail))
@@ -119,59 +131,125 @@ pub(super) fn capture_created_relations(
     Ok(captured)
 }
 
-impl CanonicalCommitEnvelope {
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn readmit_required_output_relation(
-        &self,
-        id: RelationId,
-        kind: KindId,
-        source: EntityId,
-        target: EntityId,
-        payload: Option<&AuthoritativeRecordAspectState>,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), CodecRetirementClosureStop> {
-        let origin = self
-            .required_output_origin
-            .as_ref()
-            .ok_or("incident relation has no installed native output origin")?;
-        context
-            .checkpoint(u64::from(usize::BITS - origin.relations.len().leading_zeros()) + 1)
-            .map_err(|cause| CodecRetirementClosureStop::Request(cause.into()))?;
-        let entry = origin
-            .relations
-            .binary_search_by_key(&id, |relation| relation.id)
-            .ok()
-            .map(|position| &origin.relations[position])
-            .ok_or("incident relation was not created inside the proven output closure")?;
-        // Endpoint entity proofs have already readmitted this exact origin's
-        // commit/basis against the same retained canonical envelope.
-        if origin.commit != self.commit
-            || entry.kind != kind
-            || entry.source != source
-            || entry.target != target
-        {
-            return Err("incident relation differs from its performed native create".into());
-        }
-        validate_created_relation_payload(self, id, payload, context).map_err(|failure| {
-            match failure {
-                OutputPayloadCoverageFailure::Request(cause) => {
-                    CodecRetirementClosureStop::Request(cause)
-                }
-                OutputPayloadCoverageFailure::Unsupported => CodecRetirementClosureStop::Payload(
-                    "incident relation has unsupported or unclassified present payload".into(),
-                ),
-                OutputPayloadCoverageFailure::Corrupt(detail) => {
-                    CodecRetirementClosureStop::Payload(detail)
-                }
-            }
-        })
-    }
-}
-
 fn overflow() -> TransactionCommitError {
     origin_request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
 }
 
 fn work_overflow() -> TransactionCommitError {
     origin_request(crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)
+}
+
+/// Prior edges retain native before-write fences; only actual candidate changes
+/// can update or retire them. New edges were captured from real allocations.
+pub(super) fn continue_relations(
+    envelope: &CanonicalCommitEnvelope,
+    prior: &super::CanonicalRequiredOutputOrigin,
+    basis: &crate::branch::AdmittedRelationalBranchBasis,
+    state: &crate::storage::overlay::WorkingState,
+    relations: &mut Vec<CanonicalRequiredOutputRelation>,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<(), TransactionCommitError> {
+    use crate::publication::patch::data::RecordStructuralChange as Change;
+    use crate::storage::overlay::{relation_partition_source_for_slot, OverlayStateView};
+    use crate::transactions::data::RecordRef;
+    let after_image = OverlayStateView::new(basis.inner.root.as_ref(), state);
+    for relation in &prior.relations {
+        context
+            .checkpoint(2 + envelope.patch.authoritative_record_patches.len() as u64)
+            .map_err(origin_request)?;
+        let before = basis
+            .inner
+            .root
+            .partition_state(relation.id.partition_id)
+            .ok_or_else(|| crate::mvcc::origin_denial("prior relation partition absent"))?;
+        let row = before
+            .relation_arena
+            .get(&relation.id)
+            .filter(|row| row.is_live())
+            .ok_or_else(|| {
+                crate::mvcc::origin_denial("prior relation generation absent or retired")
+            })?;
+        let write = before
+            .relation_arena
+            .metadata_history_at(relation.id.slot_index())
+            .and_then(|rows| rows.get(rows.len().checked_sub(1)?))
+            .ok_or_else(|| crate::mvcc::origin_denial("prior relation write position absent"))?
+            .effective_at;
+        if write != relation.after_write
+            || row.kind_id() != Some(relation.kind)
+            || !row.extra().endpoints.as_ref().is_some_and(|ends| {
+                ends.source == relation.source && ends.target == relation.target
+            })
+        {
+            return Err(crate::mvcc::origin_denial(
+                "relation write/endpoints break native producer continuity",
+            ));
+        }
+        let (_, after) = relation_partition_source_for_slot(
+            &after_image,
+            relation.id.partition_id,
+            relation.id.slot_index(),
+        )
+        .ok_or_else(|| crate::mvcc::origin_denial("successor relation partition absent"))?;
+        let row = after
+            .relation_arena
+            .get(&relation.id)
+            .ok_or_else(|| crate::mvcc::origin_denial("successor relation generation absent"))?;
+        let patch = envelope
+            .patch
+            .authoritative_record_patches
+            .iter()
+            .find(|patch| patch.target == RecordRef::Relation(relation.id));
+        if !row.is_live() {
+            if row.retired_at() != Some(envelope.commit.version_id)
+                || patch.is_none_or(|patch| {
+                    !matches!(
+                        patch.structural_change,
+                        Change::Deleted | Change::RetainedForAudit
+                    )
+                })
+            {
+                return Err(crate::mvcc::origin_denial(
+                    "relation retirement lacks this candidate's actual native operation",
+                ));
+            }
+            continue;
+        }
+        let ends = row
+            .extra()
+            .endpoints
+            .as_ref()
+            .ok_or_else(|| crate::mvcc::origin_denial("successor relation endpoints absent"))?;
+        let after_write = after
+            .relation_arena
+            .metadata_history_at(relation.id.slot_index())
+            .and_then(|rows| rows.get(rows.len().checked_sub(1)?))
+            .ok_or_else(|| crate::mvcc::origin_denial("successor relation write position absent"))?
+            .effective_at;
+        if row.kind_id() != Some(relation.kind)
+            || (after_write != relation.after_write && after_write != envelope.commit.version_id)
+            || patch.is_some_and(|patch| patch.structural_change != Change::Updated)
+        {
+            return Err(crate::mvcc::origin_denial(
+                "successor relation differs from its actual native mutation",
+            ));
+        }
+        relations.push(CanonicalRequiredOutputRelation {
+            id: relation.id,
+            kind: relation.kind,
+            source: ends.source,
+            target: ends.target,
+            birth: relation.birth,
+            before_write: Some(relation.after_write),
+            after_write,
+        });
+    }
+    context
+        .checkpoint(
+            (relations.len() * ((usize::BITS - relations.len().leading_zeros()) as usize + 1))
+                as u64,
+        )
+        .map_err(origin_request)?;
+    relations.sort_unstable_by_key(|relation| relation.id);
+    Ok(())
 }

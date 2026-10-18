@@ -1,6 +1,8 @@
 //! Source-contract staging and exact target installation for native recovery.
 mod physical_field_basis;
-pub(crate) use physical_field_basis::{codec_field_changes, CodecFieldLocus};
+pub(crate) use physical_field_basis::{
+    codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
+};
 
 use crate::runtime::RelationalRuntime;
 use crate::schema::data::RelationalSchemaRegistry;
@@ -8,11 +10,14 @@ use crate::schema::data::RelationalSchemaRegistry;
 /// Exact program activation change authenticated by Query's installed owner.
 /// This description is joined to that owner's occurrence proof and the
 /// recovered native source root before it permits any protected-row change.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct RecoveredCheckpointProgramActivationUpdate {
     pub entity_id: crate::identity::data::EntityId,
+    #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator")]
     pub field_locator: worth_foundational::facade::AspectFieldLocator,
+    #[serde(with = "crate::aspect_wire::serde_canonical_aspect_value")]
     pub expected: worth_foundational::facade::AspectValue,
+    #[serde(with = "crate::aspect_wire::serde_canonical_aspect_value")]
     pub replacement: worth_foundational::facade::AspectValue,
 }
 

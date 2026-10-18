@@ -24,6 +24,8 @@ mod capture_preparation;
 mod content_tests;
 #[path = "root_identity.rs"]
 mod identity;
+#[path = "root_output_publication.rs"]
+mod output_publication;
 #[path = "root_owner_allocation_ledger.rs"]
 mod owner_allocation_ledger;
 #[path = "root_readmission.rs"]
@@ -118,6 +120,8 @@ pub(crate) struct RelationalBranchRoot {
     entity_slot_count: usize,
     relation_slot_count: usize,
     content_accumulator: [u8; 32],
+    pub(crate) output_publication_positions:
+        crate::history::data::RequiredOutputPublicationPositions,
     schema_authority: Arc<RelationalBranchRootSchemaAuthority>,
     committed: Option<RelationalCommittedBranchRoot>,
 }
@@ -162,6 +166,7 @@ impl RelationalBranchRoot {
             entity_slot_count: 0,
             relation_slot_count: 0,
             content_accumulator: [0; 32],
+            output_publication_positions: Default::default(),
             schema_authority: RelationalBranchRootSchemaAuthority::empty(),
             committed: None,
         })
@@ -183,6 +188,7 @@ impl RelationalBranchRoot {
             entity_slot_count: 0,
             relation_slot_count: 0,
             content_accumulator: [0; 32],
+            output_publication_positions: Default::default(),
             schema_authority: RelationalBranchRootSchemaAuthority::capture(
                 schema_authority_id,
                 registry,

@@ -105,6 +105,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
         None,
         [0x41; 32],
         None,
+        None,
     );
     lineage.record_recovered_prior_output(
         lineage.binding_type(&source.output_binding),
@@ -118,6 +119,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
         sibling_partition,
         None,
         [0x42; 32],
+        None,
         None,
     );
     lineage.register_fork(parent, &child);

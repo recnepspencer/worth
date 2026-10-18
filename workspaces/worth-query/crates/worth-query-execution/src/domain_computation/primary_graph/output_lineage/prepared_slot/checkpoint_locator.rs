@@ -39,7 +39,7 @@ impl PreparedOutputLineageSlot {
             .try_reserve_exact(producer.len())
             .map_err(|_| denial(Kind::RetentionBudgetExceeded))?;
         owned_producer.push_str(producer);
-        self.native_prior_checkpoint = Some(NativePriorCheckpointLocator {
+        self.native_prior_checkpoint = Some(NativePriorCheckpointLocator::Performed {
             producer: owned_producer,
             source,
         });

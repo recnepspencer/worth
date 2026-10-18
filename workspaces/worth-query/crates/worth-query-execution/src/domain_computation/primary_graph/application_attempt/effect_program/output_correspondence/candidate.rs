@@ -38,20 +38,24 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
-    pub(in crate::domain_computation::primary_graph) fn native_created_output_targets(
+    pub(in crate::domain_computation::primary_graph) fn native_publication_roles(
         &self,
-    ) -> impl Iterator<Item = &worth_relational::facade::transactions::CreatedEntityRef> + Clone
-    {
-        self.roles
-            .values()
-            .filter_map(|binding| match &binding.entity {
-                EntityReference::Created(target)
-                    if binding.posture == WorthQueryApplicationOutputPosture::Create =>
-                {
-                    Some(target)
-                }
-                _ => None,
-            })
+    ) -> impl ExactSizeIterator<
+        Item = (
+            &str,
+            WorthQueryApplicationOutputPosture,
+            &str,
+            &EntityReference,
+        ),
+    > + Clone {
+        self.roles.iter().map(|(role, binding)| {
+            (
+                role.as_str(),
+                binding.posture,
+                binding.entity_name.as_str(),
+                &binding.entity,
+            )
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn native_witness_roles(

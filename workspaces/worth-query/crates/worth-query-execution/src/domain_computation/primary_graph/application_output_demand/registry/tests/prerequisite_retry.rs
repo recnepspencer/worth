@@ -76,7 +76,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         );
     let mut admission = record_admission();
     let context = reader
-        .required_context(&source_owner, &mut admission)
+        .required_context("registry-fixture-family", &source_owner, &mut admission)
         .expect("the running reader issues its required context");
     // The upstream row this execution read is no longer indexed: a newer
     // settlement of its demand retired it.
@@ -149,7 +149,9 @@ fn a_refused_posting_retry_reuses_the_exact_settlement_vector_capacity() {
             1,
         );
     let mut admission = record_admission();
-    let context = interest.required_context(&owner, &mut admission).unwrap();
+    let context = interest
+        .required_context("registry-fixture-family", &owner, &mut admission)
+        .unwrap();
     let mut claims = context
         .prepare_prerequisites(std::iter::empty(), &owner, &mut admission)
         .unwrap();
@@ -183,7 +185,9 @@ fn a_refused_posting_retry_reuses_the_exact_settlement_vector_capacity() {
         );
         state.required_budget_bytes = original_budget;
     }
-    let context = interest.required_context(&owner, &mut admission).unwrap();
+    let context = interest
+        .required_context("registry-fixture-family", &owner, &mut admission)
+        .unwrap();
     let mut retry = context
         .prepare_prerequisites(std::iter::empty(), &owner, &mut admission)
         .unwrap();

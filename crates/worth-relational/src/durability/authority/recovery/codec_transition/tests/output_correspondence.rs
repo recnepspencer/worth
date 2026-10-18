@@ -70,7 +70,11 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
             &selected,
             "native.fixture.companion",
             &[10; 32],
-            &[(companion, KindId(1))],
+            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
+            &crate::mvcc::native_roles_fixture(
+                &[(companion, KindId(1))],
+                crate::mvcc::RequiredOutputRolePosture::Create,
+            ),
         )
         .unwrap();
     for roles in [
@@ -90,7 +94,11 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
                 &selected,
                 "native.fixture.companion",
                 &[10; 32],
-                &roles
+                &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
+                &crate::mvcc::native_roles_fixture(
+                    &roles,
+                    crate::mvcc::RequiredOutputRolePosture::Create
+                )
             )
             .is_err());
     }
@@ -102,7 +110,11 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
             &selected,
             "copied.description",
             &[10; 32],
-            &[(companion, KindId(1))]
+            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
+            &crate::mvcc::native_roles_fixture(
+                &[(companion, KindId(1))],
+                crate::mvcc::RequiredOutputRolePosture::Create
+            )
         )
         .is_err());
     assert_eq!(capture(&target), before);
@@ -151,7 +163,11 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
             &selected,
             "native.fixture.companion",
             &[10; 32],
-            &[(companion, KindId(1))]
+            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
+            &crate::mvcc::native_roles_fixture(
+                &[(companion, KindId(1))],
+                crate::mvcc::RequiredOutputRolePosture::Create
+            )
         )
         .is_err());
 }
@@ -175,7 +191,11 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
             &selected,
             "native.fixture.companion",
             &[10; 32],
-            &[(companion, KindId(1))],
+            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
+            &crate::mvcc::native_roles_fixture(
+                &[(companion, KindId(1))],
+                crate::mvcc::RequiredOutputRolePosture::Create,
+            ),
         )
         .unwrap_err();
     assert!(
@@ -197,7 +217,8 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
             &selected,
             "wrong producer",
             &[0; 32],
-            &[],
+            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
+            &crate::mvcc::native_roles_fixture(&[], crate::mvcc::RequiredOutputRolePosture::Create),
         )
         .unwrap_err();
     assert_eq!(
@@ -214,7 +235,11 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
             &selected,
             "native.fixture.companion",
             &[10; 32],
-            &[(companion, KindId(1))],
+            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
+            &crate::mvcc::native_roles_fixture(
+                &[(companion, KindId(1))],
+                crate::mvcc::RequiredOutputRolePosture::Create,
+            ),
         )
         .unwrap();
 }

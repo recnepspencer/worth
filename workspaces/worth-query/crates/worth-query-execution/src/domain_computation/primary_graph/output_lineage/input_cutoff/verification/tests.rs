@@ -306,6 +306,7 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                     .seal_decision_reuse(context(), DecisionContextUse::default())
                     .unwrap();
                 let row = RecordedOutput {
+                    required_publication: None,
                     computation_source: evidence,
                     native_prior_checkpoint: None,
                     _retained_capacity: None,

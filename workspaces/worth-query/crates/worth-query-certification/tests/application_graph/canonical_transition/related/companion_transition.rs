@@ -115,6 +115,42 @@ fn companion_historical_rows_survive_real_transition_production_preserve_and_reo
     journey::assert_old(&first, "derived-left");
     let generation = first.receipt().ordered_index_generation();
     let (rows, token, _) = first.into_parts();
+    let mut before_capture = model::authored_value();
+    before_capture.notes = Some("genuine source edit before checkpoint".into());
+    let changed = old::host::edit_source(&original, before_capture.clone(), 0x2712900);
+    assert!(changed.outputs_of::<output::PreservedOutputs>().is_ok());
+    let preserved = old::host::produce(&original);
+    let initial_receipt = settlement.application_commit_receipt().unwrap();
+    let executed_receipt = preserved.application_commit_receipt().unwrap();
+    assert_eq!(
+        executed_receipt.changed_record_count(),
+        1,
+        "only the mandatory Query idempotency record changes; both producer members are unpatched"
+    );
+    assert_eq!(executed_receipt.emitted_effect_count(), 0);
+    assert_ne!(
+        executed_receipt.commit_reference(),
+        initial_receipt.commit_reference()
+    );
+    assert_cached_companion(&original, executed_receipt, ids);
+
+    let roles = preserved
+        .outputs_of::<old::output::PreservedOutputs>()
+        .unwrap();
+    assert_eq!(
+        [
+            roles
+                .entity::<old::output::PreservedOutput>()
+                .unwrap()
+                .entity_id(),
+            roles
+                .entity::<old::output::PreservedLeft>()
+                .unwrap()
+                .entity_id()
+        ],
+        ids,
+        "real V1 Preserve retains both original native companion identities"
+    );
     let checkpoint = old::host::capture(&original);
     let held = checkpoint.clone();
     let bytes = checkpoint.bytes().to_vec();
@@ -130,7 +166,7 @@ fn companion_historical_rows_survive_real_transition_production_preserve_and_reo
         "V2 must never decode predecessor derived bytes"
     );
     assert_eq!(new::reads::source_id(&target), source_id);
-    assert_eq!(new::reads::read(&target), model::authored_value());
+    assert_eq!(new::reads::read(&target), before_capture);
     assert_target(&target, ids);
     let updated = new::host::edit_source(&target, journey::edited(), 0x2712901);
     assert!(updated
@@ -237,3 +273,51 @@ fn companion_mixed_native_output_is_not_partially_promoted_or_discarded() {
 }
 #[path = "companion_transition/capture.rs"]
 mod capture;
+
+fn assert_cached_companion(
+    original: &Original,
+    performed: &worth_query_host::facade::product::WorthQueryApplicationCommitReceipt,
+    ids: [worth_relational::facade::identity::EntityId; 2],
+) {
+    let scope = request_scope();
+    let principal = authenticate_operator(original.installed_schema(), &scope);
+    let request = original
+        .runtime()
+        .request(&principal, &scope)
+        .on_branch(original.runtime().current_world());
+    let mut demand = request
+        .demand(old::producer::Demand)
+        .start_in_program::<_, old::program::Root>(original)
+        .unwrap();
+    let WorthQueryApplicationOutputDemandProgress::Settled(stable) =
+        demand.settle(&request).unwrap()
+    else {
+        panic!("unchanged completed output must settle")
+    };
+    assert_eq!(stable.producer_contacts_in_this_demand(), 0);
+    if let Some(receipt) = stable.application_commit_receipt() {
+        assert!(receipt.is_same_authoritative_commit(performed));
+    } else {
+        assert!(matches!(
+            stable.posture(),
+            WorthQueryOutputSettlementPosture::StableReused
+                | WorthQueryOutputSettlementPosture::RecoveredStableReused
+        ));
+    }
+    let roles = stable
+        .outputs_of::<old::output::PreservedOutputs>()
+        .unwrap();
+    assert_eq!(
+        [
+            roles
+                .entity::<old::output::PreservedOutput>()
+                .unwrap()
+                .entity_id(),
+            roles
+                .entity::<old::output::PreservedLeft>()
+                .unwrap()
+                .entity_id()
+        ],
+        ids
+    );
+}

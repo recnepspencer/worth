@@ -42,6 +42,9 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         return Err(TransactionCommitError::interrupted(interruption));
     }
     require_parent_publication_settled(runtime, &expected_root)?;
+    if let Some(admission) = &required_output_publication {
+        admission.validate_before_preparation(execution, context.validation_input.basis())?;
+    }
     let publication_cell = runtime
         .history
         .branch_cell(&branch_id)

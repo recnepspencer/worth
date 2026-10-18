@@ -72,6 +72,7 @@ impl WorthQueryApplicationOutputLineage {
             super::super::application_contribution::WorthQueryProducerDemandResources,
         >,
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+        checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
     ) -> Option<RestoredRecord> {
         let computation_source = observed_source_facts.source();
         let observed_source_facts = observed_source_facts.postconditions().clone();
@@ -91,6 +92,7 @@ impl WorthQueryApplicationOutputLineage {
             verified_witness,
             &mut None,
             computation_source,
+            checkpoint,
         )
     }
 
@@ -119,6 +121,7 @@ impl WorthQueryApplicationOutputLineage {
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
         republished: &mut Option<republication::RepublishedOutput>,
         computation_source: super::ComputationSourceEvidence,
+        checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
     ) -> Option<RestoredRecord> {
         let observed_source_facts = observed_source_facts.into();
         let source = SemanticSource {
@@ -186,7 +189,9 @@ impl WorthQueryApplicationOutputLineage {
             .as_ref()
             .map_or_else(|| observed_source_facts.clone(), |output| output.facts());
         let mut recorded = RecordedOutput {
-            native_prior_checkpoint: None,
+            required_publication: None,
+            native_prior_checkpoint: checkpoint
+                .map(super::native_prior_checkpoint::NativePriorCheckpointLocator::Recovered),
             computation_source,
             performed_origin: None,
             _retained_capacity: None,
@@ -274,6 +279,7 @@ impl WorthQueryApplicationOutputLineage {
         resources: Option<
             super::super::application_contribution::WorthQueryProducerDemandResources,
         >,
+        checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
     ) {
         let source = SemanticSource {
             runtime_authority,
@@ -319,7 +325,9 @@ impl WorthQueryApplicationOutputLineage {
             .or_default();
         let slot = records.len();
         let recorded = RecordedOutput {
-            native_prior_checkpoint: None,
+            required_publication: None,
+            native_prior_checkpoint: checkpoint
+                .map(super::native_prior_checkpoint::NativePriorCheckpointLocator::Recovered),
             computation_source: super::ComputationSourceEvidence::unavailable(),
             performed_origin: None,
             _retained_capacity: None,

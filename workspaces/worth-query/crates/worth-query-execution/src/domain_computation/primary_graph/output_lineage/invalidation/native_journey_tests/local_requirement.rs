@@ -90,7 +90,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&retained_fact)),
         None,
         None,
-        );
+         None);
     let identity = Arc::clone(
         &lineage
             .resolve_current_family(

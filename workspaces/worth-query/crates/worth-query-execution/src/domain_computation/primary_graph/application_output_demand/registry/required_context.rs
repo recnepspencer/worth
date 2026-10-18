@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
 /// move-only carrier; the source epoch and installed producer are the registry
 /// key, while the registry remains the sole owner of prerequisite claims.
 pub(in crate::domain_computation) struct RequiredOutputDemandContext {
+    family: &'static str,
     owner: WorthQueryOutputDemandRegistry,
     key: Arc<WorthQueryOutputDemandKey>,
     work_membership: Option<Arc<super::required_work::RequiredWorkMembership>>,
@@ -83,6 +84,10 @@ impl RequiredOutputExecution {
 }
 
 impl RequiredOutputDemandContext {
+    pub(in crate::domain_computation::primary_graph) fn publication_family(&self) -> &'static str {
+        self.family
+    }
+
     /// The selection this context executes reuses the live output it was
     /// selected for, or stops before any effect.
     pub(in crate::domain_computation::primary_graph) fn reuse_live_output_only(&mut self) {
@@ -257,6 +262,7 @@ impl Drop for RequiredOutputDemandContext {
 impl WorthQueryOutputDemandInterest {
     pub(in crate::domain_computation::primary_graph) fn required_context(
         &self,
+        family: &'static str,
         source_owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredOutputDemandContext, WorthQueryOutputDemandDenial> {
@@ -311,6 +317,7 @@ impl WorthQueryOutputDemandInterest {
         let key = Arc::new(self.key.clone());
         state.required_reserved_bytes = required;
         Ok(RequiredOutputDemandContext {
+            family,
             owner: self.owner.clone(),
             key,
             work_membership,
@@ -354,6 +361,6 @@ fn context_bytes(key: &WorthQueryOutputDemandKey) -> Result<usize, WorthQueryOut
 }
 
 pub(super) const fn minimum_context_bytes() -> usize {
-    std::mem::size_of::<WorthQueryOutputDemandKey>() + 2 * std::mem::size_of::<usize>()
+    std::mem::size_of::<WorthQueryOutputDemandKey>() + 2 * std::mem::size_of::<usize>() + std::mem::size_of::<&'static str>()
         + std::mem::size_of::<Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>>()
 }

@@ -44,7 +44,10 @@ fn publish(
     let proposal = transaction
         .validate(execution, runtime)
         .unwrap()
-        .bind_required_output_publication(installed, proof, targets.to_vec())
+        .bind_required_output_publication(
+            installed,
+            crate::mvcc::native_birth_fixture(proof, targets.to_vec()),
+        )
         .unwrap();
     let candidate = runtime
         .prepare_validated_proposal(execution, proposal)
@@ -90,10 +93,18 @@ fn companion_optional_survivor_omission_cannot_disguise_a_genuine_mixed_publicat
             &selected,
             "native.fixture.mixed",
             &[11; 32],
-            &[(a, KindId(3)), (b, KindId(1))],
+            &crate::mvcc::native_meaning_fixture("native.fixture.mixed"),
+            &crate::mvcc::native_roles_fixture(
+                &[(a, KindId(3)), (b, KindId(1))],
+                crate::mvcc::RequiredOutputRolePosture::Create,
+            ),
         )
         .unwrap();
-    for roles in [&[(a, KindId(3))][..], &[(b, KindId(1))][..]] {
+    let original_roles = crate::mvcc::native_roles_fixture(
+        &[(a, KindId(3)), (b, KindId(1))],
+        crate::mvcc::RequiredOutputRolePosture::Create,
+    );
+    for role in &original_roles {
         let denied = target
             .durability_recovery()
             .validate_recovered_codec_output_correspondence(
@@ -102,7 +113,8 @@ fn companion_optional_survivor_omission_cannot_disguise_a_genuine_mixed_publicat
                 &selected,
                 "native.fixture.mixed",
                 &[11; 32],
-                roles,
+                &crate::mvcc::native_meaning_fixture("native.fixture.mixed"),
+                std::slice::from_ref(role),
             )
             .unwrap_err();
         assert!(

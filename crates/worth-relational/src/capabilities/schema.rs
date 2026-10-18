@@ -131,3 +131,21 @@ impl RelationalRuntime {
             .get(&kind_id)
     }
 }
+
+impl AspectPlanSource for AspectContractPlanCatalog {
+    fn aspect_plan_catalog(&self) -> &AspectContractPlanCatalog {
+        self
+    }
+    fn entity_aspect_plan(
+        &self,
+        kind_id: crate::identity::data::KindId,
+    ) -> Option<&LoweredAspectContractPlan> {
+        self.entity_plans.get(&kind_id)
+    }
+    fn relation_aspect_plan(
+        &self,
+        kind_id: crate::identity::data::KindId,
+    ) -> Option<&LoweredAspectContractPlan> {
+        self.relation_plans.get(&kind_id)
+    }
+}

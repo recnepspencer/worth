@@ -105,10 +105,19 @@ Producer readiness uses the actual output-role carrier and its emitted meaning.
 Predecessor comparison requires explicit semantic aspect revision advancement
 for changed meaning and grants no recovered-transition permission.
 The existing [checkpoint transition](build-an-application.md#44-checkpoint-program-transitions)
-supports whole-output derived-codec retirement when native performed creates
-still cover every present field. It preserves authored bytes and identities on
+supports whole-output derived-codec retirement when authenticated native
+Create/Preserve publication succession still covers every present field.
+Complete membership is independent of individual data writes: unchanged
+companions and genuinely executed no-data Preserve retain their original
+identities, while no-contact reuse retains its performed provenance. Dynamic
+families may allocate and retire members through actual native operations;
+each member retains its own birth and exact predecessor write positions.
+An intervening ordinary write, including equal bytes, revokes continuity.
+Only a genuine complete native codec retirement can close that generation for
+fresh target creation; ordinary deletion or producer Retire cannot free it.
+It preserves authored bytes and identities on
 the same carrier and requires the installed target producer to rebuild output.
-A closed set of native producer-created internal relations can retire with its
+A closed set of native producer-owned internal relations can retire with its
 output records when both endpoints are independently proven in that same
 publication. Related ordering can survive when its key codec stays unchanged.
 External or rewritten relations, protected or partly classified fields, affected

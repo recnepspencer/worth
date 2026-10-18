@@ -1,4 +1,5 @@
 //! Closed performed native graph retirement precedes changed-codec consumers.
+mod codec_disposition;
 mod consequences;
 mod fixture;
 mod refusals;
@@ -49,6 +50,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
         &mut recovered,
         world.activation,
         RelationalOperationControl::uninterrupted(),
+        None,
     )
     .unwrap();
     let committed = target
@@ -114,6 +116,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
         matches!(&retired_index.entries, DerivedIndexEntries::RelatedEntityOrdering(entries) if entries.is_empty())
     );
     recovered.admit_basis(current).unwrap();
+    codec_disposition::cold_retired_route(execution, &target);
     let (outputs, relations) = produce(execution, &target, &target_receipt, 2);
     for id in outputs {
         assert!(!world.outputs.contains(&id));

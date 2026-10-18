@@ -1,5 +1,6 @@
 mod aspect_versions;
 mod canonical_deltas;
+mod deletion_publication;
 mod effect;
 mod effect_assembly;
 mod effect_diagnostics;
@@ -23,4 +24,8 @@ pub(crate) use field_versions::visit_changed_fields;
 pub(crate) use record_changes::apply_adjacency_deltas;
 pub(crate) use workspace::{
     BranchLocalDeleteAllowance, MutationPreparationTelemetry, MutationWorkspace,
+};
+
+pub(crate) use deletion_publication::{
+    entity_deletion_publication_patch, relation_deletion_publication_patch,
 };

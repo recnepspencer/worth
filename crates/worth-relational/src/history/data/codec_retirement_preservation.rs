@@ -181,7 +181,7 @@ fn validate_metered(
     Ok(())
 }
 
-fn compare_activation_payload(
+pub(super) fn compare_activation_payload(
     old: Option<&AuthoritativeRecordAspectState>,
     new: Option<&AuthoritativeRecordAspectState>,
     activation: &RecoveredCheckpointProgramActivationUpdate,

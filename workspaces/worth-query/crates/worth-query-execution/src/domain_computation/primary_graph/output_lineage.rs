@@ -28,6 +28,7 @@ mod prepared_slot;
 mod qualification;
 mod recorded_output;
 mod recorded_source_identity;
+mod required_publication;
 mod required_settlement;
 pub(in crate::domain_computation::primary_graph) use required_settlement::{
     AcceptedCurrentCandidate, BoundCurrentAcceptedOutput, CurrentAcceptedResult,
@@ -298,6 +299,7 @@ impl WorthQueryApplicationOutputLineage {
             };
         let computation_source = ComputationSourceEvidence::from_completed(application);
         let recorded = RecordedOutput {
+            required_publication: prepared.and_then(|slot| slot.required_publication.clone()),
             native_prior_checkpoint,
             computation_source,
             performed_origin: None,

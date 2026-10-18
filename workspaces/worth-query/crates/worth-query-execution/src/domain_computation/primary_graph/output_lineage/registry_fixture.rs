@@ -76,7 +76,7 @@ fn recorded_settlements(
         }])),
         None,
             None,
-        );
+         None);
     }
     let source = SemanticSource {
         runtime_authority,

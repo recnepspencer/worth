@@ -118,11 +118,16 @@ pub(super) fn prepare_commit_publication_execution(
         aspect_emission_traces,
     ) = assembled.into_parts();
     let publication = {
+        let recovered_codec_publication_custody = admitted
+            .validation_input()
+            .recovered_codec_publication_custody()
+            .cloned();
         let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
         prepare_publication_phase(
             execution,
             runtime,
             PreparePublicationPhaseInput {
+                recovered_codec_publication_custody,
                 required_output_publication,
                 created_entities: &created_entities,
                 created_relations: &created_relations,
@@ -299,15 +304,12 @@ impl PreparedCommitPublicationExecution {
     ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
         self.publication.descriptive_touches()
     }
-
     pub(crate) fn changed_record_count(&self) -> usize {
         self.publication.changed_record_count()
     }
-
     pub(crate) fn changed_records(&self) -> &[crate::transactions::data::RecordRef] {
         &self.publication.changed_records
     }
-
     pub(crate) fn attach_prepared_indexes(
         &mut self,
         prepared: crate::indexes::PreparedCandidateIndexPublication,
@@ -323,7 +325,6 @@ impl PreparedCommitPublicationExecution {
         self.prepared_indexes = Some(prepared);
         Ok(())
     }
-
     pub(crate) fn recovered_codec_publication_custody(
         &self,
     ) -> Option<&std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>> {

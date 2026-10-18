@@ -21,7 +21,8 @@ mod release;
 mod source_observation;
 pub use application_publication::{
     AdmittedCheckpointProgramActivation, AdmittedRequiredOutputPublication,
-    InstalledApplicationPublicationAuthority, InstalledApplicationPublicationOwner,
+    AdmittedRequiredOutputSuccession, InstalledApplicationPublicationAuthority,
+    InstalledApplicationPublicationOwner, RequiredOutputPublicationAuthority,
 };
 mod transition;
 mod type_level;

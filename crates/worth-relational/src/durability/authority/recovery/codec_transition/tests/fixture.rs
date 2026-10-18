@@ -198,7 +198,10 @@ pub(super) fn create(
     let proposal = transaction.validate(execution, runtime).unwrap();
     let proposal = match producer {
         Some((installed, proof)) => proposal
-            .bind_required_output_publication(installed, proof, vec![created.clone()])
+            .bind_required_output_publication(
+                installed,
+                crate::mvcc::native_birth_fixture(proof, vec![created.clone()]),
+            )
             .unwrap(),
         None => proposal,
     };

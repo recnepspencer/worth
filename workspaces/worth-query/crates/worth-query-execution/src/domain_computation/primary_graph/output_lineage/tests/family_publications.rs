@@ -146,6 +146,7 @@ impl Court {
         let slot = records.len();
         let computation_source = ComputationSourceEvidence::unavailable();
         let recorded = RecordedOutput {
+            required_publication: None,
             computation_source,
             native_prior_checkpoint: None,
             _retained_capacity: None,

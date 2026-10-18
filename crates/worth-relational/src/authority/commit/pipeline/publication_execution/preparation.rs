@@ -127,6 +127,8 @@ impl PreparedPublicationPhase {
 }
 
 pub(super) struct PreparePublicationPhaseInput<'a> {
+    pub(super) recovered_codec_publication_custody:
+        Option<Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
     pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
@@ -151,6 +153,7 @@ pub(super) fn prepare_publication_phase(
     input: PreparePublicationPhaseInput<'_>,
 ) -> Result<PreparedPublicationPhase, TransactionCommitError> {
     let PreparePublicationPhaseInput {
+        recovered_codec_publication_custody,
         required_output_publication,
         created_entities,
         created_relations,
@@ -177,8 +180,19 @@ pub(super) fn prepare_publication_phase(
         deferred_diagnostic_artifacts,
         target_schema_registry,
     ) = publication.into_finalize().into_parts();
-    if let Some(admission) = required_output_publication {
-        canonical_commit_envelope.install_required_output_origin(
+    if recovered_codec_publication_custody.is_some() && required_output_publication.is_some() {
+        return Err(crate::mvcc::origin_denial(
+            "codec retirement cannot also mint a producer completion",
+        ));
+    }
+    let output_positions = if let Some(custody) = recovered_codec_publication_custody {
+        Some(custody.install_retirements(
+            execution,
+            &mut canonical_commit_envelope,
+            &branch_basis,
+        )?)
+    } else if let Some(admission) = required_output_publication {
+        Some(canonical_commit_envelope.install_required_output_origin(
             execution,
             runtime,
             &branch_basis,
@@ -186,8 +200,10 @@ pub(super) fn prepare_publication_phase(
             created_relations,
             &working_state,
             admission,
-        )?;
-    }
+        )?)
+    } else {
+        None
+    };
     let durable_bytes = prepare_durable_bytes(execution, runtime, &canonical_commit_envelope)
         .map_err(|error| error.with_commit_log(commit_log.clone()))?;
     let canonical_commit_envelope = Arc::new(canonical_commit_envelope);
@@ -226,6 +242,7 @@ pub(super) fn prepare_publication_phase(
             published_partition_delta,
             Arc::clone(&canonical_commit_envelope),
             publication_schema_registry.as_ref(),
+            output_positions,
         )
         .map_err(|detail| {
             TransactionCommitError::publication(PublicationError::new(

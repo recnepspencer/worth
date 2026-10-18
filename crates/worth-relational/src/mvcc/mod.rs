@@ -35,6 +35,11 @@ pub(crate) use publication::{
     PreparedIndexRefreshBasis, PreparedRelationalCandidateAdmissionStop,
     PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
 };
+pub use publication::{
+    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
+};
 pub(crate) use transaction::commit_plan::bulk_reservations_for_plan;
 pub(crate) use transaction::RelationalMaterializationTransactionMode;
 pub(crate) use transaction::RelationalTransactionSavepoint;
@@ -56,3 +61,9 @@ pub use validation::{
     ValidatedMutationFootprintWork, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches, ValidatedRelationalProposal,
 };
+
+#[cfg(test)]
+pub(crate) use publication::{native_birth_fixture, native_meaning_fixture};
+
+#[cfg(test)]
+pub(crate) use publication::native_roles_fixture;

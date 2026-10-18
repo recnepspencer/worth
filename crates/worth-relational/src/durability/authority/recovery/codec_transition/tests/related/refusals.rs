@@ -13,6 +13,15 @@ fn external_endpoint_and_later_equal_relation_write_refuse_without_any_retiremen
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     for external in [true, false] {
         let world = world(execution);
+        complete_association(execution, &world).unwrap();
+        let none = crate::history::data::derive_codec_retirement_closure(
+            execution,
+            &world.runtime,
+            &basis(&world.runtime),
+            &[],
+        )
+        .unwrap();
+        assert!(none.entities.is_empty());
         let intent = if external {
             MutationIntent::Create(CreateIntent::Relation(RelationSpec {
                 partition_id: PartitionId::main(),
@@ -56,6 +65,15 @@ fn external_endpoint_and_later_equal_relation_write_refuse_without_any_retiremen
             .snapshots()
             .release_snapshot(&committed.snapshot)
             .unwrap();
+        let source_before = capture(&world.runtime);
+        let source_basis = basis(&world.runtime);
+        let denied = complete_association(execution, &world).unwrap_err();
+        assert!(
+            format!("{denied:?}").contains("incident relation"),
+            "{denied:?}"
+        );
+        assert!(source_basis.is_current());
+        assert_eq!(capture(&world.runtime), source_before);
         let (mut target, mut recovered, _) = recover(execution, &world);
         let before = capture(&target);
         let selected = basis(&target);
@@ -66,6 +84,7 @@ fn external_endpoint_and_later_equal_relation_write_refuse_without_any_retiremen
             &mut recovered,
             world.activation,
             RelationalOperationControl::uninterrupted(),
+            None,
         )
         .unwrap_err();
         assert_eq!(
@@ -79,6 +98,25 @@ fn external_endpoint_and_later_equal_relation_write_refuse_without_any_retiremen
         assert_eq!(protected_payload(&target, world.authored), source);
         assert_order(&target, &world.outputs, &world.relations);
     }
+}
+
+fn complete_association(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &RelatedWorld,
+) -> Result<(), crate::history::data::CodecRetirementClosureStop> {
+    crate::history::data::validate_codec_output_correspondence(
+        execution,
+        &world.runtime,
+        &basis(&world.runtime),
+        "native.closed.producer",
+        &[19; 32],
+        &crate::mvcc::native_meaning_fixture("native.closed.producer"),
+        &crate::mvcc::native_roles_fixture(
+            &world.outputs.map(|id| (id, KindId(3))),
+            crate::mvcc::RequiredOutputRolePosture::Create,
+        ),
+    )
+    .map(|_| ())
 }
 
 #[test]

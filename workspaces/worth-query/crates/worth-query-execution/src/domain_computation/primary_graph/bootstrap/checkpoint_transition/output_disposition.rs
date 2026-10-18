@@ -80,10 +80,15 @@ fn classify_rows<Schema: ApplicationSchema + 'static>(
             .map_err(|e| e.into_installation_denial())?;
         let mut role_funding =
             CheckpointMetadataFunding::new(execution).map_err(|e| e.into_installation_denial())?;
+        let meaning = target
+            .producers
+            .checkpoint_publication_meaning(output, &mut role_funding, execution)
+            .map_err(|e| e.into_installation_denial())?;
         let mut roles = role_funding
             .vec(output.roles.len(), execution)
             .map_err(|e| e.into_installation_denial())?;
         let mut retired = 0;
+        let mut live = 0;
         for role in output.roles.iter() {
             charge(context, role.entity_name.len().saturating_add(1))?;
             let lookup = graph
@@ -99,7 +104,20 @@ fn classify_rows<Schema: ApplicationSchema + 'static>(
                 .layout
                 .entity_kind(&role.entity_name)
                 .ok_or_else(|| denial("codec output names uninstalled native kind"))?;
-            roles.push((role.entity, kind));
+            roles.push(worth_relational::facade::mvcc::RequiredOutputRoleTarget {
+                role: role_funding.copy_text(&role.role, execution).map_err(|e| e.into_installation_denial())?,
+                entity_name: role_funding.copy_text(&role.entity_name, execution).map_err(|e| e.into_installation_denial())?,
+                kind, posture: match role.posture {
+                    crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Create => worth_relational::facade::mvcc::RequiredOutputRolePosture::Create,
+                    crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Preserve => worth_relational::facade::mvcc::RequiredOutputRolePosture::Preserve,
+                    crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Retire => worth_relational::facade::mvcc::RequiredOutputRolePosture::Retire,
+                },
+                target: worth_relational::facade::transactions::EntityReference::Existing(role.entity),
+            });
+            if role.posture == crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Retire {
+                continue;
+            }
+            live += 1;
             let mut is_retired = false;
             let mut matched = false;
             for (entity, native_kind, producer, native_dependency) in
@@ -144,11 +162,12 @@ fn classify_rows<Schema: ApplicationSchema + 'static>(
                         basis,
                         &output.producer,
                         dependency,
+                        &meaning,
                         &roles,
                     )
                     .map_err(super::codec::map_admission)
             })?;
-        if retired == output.roles.len() {
+        if retired == live && live != 0 {
             keep.push(false);
         } else if retired == 0 {
             keep.push(true);

@@ -1,7 +1,18 @@
-use crate::transactions::data::{CreatedEntityRef, TransactionCommitError};
+use crate::transactions::data::TransactionCommitError;
+mod completion;
+mod custody;
+mod route_absence;
+pub use completion::{
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
+};
+pub use custody::RelationalRequiredOutputPublication;
+pub use route_absence::RelationalRequiredOutputRouteAbsence;
 
 #[cfg(test)]
 mod absent_optional_field;
+#[cfg(test)]
+mod continuity_tests;
 #[cfg(test)]
 mod tests;
 
@@ -18,8 +29,7 @@ pub struct RelationalInstalledApplicationPublicationAuthority {
 #[derive(Debug)]
 pub(crate) struct RequiredOutputPublicationAdmission {
     pub(crate) installed: RelationalInstalledApplicationPublicationAuthority,
-    pub(crate) proof: worth_proof::AdmittedRequiredOutputPublication,
-    pub(crate) targets: Vec<CreatedEntityRef>,
+    pub(crate) publication: RequiredOutputPublication,
 }
 
 impl RelationalInstalledApplicationPublicationAuthority {
@@ -38,11 +48,12 @@ impl crate::mvcc::ValidatedRelationalProposal {
     pub fn bind_required_output_publication(
         mut self,
         installed: &RelationalInstalledApplicationPublicationAuthority,
-        proof: worth_proof::AdmittedRequiredOutputPublication,
-        targets: Vec<CreatedEntityRef>,
+        publication: RequiredOutputPublication,
     ) -> Result<Self, TransactionCommitError> {
         if self.required_output_publication.is_some()
-            || !installed.authority.admits_required_output(&proof)
+            || !installed
+                .authority
+                .admits_required_output(publication.running())
             || self
                 .validation_input
                 .basis()
@@ -57,8 +68,7 @@ impl crate::mvcc::ValidatedRelationalProposal {
         }
         self.required_output_publication = Some(RequiredOutputPublicationAdmission {
             installed: installed.clone(),
-            proof,
-            targets,
+            publication,
         });
         Ok(self)
     }
@@ -69,4 +79,68 @@ pub(crate) fn origin_denial(detail: impl Into<String>) -> TransactionCommitError
         crate::publication::bundle::PublicationStage::BundleAssembly,
         detail,
     ))
+}
+
+#[cfg(test)]
+pub(crate) fn native_birth_fixture(
+    admission: worth_proof::AdmittedRequiredOutputPublication,
+    targets: Vec<crate::transactions::data::CreatedEntityRef>,
+) -> RequiredOutputPublication {
+    // Closed native fixtures declare a distinct family for each independent
+    // producer; continuation fixtures retain the original family's meaning.
+    let family = admission.producer().to_owned();
+    RequiredOutputPublication::Birth {
+        admission,
+        absence: None,
+        meaning: native_meaning_fixture(&family),
+        roles: targets
+            .into_iter()
+            .enumerate()
+            .map(|(index, target)| RequiredOutputRoleTarget {
+                role: format!("output-{index}"),
+                entity_name: "native-unit-output".into(),
+                kind: target.kind_id,
+                posture: RequiredOutputRolePosture::Create,
+                target: crate::transactions::data::EntityReference::Created(target),
+            })
+            .collect(),
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn native_roles_fixture(
+    roles: &[(
+        crate::identity::data::EntityId,
+        crate::identity::data::KindId,
+    )],
+    posture: RequiredOutputRolePosture,
+) -> Vec<RequiredOutputRoleTarget> {
+    roles
+        .iter()
+        .enumerate()
+        .map(|(index, (id, kind))| RequiredOutputRoleTarget {
+            role: match posture {
+                RequiredOutputRolePosture::Create => format!("output-{index}"),
+                _ => format!("preserved-{index}"),
+            },
+            entity_name: "native-unit-output".into(),
+            kind: *kind,
+            posture,
+            target: crate::transactions::data::EntityReference::Existing(*id),
+        })
+        .collect()
+}
+
+#[cfg(test)]
+pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationMeaning {
+    RequiredOutputPublicationMeaning {
+        family: family.to_owned(),
+        source_scope: crate::identity::data::EntityId::new(
+            crate::identity::data::PartitionId::main(),
+            0,
+            1,
+        ),
+        source_partition: [0; 32],
+        source_epoch: [0; 32],
+    }
 }

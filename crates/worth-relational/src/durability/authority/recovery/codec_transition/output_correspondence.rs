@@ -3,7 +3,6 @@ use crate::branch::AdmittedRelationalBranchBasis;
 use crate::durability::authority::{
     DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority,
 };
-use crate::identity::data::{EntityId, KindId};
 use crate::runtime::{
     RelationalSchemaTransitionAdmissionDenial as Denial,
     RelationalSchemaTransitionAdmissionDenialKind as Kind,
@@ -22,7 +21,8 @@ impl DurabilityRecoveryAuthority<'_> {
         basis: &AdmittedRelationalBranchBasis,
         producer: &str,
         dependency: &[u8; 32],
-        roles: &[(EntityId, KindId)],
+        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        roles: &[crate::mvcc::RequiredOutputRoleTarget],
     ) -> Result<(), Denial> {
         crate::execution::check_request(execution).map_err(Denial::request)?;
         let state = recovered.codec_transition.as_ref().ok_or_else(|| {
@@ -45,6 +45,7 @@ impl DurabilityRecoveryAuthority<'_> {
             basis,
             producer,
             dependency,
+            meaning,
             roles,
         );
         crate::execution::check_request(execution).map_err(Denial::request)?;

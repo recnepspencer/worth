@@ -191,7 +191,14 @@ impl DurabilityRecoveryAuthority<'_> {
             .push_batch(batch, execution.allocation_policy())
             .map_err(Denial::staging)?;
         crate::execution::check_request(execution).map_err(Denial::request)?;
-        let custody = super::RecoveredCodecPublicationCustody::new(transition_memory);
+        let custody = super::RecoveredCodecPublicationCustody::new(
+            execution,
+            basis,
+            target,
+            &retirement,
+            &activation,
+            transition_memory,
+        )?;
         transaction.recovered_codec_publication_custody = Some(std::sync::Arc::clone(&custody));
         state.publication_custody = Some(custody);
         state.activation = Some(activation);

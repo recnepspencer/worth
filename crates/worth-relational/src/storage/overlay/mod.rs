@@ -4,7 +4,11 @@ mod partition_allocation_delta;
 mod partition_allocation_walk;
 mod partition_content;
 mod publication;
+mod slot_resolution;
 mod working_state;
+pub(crate) use slot_resolution::{
+    entity_partition_source_for_slot, relation_partition_source_for_slot, PartitionSource,
+};
 
 pub(crate) use access::{OverlayStateView, PartitionAccess};
 pub(crate) use partition::{

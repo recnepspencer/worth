@@ -34,6 +34,7 @@ fn relation_only_custom_invariant_refuses_closed_retirement_before_effects() {
         &mut recovered,
         world.activation,
         crate::mvcc::RelationalOperationControl::uninterrupted(),
+        None,
     )
     .unwrap_err();
     assert_eq!(

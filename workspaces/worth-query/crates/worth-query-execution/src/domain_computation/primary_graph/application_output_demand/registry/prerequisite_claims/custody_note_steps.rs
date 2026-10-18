@@ -29,7 +29,9 @@ pub(in super::super) fn unhold(
         .unwrap()
         .state = DemandState::Running;
     let mut admission = record_admission();
-    let context = interest.required_context(&owner, &mut admission).unwrap();
+    let context = interest
+        .required_context("registry-fixture-family", &owner, &mut admission)
+        .unwrap();
     let mut claims = context
         .prepare_prerequisites(std::iter::empty(), &owner, &mut admission)
         .unwrap();

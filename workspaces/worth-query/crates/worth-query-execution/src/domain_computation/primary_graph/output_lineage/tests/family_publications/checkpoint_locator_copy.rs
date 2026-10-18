@@ -39,7 +39,7 @@ fn court() -> Court {
         .get_mut(&9)
         .unwrap();
     let recorded = Arc::get_mut(&mut cell[0]).unwrap().get_mut().unwrap();
-    recorded.native_prior_checkpoint = Some(NativePriorCheckpointLocator {
+    recorded.native_prior_checkpoint = Some(NativePriorCheckpointLocator::Performed {
         producer: "fixture-producer".into(),
         source: [11; 32],
     });

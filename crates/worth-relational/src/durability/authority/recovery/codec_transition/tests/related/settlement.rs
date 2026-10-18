@@ -56,6 +56,7 @@ fn closed_relation_insufficient_funding_preserves_source_for_fresh_funded_retry(
         &mut recovered,
         world.activation,
         RelationalOperationControl::uninterrupted(),
+        None,
     )
     .unwrap();
     target
@@ -87,6 +88,7 @@ fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_can_defe
         &mut recovered,
         world.activation,
         cancellation.token().into(),
+        None,
     )
     .unwrap();
     cancellation.cancel();
@@ -107,6 +109,7 @@ fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_can_defe
         &mut recovered,
         world.activation,
         RelationalOperationControl::uninterrupted(),
+        None,
     )
     .unwrap();
     target.durability.arm_append_failure_for_test();

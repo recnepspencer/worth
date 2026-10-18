@@ -25,15 +25,24 @@ mod checkpoint_encoding;
 pub(crate) use checkpoint_encoding::CheckpointCanonicalEnvelopeRef;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
+mod required_output_codec_retirement;
 mod required_output_origin;
 pub use descriptive_touches::{
     RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
     RelationalDescriptiveTouchPrecision, RelationalTouchAdjacencyDirection,
 };
-pub(crate) use required_output_origin::CanonicalRequiredOutputOrigin;
+pub(crate) use required_output_codec_retirement::{
+    CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
+};
+pub(crate) use required_output_origin::{
+    CanonicalOutputMember, CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
+    CanonicalRequiredOutputRelation,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalCommitEnvelope {
+    pub(crate) required_output_codec_retirements:
+        Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     pub(crate) required_output_origin: Option<std::sync::Arc<CanonicalRequiredOutputOrigin>>,
     pub commit: RelationalCommitReceipt,
@@ -105,6 +114,7 @@ impl CanonicalCommitEnvelope {
         descriptor_semantics_version: DescriptorSemanticsVersion,
     ) -> Self {
         Self {
+            required_output_codec_retirements: Vec::new(),
             required_output_origin: None,
             commit,
             branch_context,

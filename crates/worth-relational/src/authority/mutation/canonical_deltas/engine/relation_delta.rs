@@ -8,14 +8,14 @@ use crate::authority::mutation::canonical_deltas::data::{
 use crate::authority::mutation::canonical_deltas::materialized_state::evaluate_authoritative_binding_delta;
 use crate::authority::mutation::canonical_deltas::patch_authority::evaluate_authoritative_patch_delta;
 use crate::authority::mutation::field_versions::field_changes_for_evidence;
-use crate::authority::mutation::MutationWorkspace;
+use crate::capabilities::AspectPlanSource;
 use worth_foundational::facade::{AspectBinding, AspectShape};
 
 use super::delta_assembly::{assemble_delta, evaluate_bindings};
 use super::state_views::RelationState;
 
 pub(super) fn evaluate_relation_lifecycle_delta(
-    workspace: &MutationWorkspace<'_>,
+    plans: &impl AspectPlanSource,
     relation_id: crate::identity::data::RelationId,
     kind_id: crate::identity::data::KindId,
     source: EntityId,
@@ -25,7 +25,7 @@ pub(super) fn evaluate_relation_lifecycle_delta(
 ) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
     match authoritative_patch {
         Some(authoritative_patch) => {
-            let plan = workspace
+            let plan = plans
                 .relation_aspect_plan(kind_id)
                 .ok_or(CanonicalDeltaError::MissingRelationAspectPlan { kind_id })?;
             Ok(evaluate_authoritative_patch_delta(
@@ -37,7 +37,7 @@ pub(super) fn evaluate_relation_lifecycle_delta(
             ))
         }
         None => evaluate_relation_delta(
-            workspace,
+            plans,
             relation_id,
             kind_id,
             RelationState {
@@ -56,14 +56,14 @@ pub(super) fn evaluate_relation_lifecycle_delta(
 }
 
 pub(super) fn evaluate_relation_delta(
-    workspace: &MutationWorkspace<'_>,
+    plans: &impl AspectPlanSource,
     relation_id: crate::identity::data::RelationId,
     kind_id: crate::identity::data::KindId,
     old_state: RelationState<'_>,
     new_state: RelationState<'_>,
     structural_change: RecordStructuralChange,
 ) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
-    let plan = workspace
+    let plan = plans
         .relation_aspect_plan(kind_id)
         .ok_or(CanonicalDeltaError::MissingRelationAspectPlan { kind_id })?;
     let evaluated_bindings = evaluate_bindings(
@@ -88,7 +88,7 @@ pub(super) fn evaluate_relation_delta(
 }
 
 pub(super) fn evaluate_relation_update_delta(
-    workspace: &MutationWorkspace<'_>,
+    plans: &impl AspectPlanSource,
     relation_id: crate::identity::data::RelationId,
     kind_id: crate::identity::data::KindId,
     old_state: RelationState<'_>,
@@ -97,7 +97,7 @@ pub(super) fn evaluate_relation_update_delta(
 ) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
     match authoritative_patch {
         Some(patch) => {
-            let plan = workspace
+            let plan = plans
                 .relation_aspect_plan(kind_id)
                 .ok_or(CanonicalDeltaError::MissingRelationAspectPlan { kind_id })?;
             let mut delta = evaluate_authoritative_patch_delta(
@@ -150,7 +150,7 @@ pub(super) fn evaluate_relation_update_delta(
             Ok(delta)
         }
         None => evaluate_relation_delta(
-            workspace,
+            plans,
             relation_id,
             kind_id,
             old_state,

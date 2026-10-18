@@ -9,7 +9,9 @@ mod recovery_plan;
 mod recovery_stop;
 mod store_layout;
 
-pub(crate) use branch_root_schema_images::DurableBranchRootSchemaImage;
+pub(crate) use branch_root_schema_images::{
+    DurableBranchRootSchemaImage, DurableEntitySchemaRegistration,
+};
 pub(crate) use checkpoint_images::{branch_root_image_digest, branch_root_partition_image_digest};
 pub use checkpoint_images::{
     DurableAdjacencyEntry, DurableBitSet, DurableBranchRootImage, DurableCheckpoint,

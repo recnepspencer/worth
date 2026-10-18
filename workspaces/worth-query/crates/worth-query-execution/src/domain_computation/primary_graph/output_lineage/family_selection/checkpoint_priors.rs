@@ -52,6 +52,7 @@ pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointIde
     pub(in crate::domain_computation::primary_graph) producer: &'a str,
     pub(in crate::domain_computation::primary_graph) source: [u8; 32],
     recorded: &'a super::super::RecordedOutput,
+    recovered: Option<&'a crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -221,9 +222,10 @@ impl WorthQueryApplicationOutputLineage {
                     Some(locator) => {
                         partition.ok_or(Denial::Structural(Structure::MissingSourcePartition))?;
                         Some(NativePriorCheckpointIdentity {
-                            producer: &locator.producer,
-                            source: locator.source,
+                            producer: locator.producer(),
+                            source: locator.source(),
                             recorded,
+                            recovered: locator.recovered(),
                         })
                     }
                     None => None,

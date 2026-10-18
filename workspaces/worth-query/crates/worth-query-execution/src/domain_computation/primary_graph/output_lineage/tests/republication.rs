@@ -226,6 +226,7 @@ impl Stage<'_> {
         let slot = records.len();
         let cell = Arc::new(OnceLock::new());
         let recorded = record(RecordedOutput {
+            required_publication: None,
             native_prior_checkpoint: None,
             performed_origin: None,
             _retained_capacity: None,

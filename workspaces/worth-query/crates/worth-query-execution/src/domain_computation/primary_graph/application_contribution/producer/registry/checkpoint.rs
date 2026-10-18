@@ -7,6 +7,32 @@ impl<Schema> WorthQueryInstalledApplicationProducerRegistry<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_publication_meaning(
+        &self,
+        checkpoint: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
+        funding: &mut crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+        crate::domain_computation::primary_graph::application_checkpoint::CheckpointDecodeDenial,
+    > {
+        let installed = installed_checkpoint_producer(&self.entries, &checkpoint.producer)?;
+        Ok(
+            worth_relational::facade::mvcc::RequiredOutputPublicationMeaning {
+                family: funding.copy_text(&installed.declaration.output_family, execution)?,
+                source_scope: worth_relational::facade::identity::EntityId::new(
+                    worth_relational::facade::identity::PartitionId::new(
+                        checkpoint.scope.partition_id(),
+                    ),
+                    checkpoint.scope.local_slot(),
+                    checkpoint.scope.generation(),
+                ),
+                source_partition: checkpoint.source_partition,
+                source_epoch: checkpoint.source,
+            },
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn readmit_checkpoint_output(
         &self,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,

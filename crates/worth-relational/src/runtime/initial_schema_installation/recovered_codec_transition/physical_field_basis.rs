@@ -32,22 +32,36 @@ pub(crate) fn codec_field_changes(
     let compared=execution.in_scope(|lease| {
         worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
             .run_with_checkpoint(lease,None,|context| {
-                let (capacity,bytes)=change_storage_quote(source,context)?;
-                let memory=worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease,bytes)
-                    .map_err(|stop| ComparisonStop::Request(crate::execution::denial::lease_denial(stop)))?;
-                let mut changes=Vec::with_capacity(capacity);
-                compare_registries(source,target,context,&mut changes)?;
-                Ok(OwnedCodecFieldChanges {loci:changes,_memory:memory})
+                codec_field_changes_in_context(source, target, context, lease)
             })
     }).map_err(|stop| crate::runtime::RelationalSchemaTransitionAdmissionDenial::request(stop.into()))
         .and_then(|result| result.map_err(|stop| crate::runtime::RelationalSchemaTransitionAdmissionDenial::request(stop.into())))
         .and_then(|result| result.0.map_err(|stop| match stop {
-            ComparisonStop::Request(cause) => crate::runtime::RelationalSchemaTransitionAdmissionDenial::request(cause),
-            ComparisonStop::Contract(detail) => crate::runtime::RelationalSchemaTransitionAdmissionDenial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::TargetContractMismatch,detail),
+            CodecFieldComparisonStop::Request(cause) => crate::runtime::RelationalSchemaTransitionAdmissionDenial::request(cause),
+            CodecFieldComparisonStop::Contract(detail) => crate::runtime::RelationalSchemaTransitionAdmissionDenial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::TargetContractMismatch,detail),
         }));
     crate::execution::check_request(execution)
         .map_err(crate::runtime::RelationalSchemaTransitionAdmissionDenial::request)?;
     compared
+}
+
+pub(crate) fn codec_field_changes_in_context(
+    source: &RelationalSchemaRegistry,
+    target: &RelationalSchemaRegistry,
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+) -> Result<OwnedCodecFieldChanges, CodecFieldComparisonStop> {
+    let (capacity, bytes) = change_storage_quote(source, context)?;
+    let memory = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
+        .map_err(|stop| {
+            CodecFieldComparisonStop::Request(crate::execution::denial::lease_denial(stop))
+        })?;
+    let mut changes = Vec::with_capacity(capacity);
+    compare_registries(source, target, context, &mut changes)?;
+    Ok(OwnedCodecFieldChanges {
+        loci: changes,
+        _memory: memory,
+    })
 }
 
 fn compare_registries(
@@ -55,7 +69,7 @@ fn compare_registries(
     target: &RelationalSchemaRegistry,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     changes: &mut Vec<CodecFieldLocus>,
-) -> Result<(), ComparisonStop> {
+) -> Result<(), CodecFieldComparisonStop> {
     if source.entity_kinds.len() != target.entity_kinds.len()
         || source.relation_kinds.len() != target.relation_kinds.len()
     {
@@ -124,7 +138,7 @@ fn compare_registries(
 fn change_storage_quote(
     source: &RelationalSchemaRegistry,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
-) -> Result<(usize, u64), ComparisonStop> {
+) -> Result<(usize, u64), CodecFieldComparisonStop> {
     let mut fields = 0_usize;
     let mut bytes = 0_usize;
     for registration in source.entity_kinds.values() {
@@ -155,8 +169,10 @@ fn change_storage_quote(
     Ok((fields, u64::try_from(bytes).map_err(|_| memory_overflow())?))
 }
 
-fn memory_overflow() -> ComparisonStop {
-    ComparisonStop::Request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+fn memory_overflow() -> CodecFieldComparisonStop {
+    CodecFieldComparisonStop::Request(
+        crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+    )
 }
 
 fn compare_binding(
@@ -164,7 +180,7 @@ fn compare_binding(
     previous: &DeclaredAspectContractBinding,
     next: &DeclaredAspectContractBinding,
     changes: &mut Vec<CodecFieldLocus>,
-) -> Result<(), ComparisonStop> {
+) -> Result<(), CodecFieldComparisonStop> {
     if previous == next {
         return Ok(());
     }
@@ -215,16 +231,16 @@ fn compare_binding(
     Ok(())
 }
 
-enum ComparisonStop {
+pub(crate) enum CodecFieldComparisonStop {
     Request(crate::execution::RelationalExecutionDenialCause),
     Contract(String),
 }
-impl From<&str> for ComparisonStop {
+impl From<&str> for CodecFieldComparisonStop {
     fn from(detail: &str) -> Self {
         Self::Contract(detail.into())
     }
 }
-impl From<String> for ComparisonStop {
+impl From<String> for CodecFieldComparisonStop {
     fn from(detail: String) -> Self {
         Self::Contract(detail)
     }
@@ -234,13 +250,13 @@ fn charge_declarations(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     previous: &[DeclaredAspectContractBinding],
     next: &[DeclaredAspectContractBinding],
-) -> Result<(), ComparisonStop> {
+) -> Result<(), CodecFieldComparisonStop> {
     for binding in previous.iter().chain(next) {
         let width = binding
             .contract
             .semantic_byte_width()
             .checked_add(binding.binding.owned_allocation_capacity_bytes())
-            .ok_or(ComparisonStop::Request(
+            .ok_or(CodecFieldComparisonStop::Request(
                 crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
             ))?;
         charge(context, width)?;
@@ -250,14 +266,14 @@ fn charge_declarations(
 fn charge(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     work: usize,
-) -> Result<(), ComparisonStop> {
+) -> Result<(), CodecFieldComparisonStop> {
     context
         .checkpoint(u64::try_from(work).map_err(|_| {
-            ComparisonStop::Request(
+            CodecFieldComparisonStop::Request(
                 crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
             )
         })?)
-        .map_err(|stop| ComparisonStop::Request(stop.into()))
+        .map_err(|stop| CodecFieldComparisonStop::Request(stop.into()))
 }
 
 fn same_contract_except_shape_revision(old: &AspectContract, new: &AspectContract) -> bool {

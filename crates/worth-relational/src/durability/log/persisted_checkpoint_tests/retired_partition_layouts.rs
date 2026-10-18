@@ -60,7 +60,7 @@ impl serde::Serialize for LayoutFile<'_> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
         let mut file = serializer.serialize_struct("PersistedDurableCheckpointFile", 2)?;
-        file.serialize_field("checkpoint_protocol_version", &4u16)?;
+        file.serialize_field("checkpoint_protocol_version", &5u16)?;
         file.serialize_field("checkpoint", &LayoutCheckpoint(self))?;
         file.end()
     }
@@ -128,4 +128,34 @@ impl serde::Serialize for LayoutCheckpoint<'_, '_> {
         }
         fields.end()
     }
+}
+
+#[test]
+fn borrowed_native_checkpoint_refuses_v4_before_reading_its_body() {
+    use crate::durability::log::native_file_codec::{decode_checkpoint, CHECKPOINT_MAGIC};
+    #[derive(serde::Serialize)]
+    struct PriorHeader {
+        checkpoint_protocol_version: u16,
+        checkpoint: (),
+    }
+    let mut bytes = CHECKPOINT_MAGIC.to_vec();
+    bytes.extend(
+        rmp_serde::to_vec_named(&PriorHeader {
+            checkpoint_protocol_version: 4,
+            checkpoint: (),
+        })
+        .unwrap(),
+    );
+    let request = crate::test_execution_policy::serial_request();
+    let denied = decode_checkpoint(&worth_execution::ExecutionRequest::serial(&request), &bytes)
+        .unwrap_err();
+    let crate::durability::data::RelationalRecoveryStop::Durability(denied) = denied else {
+        panic!("format refusal")
+    };
+    assert_eq!(denied.class, RecoveryFailureClass::CorruptCheckpoint);
+    assert!(
+        denied.detail.contains("v5 required first"),
+        "{}",
+        denied.detail
+    );
 }

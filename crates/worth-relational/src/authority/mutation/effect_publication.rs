@@ -281,7 +281,22 @@ fn record_patch_fragment(
     detail: PatchDetail,
     authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
 ) -> Result<(), crate::transactions::data::CommitConflict> {
-    let patch_fragment = match authoritative_patch {
+    let patch_fragment =
+        canonical_publication_fragment(&canonical_delta, detail, authoritative_patch)?;
+    effect.publication.canonical_deltas.push(canonical_delta);
+    effect.publication.patch_fragments.push(patch_fragment);
+    Ok(())
+}
+
+pub(super) fn canonical_publication_fragment(
+    canonical_delta: &crate::authority::mutation::CanonicalRecordAspectDelta,
+    detail: PatchDetail,
+    authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+) -> Result<
+    crate::authority::mutation::FoundationalPatchFragment,
+    crate::transactions::data::CommitConflict,
+> {
+    Ok(match authoritative_patch {
         Some(patch) => {
             let patch = authoritative_patch_with_delta_supplements(&canonical_delta, patch)
                 .map_err(|error| error.to_commit_conflict())?;
@@ -307,8 +322,5 @@ fn record_patch_fragment(
             .clone()
             .into_foundational_patch_fragment(detail)
             .map_err(|error| error.to_commit_conflict())?,
-    };
-    effect.publication.canonical_deltas.push(canonical_delta);
-    effect.publication.patch_fragments.push(patch_fragment);
-    Ok(())
+    })
 }

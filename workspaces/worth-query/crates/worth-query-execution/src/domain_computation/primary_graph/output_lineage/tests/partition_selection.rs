@@ -63,6 +63,7 @@ fn unrelated_partition_selection(population: u64) {
         None,
         [0x41; 32],
         None,
+        None,
     );
     for number in 1..=population {
         lineage.record_recovered_prior_output(
@@ -77,6 +78,7 @@ fn unrelated_partition_selection(population: u64) {
             partition(number),
             None,
             [0x41; 32],
+            None,
             None,
         );
     }
@@ -125,6 +127,7 @@ fn unrelated_partition_selection(population: u64) {
         .or_default();
     let slot = records.len();
     let recorded = RecordedOutput {
+            required_publication: None,
             native_prior_checkpoint: None,
         computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
         performed_origin: None,
@@ -312,7 +315,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
-        );
+         None);
     lineage.register_fork(parent, &child);
     let (candidates, work) = lineage
         .retained_output_candidates(

@@ -20,6 +20,8 @@ use partition_aliases::{
 pub(super) use section_accounting::CaptureSectionRecorder;
 use section_accounting::{MeasuredValue, NativeSection};
 
+const CHECKPOINT_PROTOCOL_VERSION: u16 = 5;
+
 #[derive(Serialize, Deserialize)]
 pub(super) struct PersistedDurableCheckpointFile {
     checkpoint_protocol_version: u16,
@@ -66,7 +68,7 @@ impl Serialize for PersistedDurableCheckpointFileRef<'_> {
         S: serde::Serializer,
     {
         let mut fields = serializer.serialize_struct("PersistedDurableCheckpointFile", 2)?;
-        fields.serialize_field("checkpoint_protocol_version", &4u16)?;
+        fields.serialize_field("checkpoint_protocol_version", &CHECKPOINT_PROTOCOL_VERSION)?;
         fields.serialize_field(
             "checkpoint",
             &PersistedDurableCheckpointRef {
@@ -276,7 +278,7 @@ impl PersistedDurableCheckpointFile {
             runtime_name,
         } = checkpoint;
         Self {
-            checkpoint_protocol_version: 4,
+            checkpoint_protocol_version: CHECKPOINT_PROTOCOL_VERSION,
             checkpoint: PersistedDurableCheckpoint {
                 coverage,
                 branch_cells,
@@ -306,7 +308,7 @@ impl PersistedDurableCheckpointFile {
     }
 
     pub(super) fn readmit(self) -> Result<DurableCheckpointFile, DurabilityError> {
-        if self.checkpoint_protocol_version != 4 {
+        if self.checkpoint_protocol_version != CHECKPOINT_PROTOCOL_VERSION {
             return Err(DurabilityError::new(
                 RecoveryFailureClass::UnsupportedLegacySemantics,
                 "unsupported native checkpoint format",

@@ -1,12 +1,19 @@
-//! Attribute only the actual created roles of an admitted running producer.
+//! Bind complete installed-family publication at the actual precommit image.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture as Posture;
 use crate::domain_computation::primary_graph::{
     output_lineage::invalidation::InvalidationEditAdmission, PreparedPrerequisiteClaims,
 };
-use worth_relational::facade::mvcc::{CompanionPreflightStop, ValidatedRelationalProposal};
+use worth_relational::facade::mvcc::{
+    CompanionPreflightStop, RequiredOutputPublication, RequiredOutputPublicationMeaning,
+    RequiredOutputRolePosture, RequiredOutputRoleTarget, ValidatedRelationalProposal,
+};
+use worth_relational::facade::transactions::EntityReference;
 
 pub(super) fn bind(
     proposal: ValidatedRelationalProposal,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    before: &worth_relational::facade::snapshots::SnapshotHandle,
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     required: Option<&PreparedPrerequisiteClaims>,
@@ -19,66 +26,213 @@ pub(super) fn bind(
         return Ok(proposal);
     };
     let Some(publisher) = &provider.graph.application_publication else {
-        // Low-level graphs without an installed application publisher never
-        // acquire reconstructibility from an output role alone.
         return Ok(proposal);
     };
     let Some(dependency) = attempt.idempotency().producer_dependency_identity() else {
         return Ok(proposal);
     };
-    let overflow =
-        || native_output_witness_stop(CompanionPreflightStop::PreparationMemoryCounterOverflow);
-    let targets = attempt.native_created_output_targets();
-    let examined = targets.size_hint().1.ok_or_else(overflow)?;
-    admission
-        .charge_external_work(
-            u64::try_from(examined)
-                .map_err(|_| overflow())?
-                .checked_mul(3)
-                .ok_or_else(overflow)?,
-        )
-        .map_err(native_output_witness_stop)?;
-    let count = targets.clone().count();
-    if count == 0 {
+    let mismatch = || native_output_witness_stop(CompanionPreflightStop::SelectedSourceMismatch);
+    let Some(partition) = attempt.idempotency().source_partition_identity() else {
+        return Err(mismatch());
+    };
+    let targets = attempt.native_publication_roles();
+    if targets.len() == 0 {
         return Ok(proposal);
     }
-    let (producer, _) = required.native_prior_checkpoint_input();
-    let mut bytes = count
-        .checked_mul(std::mem::size_of::<
-            worth_relational::facade::transactions::CreatedEntityRef,
-        >())
-        .and_then(|bytes| bytes.checked_add(producer.len()))
-        .and_then(|bytes| bytes.checked_add(2 * std::mem::size_of::<usize>()))
-        .ok_or_else(overflow)?;
-    for target in targets.clone() {
-        bytes = bytes
-            .checked_add(target.client_key.as_raw_str().map_or(0, str::len))
+    let overflow =
+        || native_output_witness_stop(CompanionPreflightStop::PreparationMemoryCounterOverflow);
+    let product = attempt.affinity().product_publication().observation();
+    let native_basis = product.basis().relational_basis();
+    provider.graph.with_runtime(execution, |runtime| {
+        let positioned = runtime.read_truth().positioned_snapshot_admitted(before, |work, bytes| {
+            admission.charge_external_work(work)?;
+            admission.admit_read_scratch(bytes)
+        }).map_err(|stop| {
+            use worth_relational::facade::runtime::RelationalSnapshotPositionAdmissionStop as Stop;
+            match stop { Stop::Admission(stop) => native_output_witness_stop(stop),
+                Stop::AccountingOverflow => overflow(), Stop::Position(_) => mismatch() }
+        })?;
+        if positioned.root_id() != native_basis.descriptor().root_identity()
+            || positioned.runtime_instance_id() != native_basis.descriptor().runtime_instance_id()
+            || positioned.branch_id() != native_basis.descriptor().branch_id()
+        {
+            return Err(mismatch());
+        }
+        Ok(())
+    })?;
+    let scope = attempt.affinity().operation_scope();
+    let (family, prior) = provider
+        .graph
+        .output_lineage
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .required_publication_predecessor(
+            required.native_publication_family(),
+            attempt.output_binding_type().ok_or_else(overflow)?,
+            scope,
+            product.lifecycle_incarnation(),
+            product.reference_generation().get(),
+            partition,
+            admission,
+        )
+        .map_err(native_output_witness_stop)?;
+    let (producer, source_epoch) = required.native_prior_checkpoint_input();
+    let bytes = targets.clone().try_fold(
+        targets
+            .len()
+            .checked_mul(std::mem::size_of::<RequiredOutputRoleTarget>())
+            .ok_or_else(overflow)?,
+        |bytes, (role, _, name, target)| {
+            bytes
+                .checked_add(role.len())
+                .and_then(|n| n.checked_add(name.len()))
+                .and_then(|n| {
+                    n.checked_add(match target {
+                        EntityReference::Created(target) => {
+                            target.client_key.as_raw_str().map_or(0, str::len)
+                        }
+                        _ => 0,
+                    })
+                })
+                .ok_or_else(overflow)
+        },
+    )?;
+    admission
+        .admit_read_scratch(bytes as u64)
+        .map_err(native_output_witness_stop)?;
+    admission
+        .charge_external_work(bytes as u64 + targets.len() as u64)
+        .map_err(native_output_witness_stop)?;
+    let mut roles = Vec::with_capacity(targets.len());
+    for (role, posture, name, target) in targets {
+        let kind = provider
+            .graph
+            .layout
+            .entity_kind(name)
             .ok_or_else(overflow)?;
+        roles.push(RequiredOutputRoleTarget {
+            role: role.to_owned(),
+            entity_name: name.to_owned(),
+            kind,
+            posture: match posture {
+                Posture::Create => RequiredOutputRolePosture::Create,
+                Posture::Preserve => RequiredOutputRolePosture::Preserve,
+                Posture::Retire => RequiredOutputRolePosture::Retire,
+            },
+            target: target.clone(),
+        });
     }
-    let bytes = u64::try_from(bytes).map_err(|_| overflow())?;
-    admission
-        .admit_read_scratch(bytes)
-        .map_err(native_output_witness_stop)?;
-    admission
-        .charge_external_work(bytes.checked_add(count as u64).ok_or_else(overflow)?)
-        .map_err(native_output_witness_stop)?;
-    // The filtered iterator has no exact lower size hint. An ordinary collect
-    // can grow beyond the backing admitted above, even for one output.
-    let mut selected = Vec::new();
-    let backing_refused = || {
-        crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(failure(
-            "native output target backing could not meet its admitted exact capacity",
-        ))
+    let source_scope = scope.scope();
+    let meaning = RequiredOutputPublicationMeaning {
+        family,
+        source_scope: worth_relational::facade::identity::EntityId::new(
+            worth_relational::facade::identity::PartitionId::new(source_scope.partition_id()),
+            source_scope.local_slot(),
+            source_scope.generation(),
+        ),
+        source_partition: partition,
+        source_epoch,
     };
-    selected
-        .try_reserve_exact(count)
-        .map_err(|_| backing_refused())?;
-    if selected.capacity() != count {
-        return Err(backing_refused());
-    }
-    selected.extend(targets.cloned());
-    let proof = publisher.owner.admit_required_output(producer, dependency);
+    let running = publisher.owner.admit_required_output(producer, dependency);
+    let publication = if prior.is_none() {
+        if roles
+            .iter()
+            .any(|role| role.posture != RequiredOutputRolePosture::Create)
+        {
+            return Err(mismatch());
+        }
+        let absence = provider
+            .graph
+            .with_runtime(execution, |runtime| {
+                runtime.readmit_required_output_route_absence(
+                    execution,
+                    &publisher.native,
+                    native_basis,
+                    &meaning,
+                )
+            })
+            .map_err(transaction_commit_stop)?;
+        RequiredOutputPublication::Birth {
+            admission: running,
+            absence: Some(absence),
+            meaning,
+            roles,
+        }
+    } else {
+        let prior = prior.ok_or_else(mismatch)?;
+        let predecessor = if let Some(native) = prior.native {
+            native
+        } else {
+            let views = prior.correspondence.native_witness_roles();
+            let width = views
+                .len()
+                .checked_mul(std::mem::size_of::<RequiredOutputRoleTarget>())
+                .ok_or_else(overflow)?;
+            admission
+                .admit_read_scratch(width as u64)
+                .map_err(native_output_witness_stop)?;
+            admission
+                .charge_external_work(views.len() as u64)
+                .map_err(native_output_witness_stop)?;
+            let mut prior_roles = Vec::with_capacity(views.len());
+            for (role, posture, name, id) in views {
+                admission
+                    .admit_read_scratch((role.len() + name.len()) as u64)
+                    .map_err(native_output_witness_stop)?;
+                admission
+                    .charge_external_work((role.len() + name.len()) as u64)
+                    .map_err(native_output_witness_stop)?;
+                prior_roles.push(RequiredOutputRoleTarget {
+                    role: role.to_owned(),
+                    entity_name: name.to_owned(),
+                    kind: provider
+                        .graph
+                        .layout
+                        .entity_kind(name)
+                        .ok_or_else(overflow)?,
+                    posture: match posture {
+                        Posture::Create => RequiredOutputRolePosture::Create,
+                        Posture::Preserve => RequiredOutputRolePosture::Preserve,
+                        Posture::Retire => RequiredOutputRolePosture::Retire,
+                    },
+                    target: EntityReference::Existing(id),
+                });
+            }
+            // The family clone's backing is included in predecessor admission;
+            // this is the performed epoch, not the new demand's source epoch.
+            let prior_meaning = RequiredOutputPublicationMeaning {
+                family: meaning.family.clone(),
+                source_epoch: prior.source_epoch,
+                source_scope: meaning.source_scope,
+                source_partition: meaning.source_partition,
+            };
+            provider
+                .graph
+                .with_runtime(execution, |runtime| {
+                    runtime.readmit_required_output_publication(
+                        execution,
+                        &publisher.native,
+                        native_basis,
+                        &prior.producer,
+                        &prior.dependency,
+                        &prior_meaning,
+                        &prior_roles,
+                    )
+                })
+                .map_err(transaction_commit_stop)?
+        };
+        let succession = publisher
+            .owner
+            .admit_required_output_succession(running, predecessor.authority())
+            .ok_or_else(mismatch)?;
+        RequiredOutputPublication::Preserve {
+            admission: succession,
+            predecessor,
+            meaning,
+            roles,
+        }
+    };
     proposal
-        .bind_required_output_publication(&publisher.native, proof, selected)
+        .bind_required_output_publication(&publisher.native, publication)
         .map_err(transaction_commit_stop)
 }

@@ -13,6 +13,8 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
+    pub(super) required_publication:
+        Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     /// The performed computation read a fact that its own effect replaced.
     /// Postcondition facts cannot discharge this knowledge after index loss.
     pub(super) computation_source: super::ComputationSourceEvidence,

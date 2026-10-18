@@ -13,6 +13,7 @@ worth_query_operation_writes!(PreserveCompanion => [CompanionValueField]);
 pub struct Binding;
 pub struct Decision {
     targets: Vec<WorthQueryInvariantMutationTarget<CanonicalSchema, Companion>>,
+    writes: [bool; 2],
 }
 impl ApplicationMutationBinding<CanonicalSchema> for Binding {
     type Input = Input;
@@ -97,13 +98,21 @@ impl OperationHandler<CanonicalSchema, Binding> for Handler {
         let root = reader.prior_output_preserved_or_created::<Binding, PreservedOutput, ProduceBinding, CreatedOutput>();
         let left = reader.prior_output_preserved_or_created::<Binding, PreservedLeft, ProduceBinding, CreatedLeft>();
         let mut targets = Vec::with_capacity(2);
-        for target in [root, left] {
+        let mut writes = [false; 2];
+        for (index, target) in [root, left].into_iter().enumerate() {
             let target = match target {
                 Ok(target) => target,
                 Err(error) => return HandlerResult::ExecutionDenied(error),
             };
             match reader.field(&target, CompanionValueField::reference()) {
-                Ok(Some(_)) => {}
+                Ok(Some(value)) => {
+                    writes[index] = value
+                        != if index == 0 {
+                            "companion-left"
+                        } else {
+                            "companion-right"
+                        };
+                }
                 Ok(None) => return HandlerResult::DomainDenied(Denied),
                 Err(error) => return HandlerResult::ExecutionDenied(error),
             }
@@ -112,7 +121,7 @@ impl OperationHandler<CanonicalSchema, Binding> for Handler {
                 Err(error) => return HandlerResult::ExecutionDenied(error),
             }
         }
-        HandlerResult::Completed(Decision { targets })
+        HandlerResult::Completed(Decision { targets, writes })
     }
     fn candidate_requirements(&self, _: &Input, _: &Decision) -> ApplicationCandidateRequirements {
         Binding::CANDIDATES
@@ -128,6 +137,9 @@ impl OperationHandler<CanonicalSchema, Binding> for Handler {
             let root = writer.projected_entity(targets.next().unwrap())?;
             let left = writer.projected_entity(targets.next().unwrap())?;
             for (index, target) in [&root, &left].into_iter().enumerate() {
+                if !decision.writes[index] {
+                    continue;
+                }
                 writer.write_field(
                     target,
                     CompanionValueField::reference(),

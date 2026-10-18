@@ -110,6 +110,28 @@ impl RecoveredRelationalRuntimeAuthority {
             .flat_map(|closure| closure.producers())
     }
 
+    /// Genuine native birth and the latest performed publication's posture.
+    /// These descriptions grant neither currentness nor additional retirement.
+    pub fn codec_transition_output_births(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            crate::identity::data::EntityId,
+            crate::identity::data::KindId,
+            &str,
+            &[u8; 32],
+            crate::mvcc::RequiredOutputRolePosture,
+            crate::mvcc::RequiredOutputRolePosture,
+        ),
+    > {
+        self.codec_transition
+            .as_ref()
+            .and_then(|state| state.retirement.as_ref())
+            .or(self.performed_codec_retirement.as_ref())
+            .into_iter()
+            .flat_map(|closure| closure.births())
+    }
+
     pub fn admit_basis(
         self,
         basis: AdmittedRelationalBranchBasis,

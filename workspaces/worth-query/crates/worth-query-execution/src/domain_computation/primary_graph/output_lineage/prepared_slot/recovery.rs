@@ -174,6 +174,7 @@ mod tests {
                 completed_decision_reuse: None,
                 prepared_input_reuse_key: None,
                 native_output_witness: None,
+                required_publication: None,
                 actual_resources: None,
                 native_prior_checkpoint: None,
                 prior_computation: None,

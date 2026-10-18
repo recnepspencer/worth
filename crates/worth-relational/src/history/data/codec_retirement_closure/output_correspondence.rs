@@ -1,15 +1,7 @@
 //! Re-admit complete original output association on the recovered source state.
-use super::{
-    charge, intent_writes_entity, memory_overflow, request, require_linear_history, reserve,
-    CodecRetirementClosureStop as Stop,
-};
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    identity::data::{EntityId, KindId},
-    runtime::RelationalRuntime,
-    transactions::data::RecordRef,
-};
-use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, MapKernelContext};
+use super::{charge, request, CodecRetirementClosureStop as Stop};
+use crate::{branch::AdmittedRelationalBranchBasis, runtime::RelationalRuntime};
+use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 type Origin =
     std::sync::Arc<super::super::canonical_commit_envelope::CanonicalRequiredOutputOrigin>;
 pub(crate) fn validate_codec_output_correspondence(
@@ -18,8 +10,9 @@ pub(crate) fn validate_codec_output_correspondence(
     basis: &AdmittedRelationalBranchBasis,
     producer: &str,
     dependency: &[u8; 32],
-    roles: &[(EntityId, KindId)],
-) -> Result<(), Stop> {
+    meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+    roles: &[crate::mvcc::RequiredOutputRoleTarget],
+) -> Result<std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>, Stop> {
     let result = execution.in_scope(|lease| {
         ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
             lease,
@@ -48,26 +41,26 @@ pub(crate) fn validate_codec_output_correspondence(
                     .exact_entity_state_read_navigation_work_bound()
                     .ok_or("output correspondence has no exact native navigation")?;
                 let bound = runtime.history.catalog_len();
-                let _scratch = reserve(
-                    lease,
-                    bound
-                        .checked_mul(std::mem::size_of::<crate::history::data::CommitId>())
-                        .ok_or_else(memory_overflow)?,
-                )?;
-                let mut visited = Vec::with_capacity(bound);
                 let mut first: Option<Origin> = None;
-                for (index, &(id, kind)) in roles.iter().enumerate() {
+                for (index, role) in roles.iter().enumerate() {
+                    let crate::transactions::data::EntityReference::Existing(id) = role.target else {
+                        return Err("recovered output role requires exact existing identity".into());
+                    };
+                    let kind = role.kind;
                     charge(
                         context,
                         index.saturating_add(1),
                     )?;
-                    if roles[..index].iter().any(|(other, _)| *other == id) {
+                    if roles[..index].iter().any(|other| other.target == crate::transactions::data::EntityReference::Existing(id)) {
                         return Err(
                             "output correspondence requires distinct exact native identities".into()
                         );
                     }
                     context.checkpoint_cost(work, navigation).map_err(request)?;
-                    let origin = branch
+                    let origin = if role.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
+                        let selected = super::membership::latest(runtime, basis, id, context)?;
+                        super::membership::validate_member(runtime, basis, &selected, id, None, context, lease)?
+                    } else { branch
                         .with_exact_entity_state(id, |metadata, payload| {
                             // The native probe permits wildcard lookup; historical roles do not.
                             if metadata.entity_id != id || metadata.kind_id != kind {
@@ -75,39 +68,39 @@ pub(crate) fn validate_codec_output_correspondence(
                                     "output correspondence native identity or kind differs",
                                 ));
                             }
-                            let payload =
-                                payload.ok_or("output correspondence has no native payload")?;
-                            for (_, value) in payload.aspects().entries() {
-                                charge(context, value.semantic_byte_width())?;
+                            if let Some(payload) = payload {
+                                for (_, value) in payload.aspects().entries() {
+                                    charge(context, value.semantic_byte_width())?;
+                                }
                             }
-                            original_association(
-                                runtime,
-                                basis,
-                                id,
-                                payload,
-                                &mut visited,
-                                bound,
-                                context,
-                            )
+                            let selected = super::membership::latest(runtime, basis, id, context)?;
+                            super::membership::validate_member(runtime, basis, &selected, id, payload, context, lease)
                         })
                         .map_err(|_| Stop::from("output correspondence native probe refused"))?
-                        .ok_or("output correspondence native identity is absent or retired")??;
+                        .ok_or("output correspondence native identity is absent or retired")?? };
                     charge(
                         context,
                         origin
                             .producer
                             .len()
                             .saturating_add(producer.len())
-                            .saturating_add(32),
+                            .saturating_add(meaning.family.len())
+                            .saturating_add(origin.meaning.family.len())
+                            .saturating_add(144),
                     )?;
-                    if origin.producer != producer || &origin.dependency_identity != dependency {
+                    charge(context, role.role.len().saturating_add(role.entity_name.len()).saturating_add(origin.members.len()))?;
+                    if !origin.members.iter().any(|member| member.id == id && member.kind == kind && member.posture == role.posture
+                        && member.role == role.role && member.entity_name == role.entity_name) {
+                        return Err("output role differs from complete performed native correspondence".into());
+                    }
+                    if origin.producer != producer || &origin.dependency_identity != dependency || &origin.meaning != meaning {
                         return Err(
                             "output correspondence producer association differs from native publication"
                                 .into(),
                         );
                     }
                     if let Some(first) = &first {
-                        if !std::sync::Arc::ptr_eq(first, &origin) {
+                        if first.commit != origin.commit {
                             return Err(
                                 "output correspondence spans different native publications"
                                     .into(),
@@ -123,7 +116,7 @@ pub(crate) fn validate_codec_output_correspondence(
                         if origin.outputs.len() != roles.len()
                             || roles
                                 .iter()
-                                .any(|(id, _)| origin.outputs.binary_search(id).is_err())
+                                .any(|role| match role.target { crate::transactions::data::EntityReference::Existing(id) => origin.outputs.binary_search(&id).is_err(), _ => true })
                         {
                             return Err(
                                 "output correspondence omits or adds native producer output"
@@ -133,68 +126,13 @@ pub(crate) fn validate_codec_output_correspondence(
                         first = Some(origin);
                     }
                 }
-                Ok(())
+                let origin = first.ok_or("complete output association absent")?;
+                super::relations::validate_complete_publication(runtime, &basis.inner.root, &origin, context, lease)?;
+                charge(context, bound)?;
+                runtime.history.canonical_envelope(origin.commit.commit_id).ok_or_else(|| Stop::from("complete publication history absent"))
             },
         )
     });
     execution.consult().map_err(request)?;
     result.map_err(request)?.map_err(request)?.0
-}
-fn original_association(
-    runtime: &RelationalRuntime,
-    basis: &AdmittedRelationalBranchBasis,
-    id: EntityId,
-    payload: &worth_foundational::facade::AuthoritativeRecordAspectState,
-    visited: &mut Vec<crate::history::data::CommitId>,
-    bound: usize,
-    context: &mut MapKernelContext<'_, '_>,
-) -> Result<Origin, Stop> {
-    visited.clear();
-    let mut next = basis.inner.root.commit_id();
-    loop {
-        // Cold readmission: the actual catalog cardinality bounds its lookup;
-        // visited.len() additionally pays the linear cycle check.
-        charge(
-            context,
-            bound.saturating_add(visited.len()).saturating_add(1),
-        )?;
-        let commit = next.ok_or("output correspondence has no original producer history")?;
-        if visited.len() >= bound || visited.contains(&commit) {
-            return Err("output correspondence ancestry is incomplete or cyclic".into());
-        }
-        visited.push(commit);
-        let envelope = runtime
-            .history
-            .canonical_envelope(commit)
-            .ok_or("output correspondence lost native history")?;
-        require_linear_history(&envelope)?;
-        charge(
-            context,
-            envelope
-                .patch
-                .authoritative_record_patches
-                .len()
-                .saturating_add(envelope.merged_plan.merged_intents.len()),
-        )?;
-        if envelope
-            .patch
-            .authoritative_record_patches
-            .iter()
-            .any(|patch| patch.target == RecordRef::Entity(id))
-            || envelope
-                .merged_plan
-                .merged_intents
-                .iter()
-                .any(|intent| intent_writes_entity(intent, id))
-        {
-            envelope.readmit_required_output_payload(id, payload, context)?;
-            return Ok(std::sync::Arc::clone(
-                envelope
-                    .required_output_origin
-                    .as_ref()
-                    .ok_or("output correspondence lost original association")?,
-            ));
-        }
-        next = envelope.commit.parents.first().copied();
-    }
 }

@@ -28,6 +28,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 /// sealed output source match this reservation. Drop removes only its vacancy.
 #[must_use = "a prepared output slot must be filled or released"]
 pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlot {
+    pub(in crate::domain_computation::primary_graph) required_publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
     pub(super) source: SemanticSource,
     pub(super) output_binding_type: TypeId,

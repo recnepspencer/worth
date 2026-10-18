@@ -2,6 +2,11 @@ mod application_publication;
 mod authority;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
+pub use application_publication::{
+    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
+};
 mod candidate;
 mod candidate_consumption;
 mod candidate_preparation;
@@ -39,3 +44,9 @@ pub use outcome::{
 };
 pub(crate) use port::PreparedCanonicalBranchMovement;
 pub use port::RelationalPublicationPort;
+
+#[cfg(test)]
+pub(crate) use application_publication::{native_birth_fixture, native_meaning_fixture};
+
+#[cfg(test)]
+pub(crate) use application_publication::native_roles_fixture;

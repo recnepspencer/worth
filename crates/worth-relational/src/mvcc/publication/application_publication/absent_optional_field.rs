@@ -54,8 +54,10 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
             proposal
                 .bind_required_output_publication(
                     &installed,
-                    owner.admit_required_output("producer", [4; 32]),
-                    vec![target],
+                    crate::mvcc::native_birth_fixture(
+                        owner.admit_required_output("producer", [4; 32]),
+                        vec![target],
+                    ),
                 )
                 .unwrap()
         } else {

@@ -208,6 +208,7 @@ impl WorthQueryApplicationOutputLineage {
             None,
             &mut republished,
             computation_source,
+            None,
         )?;
         republished.is_none().then_some(RepublishedRecord {
             identity: restored.identity,

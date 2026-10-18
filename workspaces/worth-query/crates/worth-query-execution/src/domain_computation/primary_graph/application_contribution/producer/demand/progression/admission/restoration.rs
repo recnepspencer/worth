@@ -312,7 +312,7 @@ where
                 readmitted.computation_source.retain_facts(restored.observed_source_facts.clone()),
                 restored.checkpoint.resources,
                 restored.native_output_witness.as_ref().map(std::sync::Arc::clone),
-
+                Some(restored.checkpoint.clone()),
         );
         let witness = restored
             .native_output_witness

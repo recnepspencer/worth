@@ -35,8 +35,10 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     let proposal = proposal
         .bind_required_output_publication(
             &installed,
-            owner.admit_required_output("installed-producer", [3; 32]),
-            vec![target.clone()],
+            crate::mvcc::native_birth_fixture(
+                owner.admit_required_output("installed-producer", [3; 32]),
+                vec![target.clone()],
+            ),
         )
         .unwrap();
     let candidate = runtime
@@ -58,24 +60,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     let entity = origin.outputs[0];
     let mut copied = performed.canonical_commit().clone();
     copied.commit.commit_id.0 += 1;
-    let partition = performed
-        .next_basis()
-        .inner
-        .root
-        .partition_state(entity.partition_id)
-        .unwrap();
-    let record = partition.entity_arena.get(&entity).unwrap();
-    let payload = record.extra().authoritative_aspect_state.as_ref().unwrap();
-    let copied_refusal = execution
-        .in_scope(|lease| {
-            worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
-                .run_with_checkpoint(lease, None, |context| {
-                    copied.readmit_required_output_payload(entity, payload, context)
-                })
-        })
-        .unwrap()
-        .unwrap()
-        .0;
+    let copied_refusal = copied.validate_output_membership_header();
     assert!(
         copied_refusal.is_err(),
         "copied descriptive producer origin must not authenticate another native commit"
@@ -144,8 +129,10 @@ fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
     assert!(proposal
         .bind_required_output_publication(
             &installed,
-            foreign.admit_required_output("installed-producer", [3; 32]),
-            Vec::new()
+            crate::mvcc::native_birth_fixture(
+                foreign.admit_required_output("installed-producer", [3; 32]),
+                Vec::new()
+            )
         )
         .is_err());
     create_entity(execution, &runtime, "authored");
@@ -194,8 +181,10 @@ fn producer_publication_preserves_unclassified_rows_without_granting_retirement(
         .unwrap()
         .bind_required_output_publication(
             &installed,
-            owner.admit_required_output("producer", [8; 32]),
-            vec![target],
+            crate::mvcc::native_birth_fixture(
+                owner.admit_required_output("producer", [8; 32]),
+                vec![target],
+            ),
         )
         .unwrap();
     let candidate = runtime

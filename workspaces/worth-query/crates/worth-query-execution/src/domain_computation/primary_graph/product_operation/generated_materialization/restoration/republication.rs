@@ -86,6 +86,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 producer.observed_source_facts,
                 producer.resources,
                 None,
+                None,
             );
             return;
         };

@@ -1,6 +1,7 @@
 //! Restore historical source meaning while retaining a distinct native target.
 mod output_correspondence;
 mod publication_custody;
+mod retirement_preparation;
 pub(crate) use publication_custody::{
     AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody,
 };

@@ -69,6 +69,12 @@ fn publish_retained(
         publication_admission,
         ..
     } = committed;
+    if let (Some(slot), Some(publisher)) = (
+        prepared_lineage_slot.as_mut(),
+        provider.graph.application_publication.as_ref(),
+    ) {
+        slot.required_publication = committed.required_output_publication(&publisher.native);
+    }
     if let (Some(witness), Some(slot)) = (prepared_output_witness, prepared_lineage_slot.as_mut())
         && let Some(sealed) = witness.finish(
             evidence.output_correspondence(),

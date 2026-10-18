@@ -4,7 +4,7 @@ use crate::authority::mutation::canonical_deltas::data::{
     CanonicalDeltaError, CanonicalRecordAspectDelta,
 };
 use crate::authority::mutation::outcomes::RecordMutation;
-use crate::authority::mutation::MutationWorkspace;
+use crate::capabilities::AspectPlanSource;
 
 use super::entity_delta::{
     evaluate_entity_delta, evaluate_entity_lifecycle_delta, evaluate_entity_update_delta,
@@ -16,7 +16,7 @@ use super::state_views::{EntityAuthoritativeState, RelationState};
 
 pub(crate) fn canonical_delta_for_mutation(
     mutation: &RecordMutation,
-    workspace: &MutationWorkspace<'_>,
+    plans: &impl AspectPlanSource,
 ) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
     match mutation {
         RecordMutation::EntityCreated {
@@ -25,7 +25,7 @@ pub(crate) fn canonical_delta_for_mutation(
             authoritative_patch,
             ..
         } => evaluate_entity_lifecycle_delta(
-            workspace,
+            plans,
             *entity_id,
             *kind_id,
             authoritative_patch.as_ref(),
@@ -39,7 +39,7 @@ pub(crate) fn canonical_delta_for_mutation(
             authoritative_patch,
             ..
         } => evaluate_entity_update_delta(
-            workspace,
+            plans,
             *entity_id,
             *kind_id,
             EntityAuthoritativeState {
@@ -56,7 +56,7 @@ pub(crate) fn canonical_delta_for_mutation(
             authoritative_patch,
             ..
         } => evaluate_entity_lifecycle_delta(
-            workspace,
+            plans,
             *entity_id,
             *kind_id,
             authoritative_patch.as_ref(),
@@ -67,7 +67,7 @@ pub(crate) fn canonical_delta_for_mutation(
             kind_id,
             old_authoritative_aspect_state,
         } => evaluate_entity_delta(
-            workspace,
+            plans,
             *entity_id,
             *kind_id,
             EntityAuthoritativeState {
@@ -84,7 +84,7 @@ pub(crate) fn canonical_delta_for_mutation(
             authoritative_patch,
             ..
         } => evaluate_entity_lifecycle_delta(
-            workspace,
+            plans,
             *entity_id,
             *kind_id,
             authoritative_patch.as_ref(),
@@ -98,7 +98,7 @@ pub(crate) fn canonical_delta_for_mutation(
             authoritative_patch,
             ..
         } => evaluate_relation_lifecycle_delta(
-            workspace,
+            plans,
             *relation_id,
             *kind_id,
             *source,
@@ -117,7 +117,7 @@ pub(crate) fn canonical_delta_for_mutation(
             new_authoritative_aspect_state,
             authoritative_patch,
         } => evaluate_relation_update_delta(
-            workspace,
+            plans,
             *relation_id,
             *kind_id,
             RelationState {
@@ -140,7 +140,7 @@ pub(crate) fn canonical_delta_for_mutation(
             authoritative_aspect_state,
             ..
         } => evaluate_relation_delta(
-            workspace,
+            plans,
             *relation_id,
             *kind_id,
             RelationState {
@@ -163,7 +163,7 @@ pub(crate) fn canonical_delta_for_mutation(
             authoritative_aspect_state,
             ..
         } => evaluate_relation_delta(
-            workspace,
+            plans,
             *relation_id,
             *kind_id,
             RelationState {
@@ -185,7 +185,7 @@ pub(crate) fn canonical_delta_for_mutation(
             target,
             old_authoritative_aspect_state,
         } => evaluate_relation_delta(
-            workspace,
+            plans,
             *relation_id,
             *kind_id,
             RelationState {
@@ -208,7 +208,7 @@ pub(crate) fn canonical_delta_for_mutation(
             authoritative_patch,
             ..
         } => evaluate_relation_lifecycle_delta(
-            workspace,
+            plans,
             *relation_id,
             *kind_id,
             *source,

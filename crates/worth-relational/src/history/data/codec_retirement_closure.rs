@@ -4,11 +4,17 @@ use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::{CodecFieldLocus, RelationalRuntime};
-use crate::transactions::data::RecordRef;
 
+mod codec_disposition;
+mod membership;
 mod output_correspondence;
+mod payload_reconstruction;
+mod publication_succession;
+mod relation_payload;
 mod relations;
+mod route_selection;
 pub(crate) use output_correspondence::validate_codec_output_correspondence;
+pub(crate) use route_selection::readmit_required_output_route;
 
 type OutputOrigin = (
     EntityId,
@@ -26,6 +32,87 @@ pub(crate) struct OwnedCodecRetirementClosure {
 }
 
 impl OwnedCodecRetirementClosure {
+    pub(crate) fn complete_publications(
+        &self,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    ) -> Result<
+        (
+            Vec<std::sync::Arc<super::canonical_commit_envelope::CanonicalRequiredOutputOrigin>>,
+            worth_execution::ExecutionMemoryReservation,
+        ),
+        CodecRetirementClosureStop,
+    > {
+        let memory = reserve(
+            lease,
+            self.origins
+                .len()
+                .checked_mul(std::mem::size_of::<
+                    std::sync::Arc<super::canonical_commit_envelope::CanonicalRequiredOutputOrigin>,
+                >())
+                .ok_or_else(memory_overflow)?,
+        )?;
+        let mut complete = Vec::with_capacity(self.origins.len());
+        for (_, _, origin) in &self.origins {
+            charge(
+                context,
+                complete.len().saturating_add(
+                    origin
+                        .members
+                        .len()
+                        .saturating_mul(self.entities.len().saturating_add(1)),
+                ),
+            )?;
+            if complete.iter().any(
+                |prior: &std::sync::Arc<
+                    super::canonical_commit_envelope::CanonicalRequiredOutputOrigin,
+                >| prior.commit == origin.commit,
+            ) {
+                continue;
+            }
+            if origin.members.iter().all(|member| {
+                member.posture == crate::mvcc::RequiredOutputRolePosture::Retire
+                    || self.entities.binary_search(&member.id).is_ok()
+            }) {
+                complete.push(std::sync::Arc::clone(origin));
+            }
+        }
+        Ok((complete, memory))
+    }
+    pub(crate) fn births(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            EntityId,
+            KindId,
+            &str,
+            &[u8; 32],
+            crate::mvcc::RequiredOutputRolePosture,
+            crate::mvcc::RequiredOutputRolePosture,
+        ),
+    > {
+        self.origins.iter().map(|(id, kind, origin)| {
+            let member = &origin.members[origin
+                .members
+                .binary_search_by_key(id, |member| member.id)
+                .expect("readmitted full membership")];
+            (
+                *id,
+                *kind,
+                member.birth_producer.as_str(),
+                &member.birth_dependency,
+                member.posture,
+                match origin.publication {
+                    super::canonical_commit_envelope::CanonicalOutputPublication::Birth | super::canonical_commit_envelope::CanonicalOutputPublication::BirthAfterCodecRetirement { .. } => {
+                        crate::mvcc::RequiredOutputRolePosture::Create
+                    }
+                    super::canonical_commit_envelope::CanonicalOutputPublication::Preserve {
+                        ..
+                    } => crate::mvcc::RequiredOutputRolePosture::Preserve,
+                },
+            )
+        })
+    }
     pub(crate) fn producers(&self) -> impl Iterator<Item = (EntityId, KindId, &str, &[u8; 32])> {
         self.origins.iter().map(|(id, kind, origin)| {
             (
@@ -180,85 +267,31 @@ fn derive_metered(
             }
         }
     }
-    let mut remaining = affected.clone();
-    let mut visited = Vec::with_capacity(history_bound);
-    let mut next = root.commit_id();
-    while !remaining.is_empty() {
-        charge(context, 1)?;
-        let commit = next.ok_or("affected present field has no native producer history")?;
-        charge(context, visited.len())?;
-        if visited.len() >= history_bound || visited.contains(&commit) {
-            return Err("codec provenance ancestry contains a cycle".into());
-        }
-        visited.push(commit);
-        let envelope = runtime
-            .history
-            .canonical_envelope(commit)
-            .ok_or("affected present field lost its canonical producer history")?;
-        require_linear_history(&envelope)?;
-        charge(
+    for &id in &affected {
+        let partition = root
+            .partition_state(id.partition_id)
+            .ok_or("affected output partition missing")?;
+        let row = partition
+            .entity_arena
+            .get(&id)
+            .ok_or("affected output generation changed")?;
+        let payload = row
+            .extra()
+            .authoritative_aspect_state
+            .as_ref()
+            .ok_or("affected output payload missing")?;
+        let selected = membership::latest(runtime, basis, id, context)?;
+        let origin = membership::validate_member(
+            runtime,
+            basis,
+            &selected,
+            id,
+            Some(payload),
             context,
-            envelope
-                .patch
-                .authoritative_record_patches
-                .len()
-                .saturating_add(envelope.merged_plan.merged_intents.len())
-                .saturating_add(remaining.len()),
+            lease,
         )?;
-        let mut position = 0;
-        while position < remaining.len() {
-            let id = remaining[position];
-            charge(
-                context,
-                envelope
-                    .patch
-                    .authoritative_record_patches
-                    .len()
-                    .saturating_add(envelope.merged_plan.merged_intents.len()),
-            )?;
-            let touched = envelope
-                .patch
-                .authoritative_record_patches
-                .iter()
-                .any(|record| record.target == RecordRef::Entity(id))
-                || envelope
-                    .merged_plan
-                    .merged_intents
-                    .iter()
-                    .any(|intent| intent_writes_entity(intent, id));
-            if !touched {
-                position += 1;
-                continue;
-            }
-            let partition = root
-                .partition_state(id.partition_id)
-                .ok_or("affected output partition missing")?;
-            let record = partition
-                .entity_arena
-                .get(&id)
-                .ok_or("affected output generation changed")?;
-            let payload = record
-                .extra()
-                .authoritative_aspect_state
-                .as_ref()
-                .ok_or("affected output payload missing")?;
-            for (_, value) in payload.aspects().entries() {
-                charge(context, value.semantic_byte_width())?;
-            }
-            // The newest real operation wins even if it supplied equal bytes.
-            // An ordinary writer cannot inherit a predecessor's producer proof.
-            envelope.readmit_required_output_payload(id, payload, context)?;
-            let origin = envelope
-                .required_output_origin
-                .as_ref()
-                .ok_or("admitted output lost its canonical producer origin")?;
-            let kind = record
-                .kind_id()
-                .ok_or("admitted output lost native physical kind")?;
-            origins.push((id, kind, std::sync::Arc::clone(origin)));
-            remaining.swap_remove(position);
-        }
-        next = envelope.commit.parents.first().copied();
+        let kind = row.kind_id().ok_or("affected native output kind missing")?;
+        origins.push((id, kind, origin));
     }
     let sort_work = affected
         .len()
@@ -295,11 +328,7 @@ fn intent_writes_entity(intent: &crate::transactions::data::MutationIntent, id: 
 }
 
 fn require_linear_history(envelope: &CanonicalCommitEnvelope) -> Result<(), String> {
-    if envelope.commit.parents.len() > 1
-        || envelope.merge_execution_authority.is_some()
-        || !envelope.merge_parent_branches.is_empty()
-        || !envelope.merge_base_commits.is_empty()
-    {
+    if !envelope.is_unmerged_output_publication_step() {
         return Err("codec provenance does not admit merged physical output ownership".into());
     }
     Ok(())

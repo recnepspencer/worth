@@ -33,6 +33,11 @@ pub use crate::mvcc::{
     ValidatedMutationFootprintWork, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches, ValidatedRelationalProposal,
 };
+pub use crate::mvcc::{
+    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
+};
 pub use crate::publication::RelationalSettlementPort;
 pub use crate::transactions::data::{
     CommitConflict, CommitResult, ConflictClass, TransactionCommitError, WorkerIntentBatch,

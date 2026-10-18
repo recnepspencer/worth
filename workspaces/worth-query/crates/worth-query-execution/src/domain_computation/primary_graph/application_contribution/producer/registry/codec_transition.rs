@@ -31,7 +31,10 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S
                 None,
                 |context| {
                     charge(context, 1)?;
-                    for (_, kind, producer, _) in recovered.codec_transition_output_origins() {
+                    for ((_, kind, producer, _), (_, _, birth, _, role_posture, publication_posture)) in recovered
+                        .codec_transition_output_origins()
+                        .zip(recovered.codec_transition_output_births())
+                    {
                         let entries = self.entries.len();
                         let levels = usize::BITS as usize - entries.max(1).leading_zeros() as usize;
                         let lookup = entries
@@ -44,16 +47,63 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S
                         let entry = self.entries.get(producer).ok_or_else(|| {
                             rejection(producer, "native output producer is not installed")
                         })?;
-                        if !supports_initial(&entry.declaration, context)? {
+                        let birth_entry = self.entries.get(birth).ok_or_else(|| {
+                            rejection(birth, "native birth producer is not installed")
+                        })?;
+                        if !supports_lifecycle(
+                            &birth_entry.declaration,
+                            WorthQueryProducerLifecyclePosture::Initial,
+                            context,
+                        )? && !supports_lifecycle(
+                            &birth_entry.declaration,
+                            WorthQueryProducerLifecyclePosture::Preserve,
+                            context,
+                        )? || !outputs_native_kind(
+                            &birth_entry.declaration,
+                            layout,
+                            kind,
+                            ApplicationMutationOutputPosture::Create,
+                            context,
+                        )? {
                             return Err(rejection(
-                                producer,
-                                "native output producer has no supported Initial applicability",
+                                birth,
+                                "native output lacks installed actual Create birth meaning",
                             ));
                         }
-                        if !creates_native_kind(&entry.declaration, layout, kind, context)? {
+                        let (lifecycle, _output_posture) = match publication_posture {
+                            worth_relational::facade::mvcc::RequiredOutputRolePosture::Create => (
+                                WorthQueryProducerLifecyclePosture::Initial,
+                                ApplicationMutationOutputPosture::Create,
+                            ),
+                            worth_relational::facade::mvcc::RequiredOutputRolePosture::Preserve => {
+                                (
+                                    WorthQueryProducerLifecyclePosture::Preserve,
+                                    ApplicationMutationOutputPosture::Preserve,
+                                )
+                            }
+                            worth_relational::facade::mvcc::RequiredOutputRolePosture::Retire => {
+                                return Err(rejection(
+                                    producer,
+                                    "retirement has no present recoverable payload",
+                                ))
+                            }
+                        };
+                        if !supports_lifecycle(&entry.declaration, lifecycle, context)?
+                            || !outputs_native_kind(
+                                &entry.declaration,
+                                layout,
+                                kind,
+                                match role_posture {
+                                    worth_relational::facade::mvcc::RequiredOutputRolePosture::Create => ApplicationMutationOutputPosture::Create,
+                                    worth_relational::facade::mvcc::RequiredOutputRolePosture::Preserve => ApplicationMutationOutputPosture::Preserve,
+                                    worth_relational::facade::mvcc::RequiredOutputRolePosture::Retire => ApplicationMutationOutputPosture::Retire,
+                                },
+                                context,
+                            )?
+                        {
                             return Err(rejection(
                                 producer,
-                                "native output kind has no installed producer Create role",
+                                "latest native publication differs from installed producer meaning",
                             ));
                         }
                     }
@@ -68,13 +118,14 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S
     }
 }
 
-fn supports_initial(
+fn supports_lifecycle(
     declaration: &DeclaredProducerBinding,
+    lifecycle: WorthQueryProducerLifecyclePosture,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, WorthQueryPrimaryGraphInstallationDenial> {
     for applicability in &declaration.applicability {
         charge(context, 1)?;
-        if applicability.lifecycle() != WorthQueryProducerLifecyclePosture::Initial {
+        if applicability.lifecycle() != lifecycle {
             continue;
         }
         for supported in &declaration.supported {
@@ -92,25 +143,22 @@ fn supports_initial(
     Ok(false)
 }
 
-fn creates_native_kind(
+fn outputs_native_kind(
     declaration: &DeclaredProducerBinding,
     layout: &WorthQueryPrimaryGraphLayout,
     kind: KindId,
+    posture: ApplicationMutationOutputPosture,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, WorthQueryPrimaryGraphInstallationDenial> {
     for role in &declaration.output_role_descriptors {
         charge(context, 1)?;
-        if role.posture() == ApplicationMutationOutputPosture::Create
-            && matches_native_kind(layout, role.entity(), kind, context)?
-        {
+        if role.posture() == posture && matches_native_kind(layout, role.entity(), kind, context)? {
             return Ok(true);
         }
     }
     for family in &declaration.output_role_families {
         charge(context, 1)?;
-        if family
-            .postures()
-            .allows(ApplicationMutationOutputPosture::Create)
+        if family.postures().allows(posture)
             && matches_native_kind(layout, family.entity(), kind, context)?
         {
             return Ok(true);

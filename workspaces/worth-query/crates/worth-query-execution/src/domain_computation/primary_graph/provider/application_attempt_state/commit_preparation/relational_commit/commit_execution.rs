@@ -106,6 +106,8 @@ pub(super) fn commit(
         .map_err(native_output_witness_stop)?;
     let candidate = required_origin::bind(
         candidate,
+        &execution,
+        before.as_snapshot(),
         provider,
         &attempt,
         required_prerequisites.as_ref(),

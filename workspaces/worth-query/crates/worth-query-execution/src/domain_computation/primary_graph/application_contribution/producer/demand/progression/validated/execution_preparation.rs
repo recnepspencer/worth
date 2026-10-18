@@ -269,6 +269,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             }
         };
         let mut required_output = match interest.required_context(
+            Family::IDENTITY,
             &self.primary_provider.graph.source_owner.invalidation_owner,
             request_admission,
         ) {

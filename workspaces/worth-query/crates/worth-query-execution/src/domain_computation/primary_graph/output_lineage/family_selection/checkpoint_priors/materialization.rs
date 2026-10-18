@@ -13,6 +13,14 @@ impl NativePriorCheckpointOutput<'_> {
         let Some(locator) = self.identity.as_ref() else {
             return Ok(None);
         };
+        if let Some(recovered) = locator.recovered {
+            // Preserve original posture/facts and the original immutable heaps'
+            // payer. Reading this locator grants no new Ready or performed claim.
+            admission
+                .charge_external_work(1)
+                .map_err(|stop| Denial::admission("original checkpoint locator clone", stop))?;
+            return Ok(Some(recovered.clone()));
+        }
         let recorded = locator.recorded;
         let partition = self
             .partition

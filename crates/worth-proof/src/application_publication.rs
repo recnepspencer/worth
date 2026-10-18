@@ -21,6 +21,20 @@ pub struct AdmittedRequiredOutputPublication {
     dependency_identity: [u8; 32],
 }
 
+/// Native publication identity. Descriptions cannot replace the installed issuer
+/// or the runtime's performed canonical custody that accompanies this seal.
+#[derive(Clone, Debug)]
+pub struct RequiredOutputPublicationAuthority {
+    occurrence: Arc<()>,
+    publication: u64,
+}
+
+#[derive(Debug)]
+pub struct AdmittedRequiredOutputSuccession {
+    running: AdmittedRequiredOutputPublication,
+    predecessor: RequiredOutputPublicationAuthority,
+}
+
 /// Admission issued only after the installed owner authenticates its recovered
 /// program activation predecessor. Native adoption still binds the exact patch.
 #[derive(Debug)]
@@ -30,6 +44,18 @@ pub struct AdmittedCheckpointProgramActivation {
 }
 
 impl InstalledApplicationPublicationOwner {
+    pub fn admit_required_output_succession(
+        &self,
+        running: AdmittedRequiredOutputPublication,
+        predecessor: &RequiredOutputPublicationAuthority,
+    ) -> Option<AdmittedRequiredOutputSuccession> {
+        (Arc::ptr_eq(&self.occurrence, &running.occurrence)
+            && Arc::ptr_eq(&self.occurrence, &predecessor.occurrence))
+        .then(|| AdmittedRequiredOutputSuccession {
+            running,
+            predecessor: predecessor.clone(),
+        })
+    }
     pub fn fresh() -> Self {
         Self {
             occurrence: Arc::new(()),
@@ -72,6 +98,30 @@ impl AdmittedCheckpointProgramActivation {
 }
 
 impl InstalledApplicationPublicationAuthority {
+    pub fn same_publication_owner(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.occurrence, &other.occurrence)
+    }
+
+    pub fn seal_required_output_publication(
+        &self,
+        publication: u64,
+    ) -> RequiredOutputPublicationAuthority {
+        RequiredOutputPublicationAuthority {
+            occurrence: Arc::clone(&self.occurrence),
+            publication,
+        }
+    }
+
+    pub fn admits_required_output_succession(
+        &self,
+        proof: &AdmittedRequiredOutputSuccession,
+        predecessor: &RequiredOutputPublicationAuthority,
+    ) -> bool {
+        self.admits_required_output(&proof.running)
+            && Arc::ptr_eq(&self.occurrence, &predecessor.occurrence)
+            && Arc::ptr_eq(&self.occurrence, &proof.predecessor.occurrence)
+            && predecessor.publication == proof.predecessor.publication
+    }
     pub fn admits_checkpoint_program_activation(
         &self,
         proof: &AdmittedCheckpointProgramActivation,
@@ -80,6 +130,12 @@ impl InstalledApplicationPublicationAuthority {
     }
     pub fn admits_required_output(&self, proof: &AdmittedRequiredOutputPublication) -> bool {
         Arc::ptr_eq(&self.occurrence, &proof.occurrence)
+    }
+}
+
+impl AdmittedRequiredOutputSuccession {
+    pub fn running(&self) -> &AdmittedRequiredOutputPublication {
+        &self.running
     }
 }
 
@@ -95,6 +151,36 @@ impl AdmittedRequiredOutputPublication {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn succession_requires_original_installed_owner_and_exact_predecessor_publication() {
+        let owner = InstalledApplicationPublicationOwner::fresh();
+        let other = InstalledApplicationPublicationOwner::fresh();
+        let first = owner.authority().seal_required_output_publication(11);
+        let second = owner.authority().seal_required_output_publication(12);
+        let foreign = other.authority().seal_required_output_publication(11);
+        assert!(owner
+            .admit_required_output_succession(
+                owner.admit_required_output("preserver", [2; 32]),
+                &foreign
+            )
+            .is_none());
+        let proof = owner
+            .admit_required_output_succession(
+                owner.admit_required_output("preserver", [2; 32]),
+                &first,
+            )
+            .unwrap();
+        assert!(owner
+            .authority()
+            .admits_required_output_succession(&proof, &first));
+        assert!(!owner
+            .authority()
+            .admits_required_output_succession(&proof, &second));
+        assert!(!other
+            .authority()
+            .admits_required_output_succession(&proof, &foreign));
+    }
 
     #[test]
     fn equal_producer_text_does_not_replace_installed_owner() {

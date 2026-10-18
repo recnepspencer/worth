@@ -194,14 +194,29 @@ pub(super) fn produce(
     transaction
         .push_batch(batch, execution.allocation_policy())
         .unwrap();
+    let mut publication = crate::mvcc::native_birth_fixture(
+        owner.admit_required_output("native.closed.producer", [19; 32]),
+        created.to_vec(),
+    );
+    if let crate::mvcc::RequiredOutputPublication::Birth {
+        absence, meaning, ..
+    } = &mut publication
+    {
+        *absence = Some(
+            runtime
+                .readmit_required_output_route_absence(
+                    execution,
+                    &installed,
+                    &basis(runtime),
+                    meaning,
+                )
+                .unwrap(),
+        );
+    }
     let proposal = transaction
         .validate(execution, runtime)
         .unwrap()
-        .bind_required_output_publication(
-            &installed,
-            owner.admit_required_output("native.closed.producer", [19; 32]),
-            created.to_vec(),
-        )
+        .bind_required_output_publication(&installed, publication)
         .unwrap();
     let candidate = runtime
         .prepare_validated_proposal(execution, proposal)
@@ -338,6 +353,7 @@ pub(super) fn candidate(
     recovered: &mut crate::durability::authority::RecoveredRelationalRuntimeAuthority,
     activation_id: EntityId,
     control: crate::mvcc::RelationalOperationControl,
+    extra: Option<WorkerIntentBatch>,
 ) -> Result<
     crate::mvcc::PreparedRelationalCommitCandidate,
     crate::runtime::RelationalSchemaTransitionAdmissionDenial,
@@ -355,7 +371,7 @@ pub(super) fn candidate(
         &owner,
         activation_id,
     );
-    let transaction = target
+    let mut transaction = target
         .durability_recovery()
         .begin_recovered_codec_transition(
             execution,
@@ -366,6 +382,11 @@ pub(super) fn candidate(
             proof,
             activation(activation_id),
         )?;
+    if let Some(batch) = extra {
+        transaction
+            .push_batch(batch, execution.allocation_policy())
+            .map_err(crate::runtime::RelationalSchemaTransitionAdmissionDenial::staging)?;
+    }
     Ok(target
         .prepare_branch_transaction(execution, transaction)
         .unwrap())

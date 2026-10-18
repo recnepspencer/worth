@@ -3,11 +3,7 @@ use crate::storage::overlay::PartitionState;
 
 use super::InvariantStateView;
 
-#[derive(Clone, Copy)]
-pub(crate) enum PartitionSource {
-    Visible,
-    Base,
-}
+pub(crate) use crate::storage::overlay::PartitionSource;
 
 #[derive(Clone, Copy)]
 pub(crate) struct AspectLocation {
@@ -41,16 +37,7 @@ impl<'state> InvariantStateView<'state> {
         partition_id: PartitionId,
         slot: usize,
     ) -> Option<(PartitionSource, &'state PartitionState)> {
-        let partition = self.state.get_partition(partition_id)?;
-        if self.state.entity_slot_is_touched(partition_id, slot)
-            || !self.state.has_touched_entity_slots(partition_id)
-        {
-            return Some((PartitionSource::Visible, partition));
-        }
-        Some(match self.state.base_partition(partition_id) {
-            Some(base) => (PartitionSource::Base, base),
-            None => (PartitionSource::Visible, partition),
-        })
+        crate::storage::overlay::entity_partition_source_for_slot(self.state, partition_id, slot)
     }
 
     pub(super) fn relation_partition_for_slot(
@@ -67,18 +54,6 @@ impl<'state> InvariantStateView<'state> {
         partition_id: PartitionId,
         slot: usize,
     ) -> Option<(PartitionSource, &'state PartitionState)> {
-        let partition = self.state.get_partition(partition_id)?;
-        if self.state.relation_slot_is_touched(partition_id, slot)
-            || (!self.state.has_touched_relation_slots(partition_id)
-                && partition.relation_arena.get_slot(slot).is_some())
-            || (partition.relation_arena.get_slot(slot).is_some()
-                && !partition.relation_overlay_is_sparse)
-        {
-            return Some((PartitionSource::Visible, partition));
-        }
-        Some(match self.state.base_partition(partition_id) {
-            Some(base) => (PartitionSource::Base, base),
-            None => (PartitionSource::Visible, partition),
-        })
+        crate::storage::overlay::relation_partition_source_for_slot(self.state, partition_id, slot)
     }
 }
