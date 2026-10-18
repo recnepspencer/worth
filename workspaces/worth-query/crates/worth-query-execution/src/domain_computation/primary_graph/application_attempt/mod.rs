@@ -47,15 +47,18 @@ mod provider_recomparison;
 mod read_phase;
 mod read_scope;
 mod read_set;
+pub(in crate::domain_computation::primary_graph) use dependency_identity::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
+pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
 pub(in crate::domain_computation::primary_graph) use read_set::{
     observe_admitted_fact, CheckedCallShape, CompletedDecisionReuseProof,
     ComputationFactAttribution, ComputationFactIndex, ComputationRead, NativeCallCarriage,
     PreparedDecisionReuseContext, SealedComputationFacts,
 };
+pub(in crate::domain_computation) use read_set::{CompletedFactProjection, CompletedOriginalRead};
 mod retained_commit;
 pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;
 pub(super) mod snapshot_lease;

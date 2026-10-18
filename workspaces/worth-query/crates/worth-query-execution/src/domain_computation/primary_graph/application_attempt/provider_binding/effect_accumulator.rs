@@ -46,6 +46,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
         effects: &[WorthQueryApplicationRealizedEffect],
         mutation_partition: worth_relational::facade::identity::PartitionId,
         application_effect_count: usize,
+        routes: std::sync::Arc<super::super::FactRoutes>,
     ) -> Self {
         let mutation_partition = effects[..application_effect_count]
             .iter()
@@ -57,7 +58,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
             })
             .unwrap_or(mutation_partition);
         Self {
-            facts: ObservedFactIndex::new(facts),
+            facts: ObservedFactIndex::completed(facts, routes),
             unique: UniqueValueWrites::new(unique_fields),
             mutation_partition,
             created: CreatedEffectReferences::new(effects, mutation_partition),
@@ -276,6 +277,16 @@ mod tests {
             &effects,
             issued,
             0,
+            crate::domain_computation::primary_graph::application_attempt::FactRoutes::build_iter(
+                [].iter(),
+                0,
+                None,
+                crate::domain_computation::primary_graph::StorageControl::new(
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    None,
+                ),
+            )
+            .unwrap(),
         );
         assert_eq!(accumulator.mutation_partition, issued);
     }

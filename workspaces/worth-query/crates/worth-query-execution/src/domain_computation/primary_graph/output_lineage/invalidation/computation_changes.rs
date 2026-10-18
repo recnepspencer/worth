@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) struct ComputationChanges {
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     snapshot: SnapshotHandle,
     payload_bytes: u64,
-    postings: im::OrdMap<Arc<super::fact_key::FactPostingKey>, OrdSet<usize>>,
+    storage: super::settlement::PostingComputationStorage,
 }
 impl ComputationChanges {
     /// A publication can readmit after computation. Only the native owner can
@@ -142,15 +142,15 @@ impl SourceInvalidationOwner {
         let Some(payload_bytes) = aligned.computation_payload_bytes(identity) else {
             return Ok(None);
         };
-        let postings = aligned
-            .computation_postings(identity, facts)
-            .expect("same aligned row");
         // Prepay the reader's bounded native-position identity check, beside
         // the capture's admitted lookup. No fact population is visited there.
         admission.work(10 + 5 * snapshot.branch_id().0.len() as u64)?;
         admission.bytes(
             size_of::<ComputationChanges>() as u64 + 6 * snapshot.branch_id().0.len() as u64,
         )?;
+        let storage = aligned
+            .computation_projection(identity, facts)
+            .expect("same aligned row");
         Ok(Some(ComputationChanges {
             identity: Arc::clone(identity),
             selected,
@@ -160,7 +160,7 @@ impl SourceInvalidationOwner {
             postconditions: comparable.facts().clone(),
             snapshot: snapshot.clone(),
             payload_bytes,
-            postings,
+            storage,
         }))
     }
 }

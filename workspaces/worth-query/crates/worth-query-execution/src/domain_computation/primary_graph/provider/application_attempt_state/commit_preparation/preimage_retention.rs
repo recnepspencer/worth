@@ -42,6 +42,7 @@ impl WorthQueryPreparedPreImageRetention {
 pub(super) fn retain_attempt_preimage(
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<WorthQueryPreparedPreImageRetention, WorthQueryProviderSessionFailure> {
     let Some(demand) = attempt.preimage_demand() else {
         return Ok(WorthQueryPreparedPreImageRetention {
@@ -54,8 +55,16 @@ pub(super) fn retain_attempt_preimage(
     let footprint = footprint
         .into_projected()
         .ok_or_else(|| retention_failure(WorthQueryPreImageRetentionDenial::EmptyDemand))?;
+    let candidates = attempt.facts().preimage_candidates(demand, &footprint, policy)
+        .map_err(|cause| match cause {
+            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial) =>
+                WorthQueryProviderSessionFailure::allocation_denied(denial),
+            _ => provider_failure(WorthQueryProviderSessionProtocolStage::Commit,
+                "preimage projection capacity exhausted"),
+        })?;
+    let examined = candidates.examined();
     let (retained, candidates_materialized) =
-        selection::retain_from_attempt(demand, attempt.facts().values(), &footprint)
+        selection::retain_from_attempt(demand, candidates.iter(), &footprint)
             .map_err(retention_failure)?
             .into_parts();
     Ok(WorthQueryPreparedPreImageRetention {
@@ -63,7 +72,7 @@ pub(super) fn retain_attempt_preimage(
         work: WorthQueryPreImageRetentionWork {
             validated_intents_examined: footprint_work.validated_intents_examined(),
             mutation_targets_materialized: footprint_work.mutation_targets_materialized(),
-            decision_facts_examined: attempt.facts().len(),
+            decision_facts_examined: examined,
             candidates_materialized,
             demanded_loci_examined: demand.loci().len(),
         },

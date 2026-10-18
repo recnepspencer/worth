@@ -166,6 +166,13 @@ impl<Schema, Operation, Input, Scope, Phase>
             self.admission.retain_graph_contract(),
             installed_read_scopes,
         );
+        let control = super::super::retained_decision_facts::StorageControl::new(
+            allocation_policy,
+            Some(self.admission.publication_request()),
+        );
+        let application_projection =
+            super::CompletedFactProjection::build(&facts, installed_read_scopes.clone(), control)
+                .map_err(|cause| cause.into_attempt_denial(operation))?;
         let content = if computation_facts.is_some() {
             let control = super::super::retained_decision_facts::StorageControl::new(
                 allocation_policy,
@@ -179,14 +186,16 @@ impl<Schema, Operation, Input, Scope, Phase>
             None
         };
         let computation_facts = computation_facts.map(|metadata| {
-            metadata.bind(
+            let mut bound = metadata.bind(
                 facts.clone(),
                 self.admission.retain_graph_contract(),
                 installed_read_scopes.clone(),
                 self.admission.scope_entity_id(),
                 std::sync::Arc::clone(&computation_fact_ordinals),
                 content.clone(),
-            )
+            );
+            bound.retain_projection(application_projection.clone());
+            bound
         });
         // Original facts and their checked metadata exist before retention seals;
         // postcommit facts are authored later into a distinct carrier.
@@ -202,13 +211,27 @@ impl<Schema, Operation, Input, Scope, Phase>
             CompletedHandlerFactBoundary::from_completed_read(handler_fact_count),
             retained,
         );
+        let effect_routes = match content.as_ref().and_then(|c| c.effect_routes(&facts)) {
+            Some(routes) => routes,
+            None => super::super::CompletedFactRoutes::from_facts(
+                facts.clone(),
+                super::super::retained_decision_facts::StorageControl::new(
+                    allocation_policy,
+                    Some(self.admission.publication_request()),
+                ),
+            )
+            .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?,
+        };
         Ok(WorthQueryCompleteApplicationReadSet {
             postcondition_carry: None,
             admission: self.admission,
             lease: self.lease,
+            application_projection: Some(application_projection),
+            original_read: None,
             installed_read_scopes,
             facts,
             content,
+            effect_routes,
             consumed_outputs: self.consumed_outputs,
             #[cfg(test)]
             computation_facts,

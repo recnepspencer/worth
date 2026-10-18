@@ -22,6 +22,11 @@ impl AsRef<Fact> for SharedObservedFact {
             .expect("completed fact ordinal")
     }
 }
+impl SharedObservedFact {
+    pub(super) fn at(payload: FactPayload, ordinal: usize) -> Self {
+        Self { payload, ordinal }
+    }
+}
 impl Deref for SharedObservedFact {
     type Target = Fact;
     fn deref(&self) -> &Fact {
@@ -54,10 +59,32 @@ impl AsRef<WorthQueryOperationGraphReadScope> for SharedReadScope {
         }
     }
 }
+impl SharedReadScope {
+    pub(super) fn at(
+        installed: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+        ordinal: usize,
+    ) -> Self {
+        Self {
+            backing: ScopeBacking::Installed { installed, ordinal },
+        }
+    }
+}
 
 pub(in crate::domain_computation) struct CompletedApplicationFacts {
     installed: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
     original: FactPayload,
+    binding_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    binding_bytes: Option<u64>,
+    projection: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection,
+        >,
+    >,
+    original_read: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead,
+        >,
+    >,
 }
 impl CompletedApplicationFacts {
     pub(in crate::domain_computation::primary_graph) fn new(
@@ -67,6 +94,92 @@ impl CompletedApplicationFacts {
         Self {
             installed,
             original,
+            binding_memory: None,
+            binding_bytes: None,
+            projection: None,
+            original_read: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_completed_projection(
+        mut self,
+        projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>,
+        original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
+    ) -> Self {
+        self.projection = projection;
+        self.original_read = original_read;
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) fn admit_binding(
+        mut self,
+        control: crate::domain_computation::primary_graph::StorageControl<'_, '_>,
+        authorization_count: usize,
+    ) -> Result<Self, crate::domain_computation::WorthQueryDecisionReadSetFailure> {
+        use crate::domain_computation::{
+            WorthQueryDecisionReadSetDenialKind as Kind,
+            WorthQueryDecisionReadSetFailure as Failure,
+        };
+        let denied = || Failure::new(Kind::FactCountOverflow, "application projection capacity");
+        let first = if self.projection.is_some() {
+            self.installed.len()
+        } else {
+            0
+        };
+        let node = (11 * std::mem::size_of::<(String, Decision)>()
+            + 16 * std::mem::size_of::<usize>()) as u64;
+        let entry = node.checked_add(2048).ok_or_else(denied)?;
+        let mut bytes = (authorization_count as u64)
+            .checked_mul(entry)
+            .and_then(|n| {
+                n.checked_add(
+                    (std::mem::size_of::<super::ApplicationFactTable>()
+                        + 2 * std::mem::size_of::<usize>()) as u64,
+                )
+            })
+            .ok_or_else(denied)?;
+        for ordinal in first..self.original.len() {
+            control
+                .check_live()
+                .map_err(super::super::decision_facts::storage_read_set_failure)?;
+            crate::domain_computation::primary_graph::fact_verification_observation::provider_application_fact();
+            let fact = self.original.get(ordinal).ok_or_else(denied)?;
+            bytes = bytes
+                .checked_add(
+                    fact.dependency_locator_byte_bound()
+                        .ok_or_else(denied)?
+                        .checked_mul(16)
+                        .and_then(|n| n.checked_add(entry))
+                        .ok_or_else(denied)?,
+                )
+                .ok_or_else(denied)?;
+        }
+        let memory = control.policy().reserve_memory(bytes);
+        control
+            .check_live()
+            .map_err(super::super::decision_facts::storage_read_set_failure)?;
+        self.binding_memory = memory.map_err(Failure::allocation_denied)?;
+        self.binding_bytes = Some(bytes);
+        Ok(self)
+    }
+    pub(in crate::domain_computation) fn into_table(
+        self,
+    ) -> Result<super::ApplicationFactTable, &'static str> {
+        let bytes = self
+            .binding_bytes
+            .ok_or("application binding was not admitted")?;
+        if let Some(projection) = self.projection.clone() {
+            super::ApplicationFactTable::projected(
+                self.original,
+                self.installed,
+                projection,
+                self.original_read,
+                self.binding_memory,
+                bytes,
+            )
+        } else {
+            let mut this = self;
+            let memory = this.binding_memory.take();
+            super::ApplicationFactTable::full(this.into_decisions()?, memory, bytes)
         }
     }
 

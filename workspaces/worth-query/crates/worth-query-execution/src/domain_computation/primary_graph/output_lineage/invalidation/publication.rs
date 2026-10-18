@@ -57,7 +57,8 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
         .rebased_source_facts()
         .map_err(|failed| failed.reason)?;
     let facts = super::super::RetainedSourceFacts::retain(computation_source, facts)
-        .with_payload_bytes(application.commit_evidence().source_payload_bytes());
+        .with_payload_bytes(application.commit_evidence().source_payload_bytes())
+        .with_posting_continuation(application.commit_evidence().posting_continuation());
     let read_basis = runtime
         .read_truth()
         .positioned_snapshot(snapshot)

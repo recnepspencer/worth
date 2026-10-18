@@ -26,6 +26,8 @@ mod local_requirement;
 mod logical_work_scale;
 #[path = "native_journey_tests/marking_ceiling.rs"]
 mod marking_ceiling;
+#[path = "native_journey_tests/posting_continuation.rs"]
+mod posting_continuation;
 #[path = "native_journey_tests/reestablishment.rs"]
 mod reestablishment;
 #[path = "native_journey_tests/scope_hierarchy.rs"]

@@ -15,7 +15,9 @@ mod read_observation;
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryNativeMarkingWork {
     pub posting_key_lookups: u64,
-    // Includes repeated matches of one ordinal through different posting keys.
+    // Includes repeated matches through different keys and genuinely discovered
+    // queued pairs when a later stop precedes marking. No pair is counted twice
+    // within one key, and unchanged physical sharing never erases logical fanout.
     pub matched_fact_postings: u64,
     pub marked_fact_ordinals: u64,
     // Includes directly marked roots and equality predecessors as well as

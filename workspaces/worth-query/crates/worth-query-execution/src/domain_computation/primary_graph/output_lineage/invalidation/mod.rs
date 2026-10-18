@@ -85,7 +85,9 @@ pub(in crate::domain_computation) use owner::SourceInvalidationOwner;
 pub(in crate::domain_computation::primary_graph) use publication::collect_consumed_output_upstream;
 pub(in crate::domain_computation::primary_graph) use publication::register_completed;
 pub(in crate::domain_computation::primary_graph) use publication::register_republished;
-pub(in crate::domain_computation::primary_graph) use settlement::SettlementRegistration;
+pub(in crate::domain_computation::primary_graph) use settlement::{
+    PostingContinuation, PostingRebaseBasis, SettlementRegistration,
+};
 pub(in crate::domain_computation::primary_graph) use verification::{
     DirtyReverification, SettlementVerificationStop,
 };

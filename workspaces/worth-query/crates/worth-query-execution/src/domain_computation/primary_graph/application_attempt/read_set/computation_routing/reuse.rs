@@ -184,10 +184,28 @@ impl NativeReadRefresh {
             .clone()
             .filter(|content| content.same_body(&self.prior.original))
     }
+    pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn projection(
+        &self,
+        original: &FactPayload,
+        changed: &im::OrdSet<usize>,
+        control: StorageControl<'_, '_>,
+    ) -> Result<Arc<super::super::CompletedFactProjection>, StoreDenial> {
+        match &self.prior.projection {
+            Some(projection) => {
+                projection.refresh(&self.prior.original, original, changed, control)
+            }
+            None => super::super::CompletedFactProjection::build(
+                original,
+                self.layout.scopes.clone(),
+                control,
+            ),
+        }
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn finish(
         mut self,
         original: FactPayload,
         content: Option<super::super::super::FactContent>,
+        projection: Arc<super::super::CompletedFactProjection>,
     ) -> (
         SealedComputationFacts,
         crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
@@ -213,6 +231,13 @@ impl NativeReadRefresh {
             .and_then(|(total, old)| total.checked_sub(old))
             .zip(new_content)
             .and_then(|(total, new)| total.checked_add(new));
+        let old = self.prior.projection.as_ref().map_or(0, |p| p.bytes());
+        self.prior.charged = self
+            .prior
+            .charged
+            .and_then(|n| n.checked_sub(old))
+            .and_then(|n| n.checked_add(projection.bytes()));
+        self.prior.projection = Some(projection);
         self.prior.original = original;
         self.prior.content = content;
         (

@@ -13,13 +13,12 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 
-use super::super::super::RecordedSettlementIdentity;
 use super::super::{
-    admission::{IndexAdmission, RetainedIndexAdmission},
+    admission::IndexAdmission,
     fact_key::FactPostingKey,
     fact_keys::{self, FactKeyProjectionStop},
     index_capacity,
-    mark_state::{FactPosting, FullVerificationReason, MarkState},
+    mark_state::FullVerificationReason,
     InvalidationEditAdmission,
 };
 
@@ -27,7 +26,7 @@ mod ordering;
 
 pub(super) struct PreparedPostingOrdinals {
     ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
-    posting_payload_bytes: u64,
+    retained_bytes: u64,
 }
 
 struct ProjectedKey {
@@ -177,76 +176,38 @@ impl PreparedPostingOrdinals {
         })
         .and_then(|bytes| bytes.checked_add(posting_payload_bytes))
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        admission.record_index_bytes(retained)?;
+
         Ok(Self {
             ordinals,
-            posting_payload_bytes,
+            retained_bytes: retained,
         })
     }
 
-    pub(super) fn install(
+    pub(super) fn into_projection(
         self,
-        state: &mut MarkState,
-        identity: &Arc<RecordedSettlementIdentity>,
+        id: u64,
+        source_len: usize,
+        output_len: usize,
+        requirement: Option<FullVerificationReason>,
+        resources: &crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<(OrdMap<Arc<FactPostingKey>, OrdSet<usize>>, u64), CompanionPreflightStop> {
-        use super::super::admission::PreparedTreeEdits;
-        let Self {
-            ordinals,
-            posting_payload_bytes,
-        } = self;
-        let mut map_edits = PreparedTreeEdits::<Arc<FactPostingKey>, OrdSet<FactPosting>>::new();
-        for (key, own) in &ordinals {
-            crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
-            admission.work(1)?;
-            admission.key_read(key, state.postings.len())?;
-            let (stored, mut postings, new_key) = match state.postings.get_key_value(key) {
-                Some((stored, prior)) => (Arc::clone(stored), prior.clone(), false),
-                None => (Arc::clone(key), OrdSet::new(), true),
-            };
-            admission.work(1)?;
-            let mut changed = false;
-            let mut set_edits = PreparedTreeEdits::<FactPosting, ()>::new();
-            for ordinal in own {
-                crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
-                admission.work(1)?;
-                let posting = FactPosting {
-                    settlement: Arc::clone(identity),
-                    ordinal: *ordinal,
-                };
-                admission.ordered_read(postings.len())?;
-                if !postings.contains(&posting) {
-                    set_edits.insert(postings.len(), admission)?;
-                    let next_count = state
-                        .posting_count
-                        .checked_add(1)
-                        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-                    postings.insert(posting);
-                    state.posting_count = next_count;
-                    changed = true;
-                }
-            }
-            if changed {
-                set_edits.retain(postings.len(), admission)?;
-                let next_payload = if new_key {
-                    Some(
-                        state
-                            .key_payload_bytes
-                            .checked_add(key_payload_bytes(&stored)?)
-                            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-                    )
-                } else {
-                    None
-                };
-                map_edits.key_insert(&stored, state.postings.len(), admission)?;
-                state.postings.insert(stored, postings);
-                if let Some(payload) = next_payload {
-                    state.key_payload_bytes = payload;
-                }
-            }
-        }
-        map_edits.retain(state.postings.len(), admission)?;
-        Ok((ordinals, posting_payload_bytes))
+    ) -> Result<Arc<super::PostingProjection>, CompanionPreflightStop> {
+        let bytes = self
+            .retained_bytes
+            .checked_add(
+                index_capacity::arc_bytes::<super::PostingProjection>()
+                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+            )
+            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+        let capacity = super::super::retention::reserve(resources, bytes, admission)?;
+        Ok(Arc::new(super::PostingProjection {
+            id,
+            ordinals: self.ordinals,
+            source_len,
+            output_len,
+            requirement,
+            _capacity: capacity,
+        }))
     }
 }
 
@@ -300,7 +261,7 @@ fn group_projected(
     Ok(groups)
 }
 
-fn key_payload_bytes(key: &FactPostingKey) -> Result<u64, CompanionPreflightStop> {
+pub(super) fn key_payload_bytes(key: &FactPostingKey) -> Result<u64, CompanionPreflightStop> {
     key.owned_payload_capacity_bytes()
         .and_then(|bytes| bytes.checked_add(index_capacity::arc_bytes::<FactPostingKey>()?))
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)

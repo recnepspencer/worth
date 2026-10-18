@@ -10,7 +10,7 @@ use worth_foundational::facade::PartitionIdentity;
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence as Work;
 
 mod admission;
-mod fields;
+use super::super::FactRoutes;
 mod postcondition;
 use admission::{admit_tree, leaf};
 #[cfg(test)]
@@ -22,11 +22,37 @@ type Tree = ReductionTree<Summary, fn(&Summary, &Summary) -> Summary>;
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct FactContent(Arc<Content>);
 
+pub(in crate::domain_computation::primary_graph) struct CompletedFactRoutes {
+    body: FactPayload,
+    routes: Arc<FactRoutes>,
+}
+impl CompletedFactRoutes {
+    pub(in crate::domain_computation::primary_graph) fn from_facts(
+        body: FactPayload,
+        control: StorageControl<'_, '_>,
+    ) -> Result<Self, StoreDenial> {
+        let routes = FactRoutes::build(&body, control)?;
+        Ok(Self { body, routes })
+    }
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn into_parts(
+        self,
+    ) -> (FactPayload, Arc<FactRoutes>) {
+        (self.body, self.routes)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn matches_body(
+        &self,
+        body: &FactPayload,
+    ) -> bool {
+        self.body.same_backing(body)
+    }
+}
+
 struct Content {
     body: FactPayload,
     tree: Tree,
     pair_work: Work,
-    fields: Arc<fields::Fields>,
+    fields: Arc<FactRoutes>,
     // No old-root chain: this root funds its complete shared-tree view.
     _memory: Option<ExecutionMemoryReservation>,
 }
@@ -96,13 +122,23 @@ fn repeated(mut work: Work, part: Work, count: u64) -> Work {
 }
 
 impl FactContent {
+    pub(in crate::domain_computation::primary_graph) fn effect_routes(
+        &self,
+        body: &FactPayload,
+    ) -> Option<CompletedFactRoutes> {
+        self.same_body(body).then(|| CompletedFactRoutes {
+            body: body.clone(),
+            routes: self.0.fields.clone(),
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn build(
         body: FactPayload,
         control: StorageControl<'_, '_>,
     ) -> Result<(Self, Work), StoreDenial> {
         let _canonical = admission::scratch(control)?;
         let mut memory = admit_tree(body.len(), control)?;
-        let fields = fields::Fields::build(&body, control)?;
+        let fields = FactRoutes::build(&body, control)?;
         let (empty, empty_work) = rule::empty().map_err(|()| StoreDenial::ConflictingBody)?;
         let (_, pair_work) = rule::pair(empty, empty).map_err(|()| StoreDenial::ConflictingBody)?;
         let mut work = empty_work.combine(pair_work);
@@ -157,7 +193,8 @@ impl FactContent {
         let mut addresses_match = true;
         let mut work = Work::zero();
         for ordinal in body.len()..self.0.body.len() {
-            addresses_match &= fields::Fields::addresses_match(self.0.body.get(ordinal), None);
+            addresses_match &=
+                FactRoutes::addresses_match(self.0.body.get(ordinal), None, control)?;
             let metrics = tree
                 .delete_checked(PartitionIdentity::new(ordinal as u64), VALUE_BOUND, || {
                     control.check_live()
@@ -168,7 +205,7 @@ impl FactContent {
         for ordinal in changed {
             let fact = body.get(ordinal).ok_or(StoreDenial::ConflictingBody)?;
             addresses_match &=
-                fields::Fields::addresses_match(self.0.body.get(ordinal), Some(fact));
+                FactRoutes::addresses_match(self.0.body.get(ordinal), Some(fact), control)?;
             let (summary, billed) = leaf(ordinal, fact, control)?;
             let identity = PartitionIdentity::new(ordinal as u64);
             let metrics = if ordinal < self.0.body.len() {
@@ -190,7 +227,7 @@ impl FactContent {
         let fields = if addresses_match {
             Arc::clone(&self.0.fields)
         } else {
-            fields::Fields::build(&body, control)?
+            FactRoutes::build(&body, control)?
         };
         control.check_live()?;
         Ok((

@@ -245,15 +245,18 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
             >()?)?
             .checked_sub(u64::try_from(row.read_basis.branch_id().0.capacity()).ok()?)
     }
-    pub(super) fn computation_postings(
+    pub(super) fn computation_projection(
         &self,
         identity: &RecordedSettlementIdentity,
         facts: &super::super::RetainedSourceFacts,
-    ) -> Option<im::OrdMap<Arc<super::fact_key::FactPostingKey>, im::OrdSet<usize>>> {
+    ) -> Option<super::settlement::PostingComputationStorage> {
         let row = self.state.settlements.get(identity)?;
         row.facts
             .same_binding(facts)
-            .then(|| row.posting_ordinals.clone())
+            .then(|| super::settlement::PostingComputationStorage {
+                projection: Arc::clone(&row.posting_projection),
+                _fact_capacity: Arc::clone(&row._fact_capacity),
+            })
     }
     pub(super) fn computation_frontier(
         &self,

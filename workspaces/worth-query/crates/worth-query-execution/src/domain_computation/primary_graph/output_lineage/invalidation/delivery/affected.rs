@@ -8,6 +8,7 @@ use super::{
     WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
 };
 use im::OrdSet;
+pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) mod posting_order;
 
 /// Touch matching visits only selected posting buckets. Each affected ordinal
 /// is marked once; downstream propagation follows only actual consumed edges.
@@ -41,15 +42,13 @@ pub(super) fn apply(
             .posting_key_lookups
             .checked_add(1)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        let Some(postings) = state.postings.get(key) else {
+        let Some(mut postings) =
+            posting_order::LogicalPostings::prepare(state, key, meter, counts)?
+        else {
             continue;
         };
-        for posting in postings {
+        while let Some(posting) = postings.next(state, key, meter, counts)? {
             meter.work(1)?;
-            counts.matched_fact_postings = counts
-                .matched_fact_postings
-                .checked_add(1)
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
             meter.ordered_read(state.settlements.len())?;
             let Some(existing) = state.settlements.get(&posting.settlement) else {
                 continue;

@@ -19,7 +19,6 @@ impl WorthQueryRegisteredProviderAttempt<'_> {
             .assert_comparison_scope_lifecycle(
                 execution,
                 &self.staged.read_authority(),
-                self.requests,
                 request,
                 cancellation,
                 &foreign.application.primary_provider,
@@ -44,7 +43,6 @@ impl WorthQueryRegisteredProviderAttempt<'_> {
             .assert_principal_stale_and_stopped(
                 execution,
                 &self.staged.read_authority(),
-                self.requests,
                 request,
                 relation,
             );

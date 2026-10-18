@@ -47,6 +47,21 @@ pub(in crate::domain_computation::primary_graph) enum CompletedReadScopes {
     EmptyOwnerFixture,
 }
 impl CompletedReadScopes {
+    pub(super) fn preimage_demand(
+        &self,
+    ) -> Option<&worth_query_installation::facade::InstalledPreImageDemand> {
+        use worth_query_installation::facade::InstalledCorrectionMechanism;
+        match self {
+            Self::Installed { contracts, .. } => match contracts.aftermath()?.mechanism()? {
+                InstalledCorrectionMechanism::RecordedInverse(inverse) => {
+                    Some(inverse.preimage_demand())
+                }
+                InstalledCorrectionMechanism::Compensation(_) => None,
+            },
+            #[cfg(test)]
+            Self::EmptyOwnerFixture => None,
+        }
+    }
     pub(super) fn from_completed(
         contracts: Arc<Contracts>,
         positions: ExecutionArray<InstalledScopePosition>,

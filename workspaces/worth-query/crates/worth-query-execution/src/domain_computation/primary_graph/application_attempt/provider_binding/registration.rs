@@ -75,6 +75,8 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         required_output_demand,
         installed_read_scopes,
         facts,
+        application_projection,
+        original_read,
         effects,
         preimage_demand,
         conditional_definition,
@@ -88,10 +90,28 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         Ok(affinity) => affinity,
         Err(()) => return abort_registration(staged, DenialStage::ProviderPlan),
     };
+    if original_read
+        .as_ref()
+        .is_some_and(|read| !affinity.owns_original_read(read))
+    {
+        return abort_registration(staged, DenialStage::DecisionReadSet);
+    }
+    let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
+    let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request()));
     let application = crate::domain_computation::primary_graph::CompletedApplicationFacts::new(
         installed_read_scopes,
         facts,
-    );
+    )
+    .with_completed_projection(application_projection, original_read);
+    let application = match application.admit_binding(control, authorization.fact_count()) {
+        Ok(application) => application,
+        Err(failure) => {
+            let _ = staged.abort();
+            return Err(WorthQueryProviderProgressionOutcome::Denied(
+                super::super::WorthQueryApplicationCommitDenial::decision_read_set_denied(failure),
+            ));
+        }
+    };
     let decision_facts = match authorization.bind_application_facts(application) {
         Ok(bound) => bound,
         Err(detail) => {
@@ -106,14 +126,12 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             );
         }
     };
-    let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
-    let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request()));
     let source_fact_rebase = match match &output_currentness_facts {
         Some(facts) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_output(
             facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(), control,
         ),
         None => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
-            decision_facts.facts().values().filter_map(|fact| fact.observed_source_fact().cloned()).collect(),
+            decision_facts.facts().explicit_values().filter_map(|fact| fact.observed_source_fact().cloned()).collect(),
             std::sync::Arc::from([]), control,
         ),
     } {

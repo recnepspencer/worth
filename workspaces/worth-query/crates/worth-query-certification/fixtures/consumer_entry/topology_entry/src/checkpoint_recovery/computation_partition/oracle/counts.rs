@@ -104,9 +104,9 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
             );
             assert_eq!(examined.fallback_carried_metadata_visits, 0,
                 "{size}: fixed native completion does not hide a fallback metadata walk: {examined:?}");
-            assert_eq!(
-                examined.content_field_index_visits, 0,
-                "{size}: value edits share the checked address lookup: {examined:?}"
+            assert!(
+                examined.content_field_index_visits > 0,
+                "{size}: changed-address validation remains measured: {examined:?}"
             );
             assert!(
                 examined.content_leaf_derivations > 0 && examined.content_pair_derivations > 0,
@@ -209,13 +209,33 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
             "{size}: postcommit sizing follows bounded changed leaf granules: {:?}",
             runs[0]
         );
+        assert_eq!(
+            runs[0].provider_application_fact_visits, first.provider_application_fact_visits,
+            "{size}: fresh application binding follows changed observations and fresh source roles"
+        );
+        assert_eq!(
+            runs[0].effect_index_fact_visits, first.effect_index_fact_visits,
+            "{size}: effect routing validates changed addresses and borrows checked metadata"
+        );
+        assert_eq!(
+            runs[0].content_field_index_visits, first.content_field_index_visits,
+            "{size}: address validation does not expand to the retained population"
+        );
+        assert_eq!(
+            runs[0].value_comparison_visits, first.value_comparison_visits,
+            "{size}: genuine same-source closure leaves only fresh individual comparisons"
+        );
         assert!(
-            runs[0].provider_application_fact_visits > 0
-                && runs[0].effect_index_fact_visits > 0
-                && runs[0].posting_fact_visits > 0,
-            "{size}: remaining provider/effect/posting full work stays visible: {:?}",
+            runs[0].posting_fact_visits > 0 && runs[0].posting_registration_visits > 0,
+            "{size}: checked projection and exact binding work stays visible: {:?}",
             runs[0]
         );
+        assert_eq!(
+            runs[0].posting_fact_visits, first.posting_fact_visits,
+            "{size}: posting projection follows changed native ordinals and output roles"
+        );
+        assert_eq!(runs[0].posting_registration_visits, first.posting_registration_visits,
+            "{size}: exact successor installation and predecessor retirement do not visit unchanged postings");
         assert_eq!(runs[0].completed_fact_moves, first.completed_fact_moves,
             "{size}: current source suffix is moved once; carried decision facts stay in their backing");
         assert_eq!(

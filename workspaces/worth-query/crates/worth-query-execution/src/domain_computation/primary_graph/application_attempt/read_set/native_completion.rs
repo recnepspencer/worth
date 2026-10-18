@@ -118,8 +118,15 @@ impl<Schema, Operation, Input, Scope, Phase>
         let postcondition_carry = refresh
             .postcondition_carry(&changed, self.lease.snapshot(), control)
             .map_err(|cause| cause.into_attempt_denial(operation))?;
-        let (metadata, installed_read_scopes, computation_fact_ordinals, decision_count) =
-            refresh.finish(facts.clone(), content.clone());
+        let application_projection = refresh
+            .projection(&facts, &changed, control)
+            .map_err(|cause| cause.into_attempt_denial(operation))?;
+        let (metadata, installed_read_scopes, computation_fact_ordinals, decision_count) = refresh
+            .finish(
+                facts.clone(),
+                content.clone(),
+                application_projection.clone(),
+            );
         check_request_live(self.admission.publication_request(), operation)?;
         let retained = completed
             .seal_at(Some(metadata.clone()), self.lease.snapshot())
@@ -132,18 +139,40 @@ impl<Schema, Operation, Input, Scope, Phase>
         let handler_count = decision_count
             .checked_add(handler_sources)
             .ok_or_else(|| StoreDenial::Representability.into_attempt_denial(operation))?;
+        let (lease, original_read) = super::CompletedOriginalRead::from_native_completion(
+            facts.clone(),
+            application_projection.clone(),
+            self.lease,
+            &self.admission,
+            control,
+        )
+        .map_err(|cause| cause.into_attempt_denial(operation))?;
         self.admission.record_completed_handler_facts(
             CompletedHandlerFactBoundary::from_completed_read(handler_count),
             retained,
         );
         self.admission.retain_execution_canonical_work(content_work);
+        let effect_routes = match content.as_ref().and_then(|c| c.effect_routes(&facts)) {
+            Some(routes) => routes,
+            None => super::super::CompletedFactRoutes::from_facts(
+                facts.clone(),
+                super::super::retained_decision_facts::StorageControl::new(
+                    policy,
+                    Some(self.admission.publication_request()),
+                ),
+            )
+            .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?,
+        };
         Ok(WorthQueryCompleteApplicationReadSet {
             postcondition_carry,
             admission: self.admission,
-            lease: self.lease,
+            lease,
+            application_projection: Some(application_projection),
+            original_read,
             installed_read_scopes,
             facts,
             content,
+            effect_routes,
             consumed_outputs: self.consumed_outputs,
             #[cfg(test)]
             computation_facts: Some(metadata),

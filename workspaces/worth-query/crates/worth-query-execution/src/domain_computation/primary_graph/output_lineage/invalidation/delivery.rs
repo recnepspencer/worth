@@ -21,7 +21,7 @@ use super::mark_state::{DeliveryEpoch, FullVerificationReason, MarkState, Settle
 use super::{fact_key::FactPostingKey, touch_keys};
 use super::{index_capacity, retention};
 
-mod affected;
+pub(super) mod affected;
 pub(super) use affected::propagate;
 mod meter;
 use meter::MarkingMeter;

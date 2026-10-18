@@ -45,6 +45,39 @@ enum SnapshotCustody {
         snapshot: SnapshotHandle,
     },
     Shared(WorthQueryApplicationBasisLease),
+    Original(std::sync::Arc<SharedOriginalSnapshot>),
+}
+
+struct SharedOriginalSnapshot {
+    custody: Option<SnapshotCustody>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl Drop for SharedOriginalSnapshot {
+    fn drop(&mut self) {
+        if let Some(custody) = self.custody.take() {
+            release_custody(custody);
+        }
+    }
+}
+impl SnapshotCustody {
+    fn snapshot(&self) -> &SnapshotHandle {
+        match self {
+            Self::Owned { snapshot, .. } => snapshot,
+            Self::Shared(basis) => basis.snapshot_handle(),
+            Self::Original(shared) => shared
+                .custody
+                .as_ref()
+                .expect("live original pin")
+                .snapshot(),
+        }
+    }
+    fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
+        match self {
+            Self::Owned { handle, .. } => handle,
+            Self::Shared(basis) => basis.graph_handle(),
+            Self::Original(shared) => shared.custody.as_ref().expect("live original pin").handle(),
+        }
+    }
 }
 
 pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
@@ -54,6 +87,31 @@ pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
 }
 
 impl WorthQueryApplicationSnapshotLease {
+    pub(super) fn share_original(
+        mut self,
+        control: super::retained_decision_facts::StorageControl<'_, '_>,
+    ) -> Result<(Self, Self), super::retained_decision_facts::StoreDenial> {
+        let memory = control
+            .policy()
+            .reserve_memory((size_of::<SharedOriginalSnapshot>() + 2 * size_of::<usize>()) as u64);
+        control.check_live()?;
+        let memory = memory?;
+        let custody = self.custody.take().expect("live snapshot custody");
+        let shared = match custody {
+            SnapshotCustody::Original(shared) => shared,
+            custody => std::sync::Arc::new(SharedOriginalSnapshot {
+                custody: Some(custody),
+                _memory: memory,
+            }),
+        };
+        self.custody = Some(SnapshotCustody::Original(shared.clone()));
+        let retained = Self {
+            custody: Some(SnapshotCustody::Original(shared)),
+            product: self.product.retained_clone(),
+            layout: self.layout.clone(),
+        };
+        Ok((self, retained))
+    }
     pub(in crate::domain_computation) fn acquire(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
@@ -143,14 +201,10 @@ impl WorthQueryApplicationSnapshotLease {
     }
 
     pub(in crate::domain_computation) fn snapshot(&self) -> &SnapshotHandle {
-        match self
-            .custody
+        self.custody
             .as_ref()
             .expect("snapshot lease retains custody")
-        {
-            SnapshotCustody::Owned { snapshot, .. } => snapshot,
-            SnapshotCustody::Shared(basis) => basis.snapshot_handle(),
-        }
+            .snapshot()
     }
 
     pub(in crate::domain_computation) fn product(
@@ -160,14 +214,10 @@ impl WorthQueryApplicationSnapshotLease {
     }
 
     pub(in crate::domain_computation) fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
-        match self
-            .custody
+        self.custody
             .as_ref()
             .expect("snapshot lease retains custody")
-        {
-            SnapshotCustody::Owned { handle, .. } => handle,
-            SnapshotCustody::Shared(basis) => basis.graph_handle(),
-        }
+            .handle()
     }
 
     #[cfg(test)]
@@ -199,5 +249,14 @@ fn release_custody(custody: SnapshotCustody) -> WorthQueryApplicationSnapshotRel
         SnapshotCustody::Shared(basis) => {
             WorthQueryApplicationSnapshotRelease::SharedBasisRelease(basis.release().outcome())
         }
+        SnapshotCustody::Original(shared) => match std::sync::Arc::try_unwrap(shared) {
+            Ok(mut owner) => release_custody(owner.custody.take().expect("live original pin")),
+            Err(shared) => {
+                drop(shared);
+                WorthQueryApplicationSnapshotRelease::SharedBasisRelease(
+                    WorthQueryApplicationBasisReleaseOutcome::SharedCustodyRetained,
+                )
+            }
+        },
     }
 }

@@ -22,6 +22,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+mod fact_routes;
+pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
+mod application_projection;
+pub(in crate::domain_computation) use application_projection::CompletedFactProjection;
+mod original_read;
+pub(in crate::domain_computation) use original_read::CompletedOriginalRead;
 mod admitted_arrays;
 mod completed_facts;
 pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
@@ -119,9 +125,12 @@ pub struct WorthQueryCompleteApplicationReadSet<
 > {
     pub(super) admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     pub(super) lease: WorthQueryApplicationSnapshotLease,
+    pub(super) application_projection: Option<Arc<CompletedFactProjection>>,
+    pub(super) original_read: Option<Arc<CompletedOriginalRead>>,
     pub(super) installed_read_scopes: CompletedReadScopes,
     pub(super) facts: FactPayload,
     pub(super) content: Option<super::FactContent>,
+    pub(super) effect_routes: super::CompletedFactRoutes,
     pub(super) postcondition_carry: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
     >,

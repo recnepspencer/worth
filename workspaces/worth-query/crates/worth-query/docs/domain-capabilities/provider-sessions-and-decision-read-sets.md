@@ -135,6 +135,33 @@ cleanup outcomes retain whether physical recovery is complete or required.
 Settlement-deferred is post-effect: the operation must be repaired, not
 aborted, discarded, or rerun.
 
+### Completed native application reads
+
+Ordinary installed application progression supplies its completed read directly
+to the primary provider. Completion pairs the original fact body with checked
+locator, ordinal and installed-scope routing. Qualified native completion
+also retains its actual original snapshot lease and owning admission. Cold
+reconstruction and unqualified reads retain full capture and comparison. This
+avoids rebuilding every application fact and effect lookup on each warm
+attempt; applications supply neither routing nor a reuse hint.
+
+Every attempt still receives fresh principal, authorization and provider-session
+observations. Capture retrieves the actual registered attempt. Initial comparison
+and precommit comparison both check that registration's generation, session and
+native observation. The physical prefix can close together only when its original
+body, admission and live native source correspondence remain qualified. Fresh
+source-role and authorization evidence is compared individually. A different
+readmitted source requires funded capture and comparison of all original facts.
+Unknown facts and source queries without original query permission use that full
+path as well.
+
+Effect lowering consumes routing paired with the same original body and retains
+the first sealed observation for each target. Installed preimage demands select
+only observations eligible for actual mutation records and demanded loci; scope,
+ambiguity and before-image checks still apply. Normalized own-write postconditions
+remain separate and cannot certify those original reads. Retained snapshot and
+allocation custody ends with its final owner, including refusal and abort paths.
+
 ## Small Example
 
 ```rust
@@ -155,11 +182,15 @@ use worth_query_host::facade::installed::domain_computation as execution;
 
 let captured = staged
     .read_authority()
-    .capture_decision_read_set(decision_fact_requests)?;
+    .capture_decision_read_set(
+        decision_fact_requests,
+        execution_request.allocation_policy(),
+        Some(&request_scope),
+    )?;
 
 let fresh = match staged
     .read_authority()
-    .compare_decision_read_set(captured)?
+    .compare_decision_read_set(&execution_request, captured)?
 {
     execution::WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) => fresh,
     execution::WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale) => {
@@ -175,7 +206,8 @@ let program = staged
 
 The installed operation determines which fact families are complete. The
 caller supplies locators for that declared closure; it cannot omit a required
-family or add an undeclared one.
+family or add an undeclared one. `execution_request` and `request_scope` belong
+to the current admitted host call; retained data does not reconstruct them.
 
 If the later application commit returns `SettlementDeferred`, hand its opaque
 carrier to `recover_deferred_application_settlement(...)`. That serialized
@@ -236,6 +268,9 @@ occurred.
   set before runtime construction can preserve this lane.
 - Freshness covers the installed fact closure, not undeclared application
   state.
+- Completed native physical-read custody is runtime-local. Restored data, equal
+  results, equal content and shared backing do not issue it. This optimization
+  does not make posting registration, collection membership or delivery sparse.
 - This document stops at the provider-session worker boundary. The higher
   installed application-operation progression owns compare-and-commit,
   idempotency, co-committed outbox meaning, typed settlement recovery, external

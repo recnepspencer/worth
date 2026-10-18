@@ -16,6 +16,14 @@ pub(in crate::domain_computation::primary_graph::application_attempt::read_set) 
 }
 
 impl SealedComputationFacts {
+    pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn retain_projection(
+        &mut self,
+        projection: Arc<super::super::CompletedFactProjection>,
+    ) {
+        self.charged = self.charged.and_then(|n| n.checked_add(projection.bytes()));
+        self.projection = Some(projection);
+    }
+
     pub(in crate::domain_computation::primary_graph) fn original_payload(&self) -> FactPayload {
         self.original.clone()
     }
@@ -162,6 +170,7 @@ impl PreparedComputationFacts {
             original,
             content,
             charged: None,
+            projection: None,
             layout,
         };
         result.charged = result.calculate_charged_bytes();

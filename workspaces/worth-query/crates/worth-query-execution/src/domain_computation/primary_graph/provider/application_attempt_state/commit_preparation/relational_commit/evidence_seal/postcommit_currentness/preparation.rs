@@ -100,7 +100,7 @@ impl PreparedSourceFactRebase {
                 carry.select(touches, facts.len(), &moved, control)
             })
             .ok_or(StoreDenial::ConflictingBody)??;
-        let Some((ordinals, memory)) = selection else {
+        let Some(selection) = selection else {
             return Ok(Self {
                 preparation: Preparation::Selected(selected::SelectedRebase::prepare_full(
                     facts, moved, control,
@@ -109,7 +109,14 @@ impl PreparedSourceFactRebase {
         };
         Ok(Self {
             preparation: Preparation::Selected(selected::SelectedRebase::prepare(
-                facts, moved, carry, ordinals, memory, admission, control,
+                facts,
+                moved,
+                carry,
+                selection.ordinals,
+                selection.memory,
+                selection.basis,
+                admission,
+                control,
             )?),
         })
     }

@@ -17,6 +17,7 @@ pub(super) enum RebasedSourceFacts {
     Exact(FactPayload),
     /// Exact selected native rebase, paired with the unchanged owner capacity rule.
     Cached {
+        posting_continuation: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation>,
         facts: FactPayload,
         payload_bytes: u64,
         ordinals: Arc<worth_execution::ExecutionArray<Option<usize>>>,
@@ -149,6 +150,19 @@ impl OwnEffectOnReads {
 }
 
 impl RebasedSourceFacts {
+    pub(super) fn posting_continuation(
+        &self,
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation,
+    > {
+        match self {
+            Self::Cached {
+                posting_continuation,
+                ..
+            } => posting_continuation.clone(),
+            _ => None,
+        }
+    }
     pub(super) fn payload_bytes(&self) -> Option<u64> {
         match self {
             Self::Cached { payload_bytes, .. } => Some(*payload_bytes),

@@ -100,6 +100,15 @@ impl ValidatedMutationFootprintProjection {
 }
 
 impl ValidatedMutationFootprint {
+    /// Borrows the records named by the already validated targets. A record
+    /// may occur more than once; no new selection or graph read is performed.
+    pub fn records(&self) -> impl Iterator<Item = &RecordRef> {
+        self.targets.iter().map(|target| match target {
+            ValidatedFieldMutationTarget::ExactField { record, .. }
+            | ValidatedFieldMutationTarget::WholeAspect { record, .. }
+            | ValidatedFieldMutationTarget::WholeRecord { record } => record,
+        })
+    }
     /// True only when the validated plan changes this exact prior field.
     pub fn mutates_field(&self, record: &RecordRef, locator: &AspectFieldLocator) -> bool {
         self.targets.iter().any(|target| match target {

@@ -16,6 +16,7 @@ pub(in crate::domain_computation::primary_graph) struct RetainedSourceFacts {
     source: ComputationSourceEvidence,
     facts: FactPayload,
     payload_bytes: Option<u64>,
+    posting_continuation: Option<super::invalidation::PostingContinuation>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct ComparableSourceFacts {
@@ -28,7 +29,20 @@ impl RetainedSourceFacts {
             source,
             facts: facts.into(),
             payload_bytes: None,
+            posting_continuation: None,
         }
+    }
+    pub(super) fn with_posting_continuation(
+        mut self,
+        continuation: Option<super::invalidation::PostingContinuation>,
+    ) -> Self {
+        self.posting_continuation = continuation;
+        self
+    }
+    pub(super) fn take_posting_continuation(
+        &mut self,
+    ) -> Option<super::invalidation::PostingContinuation> {
+        self.posting_continuation.take()
     }
     pub(super) fn with_payload_bytes(mut self, bytes: Option<u64>) -> Self {
         self.payload_bytes = bytes;

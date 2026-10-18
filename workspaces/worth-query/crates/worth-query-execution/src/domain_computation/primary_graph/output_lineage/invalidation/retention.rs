@@ -17,7 +17,7 @@ use super::admission::IndexAdmission;
 use super::edit_admission::RetainedIndexCheckpoint;
 use super::fact_key::FactPostingKey;
 use super::index_capacity::{arc_bytes, retained_forest_bytes, retained_map_bytes};
-use super::mark_state::{EqualOutputLink, FactPosting, MarkState, SettlementMarks};
+use super::mark_state::{EqualOutputLink, MarkState, SettlementMarks};
 use super::source_alignment::{BranchMarkRoot, HistoricalMarkState};
 use super::InvalidationEditAdmission;
 
@@ -62,7 +62,6 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
     let postings = state.posting_count;
     arc_bytes::<MarkState>()?
         .checked_add(state.key_payload_bytes)?
-        .checked_add(state.settlement_key_payload_bytes)?
         // A whole-index quote includes one live basis allocation per row.
         // Its actual ticket remains separately owned by that allocation.
         .checked_add(
@@ -93,22 +92,29 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
                     .checked_add(state.settlements.len())? as u64,
             )?,
         )?
-        .checked_add(
-            // One posting_ordinals map per row; each distinct key has at
-            // least one ordinal, so posting_count bounds their total keys.
-            retained_forest_bytes::<Arc<FactPostingKey>, im::OrdSet<usize>>(postings, rows)?,
-        )?
-        // Each row/key pair owns its own ordinal set. Their root count is
-        // at most posting_count; combining them into one tree undercounts.
-        .checked_add(retained_forest_bytes::<usize, ()>(postings, postings)?)?
-        .checked_add(retained_map_bytes::<
-            Arc<FactPostingKey>,
-            im::OrdSet<FactPosting>,
-        >(state.postings.len())?)?
-        .checked_add(retained_forest_bytes::<FactPosting, ()>(
+        // Projection maps and their key allocations have direct allocation-owned
+        // tickets. This root funds only physical buckets and exact bindings.
+        .checked_add(retained_map_bytes::<Arc<FactPostingKey>, im::OrdSet<u64>>(
+            state.postings.len(),
+        )?)?
+        .checked_add(retained_forest_bytes::<u64, ()>(
             postings,
             state.postings.len(),
         )?)?
+        .checked_add(retained_map_bytes::<
+            u64,
+            Arc<super::settlement::PostingBindings>,
+        >(state.posting_bindings.len())?)?
+        .checked_add(
+            arc_bytes::<super::settlement::PostingBindings>()?
+                .checked_mul(state.posting_bindings.len() as u64)?,
+        )?
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                rows,
+                state.posting_bindings.len(),
+            )?,
+        )?
         .checked_add(retained_map_bytes::<
             Arc<RecordedSettlementIdentity>,
             Arc<SettlementMarks>,

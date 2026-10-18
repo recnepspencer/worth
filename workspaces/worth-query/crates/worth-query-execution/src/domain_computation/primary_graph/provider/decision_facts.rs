@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 mod comparison;
+pub(in crate::domain_computation) use comparison::PrimaryDecisionReadSetComparison;
 
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::{
@@ -81,6 +82,24 @@ pub(super) fn snapshot_read_set_failure(
         kind,
         "primary provider could not open the exact decision-fact basis",
     )
+}
+
+pub(in crate::domain_computation::primary_graph) fn storage_read_set_failure(
+    failure: super::super::application_attempt::retained_decision_facts::StoreDenial,
+) -> WorthQueryDecisionReadSetFailure {
+    use super::super::application_attempt::retained_decision_facts::StoreDenial as Store;
+    use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
+    match failure {
+        Store::Allocation(denial) => WorthQueryDecisionReadSetFailure::allocation_denied(denial),
+        Store::RequestInterruption(stop) => WorthQueryDecisionReadSetFailure::new(
+            Kind::RequestInterrupted(stop),
+            "original read interrupted",
+        ),
+        _ => WorthQueryDecisionReadSetFailure::new(
+            Kind::EvidenceSubstitution,
+            "invalid original read custody",
+        ),
+    }
 }
 
 fn provider_rejected() -> WorthQueryDecisionReadSetFailure {
