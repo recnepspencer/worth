@@ -3,6 +3,7 @@
 use std::any::Any;
 use std::ops::Deref;
 use std::sync::Arc;
+mod cached_successor;
 
 use super::{
     required_custody::RequiredOutputCustodyCapacity, WorthQueryOutputDemandInterest,
@@ -135,13 +136,20 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
             .records
             .get_mut(&interest.key)
             .ok_or_else(source_denial)?;
-        if !interest.key.source.same_semantic_source(&epoch)
-            || record.product_occurrence != occurrence
+        if record.product_occurrence != occurrence
             || record.source_scope != Some(
                 crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.source.source_root())
             )
         {
             return Err(source_denial());
+        }
+        if !interest.key.source.same_semantic_source(&epoch) {
+            // The caller retains its genuinely fresh source alongside the
+            // predecessor. Never install it under the predecessor's old key.
+            // Its original Ready/source/member pins still enter the ordinary
+            // selected certification and accepted-authority refresh path.
+            cached_successor::validate_original_ready(&record, &interest.key, &epoch, &producer)?;
+            return Ok(self.source);
         }
         // Readmission retains frozen source meaning. Each read selects the
         // current Product; a semantic join does not need to replace this Arc.

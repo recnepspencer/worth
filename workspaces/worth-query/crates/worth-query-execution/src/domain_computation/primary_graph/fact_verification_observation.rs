@@ -1,9 +1,14 @@
 //! Actual retained-fact examination at its owners, apart from request billing.
 use std::cell::Cell;
 pub(super) mod input_cutoff;
+mod registry_custody;
 pub use input_cutoff::{
     WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
     WorthQueryInputCutoffOutcomeForTest,
+};
+pub(super) use registry_custody::registry_custody;
+pub use registry_custody::{
+    WorthQueryRegistryCustodyForTest, WorthQueryRegistryCustodyTransitionForTest,
 };
 
 use crate::domain_computation::execution_observation;
@@ -12,6 +17,10 @@ use crate::domain_computation::execution_observation;
 /// double-count facts examined in several phases. These are not admission units.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryFactVerificationForTest {
+    /// Actual registry transitions, including those before cutoff preparation.
+    pub registry_custody: [Option<WorthQueryRegistryCustodyForTest>; 32],
+    /// Further transitions are explicitly unobserved.
+    pub registry_custody_omitted: u64,
     /// Up to 32 actual cutoff invocations, in completion order. No fact data.
     pub input_cutoffs: [Option<WorthQueryInputCutoffForTest>; 32],
     /// Further invocations are counted, never silently treated as observed.
@@ -54,6 +63,7 @@ pub struct WorthQueryFactVerificationForTest {
 
 thread_local! {
     static OBSERVED: Cell<WorthQueryFactVerificationForTest> = const { Cell::new(WorthQueryFactVerificationForTest {
+        registry_custody: [None; 32], registry_custody_omitted: 0,
         input_cutoffs: [None; 32], input_cutoffs_omitted: 0,
         native_payload_fact_moves: 0, native_payload_chunks: 0, native_payload_joins: 0,
         sealed_computation_index_visits: 0, source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,

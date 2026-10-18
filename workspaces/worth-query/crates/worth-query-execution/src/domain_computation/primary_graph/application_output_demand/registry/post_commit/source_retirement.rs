@@ -36,6 +36,10 @@ pub(in super::super) fn retire_stale_records(
             .records
             .get_mut(key)
             .expect("source occurrence key exists");
+        crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
+            crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::SourceRetirement,
+            record.settlements.len(), record.prerequisites.len(),
+        );
         let cause = denial(
             WorthQueryOutputDemandDenialKind::Superseded,
             key.producer.clone(),

@@ -61,6 +61,12 @@ impl WorthQueryOutputDemandRegistry {
                     IdleRowDisposition::Retired(reason) => Some(reason),
                 };
                 let stopped = retirement.is_some_and(RowRetirement::releases_finished_work);
+                if ready && record.interests == 0 && !stopped {
+                    crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
+                        crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::CachedReadyClosed,
+                        record.settlements.len(), record.prerequisites.len(),
+                    );
+                }
                 if stopped
                     && record.interests == 0
                     && !record.pending_cleanup_queued

@@ -21,6 +21,21 @@ struct MatchedConsumedRoot {
 }
 
 impl<'a> MatchedRequiredPredecessors<'a> {
+    /// Preserve the exact posted consumer before a source-only refresh retires
+    /// it. No upstream has been matched: all original roots still require the
+    /// ordinary native verification at this pinned selected snapshot.
+    pub(in crate::domain_computation::primary_graph) fn retain_consumer(
+        registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
+        consumer: &Arc<RecordedSettlementIdentity>,
+        selected: &'a PositionedRelationalSnapshot,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        Ok(Self {
+            _custody: registry.retain_consumer_handoff(consumer, admission)?,
+            roots: Vec::new(),
+            selected,
+        })
+    }
     /// Adds one matched edge to `matched`, starting the set on its first.
     pub(in crate::domain_computation::primary_graph) fn join(
         matched: &mut Option<Self>,
@@ -39,11 +54,9 @@ impl<'a> MatchedRequiredPredecessors<'a> {
             )
             .map_err(|_| work_denial())?;
         if matched.is_none() {
-            *matched = Some(Self {
-                _custody: registry.retain_consumer_handoff(consumer, admission)?,
-                roots: Vec::new(),
-                selected,
-            });
+            *matched = Some(Self::retain_consumer(
+                registry, consumer, selected, admission,
+            )?);
         }
         let matched = matched.as_mut().expect("consumer wave custody established");
         if matched.roots.len() == matched.roots.capacity() {

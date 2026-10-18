@@ -17,6 +17,49 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Reclamation can release the cached Ready a fresh source was admitted
+    /// beside. Its empty row no longer carries that predecessor. Admit the
+    /// disclosed source under its own key before any Fresh execution instead
+    /// of publishing a new receipt under the released predecessor's key.
+    pub(super) fn released_predecessor_needs_source<Family>(
+        &self,
+        demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
+        source: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let interest = demand
+            .interest
+            .as_ref()
+            .expect("progression entry checked live Interest");
+        // SourceEpoch compares fixed owner-issued source coordinates and their
+        // sealed meaning identity. This neither reads the graph nor establishes
+        // equality/currentness for any retained output.
+        let work = (2 * std::mem::size_of_val(interest.key().source_epoch()) + 4 * 32 + 4) as u64;
+        admission.charge_external_work(work).map_err(|_| {
+            denial(
+                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                "released source identity",
+            )
+        })?;
+        let epoch = source.output_source_epoch().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "released source identity",
+            )
+        })?;
+        if interest.key().source_epoch().same_semantic_source(&epoch) {
+            return Ok(false);
+        }
+        Ok(matches!(
+            self.output_demands
+                .row_stage_admitted(interest, admission)?,
+            OutputRowStage::BeforeReady
+        ))
+    }
+
     pub(super) fn prepare_progression_entry<Family>(
         &self,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,

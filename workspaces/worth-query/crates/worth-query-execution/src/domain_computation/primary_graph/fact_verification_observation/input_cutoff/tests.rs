@@ -40,10 +40,17 @@ fn receipts_are_bounded_and_end_with_the_existing_listener() {
         take();
         for _ in 0..35 {
             let _scope = Scope::begin("bounded", Gate::ComparableFacts);
+            super::super::registry_custody(
+                super::super::WorthQueryRegistryCustodyTransitionForTest::PostingRelease,
+                1,
+                2,
+            );
         }
         let receipts = take();
         assert!(receipts.input_cutoffs.iter().all(Option::is_some));
         assert_eq!(receipts.input_cutoffs_omitted, 3);
+        assert!(receipts.registry_custody.iter().all(Option::is_some));
+        assert_eq!(receipts.registry_custody_omitted, 3);
         let _scope = Scope::begin("cleared", Gate::Candidate);
     }
     let _unobserved = Scope::begin("unobserved", Gate::ExecutionRequest);
@@ -52,4 +59,6 @@ fn receipts_are_bounded_and_end_with_the_existing_listener() {
     let receipts = take();
     assert!(receipts.input_cutoffs.iter().all(Option::is_none));
     assert_eq!(receipts.input_cutoffs_omitted, 0);
+    assert!(receipts.registry_custody.iter().all(Option::is_none));
+    assert_eq!(receipts.registry_custody_omitted, 0);
 }
