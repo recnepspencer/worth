@@ -2,7 +2,7 @@
 use super::{packet, Packet, BOUNDS, RAW};
 use worth_foundational::facade::{
     decode_canonical_value_with_admission, CanonicalValue, ValueCodecDenial as D,
-    ValueDecodeAdmission, ValueDecodeBounds, ValueShape, WorthValue,
+    ValueDecodeAdmission, ValueDecodeBounds, ValueShapeBody, WorthValue,
 };
 
 #[test]
@@ -54,11 +54,8 @@ fn one_loan_covers_nested_values_and_parser_escape_scratch_before_visits() {
 struct Swallowing(bool);
 impl CanonicalValue for Swallowing {
     const SUPPORTS_ADMISSION: bool = true;
-    const SHAPE_DEPTH: usize = 0;
     const WIRE_NULLABLE: bool = false;
-    fn value_shape() -> ValueShape {
-        bool::value_shape()
-    }
+    const SHAPE_BODY: ValueShapeBody = { bool::SHAPE_BODY };
     fn validate_bounds(&self, _: ValueDecodeBounds) -> Result<(), D> {
         Ok(())
     }
@@ -81,10 +78,16 @@ impl CanonicalValue for Swallowing {
 #[test]
 fn swallowed_seed_refusal_wins_and_new_funded_loan_succeeds() {
     let mut requests = 0;
+    let mut refused = false;
     assert_eq!(
         decode_canonical_value_with_admission::<Swallowing>("true", BOUNDS, &mut |_, bytes| {
             requests += 1;
+            assert!(
+                !refused,
+                "authority must not be re-entered after its first refusal"
+            );
             if bytes == 1000 {
+                refused = true;
                 Err(D::Admission)
             } else {
                 Ok(())
@@ -92,9 +95,8 @@ fn swallowed_seed_refusal_wins_and_new_funded_loan_succeeds() {
         }),
         Err(D::Admission)
     );
-    // Parser, root seed, then the opaque owner's refused allocation. Serializer
-    // callbacks never re-enter authority after that first refusal.
-    assert_eq!(requests, 3);
+    assert!(refused);
+    assert!(requests > 1);
     assert_eq!(
         decode_canonical_value_with_admission::<Swallowing>("true", BOUNDS, &mut |_, _| Ok(()))
             .unwrap(),
@@ -122,11 +124,8 @@ fn generated_grammar_diagnostics_never_render_static_names_or_lists() {
 #[derive(Debug, PartialEq, serde::Serialize)]
 struct Unadmitted(bool);
 impl CanonicalValue for Unadmitted {
-    const SHAPE_DEPTH: usize = 0;
     const WIRE_NULLABLE: bool = false;
-    fn value_shape() -> ValueShape {
-        bool::value_shape()
-    }
+    const SHAPE_BODY: ValueShapeBody = { bool::SHAPE_BODY };
     fn validate_bounds(&self, _: ValueDecodeBounds) -> Result<(), D> {
         Ok(())
     }

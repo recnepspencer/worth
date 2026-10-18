@@ -1,7 +1,9 @@
 //! A bounded JSON wire contract emitted with the value's shape and seed.
-use super::{ValueCodecDenial as D, ValueDecodeBounds, ValueShape};
+use super::{
+    ValueCodecDenial as D, ValueDecodeBounds, ValueShape, ValueShapeBody, ValueShapeDefinition,
+};
 use serde::{de::DeserializeSeed, Serialize};
-use std::{io::Write, marker::PhantomData};
+use std::io::Write;
 
 /// Borrowed admission callback; it does not itself establish request authority.
 /// The native owner supplies that authority and retains granted reservations.
@@ -12,15 +14,17 @@ pub type ValueDecodeAdmission<'a> = dyn FnMut(usize, usize) -> Result<(), D> + '
 /// Derive `WorthValue` for ordinary structs/enums. Opaque domain owners implement
 /// this contract only with their own bounded seed and admitted constructor.
 /// No `DeserializeOwned` fallback participates in this contract.
-pub trait CanonicalValue: Serialize + Sized {
-    /// Opaque owners must explicitly supply an admitted seed; no fallback.
+pub trait CanonicalValue: Serialize + Sized + 'static {
+    /// This owner's seed, independently of its children's support. The complete
+    /// static closure is checked by installation and admitted decoding.
     const SUPPORTS_ADMISSION: bool = false;
-    /// Finite structural depth. Recursive type cycles are compile-time errors.
-    const SHAPE_DEPTH: usize;
     /// Whether this wire grammar can emit JSON null. Optional payloads must
     /// exclude null so absence cannot erase a present value's meaning.
     const WIRE_NULLABLE: bool;
-    fn value_shape() -> ValueShape;
+    const SHAPE_BODY: ValueShapeBody;
+    fn value_shape() -> ValueShape {
+        ValueShapeDefinition::of::<Self>().materialize()
+    }
     fn validate_bounds(&self, bounds: ValueDecodeBounds) -> Result<(), D>;
     fn deserialize_bounded<'de, Decoder: serde::Deserializer<'de>>(
         decoder: Decoder,
@@ -38,44 +42,33 @@ pub trait CanonicalValue: Serialize + Sized {
     }
 }
 
-/// A finite grammar seed. `new` enforces representation bounds only;
+/// A bounded grammar seed. `new` enforces representation bounds only;
 /// `with_admission` also passes the caller's request loan through nested seeds.
 /// Whole-carrier decoding additionally checks input and canonical form.
 pub struct CanonicalValueSeed<'a, 'request, Value> {
-    bounds: ValueDecodeBounds,
-    admission: Option<&'a mut ValueDecodeAdmission<'request>>,
-    value: PhantomData<fn() -> Value>,
+    seed: super::DelegatedValueSeed<'a, 'request, super::ValueDelegate<Value>>,
 }
 impl<'a, 'request, Value> CanonicalValueSeed<'a, 'request, Value> {
-    pub const fn new(bounds: ValueDecodeBounds) -> Self {
+    pub fn new(bounds: ValueDecodeBounds) -> Self {
         Self {
-            bounds,
-            admission: None,
-            value: PhantomData,
+            seed: super::DelegatedValueSeed::new(bounds, None),
         }
     }
-
     /// The same request loan is reborrowed by all nested seeds.
     pub fn with_admission(
         bounds: ValueDecodeBounds,
         admission: &'a mut ValueDecodeAdmission<'request>,
     ) -> Self {
         Self {
-            bounds,
-            admission: Some(admission),
-            value: PhantomData,
+            seed: super::DelegatedValueSeed::new(bounds, Some(admission)),
         }
     }
-
-    /// Shared generated visitor plumbing for standalone and admitted decoding.
     pub fn with_optional_admission(
         bounds: ValueDecodeBounds,
         admission: Option<&'a mut ValueDecodeAdmission<'request>>,
     ) -> Self {
         Self {
-            bounds,
-            admission,
-            value: PhantomData,
+            seed: super::DelegatedValueSeed::new(bounds, admission),
         }
     }
 }
@@ -85,18 +78,12 @@ impl<'de, Value: CanonicalValue> DeserializeSeed<'de> for CanonicalValueSeed<'_,
         self,
         decoder: Decoder,
     ) -> Result<Value, Decoder::Error> {
-        match self.admission {
-            Some(admission) => {
-                // Decode, bounds validation and structural re-encoding traversal.
-                admission(3, 0).map_err(serde::de::Error::custom)?;
-                Value::deserialize_admitted(decoder, self.bounds, admission)
-            }
-            None => Value::deserialize_bounded(decoder, self.bounds),
-        }
+        self.seed.deserialize(decoder)
     }
 }
 
-/// O(wire bytes + value nodes), with finite input, container and nesting bounds.
+/// O(grammar visits * active type depth + wire bytes + value nodes), with
+/// finite input/container/value-depth bounds and guarded static grammar edges.
 /// JSON escape scratch is bounded by the admitted input bytes; decoded strings
 /// and sequences are admitted before their owned storage grows.
 pub fn decode_canonical_value<Value: CanonicalValue>(
@@ -106,6 +93,7 @@ pub fn decode_canonical_value<Value: CanonicalValue>(
     if raw.len() > bounds.maximum_wire_bytes() {
         return Err(D::WireBytes);
     }
+    ValueShapeDefinition::of::<Value>().inspect()?;
     let mut decoder = serde_json::Deserializer::from_str(raw);
     let value = CanonicalValueSeed::<Value>::new(bounds)
         .deserialize(&mut decoder)
@@ -123,6 +111,7 @@ pub fn encode_canonical_value<Value: CanonicalValue>(
     value: &Value,
     bounds: ValueDecodeBounds,
 ) -> Result<String, D> {
+    ValueShapeDefinition::of::<Value>().inspect()?;
     value.validate_bounds(bounds)?;
     let mut writer = BoundedJsonWriter {
         bytes: Vec::new(),

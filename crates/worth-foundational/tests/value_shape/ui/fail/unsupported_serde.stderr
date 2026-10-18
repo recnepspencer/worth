@@ -1,16 +1,16 @@
-error: unsupported Serde attribute for WorthValue; only literal rename is supported; use an explicit bounded owner codec for custom wire behavior
+error: unsupported Serde attribute for WorthValue; use supported literal rename/tag/snake_case/deny_unknown_fields or a bounded owner codec; defaults, skips, flattening and custom serializers are unsupported
  --> tests/value_shape/ui/fail/unsupported_serde.rs:5:13
   |
 5 |     #[serde(skip)]
   |             ^^^^
 
-error: unsupported Serde attribute for WorthValue; only literal rename is supported; use an explicit bounded owner codec for custom wire behavior
+error: unsupported Serde attribute for WorthValue; use supported literal rename/tag/snake_case/deny_unknown_fields or a bounded owner codec; defaults, skips, flattening and custom serializers are unsupported
   --> tests/value_shape/ui/fail/unsupported_serde.rs:11:13
    |
 11 |     #[serde(default)]
    |             ^^^^^^^
 
-error: unsupported Serde attribute for WorthValue; only literal rename is supported; use an explicit bounded owner codec for custom wire behavior
+error: unsupported Serde attribute for WorthValue; use supported literal rename/tag/snake_case/deny_unknown_fields or a bounded owner codec; defaults, skips, flattening and custom serializers are unsupported
   --> tests/value_shape/ui/fail/unsupported_serde.rs:17:13
    |
 17 |     #[serde(flatten)]

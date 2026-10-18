@@ -1,7 +1,7 @@
 //! Real V2 wire owner; refusal observation never supplies a synthetic denial.
 use super::{model::NestedValue, wire_model::DerivedV2 as Wire};
 use worth_foundational::facade::{
-    CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
+    CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShapeBody,
 };
 use worth_query_decl::facade::worth_query_value_binding;
 #[derive(Clone, Debug, PartialEq)]
@@ -23,12 +23,9 @@ pub fn ignored_refusals() -> u32 {
     IGNORED.get()
 }
 impl CanonicalValue for DerivedValue {
-    const SHAPE_DEPTH: usize = Wire::SHAPE_DEPTH;
     const WIRE_NULLABLE: bool = Wire::WIRE_NULLABLE;
     const SUPPORTS_ADMISSION: bool = true;
-    fn value_shape() -> ValueShape {
-        Wire::value_shape()
-    }
+    const SHAPE_BODY: ValueShapeBody = { Wire::SHAPE_BODY };
     fn validate_bounds(&self, bounds: ValueDecodeBounds) -> Result<(), ValueCodecDenial> {
         self.0.validate_bounds(bounds)
     }

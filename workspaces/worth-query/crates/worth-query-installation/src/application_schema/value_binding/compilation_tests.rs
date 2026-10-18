@@ -379,3 +379,6 @@ fn imported_native_with_codec<Schema: ApplicationSchema>(
     )
     .unwrap()
 }
+
+#[path = "compilation_tests/recursive.rs"]
+mod recursive;

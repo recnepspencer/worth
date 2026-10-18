@@ -10,9 +10,10 @@ mod shape;
 
 /// Derives `Serialize` and `CanonicalValue` from one supported wire grammar.
 ///
-/// Supports named, unit, and newtype structs, and externally tagged enums with
-/// unit or newtype variants. Only literal `serde(rename = "...")` is accepted;
-/// unsupported Serde behavior is rejected rather than decoded without bounds.
+/// Supports concrete named/unit/newtype values, guarded recursion, Vec/Option/
+/// Box and fixed pairs, external unit/newtype variants and internally tagged
+/// unit/named variants. Literal rename, snake_case enum renaming and strict
+/// unknown fields are supported; other Serde behavior fails at the declaration.
 #[proc_macro_derive(WorthValue, attributes(serde))]
 pub fn derive_worth_value(input: TokenStream) -> TokenStream {
     let result = syn::parse::<syn::DeriveInput>(input)

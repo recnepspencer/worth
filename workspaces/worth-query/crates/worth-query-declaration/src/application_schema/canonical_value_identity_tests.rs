@@ -87,3 +87,37 @@ fn nested_field_enum_and_rename_changes_cannot_retain_the_original_schema_meanin
         assert_ne!(original, changed);
     }
 }
+
+#[derive(WorthValue)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum Recursive {
+    Leaf,
+    Branch { children: Vec<Recursive> },
+}
+#[derive(WorthValue)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum RecursiveRenamed {
+    Leaf,
+    Branch { children: Vec<RecursiveRenamed> },
+}
+#[derive(WorthValue)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum RecursiveChanged {
+    Leaf,
+    Branch {
+        children: Vec<RecursiveChanged>,
+        enabled: bool,
+    },
+}
+#[test]
+fn recursive_binders_are_finite_portable_and_include_nested_meaning() {
+    assert_eq!(
+        identity::<Recursive>(BOUNDS),
+        identity::<RecursiveRenamed>(BOUNDS)
+    );
+    assert_ne!(
+        identity::<Recursive>(BOUNDS),
+        identity::<RecursiveChanged>(BOUNDS)
+    );
+    assert!(ApplicationCanonicalValueContract::of::<Recursive>(BOUNDS).supports_admission());
+}

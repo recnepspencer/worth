@@ -39,8 +39,22 @@ struct SavedValue {
 }
 
 fn main() {
-    assert_eq!(Identifier::SHAPE_DEPTH, u64::SHAPE_DEPTH);
-    assert_eq!(NestedIdentifier::SHAPE_DEPTH, u64::SHAPE_DEPTH);
+    assert_eq!(
+        worth_foundational::facade::ValueShapeDefinition::of::<Identifier>()
+            .inspect()
+            .unwrap(),
+        worth_foundational::facade::ValueShapeDefinition::of::<u64>()
+            .inspect()
+            .unwrap()
+    );
+    assert_eq!(
+        worth_foundational::facade::ValueShapeDefinition::of::<NestedIdentifier>()
+            .inspect()
+            .unwrap(),
+        worth_foundational::facade::ValueShapeDefinition::of::<u64>()
+            .inspect()
+            .unwrap()
+    );
     assert_eq!(NestedIdentifier::value_shape(), u64::value_shape());
     let shallow_bounds = ValueDecodeBounds::new(2048, 64, 8, 1);
     let nested_identifier = NestedIdentifier(Identifier(73));
@@ -49,7 +63,12 @@ fn main() {
         decode_canonical_value::<NestedIdentifier>("73", shallow_bounds).unwrap(),
         nested_identifier,
     );
-    assert_eq!(UnitMarker::SHAPE_DEPTH, 0);
+    assert_eq!(
+        worth_foundational::facade::ValueShapeDefinition::of::<UnitMarker>()
+            .inspect()
+            .unwrap(),
+        worth_foundational::facade::ValueShapeDepth::Finite(0)
+    );
     let one_level = OneLevel { marker: UnitMarker };
     one_level.validate_bounds(shallow_bounds).unwrap();
     assert_eq!(
@@ -79,6 +98,8 @@ fn main() {
         decode_canonical_value::<SavedValue>(&wire, bounds).unwrap(),
         value
     );
-    assert!(SavedValue::SHAPE_DEPTH < 12);
+    assert!(
+        matches!(worth_foundational::facade::ValueShapeDefinition::of::<SavedValue>().inspect().unwrap(), worth_foundational::facade::ValueShapeDepth::Finite(depth) if depth < 12)
+    );
     let _ = SavedValue::value_shape();
 }

@@ -23,6 +23,23 @@ pub(crate) fn emit(value: &Value) -> TokenStream {
         ValueKind::Unit => quote! {
             ::serde::Serializer::serialize_unit_struct(serializer, #wire_name)
         },
+        ValueKind::TaggedEnum { tag, variants } => {
+            let arms = variants.iter().map(|variant| {
+                let member = &variant.ident;
+                let name = &variant.wire_name;
+                let length = variant.fields.len() + 1;
+                let fields = variant.fields.iter().map(|field| &field.ident).collect::<Vec<_>>();
+                let names = variant.fields.iter().map(|field| &field.wire_name);
+                let pattern = if variant.unit { quote!() } else { quote!({ #(#fields),* }) };
+                quote!(Self::#member #pattern => {
+                    let mut state = ::serde::Serializer::serialize_struct(serializer, #wire_name, #length)?;
+                    ::serde::ser::SerializeStruct::serialize_field(&mut state, #tag, #name)?;
+                    #(::serde::ser::SerializeStruct::serialize_field(&mut state, #names, #fields)?;)*
+                    ::serde::ser::SerializeStruct::end(state)
+                })
+            });
+            quote!(match self { #(#arms),* })
+        }
         ValueKind::Enum(variants) => {
             let arms = variants.iter().enumerate().map(|(index, variant)| {
                 let variant_ident = &variant.ident;

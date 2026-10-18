@@ -32,6 +32,30 @@ pub(super) fn append_contract(
 
 fn append_shape(basis: &mut ApplicationSchemaCanonicalBasis, prefix: &str, shape: &ValueShape) {
     match shape {
+        ValueShape::Recursive { binding, body } => {
+            basis.text(format!("{prefix}.kind"), "recursive");
+            basis.usize(format!("{prefix}.binding"), *binding);
+            append_shape(basis, &format!("{prefix}.body"), body);
+        }
+        ValueShape::Reference { binding } => {
+            basis.text(format!("{prefix}.kind"), "reference");
+            basis.usize(format!("{prefix}.binding"), *binding);
+        }
+        ValueShape::TaggedEnum { tag, variants } => {
+            basis.text(format!("{prefix}.kind"), "internal-enum");
+            basis.text(format!("{prefix}.tag"), tag);
+            basis.usize(format!("{prefix}.length"), variants.len());
+            for (index, variant) in variants.iter().enumerate() {
+                let prefix = format!("{prefix}[{index}]");
+                basis.text(format!("{prefix}.name"), variant.name());
+                basis.usize(format!("{prefix}.length"), variant.fields().len());
+                for (index, field) in variant.fields().iter().enumerate() {
+                    let prefix = format!("{prefix}[{index}]");
+                    basis.text(format!("{prefix}.name"), field.name());
+                    append_shape(basis, &prefix, field.shape());
+                }
+            }
+        }
         ValueShape::Primitive(kind) => basis.text(format!("{prefix}.kind"), primitive(*kind)),
         ValueShape::Sequence(child) | ValueShape::Optional(child) => {
             basis.text(

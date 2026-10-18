@@ -1,0 +1,11 @@
+error: WorthValue internally tagged enums require unit or named variants; tuple/newtype variants are unsupported
+ --> tests/value_shape/ui/fail/tagged_payload.rs:6:16
+  |
+6 |     Unsupported(String),
+  |                ^^^^^^^^
+
+error: canonical field name conflicts with the enum tag
+  --> tests/value_shape/ui/fail/tagged_payload.rs:12:5
+   |
+12 |     Unsupported { kind: String },
+   |     ^^^^^^^^^^^

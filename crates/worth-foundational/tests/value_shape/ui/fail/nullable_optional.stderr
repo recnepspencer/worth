@@ -1,7 +1,7 @@
 error[E0080]: evaluation panicked: canonical Option payload can encode null; use a named externally tagged enum to preserve presence
  --> $RUST/core/src/panic.rs
   |
-  = note: evaluation of `worth_foundational::value_shape::containers::<impl worth_foundational::CanonicalValue for std::option::Option<std::option::Option<u64>>>::SHAPE_DEPTH` failed here
+  = note: evaluation of `worth_foundational::value_shape::containers::require_nonnullable_optional_payload::<worth_foundational::OptionalDelegate<worth_foundational::ValueDelegate<u64>>>::{constant#0}` failed here
   |
  ::: src/value_shape/containers.rs
   |
@@ -9,39 +9,29 @@ error[E0080]: evaluation panicked: canonical Option payload can encode null; use
   |       ----------------------------------------------------------------------------------------------------------------------------------- in this macro invocation
 
 note: erroneous constant encountered
- --> tests/value_shape/ui/fail/nullable_optional.rs:3:10
+ --> src/value_shape/containers.rs
   |
-3 | #[derive(WorthValue)]
-  |          ^^^^^^^^^^
+  | /     const {
+  | |         assert!(!Value::WIRE_NULLABLE, "canonical Option payload can encode null; use a named externally tagged enum to preserve ...
+  | |     }
+  | |_____^
+
+note: erroneous constant encountered
+ --> src/value_shape/definition.rs
   |
-  = note: this note originates in the derive macro `WorthValue` (in Nightly builds, run with -Z macro-backtrace for more info)
+  |             body: Delegate::SHAPE_BODY,
+  |                   ^^^^^^^^^^^^^^^^^^^^
+
+note: the above error was encountered while instantiating `fn ValueShapeDefinition::delegate::<OptionalDelegate<OptionalDelegate<ValueDelegate<u64>>>>`
 
 error[E0080]: evaluation panicked: canonical Option payload can encode null; use a named externally tagged enum to preserve presence
  --> $RUST/core/src/panic.rs
   |
-  = note: evaluation of `worth_foundational::value_shape::containers::<impl worth_foundational::CanonicalValue for std::option::Option<UnitMarker>>::SHAPE_DEPTH` failed here
+  = note: evaluation of `worth_foundational::value_shape::containers::require_nonnullable_optional_payload::<worth_foundational::ValueDelegate<UnitMarker>>::{constant#0}` failed here
   |
  ::: src/value_shape/containers.rs
   |
   | ...   assert!(!Value::WIRE_NULLABLE, "canonical Option payload can encode null; use a named externally tagged enum to preserve presence");
   |       ----------------------------------------------------------------------------------------------------------------------------------- in this macro invocation
 
-note: erroneous constant encountered
-  --> tests/value_shape/ui/fail/nullable_optional.rs:11:10
-   |
-11 | #[derive(WorthValue)]
-   |          ^^^^^^^^^^
-   |
-   = note: this note originates in the derive macro `WorthValue` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-note: erroneous constant encountered
-  --> tests/value_shape/ui/fail/nullable_optional.rs:17:13
-   |
-17 |     let _ = NestedOptional::SHAPE_DEPTH;
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-note: erroneous constant encountered
-  --> tests/value_shape/ui/fail/nullable_optional.rs:18:13
-   |
-18 |     let _ = OptionalUnit::SHAPE_DEPTH;
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the above error was encountered while instantiating `fn ValueShapeDefinition::delegate::<OptionalDelegate<ValueDelegate<UnitMarker>>>`

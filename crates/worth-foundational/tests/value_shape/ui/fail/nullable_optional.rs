@@ -14,6 +14,6 @@ struct OptionalUnit {
 }
 
 fn main() {
-    let _ = NestedOptional::SHAPE_DEPTH;
-    let _ = OptionalUnit::SHAPE_DEPTH;
+    let _ = NestedOptional::value_shape();
+    let _ = OptionalUnit::value_shape();
 }

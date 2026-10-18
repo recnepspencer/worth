@@ -1,7 +1,7 @@
 //! Fixed-width scalar decoding and length-admitted owned strings.
 use super::{
     CanonicalValue, ValueCodecDenial as D, ValueDecodeAdmission, ValueDecodeBounds, ValuePrimitive,
-    ValueShape,
+    ValueShapeBody,
 };
 use serde::{
     de::{Error, Visitor},
@@ -12,9 +12,8 @@ macro_rules! fixed_scalar {
     ($($ty:ty => $shape:ident),* $(,)?) => {$ (
         impl CanonicalValue for $ty {
             const SUPPORTS_ADMISSION: bool = true;
-            const SHAPE_DEPTH: usize = 0;
-            const WIRE_NULLABLE: bool = matches!(ValuePrimitive::$shape, ValuePrimitive::Unit);
-            fn value_shape() -> ValueShape { ValueShape::Primitive(ValuePrimitive::$shape) }
+                    const WIRE_NULLABLE: bool = matches!(ValuePrimitive::$shape, ValuePrimitive::Unit);
+            const SHAPE_BODY: ValueShapeBody = { ValueShapeBody::Primitive(ValuePrimitive::$shape) };
             fn validate_bounds(&self, _: ValueDecodeBounds) -> Result<(), D> { Ok(()) }
             fn deserialize_bounded<'de, Decoder: serde::Deserializer<'de>>(decoder: Decoder, _: ValueDecodeBounds) -> Result<Self, Decoder::Error> {
                 Self::deserialize(decoder)
@@ -30,11 +29,8 @@ fixed_scalar!(bool => Bool, i8 => I8, i16 => I16, i32 => I32, i64 => I64,
 
 impl CanonicalValue for String {
     const SUPPORTS_ADMISSION: bool = true;
-    const SHAPE_DEPTH: usize = 0;
     const WIRE_NULLABLE: bool = false;
-    fn value_shape() -> ValueShape {
-        ValueShape::Primitive(ValuePrimitive::String)
-    }
+    const SHAPE_BODY: ValueShapeBody = { ValueShapeBody::Primitive(ValuePrimitive::String) };
     fn validate_bounds(&self, bounds: ValueDecodeBounds) -> Result<(), D> {
         if self.len() > bounds.maximum_string_bytes() {
             Err(D::StringBytes)

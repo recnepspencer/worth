@@ -262,25 +262,51 @@ and the [Host facade consumer](../workspaces/worth-query/crates/worth-query-host
 
 A pure value owner can derive `worth_foundational::facade::WorthValue` to emit
 Serde serialization, portable wire shape, and a bounded deserialization seed
-from one definition. Do not also derive `Serialize` or `Deserialize`. The first
-supported grammar is named, unit, and newtype structs; externally tagged unit
-and newtype enum variants; 8–64 bit integers, booleans, strings, `Vec`, and
-`Option`. Literal `serde(rename = "...")` is supported. Unsupported Serde
-attributes, recursive types and unsupported containers fail compilation; an
-opaque domain owner must supply its own bounded `CanonicalValue` contract and
-admitted construction rather than an unbounded deserializer.
+from one definition. Do not also derive `Serialize` or `Deserialize`. Supported
+grammar includes concrete named/unit/newtype structs, external unit/newtype
+variants, internally tagged unit/named variants, 8–64 bit integers, booleans,
+strings, `Vec`, `Option`, `Box` and exact two-element tuple payloads. Literal
+`serde(rename = "...")`, enum `rename_all = "snake_case"`, and container
+`deny_unknown_fields` are supported. Other Serde behavior and containers fail
+compilation. An opaque domain owner supplies its own bounded `CanonicalValue`
+seed and admitted construction, without a generic deserializer fallback.
+
+Recursive types describe a finite grammar with lexical binders/references;
+they do not claim finite type nesting. `ValueShapeDefinition::inspect()` reports
+`ValueShapeDepth::Recursive` or an actual finite extent. Each recursion cycle
+must cross a structural level. Structs, enum envelopes, sequences and pairs
+descend the per-value depth bound; transparent newtypes and boxes do not.
+Static grammar functions allocate no descriptor during decoding. Their closure
+inspection and all nested seeds use the same admission callback. The installed
+catalogue refuses an unadmitted child even when another variant is selected.
+
+An internally tagged canonical object writes its tag first, followed by fields
+in declaration order. The bounded reader requires that tag before selecting a
+payload; it never buffers an arbitrary object. Unknown, duplicate, missing or
+conflicting fields/tags and incorrect pair arity refuse. Noncanonical ordering
+does not become an alternative encoding. These native rules do not change an
+external pack owner's declared input format.
 Nullable optional payloads, such as `Option<Option<T>>` or `Option<()>`, are
 refused because Serde's `null` would erase the distinction between absence and
 a present null payload. Use an externally tagged enum for that meaning.
 
 The entry uses `worth_query_value_binding!` with `scalar: String` and
 `canonical: ValueDecodeBounds::new(wire_bytes, string_bytes, sequence_length,
-depth)`. These finite bounds are constant declaration meaning. Encoding checks
+depth)`. The sequence bound limits variable `Vec` lengths; fixed pairs require
+exactly two slots. These finite bounds are constant declaration meaning. Encoding checks
 structure before emitting bytes; decoding uses generated seeds and requires the
 exact canonical JSON form. There are no omitted fields or permissive defaults.
 The installed field's `canonical_contract()` exposes its shape, bounds and wire
 protocol. Nested field, enum, rename and bound changes participate in portable
 schema identity; semantic aspect revisions remain explicit.
+
+Opaque implementations describe their wire using the `SHAPE_BODY` constant and
+sealed typed `ValueShapeEdge` links. A transparent delegate uses
+`ValueShapeEdge::value::<Wire>()`; it does not copy Rust identities into the
+portable shape. `SUPPORTS_ADMISSION` declares that implementation's own seed;
+complete closure support is checked separately. `SHAPE_DEPTH` is removed.
+Constructor normalization and retained memory remain owner contracts. A pair
+seed introduces no blanket tuple residency or shared-pointer accounting rule.
 
 `installed_schema.value_meaning()` derives a descriptive aspect/field roster and
 checks it against the installed executable bindings and native contracts. Field
