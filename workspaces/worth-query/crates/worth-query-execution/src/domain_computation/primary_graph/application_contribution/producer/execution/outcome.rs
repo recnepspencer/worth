@@ -321,7 +321,7 @@ fn refused_budget(
         }
         _ => return None,
     };
-    Some((kind, *stop))
+    Some((kind, stop))
 }
 
 #[cfg(test)]
