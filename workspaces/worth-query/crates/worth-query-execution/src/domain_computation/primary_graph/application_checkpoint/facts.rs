@@ -22,8 +22,12 @@ pub(in crate::domain_computation::primary_graph) use encoding::encode_funded;
 use encoding::FactBytes;
 mod payload;
 mod record;
+mod retention;
 pub(in crate::domain_computation::primary_graph) use payload::{
     CodecPayloadReservation, FactPayload,
+};
+pub(in crate::domain_computation::primary_graph) use retention::{
+    FactRetentionAllocation, FactRetentionStorage,
 };
 mod stream;
 pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;

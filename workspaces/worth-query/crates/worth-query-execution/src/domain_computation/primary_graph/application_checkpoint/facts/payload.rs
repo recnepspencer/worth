@@ -1,4 +1,6 @@
-//! Decoded native facts retain their deep parse admission through every clone.
+//! One original fact backing carries codec admission and shared custody discovery.
+//! Clones preserve the allocation; custody never certifies source currentness.
+use super::retention::FactRetentionSlot;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use std::ops::Deref;
@@ -34,17 +36,45 @@ impl CodecPayloadReservation {
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct FactPayload {
     facts: Arc<[Fact]>,
+    retention: FactRetentionStorage,
     _funding: Option<Arc<CodecPayloadReservation>>,
 }
+
 impl FactPayload {
     pub(super) fn decoded(facts: Vec<Fact>, funding: Arc<CodecPayloadReservation>) -> Self {
         Self {
             facts: facts.into(),
             _funding: Some(funding),
+            retention: FactRetentionStorage::default(),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn from_prepared(
+        facts: Vec<Fact>,
+        retention: FactRetentionStorage,
+    ) -> Self {
+        Self {
+            facts: facts.into(),
+            retention,
+            _funding: None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn same_backing(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.facts, &other.facts)
+    }
+    pub(in crate::domain_computation::primary_graph) fn lock_retention(
+        &self,
+    ) -> std::sync::MutexGuard<'_, FactRetentionSlot> {
+        self.retention.lock()
+    }
+    pub(in crate::domain_computation::primary_graph) fn retention_storage(
+        &self,
+    ) -> &FactRetentionStorage {
+        &self.retention
+    }
+    /// The shared allocation and its weak lookup are funded while external
+    /// custody exists; original payload metadata has its native/codec owner.
+    pub(in crate::domain_computation::primary_graph) fn retention_storage_bytes() -> Option<u64> {
+        FactRetentionStorage::bytes()
     }
 }
 // Native execution already owns its original fact admission; this entry does
@@ -54,7 +84,13 @@ impl From<Arc<[Fact]>> for FactPayload {
         Self {
             facts,
             _funding: None,
+            retention: FactRetentionStorage::default(),
         }
+    }
+}
+impl From<Vec<Fact>> for FactPayload {
+    fn from(facts: Vec<Fact>) -> Self {
+        Self::from(Arc::<[Fact]>::from(facts))
     }
 }
 impl Deref for FactPayload {
@@ -87,4 +123,7 @@ pub(super) fn parse_quote(length: usize, count: usize) -> Option<usize> {
         .checked_add((length / 9).checked_mul(2 * std::mem::size_of::<FieldKey>())?)?
         .checked_add((length / 16).checked_mul(std::mem::size_of::<EntityId>())?)?
         .checked_add(count.checked_mul(2 * std::mem::size_of::<Fact>())?)
+        .and_then(|bytes| {
+            bytes.checked_add(usize::try_from(FactPayload::retention_storage_bytes()?).ok()?)
+        })
 }

@@ -20,17 +20,13 @@ fn consumed_custody_is_bounded_per_edge_and_returns_on_every_release() {
         let (snapshot_handle, basis) = snapshot(runtime);
         let baseline = owner.resources.retained_capacity_bytes();
         let metadata = 128;
-        // Empty fact backing still owns its Arc header and selected native root.
-        let fact_alignment =
-            align_of::<WorthQueryApplicationObservedFact>().max(align_of::<usize>());
-        let facts = (2 * size_of::<usize>()).div_ceil(fact_alignment) * fact_alignment;
-        let expected = facts as u64
-            + allocated::<PositionedRelationalSnapshot>()
+        // A requested native read owns its basis and metadata, not dummy facts.
+        let expected = allocated::<PositionedRelationalSnapshot>()
             + basis.branch_id().0.capacity() as u64
             + metadata
             + 2 * allocated::<RetainedInvalidationCapacity>();
         let row = owner
-            .retain_consumed_output(&[], &basis, metadata, &mut owner.edit_admission())
+            .retain_requested_output(&basis, metadata, &mut owner.edit_admission())
             .unwrap();
         assert_eq!(
             owner.resources.retained_capacity_bytes(),
@@ -49,7 +45,7 @@ fn consumed_custody_is_bounded_per_edge_and_returns_on_every_release() {
             "cancellation releases its owner without stealing the settled edge"
         );
         let successor = owner
-            .retain_consumed_output(&[], &basis, metadata, &mut owner.edit_admission())
+            .retain_requested_output(&basis, metadata, &mut owner.edit_admission())
             .unwrap();
         assert_eq!(
             owner.resources.retained_capacity_bytes(),
@@ -84,7 +80,7 @@ fn consumed_custody_is_bounded_per_edge_and_returns_on_every_release() {
             .unwrap();
         let before = owner.resources.retained_capacity_bytes();
         assert!(owner
-            .retain_consumed_output(&[], &basis, metadata, &mut owner.edit_admission())
+            .retain_requested_output(&basis, metadata, &mut owner.edit_admission())
             .is_err());
         assert_eq!(
             owner.resources.retained_capacity_bytes(),
@@ -98,4 +94,80 @@ fn consumed_custody_is_bounded_per_edge_and_returns_on_every_release() {
             .release_snapshot(&snapshot_handle)
             .unwrap();
     });
+}
+
+#[test]
+fn shared_fact_funding_is_ledger_affine_and_refunds_after_the_last_holder() {
+    use crate::domain_computation::{
+        execution_runtime::{
+            WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
+        },
+        primary_graph::application_checkpoint::facts::FactPayload,
+    };
+    let installation = WorthQueryInvalidationResourceInstallation::new(1 << 20, 1 << 20, 4);
+    let local = WorthQueryInvalidationResources::install(installation).unwrap();
+    let foreign = WorthQueryInvalidationResources::install(installation).unwrap();
+    let mut admission = super::super::InvalidationEditAdmission::new(local.preflight_budget());
+    // No semantic claim is made from these facts; this court isolates physical custody.
+    let facts = FactPayload::from(Arc::<[WorthQueryApplicationObservedFact]>::from([]));
+    let first =
+        super::super::fact_retention::reserve_payload(&facts, &local, &mut admission).unwrap();
+    let held = local.retained_capacity_bytes();
+    let second = super::super::fact_retention::reserve_payload(
+        &facts.clone(),
+        &local.clone(),
+        &mut admission,
+    )
+    .unwrap();
+    assert!(
+        Arc::ptr_eq(&first, &second),
+        "cloned resources share the original ledger's actual ticket"
+    );
+    assert_eq!(local.retained_capacity_bytes(), held);
+    let independent =
+        super::super::fact_retention::reserve_payload(&facts, &foreign, &mut admission).unwrap();
+    assert!(
+        !Arc::ptr_eq(&first, &independent),
+        "a different installation receives no foreign credit"
+    );
+    assert!(foreign.retained_capacity_bytes() > 0);
+    assert_eq!(local.retained_capacity_bytes(), held);
+    drop(independent);
+    assert_eq!(foreign.retained_capacity_bytes(), 0);
+    // Failure on another ledger cannot release the original active owner.
+    let full = foreign
+        .reserve_retained_capacity(installation.maximum_retained_bytes)
+        .unwrap();
+    assert!(
+        super::super::fact_retention::reserve_payload(&facts, &foreign, &mut admission).is_err()
+    );
+    assert_eq!(local.retained_capacity_bytes(), held);
+    assert_eq!(
+        foreign.retained_capacity_bytes(),
+        installation.maximum_retained_bytes
+    );
+    drop(full);
+    drop(first);
+    assert_eq!(local.retained_capacity_bytes(), held);
+    drop(second);
+    assert_eq!(
+        local.retained_capacity_bytes(),
+        0,
+        "final external release refunds full backing AND cache even while source evidence remains"
+    );
+    assert!(facts.lock_retention().allocation.upgrade().is_none());
+
+    let replacement =
+        super::super::fact_retention::reserve_payload(&facts, &foreign, &mut admission).unwrap();
+    assert_eq!(local.retained_capacity_bytes(), 0);
+    assert!(foreign.retained_capacity_bytes() > 0);
+    drop(replacement);
+    assert_eq!(
+        foreign.retained_capacity_bytes(),
+        0,
+        "a newly admitted ledger releases its own cache with its last holder"
+    );
+    assert!(facts.lock_retention().allocation.upgrade().is_none());
+    drop(facts);
+    assert_eq!(foreign.retained_capacity_bytes(), 0);
 }

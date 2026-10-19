@@ -72,7 +72,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                     &world,
                     read.to_vec()
                 ),
-                RebasedSourceFacts::Exact(Arc::clone(&read)),
+                RebasedSourceFacts::Exact(read.clone()),
                 "a source revision nothing moved stays exact"
             )
         })
@@ -103,7 +103,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                     read.to_vec()
                 ),
                 RebasedSourceFacts::SupersededByOwnEffect {
-                    facts: Arc::clone(&read),
+                    facts: read.clone(),
                     ordinals: Arc::from([0]),
                 },
                 "the fact keeps the revision its source read and is reported stale"
@@ -201,7 +201,7 @@ pub(super) fn rebase_at_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     facts: Vec<WorthQueryApplicationObservedFact>,
-) -> Arc<[WorthQueryApplicationObservedFact]> {
+) -> FactPayload {
     match rebase_result_at_current(phase_custody, execution, world, facts) {
         RebasedSourceFacts::Exact(facts) => facts,
         other => panic!("fresh native facts must be exact: {other:?}"),

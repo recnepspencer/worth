@@ -269,7 +269,7 @@ fn normal_rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     facts: Vec<Fact>,
-) -> std::sync::Arc<[Fact]> {
+) -> crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
@@ -291,10 +291,12 @@ fn normal_rebase(
 }
 
 /// Facts that need full verification are not exact facts of the commit.
-fn exact(rebased: super::super::RebasedSourceFacts) -> std::sync::Arc<[Fact]> {
+fn exact(
+    rebased: super::super::RebasedSourceFacts,
+) -> crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
     rebased
         .retain_exact()
-        .unwrap_or_else(|| std::sync::Arc::from([]))
+        .unwrap_or_else(|| std::sync::Arc::<[Fact]>::from([]).into())
 }
 
 fn admission(

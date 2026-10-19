@@ -142,7 +142,7 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
                     64
                 ),
                 RebasedSourceFacts::SupersededByOwnEffect {
-                    facts: Arc::from([gone_read]),
+                    facts: vec![gone_read].into(),
                     ordinals: Arc::from([0]),
                 },
                 "a field read whose entity is gone answers moved once its liveness check is paid"
