@@ -13,7 +13,9 @@ use worth_foundational::facade::{
 };
 
 mod denial;
-use denial::{DuplicateSummary, OperationSummary, PresentSummary, UnsupportedPayload};
+use denial::{
+    DuplicateSummary, EmptyBindingSummary, OperationSummary, PresentSummary, UnsupportedPayload,
+};
 
 #[derive(Debug)]
 pub(super) enum OutputPayloadCoverageFailure {
@@ -111,10 +113,11 @@ fn validate_created_payload(
         if let Some(plan) = entity_plan {
             // None is storage's canonical empty state, never schema evidence.
             // Classification comes from the exact admitted branch-root plan.
-            if !plan.executable_bindings.is_empty() {
+            if let Some(binding) = plan.executable_bindings.first() {
                 return Err(OutputPayloadCoverageFailure::Unsupported(
                     UnsupportedPayload::EmptyWithBindings {
                         count: plan.executable_bindings.len(),
+                        first: EmptyBindingSummary::capture(0, binding, context)?,
                     },
                 ));
             }

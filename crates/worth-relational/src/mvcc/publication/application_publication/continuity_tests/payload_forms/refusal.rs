@@ -2,6 +2,15 @@
 use super::*;
 #[test]
 fn empty_optional_struct_refusal_carries_numeric_member_and_redacts_proposal_strings() {
+    empty_struct_refusal(4, 4001, 0, 1);
+}
+
+#[test]
+fn empty_required_struct_refusal_carries_numeric_member_and_redacts_proposal_strings() {
+    empty_struct_refusal(6, 6001, 1, 0);
+}
+
+fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usize) {
     let request = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = schema::runtime();
@@ -94,7 +103,7 @@ fn empty_optional_struct_refusal_carries_numeric_member_and_redacts_proposal_str
     let before_stream = runtime.history().latest_patch_stream_position();
     let targets = [
         (6, "private-client-key-sentinel"),
-        (4, "empty-client-key-sentinel"),
+        (kind, "empty-client-key-sentinel"),
     ]
     .map(|(kind, key)| CreatedEntityRef {
         partition_id: PartitionId::main(),
@@ -131,8 +140,14 @@ fn empty_optional_struct_refusal_carries_numeric_member_and_redacts_proposal_str
     let detail = error.detail();
     assert!(detail.contains("reason=empty-payload-with-executable-bindings"));
     assert!(detail.contains("member_ordinal=1"));
-    assert!(detail.contains("kind=4 schema_version=1"));
+    assert!(detail.contains(&format!("kind={kind} schema_version=1")));
     assert!(detail.contains("executable_bindings=1"));
+    assert!(detail.contains(&format!(
+        "binding_ordinal=0 binding_identity={identity} binding_revision=1 binding=entity-field shape=struct absence=required"
+    )));
+    assert!(detail.contains(&format!(
+        "declared_fields=1 required_fields={required} optional_fields={optional} defaulted_fields=0"
+    )));
     let [RecordRef::Entity(id)] = error.context().affected_records.as_slice() else {
         panic!("one actual failed member")
     };

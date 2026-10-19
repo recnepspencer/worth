@@ -1,4 +1,7 @@
 //! Failure-site summaries contain only fixed labels and native numeric metadata.
+mod empty_binding;
+pub(super) use empty_binding::EmptyBindingSummary;
+
 use super::{Operation, Value};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::{EntityId, KindId, RelationId};
@@ -13,6 +16,7 @@ pub(in super::super) enum UnsupportedPayload {
     EmptyWithOperations(OperationSummary),
     EmptyWithBindings {
         count: usize,
+        first: EmptyBindingSummary,
     },
     EntityWithoutPlan,
     DuplicateOperations(Box<DuplicateSummary>),
@@ -75,6 +79,20 @@ enum BindingForm {
     Unknown,
 }
 impl BindingForm {
+    fn capture(binding: &AspectBinding) -> Self {
+        match binding {
+            AspectBinding::EntityField { .. } => Self::EntityField,
+            AspectBinding::RelationField { .. } => Self::RelationField,
+            AspectBinding::RelationSourceEndpoint => Self::RelationSource,
+            AspectBinding::RelationTargetEndpoint => Self::RelationTarget,
+            AspectBinding::StructuralRegion => Self::Region,
+            AspectBinding::StructuralPartition => Self::Partition,
+            AspectBinding::StructuralFacet => Self::Facet,
+            AspectBinding::LifecycleTransition => Self::Lifecycle,
+            _ => Self::Unknown,
+        }
+    }
+
     fn label(self) -> &'static str {
         match self {
             Self::EntityField => "entity-field",
@@ -183,23 +201,12 @@ impl OperationSummary {
                 field_clears.len(),
             ),
         };
-        let binding = match binding {
-            AspectBinding::EntityField { .. } => BindingForm::EntityField,
-            AspectBinding::RelationField { .. } => BindingForm::RelationField,
-            AspectBinding::RelationSourceEndpoint => BindingForm::RelationSource,
-            AspectBinding::RelationTargetEndpoint => BindingForm::RelationTarget,
-            AspectBinding::StructuralRegion => BindingForm::Region,
-            AspectBinding::StructuralPartition => BindingForm::Partition,
-            AspectBinding::StructuralFacet => BindingForm::Facet,
-            AspectBinding::LifecycleTransition => BindingForm::Lifecycle,
-            _ => BindingForm::Unknown,
-        };
         Self {
             ordinal,
             identity: identity.0,
             revision: revision.0,
             form,
-            binding,
+            binding: BindingForm::capture(binding),
             sets,
             clears,
         }
@@ -218,8 +225,11 @@ impl UnsupportedPayload {
                 "reason=empty-payload-with-operations {}",
                 operation.detail()
             ),
-            Self::EmptyWithBindings { count } => {
-                format!("reason=empty-payload-with-executable-bindings bindings={count}")
+            Self::EmptyWithBindings { count, first } => {
+                format!(
+                    "reason=empty-payload-with-executable-bindings bindings={count} {}",
+                    first.detail()
+                )
             }
             Self::EntityWithoutPlan => "reason=entity-without-admitted-plan".into(),
             Self::DuplicateOperations(summary) => format!(
