@@ -34,7 +34,7 @@ pub(super) fn validate_requirements(
                 ));
             }
             ApplicationWorkflowNodeKind::EvidenceJoin(_)
-                if incoming(ApplicationWorkflowDataFlow::AssessmentEvidence) < 2 =>
+                if incoming(ApplicationWorkflowDataFlow::AssessmentEvidence) == 0 =>
             {
                 return Err(denial(
                     ApplicationWorkflowValidationDenialKind::IncompleteEvidenceJoin,

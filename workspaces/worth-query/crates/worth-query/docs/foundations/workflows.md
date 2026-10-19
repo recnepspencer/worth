@@ -373,8 +373,8 @@ Connection methods return `&mut Self` and chain:
 `validate()` enforces these minimums (`ApplicationWorkflowValidationDenialKind`):
 
 - Each assessment has exactly one subject (`MissingAssessmentSubject`); each condition has exactly one subject (`MissingConditionSubject`).
-- Each evidence join receives at least two `assessment_evidence` inputs (`IncompleteEvidenceJoin`).
-- Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). So every approval needs an evidence join over at least two assessments.
+- Each evidence join receives one or more distinct `assessment_evidence` inputs (`IncompleteEvidenceJoin` for zero). A singleton is a real nonempty evidence set, not an implied two-check quorum. Duplicated connections remain invalid.
+- Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). Every approval therefore needs a nonempty assessed evidence set, not dummy duplicate checks.
 - A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and explicitly declares `not_applicable()` (`UnexpectedWorkflowAuthority`).
 - After the authority check, each guarded operation has exactly one `operation_input` source (`MissingOperationInput` for zero or multiple sources). Publication and imported drafts use this validation. Native reconstruction refuses unsupported stored definitions before executable readmission without rewriting their original bytes.
 
@@ -775,6 +775,16 @@ the original decision without its historical authentication event.
 Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalStale`,
 `WorkflowApprovalGrantUnavailable`, `WorkflowApprovalExpired`,
 `WorkflowApprovalDelegationChanged`, and `WorkflowApprovalAuthorityDenied`.
+
+Evidence cardinality does not establish reviewer quorum or independence. One
+authored assessment may feed the existing evidence join; `AllRequiredPassing`
+requires that applicable check to be current, completed and passing, while
+`AllRequiredCompleted` requires completion at the join. Approval reconstruction
+still requires every applicable input to be current and passing under either
+policy. Zero authored inputs and zero currently applicable requirements refuse;
+neither produces vacuous approval authority. Do not manufacture two copies of
+one check to satisfy a shape. Author separate checks only when they represent
+separate domain requirements; author reviewer policy separately.
 
 ## Operations
 

@@ -16,6 +16,7 @@ mod guarded_binding;
 use guarded_binding::{ApplyBinding, ProposalInput};
 mod condition;
 mod content_identity;
+mod evidence;
 mod global_actions;
 mod inbound;
 mod operation_input;
@@ -26,7 +27,6 @@ mod sequence;
 mod shape;
 mod subject_selector;
 mod validation;
-
 struct TestSchema;
 struct ReviewedChange;
 struct ProposalInputBinding;
