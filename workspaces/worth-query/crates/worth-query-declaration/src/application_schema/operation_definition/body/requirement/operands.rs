@@ -208,23 +208,8 @@ fn scalar_type(
     scalar_family: ScalarAspectType,
     presence: ApplicationFieldPresence,
 ) -> Result<ExpressionType, ApplicationOperationBodyRequirementDenial> {
-    use ScalarAspectType as Scalar;
-    let ty = match scalar_family {
-        Scalar::Bool => ExpressionType::Bool,
-        Scalar::Int8 => ExpressionType::Integer(IntegerType::Int8),
-        Scalar::Int16 => ExpressionType::Integer(IntegerType::Int16),
-        Scalar::Int32 => ExpressionType::Integer(IntegerType::Int32),
-        Scalar::Int64 => ExpressionType::Integer(IntegerType::Int64),
-        Scalar::UInt8 => ExpressionType::Integer(IntegerType::UInt8),
-        Scalar::UInt16 => ExpressionType::Integer(IntegerType::UInt16),
-        Scalar::UInt32 => ExpressionType::Integer(IntegerType::UInt32),
-        Scalar::UInt64 => ExpressionType::Integer(IntegerType::UInt64),
-        Scalar::Float32 => ExpressionType::Float32,
-        Scalar::Float64 => ExpressionType::Float64,
-        Scalar::Decimal => ExpressionType::Decimal,
-        Scalar::String => ExpressionType::String,
-        _ => return Err(ApplicationOperationBodyRequirementDenial::UnsupportedScalar),
-    };
+    let ty = ExpressionType::from_scalar_family(scalar_family)
+        .map_err(|_| ApplicationOperationBodyRequirementDenial::UnsupportedScalar)?;
     Ok(if presence == ApplicationFieldPresence::Optional {
         ExpressionType::option(ty)
     } else {

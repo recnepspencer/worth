@@ -7,6 +7,7 @@
 
 use std::cmp::Ordering;
 use std::sync::Arc;
+mod retained_size;
 
 use crate::expressions::denial::{ExpressionDenial, ExpressionDenialDetail, ExpressionResult};
 use crate::values::{CanonicalDecimal, CanonicalF32, CanonicalF64};

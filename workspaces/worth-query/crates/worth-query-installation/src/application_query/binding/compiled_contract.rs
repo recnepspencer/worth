@@ -27,6 +27,8 @@ use crate::{
 };
 
 pub(crate) struct WorthQueryCompiledApplicationQuery {
+    pub(super) expression_context_schema:
+        Option<worth_foundational::expression_api::ExpressionSchema>,
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,
     pub(super) canonical: WorthQueryApplicationCanonicalArtifact,
     pub(super) canonical_work_policy: WorthQueryApplicationQueryCanonicalWorkPolicy,
@@ -44,6 +46,11 @@ pub(crate) struct WorthQueryCompiledApplicationQuery {
 }
 
 impl WorthQueryCompiledApplicationQuery {
+    pub(in crate::application_query) fn expression_context_schema(
+        &self,
+    ) -> Option<&worth_foundational::expression_api::ExpressionSchema> {
+        self.expression_context_schema.as_ref()
+    }
     pub(crate) fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
         &self.binding_identity
     }

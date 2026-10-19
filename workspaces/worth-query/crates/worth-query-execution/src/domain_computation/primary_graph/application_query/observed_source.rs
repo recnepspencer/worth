@@ -14,6 +14,7 @@ use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 mod admitted_clone;
 mod admitted_epoch;
 mod denial;
+mod expression_context;
 mod fact_conversion;
 mod footprint_accounting;
 mod prepared_expectation;
@@ -25,6 +26,7 @@ mod scope_selector;
 pub(in crate::domain_computation::primary_graph) use admitted_clone::WorthQueryObservedSourceCloneStop;
 pub(in crate::domain_computation::primary_graph) use admitted_epoch::WorthQueryObservedEpochStop;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
+pub(in crate::domain_computation::primary_graph::application_query) use expression_context::RetainedExpressionContext;
 pub use prepared_expectation::WorthQueryPendingSourceExpectation;
 pub(in crate::domain_computation::primary_graph) use prepared_expectation::{
     BoundStableObservedSourceFacts, PreparedObservedSourceExpectation,
@@ -142,6 +144,7 @@ pub(in crate::domain_computation) struct WorthQueryObservedSourceFootprint {
 /// Opaque proof of the native source projected into one public query row.
 /// It is descriptive input to a later governed mutation, not read authority.
 pub struct WorthQueryObservedSource<Query> {
+    pub(super) expression_context: Option<std::sync::Arc<RetainedExpressionContext>>,
     pub(in crate::domain_computation) runtime_authority: u64,
     pub(in crate::domain_computation) schema_binding: ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation) query_identity: WorthQueryInstalledApplicationQueryIdentity,
@@ -173,6 +176,20 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
+    /// The immutable native row and its exact expression schema, if requested
+    /// during the read. Operand `source` is a record in declared projection
+    /// order. This is descriptive data, never read or mutation permission.
+    pub fn expression_context(
+        &self,
+    ) -> Option<(
+        &worth_foundational::expression_api::ExpressionSchema,
+        &worth_foundational::expression_api::ExpressionValue,
+    )> {
+        self.expression_context
+            .as_ref()
+            .map(|context| (context.schema(), context.value()))
+    }
+
     #[doc(hidden)]
     pub fn root_entity_for_test(&self) -> EntityId {
         self.model_root

@@ -57,6 +57,20 @@ where
             plan.principal,
             plan.controls.request_scope(),
         );
+    let expression_context = if plan.retain_expression_context {
+        Some(std::sync::Arc::new(
+            super::super::observed_source::RetainedExpressionContext::retain(
+                plan.query.read_graph(),
+                plan.query.expression_context_schema(),
+                &kernel.raw,
+                &kernel.result_buffer,
+                plan.controls.request_scope(),
+            )
+            .map_err(|kind| denial(kind, plan.query.name(), plan.query.name()))?,
+        ))
+    } else {
+        None
+    };
     let mut source_footprints = std::mem::take(&mut kernel.raw.source_footprints);
     let result_set_selection = std::sync::Arc::clone(
         kernel
@@ -253,6 +267,7 @@ where
                 )
             })?;
         observed_sources.push(super::super::WorthQueryObservedSource {
+            expression_context: expression_context.clone(),
             runtime_authority: plan.runtime_authority.as_u64(),
             schema_binding: plan.query.binding_identity().clone(),
             query_identity: plan.query.identity().clone(),
@@ -293,6 +308,7 @@ where
         })?;
     let result_set_observation =
         super::super::WorthQueryObservedResultSet::new(super::super::WorthQueryObservedSource {
+            expression_context: None,
             runtime_authority: plan.runtime_authority.as_u64(),
             schema_binding: plan.query.binding_identity().clone(),
             query_identity: plan.query.identity().clone(),

@@ -107,6 +107,14 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     pub fn read_graph(&self) -> &WorthQueryInstalledGraphReadContract {
         self.compiled.read_graph()
     }
+    /// Descriptive vocabulary derived once from the exact installed projection.
+    /// Unsupported scalar/unit/record meaning or non-exactly-one roots return
+    /// `None`; this does not affect ordinary query admission or grant access.
+    pub fn expression_context_schema(
+        &self,
+    ) -> Option<&worth_foundational::expression_api::ExpressionSchema> {
+        self.compiled.expression_context_schema()
+    }
 
     pub fn output_dependencies(&self) -> WorthQueryInstalledOutputDependencyContract<'_> {
         WorthQueryInstalledOutputDependencyContract::new(

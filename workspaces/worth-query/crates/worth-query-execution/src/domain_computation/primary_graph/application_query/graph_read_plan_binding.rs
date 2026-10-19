@@ -35,6 +35,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     Scope,
 > {
     pub(super) planned_batch_item: Option<super::batch::PlannedBatchItem>,
+    pub(super) retain_expression_context: bool,
     pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     pub(super) graph_authority_identity: String,
     pub(super) provider_identity: String,
@@ -80,6 +81,14 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
         Scope,
     >
 {
+    /// Retains the native, fully disclosed exactly-one result as an immutable
+    /// expression context beside its observed source. This grants no authority
+    /// and does not replace query admission or mutation source validation.
+    pub fn retain_expression_context(mut self) -> Self {
+        self.retain_expression_context = true;
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph) fn carry_planned_batch_item(
         &mut self,
         item: Option<super::batch::PlannedBatchItem>,
