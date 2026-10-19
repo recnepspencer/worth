@@ -9,7 +9,7 @@ impl WorthQuerySealedOperationContractCompilation {
         WorthQueryInstalledApplicationOperationAuthorization,
         Vec<WorthQueryInstalledAbilityRequirement>,
         usize,
-        usize,
+        Option<usize>,
         usize,
         Vec<WorthQueryInstalledMutationPrecondition>,
         WorthQueryInstalledApplicationOperationExecutionPosture,

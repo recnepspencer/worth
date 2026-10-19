@@ -68,7 +68,7 @@ fn refused_maintenance_cleanup_probe() {
         .register(&execution, basis, graph.clone())
         .unwrap_or_else(|_| panic!("real exact basis must register"));
     assert_eq!(observer.observe().active(), 1);
-    let stopped = execution.run(ExecutionWorkCeiling::new(0), |_| {
+    let stopped = execution.run(ExecutionWorkCeiling::new(Some(0)), |_| {
         graph.with_runtime_mut(&execution, |runtime| {
             let (_, basis) = runtime
                 .observe_branch(&runtime.main_branch_identity())

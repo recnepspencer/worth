@@ -26,7 +26,7 @@ impl CustomInvariantRule for Probe {
             },
             display_name: Arc::from("Provider stop probe"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: NonZeroU64::new(4096).unwrap(),
+                maximum_work_units: Some(NonZeroU64::new(4096).unwrap()),
                 access: CustomInvariantAccessContract {
                     read_entity_kinds: vec![KindId(1)],
                     read_relation_kinds: Vec::new(),
@@ -105,7 +105,11 @@ fn commit_probe(probe: Probe) -> Outcome {
         lease_request.policy = ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 32 * 1024 * 1024, 1_000_000),
+            ExecutionBudget::new(
+                NonZeroUsize::new(2).unwrap(),
+                32 * 1024 * 1024,
+                Some(1_000_000),
+            ),
         );
     }
     let lease = authority().request_lease(lease_request).unwrap();

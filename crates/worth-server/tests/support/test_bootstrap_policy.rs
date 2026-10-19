@@ -9,7 +9,7 @@ pub(crate) fn with_bootstrap<R>(
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
                 64 * 1024 * 1024,
-                u64::MAX,
+                None,
             ),
         ),
         |phase| body(&phase.execution_request()),

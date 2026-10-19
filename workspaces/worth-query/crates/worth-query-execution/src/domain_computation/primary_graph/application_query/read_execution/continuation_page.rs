@@ -55,7 +55,9 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
         &mut result_buffer,
         false,
         None,
-        plan.controls.maximum_work().get(),
+        plan.controls
+            .maximum_work()
+            .map(std::num::NonZeroUsize::get),
         ReadInterruption::Query(plan.controls.request_scope()),
     )?;
     validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
@@ -72,8 +74,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
         selection.root_path_source.as_ref(),
         plan.controls
             .maximum_work()
-            .get()
-            .saturating_sub(selection.work_units),
+            .map(|maximum| maximum.get().saturating_sub(selection.work_units)),
         ResultTreeCollectionSelection::Ordered(OrderedCollectionWindow {
             snapshot: plan.basis.snapshot_handle().clone(),
             collection_path: continuation.collection_path().to_string(),
@@ -90,7 +91,11 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
         None,
     )?;
     let actual_work = selection.work_units.saturating_add(tree.work_units);
-    if actual_work > plan.controls.maximum_work().get() {
+    if plan
+        .controls
+        .maximum_work()
+        .is_some_and(|maximum| actual_work > maximum.get())
+    {
         return Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
             plan.query.name(),

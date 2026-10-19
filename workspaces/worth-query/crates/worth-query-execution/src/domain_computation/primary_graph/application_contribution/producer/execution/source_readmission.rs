@@ -254,15 +254,21 @@ where
     let maximum_results = installed_limits.maximum_results();
     let query_ceiling = installed_limits
         .maximum_work()
-        .get()
-        .min(limits.producer_work())
-        .min(admission.remaining_work());
-    let maximum_work = NonZeroUsize::new(query_ceiling).ok_or_else(|| {
-        denial(
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            Binding::IDENTITY,
-        )
-    })?;
+        .map(NonZeroUsize::get)
+        .into_iter()
+        .chain(limits.producer_work())
+        .chain(admission.remaining_work())
+        .min();
+    let maximum_work = query_ceiling
+        .map(|work| {
+            NonZeroUsize::new(work).ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                    Binding::IDENTITY,
+                )
+            })
+        })
+        .transpose()?;
     let (_, product, application_basis) = selected.into_parts();
     let controls = WorthQueryApplicationQueryControls::product_one_shot(
         product,

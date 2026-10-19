@@ -258,7 +258,7 @@ fn rebase_within_width(
 ) -> RebasedSourceFacts {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 64,
+        maximum_work_visits: Some(64),
         maximum_preparation_bytes: 1024 * 1024,
     });
     world
@@ -280,7 +280,7 @@ fn rebase_within_width(
                 .unwrap(),
                 &BTreeSet::new(),
                 producer_output,
-                indexed_width,
+                Some(indexed_width),
                 &mut admission,
             )
         })

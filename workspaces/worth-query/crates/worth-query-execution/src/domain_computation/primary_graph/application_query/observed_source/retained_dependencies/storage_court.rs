@@ -4,7 +4,7 @@ impl WorthQueryRetainedQueryDependencies {
     pub(in crate::domain_computation::primary_graph) fn assert_storage_custody_for_test(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
-    ) {
+    ) -> WorthQueryRetainedQueryDependencies {
         use worth_execution::{CancellationSource, ExecutionAllocationPolicy, LeaseRequest};
         use worth_foundational::{ExecutionBudget, ExecutionRequestPolicy};
         let ExecutionAllocationPolicy::Execution(parent) = execution.allocation_policy() else {
@@ -39,9 +39,9 @@ impl WorthQueryRetainedQueryDependencies {
             })
             .unwrap();
         let refusal = retain_descriptors(
-            self.sources.elements().iter(),
+            std::iter::once(self.sources.elements()),
             count,
-            ExecutionAllocationPolicy::Execution(&narrowed),
+            &worth_execution::ExecutionRequest::leased(&narrowed),
         )
         .err()
         .unwrap();
@@ -49,14 +49,45 @@ impl WorthQueryRetainedQueryDependencies {
             matches!(refusal, WorthQueryRequiredSetCurrentnessDenial::Source(ref cause) if cause.allocation_denial().is_some())
         );
         assert_eq!(self.sources.len(), count);
-        let retained = retain_descriptors(
-            self.sources.elements().iter(),
-            count,
-            execution.allocation_policy(),
-        )
-        .unwrap();
+        let retained =
+            retain_descriptors(std::iter::once(self.sources.elements()), count, &execution)
+                .unwrap();
         assert_eq!(retained.sources.len(), count);
         assert_eq!(retained.sources.charged_payload_bytes(), Some(quote));
+        let serial_stop = CancellationSource::new();
+        let serial = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(quote),
+            serial_stop.token(),
+            None,
+        );
+        let stopped_parts =
+            std::iter::once(self.sources.elements()).inspect(|_| serial_stop.cancel());
+        let refused = retain_descriptors(
+            stopped_parts,
+            count,
+            &worth_execution::ExecutionRequest::serial(&serial),
+        )
+        .err()
+        .unwrap();
+        assert!(
+            matches!(refused, WorthQueryRequiredSetCurrentnessDenial::Output(ref cause)
+            if cause.kind() == WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Interrupted(
+                    crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::Cancelled)))
+        );
+        assert_eq!(self.sources.len(), count);
+        let fresh_serial = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(quote),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let serial_retained = retain_descriptors(
+            std::iter::once(self.sources.elements()),
+            count,
+            &worth_execution::ExecutionRequest::serial(&fresh_serial),
+        )
+        .expect("a fresh serial request retains the same complete original descriptors");
+        assert_eq!(serial_retained.sources.len(), count);
         let stop = CancellationSource::new();
         let child = parent.controlled_child(stop.token(), None);
         let mut building =
@@ -76,5 +107,6 @@ impl WorthQueryRetainedQueryDependencies {
             "failed prefix owns only attempted shared copies"
         );
         drop(retained);
+        serial_retained
     }
 }

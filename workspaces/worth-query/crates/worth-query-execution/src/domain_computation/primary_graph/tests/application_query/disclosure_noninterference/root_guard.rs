@@ -192,7 +192,7 @@ fn current_controls(
 ) -> crate::domain_computation::primary_graph::WorthQueryProductQueryControls<'_> {
     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(2).unwrap(),
-        NonZeroUsize::new(512).unwrap(),
+        Some(NonZeroUsize::new(512).unwrap()),
         request,
     )
 }

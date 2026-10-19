@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) fn request(bytes: u64) -> Lease
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, 1),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

@@ -205,7 +205,7 @@ fn install_manual_bodies() -> support::Application {
         Default::default(),
         32,
         128 * 1_024 * 1_024,
-        u64::try_from(source_work).unwrap(),
+        source_work.map(|work| u64::try_from(work).unwrap()),
         seed,
     )
 }

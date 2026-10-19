@@ -28,7 +28,7 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
                     ExecutionPosture::Automatic
                 },
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 8 << 20, 10_000),
+                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 8 << 20, Some(10_000)),
             ),
             deadline: None,
             cancellation: cancellation.token(),
@@ -79,7 +79,7 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
             )
         };
         let stopped = if lease.is_none() {
-            ExecutionWorkCeiling::new(10_000)
+            ExecutionWorkCeiling::new(Some(10_000))
                 .run_serial(&serial, run)
                 .unwrap()
                 .0

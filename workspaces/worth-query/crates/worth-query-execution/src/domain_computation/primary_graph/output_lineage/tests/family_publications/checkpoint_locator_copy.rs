@@ -15,7 +15,7 @@ use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
 fn admission(work: u64, bytes: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: work,
+        maximum_work_visits: Some(work),
         maximum_preparation_bytes: bytes,
     })
 }
@@ -104,6 +104,7 @@ fn select<'a>(
     court
         .lineage
         .checkpoint_prior_outputs(
+            &worth_execution::ExecutionRequest::serial(&court.request),
             court.source.runtime_authority,
             &court.source.schema,
             court.coordinate.occurrence,

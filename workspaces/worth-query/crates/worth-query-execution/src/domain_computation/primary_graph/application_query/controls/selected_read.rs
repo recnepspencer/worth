@@ -15,7 +15,7 @@ impl<'request, Schema> WorthQueryApplicationQueryControls<'request, Schema> {
         product: WorthQueryProductObservationLease,
         application_basis: WorthQueryApplicationBasisLease,
         maximum_result_count: NonZeroUsize,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<NonZeroUsize>,
         request_scope: &'request WorthQueryRequestScope,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, CompanionPreflightStop> {

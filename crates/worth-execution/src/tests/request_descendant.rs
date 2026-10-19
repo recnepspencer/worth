@@ -6,7 +6,7 @@ fn request_scope_reborrows_its_active_descendant_without_widening_policy() {
     let parent = authority().request_lease(request(1, 1500, 100)).unwrap();
     let child = parent.child(request(1, 1200, 20)).unwrap();
     let execution = ExecutionRequest::leased(&parent);
-    let (answer, _) = ExecutionWorkCeiling::new(20)
+    let (answer, _) = ExecutionWorkCeiling::new(Some(20))
         .run(&child, || {
             execution.in_scope(|lease| {
                 let lease = lease.unwrap();
@@ -25,7 +25,7 @@ fn request_scope_never_substitutes_a_sibling_worker() {
     let first = parent.child(request(1, 1200, 20)).unwrap();
     let sibling = parent.child(request(1, 1100, 10)).unwrap();
     let original = ExecutionRequest::leased(&first);
-    let (answer, _) = ExecutionWorkCeiling::new(10)
+    let (answer, _) = ExecutionWorkCeiling::new(Some(10))
         .run(&sibling, || {
             original.in_scope(|lease| {
                 assert_eq!(lease.unwrap().policy(), first.policy());

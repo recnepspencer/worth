@@ -80,7 +80,7 @@ mod tests {
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
                 1024 * 1024,
-                100_000,
+                None,
             ),
         );
         let execution = QueryRequestExecution::open(

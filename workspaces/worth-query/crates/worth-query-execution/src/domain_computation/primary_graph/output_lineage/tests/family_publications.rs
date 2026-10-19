@@ -23,6 +23,7 @@ fn entity(number: u64) -> EntityId {
 }
 
 struct Court {
+    request: worth_execution::SerialRequest,
     lineage: WorthQueryApplicationOutputLineage,
     source: SemanticSource,
     coordinate: ProductCoordinate,
@@ -76,6 +77,7 @@ impl Court {
             ],
         )]));
         Self {
+            request: crate::test_request_policy::serial_request(),
             lineage,
             source: SemanticSource {
                 runtime_authority: world.application.runtime.authority_identity().as_u64(),
@@ -120,13 +122,7 @@ impl Court {
                     entity: entity(output),
                 }],
                 |_| Some(TypeId::of::<()>()),
-                &worth_execution::ExecutionRequest::serial(
-                    &worth_execution::SerialRequest::from_memory(
-                        worth_execution::SerialMemoryBudget::new(64 << 20),
-                        worth_execution::CancellationToken::new(),
-                        None,
-                    ),
-                ),
+                &worth_execution::ExecutionRequest::serial(&self.request),
             )
             .unwrap(),
         );
@@ -190,15 +186,19 @@ impl Court {
     fn resolve_budgeted(
         &self,
         budget: usize,
-    ) -> Result<WorthQueryCurrentOutputFamilyResolution, ()> {
+    ) -> Result<
+        WorthQueryCurrentOutputFamilyResolution,
+        worth_relational::facade::mvcc::CompanionPreflightStop,
+    > {
         self.lineage.resolve_current_family(
+            &worth_execution::ExecutionRequest::serial(&self.request),
             self.source.runtime_authority,
             &self.source.schema,
             self.source.scope,
             "family",
             self.coordinate.occurrence,
             self.coordinate.generation,
-            budget,
+            Some(budget),
         )
     }
 

@@ -66,7 +66,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 ),
             ));
         }
-        self.work_budget.consume(1);
+        assert!(
+            self.work_budget.consume(1),
+            "the same owner preflighted one work unit"
+        );
         self.work.record_endpoint();
         self.endpoint::<Entity>(
             self.execution,
@@ -103,7 +106,13 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         .map_err(|limit| {
             HandlerExecutionDenial::new(self.adjacency_limit_denial(limit, relation))
         })?;
-        self.work_budget.consume(read.work_units());
+        if !self.work_budget.consume(read.work_units()) {
+            return Err(HandlerExecutionDenial::new(
+                WorthQueryAdvancementDenial::Resource(
+                    WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                ),
+            ));
+        }
         self.work.record_adjacency(
             read.relation_records_examined(),
             read.endpoint_records_reserved(),

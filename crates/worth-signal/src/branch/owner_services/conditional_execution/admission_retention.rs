@@ -93,7 +93,7 @@ mod tests {
         let budget = |maximum_retained_bytes| SignalConditionalEvaluationBudget {
             maximum_retained_slots: 1,
             maximum_retained_bytes,
-            maximum_attempt_visits: 1,
+            maximum_attempt_visits: Some(1),
         };
         let exact = SignalConditionalRetentionLedger::new(
             budget(exact_total),

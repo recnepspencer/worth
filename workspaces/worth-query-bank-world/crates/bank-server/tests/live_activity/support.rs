@@ -135,7 +135,7 @@ pub(crate) fn commit_deposit(
     let request = fixture.world.runtime.request(teller, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         completed,
-    ) = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap())
+    ) = outcome.advance(&request, Some(NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("native retained deposit completion")
     };
@@ -160,7 +160,7 @@ pub(crate) fn live_controls_for(
     request: WorthQueryRequestScope,
     buffer_capacity: usize,
 ) -> WorthQueryApplicationLiveControls {
-    WorthQueryApplicationLiveControls::bounded(request, buffer_capacity, 8, 2_048).unwrap()
+    WorthQueryApplicationLiveControls::bounded(request, buffer_capacity, 8, Some(2_048)).unwrap()
 }
 
 fn mutation_controls(key: &str) -> BankMutationControls {

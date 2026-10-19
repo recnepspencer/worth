@@ -14,7 +14,7 @@ fn first_stage_owner_work(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, 1024),
+                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, Some(1024)),
             ),
             cancellation: worth_execution::CancellationToken::new(),
             deadline: None,
@@ -22,21 +22,24 @@ fn first_stage_owner_work(
         .unwrap();
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let ((), report) = execution
-        .run(worth_execution::ExecutionWorkCeiling::new(1024), |_| {
-            let command = crate::runtime::WorthQueryAspectMutationBuilder::new()
-                .aspect("identity.id", "left:50")
-                .build_insert("Vertex")
-                .unwrap();
-            workspace
-                .execute_ordinary_authoritative_mutation(&execution, command, false)
-                .unwrap();
-            phased_workflow::world::installed_read_declaration()
-                .clone_for_installed_execution()
-                .using(crate::ordinary::read::current())
-                .run(&execution, &mut workspace)
-                .into_result()
-                .unwrap();
-        })
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(Some(1024)),
+            |_| {
+                let command = crate::runtime::WorthQueryAspectMutationBuilder::new()
+                    .aspect("identity.id", "left:50")
+                    .build_insert("Vertex")
+                    .unwrap();
+                workspace
+                    .execute_ordinary_authoritative_mutation(&execution, command, false)
+                    .unwrap();
+                phased_workflow::world::installed_read_declaration()
+                    .clone_for_installed_execution()
+                    .using(crate::ordinary::read::current())
+                    .run(&execution, &mut workspace)
+                    .into_result()
+                    .unwrap();
+            },
+        )
         .unwrap();
     report.charged_work()
 }

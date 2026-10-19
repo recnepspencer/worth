@@ -254,7 +254,7 @@ where
     R: ComparatorPolicyResolver,
 {
     let prepared = PreparedSerialStageBatch::prepare(graph, lowered, stage_record)?;
-    let mut retained = crate::data::retained_storage::RetainedStoragePreparation::new(usize::MAX);
+    let mut retained = crate::data::retained_storage::RetainedStoragePreparation::new(None);
     let mut checkpoint = |units: usize| {
         request_work.checkpoint(units as u64).map_err(|stop| {
             crate::data::retained_storage::RetainedStoragePreparationDenial::ExecutionStopped(

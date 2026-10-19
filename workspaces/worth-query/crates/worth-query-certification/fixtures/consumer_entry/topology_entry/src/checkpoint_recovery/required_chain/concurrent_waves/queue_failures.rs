@@ -34,7 +34,10 @@ fn run(workers: usize, failure: Failure, caught: bool) -> History {
         profile,
         4096,
         128 * 1024 * 1024,
-        profile.limits().source_currentness_work() as u64,
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| work as u64),
         diamond::seed,
     );
     let (scope, principal) = authenticate(&application);

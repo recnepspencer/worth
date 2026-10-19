@@ -34,7 +34,7 @@ fn request(memory: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, 1),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

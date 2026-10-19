@@ -17,7 +17,7 @@ impl<Query> WorthQueryObservedSource<Query> {
     ) {
         use worth_relational::facade::mvcc::CompanionPreflightBudget;
         let mut funded = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: u64::MAX,
+            maximum_work_visits: None,
             maximum_preparation_bytes: u64::MAX,
         });
         drop(
@@ -30,14 +30,14 @@ impl<Query> WorthQueryObservedSource<Query> {
         for (budget, expected) in [
             (
                 CompanionPreflightBudget {
-                    maximum_work_visits: work - 1,
+                    maximum_work_visits: Some(work - 1),
                     maximum_preparation_bytes: bytes,
                 },
                 Kind::WorkBudgetExceeded,
             ),
             (
                 CompanionPreflightBudget {
-                    maximum_work_visits: work,
+                    maximum_work_visits: Some(work),
                     maximum_preparation_bytes: bytes - 1,
                 },
                 Kind::PreparationMemoryExceeded,

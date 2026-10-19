@@ -53,7 +53,7 @@ pub(super) struct WorthQueryApplicationOperationCompilation<'a> {
     input_type: String,
     decision_reads: Vec<ApplicationOperationDecisionReadTarget>,
     authored_program_width: usize,
-    projection_work_budget: usize,
+    projection_work_budget: Option<usize>,
     execution_posture: WorthQueryInstalledApplicationOperationExecutionPosture,
     external_effect: InstalledExternalEffectContract,
     portable_aftermath: Option<PortableApplicationAftermathContract>,
@@ -68,7 +68,7 @@ pub(in crate::application_operation) struct WorthQuerySealedOperationContractCom
     authorization: WorthQueryInstalledApplicationOperationAuthorization,
     ability_requirements: Vec<WorthQueryInstalledAbilityRequirement>,
     authored_program_width: usize,
-    projection_work_budget: usize,
+    projection_work_budget: Option<usize>,
     additional_authorization_fact_count: usize,
     mutation_preconditions: Vec<WorthQueryInstalledMutationPrecondition>,
     execution_posture: WorthQueryInstalledApplicationOperationExecutionPosture,
@@ -106,13 +106,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 operation,
             ));
         }
-        let projection_work_budget = operation_projection_work_budget(members, operation)
-            .ok_or_else(|| {
-                operation_denial(
-                    WorthQueryApplicationOperationInstallationDenialKind::MissingProjectionWorkBudget,
-                    operation,
-                )
-            })?;
+        let projection_work_budget = operation_projection_work_budget(members, operation);
         if portable_contract.operation() != operation
             || portable_contract.input_type().as_str() != input_type
         {

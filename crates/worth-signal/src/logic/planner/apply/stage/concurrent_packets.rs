@@ -147,7 +147,7 @@ pub(super) fn reduce_grouped_concurrent_packets(
             RetainedStoragePreparationDenial,
         };
         budget.claim_vec::<crate::data::graph::EpochSemanticSeed>(metadata.len())?;
-        let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+        let mut measurement = RetainedStoragePreparation::new(None);
         let mut checkpoint = |visits: usize| {
             request_work
                 .checkpoint(visits as u64)

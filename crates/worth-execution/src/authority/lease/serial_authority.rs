@@ -36,13 +36,13 @@ mod tests {
         let policy = ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, 100),
+            ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, Some(100)),
         );
         let authority = ExecutionAuthority::serial();
         let wide = ExecutionRequestPolicy::new(
             policy.posture(),
             policy.determinism(),
-            ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 1 << 20, 100),
+            ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 1 << 20, Some(100)),
         );
         assert_eq!(
             authority.admits_policy(&wide),
@@ -75,7 +75,7 @@ mod tests {
         )
         .unwrap();
         let (outcome, report) = ExecutionRequest::leased(&lease)
-            .run(ExecutionWorkCeiling::new(100), |borrowed| {
+            .run(ExecutionWorkCeiling::new(Some(100)), |borrowed| {
                 map.run(borrowed, |value, context| {
                     context.checkpoint(*value)?;
                     Ok::<_, MapKernelFailure<()>>(*value)

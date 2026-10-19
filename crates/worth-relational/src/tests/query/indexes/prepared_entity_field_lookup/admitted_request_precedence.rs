@@ -79,46 +79,50 @@ pub(super) fn assert_admitted_request_precedence(
             .unwrap();
             let mut answer = None;
             execution
-                .run(worth_execution::ExecutionWorkCeiling::new(0), |lease| {
-                    scan.run::<(), (), (), _>(lease, (), 0, 0, 0, 0, |_, _, meter| {
-                        answer = Some(runtime.index_access().execute_bounded_entity_field_lookup(
-                            BoundedEntityFieldSelectedLookup::new(
-                                view,
-                                prepared.index_id(),
-                                prepared.entity_kind(),
-                                prepared.field_locator(),
-                                &value,
-                                16,
-                                |work, _| {
-                                    calls += 1;
-                                    if stopped_at.is_some() {
-                                        return Err("admission exhausted");
-                                    }
-                                    if work == Operation(candidate_work) {
-                                        visits += 1;
-                                        if visits == stop_visit {
-                                            stopped_at = Some(calls);
-                                            if exhaust_work {
-                                                assert_eq!(
+                .run(
+                    worth_execution::ExecutionWorkCeiling::new(Some(0)),
+                    |lease| {
+                        scan.run::<(), (), (), _>(lease, (), 0, 0, 0, 0, |_, _, meter| {
+                            answer =
+                                Some(runtime.index_access().execute_bounded_entity_field_lookup(
+                                    BoundedEntityFieldSelectedLookup::new(
+                                        view,
+                                        prepared.index_id(),
+                                        prepared.entity_kind(),
+                                        prepared.field_locator(),
+                                        &value,
+                                        16,
+                                        |work, _| {
+                                            calls += 1;
+                                            if stopped_at.is_some() {
+                                                return Err("admission exhausted");
+                                            }
+                                            if work == Operation(candidate_work) {
+                                                visits += 1;
+                                                if visits == stop_visit {
+                                                    stopped_at = Some(calls);
+                                                    if exhaust_work {
+                                                        assert_eq!(
                                                     meter.checkpoint(1),
                                                     Err(
                                                         worth_execution::MapKernelStop::WorkCeiling
                                                     )
                                                 );
-                                            } else {
-                                                cancellation.cancel();
+                                                    } else {
+                                                        cancellation.cancel();
+                                                    }
+                                                }
                                             }
-                                        }
-                                    }
-                                    Ok(())
-                                },
-                            ),
-                            parity,
-                            &execution,
-                        ));
-                        Ok(((), ()))
-                    })
-                })
+                                            Ok(())
+                                        },
+                                    ),
+                                    parity,
+                                    &execution,
+                                ));
+                            Ok(((), ()))
+                        })
+                    },
+                )
                 .unwrap();
             let expected = BoundedEntityFieldLookupDenialKind::Execution(if exhaust_work {
                 crate::execution::RelationalExecutionDenialCause::WorkExhausted

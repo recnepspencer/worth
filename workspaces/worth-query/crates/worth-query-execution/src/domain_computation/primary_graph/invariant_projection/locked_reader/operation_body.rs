@@ -39,7 +39,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 ),
             ));
         }
-        self.work_budget.consume(1);
+        assert!(
+            self.work_budget.consume(1),
+            "the same owner preflighted one work unit"
+        );
         self.realized_scope.record(identity.entity_id);
         self.work.record_field();
         match crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(

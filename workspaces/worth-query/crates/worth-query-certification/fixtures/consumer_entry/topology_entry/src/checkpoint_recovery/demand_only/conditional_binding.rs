@@ -17,6 +17,7 @@ fn conditional_binding_refuses_ordinary_dispatch_without_mutation() {
         .execute()
         .unwrap();
     let denied = request
+        .advanced()
         .mutate(PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation: PlanarOperation::VerifyCurrentOutputs(vec![]),

@@ -47,7 +47,7 @@ pub(crate) struct PacketKernelContext<'a, 'b, 'c> {
 }
 
 impl PacketKernelContext<'_, '_, '_> {
-    pub(crate) fn remaining_work(&self) -> u64 {
+    pub(crate) fn remaining_work(&self) -> Option<u64> {
         self.meter.remaining_work()
     }
 

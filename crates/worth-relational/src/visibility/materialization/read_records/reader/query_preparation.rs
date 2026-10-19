@@ -111,7 +111,7 @@ pub(super) fn remaining_work_lease<'a>(
     let budget = policy.budget();
     let remaining = budget
         .work_ceiling()
-        .saturating_sub(preparation.charged_work());
+        .map(|ceiling| ceiling.saturating_sub(preparation.charged_work()));
     lease
         .child(LeaseRequest {
             policy: worth_foundational::ExecutionRequestPolicy::new(

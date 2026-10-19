@@ -40,7 +40,7 @@ impl ApplicationDerivedArtifact<CheckpointSchema, PlanarFinalOutputFeature> for 
         )];
     const REUSE_RULE: &'static str = "exact-source";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(TOTALS_WORK, DECISION_FACT_BUDGET * 512);
+        ApplicationArtifactResourceCeiling::new(Some(TOTALS_WORK), DECISION_FACT_BUDGET * 512);
     const STOPPED_OUTCOME: &'static str = "region-output-resource-denied";
 }
 

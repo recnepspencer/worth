@@ -55,7 +55,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
@@ -74,7 +74,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
@@ -88,14 +88,14 @@ impl VisibilityProjectionView {
         )
     }
 
-    /// Read bounded adjacency already admitted by a caller's projection budget.
+    /// Read adjacency under the caller's optional projection work limit.
     /// Request stops are consulted before each examined or retained record.
     pub fn bounded_outgoing_relations_of_kind_admitted(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
         mut admit_work: impl FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
@@ -111,14 +111,14 @@ impl VisibilityProjectionView {
         )
     }
 
-    /// Read bounded adjacency already admitted by a caller's projection budget.
+    /// Read adjacency under the caller's optional projection work limit.
     /// Request stops are consulted before each examined or retained record.
     pub fn bounded_incoming_relations_of_kind_admitted(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
         mut admit_work: impl FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
@@ -140,7 +140,7 @@ impl VisibilityProjectionView {
         entity_id: EntityId,
         kind_id: KindId,
         direction: AdjacencyDirection,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
         admit_work: &mut dyn FnMut(
             u64,
         )
@@ -156,7 +156,7 @@ impl VisibilityProjectionView {
             kind_id,
             direction,
             &mut |units, examined, reserved| {
-                if examined + reserved == maximum_work_units {
+                if maximum_work_units.is_some_and(|maximum| examined + reserved >= maximum) {
                     return Err(NativeScanStop::Limit(AdjacencyTruthReadLimitExceeded::new(
                         examined, reserved,
                     )));
@@ -178,7 +178,7 @@ impl VisibilityProjectionView {
         entity_id: EntityId,
         kind_id: KindId,
         direction: AdjacencyDirection,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
@@ -191,7 +191,8 @@ impl VisibilityProjectionView {
                     kind_id,
                     direction,
                     &mut |units, examined, reserved| {
-                        if examined + reserved == maximum_work_units {
+                        if maximum_work_units.is_some_and(|maximum| examined + reserved >= maximum)
+                        {
                             return Err(super::super::native_scan_stop::NativeScanStop::Limit(
                                 AdjacencyTruthReadLimitExceeded::new(examined, reserved),
                             ));

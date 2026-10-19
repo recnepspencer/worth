@@ -19,14 +19,14 @@ pub use batch::WorthQueryRetainedBatchQueryAdmissionDenial;
 /// cannot select a second basis or change the operation's retained occurrence.
 pub struct WorthQueryProductQueryControls<'request> {
     maximum_results: NonZeroUsize,
-    maximum_work: NonZeroUsize,
+    maximum_work: Option<NonZeroUsize>,
     request: &'request WorthQueryRequestScope,
 }
 
 impl<'request> WorthQueryProductQueryControls<'request> {
     pub fn new(
         maximum_results: NonZeroUsize,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<NonZeroUsize>,
         request: &'request WorthQueryRequestScope,
     ) -> Self {
         Self {
@@ -149,7 +149,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let execution = &request;
 
         let (application, controls) =
-            self.retained_query_controls(retained, query.name(), controls)?;
+            self.retained_query_controls(execution, retained, query.name(), controls)?;
         application.admit_application_query(execution, query, access, parameters, controls)
     }
 
@@ -363,4 +363,20 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             ),
         )
     }
+}
+
+/// Preserve the original request stop instead of relabeling it as a basis mismatch.
+fn selection_denial(
+    stop: crate::basis::WorthQueryProductBranchAdmissionDenial,
+    query_name: &str,
+) -> WorthQueryApplicationQueryAdmissionDenial {
+    use crate::basis::WorthQueryProductBranchAdmissionDenial as Branch;
+    use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind as Kind;
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Stop;
+    let kind = match stop {
+        Branch::Stopped(Err(Stop::Cancelled)) => Kind::Cancelled,
+        Branch::Stopped(Err(Stop::TimedOut)) => Kind::DeadlineExceeded,
+        _ => Kind::ForeignBasis,
+    };
+    WorthQueryApplicationQueryAdmissionDenial::new(kind, query_name)
 }

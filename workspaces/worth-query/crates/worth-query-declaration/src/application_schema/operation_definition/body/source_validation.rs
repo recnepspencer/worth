@@ -56,7 +56,7 @@ pub(super) fn validate(
     if matches!(
         step,
         Step::PresentScopeField { .. } | Step::CapturedScopeField { .. }
-    ) && !target_metadata.is_some_and(|(_, presence)| *presence == Presence::Required)
+    ) && target_metadata.is_none_or(|(_, presence)| *presence != Presence::Required)
     {
         return Err(Denial::MissingOperationDecisionReadDependency);
     }

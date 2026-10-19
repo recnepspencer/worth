@@ -77,7 +77,7 @@ pub(super) fn install_rostered(model: &Model) -> Application {
         32,
         16,
         64,
-        support::invalidation(128 * 1024 * 1024, 1_000_000, 4),
+        support::invalidation(128 * 1024 * 1024, Some(1_000_000), 4),
         candidates,
     );
     application_installation::in_memory_rostered_program(initial, roster, CheckpointSchema::declaration().unwrap(), (configuration,), limits, |_bootstrap_phase, graph, installed| {

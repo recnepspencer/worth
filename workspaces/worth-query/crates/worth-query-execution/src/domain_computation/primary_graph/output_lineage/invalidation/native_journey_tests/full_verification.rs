@@ -56,10 +56,8 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         use crate::domain_computation::primary_graph::invariant_projection::{
             ConsumedOutputEvidence, ConsumedOutputVerification,
         };
-        let mut exhausted = owner.edit_admission();
-        exhausted
-            .charge_external_work(exhausted.remaining_work_amount())
-            .unwrap();
+        let mut exhausted = owner.edit_admission_with_work_limit(Some(1));
+        exhausted.charge_external_work(1).unwrap();
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission(
                 request_execution,

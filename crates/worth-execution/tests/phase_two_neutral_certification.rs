@@ -88,7 +88,7 @@ fn lease(
             policy: ExecutionRequestPolicy::new(
                 posture,
                 determinism,
-                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), MEMORY, work),
+                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), MEMORY, Some(work)),
             ),
             deadline,
             cancellation,

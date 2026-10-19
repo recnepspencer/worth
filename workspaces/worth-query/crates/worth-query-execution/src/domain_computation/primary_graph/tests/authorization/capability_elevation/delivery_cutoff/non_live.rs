@@ -39,7 +39,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
                     elevated_account_activity_parameters("account-1"),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         one(),
-                        buffer_limit(),
+                        Some(buffer_limit()),
                         &context.request,
                     ),
                 )
@@ -97,7 +97,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
                     continuation,
                     WorthQueryApplicationQueryResumeControls::new(
                         one(),
-                        buffer_limit(),
+                        Some(buffer_limit()),
                         &context.request,
                     ),
                 )
@@ -146,7 +146,7 @@ fn revocation_after_selected_plan_denies_before_result_delivery() {
                     elevated_account_activity_parameters("account-1"),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         one(),
-                        buffer_limit(),
+                        Some(buffer_limit()),
                         &context.request,
                     ),
                 )

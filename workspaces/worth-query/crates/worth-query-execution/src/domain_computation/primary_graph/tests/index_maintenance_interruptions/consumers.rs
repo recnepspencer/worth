@@ -34,8 +34,8 @@ fn currency_consumer(consumer: u8) {
    assert_consumer(stop,consumer);
   }
   discard(runtime);
-  let (healthy,report)=setup.run(ExecutionWorkCeiling::new(100_000),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();healthy.unwrap();discard(runtime);
-  let (short,_)=setup.run(ExecutionWorkCeiling::new(report.charged_work()-1),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();
+  let (healthy,report)=setup.run(ExecutionWorkCeiling::new(Some(100_000)),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();healthy.unwrap();discard(runtime);
+  let (short,_)=setup.run(ExecutionWorkCeiling::new(Some(report.charged_work()-1)),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();
   let Err(crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop))=short else{panic!("work-short must stay typed")};
   let stop=crate::facade::primary_graph::relational_execution_kind(stop,None);assert_eq!(stop,Ok(Kind::ExecutionResource{denial:Resource::WorkExhausted,partition_identity:None,policy_ancestor:None}));assert_consumer(stop,consumer);
  });

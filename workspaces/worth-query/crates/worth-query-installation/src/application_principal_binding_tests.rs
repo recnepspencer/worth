@@ -253,19 +253,19 @@ fn installed_query_binding_retains_exact_principal_scope_and_finite_limits() {
     assert_eq!(binding.limits().maximum_work().unwrap().get(), 256);
     assert!(binding
         .limits()
-        .resolve(std::num::NonZeroUsize::new(1024).unwrap())
+        .resolve(Some(std::num::NonZeroUsize::new(1024).unwrap()))
         .narrow(
             std::num::NonZeroUsize::new(1).unwrap(),
-            std::num::NonZeroUsize::new(128).unwrap(),
+            Some(std::num::NonZeroUsize::new(128).unwrap()),
         )
         .is_ok());
     assert_eq!(
         binding
             .limits()
-            .resolve(std::num::NonZeroUsize::new(1024).unwrap())
+            .resolve(Some(std::num::NonZeroUsize::new(1024).unwrap()))
             .narrow(
                 std::num::NonZeroUsize::new(9).unwrap(),
-                std::num::NonZeroUsize::new(128).unwrap(),
+                Some(std::num::NonZeroUsize::new(128).unwrap()),
             )
             .unwrap_err(),
         crate::facade::WorthQueryApplicationQueryLimitDenial::MaximumResultsWidened

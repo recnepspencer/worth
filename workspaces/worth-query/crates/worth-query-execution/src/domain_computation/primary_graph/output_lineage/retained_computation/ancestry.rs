@@ -35,7 +35,7 @@ impl WorthQueryApplicationOutputLineage {
     ) -> usize {
         self.prepay_computation_fork_scan(&mut InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: 4096,
+                maximum_work_visits: Some(4096),
                 maximum_preparation_bytes: 4096,
             },
         ))
@@ -47,12 +47,13 @@ impl WorthQueryApplicationOutputLineage {
         source: &SemanticSource,
         mut coordinate: ProductCoordinate,
         partition: [u8; 32],
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Arc<OnceLock<RecordedOutput>>>, CompanionPreflightStop> {
         loop {
             if let Some((generation, slot)) = self
                 .partition_index
-                .latest_admitted(source, coordinate, partition, admission)?
+                .latest_admitted(execution, source, coordinate, partition, admission)?
             {
                 return self
                     .recorded_cell_at_partition_slot_admitted(

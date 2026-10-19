@@ -241,7 +241,7 @@ fn primary_graph_application(
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             64 * 1024 * 1024,
-            8_000_000,
+            Some(8_000_000),
         ),
     );
     worth_query_host::facade::application_contribution::with_bootstrap_advancement(

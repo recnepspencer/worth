@@ -332,7 +332,7 @@ fn undeclared_external_effect_leaves_retry_path_nothing_to_find() {
     let request = fixture.world.runtime.request(&owner, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         outcome,
-    ) = outcome.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    ) = outcome.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("fresh retained send completion")
     };

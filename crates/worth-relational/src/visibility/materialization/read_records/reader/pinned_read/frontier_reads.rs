@@ -11,7 +11,7 @@ impl RelationalPinnedRead {
         request: &worth_execution::ExecutionRequest<'_, '_>,
         entities: &BTreeSet<EntityId>,
         kind: KindId,
-        maximum: usize,
+        maximum: Option<usize>,
     ) -> Result<
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
@@ -32,7 +32,7 @@ impl RelationalPinnedRead {
         request: &worth_execution::ExecutionRequest<'_, '_>,
         entities: &BTreeSet<EntityId>,
         kind: KindId,
-        maximum: usize,
+        maximum: Option<usize>,
     ) -> Result<
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
@@ -53,7 +53,7 @@ impl RelationalPinnedRead {
         request: &worth_execution::ExecutionRequest<'_, '_>,
         entities: &BTreeSet<EntityId>,
         kind: KindId,
-        maximum: usize,
+        maximum: Option<usize>,
         direction: AdjacencyDirection,
     ) -> Result<
         BoundedFrontierAdjacencyTruthRead,
@@ -81,7 +81,7 @@ impl RelationalPinnedRead {
         kind: KindId,
         locator: &AspectFieldLocator,
         expected: &AspectValue,
-        maximum: usize,
+        maximum: Option<usize>,
     ) -> Result<
         BoundedFrontierFieldEqualityTruthRead,
         BoundedFrontierReadStop<

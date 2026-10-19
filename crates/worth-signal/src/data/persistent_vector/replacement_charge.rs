@@ -38,9 +38,7 @@ impl<T: Clone + RetainedStorageMeasurement, const PAGE_LEN: usize> PersistentVec
             work.reserve_visits(
                 self.indexed_mutation_work_bound(1)
                     .and_then(|n| n.checked_add(self.lookup_steps().checked_mul(3)?))
-                    .ok_or(Denial::WorkExhausted {
-                        maximum_visits: work.maximum_visits(),
-                    })?,
+                    .ok_or(Denial::ChargeOverflow)?,
             )?;
             if self.get(index).is_none() {
                 return Err(RetainedVectorMutationDenial::MissingElement { index });

@@ -13,19 +13,27 @@ use query::application_query;
 pub(super) const EXPECTED_MEMBER_COUNT: usize = 24;
 
 pub(super) fn complete_untrusted_schema_record() -> WorthQueryPortableApplicationSchemaRecord {
+    schema_record_with_projection_budget(Some(11))
+}
+
+pub(super) fn schema_record_with_projection_budget(
+    projection_work: Option<usize>,
+) -> WorthQueryPortableApplicationSchemaRecord {
+    let members = members(projection_work);
+    let member_count = u32::try_from(members.len()).unwrap();
     WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
         WorthQueryPortableApplicationSchemaParts {
             owner: "archive.tests".to_owned(),
             name: "CompleteUntrustedSchema".to_owned(),
             major: 4,
             minor: 2,
-            members: members(),
-            contributions: contributions(),
+            members,
+            contributions: contributions(member_count),
         },
     )
 }
 
-fn contributions() -> Vec<ApplicationSchemaContributionProvenance> {
+fn contributions(member_count: u32) -> Vec<ApplicationSchemaContributionProvenance> {
     vec![
         ApplicationSchemaContributionProvenance::from_untrusted_parts(
             "worth.archive.tests.foundation.v1".to_owned(),
@@ -33,13 +41,13 @@ fn contributions() -> Vec<ApplicationSchemaContributionProvenance> {
         ),
         ApplicationSchemaContributionProvenance::from_untrusted_parts(
             "worth.archive.tests.operations.v1".to_owned(),
-            (13..EXPECTED_MEMBER_COUNT as u32).collect(),
+            (13..member_count).collect(),
         ),
     ]
 }
 
-fn members() -> Vec<ApplicationSchemaMember> {
-    vec![
+fn members(projection_work: Option<usize>) -> Vec<ApplicationSchemaMember> {
+    let mut members = vec![
         ApplicationSchemaMember::Entity {
             entity: text("Entity"),
         },
@@ -119,10 +127,6 @@ fn members() -> Vec<ApplicationSchemaMember> {
                 text("field"),
             ),
         },
-        ApplicationSchemaMember::OperationProjectionWorkBudget {
-            operation: text("Apply"),
-            maximum_work_units: 11,
-        },
         external_effect(),
         ApplicationSchemaMember::OperationAftermath {
             operation: text("Apply"),
@@ -157,7 +161,17 @@ fn members() -> Vec<ApplicationSchemaMember> {
             operation: text("Reverse"),
             contract: inverse_aftermath_contract(),
         },
-    ]
+    ];
+    if let Some(maximum_work_units) = projection_work {
+        members.insert(
+            14,
+            ApplicationSchemaMember::OperationProjectionWorkBudget {
+                operation: text("Apply"),
+                maximum_work_units,
+            },
+        );
+    }
+    members
 }
 
 fn principal_binding() -> ApplicationSchemaMember {

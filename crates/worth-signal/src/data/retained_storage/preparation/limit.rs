@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 /// the outer ceiling, including on unwind; consumed visits are never refunded.
 pub(crate) struct RetainedStoragePreparationLimit<'a, 'observer> {
     work: &'a mut RetainedStoragePreparation<'observer>,
-    outer_maximum: usize,
+    outer_maximum: Option<usize>,
     outer_limited: bool,
 }
 
@@ -13,15 +13,22 @@ impl<'a, 'observer> RetainedStoragePreparationLimit<'a, 'observer> {
     pub(super) fn new(
         work: &'a mut RetainedStoragePreparation<'observer>,
         maximum_additional: usize,
-    ) -> Self {
+    ) -> Result<Self, super::RetainedStoragePreparationDenial> {
         let outer_maximum = work.maximum_visits;
-        let remaining = outer_maximum - work.visits;
-        work.maximum_visits = work.visits + remaining.min(maximum_additional);
-        Self {
+        let remaining = outer_maximum.map(|maximum| maximum - work.visits);
+        let additional = remaining.map_or(maximum_additional, |remaining| {
+            remaining.min(maximum_additional)
+        });
+        let maximum = work
+            .visits
+            .checked_add(additional)
+            .ok_or(super::RetainedStoragePreparationDenial::ChargeOverflow)?;
+        work.maximum_visits = Some(maximum);
+        Ok(Self {
             work,
             outer_maximum,
-            outer_limited: remaining <= maximum_additional,
-        }
+            outer_limited: remaining.is_some_and(|remaining| remaining <= maximum_additional),
+        })
     }
 
     pub(crate) fn outer_limited(&self) -> bool {

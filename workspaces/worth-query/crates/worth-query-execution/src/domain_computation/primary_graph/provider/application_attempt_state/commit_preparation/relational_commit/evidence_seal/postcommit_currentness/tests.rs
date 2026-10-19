@@ -228,7 +228,7 @@ pub(super) fn rebase_result_within(
     let selected = world.selected_product(&(phase_custody).test_host_request());
     let mut admission = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits,
+                maximum_work_visits: Some(maximum_work_visits),
                 maximum_preparation_bytes: 1024 * 1024,
             },
         );
@@ -245,7 +245,7 @@ pub(super) fn rebase_result_within(
                 PreparedSourceFactRebase::admit(facts, [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
                 &BTreeSet::new(),
                 true,
-                64,
+                Some(64),
                 &mut admission,
             )
         })
@@ -290,7 +290,7 @@ fn output_selection(
                     .graph
                     .source_owner
                     .invalidation_owner
-                    .edit_admission_within(std::num::NonZeroUsize::new(16).unwrap()),
+                    .edit_admission_with_work_limit(Some(16)),
             )
             .unwrap()
         })

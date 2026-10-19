@@ -6,7 +6,11 @@ use worth_foundational::{
 pub(crate) const CHECKPOINT_EXECUTION_POLICY: ExecutionRequestPolicy = ExecutionRequestPolicy::new(
     ExecutionPosture::Serial,
     DeterminismContract::CanonicalBitwise,
-    ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 * 1024 * 1024, 8_000_000),
+    ExecutionBudget::new(
+        std::num::NonZeroUsize::MIN,
+        64 * 1024 * 1024,
+        Some(8_000_000),
+    ),
 );
 
 /// Complete currentness includes retained output and original discovery facts.
@@ -14,8 +18,13 @@ pub(crate) const CHECKPOINT_EXECUTION_POLICY: ExecutionRequestPolicy = Execution
 /// policy; exact work-limit boundaries are exercised by the native meter courts.
 pub(in crate::checkpoint_recovery) fn currentness_work_limit() -> std::num::NonZeroUsize {
     std::num::NonZeroUsize::new(
-        usize::try_from(CHECKPOINT_EXECUTION_POLICY.budget().work_ceiling())
-            .expect("fixture request work fits the host word"),
+        usize::try_from(
+            CHECKPOINT_EXECUTION_POLICY
+                .budget()
+                .work_ceiling()
+                .expect("checkpoint fixture explicitly chooses a finite request"),
+        )
+        .expect("fixture request work fits the host word"),
     )
     .expect("fixture request work is positive")
 }

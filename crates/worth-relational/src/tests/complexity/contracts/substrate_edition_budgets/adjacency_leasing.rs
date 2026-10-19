@@ -152,7 +152,7 @@ fn projected_frontier_adjacency_uses_the_selected_branch_root() {
             execution,
             &std::collections::BTreeSet::from([source]),
             RELATION_KIND,
-            8,
+            Some(8),
         )
         .expect("read request remains live")
         .unwrap()

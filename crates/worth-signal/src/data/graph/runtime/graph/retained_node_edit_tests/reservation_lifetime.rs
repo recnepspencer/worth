@@ -14,7 +14,7 @@ fn staged_root_capacity_denial_preserves_performed_output_without_installing() {
             &probe,
             &[0],
             maximum,
-            &mut Work::new(PREPARATION_WORK),
+            &mut Work::new(Some(PREPARATION_WORK)),
             |_| 7,
         )
         .unwrap();
@@ -26,7 +26,7 @@ fn staged_root_capacity_denial_preserves_performed_output_without_installing() {
         crate::runtime_policy::SignalConditionalEvaluationBudget {
             maximum_retained_slots: 1,
             maximum_retained_bytes: peak - 1,
-            maximum_attempt_visits: PREPARATION_WORK,
+            maximum_attempt_visits: Some(PREPARATION_WORK),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
     );
@@ -35,7 +35,7 @@ fn staged_root_capacity_denial_preserves_performed_output_without_installing() {
             &ledger,
             &[0],
             maximum,
-            &mut Work::new(PREPARATION_WORK),
+            &mut Work::new(Some(PREPARATION_WORK)),
             |_| 7,
         )
         .unwrap();
@@ -62,7 +62,7 @@ fn owner_capacity_denial_precedes_payload_edit_and_preserves_roots() {
         crate::runtime_policy::SignalConditionalEvaluationBudget {
             maximum_retained_slots: 1,
             maximum_retained_bytes: 1,
-            maximum_attempt_visits: PREPARATION_WORK,
+            maximum_attempt_visits: Some(PREPARATION_WORK),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
     );
@@ -70,7 +70,7 @@ fn owner_capacity_denial_precedes_payload_edit_and_preserves_roots() {
         &ledger,
         &[0],
         representation_charge(&arena),
-        &mut Work::new(PREPARATION_WORK),
+        &mut Work::new(Some(PREPARATION_WORK)),
         |_| panic!("owner capacity denial must precede cloning and the callback"),
     );
     assert!(matches!(
@@ -95,7 +95,7 @@ fn installed_custody_follows_shared_roots_but_not_operational_materialization() 
             &ledger,
             &[0],
             maximum,
-            &mut Work::new(PREPARATION_WORK),
+            &mut Work::new(Some(PREPARATION_WORK)),
             |payloads| {
                 payloads[0].hot.state = NodeState::Clean;
             },
@@ -146,7 +146,7 @@ fn rejected_staged_growth_and_closed_owner_release_preparation_custody() {
             &ledger,
             &[0],
             Charge::ZERO,
-            &mut Work::new(PREPARATION_WORK),
+            &mut Work::new(Some(PREPARATION_WORK)),
             |_| 7,
         )
         .unwrap();
@@ -163,7 +163,7 @@ fn rejected_staged_growth_and_closed_owner_release_preparation_custody() {
         &ledger,
         &[0],
         representation_charge(&arena),
-        &mut Work::new(PREPARATION_WORK),
+        &mut Work::new(Some(PREPARATION_WORK)),
         |_| panic!("closed owner must deny before the edit"),
     );
     assert!(matches!(

@@ -113,15 +113,12 @@ fn comparison_work(
         MembershipSchema,
         MembershipProgram,
     >,
-) -> NonZeroUsize {
-    NonZeroUsize::new(
-        application
-            .runtime()
-            .output_demand_resource_profile()
-            .limits()
-            .source_currentness_work(),
-    )
-    .unwrap()
+) -> Option<usize> {
+    application
+        .runtime()
+        .output_demand_resource_profile()
+        .limits()
+        .source_currentness_work()
 }
 
 fn retained_bytes() -> NonZeroUsize {

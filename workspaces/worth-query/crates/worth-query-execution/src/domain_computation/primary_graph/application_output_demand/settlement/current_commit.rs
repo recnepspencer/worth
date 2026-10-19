@@ -21,6 +21,17 @@ where
         })?;
     let observation = selected.product().observation();
     let original_publication_is_current = committed.is_selected_at(observation);
+    let mut admission = runtime
+        .primary_provider
+        .graph
+        .source_owner
+        .invalidation_owner
+        .edit_admission_with_work_limit(
+            runtime
+                .output_demand_resource_profile()
+                .limits()
+                .source_currentness_work(),
+        );
     let retained_output_is_current = runtime
         .primary_provider
         .graph
@@ -32,7 +43,15 @@ where
             &runtime.installed_schema.binding_identity(),
             observation,
             receipt,
-        );
+            execution,
+            &mut admission,
+        )
+        .map_err(|stop| {
+            crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+                crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+                "settled output lineage read unavailable",
+            )
+        })?;
     Ok(
         (original_publication_is_current || retained_output_is_current)
             .then(|| selected.product().read_lease()),

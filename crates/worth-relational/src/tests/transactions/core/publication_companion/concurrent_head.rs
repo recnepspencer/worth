@@ -24,7 +24,7 @@ fn register(
         .activate(
             participant,
             CompanionPreflightBudget {
-                maximum_work_visits: 16,
+                maximum_work_visits: Some(16),
                 maximum_preparation_bytes: 4_096,
             },
         )
@@ -76,7 +76,7 @@ fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
                 calls: Arc::clone(&calls),
             }),
             CompanionPreflightBudget {
-                maximum_work_visits: 16,
+                maximum_work_visits: Some(16),
                 maximum_preparation_bytes: 4_096,
             },
         )

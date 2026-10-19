@@ -9,7 +9,7 @@ fn ledger(bytes: u64) -> Arc<SignalConditionalRetentionLedger> {
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 2,
             maximum_retained_bytes: bytes,
-            maximum_attempt_visits: 100_000,
+            maximum_attempt_visits: Some(100_000),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
     )
@@ -28,7 +28,7 @@ fn assert_charges(state: &DiagnosticsState) {
         state.lineage_records.prepared_retained_charge().unwrap(),
         state
             .lineage_records
-            .retained_heap_charge(&mut Work::new(8_000_000))
+            .retained_heap_charge(&mut Work::new(Some(8_000_000)))
             .unwrap()
     );
     assert_eq!(
@@ -38,7 +38,7 @@ fn assert_charges(state: &DiagnosticsState) {
             .unwrap(),
         state
             .lineage_records_by_node
-            .retained_heap_charge(&mut Work::new(8_000_000))
+            .retained_heap_charge(&mut Work::new(Some(8_000_000)))
             .unwrap()
     );
     assert_eq!(
@@ -48,7 +48,7 @@ fn assert_charges(state: &DiagnosticsState) {
             .unwrap(),
         state
             .lineage_records_by_artifact
-            .retained_heap_charge(&mut Work::new(8_000_000))
+            .retained_heap_charge(&mut Work::new(Some(8_000_000)))
             .unwrap()
     );
 }
@@ -65,7 +65,7 @@ fn retained_lineage_publication_matches_native_order_and_eviction_across_indexes
         let record = record(nodes[sequence as usize % 2], sequence);
         ordinary.record_lineage_record(record.clone());
         state
-            .record_retained_lineage(record, &ledger, &mut Work::new(8_000_000))
+            .record_retained_lineage(record, &ledger, &mut Work::new(Some(8_000_000)))
             .unwrap();
         assert_eq!(state, ordinary);
         assert_charges(&state);
@@ -85,7 +85,7 @@ fn retained_lineage_publication_denies_before_mutating_any_canonical_root() {
     let before = state.clone();
     let empty = ledger(0);
     assert!(matches!(
-        state.record_retained_lineage(record(node, 0), &empty, &mut Work::new(8_000_000)),
+        state.record_retained_lineage(record(node, 0), &empty, &mut Work::new(Some(8_000_000))),
         Err(Denial::Retention(
             SignalConditionalRetentionDenial::CapacityExhausted
         ))
@@ -94,12 +94,12 @@ fn retained_lineage_publication_denies_before_mutating_any_canonical_root() {
     assert_eq!(empty.usage(), (0, 0));
     let ledger = ledger(64 * 1024 * 1024);
     state
-        .record_retained_lineage(record(node, 0), &ledger, &mut Work::new(8_000_000))
+        .record_retained_lineage(record(node, 0), &ledger, &mut Work::new(Some(8_000_000)))
         .unwrap();
     let before = state.clone();
     let usage = ledger.usage();
     assert!(matches!(
-        state.record_retained_lineage(record(node, 1), &ledger, &mut Work::new(0)),
+        state.record_retained_lineage(record(node, 1), &ledger, &mut Work::new(Some(0))),
         Err(Denial::Accounting(
             RetainedStoragePreparationDenial::WorkExhausted { .. }
         ))
@@ -108,7 +108,7 @@ fn retained_lineage_publication_denies_before_mutating_any_canonical_root() {
     assert_eq!(ledger.usage(), usage);
     ledger.close();
     assert!(matches!(
-        state.record_retained_lineage(record(node, 1), &ledger, &mut Work::new(8_000_000)),
+        state.record_retained_lineage(record(node, 1), &ledger, &mut Work::new(Some(8_000_000))),
         Err(Denial::Retention(SignalConditionalRetentionDenial::Closed))
     ));
     assert_eq!(state, before);
@@ -125,7 +125,7 @@ fn retained_lineage_publication_never_repairs_unprepared_ordinary_history() {
     let before = state.clone();
     let ledger = ledger(64 * 1024 * 1024);
     assert!(matches!(
-        state.record_retained_lineage(record(node, 1), &ledger, &mut Work::new(8_000_000)),
+        state.record_retained_lineage(record(node, 1), &ledger, &mut Work::new(Some(8_000_000))),
         Err(Denial::Unprepared)
     ));
     assert_eq!(state, before);
@@ -162,7 +162,7 @@ fn heap_bearing_lineage_publication_uses_one_exact_work_allowance() {
         },
     };
     let mut sample = DiagnosticsState::default();
-    let mut measured = Work::new(8_000_000);
+    let mut measured = Work::new(Some(8_000_000));
     sample
         .record_retained_lineage(record.clone(), &ledger(64 * 1024 * 1024), &mut measured)
         .unwrap();
@@ -170,7 +170,7 @@ fn heap_bearing_lineage_publication_uses_one_exact_work_allowance() {
     for maximum in [exact - 1, exact] {
         let mut state = DiagnosticsState::default();
         let before = state.clone();
-        let mut work = Work::new(maximum);
+        let mut work = Work::new(Some(maximum));
         let result =
             state.record_retained_lineage(record.clone(), &ledger(64 * 1024 * 1024), &mut work);
         if maximum == exact {

@@ -24,7 +24,7 @@ fn request_with_memory(workers: usize, memory_bytes: u64) -> worth_execution::Le
         ExecutionBudget::new(
             admission.policy.budget().max_workers(),
             memory_bytes,
-            10_000_000,
+            Some(10_000_000),
         ),
     );
     admission

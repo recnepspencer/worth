@@ -129,6 +129,7 @@ where
                         // can consume this checkpoint's remaining allowance.
                         let priors = lineage
                             .checkpoint_prior_outputs(
+                                &execution,
                                 self.runtime.authority_identity().as_u64(),
                                 &self.installed_schema.binding_identity(),
                                 occurrence,

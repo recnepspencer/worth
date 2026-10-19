@@ -10,7 +10,7 @@ pub(super) fn selection_descriptor() -> CustomInvariantDescriptor {
         },
         display_name: Arc::from("Supply Chain selected structural adjacency probe"),
         operational: CustomInvariantOperationalMetadata {
-            maximum_work_units: std::num::NonZeroU64::new(1_000_000).unwrap(),
+            maximum_work_units: Some(std::num::NonZeroU64::new(1_000_000).unwrap()),
             access: worth_relational::facade::runtime::CustomInvariantAccessContract {
                 read_entity_kinds: vec![
                     entity_kind_id(EntityKind::CargoLot),

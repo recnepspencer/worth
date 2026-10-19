@@ -15,8 +15,7 @@ where
     <<Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Query> + Clone,
 {
     pub fn read_current(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<DeliveredProjection<Schema, Read<Schema, Intent, Action>>, WorthQueryOperationDeliveryDenial> {
-        self.read_current_with_policy(request, WorthQueryOperationDeliveryPolicy::currentness(
-            std::num::NonZeroUsize::new(self.runtime.runtime().output_demand_resource_profile().limits().source_currentness_work()).expect("installed finite positive currentness policy")))
+        self.read_current_with_policy(request, WorthQueryOperationDeliveryPolicy::default())
     }
 
     pub fn read_current_with_policy(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, policy: WorthQueryOperationDeliveryPolicy) -> Result<DeliveredProjection<Schema, Read<Schema, Intent, Action>>, WorthQueryOperationDeliveryDenial> {

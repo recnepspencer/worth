@@ -69,11 +69,10 @@ impl IndexAdmission for MarkingMeter<'_, '_> {
             .work
             .checked_add(visits)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        if required > self.budget.maximum_work_visits {
-            return Err(CompanionPreflightStop::WorkExhausted {
-                required,
-                maximum: self.budget.maximum_work_visits,
-            });
+        if let Some(maximum) = self.budget.maximum_work_visits
+            && required > maximum
+        {
+            return Err(CompanionPreflightStop::WorkExhausted { required, maximum });
         }
         self.work = required;
         Ok(())

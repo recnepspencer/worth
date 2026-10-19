@@ -79,13 +79,13 @@ mod tests {
             .push((aspect, scope.clone()));
         let mut source: PersistentPagedVector<_> = [warm].into_iter().collect();
         source
-            .prepare_retained_charge(&mut Preparation::new(1_000))
+            .prepare_retained_charge(&mut Preparation::new(Some(1_000)))
             .unwrap();
         let mut selected = source.fork_persistent();
         let sibling = selected.clone();
         let before = selected.prepared_retained_charge().unwrap();
         let outcome = selected
-            .edit_with_retained_capacity(0, before, &mut Preparation::new(1_000), |node| {
+            .edit_with_retained_capacity(0, before, &mut Preparation::new(Some(1_000)), |node| {
                 std::sync::Arc::make_mut(&mut node.aspect_version_overrides)
                     .set_global(AspectVersion::zero().with(aspect, 9));
                 node.dirty_partition_scope_payload[0].1 = PartitionSubscription::subtree(
@@ -140,7 +140,7 @@ mod tests {
             execution_trace: None,
         };
         let before = cold
-            .retained_heap_charge(&mut Preparation::new(1_000))
+            .retained_heap_charge(&mut Preparation::new(Some(1_000)))
             .unwrap()
             .bytes();
         let artifact = cold.retained_artifact.as_mut().unwrap();
@@ -158,7 +158,7 @@ mod tests {
             added += payload.capacity() as u64;
         }
         let after = cold
-            .retained_heap_charge(&mut Preparation::new(1_000))
+            .retained_heap_charge(&mut Preparation::new(Some(1_000)))
             .unwrap()
             .bytes();
         assert_eq!(after - before, added);
@@ -168,7 +168,7 @@ mod tests {
         drop(parent);
         assert!(
             retained
-                .retained_heap_charge(&mut Preparation::new(1_000))
+                .retained_heap_charge(&mut Preparation::new(Some(1_000)))
                 .unwrap()
                 .bytes()
                 >= after
@@ -208,7 +208,7 @@ mod tests {
         );
         assert_eq!(
             artifact
-                .retained_heap_charge(&mut Preparation::new(1_000))
+                .retained_heap_charge(&mut Preparation::new(Some(1_000)))
                 .unwrap()
                 .bytes(),
             capacity * 4
@@ -223,7 +223,7 @@ mod tests {
         let mut retained = parent.fork_persistent();
         retained[0] = NodeWarmData::default();
         drop(parent);
-        let mut work = Preparation::new(1_000);
+        let mut work = Preparation::new(Some(1_000));
         assert!(
             retained.retained_heap_charge(&mut work).unwrap().bytes()
                 >= capacity * 4
@@ -231,7 +231,7 @@ mod tests {
                     + std::mem::size_of::<PartitionSubscription>() as u64
         );
         assert!(matches!(
-            retained.retained_heap_charge(&mut Preparation::new(work.visits() - 1)),
+            retained.retained_heap_charge(&mut Preparation::new(Some(work.visits() - 1))),
             Err(Denial::WorkExhausted { .. })
         ));
     }

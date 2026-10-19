@@ -82,7 +82,11 @@ fn bootstrap_index_build_keeps_the_serial_requests_cancellation() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, 16 * 1024 * 1024, 1_000_000),
+            ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                16 * 1024 * 1024,
+                Some(1_000_000),
+            ),
         ),
         cancellation: cancellation.token(),
         deadline: None,

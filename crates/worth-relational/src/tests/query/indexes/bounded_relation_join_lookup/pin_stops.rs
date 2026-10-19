@@ -27,7 +27,7 @@ fn relation_join_pin_keeps_the_cancelled_request_cause() {
                     worth_foundational::ExecutionBudget::new(
                         std::num::NonZeroUsize::new(1).unwrap(),
                         64 << 20,
-                        100_000,
+                        Some(100_000),
                     ),
                 ),
                 deadline: None,

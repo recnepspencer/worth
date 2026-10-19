@@ -1,4 +1,3 @@
-use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use crate::history::{CompositeHistoryTraversal, CompositeRuntimeWorldCommit};
@@ -68,10 +67,6 @@ impl ProductBranchHistoryTraversal {
 
     pub(crate) fn branch(&self) -> &ProductBranchIdentity {
         &self.branch
-    }
-
-    pub(crate) fn continuation_limit(&self, maximum: NonZeroUsize) -> Option<NonZeroUsize> {
-        NonZeroUsize::new(maximum.get().min(self.remaining_branch_commits))
     }
 
     /// Branch generations not yet covered, counted from the next parent.

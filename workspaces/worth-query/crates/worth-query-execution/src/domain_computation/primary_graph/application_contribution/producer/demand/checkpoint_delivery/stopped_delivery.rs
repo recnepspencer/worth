@@ -33,7 +33,7 @@ impl BridgeConditionalComputeProvider for Compute {
 }
 fn admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-        maximum_work_visits: 1_000_000,
+        maximum_work_visits: Some(1_000_000),
         maximum_preparation_bytes: 8 * 1024 * 1024,
     })
 }

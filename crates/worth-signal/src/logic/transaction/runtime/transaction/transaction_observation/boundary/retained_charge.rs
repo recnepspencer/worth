@@ -89,7 +89,9 @@ mod tests {
             .checked_add(btree_structure_charge::<crate::data::handle::NodeId, ()>(1).unwrap())
             .unwrap();
         assert_eq!(
-            summary.retained_heap_charge(&mut Work::new(1000)).unwrap(),
+            summary
+                .retained_heap_charge(&mut Work::new(Some(1000)))
+                .unwrap(),
             expected
         );
     }

@@ -104,7 +104,7 @@ fn no_projection_fixed_and_no_source_deliver_at_one_caller_observation() {
         drop(foreign);
         // Change an ACTUAL consumed root fact through the selected program.
         edit_source(&world, &request, "anchor-a", 4, 0x9176_6281);
-        superseded_at_caller_observation(&closed_fixed, &closed_tree, &world, &request);
+        superseded_at_caller_observation(&closed_fixed, &closed_tree, &request);
         assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
         assert_eq!(
             world
@@ -130,7 +130,7 @@ fn one_caller_observation(
     request: &Request<'_, '_, '_>,
     foreign: &WorthQueryApplicationReadObservation,
 ) {
-    let policy = installed_policy(world);
+    let policy = WorthQueryOperationDeliveryPolicy::default();
     let common = request.retain_current_read().unwrap();
     let cancellation = WorthQueryCancellationSource::new();
     let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
@@ -202,10 +202,9 @@ fn one_caller_observation(
 fn superseded_at_caller_observation(
     closed_fixed: &ClosedNoProjection,
     closed_tree: &ClosedNoProjectionTree,
-    world: &NoProjectionWorld,
     request: &Request<'_, '_, '_>,
 ) {
-    let policy = installed_policy(world);
+    let policy = WorthQueryOperationDeliveryPolicy::default();
     let edited = request.retain_current_read().unwrap();
     let pinned = request.at(&edited);
     assert!(matches!(
@@ -246,20 +245,6 @@ fn install_no_projection(
         program,
     )
     .unwrap()
-}
-
-fn installed_policy(world: &NoProjectionWorld) -> WorthQueryOperationDeliveryPolicy {
-    WorthQueryOperationDeliveryPolicy::currentness(
-        NonZeroUsize::new(
-            world
-                .application
-                .runtime()
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
-        .unwrap(),
-    )
 }
 
 fn settle_fixed(

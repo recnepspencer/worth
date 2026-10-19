@@ -79,12 +79,12 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
     }
 
     /// The request-level ceiling used to narrow a computation's declared work.
-    /// Serial requests bound memory only, so `u64::MAX` leaves that declaration unchanged.
+    /// Absence preserves the computation declaration without adding a request ceiling.
     /// Charged work is still metered and counter overflow remains a typed stop.
-    pub fn work_ceiling(self) -> u64 {
+    pub fn work_ceiling(self) -> Option<u64> {
         match self.form {
             RequestBacking::Leased(lease) => lease.policy().budget().work_ceiling(),
-            RequestBacking::Serial(_) => u64::MAX,
+            RequestBacking::Serial(request) => request.work_ceiling,
         }
     }
 

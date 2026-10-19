@@ -18,7 +18,7 @@ fn a_tree_stop_keeps_no_kernel_completion_receipt_with_reuse_either_way() {
         Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
         &request,
         placement,
-        Some(u64::MAX),
+        None,
     );
     // All kernels fit; the ceiling omits the tree's last accepted unit.
     let ceiling = first.bill.charged_work() - 1;

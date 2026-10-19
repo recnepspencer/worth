@@ -218,7 +218,7 @@ fn candidate_partition_work_is_charged_by_enclosing_map_lease() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Serial,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 8_192, ceiling),
+                    ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 8_192, Some(ceiling)),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),

@@ -136,13 +136,8 @@ where
                         return Ok(Step::Terminal);
                     }
                 }
-                self.deliver_retained(
-                    phase,
-                    request,
-                    maximum_history_work
-                        .expect("retained mode requires a per-attempt history bound"),
-                )
-                .map(|()| Step::Completed)
+                self.deliver_retained(phase, request, maximum_history_work)
+                    .map(|()| Step::Completed)
             }
             SourceState::<S, I>::Stopped(_) | SourceState::<S, I>::AdmissionStopped(_) => {
                 Ok(Step::Terminal)

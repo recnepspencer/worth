@@ -141,7 +141,7 @@ fn charged_occurrence_search_pins_path_and_row_work() {
 
     for (budget, tested_rows) in [(1, 0), (4, 2)] {
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: budget,
+            maximum_work_visits: Some(budget),
             maximum_preparation_bytes: 8 * 1024 * 1024,
         });
         let tested = std::cell::Cell::new(0);
@@ -180,7 +180,7 @@ fn charged_stale_owner_exit_pays_through_the_published_newer_row_only() {
         record(occurrence(), DemandState::Admitted, 0),
     );
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 5,
+        maximum_work_visits: Some(5),
         maximum_preparation_bytes: 8 * 1024 * 1024,
     });
     assert!(!awaited_by_stale_owner(&records, &key("exit", 2, 2), &mut admission).unwrap());

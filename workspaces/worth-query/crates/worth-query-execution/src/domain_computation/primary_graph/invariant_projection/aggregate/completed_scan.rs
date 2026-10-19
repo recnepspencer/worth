@@ -77,12 +77,13 @@ impl AggregateScanReader<'_, '_> {
                 .reject_initial_adjacency(limit, self.plan.relation_member())
         })?;
         let row_count = read.relation_records_examined();
-        self.accounting.record_cold_lookup(row_count);
         self.accounting.complete_adjacency(
             read.work_units(),
             row_count,
             read.endpoint_records_reserved(),
-        );
+            self.plan.relation_member(),
+        )?;
+        self.accounting.record_cold_lookup(row_count);
         let mut accumulator = AggregateScanAccumulator::new();
         for record in read.into_records() {
             let value = self.observe_source(execution, &record)?;
@@ -120,7 +121,8 @@ impl AggregateScanReader<'_, '_> {
             relations.work_units(),
             relations.relation_records_examined(),
             relations.endpoint_records_reserved(),
-        );
+            self.plan.relation_member(),
+        )?;
         if relations.into_records().as_slice() != [record.clone()] {
             return Err(denial(
                 WorthQueryInvariantAggregateDenialKind::AmbiguousSourceRelation,

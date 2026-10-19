@@ -47,7 +47,7 @@ fn install(
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, AUTHORITY_BYTES as u64, work),
+        ExecutionBudget::new(NonZeroUsize::MIN, AUTHORITY_BYTES as u64, Some(work)),
     );
     let limits = example_limits(Some(policy)).with_execution_authority(authority);
     let runtime = match checkpoint {
@@ -89,7 +89,7 @@ fn request() -> LeaseRequest {
             ExecutionBudget::new(
                 NonZeroUsize::new(1).unwrap(),
                 AUTHORITY_BYTES as u64,
-                ORDINARY_READ_WORK,
+                Some(ORDINARY_READ_WORK),
             ),
         ),
         deadline: None,

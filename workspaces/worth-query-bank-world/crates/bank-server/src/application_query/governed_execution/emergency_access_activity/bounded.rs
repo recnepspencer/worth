@@ -106,7 +106,7 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
         let application = self.runtime.application_runtime();
         let request = application.request(self.principal.external(), self.controls.request());
         let retained = request
-            .at_approved_elevation(&phase, self.approved.query(), self.controls.maximum_work())
+            .at_approved_elevation(&phase, self.approved.query(), Some(self.controls.maximum_work()))
             .map_err(BankApplicationQueryDenial::from_history_selection)?;
         let capability_input = self.request.capability_request();
         retained

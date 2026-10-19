@@ -41,7 +41,7 @@ fn admitted_normalization_matches_independent_sort_for_duplicates_and_scope_payl
             )
         });
         expected.dedup();
-        let mut full = RetainedStoragePreparation::new(1_000_000);
+        let mut full = RetainedStoragePreparation::new(Some(1_000_000));
         assert_eq!(
             collect(nodes[0], mask, &entries, &mut full).unwrap(),
             expected
@@ -51,7 +51,7 @@ fn admitted_normalization_matches_independent_sort_for_duplicates_and_scope_payl
                 nodes[0],
                 mask,
                 &entries,
-                &mut RetainedStoragePreparation::new(full.visits())
+                &mut RetainedStoragePreparation::new(Some(full.visits()))
             )
             .unwrap(),
             expected
@@ -62,7 +62,7 @@ fn admitted_normalization_matches_independent_sort_for_duplicates_and_scope_payl
                 nodes[0],
                 mask,
                 &entries,
-                &mut RetainedStoragePreparation::new(limit)
+                &mut RetainedStoragePreparation::new(Some(limit))
             ),
             Err(SignalError::ConditionalEvaluationWorkExhausted {
                 maximum_visits: limit
@@ -86,7 +86,7 @@ fn equal_edge_counts_cannot_hide_large_scope_payload_traversal() {
                 detail,
             )),
         }];
-        let mut work = RetainedStoragePreparation::new(1_024);
+        let mut work = RetainedStoragePreparation::new(Some(1_024));
         let result = collect(node, AspectMask::EMPTY, &entries, &mut work);
         if large {
             assert_eq!(

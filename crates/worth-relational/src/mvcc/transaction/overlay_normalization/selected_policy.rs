@@ -19,7 +19,7 @@ fn request(memory: u64) -> LeaseRequest {
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
             // This allocation witness had an unbounded serial commit request.
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, u64::MAX),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, None),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

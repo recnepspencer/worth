@@ -234,7 +234,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
                 [].into(),
                 StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
             ).unwrap(),
-            &BTreeSet::new(), true, 4, &mut request_admission());
+            &BTreeSet::new(), true, Some(4), &mut request_admission());
         let RebasedSourceFacts::Exact(facts) = outcome else {
             panic!("two native one-row probes fit four work units: {outcome:?}");
         };
@@ -250,7 +250,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
                 [].into(),
                 StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
             ).unwrap(),
-            &BTreeSet::new(), true, 2, &mut request_admission());
+            &BTreeSet::new(), true, Some(2), &mut request_admission());
         assert_eq!(denied, RebasedSourceFacts::VerificationRequired {
             reason: RebaseVerificationReason::AdmissionDenied(
                 CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: 2 }),
@@ -302,7 +302,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
         );
         for (width, spent) in [(1, 0), (2, 2)] {
             let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                maximum_work_visits: width,
+                maximum_work_visits: Some(width),
                 maximum_preparation_bytes: 0,
             });
             assert_eq!(observed.source_currentness_in(runtime,execution,  snapshot, &mut admission),
@@ -324,7 +324,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
             .unwrap(),
             &BTreeSet::new(),
             true,
-            2,
+            Some(2),
             &mut request_admission(),
         );
         assert_eq!(
@@ -344,7 +344,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
 
 fn request_admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 64,
+        maximum_work_visits: Some(64),
         maximum_preparation_bytes: 1024 * 1024,
     })
 }

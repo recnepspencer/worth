@@ -52,12 +52,12 @@ mod tests {
         graph.arena.definitions[0].eval_config.condition = EvaluationCondition::Custom(condition);
         let retained = crate::data::graph::storage::execution_basis::SignalExecutionBasis::capture(
             &mut graph,
-            &mut Preparation::new(100_000),
+            &mut Preparation::new(Some(100_000)),
         )
         .unwrap()
         .definitions;
         let charge = retained
-            .retained_heap_charge(&mut Preparation::new(1_000))
+            .retained_heap_charge(&mut Preparation::new(Some(1_000)))
             .unwrap();
         assert!(charge.bytes() >= capacity);
 
@@ -65,12 +65,12 @@ mod tests {
         drop(graph);
         assert_eq!(
             retained
-                .retained_heap_charge(&mut Preparation::new(1_000))
+                .retained_heap_charge(&mut Preparation::new(Some(1_000)))
                 .unwrap(),
             charge
         );
         assert!(matches!(
-            retained.retained_heap_charge(&mut Preparation::new(1)),
+            retained.retained_heap_charge(&mut Preparation::new(Some(1))),
             Err(Denial::WorkExhausted { maximum_visits: 1 }),
         ));
     }

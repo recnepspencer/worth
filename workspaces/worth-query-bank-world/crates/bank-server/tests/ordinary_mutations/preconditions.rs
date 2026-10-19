@@ -48,7 +48,7 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
                     MutationHandlerExecutionDenial::Attempt(denial),
                 ),
             ),
-    } = mismatch.advance(&request, history)
+    } = mismatch.advance(&request, Some(history))
     else {
         panic!("native typed mismatch")
     };
@@ -84,7 +84,7 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
         .unwrap_or_else(|cause| panic!("typed construction: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         committed,
-    ) = committed.advance(&request, history)
+    ) = committed.advance(&request, Some(history))
     else {
         panic!("typed fresh commit")
     };
@@ -123,13 +123,13 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
         .retain_operation()
         .unwrap_or_else(|cause| panic!("typed construction: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(retried) =
-        retried.advance(&request, history)
+        retried.advance(&request, Some(history))
     else {
         panic!("native replay requires retained delivery")
     };
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         retried,
-    ) = retried.advance(&request, history)
+    ) = retried.advance(&request, Some(history))
     else {
         panic!("native original retained delivery")
     };
@@ -170,7 +170,7 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
         .unwrap_or_else(|cause| panic!("typed construction: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
         intent_drift,
-    ) = intent_drift.advance(&request, history)
+    ) = intent_drift.advance(&request, Some(history))
     else {
         panic!("changed typed conditions are intent drift")
     };

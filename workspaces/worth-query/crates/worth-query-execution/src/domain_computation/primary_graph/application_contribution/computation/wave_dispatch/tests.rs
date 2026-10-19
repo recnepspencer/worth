@@ -34,7 +34,7 @@ fn run(
     request
         .execution_request()
         .unwrap()
-        .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
             dispatch(&request, members)
         })
         .unwrap()

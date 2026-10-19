@@ -12,7 +12,7 @@ fn request(memory: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, 1_000_000),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, Some(1_000_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

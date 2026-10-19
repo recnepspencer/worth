@@ -40,7 +40,7 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
                                 ExecutionBudget::new(
                                     std::num::NonZeroUsize::new(width).unwrap(),
                                     MEMORY,
-                                    100_000,
+                                    Some(100_000),
                                 ),
                             ),
                             deadline: None,

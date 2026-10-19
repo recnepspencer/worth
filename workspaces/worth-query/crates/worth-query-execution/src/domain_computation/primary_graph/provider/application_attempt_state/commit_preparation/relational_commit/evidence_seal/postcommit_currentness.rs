@@ -226,7 +226,7 @@ pub(super) fn rebase_output(
     correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     changed_records: &[worth_relational::facade::transactions::RecordRef],
     producer_output: bool,
-    maximum_indexed_rebase_work: usize,
+    maximum_indexed_rebase_work: Option<usize>,
     admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
     let changed_entities = changed_records

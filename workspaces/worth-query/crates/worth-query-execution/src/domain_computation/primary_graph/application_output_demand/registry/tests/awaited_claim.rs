@@ -70,7 +70,7 @@ fn last_claim_closes(held_successor: bool) {
         // The lifetime proof funds the whole finite cleanup, once. Partial
         // admission and exact charges belong to the every-unit drain table.
         let mut complete = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: u64::MAX,
+            maximum_work_visits: None,
             maximum_preparation_bytes: 8 * 1024 * 1024,
         });
         registry

@@ -98,17 +98,17 @@ mod tests {
         drop(source);
         assert_eq!(retained.get(base).len(), 1);
         assert_eq!(retained.get(appended).len(), 1);
-        let mut work = Preparation::new(1_000);
+        let mut work = Preparation::new(Some(1_000));
         let charge = retained.retained_heap_charge(&mut work).unwrap();
         assert!(charge.bytes() >= 12 * 4_096);
         assert_eq!(
             retained
-                .retained_heap_charge(&mut Preparation::new(work.visits()))
+                .retained_heap_charge(&mut Preparation::new(Some(work.visits())))
                 .unwrap(),
             charge
         );
         assert!(matches!(
-            retained.retained_heap_charge(&mut Preparation::new(work.visits() - 1)),
+            retained.retained_heap_charge(&mut Preparation::new(Some(work.visits() - 1))),
             Err(Denial::WorkExhausted { .. })
         ));
     }

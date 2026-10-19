@@ -133,7 +133,7 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
                 product,
                 application_basis,
                 NonZeroUsize::new(1).unwrap(),
-                NonZeroUsize::new(256).unwrap(),
+                Some(NonZeroUsize::new(256).unwrap()),
                 &request,
             ),
         )

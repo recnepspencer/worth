@@ -220,6 +220,6 @@ impl ApplicationDerivedArtifact<CheckpointSchema, PlanarOutputFeature> for Artif
         )];
     const REUSE_RULE: &'static str = "wave-exact";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(4096, 8192);
+        ApplicationArtifactResourceCeiling::new(Some(4096), 8192);
     const STOPPED_OUTCOME: &'static str = "wave-declared-failure";
 }

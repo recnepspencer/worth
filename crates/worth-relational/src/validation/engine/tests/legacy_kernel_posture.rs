@@ -16,7 +16,7 @@ fn lease(posture: ExecutionPosture, workers: usize) -> ExecutionResourceLease<'s
                 ExecutionBudget::new(
                     NonZeroUsize::new(workers).unwrap(),
                     8 * 1024 * 1024,
-                    100_000,
+                    Some(100_000),
                 ),
             ),
             deadline: None,

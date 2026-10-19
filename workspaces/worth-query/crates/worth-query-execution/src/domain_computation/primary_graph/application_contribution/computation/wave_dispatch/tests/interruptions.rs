@@ -80,7 +80,7 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
             let (settled, report) = root
                 .execution_request()
                 .unwrap()
-                .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+                .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                     dispatch(&root, members)
                 })
                 .unwrap();

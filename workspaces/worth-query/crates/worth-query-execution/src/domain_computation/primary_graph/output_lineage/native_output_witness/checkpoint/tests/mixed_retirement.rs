@@ -78,7 +78,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     &correspondence,
                     layout,
                     owner,
-                    &mut owner.edit_admission_within(std::num::NonZeroUsize::new(exact_work - 1).unwrap())
+                    &mut owner.edit_admission_with_work_limit(Some(exact_work - 1))
                 ),
                 Err(CompanionPreflightStop::WorkExhausted { .. })
             ),
@@ -207,12 +207,12 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 &correspondence,
                 layout,
                 owner,
-                &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget { maximum_work_visits: 0, maximum_preparation_bytes: 0 })
+                &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget { maximum_work_visits: Some(0), maximum_preparation_bytes: 0 })
             ),
             Err(CompanionPreflightStop::WorkExhausted { .. })
         ));
         assert!(matches!(
-            witness.unchanged_in( runtime, &committed, &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget { maximum_work_visits: 0, maximum_preparation_bytes: 0 })),
+            witness.unchanged_in( runtime, &committed, &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget { maximum_work_visits: Some(0), maximum_preparation_bytes: 0 })),
             Err(CompanionPreflightStop::WorkExhausted { .. })
         ));
         let wrong_generation = mixed_correspondence(

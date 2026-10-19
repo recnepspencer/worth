@@ -101,7 +101,7 @@ fn lease_free_decomposition_entry_fits_its_serial_tree_quote_exactly() {
             None,
         );
         let mut entry_admitted = None;
-        let outer = run_scope_within(None, 0, 0, true, 100, Some(&request), |_| {
+        let outer = run_scope_within(None, 0, 0, true, Some(100), Some(&request), |_| {
             let tree =
                 ReductionTree::<(), Combine>::checked_serial_build_memory_bound(1, 0).unwrap();
             // Scope custody: two tree bounds, two identities, the reducer,

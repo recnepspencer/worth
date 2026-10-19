@@ -29,7 +29,7 @@ fn growing_warm_before_shrinking_cold_requires_the_intermediate_capacity() {
     }));
     arena
         .cold
-        .prepare_retained_charge(&mut Work::new(1_000))
+        .prepare_retained_charge(&mut Work::new(Some(1_000)))
         .unwrap();
     let original = arena.clone();
     // Independently materialize the actual first two writes while keeping the
@@ -48,7 +48,7 @@ fn growing_warm_before_shrinking_cold_requires_the_intermediate_capacity() {
             &test_ledger(),
             &[0],
             final_charge,
-            &mut Work::new(CAPACITY_SCENARIO_WORK),
+            &mut Work::new(Some(CAPACITY_SCENARIO_WORK)),
             transfer_payload,
         )
         .unwrap();
@@ -64,7 +64,7 @@ fn growing_warm_before_shrinking_cold_requires_the_intermediate_capacity() {
             &test_ledger(),
             &[0],
             peak,
-            &mut Work::new(CAPACITY_SCENARIO_WORK),
+            &mut Work::new(Some(CAPACITY_SCENARIO_WORK)),
             transfer_payload,
         )
         .unwrap()

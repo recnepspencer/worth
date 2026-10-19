@@ -42,15 +42,20 @@ fn page_resume_and_live_entries_refuse_before_their_own_reader() {
             .as_principal(&owner)
     };
     let controls = || BankReadControls::current(request_scope(), 1, 4_096).unwrap();
-    let live_controls = || LiveControls::bounded(request_scope(), 16, 8, 2_048).unwrap();
+    let live_controls = || LiveControls::bounded(request_scope(), 16, 8, Some(2_048)).unwrap();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         for zero_memory in [false, true] {
             for entry in 0..4 {
                 bound(None);
                 let scope = request_scope();
-                let resume =
-                    || Resume::new(NonZeroUsize::MIN, NonZeroUsize::new(4_096).unwrap(), &scope);
+                let resume = || {
+                    Resume::new(
+                        NonZeroUsize::MIN,
+                        Some(NonZeroUsize::new(4_096).unwrap()),
+                        &scope,
+                    )
+                };
                 let before = reads();
                 match entry {
                     0 => {
@@ -83,7 +88,7 @@ fn page_resume_and_live_entries_refuse_before_their_own_reader() {
                 bound(Some(worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
                     if zero_memory { 0 } else { 64 * 1_024 * 1_024 },
-                    if zero_memory { 16_000_000 } else { 0 },
+                    Some(if zero_memory { 16_000_000 } else { 0 }),
                 )));
                 let before = reads();
                 let cause = match entry {

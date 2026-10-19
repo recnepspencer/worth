@@ -119,7 +119,7 @@ impl CanonicalDependencyCauseSet {
         use crate::data::retained_storage::{
             RetainedStorageCharge as Charge, RetainedStorageMeasurement, RetainedStoragePreparation,
         };
-        let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+        let mut measurement = RetainedStoragePreparation::new(None);
         let bound = (|| {
             let mut bytes = self
                 .dirty_scoped_aspects

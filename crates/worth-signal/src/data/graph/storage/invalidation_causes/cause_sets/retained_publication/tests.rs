@@ -51,7 +51,7 @@ fn large_causes() -> NormalizedCauseSet {
 fn retained_epoch_virtual_final_empty_matches_sequential_reuse() {
     let mut source = CanonicalCauseSetStore::default();
     let producer = source.insert_normalized(causes(0));
-    let mut work = Work::new(1_000_000);
+    let mut work = Work::new(Some(1_000_000));
     source.prepare_fork_charge(&mut work).unwrap();
     source.prepare_fork_growth(&mut work).unwrap();
     let mut sequential = source.fork_persistent();
@@ -82,7 +82,7 @@ fn retained_epoch_virtual_final_empty_matches_sequential_reuse() {
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 4,
             maximum_retained_bytes: 16 * 1024 * 1024,
-            maximum_attempt_visits: 1_000_000,
+            maximum_attempt_visits: Some(1_000_000),
         },
         SignalRuntimePolicy::development().conditional_temporal_budget,
     );
@@ -135,14 +135,14 @@ fn retained_epoch_virtual_final_empty_matches_sequential_reuse() {
 #[test]
 fn retained_epoch_virtual_payload_growth_denies_before_live_publication() {
     let mut source = CanonicalCauseSetStore::default();
-    let mut work = Work::new(1_000_000);
+    let mut work = Work::new(Some(1_000_000));
     source.prepare_fork_charge(&mut work).unwrap();
     source.prepare_fork_growth(&mut work).unwrap();
     let ledger = SignalConditionalRetentionLedger::new(
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 4,
             maximum_retained_bytes: 16 * 1024 * 1024,
-            maximum_attempt_visits: 1_000_000,
+            maximum_attempt_visits: Some(1_000_000),
         },
         SignalRuntimePolicy::development().conditional_temporal_budget,
     );

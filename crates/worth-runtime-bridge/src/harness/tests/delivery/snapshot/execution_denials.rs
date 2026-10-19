@@ -64,7 +64,7 @@ impl InvalidationSink for RefusingSink {
                                 ExecutionBudget::new(
                                     NonZeroUsize::new(workers).unwrap(),
                                     memory,
-                                    work,
+                                    Some(work),
                                 ),
                             ),
                             cancellation: CancellationToken::new(),
@@ -81,7 +81,7 @@ impl InvalidationSink for RefusingSink {
                     Refusal::Memory => refused_scan(Some(lease), 0, 4097),
                     Refusal::Overflow => refused_scan(Some(lease), u64::MAX, 0),
                     Refusal::Nested => {
-                        ExecutionWorkCeiling::new(10)
+                        ExecutionWorkCeiling::new(Some(10))
                             .run(lease, || refused_scan(None, 0, 0))
                             .unwrap()
                             .0
@@ -157,7 +157,7 @@ fn serial_request(memory: u64) -> worth_execution::SerialRequest {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, memory, 1_000),
+        ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(1_000)),
     );
     worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::from_policy(&policy),

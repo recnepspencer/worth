@@ -73,7 +73,7 @@ where
         operation: ApplicationOperationRef<Schema, Operation, Input>,
         input: Input,
         page_width: NonZeroUsize,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<NonZeroUsize>,
     ) -> Result<Page<Schema, Intent>, WorthQueryApplicationRequestQueryDenial>
     where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
@@ -169,7 +169,7 @@ where
         input: Input,
         continuation: Continuation<Schema, Intent>,
         page_width: NonZeroUsize,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<NonZeroUsize>,
         after_readmission: impl for<'admitted> FnOnce(
             &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             &'admitted WorthQueryPrimaryGraphApplicationRuntime<Schema>,

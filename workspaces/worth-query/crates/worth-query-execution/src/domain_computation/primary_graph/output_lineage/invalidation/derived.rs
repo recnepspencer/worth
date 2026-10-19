@@ -93,22 +93,28 @@ impl SourceInvalidationOwner {
     pub(in crate::domain_computation::primary_graph) fn request_admission(
         &self,
     ) -> InvalidationEditAdmission {
-        InvalidationEditAdmission::structurally_bounded_request(
+        InvalidationEditAdmission::with_work_limit(
+            None,
             self.resources.preflight_budget().maximum_preparation_bytes,
         )
     }
 
-    /// The meter of a read whose caller declared its own ceiling: the
-    /// installed allowance, no larger than `maximum_work`.
-    pub(in crate::domain_computation::primary_graph) fn edit_admission_within(
+    /// A child read retains its caller's optional ceiling, including an
+    /// exhausted Some(0). Installation supplies physical preparation bytes.
+    pub(in crate::domain_computation::primary_graph) fn edit_admission_with_work_limit(
         &self,
-        maximum_work: std::num::NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> InvalidationEditAdmission {
-        let mut budget = self.resources.preflight_budget();
-        budget.maximum_work_visits = budget
-            .maximum_work_visits
-            .min(u64::try_from(maximum_work.get()).unwrap_or(u64::MAX));
-        InvalidationEditAdmission::new(budget)
+        let installed = self.resources.preflight_budget();
+        let requested = maximum_work.map(|work| u64::try_from(work).expect("native work fits u64"));
+        InvalidationEditAdmission::with_work_limit(
+            installed
+                .maximum_work_visits
+                .into_iter()
+                .chain(requested)
+                .min(),
+            installed.maximum_preparation_bytes,
+        )
     }
 
     pub(super) fn cell_for_read(

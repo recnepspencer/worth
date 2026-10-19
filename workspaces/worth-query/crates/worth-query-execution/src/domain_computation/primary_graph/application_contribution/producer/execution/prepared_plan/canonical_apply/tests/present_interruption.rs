@@ -29,7 +29,7 @@ fn interruption_present_at_dispatch_has_equal_outcome_charge_and_commits() {
         let (outcome, report) = execution
             .execution_request()
             .unwrap()
-            .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+            .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                 let plans = (0..3)
                     .map(|rank| {
                         OwnerPlan::new(
@@ -50,7 +50,7 @@ fn interruption_present_at_dispatch_has_equal_outcome_charge_and_commits() {
                     &execution,
                 );
                 let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                    maximum_work_visits: 0,
+                    maximum_work_visits: Some(0),
                     maximum_preparation_bytes: 0,
                 });
                 cursor.apply(

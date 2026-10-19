@@ -259,7 +259,9 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
         let request = ExecutionRequest::serial(&short);
         assert_eq!(
             request
-                .run(ExecutionWorkCeiling::new(units - 1), |_| read(&request))
+                .run(ExecutionWorkCeiling::new(Some(units - 1)), |_| read(
+                    &request
+                ))
                 .unwrap()
                 .0,
             Err(Cause::WorkExhausted),
@@ -268,7 +270,7 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
         let live = crate::test_execution_policy::serial_request();
         let request = ExecutionRequest::serial(&live);
         let (answer, report) = request
-            .run(ExecutionWorkCeiling::new(units), |_| read(&request))
+            .run(ExecutionWorkCeiling::new(Some(units)), |_| read(&request))
             .unwrap();
         assert_eq!(answer, Ok(rows), "seam {seam} exact budget");
         assert_eq!(report.charged_work(), units, "seam {seam} payer");

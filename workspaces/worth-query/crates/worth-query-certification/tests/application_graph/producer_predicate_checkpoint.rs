@@ -177,15 +177,15 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
         .expect("installed host call opens");
     assert!(matches!(request.at(&unchanged)
-        .require_current_output_demand(&foreign_settlement, NonZeroUsize::new(4096).unwrap()),
+        .require_current_output_demand(&foreign_settlement, Some((NonZeroUsize::new(4096).unwrap()).get())),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::ForeignSettlement));
     drop(foreign_settlement);
     request
         .at(&unchanged)
-        .require_current_output_demand(&settled, NonZeroUsize::new(4096).unwrap())
+        .require_current_output_demand(&settled, Some((NonZeroUsize::new(4096).unwrap()).get()))
         .expect("receipt-free restored output has current native lineage");
     assert!(matches!(request.at(&unchanged)
-        .require_current_output_demand(&settled, NonZeroUsize::new(1).unwrap()),
+        .require_current_output_demand(&settled, Some((NonZeroUsize::new(1).unwrap()).get())),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::WorkBudgetExceeded));
     drop(handle);
 
@@ -197,7 +197,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
         .expect("installed host call opens");
     assert!(matches!(request.at(&current)
-        .require_current_output_demand(&settled, NonZeroUsize::new(4096).unwrap()),
+        .require_current_output_demand(&settled, Some((NonZeroUsize::new(4096).unwrap()).get())),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::Superseded));
     drop(settled);
     let mut changed = request
@@ -222,7 +222,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         .expect("installed host call opens");
     request
         .at(&current)
-        .require_current_output_demand(&refreshed, NonZeroUsize::new(4096).unwrap())
+        .require_current_output_demand(&refreshed, Some((NonZeroUsize::new(4096).unwrap()).get()))
         .expect("fresh producer settlement is current");
 }
 

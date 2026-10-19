@@ -25,16 +25,7 @@ where
     {
         self.read_batch_current_with_policy::<N>(
             request,
-            WorthQueryOperationDeliveryPolicy::currentness(
-                std::num::NonZeroUsize::new(
-                    self.runtime
-                        .runtime()
-                        .output_demand_resource_profile()
-                        .limits()
-                        .source_currentness_work(),
-                )
-                .expect("installed finite positive currentness policy"),
-            ),
+            WorthQueryOperationDeliveryPolicy::default(),
         )
     }
     pub fn read_batch_current_with_policy<const N: usize>(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, policy: WorthQueryOperationDeliveryPolicy) -> Result<DeliveredProjectionBatch<Schema, BatchRead<Schema, Intent, Action, N>>, WorthQueryOperationDeliveryDenial>

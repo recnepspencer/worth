@@ -16,7 +16,7 @@ fn retained_draft_admits_warm_and_cold_byte_copies_before_the_edit_callback() {
             }));
             arena
                 .cold
-                .prepare_retained_charge(&mut Work::new(1000))
+                .prepare_retained_charge(&mut Work::new(Some(1000)))
                 .unwrap();
         } else {
             arena.warm[0].dirty_partition_scope_payload.push((
@@ -25,7 +25,7 @@ fn retained_draft_admits_warm_and_cold_byte_copies_before_the_edit_callback() {
             ));
             arena
                 .warm
-                .prepare_retained_charge(&mut Work::new(1000))
+                .prepare_retained_charge(&mut Work::new(Some(1000)))
                 .unwrap();
         }
         let sibling = arena.clone();
@@ -35,7 +35,7 @@ fn retained_draft_admits_warm_and_cold_byte_copies_before_the_edit_callback() {
             &test_ledger(),
             &[0],
             maximum,
-            &mut Work::new(maximum_visits),
+            &mut Work::new(Some(maximum_visits)),
             |_| panic!("copy work must be admitted before the edit"),
         );
         assert!(matches!(denied, Err(RetainedNodeEditDenial::Accounting(
@@ -45,7 +45,7 @@ fn retained_draft_admits_warm_and_cold_byte_copies_before_the_edit_callback() {
         assert!(arena.warm.shares_storage_with(&sibling.warm));
         assert!(arena.cold.shares_storage_with(&sibling.cold));
 
-        let mut work = Work::new(200_000);
+        let mut work = Work::new(Some(200_000));
         let RetainedNodeEditPreparation::Ready(prepared) = arena
             .prepare_retained_node_edits(&test_ledger(), &[0], maximum, &mut work, |payloads| {
                 let payload = &mut payloads[0];

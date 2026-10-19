@@ -205,7 +205,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         world
             .application
             .with_host_advancement(|host_phase| fresh_request
-                .at_commit(&host_phase, &receipt, NonZeroUsize::new(128).unwrap())
+                .at_commit(&host_phase, &receipt, Some(NonZeroUsize::new(128).unwrap()))
                 .unwrap()
                 .query(PlanarRead {
                     body_key: "anchor-a".to_owned()

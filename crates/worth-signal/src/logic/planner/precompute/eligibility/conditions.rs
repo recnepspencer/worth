@@ -64,7 +64,7 @@ pub(super) fn prepare_condition_outcome_if_blocked(
             RetainedStorageMeasurement, RetainedStoragePreparation,
         };
         let condition = &graph.node_eval_config(task.node)?.condition;
-        let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+        let mut measurement = RetainedStoragePreparation::new(None);
         let bytes = condition
             .retained_heap_charge(&mut measurement)
             .map_err(|_| SignalError::invalid_input("condition preparation memory overflow"))?

@@ -192,9 +192,9 @@ mod tests {
         let retained = entries.clone();
         let mut allocation = UngroupedAllocation::new();
         let mut work = MaintenanceWork::new(DerivedIndexMaintenanceBudget {
-            maximum_work_units: 4_000_000,
-            maximum_cold_record_slots: 0,
-            maximum_derived_rows: 0,
+            maximum_work_units: Some(4_000_000),
+            maximum_cold_record_slots: Some(0),
+            maximum_derived_rows: Some(0),
         });
         edit(
             &mut entries,
@@ -231,9 +231,9 @@ mod tests {
         let retained_bucket = large_bucket.clone();
         let mut allocation = UngroupedAllocation::new();
         let mut work = MaintenanceWork::new(DerivedIndexMaintenanceBudget {
-            maximum_work_units: 10_000,
-            maximum_cold_record_slots: 0,
-            maximum_derived_rows: 0,
+            maximum_work_units: Some(10_000),
+            maximum_cold_record_slots: Some(0),
+            maximum_derived_rows: Some(0),
         });
         edit(
             &mut large_bucket,
@@ -257,9 +257,9 @@ mod tests {
         let retained = entries.clone();
         let mut sequential = entries.clone();
         let budget = DerivedIndexMaintenanceBudget {
-            maximum_work_units: 10_000,
-            maximum_cold_record_slots: 0,
-            maximum_derived_rows: 0,
+            maximum_work_units: Some(10_000),
+            maximum_cold_record_slots: Some(0),
+            maximum_derived_rows: Some(0),
         };
         let mut grouped_work = MaintenanceWork::new(budget);
         let mut sequential_allocation = UngroupedAllocation::new();
@@ -318,9 +318,9 @@ mod tests {
         let retained = entries.clone();
         let mut allocation = UngroupedAllocation::new();
         let mut work = MaintenanceWork::new(DerivedIndexMaintenanceBudget {
-            maximum_work_units: 1,
-            maximum_cold_record_slots: 0,
-            maximum_derived_rows: 0,
+            maximum_work_units: Some(1),
+            maximum_cold_record_slots: Some(0),
+            maximum_derived_rows: Some(0),
         });
         let denied = edit(
             &mut entries,

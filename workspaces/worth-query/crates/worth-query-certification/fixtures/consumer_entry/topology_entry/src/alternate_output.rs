@@ -238,7 +238,7 @@ impl<Schema: TopologySchemaBinding>
     }
 
     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(1024, 1024)
+        WorthQueryProducerDemandResources::new(Some(1024), 1024)
     }
 }
 

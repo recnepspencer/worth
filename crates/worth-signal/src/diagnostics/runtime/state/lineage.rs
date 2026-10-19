@@ -54,7 +54,7 @@ impl DiagnosticsState {
     }
 
     pub fn record_lineage_record(&mut self, record: LineageRecord) {
-        let mut work = Work::new(usize::MAX);
+        let mut work = Work::new(None);
         if let Some(node) = record.node() {
             append_index(&mut self.lineage_records_by_node, node, &record, &mut work);
         }

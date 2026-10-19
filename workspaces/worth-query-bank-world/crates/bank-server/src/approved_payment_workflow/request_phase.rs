@@ -54,7 +54,7 @@ fn zero_work() {
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         64 * 1_024 * 1_024,
-        0,
+        Some(0),
     )));
 }
 fn opening_refused(denial: Recovery, before: u64) {

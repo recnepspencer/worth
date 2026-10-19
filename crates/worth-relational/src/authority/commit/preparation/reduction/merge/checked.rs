@@ -272,7 +272,11 @@ mod tests {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 4 * 1024 * 1024, work),
+                    ExecutionBudget::new(
+                        NonZeroUsize::new(4).unwrap(),
+                        4 * 1024 * 1024,
+                        Some(work),
+                    ),
                 ),
                 deadline: None,
                 cancellation,

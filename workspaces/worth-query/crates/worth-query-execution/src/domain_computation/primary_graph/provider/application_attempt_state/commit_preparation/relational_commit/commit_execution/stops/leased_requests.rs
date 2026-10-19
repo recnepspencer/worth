@@ -82,7 +82,7 @@ pub(super) fn request(memory: u64, work: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, memory, work),
+            ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(work)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,

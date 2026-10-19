@@ -349,7 +349,7 @@ impl WorthQueryApplicationProducerProvider<DocumentRetentionSchema, RetentionAss
     }
 
     fn demand_resources(&self, _: &DocumentRetentionRow) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(256, 512)
+        WorthQueryProducerDemandResources::new(Some(256), 512)
     }
 }
 

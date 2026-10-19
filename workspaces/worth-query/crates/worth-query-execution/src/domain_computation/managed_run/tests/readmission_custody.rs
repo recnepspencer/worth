@@ -54,7 +54,7 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
                 if memory { 0 } else { 64 * 1024 * 1024 },
-                if memory { 8_000_000 } else { 0 },
+                Some(if memory { 8_000_000 } else { 0 }),
             )));
             let before = restores();
             let direct_stop = host

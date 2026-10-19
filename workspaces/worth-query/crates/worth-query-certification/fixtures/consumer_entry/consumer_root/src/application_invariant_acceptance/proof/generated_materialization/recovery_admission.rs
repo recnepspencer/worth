@@ -97,7 +97,8 @@ fn refusals<Recovery, Output>(
         recovery = retained;
     }
     for (memory, work) in [(1 << 20, 0), (0, 1_000)] {
-        let budget = worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, memory, work);
+        let budget =
+            worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(work));
         let (denial, retained) = with_recovery_request_budget(budget, || {
             continue_recovery(recovery, scope)
                 .err()

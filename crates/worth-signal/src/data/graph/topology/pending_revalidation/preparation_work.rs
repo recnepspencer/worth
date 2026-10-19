@@ -8,9 +8,7 @@ pub(crate) fn reserve(
     work: &mut Work,
     count: Option<usize>,
 ) -> Result<(), PendingRevalidationPreparationDenial> {
-    let count = count.ok_or(Denial::WorkExhausted {
-        maximum_visits: work.maximum_visits(),
-    })?;
+    let count = count.ok_or(Denial::ChargeOverflow)?;
     work.reserve_visits(count)?;
     Ok(())
 }

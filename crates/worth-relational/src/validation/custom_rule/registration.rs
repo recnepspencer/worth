@@ -361,7 +361,7 @@ impl CustomInvariantRegistration {
         self.descriptor.operational.failure_effect
     }
 
-    pub fn maximum_work_units(&self) -> std::num::NonZeroU64 {
+    pub fn maximum_work_units(&self) -> Option<std::num::NonZeroU64> {
         self.descriptor.operational.maximum_work_units
     }
 

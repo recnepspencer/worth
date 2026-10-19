@@ -68,7 +68,7 @@ fn denial_clones_share_payload_and_keep_its_reservation_until_last_drop() {
         1,
         1,
     );
-    let (result, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+    let (result, _) = worth_execution::ExecutionWorkCeiling::new(None)
         .run_serial(&request, || {
             let identity = worth_foundational::PartitionIdentity::new(1);
             let map = ExecutionMap::<_, u64>::try_from_declared_partitions(

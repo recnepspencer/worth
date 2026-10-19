@@ -22,7 +22,7 @@ fn receipt(
 fn required() -> RequirementFact<'static> {
     RequirementFact {
         key: REQUIRED,
-        maximum_work: 2,
+        maximum_work: Some(2),
     }
 }
 
@@ -82,4 +82,50 @@ fn ordering_candidate_binding_and_work_are_required() {
     )
     .is_err());
     assert!(close(&[ReceiptFact { work: 3, ..passed }], &[required()], 0).is_err());
+}
+
+#[test]
+fn absent_work_ceiling_preserves_receipt_authority_without_refusing_large_work() {
+    let passed = ReceiptFact {
+        work: 8_193,
+        ..receipt(REQUIRED, InvariantDecisionKind::Passed)
+    };
+    let unlimited = RequirementFact {
+        maximum_work: None,
+        ..required()
+    };
+    assert_eq!(close(&[passed], &[unlimited], 0).unwrap(), 8_193);
+    assert!(close(
+        &[ReceiptFact {
+            bound: false,
+            ..passed
+        }],
+        &[unlimited],
+        0
+    )
+    .is_err());
+    assert!(close(&[passed], &[required()], 0).is_err());
+}
+
+#[test]
+fn platform_custody_receipt_uses_no_intrinsic_work_ceiling() {
+    let (id, major, minor, maximum_work) =
+        crate::domain_computation::primary_graph::workflow::schema::fact_custody_receipt_contract();
+    assert_eq!(maximum_work, None);
+    let key = (id, major, minor, InvariantExecutionPoint::CommitBoundary);
+    let passed = ReceiptFact {
+        work: 2_000_001,
+        ..receipt(key, InvariantDecisionKind::Passed)
+    };
+    let required = RequirementFact { key, maximum_work };
+    assert_eq!(close(&[passed], &[required], 0).unwrap(), 2_000_001);
+    assert!(close(
+        &[ReceiptFact {
+            bound: false,
+            ..passed
+        }],
+        &[required],
+        0
+    )
+    .is_err());
 }

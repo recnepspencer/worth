@@ -2,6 +2,8 @@ use crate::identity::{CompositeCommitIdentity, RuntimeWorldOwnerIdentity};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompositeHistoryCatalogDenial {
+    Cancelled,
+    DeadlineElapsed,
     ForeignOwner {
         expected: RuntimeWorldOwnerIdentity,
         actual: RuntimeWorldOwnerIdentity,

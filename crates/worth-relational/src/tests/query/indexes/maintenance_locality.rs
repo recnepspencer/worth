@@ -45,9 +45,9 @@ fn unrelated_field_indexes_do_not_reread_changed_records() {
             &basis,
             Some(&first.snapshot),
             DerivedIndexMaintenanceBudget {
-                maximum_work_units: 100_000,
-                maximum_cold_record_slots: 0,
-                maximum_derived_rows: 0,
+                maximum_work_units: Some(100_000),
+                maximum_cold_record_slots: Some(0),
+                maximum_derived_rows: Some(0),
             },
             execution,
         )
@@ -151,9 +151,9 @@ fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
             &basis,
             Some(&first.snapshot),
             DerivedIndexMaintenanceBudget {
-                maximum_work_units: 100_000,
-                maximum_cold_record_slots: 1_000,
-                maximum_derived_rows: 0,
+                maximum_work_units: Some(100_000),
+                maximum_cold_record_slots: Some(1_000),
+                maximum_derived_rows: Some(0),
             },
             execution,
         )
@@ -185,8 +185,8 @@ fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
 
 fn budget() -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 100_000,
-        maximum_cold_record_slots: 0,
-        maximum_derived_rows: 0,
+        maximum_work_units: Some(100_000),
+        maximum_cold_record_slots: Some(0),
+        maximum_derived_rows: Some(0),
     }
 }

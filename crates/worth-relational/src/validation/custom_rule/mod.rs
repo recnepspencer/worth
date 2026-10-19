@@ -2,6 +2,8 @@
 
 mod affected_record_filter;
 mod execution_context;
+mod interruption;
+pub use interruption::CustomInvariantInterruption;
 mod registration;
 mod scope_planner;
 mod structural_views;

@@ -21,7 +21,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let restored = restored_output(observation, scope);
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 1_000_000,
+        maximum_work_visits: Some(1_000_000),
         maximum_preparation_bytes: 8 * 1024 * 1024,
     });
 

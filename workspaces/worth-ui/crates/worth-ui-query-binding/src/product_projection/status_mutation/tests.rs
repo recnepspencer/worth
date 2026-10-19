@@ -11,8 +11,8 @@ use worth_query_host::facade::{
     },
     application_entry::{WorthQueryApplicationLiveLimits, WorthQueryApplicationRequestExt},
 };
-fn history() -> NonZeroUsize {
-    NonZeroUsize::new(64).unwrap()
+fn history() -> Option<NonZeroUsize> {
+    None
 }
 fn record(status: &str, revision: u64) -> WorthUiScalarProjectionSourceRecord {
     WorthUiScalarProjectionSourceRecord::new(status, revision).unwrap()
@@ -30,7 +30,7 @@ fn observe(owner: &WorthUiStatusSourceOwner) -> Live<'_> {
         .application
         .request(&principal, &scope)
         .query(WorthUiStatusQueryRequest::new("platform.pulse.status"))
-        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, 64))
+        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, Some(64)))
         .unwrap()
 }
 #[test]

@@ -20,7 +20,7 @@ fn current_controls(
 ) -> WorthQueryProductQueryControls<'_> {
     WorthQueryProductQueryControls::new(
         NonZeroUsize::new(10).unwrap(),
-        NonZeroUsize::new(10000).unwrap(),
+        Some(NonZeroUsize::new(10000).unwrap()),
         scope,
     )
 }

@@ -159,7 +159,7 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
         let host_scope =
             worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(Some(&root), None)
                 .unwrap();
-        let (tree_scope, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+        let (tree_scope, _) = worth_execution::ExecutionWorkCeiling::new(None)
             .run(&root, || {
                 worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(
                     Some(&child),

@@ -74,7 +74,7 @@ impl WorthQueryOutputDemandInterest {
 }
 fn admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-        maximum_work_visits: 1_000_000,
+        maximum_work_visits: Some(1_000_000),
         maximum_preparation_bytes: 8 * 1024 * 1024,
     })
 }
@@ -126,7 +126,7 @@ fn observed_account_source() -> crate::domain_computation::primary_graph::WorthQ
                         .unwrap(),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         std::num::NonZeroUsize::new(10).unwrap(),
-                        std::num::NonZeroUsize::new(10_000).unwrap(),
+                        Some(std::num::NonZeroUsize::new(10_000).unwrap()),
                         &request,
                     ),
                 )

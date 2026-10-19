@@ -11,7 +11,7 @@ pub(in crate::tests::domains::fintech) fn maximum_checked_result_heap_bytes() ->
     static MAXIMUM: OnceLock<u64> = OnceLock::new();
     *MAXIMUM.get_or_init(|| {
         let mut maximum = 0;
-        let mut work = RetainedStoragePreparation::new(usize::MAX);
+        let mut work = RetainedStoragePreparation::new(None);
         for number in [0_u64, u64::MAX] {
             for index in [0_usize, usize::MAX] {
                 let forms = [

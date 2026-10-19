@@ -56,7 +56,7 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
         Placement::Serial
     });
     bound(ceiling.map(|units| {
-        worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, units)
+        worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, Some(units))
     }));
     if cancel {
         cancellation.cancel();

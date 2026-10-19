@@ -188,9 +188,9 @@ where
         WorthQueryInspectedOperationInvariantProjection<Operation, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let completed = self.project_bounded(
+        let completed = self.project_with_work_limit(
             execution,
-            usize::MAX,
+            None,
             product.relational_basis().clone(),
             |reader| {
                 let mut decision_facts = DecisionReads::default();
@@ -286,7 +286,7 @@ where
             .retained_clone();
         let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
         let completed = self
-            .project_bounded(
+            .project_with_work_limit(
                 execution,
                 admission.allowed_graph_contract().projection_work_budget(),
                 product.relational_basis().clone(),

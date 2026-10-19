@@ -36,7 +36,7 @@ fn a_present_interruption_dispatches_no_member_at_any_matrix_width() {
                 })
                 .collect();
             let request = root.execution_request().unwrap();
-            let outcome = request.run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+            let outcome = request.run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                 dispatch(&root, members)
             });
             let expected = worth_execution::WorkCeilingDenial::Stopped(if deadline {

@@ -63,7 +63,7 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             let denial = b_product.require_current_output_settlements(
                 &phase,
                 std::iter::empty(),
-                NonZeroUsize::MIN,
+                Some(1),
             ).unwrap_err();
             assert_eq!(
                 denial.kind(),
@@ -74,7 +74,7 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             a_product.require_current_output_settlements(
                 &phase,
                 std::iter::empty(),
-                NonZeroUsize::MIN,
+                Some(1),
             ).unwrap();
             assert!(reads() > before, "A's same query door reaches its reader");
             let before = reads();

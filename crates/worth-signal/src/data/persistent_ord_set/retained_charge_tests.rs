@@ -7,7 +7,7 @@ use crate::data::retained_storage::{
 };
 
 fn work() -> Preparation<'static> {
-    Preparation::new(100_000)
+    Preparation::new(Some(100_000))
 }
 fn changed(outcome: Result<Outcome<bool>, MutationDenial>) -> bool {
     match outcome.unwrap() {
@@ -43,7 +43,7 @@ fn policy_identity_membership_and_pinned_charge_follow_the_existing_map_owner() 
         identities.insert_with_retained_charge([2; 32], &mut work())
     ));
     identities
-        .prepare_retained_charge(&mut Preparation::new(0))
+        .prepare_retained_charge(&mut Preparation::new(Some(0)))
         .unwrap();
     assert_eq!(
         pinned.prepared_retained_charge().unwrap(),
@@ -55,7 +55,7 @@ fn policy_identity_membership_and_pinned_charge_follow_the_existing_map_owner() 
 fn membership_outcome_preserves_post_edit_failure_and_array_payload_preparation() {
     let mut set = PersistentOrdSet::<String>::new();
     match set
-        .insert_with_retained_charge("inserted".into(), &mut Preparation::new(1))
+        .insert_with_retained_charge("inserted".into(), &mut Preparation::new(Some(1)))
         .unwrap()
     {
         Outcome::Unaccounted { output, .. } => assert!(output),
@@ -76,11 +76,11 @@ fn membership_outcome_preserves_post_edit_failure_and_array_payload_preparation(
     ));
     let payload = [String::with_capacity(4096), String::with_capacity(8192)];
     assert!(payload
-        .retained_heap_charge(&mut Preparation::new(2))
+        .retained_heap_charge(&mut Preparation::new(Some(2)))
         .is_err());
     assert_eq!(
         payload
-            .retained_heap_charge(&mut Preparation::new(3))
+            .retained_heap_charge(&mut Preparation::new(Some(3)))
             .unwrap()
             .bytes(),
         12288

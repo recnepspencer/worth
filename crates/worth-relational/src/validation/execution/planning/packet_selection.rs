@@ -8,6 +8,7 @@ use super::retained_bytes::{custom_access_retained_bytes, native_registration_re
 
 pub(super) fn eligible_registrations<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     preparation_budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
 ) -> Vec<InvariantPacketRegistration> {
@@ -24,7 +25,10 @@ pub(super) fn eligible_registrations<'state>(
                 .relation_integrity_registrations
                 .iter(),
         )
-        .take_while(|_| preparation_budget.is_none_or(|budget| budget.try_plan_item(0)))
+        .take_while(|_| {
+            execution.check_live().is_ok()
+                && preparation_budget.is_none_or(|budget| budget.try_plan_item(0))
+        })
         .filter(|registration| {
             registration.execution_point == request.execution_point()
                 && request.includes_registration(registration)
@@ -45,7 +49,10 @@ pub(super) fn eligible_registrations<'state>(
         .schema_contract_runtime
         .custom_invariant_registries
         .iter()
-        .take_while(|_| preparation_budget.is_none_or(|budget| budget.try_plan_item(0)))
+        .take_while(|_| {
+            execution.check_live().is_ok()
+                && preparation_budget.is_none_or(|budget| budget.try_plan_item(0))
+        })
         .filter(|registration| request.includes_custom_registration(registration))
         .filter_map(|registration| {
             if preparation_budget.is_some_and(|budget| {
@@ -100,6 +107,7 @@ pub(super) fn eligible_registrations<'state>(
                 );
             let mut planner = CustomInvariantScopePlanner::new_at_current_version(
                 runtime,
+                execution,
                 request.observation(),
                 request.version_id(),
                 request.current_version_id(),

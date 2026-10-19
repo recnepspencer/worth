@@ -83,7 +83,7 @@ pub(in crate::domain_computation::primary_graph) fn test_policy(
         DeterminismContract::CanonicalBitwise,
         REQUEST_BUDGET
             .get()
-            .map_or(ExecutionBudget::new(workers, memory, u64::MAX), |budget| {
+            .map_or(ExecutionBudget::new(workers, memory, None), |budget| {
                 ExecutionBudget::new(
                     workers,
                     budget.charged_memory_bytes(),
@@ -172,7 +172,7 @@ where
             None
         }
     };
-    let (checked, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX).run_detached_for_test(
+    let (checked, _) = worth_execution::ExecutionWorkCeiling::new(None).run_detached_for_test(
         lease,
         |diagnostic| {
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

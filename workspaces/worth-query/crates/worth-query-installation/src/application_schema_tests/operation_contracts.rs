@@ -1,3 +1,5 @@
+mod optional_projection_budget;
+
 use super::*;
 
 use worth_foundational::facade::{CanonicalFieldPath, FieldKey};
@@ -153,7 +155,7 @@ fn installed_application_operation_compiles_existing_authority_contract_families
     );
     assert_eq!(precondition.target().entity(), "TestEntity");
     assert_eq!(precondition.target().field_name(), "PrincipalIdentityField");
-    assert_eq!(operation.contracts().projection_work_budget(), 32);
+    assert_eq!(operation.contracts().projection_work_budget(), Some(32));
     assert!(matches!(
         operation.contracts().effects(),
         crate::facade::WorthQueryOperationEffectContract::Declared { effect_families }
@@ -303,8 +305,8 @@ fn reinstallation_rejects_each_coherent_preimage_axis_and_bound_drift() {
     }
 }
 
-fn installed_index_for(
-    declaration: ApplicationSchemaDeclaration<TestSchema>,
+fn installed_index_for<Schema: ApplicationSchema>(
+    declaration: ApplicationSchemaDeclaration<Schema>,
 ) -> WorthQueryInstalledPackageIndex {
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         "typed-test",

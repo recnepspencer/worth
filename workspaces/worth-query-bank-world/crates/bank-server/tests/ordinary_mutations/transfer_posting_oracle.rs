@@ -136,7 +136,7 @@ fn public_transfer_posts_thirty_once_from_one_hundred_to_zero() {
     let request = world.runtime.request(&owner, &scope);
     let history = std::num::NonZeroUsize::new(20_000).unwrap();
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
-        commit(send.clone()).advance(&request, history)
+        commit(send.clone()).advance(&request, Some(history))
     else {
         panic!("fresh transfer")
     };
@@ -187,12 +187,12 @@ fn public_transfer_posts_thirty_once_from_one_hundred_to_zero() {
         destination_entries.last().unwrap().journal()
     );
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(replay) =
-        commit(send.clone()).advance(&request, history)
+        commit(send.clone()).advance(&request, Some(history))
     else {
         panic!("replay retains original commit delivery")
     };
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(replay) =
-        replay.advance(&request, history)
+        replay.advance(&request, Some(history))
     else {
         panic!("original historical delivery")
     };
@@ -206,7 +206,7 @@ fn public_transfer_posts_thirty_once_from_one_hundred_to_zero() {
             amount: Money::from_minor(31).unwrap(),
             ..send
         })
-        .advance(&request, history)
+        .advance(&request, Some(history))
     else {
         panic!("native intent drift")
     };

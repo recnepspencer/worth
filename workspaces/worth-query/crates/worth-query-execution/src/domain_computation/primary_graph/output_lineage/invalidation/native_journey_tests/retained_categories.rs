@@ -95,7 +95,7 @@ fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_be
     let world = super::marking_ceiling::world_installing(|defaults| {
         crate::domain_computation::execution_runtime::WorthQueryInvalidationResourceInstallation {
             maximum_preparation_bytes: 256 * 1024 * 1024,
-            maximum_marking_work: 1_000_000,
+            maximum_marking_work: Some(1_000_000),
             maximum_retained_bytes: 256 * 1024,
             ..defaults
         }

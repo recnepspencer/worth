@@ -124,10 +124,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     {
         // The installed equality lookup examines at most two candidates. Keep
         // its safe point before the read, then debit only the entries examined.
-        if admission
-            .as_ref()
-            .is_some_and(|admission| admission.remaining_work() < 3)
-        {
+        if admission.as_ref().is_some_and(|admission| {
+            admission
+                .remaining_work()
+                .is_some_and(|remaining| remaining < 3)
+        }) {
             return Err(entity_denial(
                 WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
                 field,

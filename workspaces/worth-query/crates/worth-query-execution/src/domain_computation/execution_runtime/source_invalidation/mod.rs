@@ -13,13 +13,27 @@ pub(in crate::domain_computation) use retention::RetainedInvalidationCapacity;
 /// Explicit capacities for canonical delivery and derived invalidation state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvalidationResourceInstallation {
-    pub maximum_marking_work: u64,
+    pub maximum_marking_work: Option<u64>,
     pub maximum_preparation_bytes: u64,
     pub maximum_retained_bytes: u64,
     pub maximum_retained_positions: usize,
 }
 
 impl WorthQueryInvalidationResourceInstallation {
+    /// Physical installation without an intrinsic source-marking work ceiling.
+    pub const fn new(
+        maximum_preparation_bytes: u64,
+        maximum_retained_bytes: u64,
+        maximum_retained_positions: usize,
+    ) -> Self {
+        Self {
+            maximum_marking_work: None,
+            maximum_preparation_bytes,
+            maximum_retained_bytes,
+            maximum_retained_positions,
+        }
+    }
+
     pub const fn bounded(
         maximum_marking_work: u64,
         maximum_preparation_bytes: u64,
@@ -27,7 +41,7 @@ impl WorthQueryInvalidationResourceInstallation {
         maximum_retained_positions: usize,
     ) -> Self {
         Self {
-            maximum_marking_work,
+            maximum_marking_work: Some(maximum_marking_work),
             maximum_preparation_bytes,
             maximum_retained_bytes,
             maximum_retained_positions,
@@ -61,7 +75,7 @@ impl WorthQueryInvalidationResources {
         installation: WorthQueryInvalidationResourceInstallation,
     ) -> Result<Self, WorthQueryInvalidationResourceDenial> {
         use WorthQueryInvalidationResourceDenial as Denial;
-        if installation.maximum_marking_work == 0 {
+        if installation.maximum_marking_work == Some(0) {
             return Err(Denial::ZeroMarkingWork);
         }
         if installation.maximum_preparation_bytes == 0 {

@@ -101,9 +101,9 @@ pub(crate) struct CustomInvariantWorkMeter {
 }
 
 impl CustomInvariantWorkMeter {
-    pub(crate) fn new(maximum: NonZeroU64) -> Self {
+    pub(crate) fn new(maximum: Option<NonZeroU64>) -> Self {
         Self {
-            maximum: Some(maximum),
+            maximum,
             consumed: Arc::new(AtomicU64::new(0)),
             exhausted: Arc::new(AtomicBool::new(false)),
             leased: None,
@@ -116,16 +116,18 @@ impl CustomInvariantWorkMeter {
     }
 
     pub(crate) fn for_evaluation(&self, budget: &CustomPreparationBudget) -> Self {
-        let remaining = self
-            .maximum
-            .expect("only installed invariant meters enter evaluation")
+        let Some(maximum) = self.maximum else {
+            return Self::new(None).with_lease(budget);
+        };
+        let remaining = maximum
             .get()
             .saturating_sub(self.consumed.load(Ordering::Relaxed));
-        let meter = Self::new(NonZeroU64::new(remaining.max(1)).unwrap()).with_lease(budget);
-        if remaining == 0 {
+        let Some(remaining) = NonZeroU64::new(remaining) else {
+            let meter = Self::new(Some(maximum)).with_lease(budget);
             meter.stop(CustomPreparationStop::WorkExhausted);
-        }
-        meter
+            return meter;
+        };
+        Self::new(Some(remaining)).with_lease(budget)
     }
 
     fn stop(&self, reason: CustomPreparationStop) {

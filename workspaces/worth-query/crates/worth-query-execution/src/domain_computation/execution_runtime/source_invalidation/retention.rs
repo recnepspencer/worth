@@ -125,7 +125,7 @@ mod tests {
     fn source_bindings_share_capacity_and_rejection_preserves_custody() {
         let resources =
             WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation {
-                maximum_marking_work: 1,
+                maximum_marking_work: Some(1),
                 maximum_preparation_bytes: 1,
                 maximum_retained_bytes: 17,
                 maximum_retained_positions: 1,

@@ -21,7 +21,7 @@ fn required_wave_selection_answers_its_stopped_request_by_value() {
         })
         .unwrap();
     crate::test_read_stops::every_consult(|execution| {
-            let mut admission = world.application.primary_provider.graph.source_owner.invalidation_owner.edit_admission_within(std::num::NonZeroUsize::new(100_000).unwrap());
+            let mut admission = world.application.primary_provider.graph.source_owner.invalidation_owner.edit_admission_with_work_limit(Some(100_000));
             select_required_basis(execution, &world.application, world.application.current_world(), &mut admission).map(|_| ()).map_err(|denial| denial.kind())
         }, WorthQueryOutputDemandDenialKind::Cancelled, WorthQueryOutputDemandDenialKind::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
             denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None,

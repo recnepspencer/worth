@@ -170,7 +170,7 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
             task.node,
             graph.node_eval_config(task.node)?.comparator.as_ref(),
         );
-        let mut measurement = Measurement::new(usize::MAX);
+        let mut measurement = Measurement::new(None);
         let mut checkpoint = |visits: usize| {
             if let Some(request) = request.as_deref_mut() {
                 request

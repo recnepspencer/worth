@@ -62,7 +62,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, 30),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, Some(30)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -84,7 +84,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, 10),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, Some(10)),
             ),
             deadline: None,
             cancellation: cancelled.token(),
@@ -106,7 +106,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, 4),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, Some(4)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -131,7 +131,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1024, 10),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1024, Some(10)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

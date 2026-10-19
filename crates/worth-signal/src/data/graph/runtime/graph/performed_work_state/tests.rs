@@ -38,16 +38,16 @@ fn fixture() -> (
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 2,
             maximum_retained_bytes: BYTES,
-            maximum_attempt_visits: 8_000_000,
+            maximum_attempt_visits: Some(8_000_000),
         },
         crate::runtime_policy::SignalConditionalTemporalBudget {
             maximum_live_partitions: 1,
             maximum_reserved_active_wakes: 1,
         },
     );
-    let basis = crate::branch::owner_services::conditional_execution::SignalRetainedExecutionBasis::capture(&mut graph, &ledger, &mut Work::new(100_000)).unwrap();
+    let basis = crate::branch::owner_services::conditional_execution::SignalRetainedExecutionBasis::capture(&mut graph, &ledger, &mut Work::new(Some(100_000))).unwrap();
     let slot = basis
-        .new_evaluation_partition(&mut Work::new(100_000))
+        .new_evaluation_partition(&mut Work::new(Some(100_000)))
         .unwrap();
     (graph, slot, ledger, nodes)
 }
@@ -93,7 +93,7 @@ fn performed_capture_denials_precede_provider_contact() {
         let denied = execute_ready_with_work(
             selected,
             ready(selected, nodes[0], epoch),
-            &mut EvaluationWork::Conditional(&mut Work::new(0)),
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(0))),
             || {
                 calls.set(calls.get() + 1);
                 Ok(())
@@ -128,7 +128,7 @@ fn performed_capture_denials_precede_provider_contact() {
         assert!(selected
             .finish_optional_observation_session_with_work(
                 &session,
-                &mut EvaluationWork::Conditional(&mut Work::new(0))
+                &mut EvaluationWork::Conditional(&mut Work::new(Some(0)))
             )
             .unwrap()
             .is_none());
@@ -153,7 +153,7 @@ fn nested_performed_capture_releases_locks_and_receipt_retains_its_storage() {
             let receipt = selected
                 .finish_optional_observation_session_with_work(
                     &session,
-                    &mut EvaluationWork::Conditional(&mut Work::new(100_000)),
+                    &mut EvaluationWork::Conditional(&mut Work::new(Some(100_000))),
                 )
                 .unwrap()
                 .unwrap();
@@ -210,7 +210,7 @@ fn performed_capture_cancellation_and_unwind_release_pending_records() {
         assert!(selected
             .finish_optional_observation_session_with_work(
                 &session,
-                &mut EvaluationWork::Conditional(&mut Work::new(100_000))
+                &mut EvaluationWork::Conditional(&mut Work::new(Some(100_000)))
             )
             .unwrap()
             .is_some());
@@ -235,7 +235,7 @@ fn performed_receipt_capacity_denial_preserves_execution_for_finalization_retry(
         let pressure = fill(&ledger);
         let result = selected.finish_optional_observation_session_with_work(
             &session,
-            &mut EvaluationWork::Conditional(&mut Work::new(100_000)),
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(100_000))),
         );
         assert!(matches!(
             result,
@@ -247,7 +247,7 @@ fn performed_receipt_capacity_denial_preserves_execution_for_finalization_retry(
         assert!(selected
             .finish_optional_observation_session_with_work(
                 &session,
-                &mut EvaluationWork::Conditional(&mut Work::new(100_000))
+                &mut EvaluationWork::Conditional(&mut Work::new(Some(100_000)))
             )
             .unwrap()
             .is_some());
@@ -283,7 +283,7 @@ fn cancelled_counter_only_session_cannot_receive_a_later_effect_completion() {
         assert!(selected
             .finish_optional_observation_session_with_work(
                 &next,
-                &mut EvaluationWork::Conditional(&mut Work::new(0))
+                &mut EvaluationWork::Conditional(&mut Work::new(Some(0)))
             )
             .unwrap()
             .is_none());

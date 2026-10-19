@@ -119,7 +119,7 @@ fn run() {
                 .runtime
                 .request(&principal, &scope)
                 .on_branch(fork_relational)
-                .at_commit(&host_phase, &first, NonZeroUsize::new(2).unwrap())
+                .at_commit(&host_phase, &first, Some(NonZeroUsize::new(2).unwrap()))
                 .expect("the first application receipt must select its retained generation")
                 .query(TemporalIntentRead {
                     identity: "intent-1".to_owned(),

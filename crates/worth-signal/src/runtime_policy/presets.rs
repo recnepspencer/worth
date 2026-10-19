@@ -31,10 +31,8 @@ impl SignalRuntimePolicy {
             serial_memory_bytes: 64 << 20,
             conditional_evaluation_budget: super::SignalConditionalEvaluationBudget::PRESET,
             conditional_temporal_budget: super::SignalConditionalTemporalBudget::PRESET,
-            maximum_upstream_dependency_visits:
-                super::upstream_traversal::DEFAULT_MAXIMUM_UPSTREAM_DEPENDENCY_VISITS,
-            maximum_waiter_resolution_visits:
-                super::waiter_resolution::DEFAULT_MAXIMUM_WAITER_RESOLUTION_VISITS,
+            maximum_upstream_dependency_visits: None,
+            maximum_waiter_resolution_visits: None,
             tier,
             execution_objective: match tier {
                 DiagnosticsTier::Operational => ExecutionObjectiveProfile::Throughput,

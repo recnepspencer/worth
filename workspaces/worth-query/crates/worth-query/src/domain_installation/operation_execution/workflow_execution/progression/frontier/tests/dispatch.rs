@@ -44,7 +44,7 @@ impl Policy {
             ExecutionBudget::new(
                 NonZeroUsize::new(self.workers).unwrap_or(NonZeroUsize::MIN),
                 self.memory,
-                self.work,
+                Some(self.work),
             ),
         );
         let resources = crate::consumer_kit::in_memory_test_product_world_resources()

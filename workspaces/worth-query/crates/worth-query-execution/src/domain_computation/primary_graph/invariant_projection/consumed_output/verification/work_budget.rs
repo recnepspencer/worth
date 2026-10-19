@@ -172,7 +172,7 @@ mod tests {
     fn worklist_growth_distinguishes_the_meter_from_an_unrepresentable_size() {
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: u64::MAX,
+                maximum_work_visits: None,
                 maximum_preparation_bytes: 8,
             },
         );
@@ -210,7 +210,7 @@ mod tests {
         let slot = size_of::<u64>() as u64;
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: u64::MAX,
+                maximum_work_visits: None,
                 maximum_preparation_bytes: 4 * rows as u64 * slot,
             },
         );

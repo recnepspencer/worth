@@ -14,7 +14,7 @@ fn owned_map_serial_taking_keeps_input_custody() {
         Stop::Capacity,
         Stop::Memory,
     ] {
-        let budget = SerialMemoryBudget::from_policy(&request(1, BUDGET, u64::MAX).policy);
+        let budget = SerialMemoryBudget::new(BUDGET);
         let ledger = Ledger::Serial(&budget);
         let baseline = ledger.reserve(BASELINE).unwrap();
         let hold = ledger.reserve(input_bytes()).unwrap();
@@ -22,15 +22,12 @@ fn owned_map_serial_taking_keeps_input_custody() {
         let custody_violations = AtomicUsize::new(0);
         let source = crate::CancellationSource::new();
         let request = SerialRequest {
+            work_ceiling: None,
             memory: budget.clone(),
             cancellation: source.token(),
             deadline: None,
         };
-        let ceiling = if matches!(stop, Stop::Work) {
-            0
-        } else {
-            u64::MAX
-        };
+        let ceiling = matches!(stop, Stop::Work).then_some(0);
         let (outcome, _) = ExecutionWorkCeiling::new(ceiling)
             .run_serial(&request, || {
                 let expected_charge = AtomicU64::new(BASELINE + input_bytes());
@@ -79,7 +76,7 @@ fn owned_map_serial_taking_keeps_input_custody() {
 #[test]
 fn expired_serial_request_preserves_callers_input_hold() {
     let _lock = TEST_LOCK.lock().unwrap();
-    let budget = SerialMemoryBudget::from_policy(&request(1, BUDGET, u64::MAX).policy);
+    let budget = SerialMemoryBudget::new(BUDGET);
     let ledger = Ledger::Serial(&budget);
     let baseline = ledger.reserve(BASELINE).unwrap();
     let mut hold = Some(ledger.reserve(input_bytes()).unwrap());
@@ -94,12 +91,13 @@ fn expired_serial_request_preserves_callers_input_hold() {
         None,
     )));
     let request = SerialRequest {
+        work_ceiling: None,
         memory: budget.clone(),
         deadline: Some(Instant::now() - Duration::from_secs(1)),
         cancellation: crate::CancellationSource::new().token(),
     };
     // An expired scope rejects before the map can accept the caller's hold.
-    let result = ExecutionWorkCeiling::new(u64::MAX).run_serial(&request, || {
+    let result = ExecutionWorkCeiling::new(None).run_serial(&request, || {
         batch
             .take()
             .unwrap()
@@ -127,7 +125,7 @@ fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
     let _lock = TEST_LOCK.lock().unwrap();
     let watchdog = Instant::now() + Duration::from_secs(60);
     loop {
-        let budget = SerialMemoryBudget::from_policy(&request(1, BUDGET, u64::MAX).policy);
+        let budget = SerialMemoryBudget::new(BUDGET);
         let ledger = Ledger::Serial(&budget);
         let baseline = ledger.reserve(BASELINE).unwrap();
         let mut hold = Some(ledger.reserve(input_bytes()).unwrap());
@@ -136,11 +134,12 @@ fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
         let entered = AtomicUsize::new(0);
         let deadline = Instant::now() + Duration::from_millis(100);
         let request = SerialRequest {
+            work_ceiling: None,
             memory: budget.clone(),
             deadline: Some(deadline),
             cancellation: crate::CancellationSource::new().token(),
         };
-        let result = ExecutionWorkCeiling::new(u64::MAX).run_serial(&request, || {
+        let result = ExecutionWorkCeiling::new(None).run_serial(&request, || {
             let bytes = memory_model::bytes::<Tracked<'_>, ResultBytes, ()>(
                 ITEMS,
                 ITEMS as u64 * PAYLOAD_BYTES,

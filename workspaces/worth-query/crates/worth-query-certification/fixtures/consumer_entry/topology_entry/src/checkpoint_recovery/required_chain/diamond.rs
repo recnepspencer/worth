@@ -144,7 +144,10 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
         profile,
         4_096,
         128 * 1_024 * 1_024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         seed,
     );
     let (scope, principal) = authenticate(&application);

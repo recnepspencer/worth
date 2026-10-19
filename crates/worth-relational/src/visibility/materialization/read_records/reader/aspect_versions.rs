@@ -89,7 +89,11 @@ mod tests {
                     policy: ExecutionRequestPolicy::new(
                         ExecutionPosture::Serial,
                         DeterminismContract::CanonicalBitwise,
-                        ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), memory, work),
+                        ExecutionBudget::new(
+                            std::num::NonZeroUsize::new(1).unwrap(),
+                            memory,
+                            Some(work),
+                        ),
                     ),
                     deadline: None,
                     cancellation: CancellationToken::new(),
@@ -139,7 +143,11 @@ mod tests {
                     policy: ExecutionRequestPolicy::new(
                         ExecutionPosture::Serial,
                         DeterminismContract::CanonicalBitwise,
-                        ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), memory, work),
+                        ExecutionBudget::new(
+                            std::num::NonZeroUsize::new(1).unwrap(),
+                            memory,
+                            Some(work),
+                        ),
                     ),
                     deadline: None,
                     cancellation: CancellationToken::new(),

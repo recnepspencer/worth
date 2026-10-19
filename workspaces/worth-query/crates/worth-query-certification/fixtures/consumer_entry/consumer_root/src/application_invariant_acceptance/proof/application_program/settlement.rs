@@ -243,15 +243,12 @@ pub(super) fn performed_source_settles_required_output(
                 .expect("current product basis remains readable")
         })
         .expect("installed host call opens");
-    let comparison_work = NonZeroUsize::new(
-        world
-            .application
-            .runtime()
-            .output_demand_resource_profile()
-            .limits()
-            .source_currentness_work(),
-    )
-    .expect("the installed profile admits positive source currentness work");
+    let comparison_work = world
+        .application
+        .runtime()
+        .output_demand_resource_profile()
+        .limits()
+        .source_currentness_work();
     request
         .at(&current_basis)
         .require_current_program_output(&original_settlement, comparison_work)
@@ -259,7 +256,7 @@ pub(super) fn performed_source_settles_required_output(
     assert!(matches!(
         request.at(&current_basis).require_current_program_output(
             &original_settlement,
-            NonZeroUsize::new(1).unwrap(),
+            Some((NonZeroUsize::new(1).unwrap()).get()),
         ),
         Err(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial))
             if denial.kind()

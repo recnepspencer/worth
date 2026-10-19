@@ -84,7 +84,7 @@ mod tests {
             ExecutionBudget::new(
                 admission.policy.budget().max_workers(),
                 128 * 1024 * 1024,
-                20_000_000,
+                Some(20_000_000),
             ),
         );
         admission
@@ -203,7 +203,7 @@ mod tests {
             .unwrap();
         drop(setup);
         assert_eq!(graph.subscribers_of(source).unwrap(), &[consumer]);
-        let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+        let mut measurement = RetainedStoragePreparation::new(None);
         let full = graph
             .epoch_node_clone_charge(consumer, &mut measurement)
             .unwrap()

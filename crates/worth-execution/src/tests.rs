@@ -40,6 +40,7 @@ mod nested_stop_dominance;
 mod nested_stop_ownership;
 mod nested_two_causes;
 mod nesting;
+mod optional_work;
 mod owned_map;
 mod pending_refusal;
 mod prepared_map;
@@ -63,7 +64,7 @@ pub(crate) fn request(workers: usize, memory: u64, work: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, work),
+            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, Some(work)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

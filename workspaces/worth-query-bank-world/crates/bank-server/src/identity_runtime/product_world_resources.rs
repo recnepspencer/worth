@@ -15,7 +15,7 @@ const BANK_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             128 * 1024 * 1024,
-            16_000_000,
+            Some(16_000_000),
         ),
     );
 

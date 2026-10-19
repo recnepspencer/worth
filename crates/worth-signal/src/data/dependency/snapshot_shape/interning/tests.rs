@@ -25,7 +25,7 @@ fn shape_interning_admits_existing_and_new_handles_before_mutation() {
             source.intern(query.clone());
         }
         let mut measured_store = source.fork_persistent();
-        let mut measured = Work::new(10_000_000);
+        let mut measured = Work::new(Some(10_000_000));
         let expected = measured_store
             .intern_with_work(
                 query.clone(),
@@ -36,7 +36,7 @@ fn shape_interning_admits_existing_and_new_handles_before_mutation() {
         for available in [cost - 1, cost] {
             let mut candidate = source.fork_persistent();
             let before = candidate.clone();
-            let mut work = Work::new(cost + 7);
+            let mut work = Work::new(Some(cost + 7));
             work.reserve_visits(cost + 7 - available).unwrap();
             let result = candidate
                 .intern_with_work(query.clone(), &mut EvaluationWork::Conditional(&mut work));
@@ -63,13 +63,13 @@ fn shape_interning_charges_payload_bytes_and_denies_missing_index() {
     let mut store = DependencySnapshotShapeStore::default();
     store.intern(shape("seed"));
     let mut short = store.fork_persistent();
-    let mut measured = Work::new(10_000_000);
+    let mut measured = Work::new(Some(10_000_000));
     short
         .intern_with_work(shape("x"), &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
     let mut long = store.fork_persistent();
     let before = long.clone();
-    let mut limited = Work::new(measured.visits());
+    let mut limited = Work::new(Some(measured.visits()));
     assert!(matches!(
         long.intern_with_work(
             shape(&"x".repeat(4096)),
@@ -84,7 +84,7 @@ fn shape_interning_charges_payload_bytes_and_denies_missing_index() {
     assert_eq!(
         restored.intern_with_work(
             shape("seed"),
-            &mut EvaluationWork::Conditional(&mut Work::new(10_000_000))
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(10_000_000)))
         ),
         Err(SignalError::SnapshotIndexUnavailable)
     );

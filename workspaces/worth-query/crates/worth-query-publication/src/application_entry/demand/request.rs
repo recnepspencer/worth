@@ -8,7 +8,7 @@ use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicat
 use worth_query_installation::facade::ApplicationSchema;
 
 /// Optional restrictions on installed host policy. Ordinary graph authors use
-/// `Default::default()`; absent restrictions use finite installed host limits.
+/// `Default::default()`; absent work restrictions impose no intrinsic work ceiling.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandControls {
     maximum_work: Option<NonZeroUsize>,
@@ -37,6 +37,18 @@ impl WorthQueryOutputDemandControls {
         }
     }
 
+    /// Restricts producer work without adding a source-currentness restriction.
+    pub const fn producer_work(mut self, maximum: NonZeroUsize) -> Self {
+        self.maximum_work = Some(maximum);
+        self
+    }
+
+    /// Restricts producer retention without adding a work ceiling to either lane.
+    pub const fn producer_retained_bytes(mut self, maximum: NonZeroUsize) -> Self {
+        self.maximum_retained_bytes = Some(maximum);
+        self
+    }
+
     pub const fn source_currentness_work(mut self, maximum: NonZeroUsize) -> Self {
         self.maximum_source_currentness_work = Some(maximum);
         self
@@ -53,10 +65,8 @@ impl WorthQueryOutputDemandControls {
     ) -> worth_query_execution::facade::runtime::WorthQueryOutputDemandLimits {
         let host = profile.limits();
         host.restricted(
-            self.maximum_source_currentness_work
-                .map_or(host.source_currentness_work(), NonZeroUsize::get),
-            self.maximum_work
-                .map_or(host.producer_work(), NonZeroUsize::get),
+            self.maximum_source_currentness_work.map(NonZeroUsize::get),
+            self.maximum_work.map(NonZeroUsize::get),
             self.maximum_retained_bytes
                 .map_or(host.producer_retained_bytes(), NonZeroUsize::get),
             self.maximum_settlement_attempts
@@ -67,19 +77,16 @@ impl WorthQueryOutputDemandControls {
     pub(in crate::application_entry) fn from_limits(
         limits: worth_query_execution::facade::runtime::WorthQueryOutputDemandLimits,
     ) -> Self {
-        Self::new(
-            NonZeroUsize::new(limits.producer_work()).expect("positive admitted producer limit"),
-            NonZeroUsize::new(limits.producer_retained_bytes())
-                .expect("positive admitted retained limit"),
-        )
-        .source_currentness_work(
-            NonZeroUsize::new(limits.source_currentness_work())
-                .expect("positive admitted source limit"),
-        )
-        .settlement_attempts(
-            NonZeroUsize::new(limits.settlement_attempts())
-                .expect("positive admitted settlement limit"),
-        )
+        Self {
+            maximum_work: limits
+                .producer_work()
+                .map(|work| NonZeroUsize::new(work).expect("positive selected work limit")),
+            maximum_source_currentness_work: limits
+                .source_currentness_work()
+                .map(|work| NonZeroUsize::new(work).expect("positive selected currentness limit")),
+            maximum_retained_bytes: NonZeroUsize::new(limits.producer_retained_bytes()),
+            maximum_settlement_attempts: NonZeroUsize::new(limits.settlement_attempts()),
+        }
     }
 
     pub const fn maximum_work(self) -> Option<NonZeroUsize> {
@@ -220,16 +227,34 @@ mod tests {
         );
         let profile = WorthQueryOutputDemandResourceProfile::standard();
         let limits = controls.resolve(profile);
-        assert_eq!(limits.source_currentness_work(), 7);
-        assert_eq!(limits.producer_work(), 7);
+        assert_eq!(limits.source_currentness_work(), Some(7));
+        assert_eq!(limits.producer_work(), Some(7));
         assert_eq!(limits.producer_retained_bytes(), 11);
         assert_eq!(limits.settlement_attempts(), 64);
         let separated = controls
             .source_currentness_work(NonZeroUsize::new(19).unwrap())
             .settlement_attempts(NonZeroUsize::new(2).unwrap())
             .resolve(profile);
-        assert_eq!(separated.source_currentness_work(), 19);
-        assert_eq!(separated.producer_work(), 7);
+        assert_eq!(separated.source_currentness_work(), Some(19));
+        assert_eq!(separated.producer_work(), Some(7));
         assert_eq!(separated.settlement_attempts(), 2);
+    }
+    #[test]
+    fn producer_only_restriction_preserves_absent_or_finite_host_currentness() {
+        let one = NonZeroUsize::new(1).unwrap();
+        let controls = WorthQueryOutputDemandControls::default().producer_work(one);
+        assert_eq!(controls.maximum_source_currentness_work(), None);
+        let ordinary = controls.resolve(WorthQueryOutputDemandResourceProfile::standard());
+        assert_eq!(ordinary.producer_work(), Some(1));
+        assert_eq!(ordinary.source_currentness_work(), None);
+        let bounded = WorthQueryOutputDemandResourceProfile::bounded(one, one, one, one);
+        assert_eq!(controls.resolve(bounded).source_currentness_work(), Some(1));
+        let bytes_only = WorthQueryOutputDemandControls::default().producer_retained_bytes(one);
+        let selected = bytes_only.resolve(WorthQueryOutputDemandResourceProfile::standard());
+        assert_eq!(selected.source_currentness_work(), None);
+        assert_eq!(selected.producer_work(), None);
+        assert_eq!(selected.producer_retained_bytes(), 1);
+        let wider = bytes_only.producer_retained_bytes(NonZeroUsize::new(100).unwrap());
+        assert_eq!(wider.resolve(bounded).producer_retained_bytes(), 1);
     }
 }

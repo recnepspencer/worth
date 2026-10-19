@@ -138,7 +138,7 @@ pub(crate) fn product_world_resources() -> runtime::WorthQueryProductWorldResour
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             64 * 1024 * 1024,
-            8_000_000,
+            Some(8_000_000),
         ),
     );
     runtime::WorthQueryProductWorldResources::install(

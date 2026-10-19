@@ -198,22 +198,30 @@ fn commit_own_write(
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let maximum = resources.installation().maximum_retained_bytes;
-    let (key, dependency) = if generated {
-        program.producer_idempotency_identities::<OwnWriteOutputs>(
-            &world.application,
-            [11; 32],
-            None,
-            &mut owner.edit_admission(),
-        )
-    } else {
-        program.producer_idempotency_identities::<RetentionOutputs>(
-            &world.application,
-            [11; 32],
-            None,
-            &mut owner.edit_admission(),
-        )
-    }
-    .unwrap();
+    let (key, dependency) = world
+        .application
+        .with_host_advancement(|phase| {
+            let execution = phase.borrowed_request_for_test();
+            if generated {
+                program.producer_idempotency_identities::<OwnWriteOutputs>(
+                    &world.application,
+                    &execution,
+                    [11; 32],
+                    None,
+                    &mut owner.edit_admission(),
+                )
+            } else {
+                program.producer_idempotency_identities::<RetentionOutputs>(
+                    &world.application,
+                    &execution,
+                    [11; 32],
+                    None,
+                    &mut owner.edit_admission(),
+                )
+            }
+            .unwrap()
+        })
+        .expect("the installed host lends the identity request");
     let identity =
         crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::new(
             key, [232; 32],

@@ -12,7 +12,10 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         profile,
         32,
         128 * 1_024 * 1_024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         source_world::seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -102,7 +105,10 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
     let selected = crate::checkpoint_recovery::support::retain_read(&reopened, &request).unwrap();
     request
         .at(&selected)
-        .require_current_output_demand(&renewed, NonZeroUsize::new(1_000_000).unwrap())
+        .require_current_output_demand(
+            &renewed,
+            Some((NonZeroUsize::new(1_000_000).unwrap()).get()),
+        )
         .unwrap();
     let after = request
         .query(PlanarOutputRead {
@@ -151,7 +157,10 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
     let changed = crate::checkpoint_recovery::support::retain_read(&reopened, &request).unwrap();
     assert!(request
         .at(&changed)
-        .require_current_output_demand(&renewed, NonZeroUsize::new(1_000_000).unwrap())
+        .require_current_output_demand(
+            &renewed,
+            Some((NonZeroUsize::new(1_000_000).unwrap()).get())
+        )
         .is_err());
     assert!(
         matches!(

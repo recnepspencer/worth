@@ -1,4 +1,3 @@
-use std::num::NonZeroUsize;
 mod facts;
 mod settlements;
 use facts::{require_current_facts, require_witnessed_output};
@@ -22,7 +21,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         settlements: impl IntoIterator<Item = &'settlement WorthQueryOutputDemandSettlement>,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
@@ -53,7 +52,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         receipts: impl IntoIterator<Item = &'receipt WorthQueryApplicationCommitReceipt>,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
@@ -81,13 +80,14 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         .output_lineage
                         .lock()
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
-                    let read = lineage_read(&mut admission, |maximum_work| {
+                    let read = lineage_read(&mut admission, |admission| {
                         lineage.source_facts_for_receipt(
                             runtime.runtime.authority_identity().as_u64(),
                             &runtime.installed_schema.binding_identity(),
                             self.product().observation(),
                             receipt,
-                            maximum_work,
+                            &execution,
+                            admission,
                         )
                     })?;
                     drop(lineage);
@@ -104,14 +104,14 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// The request's meter, within the caller's declared maximum.
     pub(in crate::domain_computation::primary_graph) fn request_admission(
         &self,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<usize>,
     ) -> InvalidationEditAdmission {
         self.application()
             .primary_provider
             .graph
             .source_owner
             .invalidation_owner
-            .edit_admission_within(maximum_work)
+            .edit_admission_with_work_limit(maximum_work)
     }
 
     /// Compares the output witness and every source fact at this observation.
@@ -189,23 +189,22 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     }
 }
 
-/// One lineage read on the request's meter: its remaining work is reserved
-/// before the read and settled at what the read spent. A meter that cannot
-/// reserve, or a read its reservation stops, is the request's work answer.
+/// Every visited native prefix charges the same admission, including refusal.
 fn lineage_read(
     admission: &mut InvalidationEditAdmission,
-    read: impl FnOnce(usize) -> Result<Option<RetainedOutputCurrentnessRead>, ()>,
+    read: impl FnOnce(
+        &mut InvalidationEditAdmission,
+    ) -> Result<
+        Option<RetainedOutputCurrentnessRead>,
+        worth_relational::facade::mvcc::CompanionPreflightStop,
+    >,
 ) -> Result<Option<RetainedOutputCurrentnessRead>, WorthQueryOutputDemandDenial> {
-    admission
-        .reserved_read(|maximum_work| {
-            read(maximum_work).map(|read| {
-                let work = read.as_ref().map_or(0, |read| read.work);
-                (read, work)
-            })
-        })
-        .ok()
-        .and_then(Result::ok)
-        .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
+    read(admission).map_err(|stop| {
+        crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+            crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+            "native lineage read unavailable",
+        )
+    })
 }
 
 /// A settlement that retains no fact has nothing to compare: the commit of a

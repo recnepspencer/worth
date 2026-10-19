@@ -32,7 +32,9 @@ impl PreparedBatchRead {
                     plan.runtime_authority.as_u64(),
                     plan.query.binding_identity(),
                     plan.query.identity(),
-                    plan.controls.maximum_work().get(),
+                    plan.controls
+                        .maximum_work()
+                        .map(std::num::NonZeroUsize::get),
                     plan.controls.maximum_result_count().get(),
                 )?;
             }
@@ -44,14 +46,18 @@ impl PreparedBatchRead {
                     .max_inline_result_bytes(),
             ),
         )?;
-        let reservation = batch.reserve_read(plan.controls.maximum_work().get())?;
+        let reservation = batch.reserve_read(
+            plan.controls
+                .maximum_work()
+                .map(std::num::NonZeroUsize::get),
+        )?;
         Ok(Self {
             reservation,
             rows,
             meter: batch.retained_meter(),
         })
     }
-    pub(super) fn maximum(&self) -> usize {
+    pub(super) fn maximum(&self) -> Option<usize> {
         self.reservation.maximum()
     }
 

@@ -44,7 +44,7 @@ impl SignalEvaluationPartition {
     pub(crate) fn retain_basis_storage(graph: &mut SignalGraph) -> Self {
         SignalExecutionBasis::capture(
             graph,
-            &mut crate::data::retained_storage::RetainedStoragePreparation::new(100_000),
+            &mut crate::data::retained_storage::RetainedStoragePreparation::new(Some(100_000)),
         )
         .expect("storage-kernel fixture admits bounded immutable seed preparation")
         .new_evaluation_partition()

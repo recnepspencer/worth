@@ -26,7 +26,7 @@ fn zero_budgets_refuse_signal_evaluation_before_callback() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Serial,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, memory, work),
+                    ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(work)),
                 ),
                 cancellation: CancellationToken::new(),
                 deadline: None,

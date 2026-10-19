@@ -55,7 +55,10 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         profile,
         4096,
         128 * 1024 * 1024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         seed,
     );
     let (scope, principal) = authenticate(&application);

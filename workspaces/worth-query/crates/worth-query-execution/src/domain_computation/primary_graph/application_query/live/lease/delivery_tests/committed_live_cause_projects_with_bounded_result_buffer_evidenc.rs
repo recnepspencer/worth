@@ -78,7 +78,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
             &principal,
             account,
             live_account_parameters("account-1"),
-            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048)).unwrap(),
         )
         .unwrap()
         })

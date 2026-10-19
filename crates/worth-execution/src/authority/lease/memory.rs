@@ -172,7 +172,7 @@ mod room_tests {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, bytes, 100),
+                ExecutionBudget::new(NonZeroUsize::MIN, bytes, Some(100)),
             ),
             cancellation: crate::CancellationToken::new(),
             deadline: None,

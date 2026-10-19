@@ -64,7 +64,7 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
                 .controls(controls(operation_key))
                 .retain_operation()
                 .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
-            match operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap()) {
+            match operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap())) {
                 Advance::Completed(done) => {
                     let Completion::Fresh { result, .. } = done.evidence() else {
                         panic!("fresh send evidence")
@@ -125,7 +125,7 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
         .retain_operation()
         .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
     let Advance::Terminal(terminal) =
-        operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("native overspend denial")
     };
@@ -202,7 +202,7 @@ fn execute_send(
         .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
     let fresh = world.runtime.request(&actor, &request);
     let Advance::Completed(done) =
-        operation.advance(&fresh, std::num::NonZeroUsize::new(20_000).unwrap())
+        operation.advance(&fresh, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("independent native send")
     };

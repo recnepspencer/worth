@@ -59,7 +59,7 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, memory, work),
+                    ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(work)),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),
@@ -96,7 +96,7 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 1024 * 1024, 1_000_000),
+                ExecutionBudget::new(NonZeroUsize::MIN, 1024 * 1024, Some(1_000_000)),
             ),
             deadline: None,
             cancellation: cancelled.token(),
@@ -161,13 +161,13 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, memory, 1_000_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(1_000_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
     };
     let child = parent_lease.child(child_request(1024 * 1024)).unwrap();
-    let ceiling = worth_execution::ExecutionWorkCeiling::new(1_000_000);
+    let ceiling = worth_execution::ExecutionWorkCeiling::new(Some(1_000_000));
     let (framework, _) = ceiling
         .run(&child, || {
             ceiling

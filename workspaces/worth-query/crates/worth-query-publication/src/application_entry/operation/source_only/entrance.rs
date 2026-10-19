@@ -42,11 +42,11 @@ where
         <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity,
     >,
 {
-    /// Retained delivery requires the native history bound on every attempt.
+    /// Retained delivery uses the same native history; `None` adds no work ceiling.
     /// ```compile_fail,E0061
     /// use worth_query_publication::facade::application_entry::*;
     /// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::*, application_program::*};
-    /// fn attempt<'r, S, I, P, A>(owner: WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationRetainedCommit>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, maximum_history_work: std::num::NonZeroUsize)
+    /// fn attempt<'r, S, I, P, A>(owner: WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationRetainedCommit>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, maximum_history_work: Option<std::num::NonZeroUsize>)
     /// where
     ///     S: ApplicationSchema + 'static,
     ///     I: ApplicationMutationIntent<S>,
@@ -63,7 +63,7 @@ where
     /// ```
     /// use worth_query_publication::facade::application_entry::*;
     /// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::*, application_program::*};
-    /// fn attempt<'r, S, I, P, A>(owner: WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationRetainedCommit>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, maximum_history_work: std::num::NonZeroUsize)
+    /// fn attempt<'r, S, I, P, A>(owner: WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationRetainedCommit>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, maximum_history_work: Option<std::num::NonZeroUsize>)
     /// where
     ///     S: ApplicationSchema + 'static,
     ///     I: ApplicationMutationIntent<S>,
@@ -80,8 +80,8 @@ where
     pub fn advance(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        maximum_history_work: std::num::NonZeroUsize,
+        maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> super::advancement::Advance<S, I, P, A, ApplicationRetainedCommit> {
-        self.advance_with_history(request, Some(maximum_history_work))
+        self.advance_with_history(request, maximum_history_work)
     }
 }

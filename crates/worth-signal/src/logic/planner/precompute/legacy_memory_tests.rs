@@ -11,7 +11,7 @@ fn legacy_precompute_refuses_memory_after_request_admission() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 8192, 1000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 8192, Some(1000)),
     );
     let serial = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
     let request = ExecutionRequest::serial(&serial);

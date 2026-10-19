@@ -31,7 +31,12 @@ mod optional_owner_removal_and_insertion_refresh_at_the_real_current;
 
 fn batch() -> Batch {
     let nz = |value| NonZeroUsize::new(value).unwrap();
-    Batch::new(Limits::new(nz(2), nz(100_000), nz(262_144), nz(4_096)))
+    Batch::new(Limits::new(
+        nz(2),
+        Some(nz(100_000)),
+        nz(262_144),
+        nz(4_096),
+    ))
 }
 
 enum Read {
@@ -110,7 +115,7 @@ fn read(
             ApplicationQueryParameterSet::new(),
             crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::product_one_shot(
                 product.retained_clone(), basis,
-                NonZeroUsize::new(10).unwrap(), NonZeroUsize::new(10_000).unwrap(), &request,
+                NonZeroUsize::new(10).unwrap(), Some(NonZeroUsize::new(10_000).unwrap()), &request,
             ),
         )
         .unwrap();
@@ -172,7 +177,7 @@ fn refresh(
             ApplicationQueryParameterSet::new(),
             crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::product_one_shot(
                 product.retained_clone(), basis,
-                NonZeroUsize::new(10).unwrap(), NonZeroUsize::new(10_000).unwrap(), &request,
+                NonZeroUsize::new(10).unwrap(), Some(NonZeroUsize::new(10_000).unwrap()), &request,
             ),
         )
         .unwrap();

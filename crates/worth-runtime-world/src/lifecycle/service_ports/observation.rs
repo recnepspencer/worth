@@ -108,27 +108,29 @@ impl RuntimeWorldObservationPort {
 
     pub fn trace_product_branch_ancestry(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         occurrence: crate::identity::ProductBranchIncarnation,
-        maximum: std::num::NonZeroUsize,
+        maximum: Option<std::num::NonZeroUsize>,
     ) -> Result<
         crate::branch::ProductBranchHistoryTraversal,
         super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
     > {
         self.service()?
-            .trace_product_branch_ancestry(occurrence, maximum)
+            .trace_product_branch_ancestry(execution, occurrence, maximum)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
 
     pub fn continue_product_branch_ancestry(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         previous: &crate::branch::ProductBranchHistoryTraversal,
-        maximum: std::num::NonZeroUsize,
+        maximum: Option<std::num::NonZeroUsize>,
     ) -> Result<
         crate::branch::ProductBranchHistoryTraversal,
         super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
     > {
         self.service()?
-            .continue_product_branch_ancestry(previous, maximum)
+            .continue_product_branch_ancestry(execution, previous, maximum)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
 

@@ -92,7 +92,7 @@ fn recorded_settlements(
         .iter()
         .map(|partition| {
             let (recorded, _) = lineage
-                .latest_output_in_partition_budgeted(&source, coordinate, *partition, 1)
+                .latest_output_in_partition_budgeted(&source, coordinate, *partition, Some(1))
                 .expect("recorded output is selectable");
             Arc::clone(
                 &recorded

@@ -218,9 +218,9 @@ impl AggregateWorld {
             .select_product_branch(execution, self._runtime.product_runtime().default_branch())
             .expect("aggregate product basis");
         let product = selected.product().publication_binding();
-        let completed = self.authority.project_bounded(
+        let completed = self.authority.project_with_work_limit(
             execution,
-            maximum_work,
+            Some(maximum_work),
             product.observation().basis().relational_basis().clone(),
             |reader| {
                 let result = reader.summarize_exclusive_incoming(

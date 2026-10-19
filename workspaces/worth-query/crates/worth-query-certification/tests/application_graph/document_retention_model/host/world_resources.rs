@@ -34,7 +34,7 @@ fn world_resources_with_work(
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             64 * 1024 * 1024,
-            work,
+            Some(work),
         ),
     );
     runtime::WorthQueryProductWorldResources::install(

@@ -1,3 +1,4 @@
+use super::super::super::WorthQueryInvariantProjectionDenial;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use std::marker::PhantomData;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
@@ -136,13 +137,17 @@ impl<Schema: ApplicationSchema, Operation>
                 execution,
             )
             .map_err(|denied| {
-                if let BoundedEntityFieldLookupDenialKind::Execution(cause)=denied.kind() {
+                if let BoundedEntityFieldLookupDenialKind::Execution(cause) = denied.kind() {
                     self.reader.native_read_stop.get_or_insert(cause);
-                    return HandlerExecutionDenial::new(super::super::super::WorthQueryInvariantProjectionDenial::execution_request_stopped(cause,None));
+                    return HandlerExecutionDenial::new(
+                        WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None),
+                    );
                 }
 
                 selection_denial(
-                    WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::EqualityIndexUnavailable,
+                    ),
                     field.field(),
                 )
             })?;
@@ -225,38 +230,69 @@ impl<Schema: ApplicationSchema, Operation>
                 Stop::Admission(denial) => HandlerExecutionDenial::new(denial),
                 Stop::Lookup(denial) => {
                     let examined = denial.examined_entry_count();
-                    self.reader.work_budget.consume(1 + examined);
-                    self.reader.work.record_lookup(examined);
+                    let admitted = self.reader.work_budget.consume(1 + examined);
+                    if admitted {
+                        self.reader.work.record_lookup(examined);
+                    }
                     let kind = match denial.kind() {
                         BoundedEntityFieldLookupDenialKind::Execution(cause) => {
                             self.reader.native_read_stop.get_or_insert(cause);
-                            return HandlerExecutionDenial::new(super::super::super::WorthQueryInvariantProjectionDenial::execution_request_stopped(cause,None));
+                            return HandlerExecutionDenial::new(
+                                WorthQueryInvariantProjectionDenial::execution_request_stopped(
+                                    cause, None,
+                                ),
+                            );
                         }
                         BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
                         | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
-                            WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::CorruptIdentityIndex)
+                            WorthQueryEntityResolutionDenialKind::Refused(
+                                ResolutionRefusal::CorruptIdentityIndex,
+                            )
                         }
                         BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
                         | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
                         | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
                         | BoundedEntityFieldLookupDenialKind::WrongIndexKind
-                        | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                        | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => {
+                            WorthQueryEntityResolutionDenialKind::Refused(
+                                ResolutionRefusal::EqualityIndexUnavailable,
+                            )
+                        }
                     };
+                    if !admitted {
+                        return selection_denial(
+                            WorthQueryEntityResolutionDenialKind::Stopped(
+                                NativeReadStop::WorkExhausted,
+                            ),
+                            prepared.field.field(),
+                        );
+                    }
                     selection_denial(kind, prepared.field.field())
                 }
                 Stop::AccountingOverflow => {
                     let cause = NativeReadStop::WorkCounterOverflow;
                     self.reader.native_read_stop.get_or_insert(cause);
-                    HandlerExecutionDenial::new(super::super::super::WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None))
+                    HandlerExecutionDenial::new(
+                        WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None),
+                    )
                 }
                 Stop::ExactBasisRequired => selection_denial(
-                    WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::EqualityIndexUnavailable,
+                    ),
                     prepared.field.field(),
                 ),
             })?;
-        self.reader
+        if !self
+            .reader
             .work_budget
-            .consume(1 + outcome.examined_entry_count());
+            .consume(1 + outcome.examined_entry_count())
+        {
+            return Err(selection_denial(
+                WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
+                prepared.field.field(),
+            ));
+        }
         self.reader
             .work
             .record_lookup(outcome.examined_entry_count());

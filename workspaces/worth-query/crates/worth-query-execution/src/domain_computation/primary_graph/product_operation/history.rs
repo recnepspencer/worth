@@ -29,14 +29,20 @@ pub struct WorthQueryProductHistoryEntry<'history> {
 impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'runtime, Schema> {
     pub fn history(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: WorthQueryProductBranch,
-        maximum: NonZeroUsize,
+        maximum: Option<NonZeroUsize>,
     ) -> Result<WorthQueryProductHistory<'runtime, Schema>, WorthQueryProductBranchAdmissionDenial>
     {
+        let execution = phase
+            .execution_request_for(&self.application.product_runtime)
+            .map_err(|_| {
+                WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
+            })?;
         let history = self
             .application
             .product_runtime
-            .trace_product_history(branch, maximum)?;
+            .trace_product_history(&execution, branch, maximum)?;
         Ok(WorthQueryProductHistory {
             application: self.application,
             history,
@@ -66,12 +72,19 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
 
     pub fn continue_ancestry(
         &self,
-        maximum: NonZeroUsize,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        maximum: Option<NonZeroUsize>,
     ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
-        let history = self
-            .application
-            .product_runtime
-            .continue_product_history(&self.history, maximum)?;
+        let execution = phase
+            .execution_request_for(&self.application.product_runtime)
+            .map_err(|_| {
+                WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
+            })?;
+        let history = self.application.product_runtime.continue_product_history(
+            &execution,
+            &self.history,
+            maximum,
+        )?;
         Ok(Self {
             application: self.application,
             history,

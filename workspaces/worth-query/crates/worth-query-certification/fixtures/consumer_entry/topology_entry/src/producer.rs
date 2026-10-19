@@ -178,5 +178,5 @@ pub fn planar_source_key(source_identity: &[u8; 32]) -> u64 {
 }
 
 pub const fn planar_producer_resources() -> WorthQueryProducerDemandResources {
-    WorthQueryProducerDemandResources::new(4_096, 8_192)
+    WorthQueryProducerDemandResources::new(Some(4_096), 8_192)
 }

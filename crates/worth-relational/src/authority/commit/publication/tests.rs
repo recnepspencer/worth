@@ -103,7 +103,7 @@ fn publication_lease(work: u64) -> worth_execution::ExecutionResourceLease<'stat
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 8 * 1024 * 1024, work),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 8 * 1024 * 1024, Some(work)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

@@ -73,7 +73,7 @@ impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
             | (3 << 62)
     }
     fn demand_resources(&self, _: &source::Result) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(4096, 16384)
+        WorthQueryProducerDemandResources::new(Some(4096), 16384)
     }
 }
 impl WorthQueryApplicationRequiredOutputConnection<Schema> for Connection {

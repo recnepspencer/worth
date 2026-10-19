@@ -261,7 +261,7 @@ impl WorthQueryApplicationProducerProvider<BankSchema, ApprovedPaymentAssessment
     }
 
     fn demand_resources(&self, _: &PaymentSummary) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(512, 1_024)
+        WorthQueryProducerDemandResources::new(Some(512), 1_024)
     }
 }
 

@@ -59,7 +59,7 @@ impl CustomInvariantRule for LargeAdmissionProbe {
             },
             display_name: self.id.into(),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(1_000_000).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(1_000_000).unwrap()),
                 access: worth_relational::facade::runtime::CustomInvariantAccessContract {
                     read_entity_kinds: vec![],
                     read_relation_kinds: vec![],

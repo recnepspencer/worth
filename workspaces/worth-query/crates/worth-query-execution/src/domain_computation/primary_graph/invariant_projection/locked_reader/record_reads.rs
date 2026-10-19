@@ -58,13 +58,21 @@ where
             field.field(),
             value,
         );
-        self.work_budget.consume(1 + examined);
-        self.work.record_lookup(examined);
+        let admitted = self.work_budget.consume(1 + examined);
+        if admitted {
+            self.work.record_lookup(examined);
+        }
         let resolved = resolved.inspect_err(|denial| {
             if let WorthQueryEntityResolutionDenialKind::Stopped(cause) = denial.kind() {
                 self.native_read_stop = Some(cause);
             }
         })?;
+        if !admitted {
+            return Err(WorthQueryEntityResolutionDenial::new(
+                WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
+                field.field(),
+            ));
+        }
         self.realized_scope.record(resolved.entity_id());
         Ok(WorthQueryInvariantEntityIdentity {
             entity_id: resolved.entity_id(),
@@ -132,7 +140,7 @@ where
         if !self.work_budget.can_afford(1) {
             return None;
         }
-        self.work_budget.consume(1);
+        assert!(self.work_budget.consume(1), "projection work was admitted");
         self.realized_scope.record(identity.entity_id);
         let locator = self
             .layout

@@ -23,7 +23,7 @@ pub(super) fn fund_opening(
         .retain_operation()
         .unwrap_or_else(|cause| panic!("declared retained money: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
-        source.advance(&request, std::num::NonZeroUsize::new(128).unwrap())
+        source.advance(&request, Some(std::num::NonZeroUsize::new(128).unwrap()))
     else {
         panic!("fresh retained money completion")
     };
@@ -64,7 +64,7 @@ pub(super) fn reverse_deposit(
         .retain_operation()
         .unwrap_or_else(|cause| panic!("declared retained money: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
-        source.advance(&request, std::num::NonZeroUsize::new(128).unwrap())
+        source.advance(&request, Some(std::num::NonZeroUsize::new(128).unwrap()))
     else {
         panic!("fresh retained money completion")
     };

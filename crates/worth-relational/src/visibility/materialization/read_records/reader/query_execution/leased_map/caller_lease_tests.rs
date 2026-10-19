@@ -13,7 +13,7 @@ fn relational_packet_dispatch_obeys_its_callers_lease() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 1 << 20, 0),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 1 << 20, Some(0)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

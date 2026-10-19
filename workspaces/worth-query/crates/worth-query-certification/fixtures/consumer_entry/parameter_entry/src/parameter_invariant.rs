@@ -36,7 +36,7 @@ where
     ApplicationInvariantDefinition::new(
         PositiveParameterCount::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(NonZeroU64::new(1_024).unwrap()),
+        RelationalInvariantWorkBudget::new(Some(NonZeroU64::new(1_024).unwrap())),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::SchemaCompliance],

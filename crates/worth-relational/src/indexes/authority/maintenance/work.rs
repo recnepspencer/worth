@@ -160,13 +160,26 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn charge(&mut self, units: usize) -> Result<(), Denial> {
         #[cfg(test)]
         super::charge_rendezvous::meet();
+        let next = self
+            .counts
+            .work_units
+            .checked_add(units)
+            .ok_or(Denial::Execution(
+                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+            ))?;
         if let MaintenancePayer::Request(context, _) = &mut self.payer {
             checkpoint(context, 0)?;
-            if units as u64 > context.remaining_work() {
+            if context
+                .remaining_work()
+                .is_some_and(|remaining| units as u64 > remaining)
+            {
                 checkpoint(context, units as u64)?;
             }
         }
-        if units > self.native_remaining() {
+        if self
+            .native_remaining()
+            .is_some_and(|remaining| units > remaining)
+        {
             return Err(Denial::WorkBudgetExceeded);
         }
         match &mut self.payer {
@@ -177,30 +190,34 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             #[cfg(test)]
             MaintenancePayer::Test => {}
         }
-        self.counts.work_units += units;
+        self.counts.work_units = next;
         Ok(())
     }
 
-    pub(super) fn remaining(&self) -> usize {
+    pub(super) fn remaining(&self) -> Option<usize> {
         let native = self.native_remaining();
-        match &self.payer {
-            MaintenancePayer::Request(context, _) => usize::try_from(context.remaining_work())
-                .map_or(native, |remaining| native.min(remaining)),
-            _ => native,
-        }
+        let requested = match &self.payer {
+            MaintenancePayer::Request(context, _) => context
+                .remaining_work()
+                .and_then(|remaining| usize::try_from(remaining).ok()),
+            _ => None,
+        };
+        native.into_iter().chain(requested).min()
     }
 
-    fn native_remaining(&self) -> usize {
+    fn native_remaining(&self) -> Option<usize> {
         self.budget
             .maximum_work_units
-            .saturating_sub(self.counts.work_units)
+            .map(|maximum| maximum.saturating_sub(self.counts.work_units))
     }
 
     pub(super) fn bounded_scan_denial(&mut self) -> Denial {
         let native = self.native_remaining();
         if let MaintenancePayer::Request(context, _) = &mut self.payer {
             let remaining = context.remaining_work();
-            if remaining <= native as u64 {
+            if let Some(remaining) = remaining
+                .filter(|remaining| native.is_none_or(|native| *remaining <= native as u64))
+            {
                 let Some(required) = remaining.checked_add(1) else {
                     return Denial::Execution(
                         crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
@@ -220,7 +237,11 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     }
 
     pub(super) fn derive_row(&mut self) -> Result<(), Denial> {
-        if self.counts.derived_rows >= self.budget.maximum_derived_rows {
+        if self
+            .budget
+            .maximum_derived_rows
+            .is_some_and(|maximum| self.counts.derived_rows >= maximum)
+        {
             return Err(Denial::WorkBudgetExceeded);
         }
         self.charge(1)?;
@@ -252,20 +273,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn absent_native_work_ceiling_keeps_overflow_a_typed_refusal() {
+        let mut work = MaintenanceWork::new(DerivedIndexMaintenanceBudget {
+            maximum_work_units: None,
+            maximum_cold_record_slots: Some(0),
+            maximum_derived_rows: None,
+        });
+        work.counts.work_units = usize::MAX;
+        assert_eq!(
+            work.charge(1),
+            Err(Denial::Execution(
+                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow
+            ))
+        );
+        assert_eq!(work.counts().work_units, usize::MAX);
+    }
+
+    #[test]
     fn child_scan_quote_is_bounded_by_the_callers_remaining_work() {
         let host = crate::test_execution_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let budget = DerivedIndexMaintenanceBudget {
-            maximum_work_units: 100,
-            maximum_cold_record_slots: 0,
-            maximum_derived_rows: 0,
+            maximum_work_units: Some(100),
+            maximum_cold_record_slots: Some(0),
+            maximum_derived_rows: Some(0),
         };
         let (result, _) = execution
-            .run(worth_execution::ExecutionWorkCeiling::new(2), |_| {
+            .run(worth_execution::ExecutionWorkCeiling::new(Some(2)), |_| {
                 super::super::request_payment::run(&execution, budget, |work| Ok(work.remaining()))
             })
             .unwrap();
-        assert_eq!(result.unwrap().0.value, 2);
+        assert_eq!(result.unwrap().0.value, Some(2));
     }
 
     #[test]
@@ -281,13 +319,13 @@ mod tests {
             let host = crate::test_execution_policy::serial_request();
             let execution = worth_execution::ExecutionRequest::serial(&host);
             let budget = DerivedIndexMaintenanceBudget {
-                maximum_work_units: native_limit,
-                maximum_cold_record_slots: 0,
-                maximum_derived_rows: 0,
+                maximum_work_units: Some(native_limit),
+                maximum_cold_record_slots: Some(0),
+                maximum_derived_rows: Some(0),
             };
             let (result, report) = execution
                 .run(
-                    worth_execution::ExecutionWorkCeiling::new(caller_limit),
+                    worth_execution::ExecutionWorkCeiling::new(Some(caller_limit)),
                     |_| {
                         super::super::request_payment::run(&execution, budget, |work| {
                             work.charge(2)?;

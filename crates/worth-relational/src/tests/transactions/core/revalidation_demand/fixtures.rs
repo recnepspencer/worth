@@ -42,7 +42,7 @@ impl CustomInvariantRule for StrictnessRule {
             },
             display_name: Arc::from("Test Revalidation Strictness"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(4_096).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(4_096).unwrap()),
                 access: CustomInvariantAccessContract {
                     read_entity_kinds: vec![KindId(1)],
                     read_relation_kinds: Vec::new(),

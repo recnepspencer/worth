@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
 use worth_relational::facade::mvcc::CompanionPreflightBudget;
 fn admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 1_000_000,
+        maximum_work_visits: Some(1_000_000),
         maximum_preparation_bytes: 1 << 20,
     })
 }

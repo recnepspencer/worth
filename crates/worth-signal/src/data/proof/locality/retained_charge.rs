@@ -56,7 +56,7 @@ mod tests {
         assert_eq!(serde_json::to_string(&empty).unwrap(), "[]");
         assert_eq!(
             empty
-                .retained_heap_charge(&mut Preparation::new(2))
+                .retained_heap_charge(&mut Preparation::new(Some(2)))
                 .unwrap(),
             Charge::ZERO
         );
@@ -68,7 +68,7 @@ mod tests {
         assert_eq!(decoded, scopes);
         assert!(
             scopes
-                .retained_heap_charge(&mut Preparation::new(4))
+                .retained_heap_charge(&mut Preparation::new(Some(4)))
                 .unwrap()
                 .bytes()
                 >= std::mem::size_of::<PartitionSubscription>() as u64

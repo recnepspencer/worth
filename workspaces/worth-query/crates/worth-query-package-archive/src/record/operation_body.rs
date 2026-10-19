@@ -224,11 +224,11 @@ pub(super) fn decode(
     };
     let steps = decode_sequence(input, budget, 20, |input, _| {
         let tag = input.u16()?;
-        if !matches!(tag, 1 | 2)
-            && !(version >= 2 && tag == 3)
-            && !(version >= 5 && matches!(tag, 4 | 5))
-            && !(version >= 6 && tag == 6)
-            && !(version >= 9 && tag == 7)
+        if !(matches!(tag, 1 | 2)
+            || (version >= 2 && tag == 3)
+            || (version >= 5 && matches!(tag, 4 | 5))
+            || (version >= 6 && tag == 6)
+            || (version >= 9 && tag == 7))
         {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }

@@ -39,7 +39,7 @@ fn lease(workers: usize) -> worth_execution::ExecutionResourceLease<'static> {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 8 << 20, 10_000),
+                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 8 << 20, Some(10_000)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

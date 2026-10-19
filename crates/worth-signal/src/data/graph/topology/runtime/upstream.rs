@@ -7,11 +7,11 @@ struct UpstreamTraversal<'graph> {
     visited: BTreeSet<NodeId>,
     stack: Vec<std::iter::Rev<std::slice::Iter<'graph, DependencyEdge>>>,
     visits: usize,
-    maximum_visits: usize,
+    maximum_visits: Option<usize>,
 }
 
 impl<'graph> UpstreamTraversal<'graph> {
-    fn new(dependencies: &'graph [DependencyEdge], maximum_visits: usize) -> Self {
+    fn new(dependencies: &'graph [DependencyEdge], maximum_visits: Option<usize>) -> Self {
         Self {
             visited: BTreeSet::new(),
             stack: vec![dependencies.iter().rev()],
@@ -30,12 +30,15 @@ impl<'graph> UpstreamTraversal<'graph> {
                 self.stack.pop();
                 continue;
             };
-            if self.visits == self.maximum_visits {
-                return Err(SignalError::UpstreamDependencyWorkExhausted {
-                    maximum_visits: self.maximum_visits,
-                });
+            if let Some(maximum_visits) = self.maximum_visits
+                && self.visits == maximum_visits
+            {
+                return Err(SignalError::UpstreamDependencyWorkExhausted { maximum_visits });
             }
-            self.visits += 1;
+            self.visits = self
+                .visits
+                .checked_add(1)
+                .ok_or(SignalError::RetainedStorageChargeOverflow)?;
             let node = edge.source();
             // Bound search and structural moves by four visits per stored key
             // plus the new key, before insertion/allocation. Duplicate edges

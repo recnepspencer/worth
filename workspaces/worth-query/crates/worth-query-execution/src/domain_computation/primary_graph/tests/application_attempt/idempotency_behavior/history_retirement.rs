@@ -142,11 +142,14 @@ fn a_causal_replay_after_its_history_retires_answers_with_its_sealed_causality()
         }
         let history = world
             .application
-            .branches()
-            .history(
-                world.application.current_world(),
-                std::num::NonZeroUsize::new(64).unwrap(),
-            )
+            .with_host_advancement(|phase| {
+                world.application.branches().history(
+                    &phase,
+                    world.application.current_world(),
+                    std::num::NonZeroUsize::new(64),
+                )
+            })
+            .expect("the original installed host opens a fresh phase")
             .expect("the live branch exposes its history");
         assert!(
             history

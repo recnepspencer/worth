@@ -34,7 +34,7 @@ fn contains_checked_result_violation(error: &SignalError) -> bool {
 #[test]
 fn declared_checked_result_heap_is_enforced_before_publication() {
     let heap = result()
-        .retained_heap_charge(&mut RetainedStoragePreparation::new(usize::MAX))
+        .retained_heap_charge(&mut RetainedStoragePreparation::new(None))
         .unwrap()
         .bytes();
     assert!(heap > 0);

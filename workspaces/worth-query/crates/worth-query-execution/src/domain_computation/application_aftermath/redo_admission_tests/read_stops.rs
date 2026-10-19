@@ -54,12 +54,15 @@ fn admit_redo_keeps_the_prior_redo_read_stop_at_every_consult() {
                         let (answer, report) = phase
                             .execution_request_for(&world.application.product_runtime)
                             .unwrap()
-                            .run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
-                                selected
-                                    .admit_redo(&phase, recovery, &authority, &intent)
-                                    .map(|_| ())
-                                    .map_err(|denial| denial.kind())
-                            })
+                            .run(
+                                worth_execution::ExecutionWorkCeiling::new(Some(ceiling)),
+                                |_| {
+                                    selected
+                                        .admit_redo(&phase, recovery, &authority, &intent)
+                                        .map(|_| ())
+                                        .map_err(|denial| denial.kind())
+                                },
+                            )
                             .unwrap();
                         assert_eq!(
                             report.charged_work(),

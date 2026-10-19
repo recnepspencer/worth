@@ -132,9 +132,9 @@ where
     ApplicationInvariantDefinition::new(
         PositivePlanarTurn::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(
+        RelationalInvariantWorkBudget::new(Some(
             NonZeroU64::new(Schema::planar_invariant_work()).expect("nonzero fixture budget"),
-        ),
+        )),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [

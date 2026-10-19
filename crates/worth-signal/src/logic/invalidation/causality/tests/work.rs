@@ -26,7 +26,7 @@ fn conditional_cause_preparation_consumes_one_allowance_and_preserves_published_
         &[],
     )
     .unwrap();
-    let mut work = Preparation::new(100_000);
+    let mut work = Preparation::new(Some(100_000));
     graph
         .prepare_direct_output_causes(
             &delta,
@@ -36,7 +36,7 @@ fn conditional_cause_preparation_consumes_one_allowance_and_preserves_published_
         .unwrap();
     let cost = work.visits();
     for available in [cost - 1, cost] {
-        let mut work = Preparation::new(cost + 7);
+        let mut work = Preparation::new(Some(cost + 7));
         work.reserve_visits(cost + 7 - available).unwrap();
         let result = graph.prepare_direct_output_causes(
             &delta,
@@ -63,7 +63,7 @@ fn cause_copy_charges_both_key_and_binding_scope_payloads() {
     });
     publish_scoped_delta(&mut graph, producer, aspect, ChangedRegion::new("rates"));
     let mut causes = graph.pending_causes(consumer).unwrap().to_vec();
-    let mut work = Preparation::new(100_000);
+    let mut work = Preparation::new(Some(100_000));
     admit_causes_copy(&causes, &mut EvaluationWork::Conditional(&mut work)).unwrap();
     let short_cost = work.visits();
     // Explicit malformed-payload seam: key and binding are distinct owned
@@ -73,7 +73,7 @@ fn cause_copy_charges_both_key_and_binding_scope_payloads() {
     assert!(matches!(
         admit_causes_copy(
             &causes,
-            &mut EvaluationWork::Conditional(&mut Preparation::new(short_cost))
+            &mut EvaluationWork::Conditional(&mut Preparation::new(Some(short_cost)))
         ),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));
@@ -97,7 +97,7 @@ fn bounded_cause_scope_normalization_matches_independent_set() {
             .collect::<std::collections::BTreeSet<_>>()
             .into_iter()
             .collect();
-        let mut work = Preparation::new(1_000_000);
+        let mut work = Preparation::new(Some(1_000_000));
         let result =
             normalize(scopes.clone(), &mut EvaluationWork::Conditional(&mut work)).unwrap();
         assert_eq!(result.as_slice(), expected);
@@ -105,7 +105,7 @@ fn bounded_cause_scope_normalization_matches_independent_set() {
         assert_eq!(
             normalize(
                 scopes.clone(),
-                &mut EvaluationWork::Conditional(&mut Preparation::new(cost))
+                &mut EvaluationWork::Conditional(&mut Preparation::new(Some(cost)))
             )
             .unwrap(),
             result
@@ -114,7 +114,7 @@ fn bounded_cause_scope_normalization_matches_independent_set() {
             assert!(matches!(
                 normalize(
                     scopes,
-                    &mut EvaluationWork::Conditional(&mut Preparation::new(cost - 1))
+                    &mut EvaluationWork::Conditional(&mut Preparation::new(Some(cost - 1)))
                 ),
                 Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
             ));

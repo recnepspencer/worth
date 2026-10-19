@@ -215,7 +215,7 @@ pub(super) fn observe_case(
         projected.clear();
         prepared = 0;
         witness.reset();
-        let result = request.run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        let result = request.run(ExecutionWorkCeiling::new(None), |_| {
             world
                 .application
                 .reconstruct_managed_derived_collection_pair(

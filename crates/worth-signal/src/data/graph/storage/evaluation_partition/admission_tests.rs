@@ -22,12 +22,13 @@ fn fixture() -> (
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 1,
             maximum_retained_bytes: 64 * 1024 * 1024,
-            maximum_attempt_visits: 100_000,
+            maximum_attempt_visits: Some(100_000),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
     );
-    let basis = SignalRetainedExecutionBasis::capture(&mut graph, &ledger, &mut Work::new(100_000))
-        .unwrap();
+    let basis =
+        SignalRetainedExecutionBasis::capture(&mut graph, &ledger, &mut Work::new(Some(100_000)))
+            .unwrap();
     (graph, basis, ledger)
 }
 
@@ -36,18 +37,18 @@ fn partition_admission_denials_preserve_capacity_and_dropped_slots_can_be_reused
     let (_graph, basis, ledger) = fixture();
     let initial = ledger.usage();
     assert!(matches!(
-        basis.new_evaluation_partition(&mut Work::new(0)),
+        basis.new_evaluation_partition(&mut Work::new(Some(0))),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));
     assert_eq!(ledger.usage(), initial);
     let slot = basis
-        .new_evaluation_partition(&mut Work::new(100_000))
+        .new_evaluation_partition(&mut Work::new(Some(100_000)))
         .unwrap();
     assert_eq!(ledger.usage().0, 1);
     assert!(ledger.usage().1 > initial.1);
     let full = ledger.usage();
     assert!(matches!(
-        basis.new_evaluation_partition(&mut Work::new(100_000)),
+        basis.new_evaluation_partition(&mut Work::new(Some(100_000))),
         Err(SignalError::EvaluationStorageCapacityExhausted)
     ));
     assert_eq!(ledger.usage(), full);
@@ -55,7 +56,7 @@ fn partition_admission_denials_preserve_capacity_and_dropped_slots_can_be_reused
     assert_eq!(ledger.usage(), initial);
     drop(
         basis
-            .new_evaluation_partition(&mut Work::new(100_000))
+            .new_evaluation_partition(&mut Work::new(Some(100_000)))
             .unwrap(),
     );
     assert_eq!(ledger.usage(), initial);
@@ -70,7 +71,7 @@ fn partition_admission_denials_preserve_capacity_and_dropped_slots_can_be_reused
         .unwrap();
     let pressured = ledger.usage();
     assert!(matches!(
-        basis.new_evaluation_partition(&mut Work::new(100_000)),
+        basis.new_evaluation_partition(&mut Work::new(Some(100_000))),
         Err(SignalError::EvaluationStorageCapacityExhausted)
     ));
     assert_eq!(
@@ -81,7 +82,7 @@ fn partition_admission_denials_preserve_capacity_and_dropped_slots_can_be_reused
     drop(pressure);
     ledger.close();
     assert!(matches!(
-        basis.new_evaluation_partition(&mut Work::new(100_000)),
+        basis.new_evaluation_partition(&mut Work::new(Some(100_000))),
         Err(SignalError::EvaluationStorageUnavailable)
     ));
     assert_eq!(ledger.usage(), initial);
@@ -91,11 +92,11 @@ fn partition_admission_denials_preserve_capacity_and_dropped_slots_can_be_reused
 fn partition_admission_rejected_roots_retain_bytes_after_slot_and_seed_drop() {
     let (graph, basis, ledger) = fixture();
     let mut slot = basis
-        .new_evaluation_partition(&mut Work::new(100_000))
+        .new_evaluation_partition(&mut Work::new(Some(100_000)))
         .unwrap();
     let rejected = ConditionalEvaluationDraft::begin(
         &mut slot,
-        &mut crate::data::retained_storage::RetainedStoragePreparation::new(1_000_000),
+        &mut crate::data::retained_storage::RetainedStoragePreparation::new(Some(1_000_000)),
     )
     .unwrap()
     .reject();
@@ -112,7 +113,7 @@ fn partition_admission_rejected_roots_retain_bytes_after_slot_and_seed_drop() {
 fn partition_admission_escaped_session_retains_cleanup_until_drop() {
     let (mut graph, basis, ledger) = fixture();
     let mut slot = basis
-        .new_evaluation_partition(&mut Work::new(100_000))
+        .new_evaluation_partition(&mut Work::new(Some(100_000)))
         .unwrap();
     let session = slot
         .execute(&mut graph, |selected| {
@@ -134,19 +135,20 @@ fn partition_admission_escaped_session_retains_cleanup_until_drop() {
 fn partition_admission_unwind_restores_custody_and_persistent_fork_retains_it() {
     let (mut graph, basis, ledger) = fixture();
     let mut slot: SignalEvaluationPartition = basis
-        .new_evaluation_partition(&mut Work::new(100_000))
+        .new_evaluation_partition(&mut Work::new(Some(100_000)))
         .unwrap();
     let cold = ledger.usage();
     // The first admitted fork converts exclusive roots to shared backings. The
     // original partition retains that conversion even when the draft is rejected.
-    drop(ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(1_000_000)).unwrap());
+    drop(ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(Some(1_000_000))).unwrap());
     let converted = ledger.usage();
     assert_eq!(converted.0, cold.0);
     assert!(converted.1 > cold.1);
     for _ in 0..2 {
         let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let draft =
-                ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(1_000_000)).unwrap();
+                ConditionalEvaluationDraft::begin(&mut slot, &mut Work::new(Some(1_000_000)))
+                    .unwrap();
             let _ = draft
                 .partition
                 .execute(&mut graph, |_| panic!("provider unwind"));

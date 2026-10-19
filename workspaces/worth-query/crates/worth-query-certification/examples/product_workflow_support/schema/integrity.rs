@@ -22,7 +22,9 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<TemporalHostSchema,
     ApplicationInvariantDefinition::new(
         TemporalIntegrity::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(NonZeroU64::new(64).expect("non-zero work budget")),
+        RelationalInvariantWorkBudget::new(Some(
+            NonZeroU64::new(64).expect("non-zero work budget"),
+        )),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::SchemaCompliance],

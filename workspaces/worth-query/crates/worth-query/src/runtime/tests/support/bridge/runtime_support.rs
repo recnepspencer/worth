@@ -8,7 +8,7 @@ pub(in crate::runtime::tests) fn test_product_world_resources() -> WorthQueryPro
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             64 * 1024 * 1024,
-            8_000_000,
+            Some(8_000_000),
         ),
     );
     WorthQueryProductWorldResources::install(

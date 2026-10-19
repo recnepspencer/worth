@@ -63,7 +63,7 @@ fn activity_pages_keep_one_exact_basis_across_a_new_commit() {
     let request = fixture.world.runtime.request(&teller, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         completed,
-    ) = mutation.advance(&request, NonZeroUsize::new(20_000).unwrap())
+    ) = mutation.advance(&request, Some(NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("native retained deposit completion")
     };
@@ -308,7 +308,7 @@ fn activity_order_follows_committed_account_sequence_not_derived_identity() {
         let request = fixture.world.runtime.request(&teller, &scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             completed,
-        ) = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap())
+        ) = outcome.advance(&request, Some(NonZeroUsize::new(20_000).unwrap()))
         else {
             panic!("native retained deposit completion")
         };
@@ -358,7 +358,7 @@ fn resume_controls<'a>(
 ) -> WorthQueryApplicationQueryResumeControls<'a> {
     WorthQueryApplicationQueryResumeControls::new(
         NonZeroUsize::new(page_width).unwrap(),
-        NonZeroUsize::new(4_096).unwrap(),
+        Some(NonZeroUsize::new(4_096).unwrap()),
         request,
     )
 }

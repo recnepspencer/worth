@@ -16,7 +16,8 @@ use worth_foundational::PartitionIdentity;
 struct LimitsLayout {
     tokens: Vec<CancellationToken>,
     deadline: Option<Instant>,
-    ceiling: u64,
+    // Absence has its real discriminant storage; this is not a numeric sentinel.
+    ceiling: Option<u64>,
     workers: Arc<[AtomicUsize; 2]>,
     physical: Arc<[AtomicU64; 3]>,
     flags: [bool; 3],

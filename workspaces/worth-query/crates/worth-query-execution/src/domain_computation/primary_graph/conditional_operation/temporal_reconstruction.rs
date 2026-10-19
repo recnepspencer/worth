@@ -203,7 +203,7 @@ where
         product,
         application_basis,
         maximum_results,
-        maximum_work,
+        Some(maximum_work),
         &request,
     );
     let plan = access

@@ -57,7 +57,7 @@ impl IndexAuthority<'_> {
                 })
             };
             let mut work = MaintenanceWork::admitted(budget, &mut relay);
-            if budget.maximum_cold_record_slots == 0 {
+            if budget.maximum_cold_record_slots == Some(0) {
                 work.restrict_to_field_indexes();
             }
             let prepared = self

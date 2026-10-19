@@ -127,7 +127,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 .unwrap();
             let (outcome, _) = execution
                 .run(
-                    ExecutionWorkCeiling::new(1),
+                    ExecutionWorkCeiling::new(Some(1)),
                     |lease| map.run_owned(lease, |pair, context| pair.run(execution, context)),
                 )
                 .unwrap();

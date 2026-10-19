@@ -7,17 +7,17 @@ pub(crate) enum RetainedStoragePreparationDenial {
     RetainedExtentHistoryUnavailable,
 }
 
-/// One explicit bounded traversal. No charge becomes usable from a partial
+/// One traversal with optional caller work bound. No charge becomes usable from a partial
 /// result, and a failed traversal cannot replenish its own work allowance.
 pub(crate) struct RetainedStoragePreparation<'observer> {
-    maximum_visits: usize,
+    maximum_visits: Option<usize>,
     visits: usize,
     checkpoint:
         Option<&'observer mut dyn FnMut(usize) -> Result<(), RetainedStoragePreparationDenial>>,
 }
 
 impl RetainedStoragePreparation<'static> {
-    pub(crate) const fn new(maximum_visits: usize) -> Self {
+    pub(crate) const fn new(maximum_visits: Option<usize>) -> Self {
         Self {
             maximum_visits,
             visits: 0,
@@ -31,7 +31,8 @@ impl<'observer> RetainedStoragePreparation<'observer> {
     pub(crate) fn limit_additional_visits(
         &mut self,
         maximum_additional: usize,
-    ) -> RetainedStoragePreparationLimit<'_, 'observer> {
+    ) -> Result<RetainedStoragePreparationLimit<'_, 'observer>, RetainedStoragePreparationDenial>
+    {
         RetainedStoragePreparationLimit::new(self, maximum_additional)
     }
 
@@ -60,7 +61,7 @@ impl<'observer> RetainedStoragePreparation<'observer> {
         self.visits
     }
 
-    pub(crate) const fn maximum_visits(&self) -> usize {
+    pub(crate) const fn maximum_visits(&self) -> Option<usize> {
         self.maximum_visits
     }
 
@@ -77,10 +78,12 @@ impl<'observer> RetainedStoragePreparation<'observer> {
         let visits = self
             .visits
             .checked_add(count)
-            .filter(|visits| *visits <= self.maximum_visits)
-            .ok_or(RetainedStoragePreparationDenial::WorkExhausted {
-                maximum_visits: self.maximum_visits,
-            })?;
+            .ok_or(RetainedStoragePreparationDenial::ChargeOverflow)?;
+        if let Some(maximum_visits) = self.maximum_visits
+            && visits > maximum_visits
+        {
+            return Err(RetainedStoragePreparationDenial::WorkExhausted { maximum_visits });
+        }
         self.checkpoint_request_only(count)?;
         self.visits = visits;
         Ok(())

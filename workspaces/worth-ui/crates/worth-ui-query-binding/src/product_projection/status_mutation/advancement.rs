@@ -15,7 +15,7 @@ impl WorthUiStatusMutation {
     pub fn advance(
         mut self,
         scope: &WorthQueryRequestScope,
-        maximum_history_work: NonZeroUsize,
+        maximum_history_work: Option<NonZeroUsize>,
     ) -> Result<WorthUiStatusMutationResult, Self> {
         let principal = match authenticate(self.application.installed_schema(), scope) {
             Ok(principal) => principal,
@@ -36,14 +36,14 @@ impl MutationState {
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, WorthUiApplicationSchema>,
         application: &WorthUiStatusApplication,
-        history: NonZeroUsize,
+        history: Option<NonZeroUsize>,
     ) -> Result<WorthUiStatusMutationResult, WorthUiStatusMutationStop> {
         self.prepare_in_request(request, application)?;
         // Open before executing so the actual committed cause is observed. Every retry
         // opens a genuine observer and must disclose the original retained commit again.
         let mut live = request
             .query(WorthUiStatusQueryRequest::new("platform.pulse.status"))
-            .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, 64))
+            .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, Some(64)))
             .map_err(|denial| {
                 WorthUiStatusMutationStop::Setup(WorthUiStatusOwnerError::LiveOpen(format!(
                     "{denial:?}"
@@ -86,7 +86,7 @@ impl MutationState {
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, WorthUiApplicationSchema>,
         live: &mut Live<'_>,
-        history: NonZeroUsize,
+        history: Option<NonZeroUsize>,
     ) -> Result<WorthUiStatusMutationResult, WorthUiStatusMutationStop> {
         let already_completed = self
             .native

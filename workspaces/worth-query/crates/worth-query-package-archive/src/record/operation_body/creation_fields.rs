@@ -86,13 +86,13 @@ pub(super) fn decode(
         let key = input.text()?.to_owned();
         let fields = decode_sequence(input, budget, 20, |input, _| {
             let tag = input.u16()?;
-            if !matches!(tag, 1 | 2)
-                && !(version >= 4 && tag == 3)
-                && !(version >= 9 && tag == 4)
-                && !(version >= 12 && tag == 5)
-                && !(version >= 13 && matches!(tag, 6 | 7))
-                && !(version >= 14 && tag == 8)
-                && !(version >= 20 && tag == 9)
+            if !(matches!(tag, 1 | 2)
+                || (version >= 4 && tag == 3)
+                || (version >= 9 && tag == 4)
+                || (version >= 12 && tag == 5)
+                || (version >= 13 && matches!(tag, 6 | 7))
+                || (version >= 14 && tag == 8)
+                || (version >= 20 && tag == 9))
             {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }

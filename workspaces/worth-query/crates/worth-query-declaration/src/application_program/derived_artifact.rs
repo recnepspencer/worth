@@ -74,19 +74,19 @@ impl ApplicationArtifactDependency {
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationArtifactResourceCeiling {
-    maximum_work: usize,
+    maximum_work: Option<usize>,
     maximum_retained_bytes: usize,
 }
 
 impl ApplicationArtifactResourceCeiling {
-    pub const fn new(maximum_work: usize, maximum_retained_bytes: usize) -> Self {
+    pub const fn new(maximum_work: Option<usize>, maximum_retained_bytes: usize) -> Self {
         Self {
             maximum_work,
             maximum_retained_bytes,
         }
     }
 
-    pub const fn maximum_work(self) -> usize {
+    pub const fn maximum_work(self) -> Option<usize> {
         self.maximum_work
     }
 

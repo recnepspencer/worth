@@ -29,7 +29,7 @@ fn consumer_epoch_preserves_cold_payload_and_warm_companion_across_denial_and_in
     }));
     arena
         .cold
-        .prepare_retained_charge(&mut Work::new(10_000))
+        .prepare_retained_charge(&mut Work::new(Some(10_000)))
         .unwrap();
     let original = arena.clone();
     let roles = [
@@ -41,7 +41,7 @@ fn consumer_epoch_preserves_cold_payload_and_warm_companion_across_denial_and_in
             &test_ledger(),
             &roles,
             Charge::ZERO,
-            &mut Work::new(PREPARATION_WORK),
+            &mut Work::new(Some(PREPARATION_WORK)),
             edit_roles,
         )
         .unwrap();
@@ -61,7 +61,7 @@ fn consumer_epoch_preserves_cold_payload_and_warm_companion_across_denial_and_in
             &test_ledger(),
             &roles,
             Charge::capacity::<u8>(512 * 1024 * 1024).unwrap(),
-            &mut Work::new(PREPARATION_WORK),
+            &mut Work::new(Some(PREPARATION_WORK)),
             edit_roles,
         )
         .unwrap()
