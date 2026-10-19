@@ -44,6 +44,13 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_candidate_funding(
+        mut self,
+        funding: Option<std::sync::Arc<super::effect_program::CandidateFunding>>,
+    ) -> Self {
+        self.effects.retain_candidate_funding(funding);
+        self
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn with_required_output_demand(
         mut self,
         context: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,

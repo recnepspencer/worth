@@ -57,8 +57,9 @@ impl ApplicationMutationBinding<CanonicalSchema> for ProduceBinding {
     const IDENTITY: &'static str = "canonical-transition.produce.binding.v1";
     const HANDLER_IDENTITY: &'static str = "canonical-transition.produce.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "canonical-transition.produce.command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(1, 0, 0, 0, 4, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(16384),
         );
@@ -122,6 +123,8 @@ impl OperationHandler<CanonicalSchema, ProduceBinding> for Handler {
         _: &NestedValue,
     ) -> ApplicationCandidateRequirements {
         ProduceBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,

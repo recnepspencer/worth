@@ -7,10 +7,9 @@
 use worth_query_host::facade::{
     declaration::{
         application_operation::{
-            ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-            ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
-            ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
-            NoApplicationMutationSource,
+            ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
+            ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
+            NoApplicationMutationOutputs, NoApplicationMutationSource,
         },
         application_query::{
             ApplicationQueryBinding, ApplicationQueryBindingLimits, ApplicationQueryFieldScope,
@@ -280,8 +279,9 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for SetRetentionBinding
         "worth.query.certification.document-retention.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.document-retention.command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(1024),
         );

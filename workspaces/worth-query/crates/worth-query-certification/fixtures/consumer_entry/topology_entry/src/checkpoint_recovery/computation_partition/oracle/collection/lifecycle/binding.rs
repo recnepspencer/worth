@@ -54,8 +54,8 @@ macro_rules! binding {
             const HANDLER_IDENTITY: &'static str = concat!("collection-lifecycle-handler-", $id);
             const IDEMPOTENCY_IDENTITY: &'static str =
                 concat!("collection-lifecycle-command-", $id);
-            const CANDIDATES: ApplicationCandidateRequirements =
-                crate::mutation::requirements(3, 3, 0, 12, 8192);
+            const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+                worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(crate::mutation::requirements(3, 3, 0, 12, 8192));
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }

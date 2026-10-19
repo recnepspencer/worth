@@ -170,7 +170,7 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
         _: &OptionalOutputInput,
         _: &OptionalOutputInput,
     ) -> ApplicationCandidateRequirements {
-        <OptionalOutputMutationBinding as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES
+        <OptionalOutputMutationBinding as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES.fixed_requirements().expect("fixed candidate contract")
     }
 
     fn build_candidate(

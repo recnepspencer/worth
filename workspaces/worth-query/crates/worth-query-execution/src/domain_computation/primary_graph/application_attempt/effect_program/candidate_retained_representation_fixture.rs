@@ -2,6 +2,8 @@
 
 #[path = "candidate_retained_representation_fixture/bindings.rs"]
 mod bindings;
+#[path = "candidate_retained_representation_fixture/prepared.rs"]
+pub(super) mod prepared;
 #[path = "candidate_retained_representation_fixture/schema.rs"]
 mod schema;
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntimeInstaller;
@@ -26,6 +28,7 @@ use worth_query_installation::facade::{
 
 pub(super) struct ReservationWorld {
     pub(super) application: WorthQueryPrimaryGraphApplicationRuntime<ReservationSchema>,
+    pub(super) authored: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     pub(super) invariant: WorthQueryApplicationInvariantProjectionAuthority<ReservationSchema>,
 }
 
@@ -47,6 +50,11 @@ impl ReservationWorld {
 }
 
 pub(super) fn installed_world() -> ReservationWorld {
+    installed_world_with_profile(crate::domain_computation::execution_runtime::WorthQueryApplicationCandidateResourceProfile::default())
+}
+pub(super) fn installed_world_with_profile(
+    profile: crate::domain_computation::execution_runtime::WorthQueryApplicationCandidateResourceProfile,
+) -> ReservationWorld {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
         let phase = active_phase.bootstrap_for_test();
         let declaration = ReservationSchema::declaration().unwrap();
@@ -62,6 +70,7 @@ pub(super) fn installed_world() -> ReservationWorld {
             .admit(package)
             .unwrap();
         let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
+            .application_candidate_resources(profile)
             .install(WorthQueryInstallationGeneration::initial(), [admitted])
             .unwrap()
             .into_parts();
@@ -103,6 +112,8 @@ pub(super) fn installed_world() -> ReservationWorld {
             ))
             .unwrap();
         bindings::install_handlers(&schema, &mut bootstrap);
+        let authored = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        prepared::install(&schema, &mut bootstrap, &authored);
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
             .publish_application_runtime(
@@ -114,6 +125,7 @@ pub(super) fn installed_world() -> ReservationWorld {
             )
             .unwrap();
         ReservationWorld {
+            authored,
             application,
             invariant,
         }

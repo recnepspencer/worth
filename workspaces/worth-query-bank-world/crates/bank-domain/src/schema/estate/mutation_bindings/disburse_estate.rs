@@ -1,9 +1,9 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling, ApplicationCapabilityMutationBinding,
-        ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
-        NoApplicationMutationOutputs, NoApplicationMutationSource,
+        ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
+        ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
+        ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
+        NoApplicationMutationSource,
     },
     application_schema::{
         ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate, NoApplicationUnit,
@@ -81,8 +81,9 @@ impl ApplicationMutationBinding<BankSchema> for DisburseEstateMutationBinding {
     const HANDLER_IDENTITY: &'static str = "bank.estate.disburse.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(3, 0, 4, 0, 12, 2),
             ApplicationCandidateResourceCeiling::representation_bytes(32768),
         );

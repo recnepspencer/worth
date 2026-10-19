@@ -46,7 +46,9 @@ impl ApplicationMutationBinding<Schema> for Binding {
     const IDENTITY: &'static str = "courtroom-equal-dependent-publication";
     const HANDLER_IDENTITY: &'static str = "courtroom-equal-dependent-handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "courtroom-equal-dependent-command";
-    const CANDIDATES: ApplicationCandidateRequirements = RegionOutputBinding::<Schema>::CANDIDATES;
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        RegionOutputBinding::<Schema>::CANDIDATES;
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,
@@ -132,6 +134,8 @@ impl OperationHandler<Schema, Binding> for Handler {
         _: &PositiveLength,
     ) -> ApplicationCandidateRequirements {
         Binding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,

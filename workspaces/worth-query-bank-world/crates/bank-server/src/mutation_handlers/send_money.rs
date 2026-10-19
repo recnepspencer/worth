@@ -45,6 +45,8 @@ impl OperationHandler<BankSchema, SendMoneyMutationBinding> for SendMoneyHandler
         _: &BankInvariantApprovedProposal,
     ) -> ApplicationCandidateRequirements {
         SendMoneyMutationBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

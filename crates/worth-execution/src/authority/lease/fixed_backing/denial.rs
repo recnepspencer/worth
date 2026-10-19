@@ -85,6 +85,15 @@ impl ExecutionAllocationDenial {
     }
 }
 
+impl From<crate::MemoryLimitDenial> for ExecutionAllocationDenial {
+    fn from(cause: crate::MemoryLimitDenial) -> Self {
+        Self::new(
+            ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(cause)),
+            Some(cause.requested),
+        )
+    }
+}
+
 impl std::fmt::Display for ExecutionAllocationDenial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

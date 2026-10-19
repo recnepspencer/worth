@@ -104,7 +104,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.region-output.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.region-output-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.region-output-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(3, 3, 0, 14, 8192);
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(
+            requirements(3, 3, 0, 14, 8192),
+        );
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -291,6 +295,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionOutputBinding
         _: &RegionOutputDecision<Schema>,
     ) -> ApplicationCandidateRequirements {
         RegionOutputBinding::<Schema>::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

@@ -1,9 +1,9 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling, ApplicationCapabilityMutationBinding,
-        ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
-        NoApplicationMutationOutputs, NoApplicationMutationSource,
+        ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
+        ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
+        ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
+        NoApplicationMutationSource,
     },
     application_schema::{
         ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate, NoApplicationUnit,
@@ -138,8 +138,9 @@ impl ApplicationMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding
     const HANDLER_IDENTITY: &'static str = "bank.estate.notify-death.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 1),
             ApplicationCandidateResourceCeiling::representation_bytes(32768),
         );
@@ -208,8 +209,9 @@ impl ApplicationMutationBinding<BankSchema> for FreezeEstateAccountMutationBindi
     const HANDLER_IDENTITY: &'static str = "bank.estate.freeze-account.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(32768),
         );

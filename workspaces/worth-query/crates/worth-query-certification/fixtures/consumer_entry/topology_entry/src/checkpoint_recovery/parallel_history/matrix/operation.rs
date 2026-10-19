@@ -68,8 +68,9 @@ impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
     const IDENTITY: &'static str = "matrix.apply";
     const HANDLER_IDENTITY: &'static str = "matrix.apply.handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "matrix.apply.command";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 1, 0, 0, 2, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(4096),
         );
@@ -289,6 +290,8 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
         _: &Decision<Schema>,
     ) -> ApplicationCandidateRequirements {
         Binding::<Schema>::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,

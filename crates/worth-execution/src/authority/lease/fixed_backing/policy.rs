@@ -45,6 +45,39 @@ impl ExecutionAllocationPolicy<'_, '_> {
     }
 }
 
+impl ExecutionMemoryReservation {
+    /// Grow mutable allocation backing under its bound lease's controls.
+    /// `bytes` is the new total and cannot shrink the prior reservation.
+    /// A stop takes precedence over exhausted memory and keeps the prior charge.
+    /// Serial-budget tickets have no lease control; their budget still applies.
+    /// This grants no request, model, or publication authority. Cleanup uses
+    /// ordinary `resize`, which must remain possible after cancellation.
+    pub fn grow_for_allocation(&mut self, bytes: u64) -> Result<(), ExecutionAllocationDenial> {
+        let status = self.allocation_status();
+        if let Some(status) = &status {
+            check_status(status, Some(bytes))?;
+        }
+        let prior = self.bytes();
+        if bytes < prior {
+            return Err(ExecutionAllocationDenial::new(
+                ExecutionAllocationDenialKind::Layout,
+                Some(bytes),
+            ));
+        }
+        let growth = self.resize(bytes).map_err(ExecutionAllocationDenial::from);
+        if let Some(status) = &status
+            && let Err(stop) = check_status(status, Some(bytes))
+        {
+            if growth.is_ok() {
+                self.resize(prior)
+                    .expect("releasing newly admitted growth cannot exhaust memory");
+            }
+            return Err(stop);
+        }
+        growth
+    }
+}
+
 #[cfg(test)]
 mod tests;
 

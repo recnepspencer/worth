@@ -61,6 +61,7 @@ where
         reservation.materialize(&effects)?;
         let read_set = admitted.into_read_set();
         let program = WorthQueryApplicationEffectProgram {
+            candidate_funding: None,
             read_set,
             effects,
             emission_retained_bytes: 0,

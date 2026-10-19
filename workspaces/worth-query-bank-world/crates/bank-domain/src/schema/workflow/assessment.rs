@@ -11,9 +11,8 @@ use worth_query_host::facade::{
     },
     declaration::{
         application_operation::{
-            ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-            ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
-            ApplicationMutationFieldScope, ApplicationMutationIntent,
+            ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
+            ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
             ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
             ApplicationMutationOutputRoleFamilyDescriptor, ApplicationQueryMutationSource,
             WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
@@ -133,8 +132,9 @@ impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding
     const IDENTITY: &'static str = "worth.bank.approved-payment-assessment.binding.v1";
     const HANDLER_IDENTITY: &'static str = "worth.bank.approved-payment-assessment.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.bank.approved-payment-assessment.command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(1_024),
         );

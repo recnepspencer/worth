@@ -14,6 +14,8 @@ use super::{
 };
 #[path = "candidate_retained_representation_fixture.rs"]
 mod fixture;
+#[path = "candidate_retained_representation_fixture/journey.rs"]
+mod prepared_journey;
 use crate::domain_computation::primary_graph::tests::fixture::{live_scope, MutationFreeNotice};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectProgramBuilder,
@@ -75,7 +77,7 @@ fn external_encoded_width_participates_in_candidate_denial() {
 fn multi_unlink_preflight_preserves_effects_and_reservation_on_denial() {
     let requirement = requirements(0, 0, 0, 1, 0, 0, 0);
     let mut reservation =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 1, 0).unwrap();
+        WorthQueryCandidateReservation::admit(requirement, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(requirement), 1, 0).unwrap();
     let effects: Vec<()> = Vec::new();
 
     let denial = reservation
@@ -172,8 +174,7 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
 
     let insufficient = requirements(1, 0, 0, 0, 1, 0, exact_capacity - 1);
     let mut denied = WorthQueryCandidateReservation::admit(
-        insufficient,
-        insufficient,
+        insufficient, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(insufficient),
         2,
         u64::try_from(exact_capacity - 1).unwrap(),
     )
@@ -191,8 +192,7 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
 
     let exact = requirements(1, 0, 0, 0, 1, 0, exact_capacity);
     let mut admitted = WorthQueryCandidateReservation::admit(
-        exact,
-        exact,
+        exact, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(exact),
         2,
         u64::try_from(exact_capacity).unwrap(),
     )
@@ -258,7 +258,7 @@ fn reserved_external_builder(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
-        .begin_reserved_effect_program(requirement, requirement)
+        .begin_reserved_effect_program(requirement, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(requirement), world.application.runtime.application_candidate_resource_profile(), worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
 }
 
@@ -319,7 +319,7 @@ fn reserved_touch_builder(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
-        .begin_reserved_effect_program(requirement, requirement)
+        .begin_reserved_effect_program(requirement, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(requirement), world.application.runtime.application_candidate_resource_profile(), worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
 }
 

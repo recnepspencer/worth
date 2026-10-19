@@ -38,6 +38,26 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    // This allocation exists even for an empty correspondence.
+    pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn sealed_storage_bound(
+    ) -> Option<usize> {
+        std::mem::size_of::<super::storage::CorrespondenceStorage>()
+            .checked_add(2 * std::mem::size_of::<usize>())
+    }
+    // Bound complete B-tree node slack before insertion, and its simultaneous
+    // immutable sealing copy. This is actual entry storage, not effect count.
+    pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn entry_storage_bound(
+        entries: usize,
+    ) -> Option<u64> {
+        let entry = std::mem::size_of::<(String, CandidateOutputBinding)>()
+            .max(std::mem::size_of::<(String, ExpectedOutputBinding)>())
+            .max(std::mem::size_of::<ExpectedOutputFamily>());
+        let node = 11usize
+            .checked_mul(entry)?
+            .checked_add(16 * std::mem::size_of::<usize>())?;
+        u64::try_from(entries.checked_mul(node.checked_mul(2)?)?).ok()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn native_publication_roles(
         &self,
     ) -> impl ExactSizeIterator<

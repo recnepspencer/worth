@@ -59,6 +59,21 @@ Do all five steps, in order.
 
 ## Task index
 
+Variable-footprint mutations declare
+`decl::application_operation::ApplicationCandidateContract::prepared()` as their
+binding's `CANDIDATES`. Use `fixed_cardinality(counts)` when the effect-count
+maxima are semantic but payload bytes vary, or `fixed_shape(counts, resources)`
+for a genuinely fixed maximum shape. The installed `OperationHandler` returns
+concrete `ApplicationCandidateRequirements` from the current input and prepared
+decision. Native preparation admits that footprint against the runtime-owned
+candidate profile and request allocator before candidate authoring; its grant
+follows candidate backing through sealing and provider ownership. Mutable grant
+growth also checks its original allocation lease's stop controls, independently
+of authentication request checks. Refused growth preserves the prior funding.
+Required output roles/families, native permissions, current reads and writer usage remain
+checked. See [candidate preparation](build-an-application.md#candidate-preparation).
+
+
 Platform owners can borrow the existing targets of a validated native mutation
 with `ValidatedMutationFootprint::records()`. The iterator preserves target
 multiplicity and performs no graph read or allocation. Consumers still apply

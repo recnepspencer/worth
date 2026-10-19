@@ -1,5 +1,7 @@
 use worth_foundational::facade::CanonicalDigestWorkBudget;
-use worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements;
+use worth_query_declaration::facade::application_operation::{
+    ApplicationCandidateContract, ApplicationCandidateRequirements,
+};
 
 use crate::application_aftermath::{
     InstalledExternalEffectContract, WorthQueryInstalledAftermathContract,
@@ -39,14 +41,14 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
     pub(super) external_effect: InstalledExternalEffectContract,
     pub(super) aftermath: Option<WorthQueryInstalledAftermathContract>,
     pub(super) overlap_index: WorthQueryOperationReadTouchOverlapIndex,
-    pub(super) platform_candidate_ceiling: Option<ApplicationCandidateRequirements>,
+    pub(super) platform_candidate_ceiling: Option<ApplicationCandidateContract>,
     pub(super) workflow_settlement_ceiling: Option<ApplicationCandidateRequirements>,
 }
 
 impl WorthQueryCompiledApplicationOperationContracts {
     /// The componentwise maximum declared by installed mutation bindings for
     /// this operation. Query-owned platform effects cannot exceed these kinds.
-    pub const fn platform_candidate_ceiling(&self) -> Option<ApplicationCandidateRequirements> {
+    pub const fn platform_candidate_ceiling(&self) -> Option<ApplicationCandidateContract> {
         self.platform_candidate_ceiling
     }
 

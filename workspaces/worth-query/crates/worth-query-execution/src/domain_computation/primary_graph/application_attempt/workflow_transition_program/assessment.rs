@@ -112,6 +112,7 @@ where
         let mut read_set = self.admitted.into_read_set();
         bind_currentness_facts(execution, &mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
+            candidate_funding: None,
             read_set,
             effects,
             emission_retained_bytes: 0,

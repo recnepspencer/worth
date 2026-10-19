@@ -62,6 +62,8 @@ impl OperationHandler<BankSchema, InitiateBusinessPaymentMutationBinding>
         _: &InitiateBusinessPaymentDecision,
     ) -> ApplicationCandidateRequirements {
         InitiateBusinessPaymentMutationBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

@@ -59,6 +59,7 @@ impl<Schema, Operation, Input, Scope>
         };
         Ok(WorthQueryCapabilityRevocationProgram {
             program: WorthQueryApplicationEffectProgram {
+                candidate_funding: None,
                 read_set: self,
                 effects: vec![effect],
                 emission_retained_bytes: 0,

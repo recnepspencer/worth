@@ -61,6 +61,16 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOut
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn retain_candidate_funding(
+        mut self,
+        funding: Option<std::sync::Arc<super::CandidateFunding>>,
+    ) -> Self {
+        std::sync::Arc::get_mut(&mut self.storage)
+            .expect("sealing issues a new correspondence backing")
+            ._candidate_funding = funding;
+        self
+    }
+
     /// Admit the selected role's ordered descent before the ordinary typed
     /// projection reads the installed correspondence. Other roles contribute
     /// only the binary-search depth, never copied role text.

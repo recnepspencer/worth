@@ -130,6 +130,7 @@ where
             &node_path,
         )?;
         let program = WorthQueryApplicationEffectProgram {
+            candidate_funding: None,
             read_set,
             effects,
             emission_retained_bytes: 0,

@@ -169,8 +169,8 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     const IDENTITY: &'static str = "worth.query.example.temporal-amend.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.example.temporal-amend-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.example.temporal-amend-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 5, 0),
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::representation_bytes(1024),
         );
@@ -263,6 +263,8 @@ impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTempora
         _: &WorthQueryInvariantMutationTarget<TemporalHostSchema, TemporalIntent>,
     ) -> ApplicationCandidateRequirements {
         AmendTemporalBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

@@ -46,8 +46,9 @@ impl ApplicationMutationBinding<CanonicalSchema> for PublishBinding {
     const IDENTITY: &'static str = "canonical-related.publish-binding.v1";
     const HANDLER_IDENTITY: &'static str = "canonical-related.publish-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "canonical-related.publish-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 1),
             ApplicationCandidateResourceCeiling::representation_bytes(1_024),
         );
@@ -105,6 +106,8 @@ impl OperationHandler<CanonicalSchema, PublishBinding> for Handler {
     }
     fn candidate_requirements(&self, _: &Changed, _: &()) -> ApplicationCandidateRequirements {
         PublishBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,

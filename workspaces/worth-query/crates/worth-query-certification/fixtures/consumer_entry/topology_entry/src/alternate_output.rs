@@ -81,7 +81,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.alternate-planar-output-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.alternate-planar-output-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 2, 1024);
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(
+            requirements(0, 0, 0, 2, 1024),
+        );
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -181,6 +185,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         _: &worth_query_consumer_values::PositiveLength,
     ) -> ApplicationCandidateRequirements {
         AlternatePlanarOutputBinding::<Schema>::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

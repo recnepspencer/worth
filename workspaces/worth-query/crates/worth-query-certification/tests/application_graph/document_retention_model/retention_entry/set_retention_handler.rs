@@ -1,5 +1,6 @@
 //! Native decision and candidate authoring for the declared retention mutation.
 use super::*;
+use worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements;
 
 pub struct SetRetentionHandler;
 
@@ -38,6 +39,8 @@ impl OperationHandler<DocumentRetentionSchema, SetRetentionBinding> for SetReten
         _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> ApplicationCandidateRequirements {
         SetRetentionBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

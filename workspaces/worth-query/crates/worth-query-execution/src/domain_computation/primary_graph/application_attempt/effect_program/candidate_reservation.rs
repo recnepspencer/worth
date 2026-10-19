@@ -1,5 +1,6 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
+    ApplicationCandidateCardinalityCeiling, ApplicationCandidateContract,
+    ApplicationCandidateRequirements,
 };
 
 use super::super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
@@ -22,33 +23,48 @@ pub(super) struct WorthQueryCandidateReservation {
 impl WorthQueryCandidateReservation {
     pub(super) fn admit(
         requested: ApplicationCandidateRequirements,
-        ceiling: ApplicationCandidateRequirements,
+        contract: ApplicationCandidateContract,
         candidate_item_capacity: u64,
         retained_representation_byte_capacity: u64,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
-        let requested_cardinality = requested.cardinality();
-        let ceiling_cardinality = ceiling.cardinality();
-        let requested_total = total(requested_cardinality).ok_or_else(capacity_denial)?;
-        let within_binding = requested_cardinality.maximum_creates()
-            <= ceiling_cardinality.maximum_creates()
-            && requested_cardinality.maximum_deletes() <= ceiling_cardinality.maximum_deletes()
-            && requested_cardinality.maximum_links() <= ceiling_cardinality.maximum_links()
-            && requested_cardinality.maximum_unlinks() <= ceiling_cardinality.maximum_unlinks()
-            && requested_cardinality.maximum_writes() <= ceiling_cardinality.maximum_writes()
-            && requested_cardinality.maximum_emits() <= ceiling_cardinality.maximum_emits()
-            && requested
-                .resources()
-                .maximum_retained_representation_bytes()
-                <= ceiling.resources().maximum_retained_representation_bytes();
+        let requested_total = total(requested.cardinality()).ok_or_else(capacity_denial)?;
         let within_runtime = u64::try_from(requested_total)
-            .is_ok_and(|count| count <= candidate_item_capacity)
+            .is_ok_and(|n| n <= candidate_item_capacity)
             && u64::try_from(
                 requested
                     .resources()
                     .maximum_retained_representation_bytes(),
             )
-            .is_ok_and(|bytes| bytes <= retained_representation_byte_capacity);
-        if !within_binding || !within_runtime {
+            .is_ok_and(|n| n <= retained_representation_byte_capacity);
+        if !within_runtime {
+            return Err(capacity_denial());
+        }
+        Self::admit_contract(requested, contract)
+    }
+
+    /// Logical counters only. Query-owned fixed programs have already admitted
+    /// their resource contract through native graph-work support. A handler
+    /// must instead enter `admit` with its real runtime profile before funding.
+    pub(super) fn admit_contract(
+        requested: ApplicationCandidateRequirements,
+        contract: ApplicationCandidateContract,
+    ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
+        let requested_cardinality = requested.cardinality();
+        total(requested_cardinality).ok_or_else(capacity_denial)?;
+        let within_binding = match contract {
+            ApplicationCandidateContract::FixedShape(ceiling) => {
+                within_counts(requested_cardinality, ceiling.cardinality())
+                    && requested
+                        .resources()
+                        .maximum_retained_representation_bytes()
+                        <= ceiling.resources().maximum_retained_representation_bytes()
+            }
+            ApplicationCandidateContract::FixedCardinality(ceiling) => {
+                within_counts(requested_cardinality, ceiling)
+            }
+            ApplicationCandidateContract::Prepared => true,
+        };
+        if !within_binding {
             return Err(capacity_denial());
         }
         Ok(Self {
@@ -60,7 +76,7 @@ impl WorthQueryCandidateReservation {
     }
 
     pub(super) fn total_items(&self) -> usize {
-        total(self.remaining).unwrap_or(usize::MAX)
+        total(self.remaining).expect("admitted reservation counts remain representable")
     }
 
     pub(super) fn charge(
@@ -164,6 +180,16 @@ impl WorthQueryCandidateReservation {
         Ok(())
     }
 
+    pub(super) fn check_representation_only(
+        &self,
+        bytes: usize,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.remaining_retained_representation_bytes
+            .checked_sub(bytes)
+            .map(|_| ())
+            .ok_or_else(reservation_denial)
+    }
+
     pub(super) fn charge_representation_only(
         &mut self,
         retained_representation_bytes: usize,
@@ -175,6 +201,18 @@ impl WorthQueryCandidateReservation {
         self.remaining_retained_representation_bytes = remaining;
         Ok(())
     }
+}
+
+fn within_counts(
+    requested: ApplicationCandidateCardinalityCeiling,
+    ceiling: ApplicationCandidateCardinalityCeiling,
+) -> bool {
+    requested.maximum_creates() <= ceiling.maximum_creates()
+        && requested.maximum_deletes() <= ceiling.maximum_deletes()
+        && requested.maximum_links() <= ceiling.maximum_links()
+        && requested.maximum_unlinks() <= ceiling.maximum_unlinks()
+        && requested.maximum_writes() <= ceiling.maximum_writes()
+        && requested.maximum_emits() <= ceiling.maximum_emits()
 }
 
 fn total(cardinality: ApplicationCandidateCardinalityCeiling) -> Option<usize> {

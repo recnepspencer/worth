@@ -61,6 +61,8 @@ fn installed_mutation_binding_resolves_exact_callback_free_contracts() {
     assert_eq!(
         binding
             .candidate_requirements()
+            .fixed_requirements()
+            .unwrap()
             .resources()
             .maximum_retained_representation_bytes(),
         128

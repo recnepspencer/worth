@@ -61,6 +61,8 @@ impl OperationHandler<BankSchema, DisburseEstateMutationBinding> for DisburseEst
         _: &BankInvariantApprovedProposal,
     ) -> ApplicationCandidateRequirements {
         DisburseEstateMutationBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

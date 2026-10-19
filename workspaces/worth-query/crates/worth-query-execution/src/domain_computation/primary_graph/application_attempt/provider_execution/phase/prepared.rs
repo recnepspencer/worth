@@ -133,6 +133,8 @@ struct WorthQueryProviderAttemptPreparation {
     workflow_settlement: Option<
         crate::domain_computation::primary_graph::application_attempt::read_set::WorkflowOperationBindingProof,
     >,
+    // Last to drop: physical backing releases before its retained grant.
+    candidate_funding: Option<std::sync::Arc<super::super::super::effect_program::CandidateFunding>>,
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {

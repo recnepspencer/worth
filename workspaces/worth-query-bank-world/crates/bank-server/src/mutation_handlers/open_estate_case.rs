@@ -44,6 +44,8 @@ impl OperationHandler<BankSchema, OpenEstateCaseMutationBinding> for OpenEstateC
         _: &EstateAction,
     ) -> ApplicationCandidateRequirements {
         OpenEstateCaseMutationBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

@@ -66,7 +66,9 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewedSetRetentio
         worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<super::super::workflow::WorkflowApprovalCapability>()
     }
 
-    const CANDIDATES: ApplicationCandidateRequirements = SetRetentionBinding::CANDIDATES;
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        SetRetentionBinding::CANDIDATES;
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -154,6 +156,8 @@ where
         _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> ApplicationCandidateRequirements {
         Binding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

@@ -53,6 +53,8 @@ macro_rules! handler {
                 _: &Snapshot,
             ) -> ApplicationCandidateRequirements {
                 binding::$binding::CANDIDATES
+                    .fixed_requirements()
+                    .expect("fixed candidate contract")
             }
             fn build_candidate(
                 &self,

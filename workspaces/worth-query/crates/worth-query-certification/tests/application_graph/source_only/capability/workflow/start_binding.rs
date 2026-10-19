@@ -36,7 +36,7 @@ impl ApplicationMutationBinding<CapabilitySchema> for StartBinding {
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-workflow.key.StartBinding";
     // Closed propose/effect/done graph: eight native creates and fifteen links.
     // Reuse the finite small kernel profile; domain writer limits remain separate.
-    const CANDIDATES: ApplicationCandidateRequirements =
+    const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidateContract =
         <crate::document_retention_model::workflow::WorkflowInstanceStartBinding as ApplicationMutationBinding<
             crate::document_retention_model::schema::DocumentRetentionSchema,
         >>::CANDIDATES;

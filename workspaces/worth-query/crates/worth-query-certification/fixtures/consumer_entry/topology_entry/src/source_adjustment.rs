@@ -71,7 +71,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.planar-source-adjustment-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024);
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(
+            requirements(0, 0, 0, 1, 1024),
+        );
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

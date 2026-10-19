@@ -57,7 +57,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.planar-edit.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.planar-edit-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.planar-edit-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(16, 16, 16, 64, 8192);
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(
+            requirements(16, 16, 16, 64, 8192),
+        );
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

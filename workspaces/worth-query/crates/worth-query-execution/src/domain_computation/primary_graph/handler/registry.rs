@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements;
+use worth_query_declaration::facade::application_operation::ApplicationCandidateContract;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationExecution, DeterminismContract,
@@ -32,7 +32,7 @@ struct PendingMutationHandler {
     decision_type: TypeId,
     denial_type: TypeId,
     value: Arc<dyn Any + Send + Sync>,
-    candidates: ApplicationCandidateRequirements,
+    candidates: ApplicationCandidateContract,
 }
 
 struct TypedHandlerSlot<Schema, Binding>
@@ -195,7 +195,7 @@ where
         &self,
     ) -> Option<(
         Arc<dyn OperationHandler<Schema, Binding>>,
-        ApplicationCandidateRequirements,
+        ApplicationCandidateContract,
     )>
     where
         Binding: ApplicationMutationBinding<Schema>,
@@ -227,7 +227,7 @@ where
     ) -> Result<
         (
             Arc<dyn OperationHandler<Schema, Binding>>,
-            ApplicationCandidateRequirements,
+            ApplicationCandidateContract,
         ),
         MutationHandlerExecutionDenial,
     >

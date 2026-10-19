@@ -108,6 +108,8 @@ impl OperationHandler<ReservationSchema, ReservedEmissionBinding> for ReservedEm
         _: &MutationFreeEmitInput,
     ) -> ApplicationCandidateRequirements {
         ReservedEmissionBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,
@@ -143,6 +145,8 @@ impl OperationHandler<ReservationSchema, ReservedDeletionBinding> for ReservedDe
         _: &TouchAccountInput,
     ) -> ApplicationCandidateRequirements {
         ReservedDeletionBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,

@@ -1,12 +1,9 @@
 //! Exact reservation for platform-owned effects that do not pass through an
 //! application's typed candidate writer.
 
-use worth_query_declaration::facade::{
-    application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling,
-    },
-    domain_computation::{WorthQueryResourceDimension, WorthQuerySemanticScaleAxis},
+use worth_query_declaration::facade::application_operation::{
+    ApplicationCandidateCardinalityCeiling, ApplicationCandidateContract,
+    ApplicationCandidateRequirements, ApplicationCandidateResourceCeiling,
 };
 
 use super::{
@@ -35,7 +32,7 @@ pub(in crate::domain_computation::primary_graph) fn admit_platform_effects<
     demand: PlatformEffectDemand,
 ) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
     let contracts = read_set.admission.allowed_graph_contract();
-    admit_query_owned_effects(contracts, contracts.platform_candidate_ceiling(), demand)
+    admit_query_owned_effects(contracts.platform_candidate_ceiling(), demand)
 }
 
 pub(in crate::domain_computation::primary_graph) fn admit_workflow_settlement_effects<
@@ -53,12 +50,16 @@ pub(in crate::domain_computation::primary_graph) fn admit_workflow_settlement_ef
     demand: PlatformEffectDemand,
 ) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
     let contracts = admission.allowed_graph_contract();
-    admit_query_owned_effects(contracts, contracts.workflow_settlement_ceiling(), demand)
+    admit_query_owned_effects(
+        contracts
+            .workflow_settlement_ceiling()
+            .map(ApplicationCandidateContract::FixedShape),
+        demand,
+    )
 }
 
 fn admit_query_owned_effects(
-    contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
-    declared: Option<ApplicationCandidateRequirements>,
+    declared: Option<ApplicationCandidateContract>,
     demand: PlatformEffectDemand,
 ) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
     let requirements = ApplicationCandidateRequirements::fixed_shape(
@@ -72,22 +73,17 @@ fn admit_query_owned_effects(
         ),
         ApplicationCandidateResourceCeiling::representation_bytes(demand.retained_bytes),
     );
-    let envelope = contracts
-        .execution_strategy()
-        .expect("installed application operation has exactly one execution strategy")
-        .envelope();
-    let declared = declared.ok_or_else(|| {
-        WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded,
-            "platform effect operation has no installed candidate contract",
-        )
-    })?;
-    let reservation = WorthQueryCandidateReservation::admit(
+    let declared = declared
+        .and_then(ApplicationCandidateContract::fixed_requirements)
+        .ok_or_else(|| {
+            WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded,
+                "platform effects require their installed fixed candidate contract",
+            )
+        })?;
+    let reservation = WorthQueryCandidateReservation::admit_contract(
         requirements,
-        declared,
-        envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
-        envelope
-            .resource_ceiling(WorthQueryResourceDimension::CandidateRetainedRepresentationBytes),
+        ApplicationCandidateContract::FixedShape(declared),
     )?;
     Ok(PlatformEffectReservation { reservation })
 }

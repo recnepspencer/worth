@@ -56,6 +56,8 @@ impl OperationHandler<SourceOnlyRetentionSchema, SetRetentionBinding> for Retent
         _: &WorthQueryInvariantMutationTarget<SourceOnlyRetentionSchema, Document>,
     ) -> ApplicationCandidateRequirements {
         SetRetentionBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,

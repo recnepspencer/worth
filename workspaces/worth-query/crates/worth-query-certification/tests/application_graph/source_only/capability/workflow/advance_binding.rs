@@ -38,7 +38,7 @@ impl ApplicationMutationBinding<CapabilitySchema> for AdvanceBinding {
     const HANDLER_IDENTITY: &'static str = "capability-workflow.handler.AdvanceBinding";
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-workflow.key.AdvanceBinding";
     // Native progression/acceptance uses the existing finite workflow profile.
-    const CANDIDATES: ApplicationCandidateRequirements =
+    const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidateContract =
         <crate::document_retention_model::workflow::WorkflowAdvanceBinding as ApplicationMutationBinding<
             crate::document_retention_model::schema::DocumentRetentionSchema,
         >>::CANDIDATES;

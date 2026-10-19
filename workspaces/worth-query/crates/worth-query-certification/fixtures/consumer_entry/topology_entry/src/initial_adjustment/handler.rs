@@ -59,6 +59,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarInitialAdjust
         _: &WorthQueryInvariantMutationTarget<Schema, Body>,
     ) -> ApplicationCandidateRequirements {
         PlanarInitialAdjustmentBinding::<Schema>::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 }
 

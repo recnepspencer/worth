@@ -1462,7 +1462,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         _: &RegionTotalsDemand,
         _: &WorthQueryInvariantMutationTarget<Schema, Body>,
     ) -> ApplicationCandidateRequirements {
-        RegionTotalsDemandBinding::<Schema>::CANDIDATES
+        RegionTotalsDemandBinding::<Schema>::CANDIDATES.fixed_requirements().expect("fixed candidate contract")
     }
 
     fn build_candidate(
@@ -1875,7 +1875,7 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     const IDENTITY: &'static str = "worth.query.example.temporal-amend.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.example.temporal-amend-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.example.temporal-amend-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = /* fixed ceilings */;
+    const CANDIDATES: ApplicationCandidateContract = /* semantic fixed or prepared contract */;
     // fn scope_field, principal_binding
 }
 
@@ -2055,7 +2055,57 @@ ordered:
   of every workflow requirement that names the input; version the input
   binding identity when you do.
 
-### 5.3 Execute through the program
+#### Candidate preparation
+
+`ApplicationMutationBinding::CANDIDATES` declares an
+`ApplicationCandidateContract`. Select `prepared()` for an input-dependent
+candidate, `fixed_cardinality(counts)` to retain meaningful effect-count maxima
+with variable representation bytes, or `fixed_shape(counts, resources)` for a
+fixed maximum contract. These declarations grant no mutation authority.
+
+<!-- compiled: candidate_preparation.rs -->
+```rust
+use worth_query_decl::facade::application_operation::{
+    ApplicationCandidateCardinalityCeiling, ApplicationCandidateContract,
+    ApplicationCandidateRequirements, ApplicationCandidateResourceCeiling,
+};
+const CANDIDATES: ApplicationCandidateContract = ApplicationCandidateContract::prepared();
+fn prepared_footprint(
+    creates: usize,
+    writes: usize,
+    owned_bytes: usize,
+) -> ApplicationCandidateRequirements {
+    ApplicationCandidateRequirements::fixed_shape(
+        ApplicationCandidateCardinalityCeiling::fixed(creates, 0, 0, 0, writes, 0),
+        ApplicationCandidateResourceCeiling::representation_bytes(owned_bytes),
+    )
+}
+```
+
+The installed `OperationHandler::candidate_requirements(input, decision)` must
+derive finite counts and retained representation bounds from the actual
+prepared decision. Include owned key/value capacity, references, encoded
+emissions and output correspondence; checked arithmetic must remain valid.
+Returning a declaration preparation mode as this footprint does not compile.
+Native preparation checks the real runtime candidate profile and reserves
+physical memory using the request's allocation policy before `build_candidate`.
+The writer also admits actual correspondence entry storage before insertion;
+preserved members need not consume create/write counts. The same reservation
+grows under native memory limits and freezes when the program seals.
+Growth checks that reservation's original allocation lease for cancellation and
+deadline before and after admission; a stop preserves its prior charge. Those
+controls are independent of the authentication request's authority checks.
+Runtime capacity, allocation and interruption refusals leave effects unapplied;
+the writer also refuses usage beyond the admitted footprint. The funding holder
+survives sealing and provider preparation until backing release. All current
+read, principal, target, required-output and publication checks still apply.
+
+Applications continue through their existing declared mutation/operation path.
+They do not reserve native storage themselves or substitute a constant generous
+footprint for input-specific preparation. Existing host runtime capacity policy
+continues to govern the physical resource limit.
+
+## 5.3 Execute through the program
 
 Every ordinary application installs a program with `in_memory_program` or
 `in_memory_rostered_program`. Declare a no-output action with

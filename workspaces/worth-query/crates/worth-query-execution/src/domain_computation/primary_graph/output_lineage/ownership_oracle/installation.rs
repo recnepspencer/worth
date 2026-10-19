@@ -96,6 +96,8 @@ pub(super) fn install() -> Application {
     let defaults = WorthQueryApplicationCandidateResourceProfile::default();
     let required_bytes = u64::try_from(
         <RegionOutputBinding<OwnerSchema> as ApplicationMutationBinding<OwnerSchema>>::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
             .resources()
             .maximum_retained_representation_bytes(),
     )

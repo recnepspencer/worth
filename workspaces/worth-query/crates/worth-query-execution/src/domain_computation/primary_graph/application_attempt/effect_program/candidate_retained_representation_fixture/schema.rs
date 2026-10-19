@@ -59,7 +59,7 @@ worth_query_application_schema! {
         owner: "candidate_retained_representation_test",
         version: (1, 0),
         members: |schema| {
-            schema.entity(ExternalMapping::reference())
+            super::prepared::declare(schema).entity(ExternalMapping::reference())
                 .entity(Principal::reference()).entity(Account::reference())
                 .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
                 .aspect(Principal::reference(), PrincipalIdentity::reference())

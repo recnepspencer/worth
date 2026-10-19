@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_program_migration_ef
     program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Result<
     (
+        Option<std::sync::Arc<super::effect_program::CandidateFunding>>,
         ProductBranchObservation,
         worth_relational::facade::transactions::WorkerIntentBatch,
         usize,
@@ -33,6 +34,7 @@ where
         return Err(WorthQueryProgramMigrationPreparationDenial::ForeignCandidate);
     }
     let WorthQueryApplicationEffectProgram {
+        candidate_funding,
         read_set,
         effects,
         emission_retained_bytes,
@@ -113,5 +115,5 @@ where
         read_set.effect_routes,
         effects,
     )?;
-    Ok((source_product, batch, effect_count))
+    Ok((candidate_funding, source_product, batch, effect_count))
 }

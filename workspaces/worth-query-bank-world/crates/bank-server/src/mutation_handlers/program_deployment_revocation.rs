@@ -48,6 +48,8 @@ impl OperationHandler<BankSchema, ProgramDeploymentRevocationBinding>
         _: &WorthQueryInvariantMutationTarget<BankSchema, ProgramDeploymentGrant>,
     ) -> ApplicationCandidateRequirements {
         ProgramDeploymentRevocationBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

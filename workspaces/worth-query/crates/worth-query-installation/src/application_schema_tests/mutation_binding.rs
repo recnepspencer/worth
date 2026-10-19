@@ -1,12 +1,12 @@
 use super::*;
 use worth_query_declaration::facade::{
     application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, ApplicationMutationOutputContract,
-        ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleDescriptor,
-        ApplicationMutationOutputRoleFamilyDescriptor, NoApplicationMutationSource,
-        WorthQueryApplicationDeclaredOutputRoleFamily, WorthQueryApplicationOutputRoleFamily,
+        ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
+        ApplicationMutationBinding, ApplicationMutationFieldScope,
+        ApplicationMutationOutputContract, ApplicationMutationOutputPostureSet,
+        ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
+        NoApplicationMutationSource, WorthQueryApplicationDeclaredOutputRoleFamily,
+        WorthQueryApplicationOutputRoleFamily,
     },
     application_schema::{
         ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
@@ -145,8 +145,8 @@ macro_rules! mutation_binding {
             const HANDLER_IDENTITY: &'static str = $handler_identity;
             const IDEMPOTENCY_IDENTITY: &'static str =
                 "worth.query.installation-test.idempotency.v1";
-            const CANDIDATES: ApplicationCandidateRequirements =
-                ApplicationCandidateRequirements::fixed_shape(
+            const CANDIDATES: worth_query_declaration::facade::application_operation::ApplicationCandidateContract =
+                worth_query_declaration::facade::application_operation::ApplicationCandidateContract::fixed_shape(
                     ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
                     ApplicationCandidateResourceCeiling::representation_bytes($bytes),
                 );

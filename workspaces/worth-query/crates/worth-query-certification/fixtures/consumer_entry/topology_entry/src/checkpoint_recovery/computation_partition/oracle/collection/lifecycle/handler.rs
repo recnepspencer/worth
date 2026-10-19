@@ -77,7 +77,7 @@ macro_rules! handler {
                 _: &RegionOutputInput,
                 _: &u64,
             ) -> ApplicationCandidateRequirements {
-                $binding::<Schema>::CANDIDATES
+                $binding::<Schema>::CANDIDATES.fixed_requirements().expect("fixed candidate contract")
             }
             fn build_candidate(
                 &self,

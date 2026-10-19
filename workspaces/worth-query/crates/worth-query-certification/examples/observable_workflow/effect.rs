@@ -130,8 +130,9 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ArchiveBinding {
     const IDEMPOTENCY_IDENTITY: &'static str = "neutral.archive.key.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const REQUIRES_WORKFLOW_AUTHORITY: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 1),
             ApplicationCandidateResourceCeiling::representation_bytes(4096),
         );

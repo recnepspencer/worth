@@ -35,6 +35,8 @@ pub(super) struct WorthQueryRegisteredProviderEffects {
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
     output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     mutation_partition: worth_relational::facade::identity::PartitionId,
+    // Last to drop: physical backing releases before its retained grant.
+    candidate_funding: Option<Arc<super::super::effect_program::CandidateFunding>>,
 }
 
 impl<'facts, 'layout, Facts: FactSequence + ?Sized>
@@ -101,6 +103,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
             return Err(retained_bytes_denial());
         }
         Ok(WorthQueryRegisteredProviderEffects {
+            candidate_funding: None,
             expected_steps,
             batch,
             emissions,
@@ -112,6 +115,15 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
 }
 
 impl WorthQueryRegisteredProviderEffects {
+    pub(super) fn retain_candidate_funding(
+        &mut self,
+        funding: Option<Arc<super::super::effect_program::CandidateFunding>>,
+    ) {
+        for emission in self.emissions.emissions_mut() {
+            emission.retain_candidate_funding(funding.clone());
+        }
+        self.candidate_funding = funding;
+    }
     pub(in crate::domain_computation::primary_graph) fn native_publication_roles(
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture, &str, &worth_relational::facade::transactions::EntityReference)> + Clone{
@@ -204,6 +216,7 @@ impl WorthQueryRegisteredProviderEffects {
             provider.bind_application_dispatch_outbox(batch, dispatch_basis, mutation_partition)?;
         Ok((
             Self {
+                candidate_funding: self.candidate_funding,
                 expected_steps: self.expected_steps,
                 batch,
                 emissions: self.emissions,
@@ -222,7 +235,10 @@ impl WorthQueryRegisteredProviderEffects {
         &self,
         commit: &worth_relational::facade::transactions::CommitResult,
     ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
-        self.output_correspondence.clone().seal(commit)
+        self.output_correspondence
+            .clone()
+            .seal(commit)
+            .retain_candidate_funding(self.candidate_funding.clone())
     }
 }
 

@@ -314,6 +314,7 @@ where
             start_path: resumed.start_path().to_owned(),
             supersession: None,
             program: WorthQueryApplicationEffectProgram {
+                candidate_funding: None,
                 read_set: self,
                 effects,
                 emission_retained_bytes: 0,

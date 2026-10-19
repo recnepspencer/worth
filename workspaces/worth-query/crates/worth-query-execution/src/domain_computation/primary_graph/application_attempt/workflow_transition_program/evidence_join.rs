@@ -226,6 +226,7 @@ where
         let progress_update = admitted.prepare_progress_update(outcome, None)?;
         let read_set = admitted.into_read_set();
         let program = WorthQueryApplicationEffectProgram {
+            candidate_funding: None,
             read_set,
             effects,
             emission_retained_bytes: 0,

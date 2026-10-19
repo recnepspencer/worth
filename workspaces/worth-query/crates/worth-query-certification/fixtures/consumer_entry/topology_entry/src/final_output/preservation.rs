@@ -90,8 +90,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.final-planar-preserve-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.final-planar-preserve-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        super::super::requirements(0, 0, 0, 6, 4096);
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(
+            super::super::requirements(0, 0, 0, 6, 4096),
+        );
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -268,6 +271,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarPreserve
         _: &[WorthQueryInvariantMutationTarget<Schema, Body>; 3],
     ) -> ApplicationCandidateRequirements {
         FinalPlanarPreserveBinding::<Schema>::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

@@ -66,7 +66,11 @@ impl<Schema: MembershipSchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.planar-discovery-link-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.planar-discovery-link-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 1, 0, 0, 1024);
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(
+            requirements(0, 1, 0, 0, 1024),
+        );
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

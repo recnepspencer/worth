@@ -56,6 +56,8 @@ impl OperationHandler<BankSchema, CreateBusinessAccountMutationBinding>
         _: &bank_domain::proposals::BankInvariantApprovedProposal,
     ) -> ApplicationCandidateRequirements {
         CreateBusinessAccountMutationBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

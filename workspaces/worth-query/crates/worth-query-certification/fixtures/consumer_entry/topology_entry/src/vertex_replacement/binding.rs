@@ -40,7 +40,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.vertex-replacement-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.vertex-replacement-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = replacement_requirements();
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(
+            replacement_requirements(),
+        );
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

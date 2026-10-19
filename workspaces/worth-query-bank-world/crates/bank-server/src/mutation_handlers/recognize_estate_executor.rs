@@ -46,6 +46,8 @@ impl OperationHandler<BankSchema, RecognizeEstateExecutorMutationBinding>
         _: &EstateAction,
     ) -> ApplicationCandidateRequirements {
         RecognizeEstateExecutorMutationBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

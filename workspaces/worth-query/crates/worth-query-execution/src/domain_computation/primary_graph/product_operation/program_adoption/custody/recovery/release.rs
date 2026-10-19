@@ -69,6 +69,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryBranchAdoptionRecoveryReleaseFailure,
     >{
         let WorthQueryBranchAdoptionRecovery {
+            candidate_funding,
             source,
             target,
             selected_entity_count,
@@ -91,6 +92,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         custody,
                         product: failure.into_recovery(),
                         support_custody,
+                        candidate_funding,
                     },
                 })
             }

@@ -24,8 +24,7 @@ fn atomic_batch_width_does_not_enlarge_actual_candidate_reservation() {
     };
     let reserve = |requested| {
         WorthQueryCandidateReservation::admit(
-            requested,
-            requirements(2),
+            requested, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(requirements(2)),
             envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
             envelope.resource_ceiling(
                 WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,

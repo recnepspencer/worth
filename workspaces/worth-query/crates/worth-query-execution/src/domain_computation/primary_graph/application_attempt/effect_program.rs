@@ -1,4 +1,7 @@
+mod candidate_funding;
+mod candidate_preparation;
 mod candidate_reservation;
+pub(in crate::domain_computation::primary_graph) use candidate_funding::CandidateFunding;
 mod candidate_retained_representation;
 mod conditional_definition;
 mod emission;
@@ -68,9 +71,8 @@ pub(in crate::domain_computation::primary_graph) use platform_reservation::{
     admit_platform_effects, admit_workflow_settlement_effects, PlatformEffectDemand,
 };
 use target_admission::installed_contract_admits_program_target;
-use worth_query_declaration::facade::{
-    application_operation::ApplicationCandidateRequirements,
-    domain_computation::WorthQuerySemanticScaleAxis,
+use worth_query_declaration::facade::application_operation::{
+    ApplicationCandidateContract, ApplicationCandidateRequirements,
 };
 
 impl<Schema, Operation, Input, Scope>
@@ -119,51 +121,10 @@ impl<Schema, Operation, Input, Scope>
             emission_retained_bytes_ceiling,
             conditional_definition: None,
             candidate_reservation: None,
+            candidate_funding: None,
             output_correspondence: Default::default(),
             creation_partition: None,
         }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn begin_reserved_effect_program(
-        self,
-        requested: ApplicationCandidateRequirements,
-        ceiling: ApplicationCandidateRequirements,
-    ) -> Result<
-        WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>,
-        WorthQueryApplicationAttemptDenial,
-    > {
-        let envelope = self
-            .admission
-            .allowed_graph_contract()
-            .execution_strategy()
-            .expect("installed application operation has exactly one execution strategy")
-            .envelope();
-        let reservation = WorthQueryCandidateReservation::admit(
-            requested,
-            ceiling,
-            envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
-            envelope.resource_ceiling(
-                WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
-            ),
-        )?;
-        let capacity = reservation.total_items();
-        let layout = Arc::clone(&self.lease.layout);
-        let emission_retained_bytes_ceiling =
-            envelope.resource_ceiling(WorthQueryResourceDimension::RetainedBytes);
-        Ok(WorthQueryApplicationEffectProgramBuilder {
-            read_set: self,
-            layout,
-            program: Arc::new(()),
-            effects: Vec::with_capacity(capacity),
-            field_write_positions: FieldWriteIndex::default(),
-            keys: BTreeSet::new(),
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling,
-            conditional_definition: None,
-            candidate_reservation: Some(reservation),
-            output_correspondence: Default::default(),
-            creation_partition: None,
-        })
     }
 }
 
@@ -279,6 +240,7 @@ impl<Schema, Operation, Input, Scope>
         Ok(WorthQueryApplicationEffectProgram {
             read_set: self.read_set,
             effects: self.effects,
+            candidate_funding: self.candidate_funding.map(Arc::new),
             emission_retained_bytes: self.emission_retained_bytes,
             emission_retained_bytes_ceiling: self.emission_retained_bytes_ceiling,
             conditional_definition: self.conditional_definition,

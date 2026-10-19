@@ -3,9 +3,9 @@
 use worth_query_host::facade::{
     declaration::{
         application_operation::{
-            ApplicationCandidateRequirements, ApplicationMutationBinding,
-            ApplicationMutationIntent, ApplicationWorkflowExecutionRequirements,
-            NoApplicationMutationOutputs, NoApplicationMutationSource,
+            ApplicationMutationBinding, ApplicationMutationIntent,
+            ApplicationWorkflowExecutionRequirements, NoApplicationMutationOutputs,
+            NoApplicationMutationSource,
         },
         application_schema::{
             ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate,
@@ -58,7 +58,9 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ExplicitReviewedSet
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.document-retention.explicit-reviewed-command.v1";
     const REQUIRES_WORKFLOW_AUTHORITY: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = SetRetentionBinding::CANDIDATES;
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        SetRetentionBinding::CANDIDATES;
 
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::requiring_approval::<WorkflowApprovalCapability>()

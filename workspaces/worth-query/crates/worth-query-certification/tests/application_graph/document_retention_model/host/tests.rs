@@ -54,6 +54,8 @@ impl primary_graph::OperationHandler<DocumentRetentionSchema, WorkflowAdvanceBin
         _: &primary_graph::WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> declaration::application_operation::ApplicationCandidateRequirements {
         WorkflowAdvanceBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

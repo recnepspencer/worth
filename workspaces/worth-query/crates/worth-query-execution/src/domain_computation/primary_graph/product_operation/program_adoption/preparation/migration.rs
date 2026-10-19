@@ -89,6 +89,11 @@ pub struct WorthQueryPreparedProgramMigration {
     source_product: ProductBranchObservation,
     description: WorthQueryProgramMigrationDescription,
     batch: worth_relational::facade::transactions::WorkerIntentBatch,
+    candidate_funding: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::CandidateFunding,
+        >,
+    >,
 }
 
 impl WorthQueryPreparedProgramMigration {
@@ -111,12 +116,18 @@ impl WorthQueryPreparedProgramMigration {
         ProductBranchObservation,
         WorthQueryProgramMigrationDescription,
         worth_relational::facade::transactions::WorkerIntentBatch,
+        Option<
+            std::sync::Arc<
+                crate::domain_computation::primary_graph::application_attempt::CandidateFunding,
+            >,
+        >,
     ) {
         (
             self.target,
             self.source_product,
             self.description,
             self.batch,
+            self.candidate_funding,
         )
     }
 }
@@ -175,7 +186,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         self.require_target_binding::<Binding>(&admitted.target)?;
         let (program, _result) = candidate.into_parts();
-        let (source_product, batch, effect_count) =
+        let (candidate_funding, source_product, batch, effect_count) =
             crate::domain_computation::primary_graph::application_attempt::prepare_program_migration_effects(
                 self, program,
             )?;
@@ -189,6 +200,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 effect_count,
             },
             batch,
+            candidate_funding,
         })
     }
 

@@ -36,6 +36,8 @@ impl OperationHandler<DocumentRetentionSchema, ArchiveBinding> for ArchiveHandle
         _: &<ArchiveBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::Decision,
     ) -> ApplicationCandidateRequirements {
         ArchiveBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,

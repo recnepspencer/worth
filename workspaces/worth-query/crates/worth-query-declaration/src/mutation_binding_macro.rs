@@ -71,8 +71,8 @@ macro_rules! worth_query_mutation_binding {
             fn workflow_execution_requirements() -> $crate::facade::application_operation::ApplicationWorkflowExecutionRequirements {
                 $crate::worth_query_mutation_binding!(@workflow_requirements [$($workflow_authority)?] [$($workflow_requirements)?])
             }
-            const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateRequirements =
-                $crate::facade::application_operation::ApplicationCandidateRequirements::fixed_shape(
+            const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateContract =
+                $crate::facade::application_operation::ApplicationCandidateContract::fixed_shape(
                     $crate::facade::application_operation::ApplicationCandidateCardinalityCeiling::fixed(
                         $maximum_creates, $maximum_deletes, $maximum_links, $maximum_unlinks,
                         $maximum_writes, $maximum_emits,
@@ -297,8 +297,8 @@ macro_rules! worth_query_mutation_binding {
             fn workflow_execution_requirements() -> $crate::facade::application_operation::ApplicationWorkflowExecutionRequirements {
                 $crate::worth_query_mutation_binding!(@workflow_requirements [$($workflow_authority)?] [$($workflow_requirements)?])
             }
-            const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateRequirements =
-                $crate::facade::application_operation::ApplicationCandidateRequirements::fixed_shape(
+            const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateContract =
+                $crate::facade::application_operation::ApplicationCandidateContract::fixed_shape(
                     $crate::facade::application_operation::ApplicationCandidateCardinalityCeiling::fixed(
                         $maximum_creates,
                         $maximum_deletes,

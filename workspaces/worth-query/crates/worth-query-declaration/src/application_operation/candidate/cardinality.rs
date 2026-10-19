@@ -55,7 +55,7 @@ impl ApplicationCandidateCardinalityCeiling {
     }
 }
 
-/// Complete declaration-time candidate reservation contract.
+/// Concrete finite attempt footprint, prepared before candidate allocation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ApplicationCandidateRequirements {
     cardinality: ApplicationCandidateCardinalityCeiling,

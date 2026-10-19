@@ -69,7 +69,7 @@ impl OperationHandler<IdentityExecutionSchema, CapabilityTouchMutationBinding>
         _: &CapabilityTouchInput,
         _: &CapabilityTouchInput,
     ) -> ApplicationCandidateRequirements {
-        <CapabilityTouchMutationBinding as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES
+        <CapabilityTouchMutationBinding as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES.fixed_requirements().expect("fixed candidate contract")
     }
 
     fn build_candidate(

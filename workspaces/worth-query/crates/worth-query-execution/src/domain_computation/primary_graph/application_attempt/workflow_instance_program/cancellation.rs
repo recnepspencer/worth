@@ -155,6 +155,7 @@ where
             cancellation_identity_locator: layout.instance.cancellation_identity.clone(),
             performed: performed.into_iter().map(|effect| effect.path).collect(),
             program: WorthQueryApplicationEffectProgram {
+                candidate_funding: None,
                 read_set: self,
                 effects,
                 emission_retained_bytes: 0,

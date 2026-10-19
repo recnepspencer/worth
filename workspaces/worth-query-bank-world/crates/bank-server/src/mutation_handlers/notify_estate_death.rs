@@ -44,6 +44,8 @@ impl OperationHandler<BankSchema, NotifyEstateDeathMutationBinding> for NotifyEs
         _: &EstateAction,
     ) -> ApplicationCandidateRequirements {
         NotifyEstateDeathMutationBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn build_candidate(

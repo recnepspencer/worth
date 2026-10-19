@@ -19,6 +19,8 @@ pub struct WorthQueryUnpublishedBranchAdoption {
     product: crate::domain_computation::WorthQueryProductUnpublishedApplication,
     support_custody:
         crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
+    // Last to drop: physical backing releases before its retained grant.
+    candidate_funding: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CandidateFunding>>,
 }
 
 impl WorthQueryUnpublishedBranchAdoption {
@@ -28,6 +30,11 @@ impl WorthQueryUnpublishedBranchAdoption {
         selected_entity_count: usize,
         migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
         custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
+        candidate_funding: Option<
+            std::sync::Arc<
+                crate::domain_computation::primary_graph::application_attempt::CandidateFunding,
+            >,
+        >,
         owner_effects: ProductUnpublishedOwnerEffects,
         recovery: RuntimeWorldRecoveryPort,
         disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
@@ -39,6 +46,7 @@ impl WorthQueryUnpublishedBranchAdoption {
             selected_entity_count,
             migration,
             custody,
+            candidate_funding,
             product: crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
                 owner_effects,
                 recovery,
@@ -95,6 +103,7 @@ impl WorthQueryUnpublishedBranchAdoption {
             self.selected_entity_count,
             self.migration,
             self.custody,
+            self.candidate_funding,
             self.product.into_recovery(),
             self.support_custody,
         )

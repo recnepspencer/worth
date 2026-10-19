@@ -1,9 +1,9 @@
 use worth_query_host::facade::declaration::{
     application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling, ApplicationCapabilityMutationBinding,
-        ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
-        NoApplicationMutationOutputs, NoApplicationMutationSource,
+        ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
+        ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
+        ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
+        NoApplicationMutationSource,
     },
     application_schema::{
         ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
@@ -89,7 +89,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowAdvanceBind
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.workflow-advance.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = {
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract = {
         // Retain the six-source-fact allowance and the related-assessment
         // applicability's two endpoint kinds plus one adjacency revision.
         const DEPENDENCIES: usize = 6 + 3;
@@ -98,7 +99,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowAdvanceBind
         // Each dependency has four identity/tag fields and at most four
         // revision/locator fields (field or adjacency shape).
         const WRITES: usize = 7 + 3 + 1 + 19 + DEPENDENCIES * 8;
-        ApplicationCandidateRequirements::fixed_shape(
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(
                 2 + DEPENDENCIES,
                 0,
@@ -170,7 +171,9 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowApprovalBin
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.workflow-approval.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = WorkflowAdvanceBinding::CANDIDATES;
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        WorkflowAdvanceBinding::CANDIDATES;
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,

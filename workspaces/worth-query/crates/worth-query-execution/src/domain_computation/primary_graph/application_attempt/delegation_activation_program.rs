@@ -59,6 +59,7 @@ impl<Schema, Operation, Input, Scope>
             .envelope()
             .resource_ceiling(WorthQueryResourceDimension::RetainedBytes);
         let program = WorthQueryApplicationEffectProgram {
+            candidate_funding: None,
             read_set: self,
             effects,
             emission_retained_bytes: 0,

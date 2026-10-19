@@ -66,8 +66,8 @@ impl
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.unowned-migration-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.unowned-migration-command.v1";
-    const CANDIDATES: worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements =
-        worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::representation_bytes(0),
         );

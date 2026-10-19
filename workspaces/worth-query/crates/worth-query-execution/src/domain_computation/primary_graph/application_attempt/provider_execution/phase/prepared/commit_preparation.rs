@@ -29,6 +29,7 @@ where
         aftermath_causality,
     } = request;
     let WorthQueryApplicationEffectProgram {
+        candidate_funding,
         read_set,
         effects,
         emission_retained_bytes,
@@ -118,6 +119,7 @@ where
                 consumed_outputs: read_set.consumed_outputs,
                 application_effect_count: effects.len(),
                 effects,
+                candidate_funding,
                 emission_retained_bytes,
                 emission_retained_bytes_ceiling,
                 preimage_demand,

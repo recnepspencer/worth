@@ -8,7 +8,7 @@ use worth_query_declaration::facade::application_operation::{
 #[test]
 fn capacity_denies_before_a_reservation_exists() {
     let ceiling = requirements(1, 1, 64);
-    let denial = WorthQueryCandidateReservation::admit(requirements(2, 1, 64), ceiling, 16, 64)
+    let denial = WorthQueryCandidateReservation::admit(requirements(2, 1, 64), worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(ceiling), 16, 64)
         .err()
         .expect("the binding ceiling must deny excess creation");
     assert_eq!(
@@ -23,7 +23,7 @@ fn admitted_reservation_charges_each_effect_family_exactly() {
         ApplicationCandidateCardinalityCeiling::fixed(1, 1, 1, 1, 1, 1),
         ApplicationCandidateResourceCeiling::representation_bytes(64),
     );
-    let mut reservation = WorthQueryCandidateReservation::admit(requirements, requirements, 6, 64)
+    let mut reservation = WorthQueryCandidateReservation::admit(requirements, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(requirements), 6, 64)
         .expect("the exact finite reservation is admitted");
     for kind in [
         CandidateItemKind::Create,
@@ -55,7 +55,7 @@ fn equal_cardinality_payload_twin_denies_bytes_without_consuming_reservation() {
     let requirement = requirements(0, 1, candidate_bytes);
     let runtime_bytes = u64::try_from(candidate_bytes).unwrap();
     let mut small =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 1, runtime_bytes)
+        WorthQueryCandidateReservation::admit(requirement, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(requirement), 1, runtime_bytes)
             .expect("the small candidate reservation is admitted");
     small
         .charge_retained_representation(
@@ -66,7 +66,7 @@ fn equal_cardinality_payload_twin_denies_bytes_without_consuming_reservation() {
         .expect("the equal-cardinality small value fits");
 
     let mut oversized =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 1, runtime_bytes)
+        WorthQueryCandidateReservation::admit(requirement, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(requirement), 1, runtime_bytes)
             .expect("the oversized twin starts from the same reservation");
     let denial = oversized
         .charge_retained_representation(
@@ -99,8 +99,7 @@ fn coalesced_write_replaces_its_retained_semantic_width() {
     let bytes = first.semantic_byte_width();
     let requirement = requirements(0, 2, bytes);
     let mut reservation = WorthQueryCandidateReservation::admit(
-        requirement,
-        requirement,
+        requirement, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(requirement),
         2,
         u64::try_from(bytes).unwrap(),
     )

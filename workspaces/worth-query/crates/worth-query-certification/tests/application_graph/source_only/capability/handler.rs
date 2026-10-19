@@ -66,6 +66,8 @@ where
         _: &WorthQueryInvariantMutationTarget<CapabilitySchema, Document>,
     ) -> ApplicationCandidateRequirements {
         B::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,

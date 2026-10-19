@@ -18,6 +18,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationEmi
     retained_bytes: u64,
     measure_retained_bytes: fn(&(dyn Any + Send + Sync)) -> Option<u64>,
     external_payload: Option<WorthQueryExternalPayloadProjection>,
+    // Last to drop: physical backing releases before its retained grant.
+    candidate_funding: Option<Arc<super::super::CandidateFunding>>,
 }
 
 #[derive(Clone)]
@@ -27,6 +29,12 @@ struct WorthQueryExternalPayloadProjection {
 }
 
 impl WorthQueryApplicationEmission {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn retain_candidate_funding(
+        &mut self,
+        funding: Option<Arc<super::super::CandidateFunding>>,
+    ) {
+        self.candidate_funding = funding;
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn new<Binding>(
         effect: &'static str,
         payload: Binding::Value,
@@ -37,6 +45,7 @@ impl WorthQueryApplicationEmission {
     {
         let retained_bytes = Binding::retained_bytes(&payload);
         Self {
+            candidate_funding: None,
             effect,
             payload_type: Binding::IDENTITY,
             payload_type_id: TypeId::of::<Binding::Value>(),
@@ -72,6 +81,7 @@ impl WorthQueryApplicationEmission {
         derived: &worth_query_declaration::lifecycle_effect_derivation_authority::DerivedApplicationCapabilityLifecycleEffect,
     ) -> Self {
         Self {
+            candidate_funding: None,
             effect: derived.effect(),
             payload_type: derived.payload_identity(),
             payload_type_id: TypeId::from(derived.payload_type_id()),
@@ -161,6 +171,11 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedApplic
 }
 
 impl WorthQueryAdmittedApplicationEmissionBatch {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn emissions_mut(
+        &mut self,
+    ) -> &mut [WorthQueryApplicationEmission] {
+        &mut self.emissions
+    }
     pub(in crate::domain_computation::primary_graph) fn admit(
         emissions: Vec<WorthQueryApplicationEmission>,
         retained_bytes_ceiling: u64,

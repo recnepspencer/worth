@@ -235,11 +235,29 @@ fn mutation_binding_registers_exact_handler_scope_and_candidate_metadata() {
     );
     assert_eq!(descriptor.scope_entity(), "Account");
     assert_eq!(descriptor.scope().field().locus().field(), "AccountIdField");
-    assert_eq!(descriptor.candidates().cardinality().maximum_writes(), 1);
-    assert_eq!(descriptor.candidates().cardinality().maximum_emits(), 1);
     assert_eq!(
         descriptor
             .candidates()
+            .fixed_requirements()
+            .unwrap()
+            .cardinality()
+            .maximum_writes(),
+        1
+    );
+    assert_eq!(
+        descriptor
+            .candidates()
+            .fixed_requirements()
+            .unwrap()
+            .cardinality()
+            .maximum_emits(),
+        1
+    );
+    assert_eq!(
+        descriptor
+            .candidates()
+            .fixed_requirements()
+            .unwrap()
             .resources()
             .maximum_retained_representation_bytes(),
         128

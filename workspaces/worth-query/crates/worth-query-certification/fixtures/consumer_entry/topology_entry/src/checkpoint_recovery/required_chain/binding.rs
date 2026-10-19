@@ -119,7 +119,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema> for Chain
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.consumed-chain-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.consumed-chain-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 8_192);
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(
+            requirements(0, 0, 0, 1, 8_192),
+        );
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,
@@ -207,6 +211,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
     }
     fn candidate_requirements(&self, _: &ChainInput, _: &()) -> ApplicationCandidateRequirements {
         ChainBinding::<Schema>::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,
