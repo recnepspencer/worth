@@ -7,11 +7,9 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKer
 
 mod association;
 mod incident_boundary;
-mod incoming_reference;
 
 #[derive(Clone, Copy)]
 pub(super) enum RelationClosurePurpose {
-    CompletePublicationAssociation,
     CodecRetirement,
 }
 

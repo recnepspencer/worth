@@ -267,3 +267,25 @@ pub(super) fn cold_retired_route(
         assert_eq!(capture(&rejected), before);
     }
 }
+
+mod boundary_rosters;
+mod incidental_birth;
+
+#[test]
+fn cold_boundary_rosters_refuse_missing_owned_edge_and_foreign_sibling_claim() {
+    boundary_rosters::refuse_missing_and_foreign();
+    incidental_birth::refuse_late_claim();
+}
+
+fn edit_publication(
+    checkpoint: &mut crate::durability::data::DurableCheckpoint,
+    commit: crate::history::data::CommitId,
+    edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelope),
+) {
+    let entry = checkpoint
+        .envelopes
+        .iter_mut()
+        .find(|entry| entry.commit.commit_id == commit)
+        .unwrap();
+    edit(entry.envelope_mut_for_test());
+}

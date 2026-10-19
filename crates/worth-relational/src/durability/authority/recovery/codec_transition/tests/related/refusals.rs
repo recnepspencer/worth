@@ -174,3 +174,105 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
     assert_eq!(target.runtime_instance_id(), owner);
     assert_eq!(capture(&target), before);
 }
+
+#[test]
+fn owned_boundary_equal_write_and_rewire_refuse_warm_and_cold_before_effects() {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    for rewire in [false, true] {
+        let (runtime, receipt) = super::incoming_reference::installed_references(1);
+        let (world, owned) = world_with_boundary(execution, runtime, receipt);
+        let (edge, publisher) = owned.unwrap();
+        let ProducerPublication {
+            owner,
+            installed,
+            custody: previous,
+        } = publisher;
+        let mut transaction = world
+            .runtime
+            .begin_branch_transaction(
+                &basis(&world.runtime),
+                RelationalTransactionIntent::ordinary(),
+            )
+            .unwrap();
+        transaction
+            .push_batch(
+                WorkerIntentBatch::new("ordinary boundary overwrite").push(
+                    MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
+                        UpdateRelationEndpointsIntent {
+                            relation_id: edge,
+                            kind_id: KindId(4),
+                            source: EntityReference::Existing(world.outputs[usize::from(rewire)]),
+                            target: EntityReference::Existing(world.authored),
+                        },
+                    )),
+                ),
+                execution.allocation_policy(),
+            )
+            .unwrap();
+        let written = transaction.commit(execution, &world.runtime).unwrap();
+        world
+            .runtime
+            .snapshots()
+            .release_snapshot(&written.snapshot)
+            .unwrap();
+        let selected = basis(&world.runtime);
+        let before = capture(&world.runtime);
+        let payload = relation_payload(&world.runtime, edge);
+        let denied = complete_association(execution, &world).unwrap_err();
+        assert!(
+            format!("{denied:?}").contains("incident relation native position/endpoints"),
+            "{denied:?}"
+        );
+        let admission = owner
+            .admit_required_output_succession(
+                owner.admit_required_output("native.closed.preserver", [20; 32]),
+                previous.authority(),
+            )
+            .unwrap();
+        let meaning = previous
+            .envelope
+            .required_output_origin
+            .as_ref()
+            .unwrap()
+            .meaning
+            .clone();
+        let mut transaction = world
+            .runtime
+            .begin_branch_transaction(&selected, RelationalTransactionIntent::ordinary())
+            .unwrap();
+        transaction
+            .push_batch(
+                WorkerIntentBatch::new("attempt genuine no-data Preserve"),
+                execution.allocation_policy(),
+            )
+            .unwrap();
+        let proposal = transaction
+            .validate(execution, &world.runtime)
+            .unwrap()
+            .bind_required_output_publication(
+                &installed,
+                crate::mvcc::RequiredOutputPublication::Preserve {
+                    admission,
+                    predecessor: previous,
+                    meaning,
+                    roles: crate::mvcc::native_roles_fixture(
+                        &world.outputs.map(|id| (id, KindId(3))),
+                        crate::mvcc::RequiredOutputRolePosture::Preserve,
+                    ),
+                },
+            )
+            .unwrap();
+        let denied = world
+            .runtime
+            .prepare_validated_proposal(execution, proposal)
+            .unwrap_err();
+        assert!(
+            format!("{denied:?}").contains("incident relation breaks producer write/endpoints"),
+            "{denied:?}"
+        );
+        assert!(selected.is_current());
+        assert_eq!(capture(&world.runtime), before);
+        assert_eq!(relation_payload(&world.runtime, edge), payload);
+    }
+}

@@ -193,30 +193,4 @@ pub(super) fn validate_gap(
     Err("publication predecessor gap is incomplete or cyclic".into())
 }
 
-pub(super) fn relation_writes(
-    envelope: &CanonicalCommitEnvelope,
-    id: crate::identity::data::RelationId,
-    context: &mut MapKernelContext<'_, '_>,
-) -> Result<bool, Stop> {
-    charge(
-        context,
-        envelope.patch.authoritative_record_patches.len()
-            + envelope.merged_plan.merged_intents.len(),
-    )?;
-    Ok(envelope
-        .patch
-        .authoritative_record_patches
-        .iter()
-        .any(|patch| patch.target == RecordRef::Relation(id))
-        || envelope.merged_plan.merged_intents.iter().any(|intent| {
-            !matches!(
-                intent,
-                crate::transactions::data::MutationIntent::Relation(
-                    crate::transactions::data::RelationMutationIntent::Revalidate(_)
-                )
-            ) && intent.existing_record_target()
-                == Some(crate::transactions::data::ExistingRecordTarget::Relation(
-                    id,
-                ))
-        }))
-}
+pub(super) use crate::history::data::publication_relations::writes as relation_writes;

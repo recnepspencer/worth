@@ -35,7 +35,6 @@ impl IncidentRelation {
 impl Display for RelationClosurePurpose {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Self::CompletePublicationAssociation => "complete-publication-association",
             Self::CodecRetirement => "codec-retirement",
         })
     }

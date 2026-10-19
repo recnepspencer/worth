@@ -150,6 +150,32 @@ impl CanonicalCommitEnvelope {
                         "predecessor is not the publication selected at the native before image",
                     ));
                 }
+                // The carried holder is checked against its exact performed native coordinate,
+                // not an ancestry search or a caller-supplied description.
+                context.checkpoint(1).map_err(origin_request)?;
+                let canonical = runtime
+                    .history
+                    .canonical_envelope_for_version(origin.commit.version_id)
+                    .ok_or_else(|| {
+                        crate::mvcc::origin_denial("retained predecessor canonical position absent")
+                    })?;
+                let expected = canonical.required_output_origin.as_deref().ok_or_else(|| {
+                    crate::mvcc::origin_denial("retained predecessor native membership absent")
+                })?;
+                compare_retained_origin(origin, expected, context)?;
+                canonical
+                    .validate_output_membership_header()
+                    .map_err(relation_stop)?;
+                crate::history::data::publication_relations::validate(
+                    &basis.inner.root,
+                    None,
+                    origin,
+                    None,
+                    &mut |version| runtime.history.canonical_envelope_for_version(version),
+                    lease,
+                    context,
+                )
+                .map_err(relation_stop)?;
                 (meaning, roles, Some(origin.as_ref()))
             }
         };
@@ -282,6 +308,83 @@ impl CanonicalCommitEnvelope {
             issuer: Some(installed.authority.clone()),
             _funding: Some(memory),
         }));
+        crate::history::data::publication_relations::validate(
+            &basis.inner.root,
+            Some(state),
+            self.required_output_origin.as_deref().unwrap(),
+            Some(self),
+            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            lease,
+            context,
+        )
+        .map_err(relation_stop)?;
         Ok(positions)
     }
+}
+
+fn relation_stop(stop: crate::history::data::CodecRetirementClosureStop) -> TransactionCommitError {
+    match stop {
+        crate::history::data::CodecRetirementClosureStop::Request(cause) => origin_request(cause),
+        crate::history::data::CodecRetirementClosureStop::Payload(detail) => {
+            crate::mvcc::origin_denial(detail)
+        }
+    }
+}
+
+fn compare_retained_origin(
+    carried: &CanonicalRequiredOutputOrigin,
+    canonical: &CanonicalRequiredOutputOrigin,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<(), TransactionCommitError> {
+    for origin in [carried, canonical] {
+        let mut work = std::mem::size_of_val(origin);
+        for bytes in [
+            origin.producer.len(),
+            origin.birth_producer.len(),
+            origin.meaning.family.len(),
+            origin.basis.branch_id().0.len(),
+            origin
+                .relations
+                .len()
+                .checked_mul(std::mem::size_of::<CanonicalRequiredOutputRelation>())
+                .ok_or_else(|| {
+                    origin_request(
+                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                    )
+                })?,
+        ] {
+            work = work.checked_add(bytes).ok_or_else(|| {
+                origin_request(
+                    crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                )
+            })?;
+        }
+        for member in &origin.members {
+            for bytes in [
+                std::mem::size_of_val(member),
+                member.role.len(),
+                member.entity_name.len(),
+                member.birth_producer.len(),
+            ] {
+                work = work.checked_add(bytes).ok_or_else(|| {
+                    origin_request(
+                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                    )
+                })?;
+            }
+        }
+        context
+            .checkpoint(u64::try_from(work).map_err(|_| {
+                origin_request(
+                    crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                )
+            })?)
+            .map_err(origin_request)?;
+    }
+    if carried != canonical {
+        return Err(crate::mvcc::origin_denial(
+            "retained publication custody differs from exact canonical membership",
+        ));
+    }
+    Ok(())
 }

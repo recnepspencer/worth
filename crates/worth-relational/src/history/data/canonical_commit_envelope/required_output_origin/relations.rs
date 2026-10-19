@@ -1,5 +1,5 @@
-//! Relation provenance is captured only from native allocations between fully
-//! covered creates of this one installed output publication.
+//! Actual producer-created relations touch at least one complete output member.
+//! Owning an edge never adopts its external endpoint entity.
 use super::payload_coverage::{validate_created_relation_payload, OutputPayloadCoverageFailure};
 use super::{origin_request, CanonicalCommitEnvelope};
 use crate::identity::data::{EntityId, KindId, RelationId};
@@ -75,7 +75,7 @@ pub(super) fn capture_created_relations(
         context
             .checkpoint(2 * u64::from(usize::BITS - outputs.len().leading_zeros()) + 2)
             .map_err(origin_request)?;
-        if outputs.binary_search(&source).is_err() || outputs.binary_search(&target).is_err() {
+        if outputs.binary_search(&source).is_err() && outputs.binary_search(&target).is_err() {
             continue;
         }
         let record = state
@@ -233,7 +233,9 @@ pub(super) fn continue_relations(
             .effective_at;
         if row.kind_id() != Some(relation.kind)
             || (after_write != relation.after_write && after_write != envelope.commit.version_id)
-            || patch.is_some_and(|patch| patch.structural_change != Change::Updated)
+            || patch.is_some_and(|patch| {
+                patch.structural_change != Change::Updated || patch.contains_opaque_aspect
+            })
         {
             return Err(crate::mvcc::origin_denial(
                 "successor relation differs from its actual native mutation",

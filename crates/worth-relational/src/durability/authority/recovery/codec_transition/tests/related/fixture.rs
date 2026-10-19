@@ -9,6 +9,11 @@ use crate::symbols::data::ClientKey;
 use crate::transactions::data::*;
 use worth_foundational::facade::*;
 
+mod production;
+pub(super) use production::{
+    produce, produce_with_boundary, produce_with_incidental, ProducerPublication,
+};
+
 pub(super) const ORDER: DerivedIndexId = DerivedIndexId(1);
 pub(super) struct RelatedWorld {
     pub(super) runtime: RelationalRuntime,
@@ -104,9 +109,39 @@ pub(super) fn world_with_installation(
     runtime: RelationalRuntime,
     receipt: RelationalInitialSchemaInstallationReceipt,
 ) -> RelatedWorld {
+    build_world(execution, runtime, receipt, false).0
+}
+
+pub(super) fn world_with_boundary(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: RelationalRuntime,
+    receipt: RelationalInitialSchemaInstallationReceipt,
+) -> (RelatedWorld, Option<(RelationId, ProducerPublication)>) {
+    build_world(execution, runtime, receipt, true)
+}
+
+fn build_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: RelationalRuntime,
+    receipt: RelationalInitialSchemaInstallationReceipt,
+    boundary: bool,
+) -> (RelatedWorld, Option<(RelationId, ProducerPublication)>) {
     let authored = create(execution, &runtime, 1, "authored", SOURCE_VALUE, None);
     let activation = create(execution, &runtime, 2, "activation", "program.v1", None);
-    let (outputs, relations) = produce(execution, &runtime, &receipt, 1);
+    let (outputs, relations, owned) = if boundary {
+        let (outputs, relations, edge, custody) = produce_with_boundary(
+            execution,
+            &runtime,
+            &receipt,
+            1,
+            authored,
+            "native.closed.producer",
+        );
+        (outputs, relations, Some((edge, custody)))
+    } else {
+        let (outputs, relations) = produce(execution, &runtime, &receipt, 1);
+        (outputs, relations, None)
+    };
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: ORDER,
         name: "unchanged ordered derived children".into(),
@@ -123,116 +158,16 @@ pub(super) fn world_with_installation(
     });
     assert_eq!(index.index_id, ORDER);
     build_index(execution, &runtime);
-    RelatedWorld {
-        runtime,
-        authored,
-        activation,
-        outputs,
-        relations,
-    }
-}
-
-pub(super) fn produce(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    receipt: &RelationalInitialSchemaInstallationReceipt,
-    version: u8,
-) -> ([EntityId; 3], [RelationId; 2]) {
-    let (owner, installed) = receipt.issue_application_publication_owner();
-    let created = ["root", "right", "left"].map(|key| CreatedEntityRef {
-        partition_id: PartitionId::main(),
-        kind_id: KindId(3),
-        client_key: ClientKey::raw(key),
-    });
-    let edges = [1, 2].map(|child| CreatedRelationRef {
-        partition_id: PartitionId::main(),
-        kind_id: KindId(4),
-        client_key: ClientKey::raw(format!("root-{child}")),
-        source: EntityReference::Created(created[0].clone()),
-        target: EntityReference::Created(created[child].clone()),
-    });
-    let mut batch = WorkerIntentBatch::new("installed closed derived graph");
-    for (position, reference) in created.iter().enumerate() {
-        batch = batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-            partition_id: reference.partition_id,
-            kind_id: reference.kind_id,
-            client_key: reference.client_key.clone(),
-            fields: AspectFieldPatch::from(std::collections::BTreeMap::from([
-                (
-                    locator("derived"),
-                    AspectValue::String(InternedString::from(format!(
-                        "codec{version}:nondefault-{position}"
-                    ))),
-                ),
-                (
-                    locator("order"),
-                    AspectValue::String(InternedString::from(
-                        ["root", "z-right", "a-left"][position],
-                    )),
-                ),
-            ])),
-        })));
-    }
-    for edge in &edges {
-        batch = batch.push(MutationIntent::Create(CreateIntent::Relation(
-            RelationSpec {
-                partition_id: edge.partition_id,
-                kind_id: edge.kind_id,
-                client_key: edge.client_key.clone(),
-                source: edge.source.clone(),
-                target: edge.target.clone(),
-                fields: AspectFieldPatch::from_locator(
-                    locator("edge"),
-                    AspectValue::String(InternedString::from("nonempty native edge")),
-                ),
-            },
-        )));
-    }
-    let mut transaction = runtime
-        .begin_branch_transaction(&basis(runtime), RelationalTransactionIntent::ordinary())
-        .unwrap();
-    transaction
-        .push_batch(batch, execution.allocation_policy())
-        .unwrap();
-    let mut publication = crate::mvcc::native_birth_fixture(
-        owner.admit_required_output("native.closed.producer", [19; 32]),
-        created.to_vec(),
-    );
-    if let crate::mvcc::RequiredOutputPublication::Birth {
-        absence, meaning, ..
-    } = &mut publication
-    {
-        *absence = runtime
-            .readmit_required_output_route_absence(execution, &installed, &basis(runtime), meaning)
-            .unwrap();
-        assert!(absence.is_some());
-    }
-    let proposal = transaction
-        .validate(execution, runtime)
-        .unwrap()
-        .bind_required_output_publication(&installed, publication)
-        .unwrap();
-    let candidate = runtime
-        .prepare_validated_proposal(execution, proposal)
-        .unwrap();
-    let RelationalPublicationOutcome::Performed(performed) = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate)
-    else {
-        panic!("the installed native producer must publish its complete graph")
-    };
-    let committed = runtime.settle_performed_publication(performed).unwrap();
-    let entities = created
-        .each_ref()
-        .map(|reference| committed.created_entity(reference).unwrap());
-    let relations = edges
-        .each_ref()
-        .map(|reference| committed.created_relation(reference).unwrap());
-    runtime
-        .snapshots()
-        .release_snapshot(&committed.snapshot)
-        .unwrap();
-    (entities, relations)
+    (
+        RelatedWorld {
+            runtime,
+            authored,
+            activation,
+            outputs,
+            relations,
+        },
+        owned,
+    )
 }
 
 pub(super) fn assert_order(
