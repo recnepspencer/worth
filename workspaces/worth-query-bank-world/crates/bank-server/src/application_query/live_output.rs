@@ -12,6 +12,7 @@ pub struct BankApplicationLiveOverflow {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationLiveProjectionDenial {
+    ValueDecode(worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial),
     FieldNotProjected,
     FieldContractMismatch,
     FieldTypeMismatch,
@@ -51,6 +52,7 @@ impl BankApplicationLiveOverflow {
 impl BankApplicationLiveProjectionDenial {
     pub const fn code(self) -> &'static str {
         match self {
+            Self::ValueDecode(_) => "value-decode",
             Self::FieldNotProjected => "field-not-projected",
             Self::FieldContractMismatch => "field-contract-mismatch",
             Self::FieldTypeMismatch => "field-type-mismatch",
@@ -66,6 +68,7 @@ impl BankApplicationLiveProjectionDenial {
     pub(crate) const fn from_query(kind: WorthQueryApplicationProjectionDenialKind) -> Self {
         use WorthQueryApplicationProjectionDenialKind as Query;
         match kind {
+            Query::ValueDecode(cause) => Self::ValueDecode(cause),
             Query::FieldNotProjected => Self::FieldNotProjected,
             Query::FieldContractMismatch => Self::FieldContractMismatch,
             Query::FieldTypeMismatch => Self::FieldTypeMismatch,

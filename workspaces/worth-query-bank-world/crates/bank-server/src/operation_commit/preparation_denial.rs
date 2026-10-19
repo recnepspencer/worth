@@ -7,6 +7,7 @@ use worth_query_host::facade::runtime::ExecutionAllocationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationAttemptDenialKind {
+    ValueDecode(worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial),
     ForeignPhase,
     ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     Cancelled,
@@ -131,6 +132,7 @@ const fn application_attempt_kind(
 ) -> BankApplicationAttemptDenialKind {
     use WorthQueryApplicationAttemptDenialKind as Query;
     match kind {
+        Query::ValueDecode(cause) => BankApplicationAttemptDenialKind::ValueDecode(cause),
         Query::ForeignPhase => BankApplicationAttemptDenialKind::ForeignPhase,
         Query::ExecutionRequest(cause) => BankApplicationAttemptDenialKind::ExecutionRequest(cause),
         Query::Cancelled => BankApplicationAttemptDenialKind::Cancelled,

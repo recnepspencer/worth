@@ -55,6 +55,7 @@ pub enum BankProductSelectionDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationProjectionDenialKind {
+    ValueDecode(worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial),
     FieldNotProjected,
     FieldContractMismatch,
     FieldTypeMismatch,
@@ -263,6 +264,7 @@ pub(super) const fn live(kind: QueryLive) -> BankApplicationLiveOpenDenialKind {
 const fn projection(kind: QueryProjection) -> BankApplicationProjectionDenialKind {
     use BankApplicationProjectionDenialKind as Bank;
     match kind {
+        QueryProjection::ValueDecode(cause) => Bank::ValueDecode(cause),
         QueryProjection::FieldNotProjected => Bank::FieldNotProjected,
         QueryProjection::FieldContractMismatch => Bank::FieldContractMismatch,
         QueryProjection::FieldTypeMismatch => Bank::FieldTypeMismatch,

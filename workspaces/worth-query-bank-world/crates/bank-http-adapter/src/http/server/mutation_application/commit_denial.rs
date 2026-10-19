@@ -83,6 +83,10 @@ pub(in crate::http::server) fn commit_denial(
 // ask for correction, while configuration and faults ask for the operator.
 pub(in crate::http::server) fn execution_resource(denial: Resource) -> BankHttpDenial {
     let (kind, next) = match denial {
+        Resource::NativeAllocationRefused {
+            kind,
+            requested_payload_bytes: _,
+        } => return super::super::advancement_denial::physical_allocation(kind),
         Resource::MemoryLimit {
             level: Level::Process,
             ..

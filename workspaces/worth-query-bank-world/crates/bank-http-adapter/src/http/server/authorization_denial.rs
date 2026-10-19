@@ -117,6 +117,7 @@ fn execution_request_denial(
                 Resource::WorkCounterOverflow
                 | Resource::RetainedBytesExhausted
                 | Resource::CapacityOverflow
+                | Resource::NativeAllocationRefused { .. }
                 | Resource::ChargedBytesOverflow
                 | Resource::NestedLeaseMisuse
                 | Resource::NestedAdvancementOpening
