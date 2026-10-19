@@ -23,9 +23,9 @@ fn delegation_child_identity_records_absence_and_taken_values_once() {
                 partition: super::super::super::effect_program::WorthQueryApplicationCreationPartition::Issued,
             };
             let mut calls = 0;
-            let facts = observe_created_values(&[], unique.fields(), &[effect(), effect()], |index, kind, locator, value| {
+            let facts = observe_unique_values(&[], unique.fields(), &[effect(), effect()], |_| None, |index, kind, locator, value| {
                 calls += 1;
-                observe_indexed_entity_selection(runtime,execution,  &snapshot, index, kind, locator, value, CHILD_IDENTITY_CANDIDATE_LIMIT)
+                observe_indexed_entity_selection(runtime,execution,  &snapshot, index, kind, locator, value, UNIQUE_VALUE_CANDIDATE_LIMIT)
             }).unwrap();
             assert_eq!(calls, 1, "one distinct created identity has one lookup");
             assert_eq!(facts.len(), 1);
@@ -49,7 +49,7 @@ fn delegation_child_identity_records_absence_and_taken_values_once() {
                     "one delegation cannot write its unique child identity twice");
             }
 
-            assert!(observe_created_values(&facts, unique.fields(), &[effect()], |_, _, _, _| panic!("already observed identity is not read again")).unwrap().is_empty());
+            assert!(observe_unique_values(&facts, unique.fields(), &[effect()], |_| None, |_, _, _, _| panic!("already observed identity is not read again")).unwrap().is_empty());
         }
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
     });

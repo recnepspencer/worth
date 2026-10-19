@@ -1,7 +1,6 @@
-//! The observed absence a delegation's child create needs. The activation
-//! program writes the child's identity, a unique field, so the read set must
-//! hold that value's indexed selection; the unique law then decides at
-//! lowering. A selection the decision already observed is not repeated.
+//! Intrinsic indexed dependencies earned by admitted unique writes. Observe
+//! normalized values at the retained basis before signing/sealing, not through
+//! supplier decision permission. Lowering still decides collisions.
 
 use std::collections::BTreeSet;
 
@@ -23,7 +22,7 @@ use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFie
 
 /// Two candidates tell a free value from a taken one, and a held value from
 /// a duplicated one.
-const CHILD_IDENTITY_CANDIDATE_LIMIT: usize = 2;
+const UNIQUE_VALUE_CANDIDATE_LIMIT: usize = 2;
 
 type SelectionKey = (
     DerivedIndexId,
@@ -41,18 +40,22 @@ impl<Schema, Operation, Input, Scope>
         WorthQueryProjectedApplicationMutation,
     >
 {
-    /// Appends one indexed selection for each distinct created unique value.
+    /// Appends one indexed selection for each distinct written unique value.
     /// Replacement fact backing is admitted before copying retained facts.
-    pub(super) fn observe_created_unique_values(
+    pub(in crate::domain_computation::primary_graph) fn observe_unique_write_values(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         effects: &[WorthQueryApplicationRealizedEffect],
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let appended = observe_created_values(
+        if self.lease.layout.unique_fields().is_empty() {
+            return Ok(());
+        }
+        let appended = observe_unique_values(
             &self.facts,
             self.lease.layout.unique_fields(),
             effects,
+            |entity| self.lease.layout.entity_kind(entity),
             |index, kind, locator, value| {
                 self.lease.handle().with_runtime(execution, |runtime| {
                     observe_indexed_entity_selection(
@@ -63,11 +66,14 @@ impl<Schema, Operation, Input, Scope>
                         kind,
                         locator,
                         value,
-                        CHILD_IDENTITY_CANDIDATE_LIMIT,
+                        UNIQUE_VALUE_CANDIDATE_LIMIT,
                     )
                 })
             },
         )?;
+        if appended.is_empty() {
+            return Ok(());
+        }
         let operation = self.admission.operation();
         let count = self
             .facts
@@ -92,10 +98,11 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-fn observe_created_values(
+fn observe_unique_values(
     facts: &[WorthQueryApplicationObservedFact],
     unique: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<'_>,
     effects: &[WorthQueryApplicationRealizedEffect],
+    kind_of: impl Fn(&str) -> Option<KindId>,
     mut observe: impl FnMut(
         DerivedIndexId,
         KindId,
@@ -111,46 +118,42 @@ fn observe_created_values(
         .filter_map(selection_key)
         .collect::<BTreeSet<_>>();
     let mut appended = Vec::new();
-    for effect in effects {
-        let WorthQueryApplicationRealizedEffect::CreateEntity { kind, fields, .. } = effect else {
-            continue;
+    for (kind, locator, value) in writes::values(effects, kind_of)? {
+        let index_id = match unique.index(kind, locator) {
+            None => continue,
+            Some(WorthQueryUniqueFieldIndex::Unavailable) => return Err(unavailable(locator)),
+            Some(WorthQueryUniqueFieldIndex::Installed(index_id)) => index_id,
         };
-        for (locator, value) in fields {
-            let index_id = match unique.index(*kind, locator) {
-                None => continue,
-                Some(WorthQueryUniqueFieldIndex::Unavailable) => return Err(unavailable(locator)),
-                Some(WorthQueryUniqueFieldIndex::Installed(index_id)) => index_id,
-            };
-            let key = (
-                index_id,
-                *kind,
-                locator.clone(),
-                prepare_aspect_value_identity_basis(value),
-            );
-            if !observed.insert(key) {
-                continue;
-            }
-            let selection = observe(index_id, *kind, locator.clone(), value.clone());
-            appended.push(selection.map_err(|refusal| match refusal {
-                // More holders than the limit: the value is held.
-                WorthQueryIndexedSelectionRefusal::Overflowed => denial(
-                    WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,
-                    format!("{locator:?}"),
-                ),
-                WorthQueryIndexedSelectionRefusal::Execution(cause) => {
-                    WorthQueryApplicationAttemptDenial::relational_read_stopped(
-                        cause,
-                        "unique child identity",
-                    )
-                }
-                WorthQueryIndexedSelectionRefusal::Unavailable => unavailable(locator),
-            })?);
+        let key = (
+            index_id,
+            kind,
+            locator.clone(),
+            prepare_aspect_value_identity_basis(value),
+        );
+        if !observed.insert(key) {
+            continue;
         }
+        let selection = observe(index_id, kind, locator.clone(), value.clone());
+        appended.push(selection.map_err(|refusal| match refusal {
+            // More holders than the limit: the value is held.
+            WorthQueryIndexedSelectionRefusal::Overflowed => denial(
+                WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,
+                format!("{locator:?}"),
+            ),
+            WorthQueryIndexedSelectionRefusal::Execution(cause) => {
+                WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                    cause,
+                    "unique write value",
+                )
+            }
+            WorthQueryIndexedSelectionRefusal::Unavailable => unavailable(locator),
+        })?);
     }
     Ok(appended)
 }
 #[cfg(test)]
 mod tests;
+mod writes;
 
 fn selection_key(fact: &WorthQueryApplicationObservedFact) -> Option<SelectionKey> {
     match fact {

@@ -171,6 +171,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         identities,
                         decision,
                         installed_ceiling,
+                        &phase_request,
+                        allocation_control.policy(),
                     )
                 })();
                 WorthQueryMutationHandlerExecutionReport::new(

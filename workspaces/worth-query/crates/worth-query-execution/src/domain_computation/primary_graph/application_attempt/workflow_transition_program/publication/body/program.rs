@@ -107,8 +107,16 @@ where
         )
         .map_err(WorkflowApprovalBodyDenial::Attempt)?;
     let completed = ready(
-        build_handler_candidate(read_set, handler.as_ref(), identities, decision, ceiling)
-            .map_err(WorkflowApprovalBodyDenial::Handler)?,
+        build_handler_candidate(
+            read_set,
+            handler.as_ref(),
+            identities,
+            decision,
+            ceiling,
+            &request,
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .map_err(WorkflowApprovalBodyDenial::Handler)?,
     )?;
     let (mut body, ()) = completed.into_parts();
     if body.output_currentness_facts.is_some() {

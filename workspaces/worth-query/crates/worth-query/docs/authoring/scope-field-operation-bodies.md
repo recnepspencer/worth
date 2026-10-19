@@ -353,6 +353,27 @@ fresh governed query.
 An invalid input member returns `DomainDenied(InputMismatch { member })` before
 effects. Work or memory refusal remains an execution denial.
 
+### Unique business values
+
+Declare uniqueness once with the schema builder's `unique_field(entity, field)`;
+the field must be equality-queryable. This is independent of a creation's
+symbolic slot, the logical request key and authorization. For example, declaring
+`DocumentIdentityField` unique prevents two live Documents from holding the same
+business identity, including creates under different admitted tenant scopes.
+Use a different authored identity shape if business uniqueness is tenant-local.
+
+The shared native handler tail observes each distinct assigned unique value
+through its installed equality index at the candidate's retained snapshot.
+Creation initializers, required assignments and present optional replacements
+use that same owner; optional clears consume no value. These intrinsic write
+dependencies are retained before signing/sealing, without requiring a supplier
+lookup or granting access to the other holders. Previously observed predicates
+are reused, and the ordinary native lowering law still refuses taken values or
+two writes of the same unique value within one candidate. A concurrent claimant
+cannot turn an observed absence into permission: publication rechecks the
+retained predicate and uniqueness. No losing creation or membership link commits.
+Unavailable indexes fail closed; uniqueness is never downgraded to a host precheck.
+
 ## Small Example
 
 With the application's normal typed field and operation declarations in scope:
@@ -397,12 +418,16 @@ let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
 setup.operation_body::<SetRetentionBinding>()?;
 ```
 
-The ordinary caller sends its intent and stable logical key through
-`execute_in_program`. The installed body supplies `30`, not a caller-provided
-destination. Normal policy and invariants can still deny that write. A successful
-unit result is not a row snapshot: read authoritative data through a fresh
-governed query. `prepare_in_program` can retain the actual candidate before
-publication; it grants neither an unpublished result nor a fresh retry permit.
+The ordinary caller declares the action's delivery and captures its intent and
+stable logical key with `idempotency_owned`, then `retain_operation` for the exact
+action. Advance with fresh request authority and retain every returned owner;
+see the [owning front door](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
+The installed body supplies `30`, not a caller-provided destination. Normal policy
+and invariants can still deny that write. A successful unit result is not a row
+snapshot: read authoritative data through a fresh governed query. Deliberate
+native preparation uses the explicitly advanced lane's `prepare_in_program`;
+it is not the ordinary mutation/retry API and grants neither an unpublished
+result nor a fresh retry permit.
 
 For a caller supplied scalar, use `assign_input(DocumentRetentionField::reference(),
 "retention_days")` in place of `assign(...)`, and opt the operation's structured

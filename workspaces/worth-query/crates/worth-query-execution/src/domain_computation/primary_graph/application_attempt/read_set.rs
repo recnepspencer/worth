@@ -50,6 +50,7 @@ mod projected_completion;
 mod projected_extension;
 mod relation_observation;
 mod source_facts;
+mod unique_write_dependencies;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::WorthQueryObservedApplicationRelation;
