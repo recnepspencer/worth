@@ -2,6 +2,8 @@
 use super::*;
 use crate::{binary_output::BinaryOutput, limits::WorthQueryPackageArchiveLimits};
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
+#[path = "tests/collection_values.rs"]
+mod collection_values;
 #[path = "tests/creation_links.rs"]
 mod creation_links;
 #[path = "tests/enrollment.rs"]

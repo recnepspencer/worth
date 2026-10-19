@@ -15,7 +15,7 @@ fields can be set from a present scalar input, explicitly cleared, or replaced
 and initialized from one-level Option-valued input. Query installs and executes those
 values; the host does not choose a handler that independently restates them.
 An operation may declare presence requirements or Boolean Foundation expressions
-over typed scope fields and related-item counts. The same installed requirements
+over typed scope fields, related-item counts and outgoing child-field lists. The same installed requirements
 drive admission and authorized read-only guidance.
 Fixed typed output roles may preserve the admitted scope, preserve its single
 selected outgoing subject, or identify the body's created row through Query's
@@ -667,6 +667,59 @@ review flag makes this authored rule NotApplicable. When it is true, the same
 body supplies guidance and refuses the write until one distinct validator exists.
 The host does not recheck the count or choose a default rule result.
 
+### Require values on every related item
+
+Use `outgoing_field_values(name, relation, field)` on the same operand builder
+when a count alone is insufficient. The field must belong to the relation's
+typed target and both must declare `OperationReads<Operation>`. Fresh schema
+admission also checks the exact field binding, scalar width, optionality,
+unit-free contract and complete relation/entity/field read closure.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The runnable supplier uses this same call shape.
+let operands = Submit::reference().requirement_operands()
+    .outgoing_field_values("notes", Items::reference(), ItemNote::reference())?;
+let requirement = ApplicationOperationBodyRequirement::admit(
+    "complete-item-notes", operands, None,
+    parser.parse("length(notes) >= 2 && notes.all(n, is_some(n) && length(unwrap(n)) > 0)")?,
+    "notes",
+)?;
+// Attach to the ordinary body with .requirement(requirement), then install it.
+```
+
+Here `ItemNote` is optional text. Required fields produce plain list elements;
+optional fields produce Option elements, including `None`. Membership is a
+distinct-live-child set: duplicate edges do not add elements, dangling endpoints
+are unavailable, and missing required or malformed values are typed denials,
+not omitted elements or fabricated false. Empty membership produces an empty
+list. Foundation's `all` over that list does not establish a collection minimum;
+author the length requirement explicitly when the business requires one.
+
+Query reads adjacency, child liveness and child fields on the same retained
+snapshot. The existing tracked observations drive both guidance and actual
+publication currentness. A later member or consumed-field change can make a
+prepared attempt stale. A ready finding is descriptive, not permission to
+bypass fresh admission or automatically retry a stale mutation.
+These are admission dependencies, not automatically certified signature subjects.
+Only the signed body's declared captures define its permanent subject footprint;
+a field-list requirement does not add collection captures to an attestation.
+
+The runnable deviation supplier checks its real tenant-to-draft collection
+through two immutable installed actions with minimums one and two. Its common
+entry/driver stays unchanged. One ready early-signed draft does not hide another
+incomplete member; completing that member permits the check without requiring
+its signature. A preserved scope output describes the actual checked tenant,
+not an ongoing collection-validity grant.
+
+Enumeration follows native identity order, not user/business ordering. This
+single outgoing hop has no filters, nested paths, row records, or correlated
+multi-field predicate contract. Findings target the collection and child field,
+not individual failing rows. Do not zip independent field lists into a custom
+host rule engine. Resource limits refuse rather than truncate the collection.
+Body record v24 carries this new source; v1–v23 keep their existing meaning and
+refuse its source tag.
+
 ## How It Relates To Other Features
 
 Program manifests and semantic descriptions include body values. Portable schema
@@ -736,8 +789,8 @@ This form supports literal equality expectations, literal assignments and flat
 input member assignments on one admitted scope's required scalar fields, optional
 Set-from-flat-input, explicit Clear, one-level Option-valued replacement and
 initialization, operation-specific presence requirements,
-and Foundation Boolean requirements over scope scalar/presence and distinct
-incoming/outgoing related-item count operands, plus
+and Foundation Boolean requirements over scope scalar/presence, distinct
+incoming/outgoing related-item count operands and outgoing child-field lists, plus
 one in-context created entity with literal, flat-input, tracked scope-preimage or
 single outgoing related-subject required/optional preimage
 initializers or an exact unitless admitted-principal identity initializer,

@@ -26,6 +26,30 @@ pub(super) fn write(
         write_sequence(output, requirement.operands(), |output, operand| {
             output.text(operand.name())?;
             match operand.source() {
+                Source::RelatedFieldValues {
+                    relation,
+                    from,
+                    to,
+                    field,
+                    binding,
+                    scalar_family,
+                    presence,
+                } => {
+                    output.u16(6)?;
+                    for text in [
+                        relation.as_str(),
+                        from.as_str(),
+                        to.as_str(),
+                        field.entity(),
+                        field.aspect(),
+                        field.field(),
+                        binding.as_str(),
+                    ] {
+                        output.text(text)?;
+                    }
+                    super::super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
+                    output.u8(u8::from(*presence == ApplicationFieldPresence::Optional))
+                }
                 Source::SignedEvidence(source) => {
                     output.u16(4)?;
                     signed_evidence::write(output, source)
@@ -116,6 +140,25 @@ pub(super) fn decode(
         let operands = decode_sequence(input, budget, 12, |input, _| {
             let name = input.text()?.to_owned();
             let source = match input.u16()? {
+                6 if version >= 24 => Source::RelatedFieldValues {
+                    relation: input.text()?.to_owned(),
+                    from: input.text()?.to_owned(),
+                    to: input.text()?.to_owned(),
+                    field: ApplicationFieldBindingLocus::new(
+                        input.text()?,
+                        input.text()?,
+                        input.text()?,
+                    ),
+                    binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                        input.text()?.to_owned(),
+                    ),
+                    scalar_family: super::super::foundational_aspect::decode_scalar_type(input)?,
+                    presence: if boolean(input)? {
+                        ApplicationFieldPresence::Optional
+                    } else {
+                        ApplicationFieldPresence::Required
+                    },
+                },
                 5 if version >= 18 => Source::RelatedSignedEvidence {
                     relation: input.text()?.to_owned(),
                     from: input.text()?.to_owned(),

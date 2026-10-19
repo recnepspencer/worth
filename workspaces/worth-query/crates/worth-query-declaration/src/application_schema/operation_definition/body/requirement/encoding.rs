@@ -18,6 +18,33 @@ impl ApplicationOperationBodyRequirementProgram {
         for operand in self.operands() {
             part(operand.name());
             match operand.source() {
+                Source::RelatedFieldValues {
+                    relation,
+                    from,
+                    to,
+                    field,
+                    binding,
+                    scalar_family,
+                    presence,
+                } => {
+                    part("distinct-live-outgoing-field-values-v1");
+                    for text in [
+                        relation.as_str(),
+                        from.as_str(),
+                        to.as_str(),
+                        field.entity(),
+                        field.aspect(),
+                        field.field(),
+                        binding.as_str(),
+                        scalar_family.canonical_name(),
+                    ] {
+                        part(text);
+                    }
+                    part(match presence {
+                        crate::application_schema::ApplicationFieldPresence::Required => "required",
+                        crate::application_schema::ApplicationFieldPresence::Optional => "optional",
+                    });
+                }
                 Source::SignedEvidence(source) => {
                     part("current-signed-evidence");
                     part(&source.canonical_record());

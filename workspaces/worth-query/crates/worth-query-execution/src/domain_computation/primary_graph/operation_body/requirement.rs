@@ -48,6 +48,12 @@ pub enum WorthQueryOperationBodyRequirementTarget {
         to: String,
         direction: ApplicationOperationBodyRequirementDirection,
     },
+    RelatedFieldValues {
+        relation: String,
+        from: String,
+        to: String,
+        field: ApplicationFieldBindingLocus,
+    },
 }
 
 /// A descriptive finding for one installed body field; it grants no mutation authority.
@@ -92,6 +98,18 @@ impl WorthQueryOperationBodyRequirementFinding {
         status: WorthQueryOperationBodyRequirementStatus,
     ) -> Self {
         let target = match requirement.target() {
+            ApplicationOperationBodyRequirementSource::RelatedFieldValues {
+                relation,
+                from,
+                to,
+                field,
+                ..
+            } => WorthQueryOperationBodyRequirementTarget::RelatedFieldValues {
+                relation: relation.clone(),
+                from: from.clone(),
+                to: to.clone(),
+                field: field.clone(),
+            },
             ApplicationOperationBodyRequirementSource::SignedEvidence(source) => {
                 WorthQueryOperationBodyRequirementTarget::SignedEvidence(source.clone())
             }

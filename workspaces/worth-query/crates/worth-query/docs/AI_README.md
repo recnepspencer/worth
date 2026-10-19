@@ -462,7 +462,7 @@ it to the completed operation definition, bind the same completed schema through
 program authoring's `with_schema`, and install with `setup.operation_body::<Binding>()`.
 Its literals, flat canonical-input assignments, optional Set/Clear and one-level
 Option-valued replacement/initialization, tracked
-preimage initializers and field/count expression requirements enter canonical
+preimage initializers and field/count/child-field-list expression requirements enter canonical
 schema/program meaning and drive native tracked execution. A replacement handler
 is denied. A creation-only body declares `in_scope(Entity::reference())`; it does
 not need a dummy scope write or bootstrapped business entity. Fixed output uses

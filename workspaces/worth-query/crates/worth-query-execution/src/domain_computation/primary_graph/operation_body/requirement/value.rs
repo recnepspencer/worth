@@ -28,6 +28,11 @@ pub(in crate::domain_computation::primary_graph) fn field_value(
             presence_only,
             ..
         } => (*scalar_family, *presence, *presence_only),
+        ApplicationOperationBodyRequirementSource::RelatedFieldValues {
+            scalar_family,
+            presence,
+            ..
+        } => (*scalar_family, *presence, false),
         ApplicationOperationBodyRequirementSource::PrincipalIdentity { scalar_family, .. } => {
             (*scalar_family, ApplicationFieldPresence::Required, false)
         }

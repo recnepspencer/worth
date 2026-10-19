@@ -188,6 +188,27 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                             work.observe_text(binding.as_str());
                             work.observe_fixed(4);
                         }
+                        Source::RelatedFieldValues {
+                            relation,
+                            from,
+                            to,
+                            field,
+                            binding,
+                            ..
+                        } => {
+                            for text in [
+                                relation.as_str(),
+                                from.as_str(),
+                                to.as_str(),
+                                field.entity(),
+                                field.aspect(),
+                                field.field(),
+                                binding.as_str(),
+                            ] {
+                                work.observe_text(text);
+                            }
+                            work.observe_fixed(2);
+                        }
                         Source::RelatedItemCount {
                             relation, from, to, ..
                         } => {

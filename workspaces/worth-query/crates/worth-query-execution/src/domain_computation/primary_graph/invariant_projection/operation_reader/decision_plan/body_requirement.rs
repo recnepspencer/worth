@@ -14,6 +14,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
     ApplicationOperationBodyRequirementSource as Source,
 };
+mod collection_values;
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
@@ -26,6 +27,9 @@ impl<Schema: ApplicationSchema, Operation>
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<PreparedRequirementOperand, HandlerExecutionDenial> {
         match source {
+            Source::RelatedFieldValues { .. } => {
+                self.collection_field_values(identity, source, execution, context)
+            }
             Source::SignedEvidence(source) => {
                 self.signed_evidence_operand(identity, source, execution, context)
             }

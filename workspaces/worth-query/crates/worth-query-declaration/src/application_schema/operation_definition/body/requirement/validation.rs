@@ -37,6 +37,11 @@ pub(in crate::application_schema::operation_definition::body) fn validate_requir
                 Source::RelatedItemCount { relation: name, from: source, to: target, .. } => members.iter().any(|member| {
                     matches!(member, Member::Relation { relation, from, to, .. } if relation == name && from == source && to == target)
                 }),
+                Source::RelatedFieldValues { relation: name, from: source, to: target, field: locus, binding, scalar_family: family, presence: posture } => {
+                    locus.entity() == target && members.iter().any(|member| matches!(member, Member::Relation { relation, from, to, .. } if relation == name && from == source && to == target))
+                    && members.iter().any(|member| matches!(member, Member::Field { entity, aspect, field, scalar_family, value_type, presence, unit, .. }
+                        if entity == locus.entity() && aspect == locus.aspect() && field == locus.field() && value_type == binding.as_str() && scalar_family == family && presence == posture && unit.is_none()))
+                },
                 Source::PrincipalIdentity { scope, mutation_binding, principal_binding, field, binding, scalar_family } => {
                     super::super::principal_validation::PrincipalSourceContract { scope, mutation_binding, principal_binding, field, binding, scalar_family: *scalar_family }.is_declared_for(operation, members)
                 },

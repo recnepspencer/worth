@@ -198,7 +198,10 @@ impl QueryMemoryReservation {
     }
 
     /// Holds `bytes` more.
-    pub(super) fn grow(&mut self, bytes: u64) -> Result<(), Resource> {
+    pub(in crate::domain_computation::primary_graph) fn grow(
+        &mut self,
+        bytes: u64,
+    ) -> Result<(), Resource> {
         let total = self
             .bytes
             .checked_add(bytes)
