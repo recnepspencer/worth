@@ -14,6 +14,7 @@ use worth_query_declaration::facade::{
     },
 };
 mod graph;
+mod writes;
 
 pub(super) enum CapturedSubject {
     Authentication,
@@ -78,7 +79,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<CapturedSubject, Denial> {
-    // O((captures + retained facts) log captures), with borrowed native keys.
+    // O((captures + retained facts) log captures + captures * candidate effects), with borrowed keys.
     // The admitted correspondence workspace covers this transient lookup; no
     // other document, persistent reverse index or historical record is scanned.
     let (creation, encoding) = creation::<Schema, Binding>(candidate)?;
@@ -124,6 +125,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
             .layout
             .field_locator(source.entity(), source.aspect(), source.field())
             .ok_or(Denial::CandidateMismatch)?;
+        writes::require_unchanged::<Schema, Binding>(candidate, subject, locator, context)?;
         let revision = revisions
             .get(&(locator.aspect().aspect_key(), locator.field_path()))
             .copied()

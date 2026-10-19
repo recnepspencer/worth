@@ -18,6 +18,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         let builder = super::retiring_actions::declare(super::selection_schema::declare(builder));
         let builder = super::reuse_actions::declare(builder);
         let builder = super::child_actions::declare(builder);
+        let builder = super::path_signing::declare(builder);
         builder
             .entity(Mapping::reference())
             .entity(Principal::reference())
@@ -154,6 +155,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.operation_body::<super::retiring_actions::RetireBinding>()?;
         setup.operation_body::<super::reuse_actions::Binding>()?;
         setup.operation_body::<super::reuse_actions::NoteBinding>()?;
+        setup.operation_body::<super::path_signing::GraphBinding>()?;
+        setup.operation_body::<super::path_signing::GraphAliasBinding>()?;
+        setup.operation_body::<super::path_signing::ScopeAliasBinding>()?;
         setup.operation_body::<super::child_actions::Binding>()
     }
 }
@@ -192,6 +196,12 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .native_action::<super::reuse_actions::NoteBinding>()
             .finish_action()
             .native_action::<super::child_actions::Binding>()
+            .finish_action()
+            .native_action::<super::path_signing::GraphBinding>()
+            .finish_action()
+            .native_action::<super::path_signing::GraphAliasBinding>()
+            .finish_action()
+            .native_action::<super::path_signing::ScopeAliasBinding>()
             .finish_action()
             .finish()]
     }

@@ -135,6 +135,11 @@ Scope-only v2 captures remain available. V3 can combine classified scope capture
 with path captures in one native signed creation. `AuditContext` is authenticated
 but does not control settled effectiveness. Native computed scope bookkeeping
 can accompany either profile; computed signed-artifact initializers remain refused.
+Computed path writes can also accompany signing: a captured parent revision may
+be AuditContext while its next value publishes in the same native candidate.
+The native sealer rejects any same-candidate write to an actual certified Subject
+locus, including a distinct path that aliases it. No lifecycle declaration is
+needed for that preimage-integrity check. See [computed graph-target writes](./computed-path-writes.md).
 
 Current-evidence requirements use the existing typed producer reference. The
 related-subject requirement selector is distinct from the capture path: the

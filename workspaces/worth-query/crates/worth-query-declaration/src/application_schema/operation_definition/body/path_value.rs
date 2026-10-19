@@ -45,9 +45,6 @@ impl ApplicationOperationBodyPathValueAssignment {
                 .values()
                 .iter()
                 .any(|value| value.identity() == self.value && value.binding() == &self.binding)
-            && !body
-                .creation()
-                .is_some_and(|creation| creation.signing().is_some())
     }
 }
 impl ApplicationOperationBodyProgram {

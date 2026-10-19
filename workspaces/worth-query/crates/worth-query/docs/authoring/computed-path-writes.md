@@ -102,6 +102,38 @@ pass its actual row-affine source to `expect_source`. The parent assignment and
 audit consume one checked result. Overflow denies before candidate publication.
 The host does not parse the result DTO to calculate a new revision.
 
+A signed creation can share that same body. Capture the observed parent revision
+as `AuditContext`, not as a certified Subject that the candidate itself rewrites:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. Complete the declared reads, writes and signing binding.
+let op = SignRow::reference();
+// Declare `next` for this operation and SignBinding, using the query-context pattern above.
+let body = op.body()
+    .assign_value_at_path(parent_path(), ParentRevision::reference(), &next)?
+    .create_in_scope(Verification::reference(), "verification")?
+    .capture_from_scope(
+        RowValue::reference(), SignedValue::reference(),
+        ApplicationOperationBodyCaptureRole::Subject,
+    )?
+    .capture_from_path(
+        parent_path(), ParentRevision::reference(), SignedRevision::reference(),
+        ApplicationOperationBodyCaptureRole::AuditContext,
+    )?
+    .signed_by::<SignBinding, _, _, _, _, _, _, _>(
+        SignedActor::reference(), GraphProvenance::reference(), "verification",
+    )?
+    .finish()?;
+```
+
+Use the v3 graph-subject provenance binding for the path capture. The signed
+snapshot contains the revision preimage (for example 1), while the same commit
+writes the computed next revision (2). The actual native authentication intent
+covers the whole candidate and retained observation, not just the snapshot.
+Prepare, authenticate, sign and commit through the existing signing owner; an
+unpublished signature or stale candidate publishes no bookkeeping half.
+
 ## How It Relates To Other Features
 
 Use [path-input guards](./path-input-guards.md) to compare a parent's Company with
@@ -109,8 +141,14 @@ captured provider input; that comparison does not write the parent. Use ordinary
 `assign_value` for scope writes and `initialize_value` for created fields.
 Existing signature-impact installation includes path-written fields; native
 dependency/lifecycle rules still determine affected evidence and their bounds.
-This profile refuses a signed creation in the same body rather than promising
-unproven subject/postimage capture semantics.
+Path writes can accompany signed creation. Both certified profiles reject writes
+or deletion touching a captured Subject's actual entity/field, including when
+different paths alias it. Obvious same-path conflicts fail declaration/readmission;
+dynamic aliases fail native signing preparation with `CandidateMismatch`.
+AuditContext is authenticated preimage data, not a continued-effectiveness
+dependency. This rule applies even without a supersession lifecycle declaration.
+Computed initializers inside the signed artifact remain unsupported; capture
+its classified values from native observations instead.
 
 ## Inspection And Debugging
 
@@ -131,7 +169,8 @@ automatically. Read descriptions and receipt identities grant no mutation author
 
 Guard-free identity/forward/reverse paths only; every hop is a single selection.
 Required unitless UInt64 computed writes only. No optional replacement, dynamic
-collection mutation, general cross-entity effect language or signed creation.
+collection mutation or general cross-entity effect language. Signed snapshots
+capture observed preimages, not computed postimages or caller-built authority.
 All normal candidate, expression, decision and signature-impact bounds remain.
 This proves native atomic graph writes, not distributed provider transactions,
 Store restart durability or a complete application endpoint.

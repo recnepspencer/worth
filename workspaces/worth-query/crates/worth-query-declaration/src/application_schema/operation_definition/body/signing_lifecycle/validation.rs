@@ -41,13 +41,13 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
     let Some(creation) = body.creation() else {
         return true;
     };
-    if !validate_creation(creation) {
+    if !validate_creation(creation) || !validate_subject_writes(body) {
         return false;
     }
     let Some(spec) = creation.signing_lifecycle() else {
         return true;
     };
-    if body.scope_entity() != Some(spec.source_entity.as_str()) || !validate_subject_writes(body) {
+    if body.scope_entity() != Some(spec.source_entity.as_str()) {
         return false;
     }
     let mut record_fields = 0;
@@ -96,26 +96,35 @@ pub(in crate::application_schema::operation_definition::body) fn validate_subjec
     body: &Body,
 ) -> bool {
     body.creation().is_none_or(|creation| {
-        creation.signing_lifecycle().is_none()
+        creation.signing().is_none()
             || creation.fields().iter().all(|field| {
                 let source = match field {
                     Field::CapturedScopeField {
                         source,
                         role: super::super::ApplicationOperationBodyCaptureRole::Subject,
                         ..
-                    } => Some(source),
+                    } => Some((source, None)),
                     Field::CapturedPathField {
                         source,
                         role: super::super::ApplicationOperationBodyCaptureRole::Subject,
                         ..
-                    } if source.path.steps().is_empty() => Some(&source.field),
+                    } => Some((&source.field, Some(&source.path))),
                     _ => None,
                 };
-                source.is_none_or(|source| {
-                    !body
-                        .scope_fields()
-                        .iter()
-                        .any(|step| step.write_target().is_some() && step.field() == source)
+                source.is_none_or(|(source, path)| {
+                    let scope_write = path.is_none_or(|path| path.steps().is_empty())
+                        && body
+                            .scope_fields()
+                            .iter()
+                            .any(|step| step.write_target().is_some() && step.field() == source);
+                    let path_write = body.path_value_assignments().iter().any(|step| {
+                        &step.target.field == source
+                            && path.map_or_else(
+                                || step.target.path.steps().is_empty(),
+                                |path| &step.target.path == path,
+                            )
+                    });
+                    !scope_write && !path_write
                 })
             })
     })

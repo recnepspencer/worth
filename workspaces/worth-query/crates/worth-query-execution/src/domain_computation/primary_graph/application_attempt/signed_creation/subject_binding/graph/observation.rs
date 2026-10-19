@@ -109,24 +109,9 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
         (None, None) => {}
         _ => return Err(Denial::CandidateMismatch),
     }
-    // Paths may return to the same native identity. Reject an in-candidate subject
-    // write here even when static entity kinds alone could not prove aliasing.
-    for effect in &candidate.effects {
-        identity::admit_assembly(context, 0)?;
-        let touched = match effect {
-            Effect::UpdateEntity {
-                entity_id, fields, ..
-            } => *entity_id == source && fields.keys().any(|f| same_field(f, locator)),
-            Effect::PatchOptionalEntityFields {
-                entity_id, fields, ..
-            } => *entity_id == source && fields.keys().any(|f| same_field(f, locator)),
-            Effect::DeleteEntity { entity_id } => *entity_id == source,
-            _ => false,
-        };
-        if touched {
-            return Err(Denial::CandidateMismatch);
-        }
-    }
+    super::super::writes::require_unchanged::<Schema, Binding>(
+        candidate, source, locator, context,
+    )?;
     Ok(observed)
 }
 fn same_field(

@@ -124,11 +124,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         if body.path_value_assignments().iter().any(|step| {
             !step.target.has_supported_shape()
                 || Some(step.target.path.start_entity()) != body.scope_entity()
-        }) || (!body.path_value_assignments().is_empty()
-            && body
-                .creation()
-                .is_some_and(|creation| creation.signing().is_some()))
-        {
+        }) {
             return Err(denied());
         }
         require_candidate_capacity(body, &Binding::CANDIDATES, Binding::IDENTITY)?;

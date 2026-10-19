@@ -24,6 +24,8 @@ mod evidence;
     reason = "Reuse real authentication ports; reviewer variants are unrelated to this boundary."
 )]
 mod operator_identity;
+#[path = "native_graph_input_guards/path_signing.rs"]
+mod path_signing;
 #[path = "native_graph_input_guards/path_value.rs"]
 mod path_value;
 #[path = "native_graph_input_guards/path_value_admission.rs"]
