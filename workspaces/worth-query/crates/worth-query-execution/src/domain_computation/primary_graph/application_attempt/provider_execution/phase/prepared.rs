@@ -115,6 +115,7 @@ impl<Schema, Operation, Input, Scope>
 
 struct WorthQueryProviderAttemptPreparation {
     signing_lifecycle_memory: Option<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>,
+    body_input_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyInputEffectSelection>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
     facts: ExecutionArray<WorthQueryApplicationObservedFact>,

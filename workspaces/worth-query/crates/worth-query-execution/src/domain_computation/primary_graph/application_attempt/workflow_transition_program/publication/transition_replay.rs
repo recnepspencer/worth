@@ -323,11 +323,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             WorthQueryApplicationIdempotencyResolution::Unseen => {
                 // Local effects settle this original transition atomically. A fresh
                 // confirmation key observes that settlement without recording a command.
-                let local = runtime.installed_schema().installed_operation(
-                    worth_query_declaration::facade::application_schema::ApplicationOperationRef::<
-                        Schema, Binding::Operation, Binding::Input,
-                    >::from_declaration(),
-                ).is_ok_and(|installed| !installed.contracts().external_effect().is_declared());
+                let local = receipt.dispatch_outbox().is_none();
                 let original_guarded_key = receipt
                     .authority_binding()
                     .idempotency_binding()

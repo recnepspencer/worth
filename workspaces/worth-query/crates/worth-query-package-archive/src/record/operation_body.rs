@@ -8,6 +8,7 @@ mod classified_capture;
 mod creation_fields;
 mod creation_links;
 mod enrollment;
+mod input_emission;
 mod outputs;
 mod principal;
 mod query_context;
@@ -40,7 +41,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.requires_query_context() { 25 }
+    let version = if body.input_emission().is_some() { 26 }
+    else if body.requires_query_context() { 25 }
     else if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
         matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::RelatedFieldValues { .. })) { 24 }
     else if body.succession().is_some_and(|s| s.output_match().is_some()) { 23 }
@@ -218,6 +220,9 @@ pub(super) fn write(
     if version >= 21 {
         succession::write(output, body.succession())?;
     }
+    if let Some(emission) = body.input_emission() {
+        input_emission::write(output, emission)?;
+    }
     Ok(())
 }
 
@@ -226,7 +231,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=25) {
+    if !matches!(version, 1..=26) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -365,6 +370,11 @@ pub(super) fn decode(
     } else {
         None
     };
+    let input_emission = if version >= 26 {
+        Some(input_emission::decode(input, budget, version)?)
+    } else {
+        None
+    };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
             scope,
@@ -373,7 +383,8 @@ pub(super) fn decode(
             requirements,
         )
         .with_untrusted_outputs(outputs)
-        .with_untrusted_succession(succession))
+        .with_untrusted_succession(succession)
+        .with_untrusted_input_emission(input_emission))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             steps,

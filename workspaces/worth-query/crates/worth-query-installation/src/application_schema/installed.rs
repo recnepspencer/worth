@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+mod codec_correspondence;
 mod inbound;
 
 use super::compilation::CompiledApplicationSchema;
@@ -189,12 +190,6 @@ where
 
     pub fn native_contracts(&self) -> &WorthQueryInstalledApplicationSchemaContractCatalog {
         self.native_contract_catalog.as_ref()
-    }
-
-    /// Returns the immutable entry-local scalar bindings validated for this
-    /// exact installed schema generation.
-    pub fn value_bindings(&self) -> &WorthQueryInstalledApplicationValueBindingCatalog {
-        &self.value_binding_catalog
     }
 
     /// Returns the exact mutation-binding inventory retained at installation.

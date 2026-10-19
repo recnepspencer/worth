@@ -140,6 +140,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
+    pub(super) input_emission: Option<super::ApplicationOperationBodyInputEmission>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -235,6 +236,7 @@ impl ApplicationOperationBodyProgram {
             requirements: Vec::new(),
             outputs: Vec::new(),
             succession: None,
+            input_emission: None,
         }
     }
     pub fn from_untrusted_with_creation(
@@ -248,6 +250,7 @@ impl ApplicationOperationBodyProgram {
             requirements: Vec::new(),
             outputs: Vec::new(),
             succession: None,
+            input_emission: None,
         }
     }
     pub fn from_untrusted_with_requirements(
@@ -262,6 +265,7 @@ impl ApplicationOperationBodyProgram {
             requirements,
             outputs: Vec::new(),
             succession: None,
+            input_emission: None,
         }
     }
     /// Authority-free scope-bound description. Fresh readmission checks the scope
@@ -282,6 +286,7 @@ impl ApplicationOperationBodyProgram {
             requirements,
             outputs: Vec::new(),
             succession: None,
+            input_emission: None,
         }
     }
     pub fn explicit_scope_entity(&self) -> Option<&str> {
@@ -319,10 +324,30 @@ impl ApplicationOperationBodyProgram {
     pub fn requirements(&self) -> &[super::ApplicationOperationBodyRequirementProgram] {
         &self.requirements
     }
+    pub fn input_emission(&self) -> Option<&super::ApplicationOperationBodyInputEmission> {
+        self.input_emission.as_ref()
+    }
+    pub fn with_untrusted_input_emission(
+        mut self,
+        emission: Option<super::ApplicationOperationBodyInputEmission>,
+    ) -> Self {
+        self.input_emission = emission;
+        self
+    }
+    /// All source consumers, including optional effect guards. Only `requirements`
+    /// are mandatory operation findings; an emission guard may lawfully be unmet.
+    pub fn observation_requirements(
+        &self,
+    ) -> impl Iterator<Item = &super::ApplicationOperationBodyRequirementProgram> {
+        self.requirements.iter().chain(
+            self.input_emission
+                .iter()
+                .filter_map(|emission| emission.condition.as_ref()),
+        )
+    }
     /// Whether fresh requirement evaluation consumes the bound native query source.
     pub fn requires_query_context(&self) -> bool {
-        self.requirements
-            .iter()
+        self.observation_requirements()
             .flat_map(|requirement| requirement.operands())
             .any(|operand| {
                 matches!(

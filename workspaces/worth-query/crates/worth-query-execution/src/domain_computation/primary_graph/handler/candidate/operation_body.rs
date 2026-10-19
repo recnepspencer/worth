@@ -10,6 +10,13 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     CandidateWriter<'_, Schema, Binding>
 {
+    pub(in crate::domain_computation::primary_graph) fn body_input_emission(
+        &mut self,
+        selection: crate::domain_computation::primary_graph::operation_body::emission::BodyInputEffectSelection,
+        input: &Binding::Input,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.body_input_emission(selection, input)
+    }
     pub(in crate::domain_computation::primary_graph) fn body_creation_unlink<Entity>(
         &mut self,
         scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,

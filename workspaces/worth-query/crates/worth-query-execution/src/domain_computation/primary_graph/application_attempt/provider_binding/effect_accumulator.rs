@@ -29,6 +29,7 @@ pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout> {
 }
 
 pub(super) struct WorthQueryRegisteredProviderEffects {
+    body_input_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyInputEffectSelection>,
     expected_steps: WorthQueryExpectedEffectSteps,
     batch: WorkerIntentBatch,
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
@@ -97,6 +98,7 @@ impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
             return Err(retained_bytes_denial());
         }
         Ok(WorthQueryRegisteredProviderEffects {
+            body_input_emission: None,
             expected_steps,
             batch,
             emissions,
@@ -108,6 +110,25 @@ impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
 }
 
 impl WorthQueryRegisteredProviderEffects {
+    pub(super) fn bind_body_input_emission(
+        &mut self,
+        selection: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyInputEffectSelection>,
+    ) {
+        self.body_input_emission = selection;
+    }
+    /// Mandatory contracts remain mandatory unless the native body earned an
+    /// exact matching suppressed disposition at this decision observation.
+    pub(super) fn selected_external_contract<'a>(
+        &self,
+        original: &'a worth_query_installation::facade::InstalledExternalEffectContract,
+    ) -> Result<
+        Option<&'a worth_query_installation::facade::InstalledExternalEffectContract>,
+        &'static str,
+    > {
+        crate::domain_computation::primary_graph::operation_body::emission::BodyInputEffectSelection::selected_external_contract(
+            self.body_input_emission.as_ref(), original,
+        )
+    }
     pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
         &self,
     ) -> impl ExactSizeIterator<
@@ -194,6 +215,7 @@ impl WorthQueryRegisteredProviderEffects {
             provider.bind_application_dispatch_outbox(batch, dispatch_basis, mutation_partition)?;
         Ok((
             Self {
+                body_input_emission: self.body_input_emission,
                 expected_steps: self.expected_steps,
                 batch,
                 emissions: self.emissions,

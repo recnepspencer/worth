@@ -57,10 +57,11 @@ impl WorthQueryProviderAttemptPreparation {
         let Some(binding) = self.workflow_settlement.take() else {
             return Ok((self, None));
         };
-        let external = admission
-            .allowed_graph_contract()
-            .external_effect()
-            .is_declared();
+        let external = crate::domain_computation::primary_graph::operation_body::emission::BodyInputEffectSelection::selected_external_contract(
+            self.body_input_emission.as_ref(), admission.allowed_graph_contract().external_effect(),
+        ).map_err(|detail| WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, detail,
+        ))?.is_some_and(|contract| contract.is_declared());
         let receipt_identity = receipt_identity_from_outcome(
             admission.runtime_authority().as_u64(),
             outcome_identity.get(),

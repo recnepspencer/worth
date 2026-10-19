@@ -7,8 +7,7 @@ pub(in crate::record) fn require_nesting_depth(
     maximum_depth: u32,
 ) -> Result<(), Denial> {
     for operand in body
-        .requirements()
-        .iter()
+        .observation_requirements()
         .flat_map(|requirement| requirement.operands())
     {
         if let Source::QueryContext { query, .. } = operand.source() {

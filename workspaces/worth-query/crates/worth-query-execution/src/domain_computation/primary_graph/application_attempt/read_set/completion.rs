@@ -146,6 +146,7 @@ impl<Schema, Operation, Input, Scope, Phase>
             workflow_birth_binding: None,
             workflow_succession_binding: None,
             mutation_handler_binding: None,
+            body_input_emission: None,
             signed_creation: None,
             workflow_deadline: None,
             new_commit_refusal: None,

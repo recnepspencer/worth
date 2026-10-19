@@ -17,6 +17,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 definition.operation,
                 definition.input_type.clone(),
             );
+        if let Some(recipe) = definition.input_emission_recipe {
+            self.member_provenance.register_body_input_effect(recipe);
+        }
         self.push_member_in_place(ApplicationSchemaMember::Operation {
             operation: operation.clone(),
             input_type: definition.input_type,
@@ -43,8 +46,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .flat_map(|output| output.target.decision_reads()),
             );
             reads.extend(
-                body.requirements()
-                    .iter()
+                body.observation_requirements()
                     .flat_map(|requirement| requirement.operands())
                     .flat_map(|operand| operand.source().decision_reads()),
             );
@@ -111,6 +113,14 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                         target: field.write_target(),
                     });
                 }
+            }
+            if let Some(emission) = body.input_emission() {
+                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                    operation: operation.clone(),
+                    target: super::super::ApplicationOperationProgramTarget::Emit {
+                        effect: emission.effect.clone(),
+                    },
+                });
             }
             self.push_member_in_place(ApplicationSchemaMember::OperationBody {
                 operation: operation.clone(),

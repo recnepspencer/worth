@@ -10,6 +10,8 @@ mod creation_links;
 mod enrollment;
 #[path = "tests/genesis.rs"]
 mod genesis;
+#[path = "tests/input_emission.rs"]
+mod input_emission;
 #[path = "tests/optional_input.rs"]
 mod optional_input;
 #[path = "tests/outputs.rs"]

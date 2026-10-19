@@ -31,6 +31,7 @@ pub(crate) fn validate_operation_bodies(
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
         }
         super::requirement::validate_requirements(operation, body, members)?;
+        super::emission::validate_emission(operation, body, members)?;
         super::output_validation::validate_outputs(operation, body, members)?;
         if !super::enrollment::valid(body) {
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);

@@ -1,4 +1,5 @@
 //! Execution-only body read; no raw-field API enters the application facade.
+mod emission;
 mod selection;
 mod source;
 use super::super::super::operation_body::{BodyFieldExpectation, PreparedBodySource};

@@ -42,6 +42,7 @@ where
         output_currentness_facts,
     } = program;
     let workflow_settlement = read_set.workflow_authority_binding;
+    let body_input_emission = read_set.body_input_emission;
     let workflow_deadline = read_set.workflow_deadline;
     let new_commit_refusal = read_set.new_commit_refusal;
     let signed_creation = read_set.signed_creation;
@@ -151,6 +152,7 @@ where
             lease,
             provider: WorthQueryProviderAttemptPreparation {
                 signing_lifecycle_memory: lifecycle.memory,
+                body_input_emission,
                 required_output_demand,
                 installed_read_scopes: read_set.installed_read_scopes,
                 facts: lifecycle.facts,

@@ -15,8 +15,7 @@ pub(super) fn validate<Schema: ApplicationSchema>(
             && operation == descriptor.operation_name()
         {
             for operand in body
-                .requirements()
-                .iter()
+                .observation_requirements()
                 .flat_map(|requirement| requirement.operands())
             {
                 if let Source::QueryContext {

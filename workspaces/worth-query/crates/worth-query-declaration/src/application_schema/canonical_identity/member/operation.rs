@@ -3,6 +3,7 @@ use crate::application_schema::canonical_decision_read_identity::append_decision
 use crate::application_schema::canonical_operation_identity::append_operation_target;
 use crate::application_schema::ApplicationSchemaMember;
 mod creation;
+mod emission;
 
 pub(super) fn append_body(
     basis: &mut ApplicationSchemaCanonicalBasis,
@@ -14,7 +15,8 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.succession().is_some_and(|s| s.output_match().is_some()) { "operation-body-v15" }
+        if body.input_emission().is_some() { "operation-body-v16" }
+        else if body.succession().is_some_and(|s| s.output_match().is_some()) { "operation-body-v15" }
         else if body.outputs().iter().any(|output| matches!(output.target, crate::application_schema::ApplicationOperationBodyOutputTarget::Related { .. })) {
             "operation-body-v14"
         } else if body.succession().is_some() {
@@ -64,6 +66,9 @@ pub(super) fn append_body(
         },
         operation,
     );
+    if let Some(input_emission) = body.input_emission() {
+        emission::append(basis, prefix, input_emission);
+    }
     if !body.outputs().is_empty() {
         basis.usize(format!("{prefix}.outputs"), body.outputs().len());
         for (index, output) in body.outputs().iter().enumerate() {

@@ -12,7 +12,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_requir
     members: &[Member],
 ) -> Result<(), Denial> {
     let mut names = BTreeSet::new();
-    for requirement in body.requirements() {
+    for requirement in body.observation_requirements() {
         if !names.insert(requirement.identity()) {
             return Err(Denial::DuplicateMember);
         }

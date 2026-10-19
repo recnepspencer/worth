@@ -1,5 +1,6 @@
 //! Execution of a complete installed body, never a caller-selected replacement.
 mod assessment;
+pub(in crate::domain_computation::primary_graph) mod emission;
 mod field_expectation;
 mod handler;
 mod input;
@@ -37,6 +38,7 @@ pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     inputs: Option<PreparedBodyInputs>,
     sources: Vec<Option<PreparedBodySource>>,
     selections: PreparedBodySelections<Schema>,
+    emission: Option<emission::BodyInputEffectSelection>,
 }
 
 /// A declared source expectation failed before any candidate effect.

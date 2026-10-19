@@ -37,7 +37,8 @@ fn require_candidate_capacity(
     let cardinality = requirements.cardinality();
     let required_unlinks = body.creation().map_or(0, |creation| creation.links().iter().filter(|link|
         link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle).count());
-    if cardinality.maximum_unlinks() < required_unlinks
+    if cardinality.maximum_emits() < usize::from(body.input_emission().is_some())
+        || cardinality.maximum_unlinks() < required_unlinks
         || cardinality.maximum_writes() < required_writes
         || cardinality.maximum_creates() < usize::from(body.creation().is_some())
         || cardinality.maximum_links()
@@ -65,14 +66,14 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             return Err(denied());
         }
         let body = installed.operation().body().ok_or_else(denied)?;
+        let input_emission = super::emission::install::<Schema, Binding>(schema, body)?;
         if body.scope_entity() != Some(Binding::scope_field().entity()) {
             return Err(denied());
         }
         require_candidate_capacity(body, &Binding::CANDIDATES, Binding::IDENTITY)?;
         let mut input_bindings = Vec::new();
         for source in body
-            .requirements()
-            .iter()
+            .observation_requirements()
             .flat_map(|requirement| requirement.operands())
             .map(|operand| operand.source())
         {
@@ -224,6 +225,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             body: body.clone(),
             marker: PhantomData,
             input_bindings,
+            input_emission,
         })
     }
 }

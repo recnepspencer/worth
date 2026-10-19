@@ -43,14 +43,35 @@ pub(in crate::domain_computation::primary_graph) fn evaluate_requirements<
         }
     }
     for requirement in body.requirements() {
-        let applicable = requirement
-            .applicability()
-            .map(|expression| evaluate(reader, identity, requirement, expression, execution))
-            .transpose()?
-            .unwrap_or(true);
-        let status = if !applicable {
-            Status::NotApplicable
-        } else if evaluate(
+        let status = evaluate_requirement(reader, identity, requirement, execution)?;
+        findings.push(Finding::evaluated(requirement, status));
+    }
+    Ok(WorthQueryCurrentBodyRequirementAssessment::new(
+        findings,
+        findings_memory,
+    ))
+}
+
+pub(in crate::domain_computation::primary_graph) fn evaluate_requirement<
+    Schema: worth_query_installation::facade::ApplicationSchema,
+    Operation,
+    Entity,
+>(
+    reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
+    identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+    requirement: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementProgram,
+    execution: &QueryRequestExecution<'_>,
+) -> Result<Status, HandlerExecutionDenial> {
+    let applicable = requirement
+        .applicability()
+        .map(|expression| evaluate(reader, identity, requirement, expression, execution))
+        .transpose()?
+        .unwrap_or(true);
+    if !applicable {
+        return Ok(Status::NotApplicable);
+    }
+    Ok(
+        if evaluate(
             reader,
             identity,
             requirement,
@@ -60,13 +81,8 @@ pub(in crate::domain_computation::primary_graph) fn evaluate_requirements<
             Status::Met
         } else {
             Status::Unmet
-        };
-        findings.push(Finding::evaluated(requirement, status));
-    }
-    Ok(WorthQueryCurrentBodyRequirementAssessment::new(
-        findings,
-        findings_memory,
-    ))
+        },
+    )
 }
 
 fn finding_quote(

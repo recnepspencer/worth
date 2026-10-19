@@ -27,6 +27,9 @@ body needs no dummy business-field write.
 The creation may also link to/from that admitted scope through typed declared
 relations, so domain membership does not depend on a later host effect.
 This remains a bounded body form; it does not dispatch workflow commands.
+For a conditional typed external request using the exact operation input, use
+[Authored Conditional External Effects](./conditional-body-effects.md). Its guard
+suppresses the effect, not the business operation, and uses the ordinary outbox.
 For one unsigned creation that must publish with its fresh native instance, use
 the explicit [workflow-enrollment attachment](./workflow-enrolled-creations.md).
 It does not replace a body with host-created workflow effects.
@@ -800,7 +803,8 @@ initializers or an exact unitless admitted-principal identity initializer,
 links between that creation and its admitted scope, including at-most-one outgoing
 selection replacement, plus fixed
 Preserve-scope, Preserve-single-outgoing-subject and Create-slot output uses. It requires
-at least one real creation, scope assignment or output use and unit results.
+at least one real creation, scope assignment, output use or
+[whole-input external emission](./conditional-body-effects.md) and unit results.
 Output roles are binding-affine; a body cannot silently reinterpret one binding's
 roles under another binding with matching names. Arbitrary target selection,
 Retire and role-family member uses are unsupported. Optional literal assignments,

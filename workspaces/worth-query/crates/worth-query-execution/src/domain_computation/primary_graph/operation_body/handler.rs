@@ -18,6 +18,7 @@ type Scope<Schema, Binding> = <<Binding as ApplicationMutationBinding<Schema>>::
 
 pub(in crate::domain_computation::primary_graph) struct OperationBodyHandler<Schema, Binding> {
     pub(super) body: ApplicationOperationBodyProgram,
+    pub(super) input_emission: Option<std::sync::Arc<worth_query_declaration::facade::application_schema::ApplicationOperationBodyInputEffectRecipe>>,
     pub(super) marker: PhantomData<fn() -> (Schema, Binding)>,
     pub(super) input_bindings:
         Vec<worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding>,
@@ -47,7 +48,7 @@ where
 {
     fn decide(
         &self,
-        _: &Binding::Input,
+        input: &Binding::Input,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Binding::Decision, Binding::Denial> {
         for step in self.body.scope_fields() {
@@ -141,12 +142,22 @@ where
             HandlerResult::Cancelled => return HandlerResult::Cancelled,
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         };
+        let emission = match self
+            .input_emission
+            .as_ref()
+            .map(|recipe| reader.body_input_emission(std::sync::Arc::clone(recipe), input))
+            .transpose()
+        {
+            Ok(emission) => emission,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         match reader.body_scope_target(&self.body) {
             Ok(target) => HandlerResult::Completed(WorthQueryOperationBodyDecision {
                 target,
                 inputs,
                 sources,
                 selections,
+                emission,
             }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
@@ -162,7 +173,7 @@ where
 
     fn build_candidate(
         &self,
-        _: &Binding::Input,
+        input: &Binding::Input,
         decision: Binding::Decision,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<(), Binding::Denial> {
@@ -313,6 +324,11 @@ where
             {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
             }
+        }
+        if let Some(emission) = decision.emission
+            && let Err(cause) = writer.body_input_emission(emission, input)
+        {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
         }
         HandlerResult::Completed(())
     }

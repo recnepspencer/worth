@@ -42,6 +42,13 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_body_input_emission(
+        mut self,
+        selection: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyInputEffectSelection>,
+    ) -> Self {
+        self.effects.bind_body_input_emission(selection);
+        self
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn with_required_output_demand(
         mut self,
         context: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,

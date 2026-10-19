@@ -324,6 +324,11 @@ impl WorthQueryPrimaryGraphProvider {
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
+        let no_external_effect =
+            worth_query_installation::facade::InstalledExternalEffectContract::None;
+        let external_effect = effects
+            .selected_external_contract(external_effect)?
+            .unwrap_or(&no_external_effect);
         let external_payload = effects.emissions().external_payload(external_effect)?;
         let (effects, dispatch_outbox) = effects.bind_registration_intents(
             self,

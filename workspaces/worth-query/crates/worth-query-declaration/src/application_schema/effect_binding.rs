@@ -1,4 +1,6 @@
 use super::{ApplicationExternalEffectProtocol, ApplicationStructuredValueBinding};
+mod projection;
+pub use projection::ApplicationExternalEffectPayloadProjection;
 
 /// A structured effect binding that accounts for the memory retained by its value.
 pub trait ApplicationRetainedEffectBinding: ApplicationStructuredValueBinding {

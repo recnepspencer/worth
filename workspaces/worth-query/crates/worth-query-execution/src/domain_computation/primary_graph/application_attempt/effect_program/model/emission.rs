@@ -18,6 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationEmi
     retained_bytes: u64,
     measure_retained_bytes: fn(&(dyn Any + Send + Sync)) -> Option<u64>,
     external_payload: Option<WorthQueryExternalPayloadProjection>,
+    _native_body_funding: Option<Arc<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>>,
 }
 
 #[derive(Clone)]
@@ -44,6 +45,7 @@ impl WorthQueryApplicationEmission {
             retained_bytes,
             measure_retained_bytes: measure_retained_bytes::<Binding>,
             external_payload: None,
+            _native_body_funding: None,
         }
     }
 
@@ -55,17 +57,8 @@ impl WorthQueryApplicationEmission {
         Binding: ApplicationExternalEffectBinding,
         Binding::Value: Send + Sync,
     {
-        let bytes = Binding::external_effect_bytes(&payload);
-        let encoded_len = u64::try_from(bytes.len()).map_err(|_| ())?;
-        if Binding::MAX_EXTERNAL_BYTES == 0 || encoded_len > Binding::MAX_EXTERNAL_BYTES {
-            return Err(());
-        }
-        let mut emission = Self::new::<Binding>(effect, payload);
-        emission.external_payload = Some(WorthQueryExternalPayloadProjection {
-            bytes: bytes.into(),
-            maximum_bytes: Binding::MAX_EXTERNAL_BYTES,
-        });
-        Ok(emission)
+        let projection = worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection::encode::<Binding>(effect, payload).map_err(|_| ())?;
+        Ok(Self::from_external_projection(projection, None))
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt) fn from_lifecycle(
@@ -79,6 +72,7 @@ impl WorthQueryApplicationEmission {
             retained_bytes: derived.retained_bytes(),
             measure_retained_bytes: derived.measure_retained_bytes(),
             external_payload: None,
+            _native_body_funding: None,
         }
     }
 
@@ -103,6 +97,29 @@ impl WorthQueryApplicationEmission {
 
     pub(in crate::domain_computation::primary_graph) const fn retained_bytes(&self) -> u64 {
         self.retained_bytes
+    }
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn effect_name(
+        &self,
+    ) -> &str {
+        self.effect
+    }
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn from_external_projection(
+        projection: worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection,
+        funding: Option<Arc<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>>,
+    ) -> Self {
+        Self {
+            effect: projection.effect(),
+            payload_type: projection.identity().clone(),
+            payload_type_id: TypeId::from(projection.value_type()),
+            payload: projection.value(),
+            retained_bytes: projection.retained_bytes(),
+            measure_retained_bytes: projection.measure(),
+            external_payload: Some(WorthQueryExternalPayloadProjection {
+                bytes: projection.bytes(),
+                maximum_bytes: projection.maximum_bytes(),
+            }),
+            _native_body_funding: funding,
+        }
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn candidate_retained_representation_bytes(

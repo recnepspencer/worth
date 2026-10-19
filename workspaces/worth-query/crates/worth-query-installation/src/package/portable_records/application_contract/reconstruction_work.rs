@@ -3,6 +3,7 @@
 use worth_foundational::facade::{AspectContract, AspectShape};
 
 use super::*;
+mod input_emission;
 mod query_context;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -121,7 +122,10 @@ impl WorthQueryPortableApplicationOperationContractRecord {
             if let Some(scope) = body.explicit_scope_entity() {
                 work.observe_text(scope);
             }
-            for requirement in body.requirements() {
+            if let Some(emission) = body.input_emission() {
+                work.observe_input_emission(emission);
+            }
+            for requirement in body.observation_requirements() {
                 work.observe_text(requirement.identity());
                 work.observe_text(requirement.target_name());
                 for operand in requirement.operands() {

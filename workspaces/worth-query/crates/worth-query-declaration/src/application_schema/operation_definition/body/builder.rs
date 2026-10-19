@@ -20,6 +20,8 @@ pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
+    pub(super) input_emission: Option<super::ApplicationOperationBodyInputEmission>,
+    pub(super) input_emission_recipe: Option<super::ApplicationOperationBodyInputEffectRecipe>,
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -33,6 +35,8 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
             requirements: Vec::new(),
             outputs: Vec::new(),
             succession: None,
+            input_emission: None,
+            input_emission_recipe: None,
             marker: PhantomData,
         }
     }
@@ -138,7 +142,11 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         {
             return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
         }
-        if writes.is_empty() && creation.is_none() && self.outputs.is_empty() {
+        if writes.is_empty()
+            && creation.is_none()
+            && self.outputs.is_empty()
+            && self.input_emission.is_none()
+        {
             return Err(ApplicationOperationBodyAuthoringDenial::Empty);
         }
         let program = ApplicationOperationBodyProgram::from_untrusted_in_scope(
@@ -148,12 +156,21 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             self.requirements,
         )
         .with_untrusted_outputs(self.outputs)
-        .with_untrusted_succession(self.succession);
+        .with_untrusted_succession(self.succession)
+        .with_untrusted_input_emission(self.input_emission);
+        if program
+            .observation_requirements()
+            .flat_map(|rule| rule.operands())
+            .any(|operand| Some(operand.source().scope_entity()) != program.scope_entity())
+        {
+            return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
+        }
         if !super::succession::valid(&program) {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidWorkflowSuccession);
         }
         Ok(ApplicationOperationBody {
             program,
+            input_emission_recipe: self.input_emission_recipe,
             marker: PhantomData,
         })
     }

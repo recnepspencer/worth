@@ -134,7 +134,10 @@ pub use declaration::{
 };
 pub use declaration_denial::ApplicationSchemaDeclarationDenial;
 pub use effect_authoring::{TypedEffectIntent, TypedEffectIntentBuilder};
-pub use effect_binding::{ApplicationExternalEffectBinding, ApplicationRetainedEffectBinding};
+pub use effect_binding::{
+    ApplicationExternalEffectBinding, ApplicationExternalEffectPayloadProjection,
+    ApplicationRetainedEffectBinding,
+};
 pub use effect_marker_identity::ApplicationEffectMarkerIdentity;
 pub use external_effect_correlation_family::WorthQueryExternalEffectCorrelationFamily;
 pub use external_effect_protocol::ApplicationExternalEffectProtocol;
@@ -167,7 +170,8 @@ pub use operation_definition::{
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
     ApplicationOperationBodyCreationBuilder, ApplicationOperationBodyCreationLink,
     ApplicationOperationBodyCreationLinkDirection, ApplicationOperationBodyCreationLinkPosture,
-    ApplicationOperationBodyEnrollment, ApplicationOperationBodyOutput,
+    ApplicationOperationBodyEnrollment, ApplicationOperationBodyInputEffectRecipe,
+    ApplicationOperationBodyInputEmission, ApplicationOperationBodyOutput,
     ApplicationOperationBodyOutputTarget, ApplicationOperationBodyProgram,
     ApplicationOperationBodyRelatedFieldSource, ApplicationOperationBodyRequirement,
     ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,

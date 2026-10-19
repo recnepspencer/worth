@@ -1,6 +1,10 @@
 //! Typed values in an operation body, distinct from its derived effect ceiling.
 
 mod builder;
+mod emission;
+pub use emission::{
+    ApplicationOperationBodyInputEffectRecipe, ApplicationOperationBodyInputEmission,
+};
 mod classified_capture;
 mod created_field;
 mod creation;
@@ -58,6 +62,7 @@ use crate::application_schema::ApplicationValueEncodeDenial;
 /// Completed authored meaning. Construction validates all typed literal values.
 pub struct ApplicationOperationBody<Schema, Operation, Input> {
     pub(super) program: ApplicationOperationBodyProgram,
+    pub(super) input_emission_recipe: Option<ApplicationOperationBodyInputEffectRecipe>,
     pub(super) marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 

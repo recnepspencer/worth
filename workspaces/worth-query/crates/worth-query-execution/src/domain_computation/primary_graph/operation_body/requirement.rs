@@ -6,6 +6,7 @@ use worth_query_declaration::facade::application_schema::{
 };
 mod evaluation;
 mod value;
+pub(in crate::domain_computation::primary_graph) use evaluation::evaluate_requirement;
 pub(in crate::domain_computation::primary_graph) use evaluation::evaluate_requirements;
 pub(in crate::domain_computation::primary_graph) use value::{
     field_value, PreparedRequirementOperand,
