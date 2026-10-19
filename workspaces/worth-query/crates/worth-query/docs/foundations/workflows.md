@@ -1307,6 +1307,43 @@ the actual new instance. Neither decoded declarations nor instance references
 grant authority. Preserve native stale, indeterminate and recovery outcomes;
 never automatically retry a stale lifecycle change.
 
+### Reacquire a completed predecessor after checkpoint restoration
+
+Keep the pure `WorthQueryWorkflowInstanceDiscoveryIntent<Schema>` returned by
+the genuine prepared start's `discovery_intent()` before executing that start.
+The same succession funnel accepts it through `WorkflowSuccessionTarget`, or
+accepts a `PublishedWorkflowInstanceRef` while its runtime and branch remain valid.
+The descriptor is descriptive input, not a grant or a serialized live proof.
+
+After restoring a native checkpoint and reinstalling the program and workflow
+vocabulary, authenticate again and prepare under fresh request authority:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Application-specific restored runtime, principal, scope, intent and key.
+let required = restored.request(&principal, &scope)
+    .advanced().mutate(intent.clone()).without_source().idempotency(&key)
+    .prepare_workflow_succession::<ReviewWorkflow, ExistingItem>(
+        &workflow, original_start_descriptor,
+    )?;
+```
+
+Continue with `for_workflow_succession` as above. Fresh capability admission
+precedes the tracked identity-index lookup at the mutation basis. Query checks
+the admitted subject, actual branch occurrence, workflow lineage, retained pin,
+and managed original start provenance, then applies the same completed-source,
+history, custody and output-affinity rules. Exact replay uses the original
+logical input/key; it does not create another episode. A prepared start that was
+never published refuses as NotFound. Missing, ambiguous or unavailable lookup
+does not fall back to a graph scan, current instance, or guessed definition.
+
+Do not carry an old published reference or branch handle into the restored
+runtime: their owner fences still refuse it. The proven boundary is native
+checkpoint reconstruction with a retained pure descriptor and fresh command
+admission. Descriptor serialization, OS/process crash recovery and Store durable
+restart are not established by that proof.
+
 This is not a complete business Reopen policy. Applications must additionally
 author which business chain is current when independent chains share one subject,
 permitted destinations and audit behavior. Cross-release adoption, Store crash
@@ -1360,9 +1397,10 @@ alone cannot choose which one may Reopen. Author a
 [succession output match](workflow-succession-output-affinity.md) to compare the
 latest named producer output with the successor body's captured selection.
 This does not make old runtime-owned instance handles usable after checkpoint
-restoration. Completed-reference
-reacquisition and checkpoint-to-succession remain separate, unproven boundaries;
-do not invent handle constructors or weaken ForeignOwner checks to bridge them.
+restoration. Use the [original start descriptor under fresh command admission](#reacquire-a-completed-predecessor-after-checkpoint-restoration)
+to prepare succession in the restored runtime. Do not invent handle constructors
+or weaken ForeignOwner checks. Descriptor serialization and process/Store crash
+durability remain separate, unproven boundaries.
 
 ## The ordinary convenience lane
 

@@ -191,7 +191,7 @@ pub use workflow_instance_program::{
     RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart, WorkflowBirthAuthority,
     WorkflowBirthAuthoritySlot, WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
     WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowSuccessionAuthority,
-    WorkflowSuccessionAuthoritySlot, WorthQueryWorkflowBirthAdapter,
+    WorkflowSuccessionAuthoritySlot, WorkflowSuccessionTarget, WorthQueryWorkflowBirthAdapter,
     WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
     WorthQueryWorkflowSuccessionAdapter,
 };

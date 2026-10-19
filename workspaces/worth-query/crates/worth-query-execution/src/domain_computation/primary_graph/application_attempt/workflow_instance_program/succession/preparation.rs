@@ -1,5 +1,5 @@
 //! Issue a succession slot only from exact fresh capability and native completed-chain facts.
-use super::super::{PublishedWorkflowInstanceRef, WorkflowInstancePreparationDenial};
+use super::super::WorkflowInstancePreparationDenial;
 use super::{
     mismatch, ApplicationMutationBinding, ApplicationSchema, ApplicationWorkflowSpec,
     RequiredWorkflowSuccession, TypeId, WorkflowSuccessionAuthority,
@@ -23,7 +23,7 @@ impl WorthQueryWorkflowSuccessionAdapter {
         phase: &WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
-        predecessor: PublishedWorkflowInstanceRef,
+        predecessor: super::WorkflowSuccessionTarget<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         admission: WorthQueryAdmittedApplicationOperation<
             Schema,
@@ -59,11 +59,15 @@ impl WorthQueryWorkflowSuccessionAdapter {
             .execution_request_for(&selected.application().product_runtime)
             .map_err(|_| denied("foreign succession phase"))?;
         let mut read = selected.begin_instance_read_set(&execution, installed, admission)?;
-        let (compiled, carry, output_match) = read
+        let (compiled, carry, output_match, predecessor) = read
             .observe_succession_basis(
                 &execution,
                 installed,
-                &predecessor,
+                predecessor,
+                selected
+                    .application()
+                    .installed_program_support()
+                    .ok_or_else(|| denied("installed program support unavailable"))?,
                 &selected.application().authorization_clock,
             )
             .map_err(WorkflowInstancePreparationDenial::Attempt)?;

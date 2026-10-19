@@ -1,20 +1,14 @@
 //! The named predecessor's native pin and completion, not caller-selected Retained admission.
 use super::super::super::{
-    observe_adjacency, PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
-    WorthQueryApplicationAdjacencyDirection, WorthQueryCompleteApplicationReadSet,
-    WorthQueryProjectedApplicationMutation,
+    observe_adjacency, PublishedWorkflowInstanceRef, WorthQueryApplicationAdjacencyDirection,
+    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
 use super::{
     mismatch, ApplicationSchema, ApplicationWorkflowSpec, CompiledWorkflowDefinition,
     WorkflowLineageCarry, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::{
-    primary_graph::workflow::definition::{
-        reconstruct_compiled_definition, WorkflowDefinitionCompilationPosture,
-    },
-    runtime_time::WorthQueryRuntimeClock,
-};
+use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 impl<
@@ -37,41 +31,27 @@ impl<
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
-        predecessor: &PublishedWorkflowInstanceRef,
+        target: super::WorkflowSuccessionTarget<Schema>,
+        support: &crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport<Schema>,
         clock: &WorthQueryRuntimeClock,
     ) -> Result<
         (
             CompiledWorkflowDefinition,
             WorkflowLineageCarry,
             Option<super::CompletedOutputExpectation>,
+            PublishedWorkflowInstanceRef,
         ),
         WorthQueryApplicationAttemptDenial,
     >
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        if predecessor.branch() != self.lease.product().product_branch() {
-            return Err(mismatch("succession predecessor belongs to another branch"));
-        }
+        let resolved =
+            self.resolve_succession_predecessor(execution, installed, target, support)?;
+        let predecessor = resolved.reference;
+        let mut compiled = resolved.compiled;
+        let mut facts = resolved.facts;
         let layout = self.lease.layout.workflow().clone();
-        let published = PublishedWorkflowDefinitionRef::retained(
-            predecessor.branch(),
-            predecessor.definition_entity_id(),
-            predecessor.definition_content_identity().clone(),
-        );
-        let (mut compiled, mut facts) = reconstruct_compiled_definition(
-            execution,
-            self.lease.handle(),
-            self.lease.snapshot(),
-            &layout,
-            &published,
-            installed.program_revision(),
-            Spec::IDENTITY.as_str(),
-            installed.support_identity_bytes(),
-            usize::from(installed.resources().maximum_definition_nodes()),
-            usize::from(installed.resources().maximum_definition_connections()),
-            WorkflowDefinitionCompilationPosture::Retained,
-        )?;
         // Observation may restore a migration-resume position on the old instance.
         // A fresh lifecycle episode always begins at the actual definition start.
         let fresh = compiled.clone();
@@ -84,7 +64,7 @@ impl<
         let subject = self.admission.scope_entity_id();
         let observed = self.lease.handle().with_runtime(execution, |runtime| {
             super::super::super::workflow_instance_observation::observe_workflow_instance(execution, self.lease.handle(), runtime, self.lease.snapshot(), &layout,
-                predecessor, subject, compiled.lineage(), &mut compiled, maximum, installed.resources().history_reconstruction_budget(),
+                &predecessor, subject, compiled.lineage(), &mut compiled, maximum, installed.resources().history_reconstruction_budget(),
                 super::super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Close)
         })?;
         let (source, successors) = self.lease.handle().with_runtime(execution, |runtime| {
@@ -133,6 +113,6 @@ impl<
         });
         let carry =
             self.observe_fresh_instance_capacity(execution, installed, &fresh, facts, clock)?;
-        Ok((fresh, carry, output_match))
+        Ok((fresh, carry, output_match, predecessor))
     }
 }

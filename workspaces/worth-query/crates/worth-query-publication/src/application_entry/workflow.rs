@@ -4,7 +4,9 @@ mod succession;
 pub use birth::WorthQueryWorkflowBirthBindingDenial;
 pub use succession::WorthQueryWorkflowSuccessionBindingDenial;
 pub use worth_query_execution::publication_boundary::workflow_birth::RequiredWorkflowBirth;
-pub use worth_query_execution::publication_boundary::workflow_succession::RequiredWorkflowSuccession;
+pub use worth_query_execution::publication_boundary::workflow_succession::{
+    RequiredWorkflowSuccession, WorkflowSuccessionTarget,
+};
 mod assessment;
 mod condition;
 mod definition;

@@ -94,6 +94,9 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowPredecessorOutputUnavailable,
     WorkflowPredecessorOutputMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
+    WorkflowInstanceOriginalIntentNotFound,
+    WorkflowInstanceOriginalIntentAmbiguous,
+    WorkflowInstanceOriginalIntentUnavailable,
     /// The instance's lineage has taken its installed number of steps, or
     /// its retained progress would pass the installed byte budget. Recorded
     /// steps still replay and the instance can still be cancelled; ending

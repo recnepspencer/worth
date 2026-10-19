@@ -141,9 +141,11 @@ role families and multiple matches are not part of this surface. The feature
 does not automatically decide destinations, business-current policy, actor
 policy, or cross-release adoption.
 
-It does not reacquire a completed instance command locator after checkpoint
-restoration, serialize live authority, or establish Store crash durability.
-Those remain separate boundaries; ForeignOwner checks are not bypassable.
+Completed predecessor preparation can use the original pure start descriptor
+after native checkpoint restoration and fresh command admission through the
+[same succession funnel](workflows.md#reacquire-a-completed-predecessor-after-checkpoint-restoration).
+It does not serialize live authority or the descriptor, or establish process or
+Store crash durability. Old published-reference ForeignOwner checks remain intact.
 
 ## Related Docs
 

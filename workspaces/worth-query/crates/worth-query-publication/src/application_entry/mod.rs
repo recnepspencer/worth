@@ -166,7 +166,7 @@ pub use workflow::{
     WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
     WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
     WorkflowProposalBindingDenial, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
-    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorkflowSuccessionTarget, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
     WorthQueryAdvancedAssessmentObservation, WorthQueryAdvancedAssessmentRequest,
     WorthQueryAdvancedWorkflowOperation, WorthQueryBoundWorkflowOperation,
     WorthQueryClosedAssessmentObservation, WorthQueryOrdinaryWorkflowDraft,

@@ -44,7 +44,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use succes
 };
 pub use succession::{
     RequiredWorkflowSuccession, WorkflowSuccessionAuthority, WorkflowSuccessionAuthoritySlot,
-    WorthQueryWorkflowSuccessionAdapter,
+    WorkflowSuccessionTarget, WorthQueryWorkflowSuccessionAdapter,
 };
 mod supersession;
 

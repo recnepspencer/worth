@@ -1,7 +1,7 @@
 //! One exact completed-chain handoff through the ordinary capability mutation funnel.
 use super::progress::{IntentBinding, MutationInput, MutationScope};
 use super::{
-    PublishedWorkflowInstanceRef, RequiredWorkflowSuccession,
+    RequiredWorkflowSuccession, WorkflowSuccessionTarget,
     WorthQueryWorkflowInstancePreparationDenial as PreparationDenial,
 };
 use crate::application_entry::{
@@ -45,8 +45,13 @@ where Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema> + Clo
 {
     /// Admit the exact body capability and native completed predecessor. Its
     /// supported definition pin is derived from that predecessor, not chosen by a flag.
+    /// Accepts either a native PublishedWorkflowInstanceRef or an original
+    /// WorthQueryWorkflowInstanceDiscoveryIntent issued before a genuine start.
+    /// The latter performs tracked lookup on this request's current basis only
+    /// after fresh capability admission. It grants no permission or live-handle
+    /// restoration; a foreign Published reference still refuses unchanged.
     pub fn prepare_workflow_succession<Spec, Role>(mut self, workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
-        predecessor: PublishedWorkflowInstanceRef) -> Result<RequiredWorkflowSuccession, PreparationDenial>
+        predecessor: impl Into<WorkflowSuccessionTarget<Schema>>) -> Result<RequiredWorkflowSuccession, PreparationDenial>
     where Spec: ApplicationWorkflowSpec<Schema=Schema>,
         Role: WorthQueryApplicationOutputRole<Schema=Schema, Contract=<IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Output, Action=WorthQueryPreserveOutput> {
         let workflow = workflow.into();
@@ -59,7 +64,7 @@ where Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema> + Clo
             let identities = self.identities().map_err(PreparationDenial::RequestAdmission)?;
             let prepared = authorization::prepare_capability_selected(&phase, &self, &identities, staged, &selected).map_err(PreparationDenial::RequestAdmission)?;
             WorthQueryWorkflowSuccessionAdapter::prepare::<Schema, IntentBinding<Schema, Intent>, Role, Spec>(
-                &phase, &selected, workflow.workflow_spec_for(&selected), predecessor, &identities, prepared.admission,
+                &phase, &selected, workflow.workflow_spec_for(&selected), predecessor.into(), &identities, prepared.admission,
             ).map_err(PreparationDenial::InstancePreparation)
         }).map_err(|cause| PreparationDenial::RequestAdmission(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
