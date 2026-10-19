@@ -114,22 +114,12 @@ impl OutputContextReader<'_, '_, '_> {
                 field,
             )
         };
-        match (
+        crate::domain_computation::primary_graph::workflow::operation_output::decode_transition_output_context(
             read(&layout.protocol_version)?,
             read(&layout.output_binding)?,
             read(&layout.output_count)?,
-        ) {
-            // Old missing context is never backfilled from today's selection.
-            (Some(AspectValue::UInt64(2)), None, None) => Ok(None),
-            (
-                Some(AspectValue::UInt64(3)),
-                Some(AspectValue::String(InternedString::Raw(binding))),
-                Some(AspectValue::UInt64(count)),
-            ) if !binding.is_empty() => usize::try_from(count)
-                .map(|count| Some((binding, count)))
-                .map_err(|_| denial("workflow output count overflows")),
-            _ => Err(denial("workflow operation output context is malformed")),
-        }
+        )
+            .map_err(|()| denial("workflow operation output context is malformed"))
     }
 
     fn entry(

@@ -900,6 +900,12 @@ it is not enabled by removing an approval from an old editable definition.
 
 ### Retain and advance the original operation
 
+For a finite command with differently typed business operations, use
+[workflow operation inputs](workflow-operation-inputs.md). The native requirement
+selects a complete installed action and transfers its original description into
+the owner below. The pack does not choose workflow order, retry operations, or
+provide durable whole-command recovery.
+
 Construction is effect-free and retains the original input, conditions, key, branch and issued requirement.
 
 <!-- illustrative -->

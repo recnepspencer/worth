@@ -182,7 +182,7 @@ impl WorkflowAdoptionEntity<'_> {
     ) -> Result<bool, WorkflowAdoptionReadDenial> {
         Ok(self.value(execution, locator)?.is_none())
     }
-    fn value(
+    pub(in crate::domain_computation::primary_graph) fn value(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         locator: &AspectFieldLocator,

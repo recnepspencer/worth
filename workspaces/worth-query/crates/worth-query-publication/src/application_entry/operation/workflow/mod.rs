@@ -11,7 +11,14 @@ use worth_query_execution::publication_boundary::workflow_advance::RequiredWorkf
 mod advance;
 mod completion;
 mod construction;
+mod inputs;
 mod recovery;
+pub use inputs::{
+    WorthQueryCompletedWorkflowSelection, WorthQuerySelectedWorkflowOperation,
+    WorthQueryTerminalWorkflowSelection, WorthQueryWorkflowInputDenial, WorthQueryWorkflowInputEnd,
+    WorthQueryWorkflowInputList, WorthQueryWorkflowInputNode, WorthQueryWorkflowOperationChoice,
+    WorthQueryWorkflowOperationInputs,
+};
 
 pub use completion::{
     WorthQueryCompletedWorkflowOperation, WorthQueryTerminalWorkflowOperation,
@@ -45,6 +52,30 @@ pub enum WorthQueryWorkflowOperationAdvance<O, C, T> {
     },
     Completed(C),
     Terminal(T),
+}
+impl<O, C, T> WorthQueryWorkflowOperationAdvance<O, C, T> {
+    /// Structural composition preserves refusal custody and the original native denial.
+    pub fn map<O2, C2, T2>(
+        self,
+        operation: impl FnOnce(O) -> O2,
+        completed: impl FnOnce(C) -> C2,
+        terminal: impl FnOnce(T) -> T2,
+    ) -> WorthQueryWorkflowOperationAdvance<O2, C2, T2> {
+        match self {
+            Self::Progress(owner) => WorthQueryWorkflowOperationAdvance::Progress(operation(owner)),
+            Self::Refused {
+                operation: owner,
+                denial,
+            } => WorthQueryWorkflowOperationAdvance::Refused {
+                operation: operation(owner),
+                denial,
+            },
+            Self::Completed(owner) => {
+                WorthQueryWorkflowOperationAdvance::Completed(completed(owner))
+            }
+            Self::Terminal(owner) => WorthQueryWorkflowOperationAdvance::Terminal(terminal(owner)),
+        }
+    }
 }
 
 pub use recovery::WorthQueryWorkflowEffectRecoveryDenial;

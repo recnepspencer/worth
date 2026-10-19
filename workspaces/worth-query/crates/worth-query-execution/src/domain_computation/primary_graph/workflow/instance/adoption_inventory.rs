@@ -15,8 +15,7 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::adoption::{WorkflowAdoptionReadDenial, WorkflowAdoptionTruth};
 use super::super::schema::version::{
-    WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION, WORKFLOW_FACT_PROTOCOL_VERSION,
-    WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
+    WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION, WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
 };
 use super::super::schema::WorthQueryWorkflowLayout;
 use super::WorkflowInstanceState;
@@ -142,18 +141,27 @@ fn read_transition(
 ) -> Result<ReadTransition, WorkflowAdoptionReadDenial> {
     let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity: transition };
     let record = truth.entity(execution, transition, layout.transition.entity_kind)?;
-    if record.u64(execution, &layout.transition.protocol_version)? != WORKFLOW_FACT_PROTOCOL_VERSION
-    {
-        return Err(unreadable);
-    }
+    let context = super::super::operation_output::decode_transition_output_context(
+        record.value(execution, &layout.transition.protocol_version)?,
+        record.value(execution, &layout.transition.output_binding)?,
+        record.value(execution, &layout.transition.output_count)?,
+    )
+    .map_err(|()| unreadable)?;
     let identity = record.text(execution, &layout.transition.identity)?;
     let occurrence = record.u64(execution, &layout.transition.occurrence)?;
     let outcome =
         super::decode_transition_outcome(record.u64(execution, &layout.transition.outcome)?)
             .ok_or(unreadable)?;
-    let receipted = record
-        .optional_text(execution, &layout.transition.operation_receipt_identity)?
-        .is_some();
+    let receipted =
+        match record.optional_text(execution, &layout.transition.operation_receipt_identity)? {
+            Some(receipt) if super::super::proposal::decode_identity(&receipt).is_some() => true,
+            Some(_) => return Err(unreadable),
+            None => false,
+        };
+    // Protocol 3 describes performed output context, even when its output count is zero.
+    if context.is_some() && !receipted {
+        return Err(unreadable);
+    }
     if layout
         .transition
         .advancer

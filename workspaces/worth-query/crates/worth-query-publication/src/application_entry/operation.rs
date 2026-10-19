@@ -15,10 +15,14 @@ pub use source_only::{
     WorthQueryTerminalSourceOperation,
 };
 pub use workflow::{
-    WorthQueryCompletedWorkflowOperation, WorthQueryOwnedWorkflowBinding,
-    WorthQueryTerminalWorkflowOperation, WorthQueryWorkflowAcceptance,
-    WorthQueryWorkflowEffectRecoveryDenial, WorthQueryWorkflowOperation,
-    WorthQueryWorkflowOperationAdvance, WorthQueryWorkflowOperationDenial,
+    WorthQueryCompletedWorkflowOperation, WorthQueryCompletedWorkflowSelection,
+    WorthQueryOwnedWorkflowBinding, WorthQuerySelectedWorkflowOperation,
+    WorthQueryTerminalWorkflowOperation, WorthQueryTerminalWorkflowSelection,
+    WorthQueryWorkflowAcceptance, WorthQueryWorkflowEffectRecoveryDenial,
+    WorthQueryWorkflowInputDenial, WorthQueryWorkflowInputEnd, WorthQueryWorkflowInputList,
+    WorthQueryWorkflowInputNode, WorthQueryWorkflowOperation, WorthQueryWorkflowOperationAdvance,
+    WorthQueryWorkflowOperationChoice, WorthQueryWorkflowOperationDenial,
+    WorthQueryWorkflowOperationInputs,
 };
 mod capture_refusal;
 mod construction;
