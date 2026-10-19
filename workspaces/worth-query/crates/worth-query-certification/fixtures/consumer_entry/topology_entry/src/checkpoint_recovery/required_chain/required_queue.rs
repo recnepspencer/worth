@@ -350,5 +350,6 @@ mod steady_retention;
 mod performed_head_movement;
 
 mod current_consumption;
+mod retained_currentness;
 
 mod checkpoint_failures;
