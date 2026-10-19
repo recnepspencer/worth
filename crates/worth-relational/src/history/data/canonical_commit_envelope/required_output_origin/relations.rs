@@ -110,10 +110,15 @@ pub(super) fn capture_created_relations(
                 before_write: None,
                 after_write: envelope.commit.version_id,
             }),
-            Err(OutputPayloadCoverageFailure::Unsupported) => {
-                return Err(crate::mvcc::origin_denial(
-                    "native output relation has unsupported present cells",
-                ))
+            Err(OutputPayloadCoverageFailure::Unsupported(reason)) => {
+                let mut error = crate::publication::data::PublicationError::new(
+                    crate::publication::bundle::PublicationStage::BundleAssembly,
+                    reason.relation_detail(envelope, *id, created.kind_id),
+                );
+                error.context = error
+                    .context
+                    .with_records(vec![crate::transactions::data::RecordRef::Relation(*id)]);
+                return Err(crate::transactions::data::TransactionCommitError::publication(error));
             }
             Err(OutputPayloadCoverageFailure::Request(cause)) => return Err(origin_request(cause)),
             Err(OutputPayloadCoverageFailure::Corrupt(detail)) => {

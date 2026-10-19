@@ -20,7 +20,7 @@ pub(super) fn capture(
 ) -> Result<Vec<CanonicalOutputMember>, TransactionCommitError> {
     let after_image = OverlayStateView::new(basis.inner.root.as_ref(), state);
     let mut members = Vec::with_capacity(roles.len());
-    for role in roles {
+    for (member_ordinal, role) in roles.iter().enumerate() {
         context
             .checkpoint((role.role.len() + role.entity_name.len() + 2) as u64)
             .map_err(origin_request)?;
@@ -171,7 +171,15 @@ pub(super) fn capture(
                 record.extra().authoritative_aspect_state.as_ref(),
                 context,
             )
-            .map_err(super::readmission::coverage_commit_stop)?;
+            .map_err(|failure| {
+                super::readmission::coverage_commit_stop(
+                    failure,
+                    envelope,
+                    id,
+                    plan,
+                    member_ordinal,
+                )
+            })?;
         }
         members.push(CanonicalOutputMember {
             role: role.role.clone(),

@@ -289,3 +289,6 @@ mod routes;
 
 #[path = "continuity_tests/fieldless.rs"]
 mod fieldless;
+
+#[path = "continuity_tests/payload_forms.rs"]
+mod payload_forms;

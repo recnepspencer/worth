@@ -3,11 +3,30 @@ use super::payload_coverage::OutputPayloadCoverageFailure as Failure;
 use super::*;
 use crate::history::data::CodecRetirementClosureStop as Stop;
 
-pub(super) fn coverage_commit_stop(failure: Failure) -> TransactionCommitError {
+pub(super) fn coverage_commit_stop(
+    failure: Failure,
+    envelope: &CanonicalCommitEnvelope,
+    id: crate::identity::data::EntityId,
+    plan: &crate::schema::data::LoweredAspectContractPlan,
+    member_ordinal: usize,
+) -> TransactionCommitError {
     match failure {
         Failure::Request(cause) => origin_request(cause),
-        Failure::Unsupported => {
-            crate::mvcc::origin_denial("output has unsupported or unclassified present cells")
+        Failure::Unsupported(reason) => {
+            let mut error = crate::publication::data::PublicationError::new(
+                crate::publication::bundle::PublicationStage::BundleAssembly,
+                reason.entity_detail(
+                    "output has unsupported or unclassified present cells",
+                    envelope,
+                    id,
+                    plan,
+                    Some(member_ordinal),
+                ),
+            );
+            error.context = error
+                .context
+                .with_records(vec![crate::transactions::data::RecordRef::Entity(id)]);
+            TransactionCommitError::publication(error)
         }
         Failure::Corrupt(detail) => crate::mvcc::origin_denial(detail),
     }
@@ -26,9 +45,13 @@ impl CanonicalCommitEnvelope {
         payload_coverage::validate_created_output_payload(self, id, plan, payload, context).map_err(
             |failure| match failure {
                 Failure::Request(cause) => Stop::Request(cause),
-                Failure::Unsupported => {
-                    Stop::Payload("output has unsupported or unclassified birth cells".into())
-                }
+                Failure::Unsupported(reason) => Stop::Payload(reason.entity_detail(
+                    "output has unsupported or unclassified birth cells",
+                    self,
+                    id,
+                    plan,
+                    None,
+                )),
                 Failure::Corrupt(detail) => Stop::Payload(detail),
             },
         )

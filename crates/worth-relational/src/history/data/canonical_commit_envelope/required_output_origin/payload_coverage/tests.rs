@@ -88,8 +88,14 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
     opaque.patch.authoritative_record_patches[0].contains_opaque_aspect = true;
     assert!(matches!(
         validate(execution, &opaque, id, plan, payload),
-        Err(OutputPayloadCoverageFailure::Unsupported)
+        Err(OutputPayloadCoverageFailure::Unsupported(
+            UnsupportedPayload::OpaqueRecord
+        ))
     ));
+    let failure = validate(execution, &opaque, id, plan, payload).unwrap_err();
+    let error = super::super::readmission::coverage_commit_stop(failure, &opaque, id, plan, 0);
+    assert!(error.detail().contains("reason=opaque-record"));
+    assert_eq!(error.context().affected_records, [RecordRef::Entity(id)]);
     assert_eq!(basis.inner.root.commit_id(), Some(result.commit.commit_id));
     release_test_commit_snapshot(&runtime, &result);
 }
@@ -116,8 +122,17 @@ fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage
     assert!(validate(execution, envelope, id, plan, Some(payload)).is_ok());
     assert!(matches!(
         validate(execution, envelope, id, plan, None),
-        Err(OutputPayloadCoverageFailure::Unsupported)
+        Err(OutputPayloadCoverageFailure::Unsupported(
+            UnsupportedPayload::EmptyWithOperations(_)
+        ))
     ));
+    let failure = validate(execution, envelope, id, plan, None).unwrap_err();
+    let error = super::super::readmission::coverage_commit_stop(failure, envelope, id, plan, 0);
+    assert!(error
+        .detail()
+        .contains("reason=empty-payload-with-operations"));
+    assert!(error.detail().contains("operation_ordinal=0"));
+    assert_eq!(error.context().affected_records, [RecordRef::Entity(id)]);
     let mut omitted_operation = envelope.as_ref().clone();
     omitted_operation.patch.authoritative_record_patches[0].authoritative_patch =
         crate::publication::patch::data::PublishedAuthoritativePatch::empty();
@@ -128,13 +143,19 @@ fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage
     // Empty operations do not turn a nonempty admitted schema into a fieldless kind.
     assert!(matches!(
         validate(execution, &omitted_operation, id, plan, None),
-        Err(OutputPayloadCoverageFailure::Unsupported)
+        Err(OutputPayloadCoverageFailure::Unsupported(
+            UnsupportedPayload::EmptyWithBindings { .. }
+        ))
     ));
     let mut opaque = envelope.as_ref().clone();
     opaque.patch.authoritative_record_patches[0].contains_opaque_aspect = true;
     assert!(matches!(
         validate(execution, &opaque, id, plan, Some(payload)),
-        Err(OutputPayloadCoverageFailure::Unsupported)
+        Err(OutputPayloadCoverageFailure::Unsupported(
+            UnsupportedPayload::OpaqueRecord
+        ))
     ));
     release_test_commit_snapshot(&runtime, &result);
 }
+
+mod diagnostics;

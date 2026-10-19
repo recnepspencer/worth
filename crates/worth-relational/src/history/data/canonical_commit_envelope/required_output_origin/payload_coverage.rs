@@ -12,10 +12,13 @@ use worth_foundational::facade::{
     ContractValidatedAspectValueView, StructAspectValue,
 };
 
+mod denial;
+use denial::{DuplicateSummary, OperationSummary, PresentSummary, UnsupportedPayload};
+
 #[derive(Debug)]
 pub(super) enum OutputPayloadCoverageFailure {
     Request(crate::execution::RelationalExecutionDenialCause),
-    Unsupported,
+    Unsupported(UnsupportedPayload),
     Corrupt(String),
 }
 impl From<&str> for OutputPayloadCoverageFailure {
@@ -91,18 +94,29 @@ fn validate_created_payload(
         return Err("required output lacks one complete native create publication".into());
     }
     if record.contains_opaque_aspect {
-        return Err(OutputPayloadCoverageFailure::Unsupported);
+        return Err(OutputPayloadCoverageFailure::Unsupported(
+            UnsupportedPayload::OpaqueRecord,
+        ));
     }
     let operations = record.authoritative_patch.full_grammar_operations();
     let Some(payload) = payload.filter(|payload| !payload.aspects().is_empty()) else {
         if !operations.is_empty() {
-            return Err(OutputPayloadCoverageFailure::Unsupported);
+            return Err(OutputPayloadCoverageFailure::Unsupported(
+                UnsupportedPayload::EmptyWithOperations(OperationSummary::capture(
+                    0,
+                    &operations[0],
+                )),
+            ));
         }
         if let Some(plan) = entity_plan {
             // None is storage's canonical empty state, never schema evidence.
             // Classification comes from the exact admitted branch-root plan.
             if !plan.executable_bindings.is_empty() {
-                return Err(OutputPayloadCoverageFailure::Unsupported);
+                return Err(OutputPayloadCoverageFailure::Unsupported(
+                    UnsupportedPayload::EmptyWithBindings {
+                        count: plan.executable_bindings.len(),
+                    },
+                ));
             }
             let kinds = &envelope.schema_authority.entity_kinds;
             charge(
@@ -118,13 +132,15 @@ fn validate_created_payload(
                 return Err("required empty output birth schema plan differs".into());
             }
         } else if !matches!(target, RecordRef::Relation(_)) {
-            return Err(OutputPayloadCoverageFailure::Unsupported);
+            return Err(OutputPayloadCoverageFailure::Unsupported(
+                UnsupportedPayload::EntityWithoutPlan,
+            ));
         }
         return Ok(());
     };
-    for (_, present) in payload.aspects().entries() {
-        let mut selected = None;
-        for operation in operations {
+    for (present_ordinal, (_, present)) in payload.aspects().entries().enumerate() {
+        let mut selected: Option<(usize, &Operation)> = None;
+        for (operation_ordinal, operation) in operations.iter().enumerate() {
             charge(
                 context,
                 operation
@@ -135,14 +151,21 @@ fn validate_created_payload(
                     .saturating_add(1),
             )?;
             if operation.aspect_key() == present.key() {
-                if selected.is_some() {
-                    return Err(OutputPayloadCoverageFailure::Unsupported);
+                if let Some((first_ordinal, first)) = selected {
+                    return Err(OutputPayloadCoverageFailure::Unsupported(
+                        UnsupportedPayload::DuplicateOperations(Box::new(DuplicateSummary {
+                            present: PresentSummary::capture(present_ordinal, present),
+                            first: OperationSummary::capture(first_ordinal, first),
+                            second: OperationSummary::capture(operation_ordinal, operation),
+                        })),
+                    ));
                 }
-                selected = Some(operation);
+                selected = Some((operation_ordinal, operation));
             }
         }
         covered_value(
             present,
+            present_ordinal,
             selected.ok_or("required output present cell has no actual native operation")?,
             target,
             context,
@@ -153,11 +176,13 @@ fn validate_created_payload(
 
 fn covered_value(
     present: &ContractValidatedAspectValue,
-    operation: &Operation,
+    present_ordinal: usize,
+    selected: (usize, &Operation),
     target: &RecordRef,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), OutputPayloadCoverageFailure> {
     charge(context, 1)?;
+    let (operation_ordinal, operation) = selected;
     let (identity, revision, binding) = match operation {
         Operation::WholeAspectSet {
             aspect_identity,
@@ -194,7 +219,12 @@ fn covered_value(
                 AspectBinding::RelationTargetEndpoint
             )
     ) {
-        return Err(OutputPayloadCoverageFailure::Unsupported);
+        return Err(OutputPayloadCoverageFailure::Unsupported(
+            UnsupportedPayload::TargetBinding {
+                present: PresentSummary::capture(present_ordinal, present),
+                operation: OperationSummary::capture(operation_ordinal, operation),
+            },
+        ));
     }
     let equal = match (operation, present.view()) {
         (
@@ -268,7 +298,14 @@ fn covered_value(
             }
             true
         }
-        _ => return Err(OutputPayloadCoverageFailure::Unsupported),
+        _ => {
+            return Err(OutputPayloadCoverageFailure::Unsupported(
+                UnsupportedPayload::OperationValue {
+                    present: PresentSummary::capture(present_ordinal, present),
+                    operation: OperationSummary::capture(operation_ordinal, operation),
+                },
+            ))
+        }
     };
     if equal {
         Ok(())
