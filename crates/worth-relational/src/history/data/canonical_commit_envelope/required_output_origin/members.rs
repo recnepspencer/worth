@@ -155,13 +155,23 @@ pub(super) fn capture(
             }
         }
         if role.posture == Posture::Create {
-            let payload = record
-                .extra()
-                .authoritative_aspect_state
-                .as_ref()
-                .ok_or_else(|| crate::mvcc::origin_denial("output has no classified payload"))?;
-            payload_coverage::validate_created_output_payload(envelope, id, payload, context)
-                .map_err(super::readmission::coverage_commit_stop)?;
+            let schema = basis.inner.root.schema_authority();
+            context
+                .checkpoint(
+                    u64::from(usize::BITS - schema.entity_aspect_plan_count().leading_zeros()) + 1,
+                )
+                .map_err(origin_request)?;
+            let plan = schema.entity_aspect_plan(role.kind).ok_or_else(|| {
+                crate::mvcc::origin_denial("output physical contract plan absent")
+            })?;
+            payload_coverage::validate_created_output_payload(
+                envelope,
+                id,
+                plan,
+                record.extra().authoritative_aspect_state.as_ref(),
+                context,
+            )
+            .map_err(super::readmission::coverage_commit_stop)?;
         }
         members.push(CanonicalOutputMember {
             role: role.role.clone(),

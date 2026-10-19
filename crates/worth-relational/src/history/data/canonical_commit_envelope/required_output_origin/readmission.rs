@@ -14,6 +14,26 @@ pub(super) fn coverage_commit_stop(failure: Failure) -> TransactionCommitError {
 }
 
 impl CanonicalCommitEnvelope {
+    /// Reconstructive callers validate the actual birth payload before any
+    /// later Preserve patches, using the same native coverage rule as capture.
+    pub(in crate::history::data) fn validate_required_output_entity_create(
+        &self,
+        id: crate::identity::data::EntityId,
+        plan: &crate::schema::data::LoweredAspectContractPlan,
+        payload: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
+        payload_coverage::validate_created_output_payload(self, id, plan, payload, context).map_err(
+            |failure| match failure {
+                Failure::Request(cause) => Stop::Request(cause),
+                Failure::Unsupported => {
+                    Stop::Payload("output has unsupported or unclassified birth cells".into())
+                }
+                Failure::Corrupt(detail) => Stop::Payload(detail),
+            },
+        )
+    }
+
     pub(crate) fn is_unmerged_output_publication_step(&self) -> bool {
         self.commit.parents.len() <= 1
             && self.merge_execution_authority.is_none()

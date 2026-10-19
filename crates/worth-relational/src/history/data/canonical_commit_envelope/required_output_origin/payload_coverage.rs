@@ -4,6 +4,7 @@ use crate::publication::patch::data::{
     PublishedAuthoritativePatchOperation as Operation, PublishedAuthoritativePatchValue as Value,
     RecordStructuralChange,
 };
+use crate::schema::data::LoweredAspectContractPlan;
 use crate::transactions::data::RecordRef;
 use worth_execution::MapKernelContext;
 use worth_foundational::facade::{
@@ -28,10 +29,27 @@ impl From<&str> for OutputPayloadCoverageFailure {
 pub(super) fn validate_created_output_payload(
     envelope: &CanonicalCommitEnvelope,
     id: EntityId,
-    payload: &AuthoritativeRecordAspectState,
+    plan: &LoweredAspectContractPlan,
+    payload: Option<&AuthoritativeRecordAspectState>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), OutputPayloadCoverageFailure> {
-    validate_created_payload(envelope, &RecordRef::Entity(id), Some(payload), context)
+    charge(context, envelope.record_allocations.len())?;
+    if envelope
+        .record_allocations
+        .iter()
+        .filter(|allocation| allocation.record() == &RecordRef::Entity(id))
+        .count()
+        != 1
+    {
+        return Err("required output has no unique native allocation".into());
+    }
+    validate_created_payload(
+        envelope,
+        &RecordRef::Entity(id),
+        Some(plan),
+        payload,
+        context,
+    )
 }
 
 pub(super) fn validate_created_relation_payload(
@@ -50,12 +68,13 @@ pub(super) fn validate_created_relation_payload(
     {
         return Err("required relation has no unique native allocation".into());
     }
-    validate_created_payload(envelope, &RecordRef::Relation(id), payload, context)
+    validate_created_payload(envelope, &RecordRef::Relation(id), None, payload, context)
 }
 
 fn validate_created_payload(
     envelope: &CanonicalCommitEnvelope,
     target: &RecordRef,
+    entity_plan: Option<&LoweredAspectContractPlan>,
     payload: Option<&AuthoritativeRecordAspectState>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), OutputPayloadCoverageFailure> {
@@ -76,11 +95,32 @@ fn validate_created_payload(
     }
     let operations = record.authoritative_patch.full_grammar_operations();
     let Some(payload) = payload.filter(|payload| !payload.aspects().is_empty()) else {
-        return if matches!(target, RecordRef::Relation(_)) && operations.is_empty() {
-            Ok(())
-        } else {
-            Err(OutputPayloadCoverageFailure::Unsupported)
-        };
+        if !operations.is_empty() {
+            return Err(OutputPayloadCoverageFailure::Unsupported);
+        }
+        if let Some(plan) = entity_plan {
+            // None is storage's canonical empty state, never schema evidence.
+            // Classification comes from the exact admitted branch-root plan.
+            if !plan.executable_bindings.is_empty() {
+                return Err(OutputPayloadCoverageFailure::Unsupported);
+            }
+            let kinds = &envelope.schema_authority.entity_kinds;
+            charge(
+                context,
+                (usize::BITS - kinds.len().leading_zeros()) as usize + 1,
+            )?;
+            let kind = kinds
+                .binary_search_by_key(&plan.kind_id, |kind| kind.kind_id)
+                .ok()
+                .map(|index| &kinds[index])
+                .ok_or("required empty output birth schema kind absent")?;
+            if kind.aspect_plan_revision != plan.plan_revision {
+                return Err("required empty output birth schema plan differs".into());
+            }
+        } else if !matches!(target, RecordRef::Relation(_)) {
+            return Err(OutputPayloadCoverageFailure::Unsupported);
+        }
+        return Ok(());
     };
     for (_, present) in payload.aspects().entries() {
         let mut selected = None;
@@ -267,3 +307,6 @@ pub(super) fn charge(
         .checkpoint(units)
         .map_err(|cause| OutputPayloadCoverageFailure::Request(cause.into()))
 }
+
+#[cfg(test)]
+mod tests;

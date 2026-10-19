@@ -3,7 +3,6 @@ use super::{
     charge, intent_writes_entity, require_linear_history, reserve,
     CodecRetirementClosureStop as Stop,
 };
-use crate::capabilities::AspectPlanSource;
 use crate::history::data::canonical_commit_envelope::{
     CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
 };
@@ -89,7 +88,12 @@ pub(super) fn validate_member(
     {
         return Err("output differs from its complete publication native write position".into());
     }
-    let plan = runtime
+    let schema = basis.inner.root.schema_authority();
+    charge(
+        context,
+        (usize::BITS - schema.entity_aspect_plan_count().leading_zeros()) as usize + 1,
+    )?;
+    let plan = schema
         .entity_aspect_plan(member.kind)
         .ok_or("output physical contract plan absent")?;
     let reconstructed = reconstruct(runtime, selected, id, plan, context, lease)?;
@@ -221,7 +225,7 @@ pub(super) fn reconstruct(
             if patch.contains_opaque_aspect {
                 return Err("output has unclassified opaque cells".into());
             }
-            reconstructed = Some(super::payload_reconstruction::apply(
+            let next = super::payload_reconstruction::apply(
                 reconstructed
                     .as_ref()
                     .and_then(|state| state.state.as_ref()),
@@ -230,7 +234,16 @@ pub(super) fn reconstruct(
                 creation,
                 lease,
                 context,
-            )?);
+            )?;
+            if creation {
+                envelope.validate_required_output_entity_create(
+                    id,
+                    plan,
+                    next.state.as_ref(),
+                    context,
+                )?;
+            }
+            reconstructed = Some(next);
         }
     }
     Ok(reconstructed)

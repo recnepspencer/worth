@@ -286,3 +286,6 @@ mod retirement;
 
 #[path = "continuity_tests/routes.rs"]
 mod routes;
+
+#[path = "continuity_tests/fieldless.rs"]
+mod fieldless;
