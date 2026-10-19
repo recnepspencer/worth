@@ -134,43 +134,40 @@ fn shared_fact_funding_is_ledger_affine_and_refunds_after_the_last_holder() {
     assert_eq!(local.retained_capacity_bytes(), held);
     drop(independent);
     assert_eq!(foreign.retained_capacity_bytes(), 0);
-    drop(first);
-    drop(second);
-    let cache = local.retained_capacity_bytes();
-    assert!(
-        cache > 0 && cache < held,
-        "only actual small weak-cache storage remains"
-    );
-
-    // A failed ownership transfer cannot erase the old cache's funding.
+    // Failure on another ledger cannot release the original active owner.
     let full = foreign
         .reserve_retained_capacity(installation.maximum_retained_bytes)
         .unwrap();
     assert!(
         super::super::fact_retention::reserve_payload(&facts, &foreign, &mut admission).is_err()
     );
-    assert_eq!(local.retained_capacity_bytes(), cache);
+    assert_eq!(local.retained_capacity_bytes(), held);
     assert_eq!(
         foreign.retained_capacity_bytes(),
         installation.maximum_retained_bytes
     );
     drop(full);
-    let replacement =
-        super::super::fact_retention::reserve_payload(&facts, &foreign, &mut admission).unwrap();
+    drop(first);
+    assert_eq!(local.retained_capacity_bytes(), held);
+    drop(second);
     assert_eq!(
         local.retained_capacity_bytes(),
         0,
-        "expired weak storage may move only after its new funding succeeds"
+        "final external release refunds full backing AND cache even while source evidence remains"
     );
+    assert!(facts.lock_retention().allocation.upgrade().is_none());
+
+    let replacement =
+        super::super::fact_retention::reserve_payload(&facts, &foreign, &mut admission).unwrap();
+    assert_eq!(local.retained_capacity_bytes(), 0);
+    assert!(foreign.retained_capacity_bytes() > 0);
     drop(replacement);
-    assert!(
-        foreign.retained_capacity_bytes() > 0,
-        "the original payload still owns its small cache"
-    );
-    drop(facts);
     assert_eq!(
         foreign.retained_capacity_bytes(),
         0,
-        "final backing release returns every retained byte"
+        "a newly admitted ledger releases its own cache with its last holder"
     );
+    assert!(facts.lock_retention().allocation.upgrade().is_none());
+    drop(facts);
+    assert_eq!(foreign.retained_capacity_bytes(), 0);
 }

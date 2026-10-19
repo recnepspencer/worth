@@ -7,7 +7,9 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
 use crate::domain_computation::execution_runtime::WorthQueryInvalidationResources;
-use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::{
+    FactPayload, FactRetentionAllocation,
+};
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 
 use super::admission::IndexAdmission;
@@ -18,7 +20,7 @@ use super::{index_capacity, retention};
 /// independent custody without borrowing that ledger's credit.
 #[derive(Clone, Debug)]
 pub(super) struct RetainedFactCapacity {
-    _allocation: Arc<RetainedInvalidationCapacity>,
+    _allocation: Arc<FactRetentionAllocation>,
     _basis: Arc<RetainedInvalidationCapacity>,
 }
 
@@ -54,39 +56,28 @@ pub(super) fn reserve_payload(
     facts: &FactPayload,
     resources: &WorthQueryInvalidationResources,
     admission: &mut impl IndexAdmission,
-) -> Result<Arc<RetainedInvalidationCapacity>, CompanionPreflightStop> {
+) -> Result<Arc<FactRetentionAllocation>, CompanionPreflightStop> {
     admission.work(1)?;
-    // Serialize admission with the weak lookup. Two first readers must not
-    // reserve the same allocation concurrently. No caller callback runs here.
+    // Declare this owner before the guard: on every return/error path the lock
+    // must be released before a potentially final upgraded allocation drops.
+    let existing;
     let mut slot = facts.lock_retention();
-    let existing = slot.allocation.upgrade();
+    existing = slot.allocation.upgrade();
     if let Some(ticket) = existing
         .as_ref()
-        .filter(|ticket| ticket.belongs_to(resources))
+        .filter(|ticket| ticket.capacity.belongs_to(resources))
     {
         return Ok(Arc::clone(ticket));
     }
-    let storage = if existing.is_none() {
-        match &slot.storage {
-            Some(ticket) if ticket.belongs_to(resources) => Some(Arc::clone(ticket)),
-            _ => {
-                // reserve adds this storage ticket's own Arc allocation.
-                let bytes = FactPayload::retention_storage_bytes()
-                    .and_then(|bytes| {
-                        bytes.checked_sub(
-                            index_capacity::arc_bytes::<RetainedInvalidationCapacity>()?,
-                        )
-                    })
-                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-                admission.bytes(bytes)?;
-                Some(retention::reserve(resources, bytes, admission)?)
-            }
-        }
-    } else {
-        // A foreign live ledger's ticket is never another installation's credit.
-        // It retains its slot; this independent owner pays its original full quote.
-        None
-    };
+    // Reserve the actual new wrapper/cache shape before allocation. A foreign
+    // live ledger receives no credit and cannot replace the original weak slot.
+    let bytes = FactPayload::retention_storage_bytes()
+        .and_then(|bytes| {
+            bytes.checked_sub(index_capacity::arc_bytes::<RetainedInvalidationCapacity>()?)
+        })
+        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+    admission.bytes(bytes)?;
+    let storage = retention::reserve(resources, bytes, admission)?;
     let count =
         u64::try_from(facts.len()).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
     admission.work(count)?;
@@ -98,10 +89,11 @@ pub(super) fn reserve_payload(
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     }
     admission.bytes(bytes)?;
-    let ticket = retention::reserve(resources, bytes, admission)?;
-    if let Some(storage) = storage {
+    let capacity = retention::reserve(resources, bytes, admission)?;
+    let cached = existing.is_none();
+    let ticket = facts.retention_storage().retain(capacity, storage, cached);
+    if cached {
         slot.allocation = Arc::downgrade(&ticket);
-        slot.storage = Some(storage);
     }
     Ok(ticket)
 }

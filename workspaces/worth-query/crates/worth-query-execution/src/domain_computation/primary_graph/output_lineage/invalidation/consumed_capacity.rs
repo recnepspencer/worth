@@ -5,7 +5,9 @@ use worth_relational::facade::{
 };
 
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
-use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::{
+    FactPayload, FactRetentionAllocation,
+};
 
 use super::admission::IndexAdmission;
 use super::{fact_retention, retention, InvalidationEditAdmission, SourceInvalidationOwner};
@@ -15,7 +17,7 @@ use super::{fact_retention, retention, InvalidationEditAdmission, SourceInvalida
 /// and metadata. A requested read has no facts and claims no currentness.
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct RetainedConsumedOutputCapacity {
-    _facts: Option<Arc<RetainedInvalidationCapacity>>,
+    _facts: Option<Arc<FactRetentionAllocation>>,
     _basis: Arc<RetainedInvalidationCapacity>,
     _metadata: Arc<RetainedInvalidationCapacity>,
 }
@@ -57,7 +59,10 @@ impl SourceInvalidationOwner {
         admission.bytes(metadata_bytes)?;
         let metadata = retention::reserve(&self.resources, metadata_bytes, admission)?;
         if let Some(ticket) = &facts {
-            super::consumed_capacity_observation::observe(self.runtime_instance_id, ticket);
+            super::consumed_capacity_observation::observe(
+                self.runtime_instance_id,
+                &ticket.capacity,
+            );
         }
         super::consumed_capacity_observation::observe(self.runtime_instance_id, &basis);
         super::consumed_capacity_observation::observe(self.runtime_instance_id, &metadata);

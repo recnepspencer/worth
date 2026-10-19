@@ -2545,9 +2545,11 @@ increase, output completion or cleanup.
 Consumed edges and restored marks in their original installed invalidation
 ledger share retention custody of the same original fact allocation. Each holder still funds
 its own native basis and metadata; new output projections and index storage
-remain separately admitted. The full fact reservation ends with its last
-external holder. Small weak-custody metadata remains funded while the original
-payload lives. A different installation receives no credit from that ledger.
+remain separately admitted. The full fact reservation and its weak-cache
+funding end with their last external holder, even when historical commit
+evidence still owns the original payload. Its empty lookup remains under the
+payload's original native or codec ownership. A different installation receives
+no credit from that ledger.
 This changes neither currentness checks nor the configured physical capacity.
 
 ### 5.5 Own a complete no-source output tree
