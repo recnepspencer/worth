@@ -249,7 +249,10 @@ impl<Schema, Operation, Input, Entity>
             .links()
             .iter()
             .any(|link| {
-                link.scope_entity() != scope
+                (matches!(
+                    link.source,
+                    super::ApplicationOperationBodyCreationLinkSource::Scope
+                ) && link.scope_entity() != scope)
                     || link.created_entity()
                         != body.program.creation().expect("creation attached").entity()
             })

@@ -110,6 +110,7 @@ fn lifecycle_compatibility_checks_child_sites_without_claiming_an_admission_bypa
                 key: "child".into(),
                 direction: Direction::FromScope,
                 posture: Posture::Append,
+                source: Default::default(),
             }]),
     };
     let holder = Creation::from_untrusted("Holder".into(), "holder".into(), vec![]);

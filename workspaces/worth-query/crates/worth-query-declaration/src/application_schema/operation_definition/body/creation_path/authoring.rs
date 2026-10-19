@@ -48,6 +48,8 @@ impl<S, O, I, E> ApplicationOperationBodyCreationBuilder<S, O, I, E> {
                 key: key.into(),
                 direction: Direction::FromScope,
                 posture: Posture::Append,
+                source:
+                    crate::application_schema::ApplicationOperationBodyCreationLinkSource::Scope,
             },
         };
         if !link.has_supported_shape()

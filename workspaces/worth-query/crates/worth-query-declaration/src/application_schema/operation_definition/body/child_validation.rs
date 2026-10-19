@@ -30,6 +30,7 @@ impl Child {
             && c.links()[0].created_entity() == c.entity()
             && c.links().iter().enumerate().all(|(index, link)| {
                 link.direction == Direction::FromScope
+                    && matches!(link.source, crate::application_schema::ApplicationOperationBodyCreationLinkSource::Scope)
                     && link.posture == Posture::Append
                     && link.scope_entity() == c.links()[0].scope_entity()
                     && link.created_entity() == c.entity()

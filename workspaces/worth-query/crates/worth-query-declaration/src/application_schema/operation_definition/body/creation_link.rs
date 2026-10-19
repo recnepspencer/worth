@@ -1,7 +1,8 @@
-//! Links connect this body's creation to its admitted scope, never arbitrary IDs.
+//! Created links target the admitted scope or principal, never arbitrary IDs.
 use super::{
     ApplicationOperationBodyAuthoringDenial as Denial, ApplicationOperationBodyCreationBuilder,
 };
+mod principal;
 use crate::application_schema::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
     ApplicationRelationRef, OperationLinks, OperationReads, OperationUnlinks,
@@ -11,6 +12,16 @@ use crate::application_schema::{
 pub enum ApplicationOperationBodyCreationLinkDirection {
     FromScope,
     ToScope,
+}
+#[derive(Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationOperationBodyCreationLinkSource {
+    #[default]
+    Scope,
+    Principal {
+        mutation_binding: String,
+        principal_binding: String,
+        identity: crate::application_schema::ApplicationFieldBindingLocus,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -36,8 +47,24 @@ pub struct ApplicationOperationBodyCreationLink {
     pub key: String,
     pub direction: ApplicationOperationBodyCreationLinkDirection,
     pub posture: ApplicationOperationBodyCreationLinkPosture,
+    pub source: ApplicationOperationBodyCreationLinkSource,
 }
 impl ApplicationOperationBodyCreationLink {
+    pub fn source_reads(&self) -> Vec<ApplicationOperationDecisionReadTarget> {
+        match &self.source {
+            ApplicationOperationBodyCreationLinkSource::Scope => vec![],
+            ApplicationOperationBodyCreationLinkSource::Principal { identity, .. } => vec![
+                ApplicationOperationDecisionReadTarget::Entity {
+                    entity: identity.entity().into(),
+                },
+                ApplicationOperationDecisionReadTarget::Field {
+                    entity: identity.entity().into(),
+                    aspect: identity.aspect().into(),
+                    field: identity.field().into(),
+                },
+            ],
+        }
+    }
     pub fn replacement_target(&self) -> Option<ApplicationOperationProgramTarget> {
         self.posture
             .replaces_selection()
@@ -108,6 +135,24 @@ impl ApplicationOperationBodyCreationLink {
         for part in [&self.relation, &self.from, &self.to, &self.key, direction] {
             use std::fmt::Write;
             write!(record, "{}:{part};", part.len()).expect("String write");
+        }
+        if let ApplicationOperationBodyCreationLinkSource::Principal {
+            mutation_binding,
+            principal_binding,
+            identity,
+        } = &self.source
+        {
+            use std::fmt::Write;
+            record.push_str("principal-anchor-v1;");
+            for part in [
+                mutation_binding.as_str(),
+                principal_binding.as_str(),
+                identity.entity(),
+                identity.aspect(),
+                identity.field(),
+            ] {
+                write!(record, "{}:{part};", part.len()).expect("String write");
+            }
         }
         record
     }
@@ -242,6 +287,7 @@ impl<Schema, Operation, Input, Entity>
             key: key.to_owned(),
             direction,
             posture: ApplicationOperationBodyCreationLinkPosture::Append,
+            source: ApplicationOperationBodyCreationLinkSource::Scope,
         });
         Ok(self)
     }

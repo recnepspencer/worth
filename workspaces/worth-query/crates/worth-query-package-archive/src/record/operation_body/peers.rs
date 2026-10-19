@@ -1,22 +1,27 @@
 //! V38 extends the root with path links and independent creation trees.
 use super::*;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationPathLink as PathLink;
-fn write_paths(output: &mut dyn BinaryEncodingSink, paths: &[PathLink]) -> Result<(), Denial> {
+fn write_paths(
+    output: &mut dyn BinaryEncodingSink,
+    paths: &[PathLink],
+    version: u16,
+) -> Result<(), Denial> {
     write_sequence(output, paths, |output, path| {
         if !path.has_supported_shape() {
             return Err(Denial::new(Kind::InvalidRecordShape));
         }
         super::super::application_query::write_root_path(output, &path.path)?;
-        super::creation_links::write(output, std::slice::from_ref(&path.link), 38)
+        super::creation_links::write(output, std::slice::from_ref(&path.link), version)
     })
 }
 fn decode_paths(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
+    version: u16,
 ) -> Result<Vec<PathLink>, Denial> {
     decode_sequence(input, budget, 12, |input, budget| {
         let path = super::super::application_query::decode_root_path(input, budget)?;
-        let links = super::creation_links::decode(input, budget, 38)?;
+        let links = super::creation_links::decode(input, budget, version)?;
         let [link]: [_; 1] = links
             .try_into()
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
@@ -30,17 +35,18 @@ fn decode_paths(
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     body: &ApplicationOperationBodyProgram,
+    version: u16,
 ) -> Result<(), Denial> {
     if !body.has_supported_peer_creations() {
         return Err(Denial::new(Kind::InvalidRecordShape));
     }
     let root = body.creation();
-    write_paths(output, root.map_or(&[], |c| c.path_links()))?;
+    write_paths(output, root.map_or(&[], |c| c.path_links()), version)?;
     write_sequence(output, root.map_or(&[], |c| c.peers()), |output, peer| {
         creation_fields::write(output, peer)?;
-        creation_links::write(output, peer.links(), 38)?;
-        write_paths(output, peer.path_links())?;
-        children::write(output, peer.children())
+        creation_links::write(output, peer.links(), version)?;
+        write_paths(output, peer.path_links(), version)?;
+        children::write(output, peer.children(), version)
     })
 }
 pub(super) fn decode(
@@ -49,11 +55,12 @@ pub(super) fn decode(
     root: Option<ApplicationOperationBodyCreation>,
     version: u16,
 ) -> Result<Option<ApplicationOperationBodyCreation>, Denial> {
-    let paths = decode_paths(input, budget)?;
+    let paths = decode_paths(input, budget, version)?;
     let peers = decode_sequence(input, budget, 32, |input, budget| {
-        let peer = creation_fields::decode(input, budget, 38, true)?.expect("explicit peer site");
-        let links = creation_links::decode(input, budget, 38)?;
-        let paths = decode_paths(input, budget)?;
+        let peer =
+            creation_fields::decode(input, budget, version, true)?.expect("explicit peer site");
+        let links = creation_links::decode(input, budget, version)?;
+        let paths = decode_paths(input, budget, version)?;
         let children = children::decode(input, budget, version)?;
         Ok(peer
             .with_untrusted_links(links)

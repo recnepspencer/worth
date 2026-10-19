@@ -16,6 +16,7 @@ fn child(parent: &str, from: &str, to: &str, key: &str, relation: &str) -> Child
                 key: key.into(),
                 direction: Direction::FromScope,
                 posture: Posture::Append,
+                source: Default::default(),
             }]),
     }
 }

@@ -27,6 +27,7 @@ fn replacement_installation_capacity_requires_room_for_the_observed_old_edge() {
         key: name.into(),
         direction: Direction::FromScope,
         posture,
+        source: Default::default(),
     })
     .collect();
     let body = Body::from_untrusted_in_scope(

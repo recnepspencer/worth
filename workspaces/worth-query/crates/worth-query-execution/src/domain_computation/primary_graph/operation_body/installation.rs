@@ -227,6 +227,13 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 .iter()
                 .chain(creation.path_links().iter().map(|path| &path.link))
             {
+                if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkSource::Principal {mutation_binding, principal_binding, identity} = &link.source {
+                    let principal = Binding::principal_binding();
+                    if mutation_binding != Binding::IDENTITY || principal_binding != principal.name()
+                        || identity.entity()!=principal.principal_entity()
+                        || identity.aspect()!=principal.principal_identity_aspect()
+                        || identity.field()!=principal.principal_identity_field() {return Err(denied());}
+                }
                 super::super::WorthQueryApplicationEntityKey::<Schema, ()>::new(&link.key)
                     .map_err(|_| denied())?;
             }

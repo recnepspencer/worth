@@ -1,6 +1,8 @@
 //! New meaning selects a new portable profile; old bodies retain their historical version.
 use super::*;
 pub(super) fn select(body: &ApplicationOperationBodyProgram) -> u16 {
+    if body.creation().into_iter().flat_map(|c|c.initialization_sites()).flat_map(|c|c.links())
+        .any(|l|!matches!(l.source,worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkSource::Scope)) {return 40;}
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
     if body.has_multiple_child_links() {39}
     else if body.creation().is_some_and(|c|!c.peers().is_empty()||!c.path_links().is_empty()) {38}

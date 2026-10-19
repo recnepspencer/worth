@@ -135,13 +135,17 @@ pub(super) fn write(
             })))?;
     }
     if version >= 36 {
-        children::write(output, body.creation().map_or(&[], |c| c.children()))?;
+        children::write(
+            output,
+            body.creation().map_or(&[], |c| c.children()),
+            version,
+        )?;
     }
     if version >= 37 {
         reference_input::write(output, body.reference_inputs())?;
     }
     if version >= 38 {
-        peers::write(output, body)?;
+        peers::write(output, body, version)?;
     }
     Ok(())
 }
@@ -151,7 +155,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=39) {
+    if !matches!(version, 1..=40) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {

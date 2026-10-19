@@ -59,6 +59,7 @@ pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     retirements: PreparedBodyRetirements<Schema>,
     path_writes: PreparedBodyPathWrites<Schema>,
     path_links: PreparedBodyPathLinks<Schema>,
+    principal_link: Option<WorthQueryInvariantMutationTarget<Schema, ()>>,
     references: reference_input::PreparedBodyReferences<Schema>,
     creation_disposition: reuse::CreationDisposition,
     children: Option<PreparedBodyChildren<Schema>>,

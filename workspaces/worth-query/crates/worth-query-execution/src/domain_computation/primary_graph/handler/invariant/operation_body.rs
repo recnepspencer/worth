@@ -4,6 +4,7 @@ mod emission;
 mod path_input;
 mod path_links;
 mod path_value;
+mod principal_link;
 mod reference_input;
 mod retirement;
 mod reuse;

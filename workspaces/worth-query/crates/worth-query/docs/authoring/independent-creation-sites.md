@@ -19,6 +19,7 @@ Through `worth_query_decl::facade::application_schema`:
 
 - `creation.with_peer(entity, key, authoring_closure)`
 - `creation.link_from_path(ApplicationQueryRootPath, relation, key)`
+- `creation.link_to_principal::<Binding, Relation>(relation, key)`
 
 The peer closure receives the existing typed creation builder, not a runtime
 callback or another mutation executor. Initializers, native actor capture and
@@ -30,6 +31,13 @@ The admitted scope remains the original existing entity. A path selects an exact
 existing anchor from that scope; it does not turn a supplied key into authority.
 Each creation has a candidate-local symbolic key, independent of business identity.
 Root, peer and descendant creation keys must all be distinct.
+
+A creator relationship has a different source from a scope/path link. Use
+`link_to_principal::<Binding, _>` with a relation from the created entity to
+`Binding::Principal`. Query captures the principal actually admitted for that
+binding before candidate effects. The input supplies neither an actor ID nor an
+organization-member selection. Two editors in the same scope therefore retain
+distinct creator relationships. The link records provenance, not permission.
 
 A snapshot can be reused while an independently declared audit is still created.
 Snapshot replacement retires only its disposable predecessor. It does not delete
@@ -104,6 +112,23 @@ optional absence. Reuse skips only the reusable site's creation effects, not the
 parent revision or independent audit. Whether a business operation should emit an
 audit for a no-op request is supplier-authored meaning, not an implicit audit policy.
 
+To retain a creator relationship as well as an actor scalar, the corresponding
+root or peer builder can append the actual principal link:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// CreatedBy targets CreateBinding::Principal.
+let created = created
+    .link_to_principal::<CreateBinding, _>(CreatedBy::reference(), "creator")?;
+```
+
+Declare Link membership normally. Cold readmission checks the operation, binding,
+principal identity locus and relation endpoints; installation also checks the
+exact typed mutation binding. Native capture retains the actual observed target,
+not a scalar identity for later lookup. The admitted principal's identity field
+and entity are tracked reads, not arbitrary directory-read permission.
+
 The binding's candidate ceiling must fund every creation instance, initializer,
 scope/path write and link, including each peer's children. Repeated entity kinds
 are not one creation instance. This mechanism alone is not a complete lot-provider,
@@ -130,6 +155,10 @@ New composition uses canonical body profile 28 and portable archive profile 38.
 Older bodies keep their profiles. Program/evolution identity retains peer
 initializers, link targets, anchor paths and descendant-parent correspondence.
 Profiles do not advance schema compatibility versions or rewrite old releases.
+Principal anchors add explicit canonical link meaning and select portable body
+archive profile 40. Root, peer, path and child carriage retain the same meaning
+within that record. An older-profile writer refuses principal anchors rather
+than silently dropping metadata; ordinary scope links keep their original bytes.
 
 ## Anti-Patterns
 
@@ -143,6 +172,11 @@ with a second changed-field planner.
 Paths must be guard-free and select one distinct live endpoint at each hop.
 Path links append from an existing anchor; they do not replace an existing-path
 selection. A reusable or retiring site cannot also have path links.
+Principal links append from the created record to the existing admitted principal.
+They are supported on roots and peers, not child sites or path-link wrappers.
+Unsupported descriptions fail fresh validation. Reverse-path subjects anchored
+at the existing principal can be affected by this new relation; a fresh endpoint
+does not imply a preexisting forward-path subject changed.
 
 Independent peers are unsigned, append-only creation trees. Nested peer
 attachments, peer reuse/replacement, peer enrollment, peer signing and succession

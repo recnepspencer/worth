@@ -76,6 +76,7 @@ impl<S, O, I, E> ApplicationOperationBodyChildCreationBuilder<S, O, I, E> {
             key: key.into(),
             direction: Direction::FromScope,
             posture: Posture::Append,
+            source: super::ApplicationOperationBodyCreationLinkSource::Scope,
         });
         Ok(self)
     }
@@ -214,6 +215,7 @@ where
         key: key.to_owned(),
         direction: Direction::FromScope,
         posture: Posture::Append,
+        source: super::ApplicationOperationBodyCreationLinkSource::Scope,
     };
     let mut child = build(ApplicationOperationBodyChildCreationBuilder {
         creation: Creation::from_untrusted(relation.to().to_owned(), key.to_owned(), vec![])

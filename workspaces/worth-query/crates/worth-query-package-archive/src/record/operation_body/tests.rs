@@ -31,6 +31,8 @@ mod path_value;
 mod peers;
 #[path = "tests/principal.rs"]
 mod principal;
+#[path = "tests/principal_links.rs"]
+mod principal_links;
 #[path = "tests/reference_input.rs"]
 mod reference_input;
 #[path = "tests/related_outputs.rs"]

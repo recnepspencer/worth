@@ -13,6 +13,10 @@ pub struct ApplicationOperationBodyCreationPathLink {
 impl ApplicationOperationBodyCreationPathLink {
     pub fn has_supported_shape(&self) -> bool {
         path_source::supported_path(&self.path)
+            && matches!(
+                self.link.source,
+                super::ApplicationOperationBodyCreationLinkSource::Scope
+            )
             && self.link.scope_entity() == self.path.terminal_entity()
             && !self.link.key.is_empty()
             && self.link.key.trim() == self.link.key

@@ -143,6 +143,10 @@ where
             Ok(anchors) => anchors,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
+        let principal_link = match reader.body_principal_link(&self.body) {
+            Ok(target) => target,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         let children = match reader.body_child_custody(&self.body) {
             Ok(children) => children,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -173,6 +177,7 @@ where
                 retirements,
                 path_writes,
                 path_links,
+                principal_link,
                 references,
                 creation_disposition,
                 children,

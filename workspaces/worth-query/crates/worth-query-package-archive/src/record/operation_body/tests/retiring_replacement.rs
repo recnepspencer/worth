@@ -14,6 +14,7 @@ fn retiring_replacement_v34_roundtrips_and_older_posture_readers_refuse() {
         key: "current".into(),
         direction: Direction::FromScope,
         posture: Posture::ReplaceAndRetireSingle,
+        source: Default::default(),
     };
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
         "Row".into(),

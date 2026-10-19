@@ -15,7 +15,7 @@ pub(super) fn validate_links(
     for creation in body.creation().into_iter().flat_map(|c| c.creation_roots()) {
         let mut keys = std::collections::BTreeSet::new();
         for link in creation.links() {
-            if link.scope_entity() != body.scope_entity().unwrap_or_default()
+            if !source_is_declared(operation, body, link, members)
                 || link.created_entity() != creation.entity()
                 || link.key.is_empty()
                 || link.key.trim() != link.key
@@ -39,6 +39,31 @@ pub(super) fn validate_links(
         }
     }
     Ok(())
+}
+
+fn source_is_declared(
+    operation: &str,
+    body: &ApplicationOperationBodyProgram,
+    link: &Link,
+    members: &[ApplicationSchemaMember],
+) -> bool {
+    use crate::application_schema::ApplicationOperationBodyCreationLinkSource as Source;
+    match &link.source {
+        Source::Scope => link.scope_entity() == body.scope_entity().unwrap_or_default(),
+        Source::Principal {mutation_binding, principal_binding, identity} => {
+            link.direction == Direction::ToScope && !link.posture.replaces_selection()
+                && link.scope_entity() == identity.entity()
+                && members.iter().any(|m| matches!(m, ApplicationSchemaMember::ApplicationMutation {description}
+                    if description.operation()==operation && description.binding_identity().as_str()==mutation_binding
+                    && Some(description.scope().entity.as_str())==body.scope_entity()))
+                && members.iter().any(|m| matches!(m, ApplicationSchemaMember::PrincipalBinding {
+                    binding, principal_entity, principal_identity_aspect, principal_identity_field, ..}
+                    if binding==principal_binding && principal_entity==identity.entity()
+                    && principal_identity_aspect==identity.aspect() && principal_identity_field==identity.field()))
+                && link.source_reads().iter().all(|read| members.iter().any(|m| matches!(m,
+                    ApplicationSchemaMember::OperationDecisionRead {operation:op,target} if op==operation && target==read)))
+        }
+    }
 }
 
 fn replacement_is_declared(

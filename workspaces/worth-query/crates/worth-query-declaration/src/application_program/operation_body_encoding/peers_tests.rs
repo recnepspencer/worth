@@ -47,6 +47,7 @@ fn body(member: &str, relation: &str) -> Body {
             key: "entry".into(),
             direction: Direction::FromScope,
             posture: Posture::Append,
+            source: Default::default(),
         },
     }]);
     Body::from_untrusted_in_scope(

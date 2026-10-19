@@ -1,14 +1,18 @@
 //! Flat prior-parent site carriage reuses the existing initializer and link codecs.
 use super::*;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyChildCreation as Child;
-pub(super) fn write(output: &mut dyn BinaryEncodingSink, children: &[Child]) -> Result<(), Denial> {
+pub(super) fn write(
+    output: &mut dyn BinaryEncodingSink,
+    children: &[Child],
+    version: u16,
+) -> Result<(), Denial> {
     write_sequence(output, children, |output, child| {
         if !child.has_supported_shape() {
             return Err(Denial::new(Kind::InvalidRecordShape));
         }
         output.text(&child.parent_key)?;
         super::creation_fields::write(output, &child.creation)?;
-        super::creation_links::write(output, child.creation.links(), 36)
+        super::creation_links::write(output, child.creation.links(), version)
     })
 }
 pub(super) fn decode(

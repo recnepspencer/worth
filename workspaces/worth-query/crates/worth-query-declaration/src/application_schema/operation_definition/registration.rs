@@ -83,12 +83,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                         }
                     }));
                 }
-                reads.extend(
-                    creation
-                        .links()
-                        .iter()
-                        .flat_map(|link| link.replacement_reads()),
-                );
+                reads.extend(creation.links().iter().flat_map(|link| {
+                    link.replacement_reads()
+                        .into_iter()
+                        .chain(link.source_reads())
+                }));
                 reads.extend(
                     creation
                         .fields()

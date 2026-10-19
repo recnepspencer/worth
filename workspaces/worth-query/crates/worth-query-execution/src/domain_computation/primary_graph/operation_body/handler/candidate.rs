@@ -199,7 +199,14 @@ where
                         return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                     }
                 }
-                if let Err(cause) = writer.body_creation_link(&target, &created, link) {
+                let linked = if matches!(link.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkSource::Principal {..}) {
+                    let principal = match writer.projected_entity(decision.principal_link.as_ref().expect("exact admitted principal target")) {
+                        Ok(target) => target,
+                        Err(cause) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+                    };
+                    writer.body_creation_link(&principal, &created, link)
+                } else { writer.body_creation_link(&target, &created, link) };
+                if let Err(cause) = linked {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
             }

@@ -71,7 +71,7 @@ pub use builder::ApplicationOperationBodyBuilder;
 pub use creation::ApplicationOperationBodyCreationBuilder;
 pub use creation_link::{
     ApplicationOperationBodyCreationLink, ApplicationOperationBodyCreationLinkDirection,
-    ApplicationOperationBodyCreationLinkPosture,
+    ApplicationOperationBodyCreationLinkPosture, ApplicationOperationBodyCreationLinkSource,
 };
 pub use output::{ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget};
 pub use program::{

@@ -14,6 +14,48 @@ use worth_query_declaration::facade::{
     },
 };
 #[test]
+fn creation_to_principal_changes_reverse_existing_subjects_not_fresh_forward_subjects() {
+    use worth_query_declaration::facade::application_schema::{
+        ApplicationFieldBindingLocus, ApplicationOperationBodyCreationLinkSource as Source,
+    };
+    let link = Link {
+        relation: "CreatedBy".into(),
+        from: "Created".into(),
+        to: "Principal".into(),
+        key: "creator".into(),
+        direction: Direction::ToScope,
+        posture: Posture::Append,
+        source: Source::Principal {
+            mutation_binding: "CreateBinding".into(),
+            principal_binding: "PrincipalBinding".into(),
+            identity: ApplicationFieldBindingLocus::new("Principal", "Identity", "Id"),
+        },
+    };
+    let body = Body::from_untrusted_in_scope(
+        "Organization".into(),
+        vec![],
+        Some(
+            Creation::from_untrusted("Created".into(), "new".into(), vec![])
+                .with_untrusted_links(vec![link]),
+        ),
+        vec![],
+    );
+    let forward = Step::from_untrusted_fields(
+        "CreatedBy".into(),
+        "Created".into(),
+        "Principal".into(),
+        Path::Forward,
+    );
+    let reverse = Step::from_untrusted_fields(
+        "CreatedBy".into(),
+        "Created".into(),
+        "Principal".into(),
+        Path::Reverse,
+    );
+    assert!(!link_can_change_existing_anchor(&body, &forward));
+    assert!(link_can_change_existing_anchor(&body, &reverse));
+}
+#[test]
 fn peer_existing_anchor_links_participate_without_touching_fresh_endpoints() {
     for path_link in [false, true] {
         for direction in [Direction::FromScope, Direction::ToScope] {
@@ -28,6 +70,7 @@ fn peer_existing_anchor_links_participate_without_touching_fresh_endpoints() {
                 key: "selection".into(),
                 direction,
                 posture: Posture::Append,
+                source: Default::default(),
             };
             let peer = Creation::from_untrusted("Created".into(), "peer".into(), vec![]);
             let peer = if path_link {

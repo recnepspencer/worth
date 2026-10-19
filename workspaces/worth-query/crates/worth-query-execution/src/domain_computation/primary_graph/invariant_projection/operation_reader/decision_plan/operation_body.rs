@@ -108,7 +108,7 @@ impl<Schema: ApplicationSchema, Operation>
         self.body_value(&identity, field, capture)
     }
 
-    pub(super) fn body_principal_identity(
+    pub(in crate::domain_computation::primary_graph) fn body_principal_identity(
         &mut self,
         field: &ApplicationFieldBindingLocus,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, ()>, HandlerExecutionDenial> {

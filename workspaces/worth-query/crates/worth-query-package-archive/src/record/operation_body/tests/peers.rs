@@ -35,6 +35,7 @@ fn v38_preserves_independent_root_and_existing_anchor_without_changing_old_profi
             key: "audit".into(),
             direction: Direction::FromScope,
             posture: Posture::Append,
+            source: Default::default(),
         },
     };
     let root = ApplicationOperationBodyCreation::from_untrusted(
