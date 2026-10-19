@@ -15,7 +15,8 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.input_emission().is_some() { "operation-body-v16" }
+        if body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { "operation-body-v17" }
+        else if body.external_emission().is_some() { "operation-body-v16" }
         else if body.succession().is_some_and(|s| s.output_match().is_some()) { "operation-body-v15" }
         else if body.outputs().iter().any(|output| matches!(output.target, crate::application_schema::ApplicationOperationBodyOutputTarget::Related { .. })) {
             "operation-body-v14"
@@ -66,8 +67,8 @@ pub(super) fn append_body(
         },
         operation,
     );
-    if let Some(input_emission) = body.input_emission() {
-        emission::append(basis, prefix, input_emission);
+    if let Some(external_emission) = body.external_emission() {
+        emission::append(basis, prefix, external_emission);
     }
     if !body.outputs().is_empty() {
         basis.usize(format!("{prefix}.outputs"), body.outputs().len());

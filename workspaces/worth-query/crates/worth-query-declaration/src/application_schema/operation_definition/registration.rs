@@ -17,8 +17,8 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 definition.operation,
                 definition.input_type.clone(),
             );
-        if let Some(recipe) = definition.input_emission_recipe {
-            self.member_provenance.register_body_input_effect(recipe);
+        if let Some(recipe) = definition.external_emission_recipe {
+            self.member_provenance.register_body_external_effect(recipe);
         }
         self.push_member_in_place(ApplicationSchemaMember::Operation {
             operation: operation.clone(),
@@ -114,7 +114,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     });
                 }
             }
-            if let Some(emission) = body.input_emission() {
+            if let Some(emission) = body.external_emission() {
                 self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
                     operation: operation.clone(),
                     target: super::super::ApplicationOperationProgramTarget::Emit {

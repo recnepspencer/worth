@@ -19,6 +19,15 @@ mod collection_values;
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
+    pub(in crate::domain_computation::primary_graph) fn body_query_context(
+        &self,
+        query: &str,
+    ) -> Result<
+        crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext,
+        HandlerExecutionDenial,
+    > {
+        self.query_context.filter(|context| context.query_identifier() == query).cloned().ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query)))
+    }
     pub(in crate::domain_computation::primary_graph) fn body_requirement_operand<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,

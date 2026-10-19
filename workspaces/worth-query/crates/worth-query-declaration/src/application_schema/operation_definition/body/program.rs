@@ -1,6 +1,7 @@
 //! Ordered, portable native values for one operation's scope-bound body.
 
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
+mod query_context;
 
 pub use super::created_field::ApplicationOperationBodyCreatedField;
 use crate::application_schema::{
@@ -140,7 +141,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
-    pub(super) input_emission: Option<super::ApplicationOperationBodyInputEmission>,
+    pub(super) external_emission: Option<super::ApplicationOperationBodyExternalEmission>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -236,7 +237,7 @@ impl ApplicationOperationBodyProgram {
             requirements: Vec::new(),
             outputs: Vec::new(),
             succession: None,
-            input_emission: None,
+            external_emission: None,
         }
     }
     pub fn from_untrusted_with_creation(
@@ -250,7 +251,7 @@ impl ApplicationOperationBodyProgram {
             requirements: Vec::new(),
             outputs: Vec::new(),
             succession: None,
-            input_emission: None,
+            external_emission: None,
         }
     }
     pub fn from_untrusted_with_requirements(
@@ -265,7 +266,7 @@ impl ApplicationOperationBodyProgram {
             requirements,
             outputs: Vec::new(),
             succession: None,
-            input_emission: None,
+            external_emission: None,
         }
     }
     /// Authority-free scope-bound description. Fresh readmission checks the scope
@@ -286,7 +287,7 @@ impl ApplicationOperationBodyProgram {
             requirements,
             outputs: Vec::new(),
             succession: None,
-            input_emission: None,
+            external_emission: None,
         }
     }
     pub fn explicit_scope_entity(&self) -> Option<&str> {
@@ -324,14 +325,14 @@ impl ApplicationOperationBodyProgram {
     pub fn requirements(&self) -> &[super::ApplicationOperationBodyRequirementProgram] {
         &self.requirements
     }
-    pub fn input_emission(&self) -> Option<&super::ApplicationOperationBodyInputEmission> {
-        self.input_emission.as_ref()
+    pub fn external_emission(&self) -> Option<&super::ApplicationOperationBodyExternalEmission> {
+        self.external_emission.as_ref()
     }
-    pub fn with_untrusted_input_emission(
+    pub fn with_untrusted_external_emission(
         mut self,
-        emission: Option<super::ApplicationOperationBodyInputEmission>,
+        emission: Option<super::ApplicationOperationBodyExternalEmission>,
     ) -> Self {
-        self.input_emission = emission;
+        self.external_emission = emission;
         self
     }
     /// All source consumers, including optional effect guards. Only `requirements`
@@ -340,21 +341,10 @@ impl ApplicationOperationBodyProgram {
         &self,
     ) -> impl Iterator<Item = &super::ApplicationOperationBodyRequirementProgram> {
         self.requirements.iter().chain(
-            self.input_emission
+            self.external_emission
                 .iter()
                 .filter_map(|emission| emission.condition.as_ref()),
         )
-    }
-    /// Whether fresh requirement evaluation consumes the bound native query source.
-    pub fn requires_query_context(&self) -> bool {
-        self.observation_requirements()
-            .flat_map(|requirement| requirement.operands())
-            .any(|operand| {
-                matches!(
-                    operand.source(),
-                    super::ApplicationOperationBodyRequirementSource::QueryContext { .. }
-                )
-            })
     }
     pub fn has_optional_inputs(&self) -> bool {
         self.scope_fields

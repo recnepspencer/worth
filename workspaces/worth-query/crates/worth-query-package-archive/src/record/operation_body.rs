@@ -8,7 +8,7 @@ mod classified_capture;
 mod creation_fields;
 mod creation_links;
 mod enrollment;
-mod input_emission;
+mod external_emission;
 mod outputs;
 mod principal;
 mod query_context;
@@ -41,7 +41,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.input_emission().is_some() { 26 }
+    let version = if body.external_emission().is_some_and(|emission| matches!(emission.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { 27 }
+    else if body.external_emission().is_some() { 26 }
     else if body.requires_query_context() { 25 }
     else if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
         matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::RelatedFieldValues { .. })) { 24 }
@@ -220,8 +221,8 @@ pub(super) fn write(
     if version >= 21 {
         succession::write(output, body.succession())?;
     }
-    if let Some(emission) = body.input_emission() {
-        input_emission::write(output, emission)?;
+    if let Some(emission) = body.external_emission() {
+        external_emission::write(output, emission)?;
     }
     Ok(())
 }
@@ -231,7 +232,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=26) {
+    if !matches!(version, 1..=27) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -370,8 +371,8 @@ pub(super) fn decode(
     } else {
         None
     };
-    let input_emission = if version >= 26 {
-        Some(input_emission::decode(input, budget, version)?)
+    let external_emission = if version >= 26 {
+        Some(external_emission::decode(input, budget, version)?)
     } else {
         None
     };
@@ -384,7 +385,7 @@ pub(super) fn decode(
         )
         .with_untrusted_outputs(outputs)
         .with_untrusted_succession(succession)
-        .with_untrusted_input_emission(input_emission))
+        .with_untrusted_external_emission(external_emission))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             steps,

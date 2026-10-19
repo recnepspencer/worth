@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph::operation_body) fn install<
     schema: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
     body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
 ) -> Result<Option<Arc<Recipe>>, Denial> {
-    let Some(emission) = body.input_emission() else {
+    let Some(emission) = body.external_emission() else {
         return Ok(None);
     };
     let denied = || Denial::new(Kind::OperationBodyUnavailable, Binding::IDENTITY);
@@ -25,7 +25,7 @@ pub(in crate::domain_computation::primary_graph::operation_body) fn install<
         return Err(denied());
     }
     let recipe = schema
-        .body_input_effect_recipe(Binding::Operation::IDENTIFIER)
+        .body_external_effect_recipe(Binding::Operation::IDENTIFIER)
         .ok_or_else(denied)?;
     use worth_query_declaration::facade::application_schema::{
         ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
@@ -35,6 +35,14 @@ pub(in crate::domain_computation::primary_graph::operation_body) fn install<
         || recipe.operation_type() != std::any::TypeId::of::<Binding::Operation>()
         || emission.input_binding != Binding::InputBinding::IDENTITY
     {
+        return Err(denied());
+    }
+    let payload_type = match &emission.source {
+        worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::OperationInput => std::any::TypeId::of::<Binding::Input>(),
+        worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { mutation_binding, .. } if mutation_binding == Binding::IDENTITY => std::any::TypeId::of::<worth_query_declaration::facade::application_query::ApplicationQueryExpressionSnapshot>(),
+        _ => return Err(denied()),
+    };
+    if recipe.payload_type() != payload_type {
         return Err(denied());
     }
     Ok(Some(Arc::new(recipe.clone())))

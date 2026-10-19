@@ -57,8 +57,8 @@ impl WorthQueryProviderAttemptPreparation {
         let Some(binding) = self.workflow_settlement.take() else {
             return Ok((self, None));
         };
-        let external = crate::domain_computation::primary_graph::operation_body::emission::BodyInputEffectSelection::selected_external_contract(
-            self.body_input_emission.as_ref(), admission.allowed_graph_contract().external_effect(),
+        let external = crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection::selected_external_contract(
+            self.body_external_emission.as_ref(), admission.allowed_graph_contract().external_effect(),
         ).map_err(|detail| WorthQueryApplicationAttemptDenial::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, detail,
         ))?.is_some_and(|contract| contract.is_declared());

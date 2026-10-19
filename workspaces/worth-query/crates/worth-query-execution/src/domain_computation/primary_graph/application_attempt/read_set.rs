@@ -123,8 +123,8 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     /// Earned optional-effect guard disposition from the same sealed decision.
     /// It cannot be supplied by a caller or inferred from an absent payload.
-    pub(super) body_input_emission:
-        Option<super::super::operation_body::emission::BodyInputEffectSelection>,
+    pub(super) body_external_emission:
+        Option<super::super::operation_body::emission::BodyExternalEffectSelection>,
     pub(super) signed_creation: Option<super::signed_creation::SignedCreationState<Schema>>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
     /// must commit before; the provider checks it again at commit.

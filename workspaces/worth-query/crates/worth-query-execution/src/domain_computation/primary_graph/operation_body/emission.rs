@@ -1,21 +1,25 @@
-//! Native earned selection of an installed body's one external input effect.
+//! Native earned selection and once-prepared payload of one installed external effect.
 mod installation;
 use crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation;
+use crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext;
+use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as DenialKind;
 pub(super) use installation::install;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationBodyInputEffectRecipe as Recipe,
-    ApplicationOperationBodyInputEmission as Meaning,
+    ApplicationOperationBodyExternalEffectRecipe as Recipe,
+    ApplicationOperationBodyExternalEmission as Meaning,
 };
 
 /// Minted only by the native body evaluator. It is not caller-supplied
 /// availability, an effect count, or an alternate publication permit.
-pub(in crate::domain_computation::primary_graph) struct BodyInputEffectSelection {
+pub(in crate::domain_computation::primary_graph) struct BodyExternalEffectSelection {
     recipe: Arc<Recipe>,
     emit: bool,
     funding: Option<Arc<QueryMemoryReservation>>,
+    payload: Option<worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection>,
+    backing: Option<ObservedQueryExpressionContext>,
 }
-impl BodyInputEffectSelection {
+impl BodyExternalEffectSelection {
     /// A missing disposition preserves the ordinary mandatory external slot.
     /// Only a matching native selection may suppress it for this invocation.
     pub(in crate::domain_computation::primary_graph) fn selected_external_contract<'a>(
@@ -48,16 +52,13 @@ impl BodyInputEffectSelection {
         }
         Ok(selection.emits().then_some(original))
     }
-    pub(super) fn new(
-        recipe: Arc<Recipe>,
-        emit: bool,
-        funding: Option<QueryMemoryReservation>,
-    ) -> Self {
-        Self {
-            recipe,
-            emit,
-            funding: funding.map(Arc::new),
-        }
+    pub(in crate::domain_computation::primary_graph) fn take_payload(&mut self) -> Option<worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection>{
+        self.payload.take()
+    }
+    pub(in crate::domain_computation::primary_graph) fn backing(
+        &self,
+    ) -> Option<ObservedQueryExpressionContext> {
+        self.backing.clone()
     }
     pub(in crate::domain_computation::primary_graph) fn matches(&self, meaning: &Meaning) -> bool {
         self.recipe.meaning() == meaning
@@ -92,7 +93,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
     input: &dyn std::any::Any,
     execution: &crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution<'_>,
 ) -> Result<
-    BodyInputEffectSelection,
+    BodyExternalEffectSelection,
     crate::domain_computation::primary_graph::HandlerExecutionDenial,
 > {
     use crate::domain_computation::primary_graph::{
@@ -108,21 +109,57 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
         })
         .transpose()?
         .is_none_or(|status| status == super::WorthQueryOperationBodyRequirementStatus::Met);
-    let funding = if emit {
-        let retained = recipe.quote(input).map_err(|_| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::InvalidEffectValue, &recipe.meaning().effect)))?;
+    let backing = if emit {
+        match &recipe.meaning().source {
+            worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::OperationInput => None,
+            worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { query, .. } => Some(reader.body_query_context(query.name())?),
+        }
+    } else {
+        None
+    };
+    let source: &dyn std::any::Any = backing.as_ref().map_or(input, |context| context.snapshot());
+    let (funding, payload) = if emit {
+        let retained = recipe
+            .quote(source)
+            .map_err(|_| invalid_payload(&recipe, DenialKind::InvalidEffectValue))?;
         let bytes = retained
             .checked_add(recipe.meaning().maximum_payload_bytes)
-            .and_then(|bytes| bytes.checked_add(size_of::<BodyInputEffectSelection>() as u64))
+            .and_then(|bytes| bytes.checked_add(size_of::<BodyExternalEffectSelection>() as u64))
             .ok_or_else(|| {
                 HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(
                     WorthQueryManagedComputationResourceDenial::CapacityOverflow,
                 ))
             })?;
-        Some(execution.reserve(bytes).map_err(|cause| {
+        let funding = execution.reserve(bytes).map_err(|cause| {
             HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause))
-        })?)
+        })?;
+        // The exact native decision owns both source and funding. Candidate
+        // construction consumes this projection without rereading or encoding.
+        let payload = recipe.project(source).map_err(|_| {
+            invalid_payload(&recipe, DenialKind::ExternalEffectPayloadProjectionRejected)
+        })?;
+        (Some(Arc::new(funding)), Some(payload))
     } else {
-        None
+        (None, None)
     };
-    Ok(BodyInputEffectSelection::new(recipe, emit, funding))
+    Ok(BodyExternalEffectSelection {
+        recipe,
+        emit,
+        funding,
+        payload,
+        backing,
+    })
+}
+
+fn invalid_payload(
+    recipe: &Recipe,
+    kind: DenialKind,
+) -> crate::domain_computation::primary_graph::HandlerExecutionDenial {
+    use crate::domain_computation::primary_graph::{
+        HandlerExecutionDenial, WorthQueryApplicationAttemptDenial,
+    };
+    HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::new(
+        kind,
+        &recipe.meaning().effect,
+    ))
 }

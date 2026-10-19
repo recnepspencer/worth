@@ -3,7 +3,7 @@ use super::*;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectProtocol, ApplicationFieldPresence,
-    ApplicationOperationBodyInputEmission as Emission,
+    ApplicationOperationBodyExternalEmission as Emission,
     ApplicationOperationBodyRequirementExpression as Expression,
     ApplicationOperationBodyRequirementOperand as Operand,
     ApplicationOperationBodyRequirementProgram as Requirement,
@@ -11,7 +11,7 @@ use worth_query_declaration::facade::application_schema::{
 };
 
 #[test]
-fn whole_input_emission_v26_roundtrips_conditional_and_unconditional_meaning() {
+fn whole_external_emission_v26_roundtrips_conditional_and_unconditional_meaning() {
     let expression =
         worth_foundational::expression_api::expressions().reading_within(Expression::PROFILE);
     let condition = Requirement::from_untrusted(
@@ -38,7 +38,8 @@ fn whole_input_emission_v26_roundtrips_conditional_and_unconditional_meaning() {
             None,
             vec![],
         )
-        .with_untrusted_input_emission(Some(Emission {
+        .with_untrusted_external_emission(Some(Emission {
+            source: worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::OperationInput,
             effect: "Notice".into(),
             input_binding: WorthQueryPortableTypeIdentity::from_untrusted("item.input".into()),
             payload_binding: WorthQueryPortableTypeIdentity::from_untrusted("item.notice".into()),
@@ -74,7 +75,7 @@ fn whole_input_emission_v26_roundtrips_conditional_and_unconditional_meaning() {
         .unwrap();
         let mut input = BinaryInput::new(&bytes);
         let old = decode(&mut input, &mut budget).unwrap();
-        assert!(old.input_emission().is_none());
+        assert!(old.external_emission().is_none());
         // Outer record admission requires exact consumption, so this is rejected.
         assert!(!input.is_finished());
     }

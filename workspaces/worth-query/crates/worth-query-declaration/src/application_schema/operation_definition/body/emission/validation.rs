@@ -8,9 +8,22 @@ pub(crate) fn validate_emission(
     body: &ApplicationOperationBodyProgram,
     members: &[Member],
 ) -> Result<(), Denial> {
-    let Some(emission) = body.input_emission() else {
+    let Some(emission) = body.external_emission() else {
         return Ok(());
     };
+    if let super::ApplicationOperationBodyExternalPayloadSource::QueryContext {
+        mutation_binding,
+        query,
+    } = &emission.source
+        && (!super::super::requirement::query_context::is_declared(
+            operation,
+            mutation_binding,
+            query,
+            members,
+        ) || Some(query.scope_entity()) != body.scope_entity())
+    {
+        return Err(Denial::MissingOperationProgramDependency);
+    }
     let bound = emission.maximum_payload_bytes != 0
         && members.iter().any(|member| matches!(member, Member::Effect { effect, payload_type } if effect == &emission.effect && payload_type == &emission.payload_binding))
         && members.iter().any(|member| matches!(member, Member::Operation { operation: name, input_type } if name == operation && input_type == &emission.input_binding))

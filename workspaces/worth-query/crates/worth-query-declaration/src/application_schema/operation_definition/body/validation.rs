@@ -123,7 +123,11 @@ pub(crate) fn validate_operation_bodies(
                 }
             }
         }
-        if writes.is_empty() && body.creation().is_none() && body.outputs().is_empty() {
+        if writes.is_empty()
+            && body.creation().is_none()
+            && body.outputs().is_empty()
+            && body.external_emission().is_none()
+        {
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
         }
         if !members.iter().any(|member| {

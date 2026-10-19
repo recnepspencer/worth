@@ -804,7 +804,7 @@ links between that creation and its admitted scope, including at-most-one outgoi
 selection replacement, plus fixed
 Preserve-scope, Preserve-single-outgoing-subject and Create-slot output uses. It requires
 at least one real creation, scope assignment, output use or
-[whole-input external emission](./conditional-body-effects.md) and unit results.
+[whole-input or native-query-context external emission](./conditional-body-effects.md) and unit results.
 Output roles are binding-affine; a body cannot silently reinterpret one binding's
 roles under another binding with matching names. Arbitrary target selection,
 Retire and role-family member uses are unsupported. Optional literal assignments,

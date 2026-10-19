@@ -100,45 +100,122 @@ fn operation_contract_query_depth_is_symmetric_on_encode_and_decode() {
         WorthQueryPortableApplicationOperationContractParts,
         WorthQueryPortableApplicationOperationContractRecord,
     };
-    let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
-        WorthQueryPortableApplicationOperationContractParts {
-            schema: "ArchiveSchema".into(),
-            operation: "Check".into(),
-            input_type: WorthQueryPortableTypeIdentity::from_untrusted("archive.input".into()),
-            graph_reads: vec![],
-            touches: vec![],
-            emissions: vec![],
-            external_effect: None,
-            reconciliation: None,
-            body: Some(context_body()),
-        },
-    );
-    let exact = WorthQueryPackageArchiveLimits::DEFAULT.with_maximum_nesting_depth(3);
-    let narrow = exact.with_maximum_nesting_depth(2);
-    assert_eq!(
-        contract::payload_encoding_work(&record, narrow)
-            .unwrap_err()
-            .kind(),
-        WorthQueryPackageArchiveDenialKind::NestingDepthBudgetExceeded
-    );
-    let work = contract::payload_encoding_work(&record, exact).unwrap();
-    let mut output = BinaryOutput::with_capacity(work.payload_bytes() as usize);
-    contract::write_payload(&record, &mut output).unwrap();
-    let bytes = output.into_bytes();
-    for (limits, accepted) in [(narrow, false), (exact, true)] {
-        let mut budget =
-            RecordDecodeAttempt::begin(Default::default(), bytes.len() as u64, limits).unwrap();
-        let decoded = contract::decode_payload(&mut BinaryInput::new(&bytes), &mut budget);
-        if accepted {
-            assert_eq!(
-                decoded.unwrap(),
-                WorthQueryPortablePackageRecord::ApplicationOperationContract(record.clone())
-            );
-        } else {
-            assert_eq!(
-                decoded.unwrap_err().kind(),
-                WorthQueryPackageArchiveDenialKind::NestingDepthBudgetExceeded
-            );
+    for body in [context_body(), payload_context_body()] {
+        let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+            WorthQueryPortableApplicationOperationContractParts {
+                schema: "ArchiveSchema".into(),
+                operation: "Check".into(),
+                input_type: WorthQueryPortableTypeIdentity::from_untrusted("archive.input".into()),
+                graph_reads: vec![],
+                touches: vec![],
+                emissions: vec![],
+                external_effect: None,
+                reconciliation: None,
+                body: Some(body),
+            },
+        );
+        let exact = WorthQueryPackageArchiveLimits::DEFAULT.with_maximum_nesting_depth(3);
+        let narrow = exact.with_maximum_nesting_depth(2);
+        assert_eq!(
+            contract::payload_encoding_work(&record, narrow)
+                .unwrap_err()
+                .kind(),
+            WorthQueryPackageArchiveDenialKind::NestingDepthBudgetExceeded
+        );
+        let work = contract::payload_encoding_work(&record, exact).unwrap();
+        let mut output = BinaryOutput::with_capacity(work.payload_bytes() as usize);
+        contract::write_payload(&record, &mut output).unwrap();
+        let bytes = output.into_bytes();
+        for (limits, accepted) in [(narrow, false), (exact, true)] {
+            let mut budget =
+                RecordDecodeAttempt::begin(Default::default(), bytes.len() as u64, limits).unwrap();
+            let decoded = contract::decode_payload(&mut BinaryInput::new(&bytes), &mut budget);
+            if accepted {
+                assert_eq!(
+                    decoded.unwrap(),
+                    WorthQueryPortablePackageRecord::ApplicationOperationContract(record.clone())
+                );
+            } else {
+                assert_eq!(
+                    decoded.unwrap_err().kind(),
+                    WorthQueryPackageArchiveDenialKind::NestingDepthBudgetExceeded
+                );
+            }
         }
     }
+}
+
+fn payload_context_body() -> Body {
+    use worth_query_declaration::facade::{
+        application_schema::{
+            ApplicationExternalEffectProtocol,
+            ApplicationOperationBodyExternalEmission as Emission,
+            ApplicationOperationBodyExternalPayloadSource as PayloadSource,
+        },
+        portable_identity::WorthQueryPortableTypeIdentity as Identity,
+    };
+    let body = context_body();
+    let Source::QueryContext {
+        mutation_binding,
+        query,
+    } = body.requirements()[0].operands()[0].source()
+    else {
+        unreachable!()
+    };
+    Body::from_untrusted_in_scope("Entity".into(), vec![], None, vec![])
+        .with_untrusted_external_emission(Some(Emission {
+            source: PayloadSource::QueryContext {
+                mutation_binding: mutation_binding.clone(),
+                query: query.clone(),
+            },
+            effect: "Notice".into(),
+            input_binding: Identity::from_untrusted("input".into()),
+            payload_binding: Identity::from_untrusted("payload".into()),
+            protocol: ApplicationExternalEffectProtocol::new(
+                worth_foundational::facade::BoundaryProtocolIdentity::new("context.notice"),
+                worth_foundational::facade::BoundaryProtocolVersion::new(1),
+            ),
+            maximum_payload_bytes: 512,
+            condition: None,
+        }))
+}
+
+#[test]
+fn v27_carries_an_unguarded_payload_query_and_v26_cannot_reinterpret_it() {
+    let body = payload_context_body();
+    assert!(body.requirements().is_empty());
+    assert!(body.requires_query_context());
+    let mut output = BinaryOutput::with_capacity(4096);
+    operation_body::write(&mut output, &body).unwrap();
+    let mut bytes = output.into_bytes();
+    assert_eq!(&bytes[..2], &27_u16.to_be_bytes());
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    let mut input = BinaryInput::new(&bytes);
+    assert_eq!(
+        operation_body::decode(&mut input, &mut budget).unwrap(),
+        body
+    );
+    assert!(input.is_finished());
+    let mut measure = crate::binary_encoding::BinaryEncodingMeasure::default();
+    operation_body::write(&mut measure, &body).unwrap();
+    assert_eq!(measure.nested_entries(), budget.finish().nested_entries());
+    bytes[..2].copy_from_slice(&26_u16.to_be_bytes());
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    let mut input = BinaryInput::new(&bytes);
+    let old = operation_body::decode(&mut input, &mut budget).unwrap();
+    assert!(!old.requires_query_context());
+    assert!(
+        !input.is_finished(),
+        "outer exact-consumption admission rejects the downgrade"
+    );
 }

@@ -30,7 +30,7 @@ pub(super) fn prepare_application_provider_attempt(
     )
     .map(|prepared| {
         prepared
-            .with_body_input_emission(preparation.body_input_emission)
+            .with_body_external_emission(preparation.body_external_emission)
             .with_required_output_demand(preparation.required_output_demand)
     })
 }

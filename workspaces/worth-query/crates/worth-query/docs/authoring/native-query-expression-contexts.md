@@ -141,6 +141,16 @@ operation's retained observation. The same body evaluator serves guidance and
 execution. Nested consumed-field edits and relation-membership changes remain
 publication obligations, even after successful requirement evaluation.
 
+The same native context can supply an authored external effect with
+`body.emit_external_query_context::<Binding, _, _, _, _, _>(effect, query, condition)`.
+Its payload binding formats an `ApplicationQueryExpressionSnapshot`, not a
+public DTO. Query obtains that snapshot only from the admitted source, prepares
+the payload once, retains the charged original context through emission custody,
+and carries its facts into the business/outbox commit even without a guard.
+See [authored external effects](./conditional-body-effects.md) for the complete
+declaration and installation path. Constructing pure snapshot data grants no
+source or mutation authority.
+
 Exact committed replay resolves before fresh source currentness or requirement
 evaluation, so later edits cannot erase an already-recorded outcome. Keep the
 original source and logical key for that replay; replacing the source changes

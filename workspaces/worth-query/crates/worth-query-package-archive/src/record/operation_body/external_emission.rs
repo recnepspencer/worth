@@ -2,7 +2,7 @@
 use super::*;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationExternalEffectProtocol, ApplicationOperationBodyInputEmission as Emission,
+    ApplicationExternalEffectProtocol, ApplicationOperationBodyExternalEmission as Emission,
 };
 
 pub(super) fn write(
@@ -15,7 +15,12 @@ pub(super) fn write(
     output.text(emission.protocol.identity().as_str())?;
     output.u32(emission.protocol.version().get())?;
     output.u64(emission.maximum_payload_bytes)?;
-    super::requirements::write(output, emission.condition.as_slice())
+    super::requirements::write(output, emission.condition.as_slice())?;
+    if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { mutation_binding, query } = &emission.source {
+        output.text(mutation_binding)?;
+        crate::record::application_query::write(output, query)?;
+    }
+    Ok(())
 }
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
@@ -35,6 +40,14 @@ pub(super) fn decode(
         return Err(Denial::new(Kind::InvalidRecordShape));
     }
     Ok(Emission {
+        source: if version >= 27 {
+            worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext {
+                mutation_binding: input.text()?.to_owned(),
+                query: Box::new(crate::record::application_query::decode_nested(input, budget)?),
+            }
+        } else {
+            worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::OperationInput
+        },
         effect,
         input_binding,
         payload_binding,

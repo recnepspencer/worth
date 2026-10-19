@@ -38,7 +38,7 @@ pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     inputs: Option<PreparedBodyInputs>,
     sources: Vec<Option<PreparedBodySource>>,
     selections: PreparedBodySelections<Schema>,
-    emission: Option<emission::BodyInputEffectSelection>,
+    emission: Option<emission::BodyExternalEffectSelection>,
 }
 
 /// A declared source expectation failed before any candidate effect.

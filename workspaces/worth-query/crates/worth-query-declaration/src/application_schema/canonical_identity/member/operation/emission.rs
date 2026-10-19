@@ -1,16 +1,20 @@
 use crate::application_schema::{
-    canonical_basis::ApplicationSchemaCanonicalBasis, ApplicationOperationBodyInputEmission,
+    canonical_basis::ApplicationSchemaCanonicalBasis, ApplicationOperationBodyExternalEmission,
 };
 
 pub(super) fn append(
     basis: &mut ApplicationSchemaCanonicalBasis,
     prefix: &str,
-    emission: &ApplicationOperationBodyInputEmission,
+    emission: &ApplicationOperationBodyExternalEmission,
 ) {
-    basis.text(
-        format!("{prefix}.emission.source"),
-        "exact-operation-input-v1",
-    );
+    match &emission.source {
+        crate::application_schema::ApplicationOperationBodyExternalPayloadSource::OperationInput => basis.text(format!("{prefix}.emission.source"), "exact-operation-input-v1"),
+        crate::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { mutation_binding, query } => {
+            basis.text(format!("{prefix}.emission.source"), "exact-native-query-context-v1");
+            basis.text(format!("{prefix}.emission.source-binding"), mutation_binding);
+            basis.extend_embedded(query.canonical_basis().basis(), &format!("{prefix}.emission.query"), worth_foundational::facade::CanonicalBasisEntryKind::Identity);
+        }
+    }
     basis.text(format!("{prefix}.emission.effect"), &emission.effect);
     basis.text(
         format!("{prefix}.emission.input-binding"),

@@ -50,7 +50,7 @@ pub struct ApplicationSchemaMemberProvenance {
     conflicting_field_binding: bool,
     operations: Vec<DeclaredApplicationMemberMarker>,
     effects: Vec<DeclaredApplicationMemberMarker>,
-    body_input_effects: Vec<super::ApplicationOperationBodyInputEffectRecipe>,
+    body_external_effects: Vec<super::ApplicationOperationBodyExternalEffectRecipe>,
     mutation_bindings: Vec<ApplicationMutationBindingDescriptor>,
     query_bindings: Vec<ApplicationQueryBindingDescriptor>,
 }
@@ -86,7 +86,7 @@ impl ApplicationSchemaMemberProvenance {
             && self.entities.is_empty()
             && self.operations.is_empty()
             && self.effects.is_empty()
-            && self.body_input_effects.is_empty()
+            && self.body_external_effects.is_empty()
             && self.mutation_bindings.is_empty()
             && self.query_bindings.is_empty()
     }
@@ -144,7 +144,7 @@ impl ApplicationSchemaMemberProvenance {
     }
 
     pub(super) fn normalize(&mut self) {
-        self.body_input_effects
+        self.body_external_effects
             .sort_by_key(|recipe| recipe.operation());
         self.entities.sort_by(|left, right| left.0.cmp(&right.0));
         let order = |left: &DeclaredApplicationMemberMarker,
@@ -199,19 +199,19 @@ impl ApplicationSchemaMemberProvenance {
     pub fn mutation_bindings(&self) -> &[ApplicationMutationBindingDescriptor] {
         &self.mutation_bindings
     }
-    pub(super) fn register_body_input_effect(
+    pub(super) fn register_body_external_effect(
         &mut self,
-        recipe: super::ApplicationOperationBodyInputEffectRecipe,
+        recipe: super::ApplicationOperationBodyExternalEffectRecipe,
     ) {
-        self.body_input_effects.push(recipe);
+        self.body_external_effects.push(recipe);
     }
     /// A codec is compiler-local correspondence, never an emission permit.
-    pub fn body_input_effect(
+    pub fn body_external_effect(
         &self,
         operation: &str,
-    ) -> Option<&super::ApplicationOperationBodyInputEffectRecipe> {
+    ) -> Option<&super::ApplicationOperationBodyExternalEffectRecipe> {
         let mut recipes = self
-            .body_input_effects
+            .body_external_effects
             .iter()
             .filter(|recipe| recipe.operation() == operation);
         let recipe = recipes.next()?;
@@ -226,7 +226,7 @@ impl ApplicationSchemaMemberProvenance {
         }) && self.effects.iter().any(|member| {
             member.name == recipe.meaning().effect
                 && member.marker_type == recipe.effect_type()
-                && member.value_type == recipe.input_type()
+                && member.value_type == recipe.payload_type()
                 && member.value_identity == recipe.meaning().payload_binding
         }))
         .then_some(recipe)

@@ -19,6 +19,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationEmi
     measure_retained_bytes: fn(&(dyn Any + Send + Sync)) -> Option<u64>,
     external_payload: Option<WorthQueryExternalPayloadProjection>,
     _native_body_funding: Option<Arc<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>>,
+    _native_query_backing: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
 }
 
 #[derive(Clone)]
@@ -46,6 +47,7 @@ impl WorthQueryApplicationEmission {
             measure_retained_bytes: measure_retained_bytes::<Binding>,
             external_payload: None,
             _native_body_funding: None,
+            _native_query_backing: None,
         }
     }
 
@@ -58,7 +60,7 @@ impl WorthQueryApplicationEmission {
         Binding::Value: Send + Sync,
     {
         let projection = worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection::encode::<Binding>(effect, payload).map_err(|_| ())?;
-        Ok(Self::from_external_projection(projection, None))
+        Ok(Self::from_external_projection(projection, None, None))
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt) fn from_lifecycle(
@@ -73,6 +75,7 @@ impl WorthQueryApplicationEmission {
             measure_retained_bytes: derived.measure_retained_bytes(),
             external_payload: None,
             _native_body_funding: None,
+            _native_query_backing: None,
         }
     }
 
@@ -106,6 +109,7 @@ impl WorthQueryApplicationEmission {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn from_external_projection(
         projection: worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection,
         funding: Option<Arc<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>>,
+        backing: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
     ) -> Self {
         Self {
             effect: projection.effect(),
@@ -119,6 +123,7 @@ impl WorthQueryApplicationEmission {
                 maximum_bytes: projection.maximum_bytes(),
             }),
             _native_body_funding: funding,
+            _native_query_backing: backing,
         }
     }
 

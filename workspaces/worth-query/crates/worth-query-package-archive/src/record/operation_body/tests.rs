@@ -8,10 +8,10 @@ mod collection_values;
 mod creation_links;
 #[path = "tests/enrollment.rs"]
 mod enrollment;
+#[path = "tests/external_emission.rs"]
+mod external_emission;
 #[path = "tests/genesis.rs"]
 mod genesis;
-#[path = "tests/input_emission.rs"]
-mod input_emission;
 #[path = "tests/optional_input.rs"]
 mod optional_input;
 #[path = "tests/outputs.rs"]

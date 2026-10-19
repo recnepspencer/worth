@@ -18,7 +18,7 @@ type Scope<Schema, Binding> = <<Binding as ApplicationMutationBinding<Schema>>::
 
 pub(in crate::domain_computation::primary_graph) struct OperationBodyHandler<Schema, Binding> {
     pub(super) body: ApplicationOperationBodyProgram,
-    pub(super) input_emission: Option<std::sync::Arc<worth_query_declaration::facade::application_schema::ApplicationOperationBodyInputEffectRecipe>>,
+    pub(super) external_emission: Option<std::sync::Arc<worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalEffectRecipe>>,
     pub(super) marker: PhantomData<fn() -> (Schema, Binding)>,
     pub(super) input_bindings:
         Vec<worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding>,
@@ -143,9 +143,9 @@ where
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         };
         let emission = match self
-            .input_emission
+            .external_emission
             .as_ref()
-            .map(|recipe| reader.body_input_emission(std::sync::Arc::clone(recipe), input))
+            .map(|recipe| reader.body_external_emission(std::sync::Arc::clone(recipe), input))
             .transpose()
         {
             Ok(emission) => emission,
@@ -173,7 +173,7 @@ where
 
     fn build_candidate(
         &self,
-        input: &Binding::Input,
+        _: &Binding::Input,
         decision: Binding::Decision,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<(), Binding::Denial> {
@@ -326,7 +326,7 @@ where
             }
         }
         if let Some(emission) = decision.emission
-            && let Err(cause) = writer.body_input_emission(emission, input)
+            && let Err(cause) = writer.body_external_emission(emission)
         {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
         }

@@ -4,7 +4,6 @@ use super::{
     DenialKind, WorthQueryApplicationOperationInstallationDenial,
     WorthQueryInstalledApplicationSchema,
 };
-use worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource as Source;
 
 pub(super) fn validate<Schema: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -14,16 +13,9 @@ pub(super) fn validate<Schema: ApplicationSchema>(
         if let ApplicationSchemaMember::OperationBody { operation, body } = member
             && operation == descriptor.operation_name()
         {
-            for operand in body
-                .observation_requirements()
-                .flat_map(|requirement| requirement.operands())
-            {
-                if let Source::QueryContext {
-                    mutation_binding,
-                    query,
-                } = operand.source()
-                    && (mutation_binding != descriptor.identity()
-                        || descriptor.source_query_identifier() != Some(query.name()))
+            for (mutation_binding, query) in body.query_contexts() {
+                if mutation_binding != descriptor.identity()
+                    || descriptor.source_query_identifier() != Some(query.name())
                 {
                     return Err(denial(
                         DenialKind::MutationBindingMeaningChanged,

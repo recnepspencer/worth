@@ -1,4 +1,4 @@
-mod body_input_emission;
+mod body_external_emission;
 mod candidate_reservation;
 mod candidate_retained_representation;
 mod conditional_definition;
@@ -305,7 +305,7 @@ impl<Schema, Operation, Input, Scope>
             .validate_current_authority()
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         self.output_correspondence.validate_effects(&self.effects)?;
-        self.validate_body_input_emission()?;
+        self.validate_body_external_emission()?;
         Ok(WorthQueryApplicationEffectProgram {
             read_set: self.read_set,
             effects: self.effects,

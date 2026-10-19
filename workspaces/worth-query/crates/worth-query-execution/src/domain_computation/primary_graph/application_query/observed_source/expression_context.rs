@@ -8,24 +8,28 @@ use crate::domain_computation::primary_graph::application_query::{
     },
 };
 use worth_foundational::expression_api::{ExpressionSchema, ExpressionValue};
-use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryCardinality, ApplicationQueryExpressionSnapshot,
+};
 use worth_query_installation::facade::{
     ApplicationFieldPresence, WorthQueryInstalledGraphReadContract,
 };
 
 pub(in crate::domain_computation::primary_graph::application_query) struct RetainedExpressionContext
 {
-    schema: ExpressionSchema,
-    value: ExpressionValue,
+    snapshot: ApplicationQueryExpressionSnapshot,
     _charge: WorthQueryRetainedSourceCharge,
 }
 
 impl RetainedExpressionContext {
     pub(super) fn schema(&self) -> &ExpressionSchema {
-        &self.schema
+        self.snapshot.schema()
     }
     pub(super) fn value(&self) -> &ExpressionValue {
-        &self.value
+        self.snapshot.value()
+    }
+    pub(super) fn snapshot(&self) -> &ApplicationQueryExpressionSnapshot {
+        &self.snapshot
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn retain(
@@ -58,8 +62,7 @@ impl RetainedExpressionContext {
             .claim_retained_source(bytes)
             .map_err(|()| Denial::ResultBufferLimitExceeded)?;
         Ok(Self {
-            schema,
-            value,
+            snapshot: ApplicationQueryExpressionSnapshot::from_untrusted_parts(schema, value),
             _charge: charge,
         })
     }

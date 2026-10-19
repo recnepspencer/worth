@@ -3,7 +3,8 @@
 mod builder;
 mod emission;
 pub use emission::{
-    ApplicationOperationBodyInputEffectRecipe, ApplicationOperationBodyInputEmission,
+    ApplicationOperationBodyExternalEffectRecipe, ApplicationOperationBodyExternalEmission,
+    ApplicationOperationBodyExternalPayloadSource,
 };
 mod classified_capture;
 mod created_field;
@@ -62,7 +63,7 @@ use crate::application_schema::ApplicationValueEncodeDenial;
 /// Completed authored meaning. Construction validates all typed literal values.
 pub struct ApplicationOperationBody<Schema, Operation, Input> {
     pub(super) program: ApplicationOperationBodyProgram,
-    pub(super) input_emission_recipe: Option<ApplicationOperationBodyInputEffectRecipe>,
+    pub(super) external_emission_recipe: Option<ApplicationOperationBodyExternalEffectRecipe>,
     pub(super) marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 

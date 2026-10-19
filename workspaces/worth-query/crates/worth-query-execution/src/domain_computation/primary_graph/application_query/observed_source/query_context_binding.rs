@@ -3,6 +3,7 @@ use super::{RetainedExpressionContext, WorthQueryObservedSource};
 use std::sync::Arc;
 use worth_foundational::expression_api::ExpressionValue;
 
+#[derive(Clone)]
 pub(in crate::domain_computation) struct ObservedQueryExpressionContext {
     query_identifier: Arc<String>,
     context: Arc<RetainedExpressionContext>,
@@ -13,6 +14,12 @@ impl ObservedQueryExpressionContext {
     }
     pub(in crate::domain_computation::primary_graph) fn value(&self) -> &ExpressionValue {
         self.context.value()
+    }
+    pub(in crate::domain_computation::primary_graph) fn snapshot(
+        &self,
+    ) -> &worth_query_declaration::facade::application_query::ApplicationQueryExpressionSnapshot
+    {
+        self.context.snapshot()
     }
 }
 impl<Query> WorthQueryObservedSource<Query> {

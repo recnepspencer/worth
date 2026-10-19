@@ -5,7 +5,7 @@ mod encoding;
 mod expression;
 mod operands;
 mod principal;
-mod query_context;
+pub(super) mod query_context;
 mod signing_evidence;
 mod validation;
 

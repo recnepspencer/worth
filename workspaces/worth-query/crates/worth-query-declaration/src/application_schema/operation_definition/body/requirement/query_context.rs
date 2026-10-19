@@ -41,7 +41,7 @@ impl<Schema: ApplicationSchema, Operation>
     }
 }
 
-pub(super) fn is_declared(
+pub(in crate::application_schema::operation_definition::body) fn is_declared(
     operation: &str,
     binding: &str,
     query: &ErasedApplicationQueryDefinition,
