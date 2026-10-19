@@ -161,7 +161,7 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
                         &mut InvalidationEditAdmission::new(
                             worth_relational::facade::mvcc::CompanionPreflightBudget {
                                 maximum_work_visits: Some(1_000_000),
-                                maximum_preparation_bytes: 1_000_000,
+                                maximum_preparation_bytes: None,
                             },
                         ),
                     )

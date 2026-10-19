@@ -55,7 +55,7 @@ fn completion_failure_charges_the_whole_dispatched_wave() {
                 );
                 let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
                     maximum_work_visits: Some(0),
-                    maximum_preparation_bytes: 0,
+                    maximum_preparation_bytes: None,
                 });
                 cursor.apply(
                     &mut admission,

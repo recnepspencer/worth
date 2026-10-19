@@ -104,7 +104,7 @@ fn a_fresh_build_admits_its_own_growth_and_ordered_navigation() {
     let build = |bytes| {
         let mut meter = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: None,
-            maximum_preparation_bytes: bytes,
+            maximum_preparation_bytes: Some(bytes),
         });
         let built = (0..entries).try_for_each(|length| meter.fresh_insert::<usize, ()>(length));
         (built, meter.charged_bytes())

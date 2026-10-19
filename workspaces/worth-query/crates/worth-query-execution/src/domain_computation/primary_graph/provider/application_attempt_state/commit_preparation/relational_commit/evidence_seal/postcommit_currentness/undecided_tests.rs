@@ -259,7 +259,7 @@ fn rebase_within_width(
     let selected = world.selected_product(&(phase_custody).test_host_request());
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(64),
-        maximum_preparation_bytes: 1024 * 1024,
+        maximum_preparation_bytes: None,
     });
     world
         .application

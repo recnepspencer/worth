@@ -131,14 +131,15 @@ impl SourceInvalidationOwner {
         // image now, rather than strand subsequent registration behind it.
         let edit_bytes = retention::state_bound(&root.current)
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        let retained = self.resources.retained_capacity_bytes();
-        let maximum = self.resources.installation().maximum_retained_bytes;
-        if edit_bytes > maximum.saturating_sub(retained) {
-            return Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted {
-                requested: edit_bytes,
-                retained,
-                maximum,
-            });
+        if let Some(maximum) = self.resources.installation().maximum_retained_bytes {
+            let retained = self.resources.retained_capacity_bytes();
+            if edit_bytes > maximum.saturating_sub(retained) {
+                return Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted {
+                    requested: edit_bytes,
+                    retained,
+                    maximum,
+                });
+            }
         }
         let mut effect = context.seal_replacement(reserved, Arc::new(root))?;
         if !selected.is_empty() {

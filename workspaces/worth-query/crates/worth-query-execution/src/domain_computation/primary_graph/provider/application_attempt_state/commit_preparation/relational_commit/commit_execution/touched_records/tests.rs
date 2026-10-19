@@ -36,7 +36,7 @@ fn request(bytes: u64) -> LeaseRequest {
 fn admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(1_000),
-        maximum_preparation_bytes: 1_024,
+        maximum_preparation_bytes: None,
     })
 }
 

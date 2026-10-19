@@ -55,7 +55,7 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
                     );
                     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
                         maximum_work_visits: Some(0),
-                        maximum_preparation_bytes: 0,
+                        maximum_preparation_bytes: None,
                     });
                     cursor.apply(
                         &mut admission,
@@ -136,7 +136,7 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
                 );
                 let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
                     maximum_work_visits: Some(0),
-                    maximum_preparation_bytes: 0,
+                    maximum_preparation_bytes: None,
                 });
                 cursor.apply(
                     &mut admission,

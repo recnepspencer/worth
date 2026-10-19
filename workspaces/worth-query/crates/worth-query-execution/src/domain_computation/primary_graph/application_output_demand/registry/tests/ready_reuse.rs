@@ -106,7 +106,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         .0;
     let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(0),
-        maximum_preparation_bytes: 8 * 1024 * 1024,
+        maximum_preparation_bytes: None,
     });
     assert!(matches!(
         registry.peek_ready(&reopened, &mut short),

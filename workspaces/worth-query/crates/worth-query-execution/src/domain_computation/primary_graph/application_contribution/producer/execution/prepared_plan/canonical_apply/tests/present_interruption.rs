@@ -51,7 +51,7 @@ fn interruption_present_at_dispatch_has_equal_outcome_charge_and_commits() {
                 );
                 let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
                     maximum_work_visits: Some(0),
-                    maximum_preparation_bytes: 0,
+                    maximum_preparation_bytes: None,
                 });
                 cursor.apply(
                     &mut admission,

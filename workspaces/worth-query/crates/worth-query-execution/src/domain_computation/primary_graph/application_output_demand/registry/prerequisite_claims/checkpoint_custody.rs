@@ -71,7 +71,7 @@ mod tests {
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
                 maximum_work_visits: Some(1_000_000),
-                maximum_preparation_bytes: 8 * 1024 * 1024,
+                maximum_preparation_bytes: None,
             },
         );
         let claims = CheckpointPrerequisiteClaims::prepare(2, &state, &mut admission).unwrap();

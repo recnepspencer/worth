@@ -54,7 +54,7 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
     WorthQueryOperationProjectionDenial,
 ) {
     let product_resources =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources();
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_retained_capacity_for_test(128 * 1024 * 1024);
     let resources = product_resources.invalidation_resources();
     let world = installed_authorization_world_with_product_resources(product_resources);
     let request = live_scope();
@@ -127,7 +127,7 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
                     &request,
                 )
                 .unwrap();
-            let maximum = resources.installation().maximum_retained_bytes;
+            let maximum = resources.installation().maximum_retained_bytes.expect("this court installs a finite retained ceiling");
             let held = resources
                 .reserve_retained_capacity(maximum - resources.retained_capacity_bytes())
                 .unwrap();

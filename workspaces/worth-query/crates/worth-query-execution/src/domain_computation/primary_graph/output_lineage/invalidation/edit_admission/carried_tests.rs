@@ -124,7 +124,7 @@ fn denied_custody_preparation_preserves_spent_local_counters_and_refunds_retenti
     let owner = owner();
     let mut request = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(5),
-        maximum_preparation_bytes: 4096,
+        maximum_preparation_bytes: None,
     });
     request.charge_external_work(5).unwrap();
     assert!(matches!(
@@ -162,4 +162,35 @@ fn retained_index_subtotal_is_shared_but_scratch_and_separate_tickets_are_not_in
     assert_eq!(request.charged_index_bytes(), 36);
     assert_eq!(request.charged_bytes(), before);
     assert_eq!(request.index_bytes_since(checkpoint).unwrap(), 23);
+}
+
+#[test]
+fn absent_byte_ceilings_share_original_accounting_and_still_deny_counter_overflow() {
+    let resources = WorthQueryInvalidationResources::install(
+        WorthQueryInvalidationResourceInstallation::new(None, None, 1),
+    )
+    .unwrap();
+    let owner = SourceInvalidationOwner::new(resources, 1);
+    let mut request = owner.edit_admission();
+    request.admit_read_scratch(17).unwrap();
+    let mut publication = request
+        .carry_for_publication(&owner)
+        .unwrap()
+        .into_admission();
+    assert_eq!(publication.maximum_preparation_bytes, None);
+    assert_eq!(publication.remaining_work(), None);
+    let retained = owner.resources.retained_capacity_bytes();
+    assert!(retained > 0);
+    let before = request.charged_bytes();
+    publication.admit_read_scratch(u64::MAX - before).unwrap();
+    assert_eq!(request.charged_bytes(), u64::MAX);
+    assert!(matches!(
+        request.admit_read_scratch(1),
+        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow)
+    ));
+    assert_eq!(publication.charged_bytes(), u64::MAX);
+    drop(request);
+    assert_eq!(owner.resources.retained_capacity_bytes(), retained);
+    drop(publication);
+    assert_eq!(owner.resources.retained_capacity_bytes(), 0);
 }

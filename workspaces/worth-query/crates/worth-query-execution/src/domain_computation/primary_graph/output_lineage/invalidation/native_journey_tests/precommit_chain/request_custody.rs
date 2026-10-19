@@ -25,7 +25,7 @@ pub(super) fn assert_closures_share_the_meter(
     let meter = |work, bytes| {
         InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: Some(work),
-            maximum_preparation_bytes: bytes,
+            maximum_preparation_bytes: Some(bytes),
         })
     };
     let answers = |mut meter: InvalidationEditAdmission, closures: usize| {
@@ -144,7 +144,7 @@ pub(super) fn assert_backing_paid_by_the_request(
     let meter = |work| {
         InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: Some(work),
-            maximum_preparation_bytes: bytes,
+            maximum_preparation_bytes: Some(bytes),
         })
     };
     assert_eq!(admit(&mut meter(work)), Ok(()));

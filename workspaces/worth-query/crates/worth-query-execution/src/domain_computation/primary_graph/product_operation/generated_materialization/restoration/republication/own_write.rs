@@ -254,7 +254,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
         let held = exhaust_registration.then(|| {
             resources
                 .reserve_retained_capacity(
-                    resources.installation().maximum_retained_bytes
+                    resources.installation().maximum_retained_bytes.expect("capacity-exhaustion control requires a finite installed ceiling")
                         - resources.retained_capacity_bytes(),
                 )
                 .unwrap()

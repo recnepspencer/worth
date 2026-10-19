@@ -12,7 +12,12 @@ fn consumed_custody_is_bounded_per_edge_and_returns_on_every_release() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = super::marking_ceiling::world_installing(|defaults| {
+        crate::domain_computation::execution_runtime::WorthQueryInvalidationResourceInstallation {
+            maximum_retained_bytes: Some(128 * 1024 * 1024),
+            ..defaults
+        }
+    });
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
@@ -73,7 +78,11 @@ fn consumed_custody_is_bounded_per_edge_and_returns_on_every_release() {
         // Leave exactly the first ticket's capacity. Refusal of the second
         // ticket must give the already reserved first ticket back.
         let first_ticket = expected - metadata - allocated::<RetainedInvalidationCapacity>();
-        let maximum = owner.resources.installation().maximum_retained_bytes;
+        let maximum = owner
+            .resources
+            .installation()
+            .maximum_retained_bytes
+            .expect("this court installs a finite retained ceiling");
         let filled = owner
             .resources
             .reserve_retained_capacity(maximum - baseline - first_ticket)
@@ -104,7 +113,7 @@ fn shared_fact_funding_is_ledger_affine_and_refunds_after_the_last_holder() {
         },
         primary_graph::application_checkpoint::facts::FactPayload,
     };
-    let installation = WorthQueryInvalidationResourceInstallation::new(1 << 20, 1 << 20, 4);
+    let installation = WorthQueryInvalidationResourceInstallation::new(None, Some(1 << 20), 4);
     let local = WorthQueryInvalidationResources::install(installation).unwrap();
     let foreign = WorthQueryInvalidationResources::install(installation).unwrap();
     let mut admission = super::super::InvalidationEditAdmission::new(local.preflight_budget());
@@ -136,7 +145,11 @@ fn shared_fact_funding_is_ledger_affine_and_refunds_after_the_last_holder() {
     assert_eq!(foreign.retained_capacity_bytes(), 0);
     // Failure on another ledger cannot release the original active owner.
     let full = foreign
-        .reserve_retained_capacity(installation.maximum_retained_bytes)
+        .reserve_retained_capacity(
+            installation
+                .maximum_retained_bytes
+                .expect("this court installs a finite retained ceiling"),
+        )
         .unwrap();
     assert!(
         super::super::fact_retention::reserve_payload(&facts, &foreign, &mut admission).is_err()
@@ -144,7 +157,9 @@ fn shared_fact_funding_is_ledger_affine_and_refunds_after_the_last_holder() {
     assert_eq!(local.retained_capacity_bytes(), held);
     assert_eq!(
         foreign.retained_capacity_bytes(),
-        installation.maximum_retained_bytes
+        installation
+            .maximum_retained_bytes
+            .expect("this court installs a finite retained ceiling")
     );
     drop(full);
     drop(first);

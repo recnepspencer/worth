@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph) fn evict_index_with_unrelated_w
         .clone();
     let held = resources
         .reserve_retained_capacity(
-            resources.installation().maximum_retained_bytes - resources.retained_capacity_bytes(),
+            resources.installation().maximum_retained_bytes.expect("capacity-exhaustion control requires a finite installed ceiling") - resources.retained_capacity_bytes(),
         )
         .unwrap();
     publish_relational_mutation(

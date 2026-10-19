@@ -27,7 +27,7 @@ mod tests {
     fn registry_optional_cleanup_quote_returns_failed_quote_counters() {
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: Some(20),
-            maximum_preparation_bytes: 100,
+            maximum_preparation_bytes: None,
         });
         admission.charge_external_work(5).unwrap();
         admission.admit_read_scratch(7).unwrap();

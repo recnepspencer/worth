@@ -39,7 +39,7 @@ mod tests {
         // and below the exact remainder 1099511627759 after the prior debit.
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: Some(maximum),
-            maximum_preparation_bytes: 0,
+            maximum_preparation_bytes: None,
         });
         admission.charge_external_work(17).unwrap();
         assert!(

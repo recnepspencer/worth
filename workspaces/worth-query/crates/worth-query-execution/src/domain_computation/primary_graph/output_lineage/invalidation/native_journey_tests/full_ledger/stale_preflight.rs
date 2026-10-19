@@ -9,7 +9,7 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
-        maximum_retained_bytes: MAXIMUM_RETAINED_BYTES,
+        maximum_retained_bytes: Some(MAXIMUM_RETAINED_BYTES),
         ..defaults
     });
     let entity = world

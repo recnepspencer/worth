@@ -80,7 +80,7 @@ fn replacement_member_walk_refuses_every_budget_and_retries_by_value() {
         let before = replacement_value(&retry.state.lock().unwrap());
         let mut limited = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: Some(k),
-            maximum_preparation_bytes: u64::MAX,
+            maximum_preparation_bytes: None,
         });
         let denial = run(&retry, &old, &next, &mut limited).unwrap_err();
         assert_eq!(
@@ -221,14 +221,14 @@ fn replacement_one_short_work_or_scratch_preserves_both_records_and_tickets() {
         (
             CompanionPreflightBudget {
                 maximum_work_visits: Some(work - 1),
-                maximum_preparation_bytes: bytes,
+                maximum_preparation_bytes: None,
             },
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         ),
         (
             CompanionPreflightBudget {
                 maximum_work_visits: Some(work),
-                maximum_preparation_bytes: bytes - 1,
+                maximum_preparation_bytes: Some(bytes - 1),
             },
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         ),

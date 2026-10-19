@@ -47,6 +47,13 @@ pub(super) fn reserve(
                 retained,
                 maximum,
             },
+            WorthQueryInvalidationResourceDenial::RetentionCounterOverflow {
+                requested,
+                retained,
+            } => CompanionPreflightStop::RetainedCompanionCounterOverflow {
+                requested,
+                retained,
+            },
             _ => unreachable!("installed resources have positive capacities"),
         })?;
     let capacity = Arc::new(capacity);

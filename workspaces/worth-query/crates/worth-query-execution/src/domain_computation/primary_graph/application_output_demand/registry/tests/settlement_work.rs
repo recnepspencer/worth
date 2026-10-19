@@ -9,7 +9,7 @@ use worth_relational::facade::mvcc::CompanionPreflightBudget;
 fn admission(work: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(work),
-        maximum_preparation_bytes: 8 * 1024 * 1024,
+        maximum_preparation_bytes: None,
     })
 }
 

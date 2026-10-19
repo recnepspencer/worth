@@ -22,7 +22,7 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
-        maximum_preparation_bytes: PREPARATION_BYTES,
+        maximum_preparation_bytes: Some(PREPARATION_BYTES),
         ..defaults
     });
     let selected = world

@@ -116,7 +116,8 @@ pub(in crate::domain_computation::primary_graph) fn preflight_stop(
         }
         CompanionPreflightStop::WorkExhausted { .. }
         | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } => RetainedFactStop::Work,
-        CompanionPreflightStop::PreparationMemoryCounterOverflow => {
+        CompanionPreflightStop::PreparationMemoryCounterOverflow
+        | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. } => {
             RetainedFactStop::Execution(NativeReadStop::ChargedBytesOverflow)
         }
         CompanionPreflightStop::WorkCounterOverflow => {
@@ -279,7 +280,7 @@ mod read_fold_tests {
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
                 maximum_work_visits: Some(10),
-                maximum_preparation_bytes: 0,
+                maximum_preparation_bytes: Some(0),
             },
         );
         let stop = admission.admit_read_scratch(1).unwrap_err();

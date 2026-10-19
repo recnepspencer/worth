@@ -71,7 +71,7 @@ fn last_claim_closes(held_successor: bool) {
         // admission and exact charges belong to the every-unit drain table.
         let mut complete = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: None,
-            maximum_preparation_bytes: 8 * 1024 * 1024,
+            maximum_preparation_bytes: None,
         });
         registry
             .drain_terminal_cleanup_admitted(&source_owner(), &mut complete)

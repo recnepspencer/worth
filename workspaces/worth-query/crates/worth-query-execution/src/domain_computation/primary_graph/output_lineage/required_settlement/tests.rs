@@ -28,7 +28,7 @@ fn committed() -> (u64, ApplicationSchemaBindingIdentity, ReadyCompletion) {
 fn admission(work: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(work),
-        maximum_preparation_bytes: 1024 * 1024,
+        maximum_preparation_bytes: None,
     })
 }
 

@@ -303,7 +303,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
         for (width, spent) in [(1, 0), (2, 2)] {
             let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
                 maximum_work_visits: Some(width),
-                maximum_preparation_bytes: 0,
+                maximum_preparation_bytes: None,
             });
             assert_eq!(observed.source_currentness_in(runtime,execution,  snapshot, &mut admission),
                 Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: width }));
@@ -345,7 +345,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
 fn request_admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(64),
-        maximum_preparation_bytes: 1024 * 1024,
+        maximum_preparation_bytes: None,
     })
 }
 

@@ -45,7 +45,7 @@ fn subscribe(
             Arc::new(consumer),
             CompanionPreflightBudget {
                 maximum_work_visits: Some(32),
-                maximum_preparation_bytes: 8192,
+                maximum_preparation_bytes: None,
             },
         )
         .unwrap()

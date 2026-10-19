@@ -2504,6 +2504,32 @@ The following fixture deliberately coordinates native output custody through
 
 ---
 
+#### Invalidation byte ceilings
+
+Pass `None` for preparation and retained bytes to
+`host::runtime::WorthQueryInvalidationResourceInstallation::new(None, None, positions)`
+when the host imposes no logical byte ceiling. `Some(bytes)` supplies a deliberate
+finite ceiling at either boundary; `Some(0)` remains an invalid installation.
+The existing `bounded(work, preparation, retained, positions)` constructor chooses
+finite work and byte ceilings. The retained-position window remains independent.
+
+Absence does not disable admission accounting or authorize memory allocation.
+Preparation still checked-adds every original byte quote; retained tickets share
+one ledger and stay charged while current, historical, prepared or consumed-output
+owners hold them. Carried admissions retain the same original counters and
+optional ceilings. Only the final holder's drop refunds its ticket. Request
+cancellation and precommit atomicity are unchanged; real allocator refusals remain
+owned by their allocating operation. This installation does not bound aggregate
+process RSS or guarantee available RAM.
+
+`RetentionCounterOverflow` and `RetainedCompanionCounterOverflow` report an
+unrepresentable retained total with its original requested/retained operands.
+They are distinct from finite `RetentionCapacityExhausted` and
+`RetainedCompanionCapacityExhausted`, and do not trigger finite-capacity eviction.
+Preparation counter overflow likewise remains distinct from a supplied ceiling.
+Never replace `None` with a maximum integer, infer released predecessor credit,
+or replay a refused publication to manufacture admission.
+
 #### Producer publication diagnostics
 
 Keep the original operation on a terminal or refused advance and borrow its

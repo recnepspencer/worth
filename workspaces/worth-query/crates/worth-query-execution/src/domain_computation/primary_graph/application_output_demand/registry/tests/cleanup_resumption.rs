@@ -7,7 +7,7 @@ type Receipt = crate::domain_computation::primary_graph::WorthQueryApplicationCo
 fn admission(work: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(work),
-        maximum_preparation_bytes: 8 * 1024 * 1024,
+        maximum_preparation_bytes: None,
     })
 }
 fn source_owner(

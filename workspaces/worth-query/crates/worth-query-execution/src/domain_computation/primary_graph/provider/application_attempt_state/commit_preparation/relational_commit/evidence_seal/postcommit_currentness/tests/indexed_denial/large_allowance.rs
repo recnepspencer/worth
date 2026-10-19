@@ -28,7 +28,7 @@ fn source_currentness_denial_keeps_its_large_u64_allowance() {
                     let maximum = 1_u64 << 40;
                     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
                         maximum_work_visits: Some(maximum),
-                        maximum_preparation_bytes: 0,
+                        maximum_preparation_bytes: None,
                     });
                     admission.charge_external_work(maximum - 1).unwrap();
                     assert_eq!(

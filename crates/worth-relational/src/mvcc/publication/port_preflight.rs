@@ -308,6 +308,7 @@ const fn follows_concurrent_publication(stop: &super::super::CompanionPreflightS
         | Stop::WorkCounterOverflow
         | Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
+        | Stop::RetainedCompanionCounterOverflow { .. }
         | Stop::RetainedCompanionCapacityExhausted { .. }
         | Stop::Interrupted(_) => false,
     }

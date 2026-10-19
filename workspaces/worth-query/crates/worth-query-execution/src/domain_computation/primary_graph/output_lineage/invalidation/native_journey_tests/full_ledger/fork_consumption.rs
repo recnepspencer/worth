@@ -9,7 +9,7 @@ use worth_relational::facade::history::BranchId;
 
 pub(super) fn restored_root_consumption_and_later_writes() {
     let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
-        maximum_retained_bytes: MAXIMUM_RETAINED_BYTES,
+        maximum_retained_bytes: Some(MAXIMUM_RETAINED_BYTES),
         ..defaults
     });
     world.application.with_host_advancement(|phase| {

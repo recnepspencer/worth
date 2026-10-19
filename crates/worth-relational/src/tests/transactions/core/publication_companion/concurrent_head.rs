@@ -25,7 +25,7 @@ fn register(
             participant,
             CompanionPreflightBudget {
                 maximum_work_visits: Some(16),
-                maximum_preparation_bytes: 4_096,
+                maximum_preparation_bytes: None,
             },
         )
         .expect("the participant is active")
@@ -77,7 +77,7 @@ fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
             }),
             CompanionPreflightBudget {
                 maximum_work_visits: Some(16),
-                maximum_preparation_bytes: 4_096,
+                maximum_preparation_bytes: None,
             },
         )
         .expect("the participant is active");

@@ -17,7 +17,7 @@ pub(super) use retained_checkpoint::RetainedIndexCheckpoint;
 /// no kernel or concurrent compute charges it.
 pub(in crate::domain_computation) struct InvalidationEditAdmission {
     maximum_work: Option<u64>,
-    maximum_preparation_bytes: u64,
+    maximum_preparation_bytes: Option<u64>,
     counters: AdmissionCounters,
     request_local: RequestLocal,
 }
@@ -107,11 +107,11 @@ impl InvalidationEditAdmission {
         Self::with_work_limit(budget.maximum_work_visits, budget.maximum_preparation_bytes)
     }
 
-    /// Work ceilings are caller choices; preparation bytes remain physical
-    /// admission. Absence is retained by every child and carried meter.
+    /// Work and preparation ceilings are caller choices. Accounting and absence
+    /// are retained by every child and carried meter.
     pub(in crate::domain_computation::primary_graph) const fn with_work_limit(
         maximum_work: Option<u64>,
-        maximum_preparation_bytes: u64,
+        maximum_preparation_bytes: Option<u64>,
     ) -> Self {
         Self {
             maximum_work,

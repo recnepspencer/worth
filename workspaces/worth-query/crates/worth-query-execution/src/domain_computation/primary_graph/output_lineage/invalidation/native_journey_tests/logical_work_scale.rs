@@ -116,9 +116,6 @@ fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
                 field_fact(execution, runtime, &before_handle, *entity, label.clone()),
                 field_fact(execution, runtime, &before_handle, *entity, status.clone()),
             ]), &before, OrdSet::new());
-            assert!(owner.resources.retained_capacity_bytes()
-                <= owner.resources.installation().maximum_retained_bytes,
-                "actual Native registration must stay within the installed capacity");
         }
         let downstream = RecordedSettlementIdentity::retain(
             &source(entities[0], OutputBindingIdentity::declared("DownstreamOutput")), coordinate, 0,

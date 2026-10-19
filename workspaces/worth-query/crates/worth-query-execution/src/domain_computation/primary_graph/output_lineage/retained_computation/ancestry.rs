@@ -36,7 +36,7 @@ impl WorthQueryApplicationOutputLineage {
         self.prepay_computation_fork_scan(&mut InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
                 maximum_work_visits: Some(4096),
-                maximum_preparation_bytes: 4096,
+                maximum_preparation_bytes: None,
             },
         ))
         .unwrap()

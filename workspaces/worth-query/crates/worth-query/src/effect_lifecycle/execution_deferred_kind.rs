@@ -47,7 +47,8 @@ pub(crate) const fn companion_stop_is_transient(stop: &CompanionPreflightStop) -
         | CompanionPreflightStop::WorkCounterOverflow
         | CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
-        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => false,
+        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }
+        | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. } => false,
     }
 }
 
@@ -56,7 +57,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_work_refusal_does_not_clear_on_an_unchanged_retry() {
+    fn a_resource_refusal_does_not_clear_on_an_unchanged_retry() {
         for stop in [
             CompanionPreflightStop::WorkExhausted {
                 required: 1,
@@ -65,10 +66,14 @@ mod tests {
             CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: 0 },
             CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: u64::MAX },
             CompanionPreflightStop::WorkCounterOverflow,
+            CompanionPreflightStop::RetainedCompanionCounterOverflow {
+                requested: 1,
+                retained: u64::MAX,
+            },
         ] {
             assert!(
                 !companion_stop_is_transient(&stop),
-                "a work refusal recurs on an unchanged effect: {stop:?}"
+                "a resource refusal recurs on an unchanged effect: {stop:?}"
             );
         }
     }

@@ -58,7 +58,7 @@ fn commit_own_write(
     ),
 ) {
     let product_resources =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources();
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_retained_capacity_for_test(128 * 1024 * 1024);
     let resources = product_resources.invalidation_resources();
     let world = crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world_with_product_resources(product_resources);
     world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
@@ -197,7 +197,7 @@ fn commit_own_write(
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let maximum = resources.installation().maximum_retained_bytes;
+    let maximum = resources.installation().maximum_retained_bytes.expect("this court installs a finite retained ceiling");
     let (key, dependency) = world
         .application
         .with_host_advancement(|phase| {
