@@ -28,8 +28,13 @@ Execute through `worth_query_host::facade::application_entry`:
 
 - `request.prepare_workflow_birth::<Spec, Role>(&workflow, definition)` returns
   `RequiredWorkflowBirth`; it writes nothing.
+- Ordinary product creation captures one descriptor with `idempotency_owned(key)`.
+  `description.for_workflow_birth::<Spec, Role>(&workflow, &required)` binds its
+  frozen input/key, then `retain_operation::<Program, Action>(program_runtime)`
+  selects its declared SourceOnly delivery. The resulting owner carries birth
+  authority, native recovery and cleanup across fresh requests.
 - `request.for_workflow_birth::<Spec, Role>(&workflow, &required)` binds the exact
-  input, logical key, workflow, role and branch.
+  input, logical key, workflow, role and branch in deliberate native control.
 - The ordinary `execute_capability_in_program` or prepared-program commit funnel
   then executes the installed creation body and native enrollment together.
 - `required.instance_in(&receipt)` projects the actual `PublishedWorkflowInstanceRef`.
@@ -37,6 +42,10 @@ Execute through `worth_query_host::facade::application_entry`:
 The creator must be a program-required, non-control mutation with its own
 capability. It does not set `REQUIRES_WORKFLOW_AUTHORITY`: no current occurrence
 of the unborn subject exists to authorize creation.
+
+Owning birth supports `ApplicationSourceCompletion` and `ApplicationRetainedCommit`.
+The latter retains its existing explicit history-work bound at advancement.
+Fixed/discovered output delivery is not erased or adapted into this path.
 
 ## Core Mental Model
 
@@ -86,6 +95,31 @@ let installation = installation
 This is not an ordinary workflow operation node. The vocabulary rejects
 `.operation::<CreateRequestBinding>()` for an enrollment-bearing creator.
 
+Declare an ordinary SourceOnly action/delivery for the creator. Once the native
+birth requirement is prepared, capture and retain the original creator:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let original = workflow.request(&principal, &scope)
+    .on_branch(required.branch())
+    .mutate(intent).without_source().idempotency_owned(key)?;
+let operation = original
+    .for_workflow_birth::<RequestWorkflow, CreatedRequest>(&workflow, &required)?
+    .retain_operation::<RequestProgram, CreateAction>(workflow.program_runtime())?;
+let step = operation.advance(&workflow.request(&principal, &scope)
+    .on_branch(required.branch()));
+// Retain the native Progress/Refused owner, or close Completed/Terminal custody.
+```
+
+Binding refusal returns the original descriptor; the borrowed requirement remains
+untouched. Retention refusal returns `WorthQueryOwnedWorkflowBirthBinding`, whose
+`into_parts()` returns the original descriptor and shared one-shot requirement.
+Construction consumes no slot and retains no authenticated request. Each advance
+freshly authorizes the selected installed action. Keyed and unpublished recovery
+carry the exact birth identity without taking that slot again. Do not implement
+a host retry loop around repeated advanced mutation construction.
+
 ## Real Example
 
 A purchase-request creator can initialize its code and admitted requester and
@@ -107,7 +141,9 @@ let body = CreateRequestOperation::reference().body()
 
 After installing that body, its program action, own company-scoped capability
 and vocabulary membership, use the same intent and logical key at both calls.
-The explicit native control lane below retains the enrollment requirement:
+The explicit native control lane below prepares the requirement. Its execute
+call is useful for deliberately driven native control; ordinary product mutation
+and retry use the retained descriptor path above:
 
 <!-- illustrative -->
 ```rust,ignore

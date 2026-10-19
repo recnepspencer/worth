@@ -120,7 +120,9 @@ impl<'w, S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
         } = self;
         match WorthQuerySourceOnlyOperation::construct(description, runtime) {
             Ok(mut source) => {
-                source.admission.workflow = Some(required.clone());
+                source.admission.workflow = Some(
+                    super::super::source_admission::WorkflowAdmission::Operation(required.clone()),
+                );
                 Ok(WorthQueryWorkflowOperation {
                     source,
                     required,

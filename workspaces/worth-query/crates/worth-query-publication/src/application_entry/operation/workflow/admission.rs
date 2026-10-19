@@ -6,6 +6,13 @@ use crate::application_entry::mutation::{
 };
 use crate::application_entry::WorthQueryMutationSourcePrepared;
 
+pub(in crate::application_entry::operation) enum WorkflowAdmission {
+    Operation(
+        worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowOperation,
+    ),
+    Birth(worth_query_execution::publication_boundary::workflow_birth::RequiredWorkflowBirth),
+}
+
 impl<S, I, P, A, M> WorthQuerySourceOperationAdmission<S, I, P, A, M>
 where
     S: ApplicationSchema,
@@ -25,11 +32,20 @@ where
         >,
         execution: bool,
     ) {
-        if let Some(required) = &self.workflow {
-            native.workflow_transition_identity = Some(*required.transition_identity_bytes());
-            if execution {
-                native.workflow_authority = Some(required.authority_slot());
+        match &self.workflow {
+            Some(WorkflowAdmission::Operation(required)) => {
+                native.workflow_transition_identity = Some(*required.transition_identity_bytes());
+                if execution {
+                    native.workflow_authority = Some(required.authority_slot());
+                }
             }
+            Some(WorkflowAdmission::Birth(required)) => {
+                native.bind_retained_workflow_birth(
+                    *required.identity_bytes(),
+                    execution.then(|| required.authority_slot()),
+                );
+            }
+            None => {}
         }
     }
 }

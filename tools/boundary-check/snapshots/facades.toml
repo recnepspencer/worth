@@ -316,6 +316,7 @@ exports = [
     "WorthQueryOutputProjectionInstallation",
     "WorthQueryOutputSettlementPosture",
     "WorthQueryOwnedWorkflowBinding",
+    "WorthQueryOwnedWorkflowBirthBinding",
     "WorthQueryPendingApplicationLane",
     "WorthQueryPerformedApplicationMutation",
     "WorthQueryPerformedBranchAdoption",

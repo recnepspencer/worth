@@ -6,6 +6,7 @@ pub(super) mod native_publication;
 mod source_admission;
 mod source_only;
 mod workflow;
+mod workflow_birth;
 pub use cleanup::{WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt};
 pub use mode_construction::WorthQueryOperationModeFactory;
 pub use source_admission::{WorthQuerySourceDeliveryMode, WorthQuerySourceOperationAdmission};
@@ -24,6 +25,7 @@ pub use workflow::{
     WorthQueryWorkflowOperationChoice, WorthQueryWorkflowOperationDenial,
     WorthQueryWorkflowOperationInputs,
 };
+pub use workflow_birth::WorthQueryOwnedWorkflowBirthBinding;
 mod capture_refusal;
 mod construction;
 pub use capture_refusal::{

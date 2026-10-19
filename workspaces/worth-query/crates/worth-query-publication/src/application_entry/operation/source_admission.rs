@@ -71,9 +71,7 @@ where
     pub(in crate::application_entry) description: WorthQueryOperationDescription<S, I>,
     pub(in crate::application_entry) installed_action:
         worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
-    pub(super) workflow: Option<
-        worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowOperation,
-    >,
+    pub(super) workflow: Option<WorkflowAdmission>,
     marker: std::marker::PhantomData<fn() -> (A, Mode)>,
     // Retention outlives captured intent and native workflow custody on abandonment.
     pub(in crate::application_entry) runtime: WorthQueryProgramApplicationRuntime<S, P>,
@@ -284,3 +282,4 @@ where
 
 #[path = "workflow/admission.rs"]
 mod workflow_admission;
+pub(super) use workflow_admission::WorkflowAdmission;
