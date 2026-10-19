@@ -158,6 +158,62 @@ input again. It reserves selected values and the installed decoder's declared
 peak allocation on the same request, charges declared work, validates through
 the exact installed codec, then moves the prepared values into the candidate.
 
+### Exact Decimal inputs
+
+A field whose explicit scalar binding declares `ScalarAspectType::Decimal` can
+use exact captured text as a native body input. The pure domain value should
+validate its business rules and serialize transparently as a string:
+
+```rust,ignore
+#[derive(serde::Serialize)]
+#[serde(transparent)]
+struct ExactAmount(String); // Construction validates/normalizes before capture.
+
+#[derive(serde::Serialize)]
+struct SetAmounts {
+    amount: ExactAmount,
+    adjustment: Option<ExactAmount>,
+}
+```
+
+The installed field family supplies Decimal meaning. An ordinary String field
+still receives String; selecting Decimal does not parse numbers by looking at
+their spelling or an arbitrary Rust newtype name. Floats and integer inputs are
+not coerced to Decimal, and nominal serde wrappers remain unsupported by the flat
+selector. `"9007199254740993.125"` therefore keeps every digit without an f64
+round trip. Required text and Some(text) are supported; None in an optional
+replacement remains an explicit Clear or absent initializer.
+
+For example, declare both fields with the application's readable Decimal codec,
+then author:
+
+```rust,ignore
+let body = SetAmountsOperation::reference().body()
+    .assign_optional_input(Adjustment::reference(), "adjustment")?
+    .assign_input(Amount::reference(), "amount")?
+    .finish()?;
+```
+
+The codec must opt into native input admission with a profile covering its actual
+decoder, validator, temporary allocations and boxed result. It is still the
+authority for accepted grammar, signs, precision, range and canonical spelling.
+An exact nonnegative quantity codec can reject `"-1"`, `"1e3"` and `"01.00"`
+while its pure constructor normalizes valid user spelling **before** capture.
+Do not silently normalize a native input after its original identity is captured.
+
+The selector borrows exact Decimal text and quotes its retained byte capacity.
+Native execution materializes `AspectValue::Decimal` under the existing request
+reservation and admits the codec's declared resources before decoding. An
+advanced `ApplicationCanonicalInputScalar::DecimalText` is representation only:
+even malformed text can be selected, and it grants neither domain validity nor
+permission to write. Codec failure remains `InputMismatch { member }` before
+any body effect. No encoder tag, canonical input bytes, request identity or body
+transport shape changes for this support.
+
+Do not store graph quantities as String merely to bypass missing Decimal
+admission, round through floats, truncate fractions into whole-number fields, or
+skip the installed codec's validation.
+
 ### Compare a field with captured input
 
 Use `expect_input` when a mutation must compare committed graph truth with a
