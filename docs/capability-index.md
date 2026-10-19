@@ -149,9 +149,13 @@ the same carrier and requires the installed target producer to rebuild output.
 A closed set of native producer-owned internal relations can retire with its
 output records when both endpoints are independently proven in that same
 publication. Related ordering can survive when its key codec stays unchanged.
-Cold complete-publication association preserves independently admitted incoming
-references without adopting their source entities or relation ownership. Internal
-and claimed-owned relations still require complete native publication provenance.
+A producer owns every relation it actually allocates/creates touching at least
+one output, including new boundary edges during Preserve; external endpoints
+remain external entities. Before/candidate/cold association authenticates the
+complete relation roster and its birth/write succession. Independently committed
+crossing references may survive in either direction without being adopted; exact
+native creation/allocation distinguishes them from omitted producer ownership.
+Internal and claimed-owned relations require complete native provenance.
 Destructive retirement remains closed: external or rewritten relations, protected
 or partly classified fields, affected invariants, changed ordering keys and join
 consequences refuse before publication; ordinary restore remains exact. Surviving application relations

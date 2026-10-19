@@ -15,6 +15,7 @@ mod merge_branch_basis;
 #[cfg(test)]
 mod merge_branch_basis_foundational;
 mod positioned_canonical_commit;
+mod publication_relations;
 mod required_output_positions;
 pub(crate) use required_output_positions::{
     RequiredOutputPublicationPositions, RequiredOutputRoutePosition,

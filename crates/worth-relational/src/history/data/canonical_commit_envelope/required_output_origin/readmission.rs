@@ -57,6 +57,24 @@ impl CanonicalCommitEnvelope {
         )
     }
 
+    pub(in crate::history::data) fn validate_required_output_relation_create(
+        &self,
+        id: crate::identity::data::RelationId,
+        kind: crate::identity::data::KindId,
+        payload: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
+        payload_coverage::validate_created_relation_payload(self, id, payload, context).map_err(
+            |failure| match failure {
+                Failure::Request(cause) => Stop::Request(cause),
+                Failure::Unsupported(reason) => {
+                    Stop::Payload(reason.relation_detail(self, id, kind))
+                }
+                Failure::Corrupt(detail) => Stop::Payload(detail),
+            },
+        )
+    }
+
     pub(crate) fn is_unmerged_output_publication_step(&self) -> bool {
         self.commit.parents.len() <= 1
             && self.merge_execution_authority.is_none()

@@ -1,7 +1,6 @@
 //! Reconstruct one live incident edge over its exact publication predecessors.
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop as Stop};
 use crate::branch::RelationalBranchRoot;
-use crate::capabilities::AspectPlanSource;
 use crate::history::data::{
     canonical_commit_envelope::CanonicalOutputPublication, CanonicalCommitEnvelope,
 };
@@ -55,7 +54,8 @@ pub(super) fn validate(
             "incident relation native position/endpoints differ from producer publication".into(),
         );
     }
-    let plan = runtime
+    let plan = root
+        .schema_authority()
         .relation_aspect_plan(entry.kind)
         .ok_or("relation physical contract plan absent")?;
     let state = reconstruct(runtime, selected, id, plan, context, lease)?;
@@ -176,6 +176,14 @@ pub(super) fn reconstruct(
                 lease,
                 context,
             )?);
+            if creation {
+                envelope.validate_required_output_relation_create(
+                    id,
+                    relation.kind,
+                    state.as_ref().and_then(|state| state.state.as_ref()),
+                    context,
+                )?;
+            }
         }
     }
     Ok(state)
