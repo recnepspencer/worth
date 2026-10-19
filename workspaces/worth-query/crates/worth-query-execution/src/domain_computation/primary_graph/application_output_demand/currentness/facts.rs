@@ -39,16 +39,10 @@ pub(super) fn require_current_facts(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    read: &RetainedOutputCurrentnessRead,
+    facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    match first_moved_fact(
-        execution,
-        relational,
-        snapshot,
-        read.facts.iter(),
-        admission,
-    ) {
+    match first_moved_fact(execution, relational, snapshot, facts.iter(), admission) {
         Ok(None) => Ok(()),
         Ok(Some(moved)) => Err(denial_subject(
             WorthQueryOutputDemandDenialKind::Superseded,

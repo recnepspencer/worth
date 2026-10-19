@@ -54,7 +54,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 require_own_publication(receipt, self.product().observation())?;
                 continue;
             };
-            self.require_current_read(&execution, relational, &read, admission)?;
+            self.require_current_read(
+                &execution,
+                relational,
+                &read,
+                settlement.application_commit_receipt(),
+                admission,
+            )?;
         }
         Ok(())
     }

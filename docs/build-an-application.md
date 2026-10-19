@@ -2646,8 +2646,12 @@ projection delivers only through its declared read (`read_current`,
 known gap, not permission to pair a unit gate with a replacement selector. The request's scope is checked fresh. A
 foreign runtime, branch or observation is refused before any installed meaning is
 read. Bare `request.at(&observation).require_current_program_output(...)` checks
-lineage only. It neither revalidates the selected action or root nor replaces
-this gate. Success returns `()` because the caller already holds the
+lineage only: its output witness, comparable source facts and original consumed
+outputs at that same native observation. Changed upstream facts refuse current
+delivery even before regeneration; an unresolved upstream remains pending,
+never current. Missing or empty comparable facts still require the original
+own-publication decision. This check neither revalidates the selected action or
+root nor replaces this gate. Success returns `()` because the caller already holds the
 observation. Read every displayed fact at that same observation.
 
 <!-- illustrative -->
