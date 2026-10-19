@@ -65,6 +65,7 @@ fn require_candidate_capacity(
         .ok_or_else(denied)?;
     let required_unlinks = required_unlinks
         .checked_add(retirement_capacity)
+        .and_then(|count| count.checked_add(body.reference_inputs().len()))
         .ok_or_else(denied)?;
     if cardinality.maximum_emits() < usize::from(body.external_emission().is_some())
         || cardinality.maximum_deletes() < required_deletes
@@ -77,6 +78,7 @@ fn require_candidate_capacity(
                 .into_iter()
                 .flat_map(|c| c.initialization_sites())
                 .try_fold(0usize, |sum, site| sum.checked_add(site.links().len()))
+                .and_then(|count| count.checked_add(body.reference_inputs().len()))
                 .ok_or_else(denied)?
     {
         return Err(denied());
@@ -303,6 +305,24 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 || !Binding::InputBinding::RETAIN_CANONICAL_INPUT
                 || !binding.is_readable()
                 || !binding.admits_native_input()
+            {
+                return Err(denied());
+            }
+            input_bindings.push(binding.clone());
+        }
+        for reference in body.reference_inputs() {
+            let field = &reference.field;
+            let binding = schema
+                .value_bindings()
+                .field(field.entity(), field.aspect(), field.field())
+                .ok_or_else(denied)?;
+            if binding.identity() != &reference.binding
+                || binding.scalar_family() != reference.scalar_family
+                || !Binding::InputBinding::RETAIN_CANONICAL_INPUT
+                || !binding.is_readable()
+                || !binding.admits_native_input()
+                || !binding.is_identity()
+                || binding.unit().is_some()
             {
                 return Err(denied());
             }

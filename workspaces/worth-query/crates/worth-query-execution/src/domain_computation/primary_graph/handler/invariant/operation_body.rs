@@ -3,6 +3,7 @@ mod children;
 mod emission;
 mod path_input;
 mod path_value;
+mod reference_input;
 mod retirement;
 mod reuse;
 mod selection;

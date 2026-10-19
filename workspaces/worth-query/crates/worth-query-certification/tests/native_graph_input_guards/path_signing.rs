@@ -2,7 +2,7 @@
 #[path = "path_signing/admission.rs"]
 mod admission;
 #[path = "path_signing/authentication.rs"]
-mod authentication;
+pub(super) mod authentication;
 #[path = "path_signing/binding.rs"]
 mod binding;
 #[path = "path_signing/declaration.rs"]

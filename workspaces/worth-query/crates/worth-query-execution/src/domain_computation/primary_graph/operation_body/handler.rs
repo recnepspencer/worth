@@ -142,6 +142,10 @@ where
             Ok(children) => children,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
+        let references = match reader.body_references(&self.body, inputs.as_ref()) {
+            Ok(references) => references,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         let emission = match self
             .external_emission
             .as_ref()
@@ -163,6 +167,7 @@ where
                 values,
                 retirements,
                 path_writes,
+                references,
                 creation_disposition,
                 children,
             }),

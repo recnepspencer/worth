@@ -124,7 +124,14 @@ pub(in crate::application_schema::operation_definition::body) fn validate_subjec
                                 |path| &step.target.path == path,
                             )
                     });
-                    !scope_write && !path_write
+                    let retarget = path.is_some_and(|path| {
+                        path.steps().iter().any(|step| {
+                            body.reference_inputs()
+                                .iter()
+                                .any(|reference| reference.relation == step.relation())
+                        })
+                    });
+                    !scope_write && !path_write && !retarget
                 })
             })
     })

@@ -7,6 +7,8 @@ use base::operation_body_base_record;
 #[cfg(test)]
 mod children_tests;
 mod enrollment;
+#[cfg(test)]
+mod reference_input_tests;
 mod related_output;
 mod related_source;
 mod succession;
@@ -102,6 +104,18 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
         )
     } else {
         record
+    };
+    let record = if body.reference_inputs().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-reference-inputs-v1",
+            std::iter::once(("body", record)).chain(
+                body.reference_inputs()
+                    .iter()
+                    .map(|reference| ("reference-input", reference.canonical_record())),
+            ),
+        )
     };
     let Some(creation) = body.creation().filter(|c| !c.children().is_empty()) else {
         return record;

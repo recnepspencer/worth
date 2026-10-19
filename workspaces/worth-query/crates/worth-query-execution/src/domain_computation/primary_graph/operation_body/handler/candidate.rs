@@ -22,6 +22,9 @@ where
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
             }
         };
+        if let Err(cause) = writer.body_references(&target, &self.body, decision.references) {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+        }
         let mut prepared_inputs = decision.inputs;
         let mut children = decision.children;
         let mut input_values = prepared_inputs

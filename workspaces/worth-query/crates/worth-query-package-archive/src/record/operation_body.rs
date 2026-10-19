@@ -20,6 +20,7 @@ mod version;
 pub(super) use query_context::require_nesting_depth;
 mod path_input;
 mod path_value;
+mod reference_input;
 mod related_source;
 mod requirements;
 mod retirements;
@@ -135,6 +136,9 @@ pub(super) fn write(
     if version >= 36 {
         children::write(output, body.creation().map_or(&[], |c| c.children()))?;
     }
+    if version >= 37 {
+        reference_input::write(output, body.reference_inputs())?;
+    }
     Ok(())
 }
 
@@ -143,7 +147,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=36) {
+    if !matches!(version, 1..=37) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -281,6 +285,11 @@ pub(super) fn decode(
     } else {
         creation
     };
+    let references = if version >= 37 {
+        reference_input::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
             scope,
@@ -294,7 +303,8 @@ pub(super) fn decode(
         .with_untrusted_values(values)
         .with_untrusted_retirements(retirements)
         .with_untrusted_path_input_expectations(path_inputs)
-        .with_untrusted_path_value_assignments(path_values))
+        .with_untrusted_path_value_assignments(path_values)
+        .with_untrusted_reference_inputs(references))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             steps,

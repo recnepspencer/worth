@@ -33,8 +33,10 @@ mod output_validation;
 mod path_input;
 mod path_source;
 mod path_value;
+mod reference_input;
 pub use path_input::ApplicationOperationBodyPathInputExpectation;
 pub use path_value::ApplicationOperationBodyPathValueAssignment;
+pub use reference_input::ApplicationOperationBodyReferenceInput;
 mod present_source;
 mod related_source;
 mod retirement;
@@ -111,6 +113,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     InvalidWorkflowEnrollment,
     InvalidWorkflowSuccession,
     InvalidSelectionRetirement,
+    InvalidReferenceReplacement,
     Requirement(ApplicationOperationBodyRequirementDenial),
 }
 

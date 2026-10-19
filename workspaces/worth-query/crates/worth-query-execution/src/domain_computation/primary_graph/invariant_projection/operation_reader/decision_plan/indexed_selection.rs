@@ -45,6 +45,50 @@ impl<Schema: ApplicationSchema, Operation>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        self.decision_select_with_value(
+            SelectionField {
+                entity: field.entity(),
+                aspect: field.aspect(),
+                field: field.field(),
+            },
+            || {
+                Field::Binding::encode(&value).map_err(|_| {
+                    selection_denial(
+                        WorthQueryEntityResolutionDenialKind::Refused(
+                            ResolutionRefusal::ValueEncodingRejected,
+                        ),
+                        field.field(),
+                    )
+                })
+            },
+            candidate_limit,
+        )
+    }
+
+    /// Private compiled-body entry; installation admitted the identity codec.
+    pub(in crate::domain_computation::primary_graph) fn body_select_identity(
+        &mut self,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        value: worth_foundational::facade::AspectValue,
+    ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, ()>>, HandlerExecutionDenial> {
+        self.decision_select_with_value(
+            SelectionField {
+                entity: field.entity(),
+                aspect: field.aspect(),
+                field: field.field(),
+            },
+            || Ok(value),
+            2,
+        )
+    }
+
+    fn decision_select_with_value<Entity>(
+        &mut self,
+        field: SelectionField<'_>,
+        encode: impl FnOnce() -> Result<worth_foundational::facade::AspectValue, HandlerExecutionDenial>,
+        candidate_limit: usize,
+    ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+    {
         let execution = self.reader.execution;
         self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Field {
             entity: field.entity().to_owned(),
@@ -53,14 +97,8 @@ impl<Schema: ApplicationSchema, Operation>
         })
         .map_err(HandlerExecutionDenial::new)?;
         self.require_selection_budget(candidate_limit, field.field())?;
-        let value = Field::Binding::encode(&value).map_err(|_| {
-            selection_denial(
-                WorthQueryEntityResolutionDenialKind::Refused(
-                    ResolutionRefusal::ValueEncodingRejected,
-                ),
-                field.field(),
-            )
-        })?;
+        // Preserve the typed resolver's admission/work gate before supplier encoding.
+        let value = encode()?;
         let layout = self
             .reader
             .layout
@@ -139,8 +177,8 @@ impl<Schema: ApplicationSchema, Operation>
                 field.field(),
             ));
         }
-        self.retain_entity_selection(
-            field,
+        self.retain_named_entity_selection(
+            field.entity(),
             layout.entity_kind,
             layout.locator.clone(),
             value,
@@ -170,6 +208,26 @@ impl<Schema: ApplicationSchema, Operation>
     where
         Unit: ApplicationFieldUnit,
     {
+        self.retain_named_entity_selection(
+            field.entity(),
+            kind,
+            locator,
+            value,
+            candidate_limit,
+            outcome,
+        )
+    }
+
+    fn retain_named_entity_selection<Entity>(
+        &mut self,
+        entity: &str,
+        kind: worth_relational::facade::identity::KindId,
+        locator: worth_foundational::facade::AspectFieldLocator,
+        value: worth_foundational::facade::AspectValue,
+        candidate_limit: usize,
+        outcome: worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
+    ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+    {
         let index_id = outcome.retain_definition().index_id;
         let mut identities = Vec::with_capacity(outcome.candidate_entity_ids().len());
         for entity_id in outcome.candidate_entity_ids() {
@@ -177,7 +235,7 @@ impl<Schema: ApplicationSchema, Operation>
             identities.push(WorthQueryInvariantEntityIdentity {
                 entity_id: *entity_id,
                 kind,
-                entity: Arc::from(field.entity()),
+                entity: Arc::from(entity),
                 authority_identity: self.reader.authority_identity,
                 _marker: PhantomData,
             });
@@ -218,6 +276,23 @@ impl<Schema: ApplicationSchema, Operation>
             ));
         }
         Ok(())
+    }
+}
+
+struct SelectionField<'a> {
+    entity: &'a str,
+    aspect: &'a str,
+    field: &'a str,
+}
+impl SelectionField<'_> {
+    fn entity(&self) -> &str {
+        self.entity
+    }
+    fn aspect(&self) -> &str {
+        self.aspect
+    }
+    fn field(&self) -> &str {
+        self.field
     }
 }
 

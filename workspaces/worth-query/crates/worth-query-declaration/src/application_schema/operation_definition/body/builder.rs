@@ -21,6 +21,7 @@ pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
     pub(super) path_input_expectations: Vec<super::ApplicationOperationBodyPathInputExpectation>,
     pub(super) path_value_assignments: Vec<super::ApplicationOperationBodyPathValueAssignment>,
+    pub(super) reference_inputs: Vec<super::ApplicationOperationBodyReferenceInput>,
     requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
@@ -41,6 +42,7 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
             path_value_assignments: Vec::new(),
+            reference_inputs: Vec::new(),
             requirements: Vec::new(),
             outputs: Vec::new(),
             succession: None,
@@ -184,6 +186,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
         }
         if writes.is_empty()
+            && self.reference_inputs.is_empty()
             && self.path_value_assignments.is_empty()
             && creation.is_none()
             && self.outputs.is_empty()
@@ -206,6 +209,8 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         let program = program
             .with_untrusted_path_input_expectations(self.path_input_expectations)
             .with_untrusted_path_value_assignments(self.path_value_assignments);
+        let program = program.with_untrusted_reference_inputs(self.reference_inputs);
+        super::reference_input::validate_shape(&program)?;
         program.validate_path_bindings()?;
         if !program.has_supported_retiring_replacement()
             || !program.has_supported_creation_reuse()

@@ -292,13 +292,16 @@ fn link_can_change_existing_anchor(
         application_query::ApplicationQueryRootPathDirection as Path,
         application_schema::ApplicationOperationBodyCreationLinkDirection as Link,
     };
-    body.creation().is_none_or(|creation| {
-        creation.links().iter().any(|link| {
-            link.relation == step.relation()
-                && matches!(
-                    (link.direction, step.direction()),
-                    (Link::FromScope, Path::Forward) | (Link::ToScope, Path::Reverse)
-                )
+    body.reference_inputs()
+        .iter()
+        .any(|reference| reference.relation == step.relation())
+        || body.creation().is_none_or(|creation| {
+            creation.links().iter().any(|link| {
+                link.relation == step.relation()
+                    && matches!(
+                        (link.direction, step.direction()),
+                        (Link::FromScope, Path::Forward) | (Link::ToScope, Path::Reverse)
+                    )
+            })
         })
-    })
 }

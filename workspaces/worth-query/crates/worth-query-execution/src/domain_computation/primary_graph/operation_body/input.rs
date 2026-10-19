@@ -92,6 +92,11 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
         for ((member, family, optional), binding) in scope_inputs
             .chain(created_inputs)
             .chain(path_inputs)
+            .chain(
+                body.reference_inputs()
+                    .iter()
+                    .map(|reference| (reference.member.as_str(), reference.scalar_family, true)),
+            )
             .zip(bindings)
         {
             context

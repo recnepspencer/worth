@@ -38,6 +38,8 @@ mod path_value_evidence;
 mod path_value_targets;
 #[path = "native_graph_input_guards/program.rs"]
 mod program;
+#[path = "native_graph_input_guards/reference_input.rs"]
+mod reference_input;
 #[path = "native_graph_input_guards/retiring_actions.rs"]
 mod retiring_actions;
 #[path = "native_graph_input_guards/retiring_admission.rs"]

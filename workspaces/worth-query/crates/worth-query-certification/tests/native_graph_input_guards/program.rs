@@ -19,6 +19,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         let builder = super::reuse_actions::declare(builder);
         let builder = super::child_actions::declare(builder);
         let builder = super::path_signing::declare(builder);
+        let builder = super::reference_input::declare(builder);
         builder
             .entity(Mapping::reference())
             .entity(Principal::reference())
@@ -33,7 +34,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
             .field(Mapping::reference(), ExternalIdentity::reference())
             .field(Mapping::reference(), MappingStatus::reference())
             .field(Principal::reference(), PrincipalIdentity::reference())
-            .field(Parent::reference(), ParentIdentity::reference())
+            .unique_field(Parent::reference(), ParentIdentity::reference())
             .field(Parent::reference(), Company::reference())
             .field(Parent::reference(), ParentRevision::reference())
             .field(Row::reference(), RowIdentity::reference())
@@ -158,6 +159,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.operation_body::<super::path_signing::GraphBinding>()?;
         setup.operation_body::<super::path_signing::GraphAliasBinding>()?;
         setup.operation_body::<super::path_signing::ScopeAliasBinding>()?;
+        setup.operation_body::<super::reference_input::Binding>()?;
+        setup.operation_body::<super::reference_input::SignBinding>()?;
         setup.operation_body::<super::child_actions::Binding>()
     }
 }
@@ -202,6 +205,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .native_action::<super::path_signing::GraphAliasBinding>()
             .finish_action()
             .native_action::<super::path_signing::ScopeAliasBinding>()
+            .finish_action()
+            .native_action::<super::reference_input::Binding>()
+            .finish_action()
+            .native_action::<super::reference_input::SignBinding>()
             .finish_action()
             .finish()]
     }

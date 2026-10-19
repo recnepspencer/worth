@@ -30,6 +30,8 @@ mod path_input;
 mod path_value;
 #[path = "tests/principal.rs"]
 mod principal;
+#[path = "tests/reference_input.rs"]
+mod reference_input;
 #[path = "tests/related_outputs.rs"]
 mod related_outputs;
 #[path = "tests/related_source.rs"]

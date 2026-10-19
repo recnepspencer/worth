@@ -19,6 +19,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
     pub(super) path_input_expectations: Vec<super::ApplicationOperationBodyPathInputExpectation>,
     pub(super) path_value_assignments: Vec<super::ApplicationOperationBodyPathValueAssignment>,
+    pub(super) reference_inputs: Vec<super::ApplicationOperationBodyReferenceInput>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -158,6 +159,7 @@ impl ApplicationOperationBodyProgram {
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
             path_value_assignments: Vec::new(),
+            reference_inputs: Vec::new(),
         }
     }
     pub fn from_untrusted_with_creation(
@@ -176,6 +178,7 @@ impl ApplicationOperationBodyProgram {
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
             path_value_assignments: Vec::new(),
+            reference_inputs: Vec::new(),
         }
     }
     pub fn from_untrusted_with_requirements(
@@ -195,6 +198,7 @@ impl ApplicationOperationBodyProgram {
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
             path_value_assignments: Vec::new(),
+            reference_inputs: Vec::new(),
         }
     }
     /// Authority-free scope-bound description. Fresh readmission checks the scope
@@ -220,10 +224,21 @@ impl ApplicationOperationBodyProgram {
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
             path_value_assignments: Vec::new(),
+            reference_inputs: Vec::new(),
         }
     }
     pub fn explicit_scope_entity(&self) -> Option<&str> {
         self.explicit_scope.as_deref()
+    }
+    pub fn reference_inputs(&self) -> &[super::ApplicationOperationBodyReferenceInput] {
+        &self.reference_inputs
+    }
+    pub fn with_untrusted_reference_inputs(
+        mut self,
+        references: Vec<super::ApplicationOperationBodyReferenceInput>,
+    ) -> Self {
+        self.reference_inputs = references;
+        self
     }
     pub fn path_value_assignments(&self) -> &[super::ApplicationOperationBodyPathValueAssignment] {
         &self.path_value_assignments
@@ -284,6 +299,7 @@ impl ApplicationOperationBodyProgram {
     /// Creation changes no existing scope field; guards and requirements may read it.
     pub fn is_creation_only(&self) -> bool {
         self.creation.is_some()
+            && self.reference_inputs.is_empty()
             && self.path_value_assignments.is_empty()
             && self
                 .scope_fields
@@ -315,9 +331,11 @@ impl ApplicationOperationBodyProgram {
         )
     }
     pub fn has_optional_inputs(&self) -> bool {
-        self.scope_fields
-            .iter()
-            .any(ApplicationOperationBodyScopeField::input_is_optional)
+        !self.reference_inputs.is_empty()
+            || self
+                .scope_fields
+                .iter()
+                .any(ApplicationOperationBodyScopeField::input_is_optional)
             || self
                 .creation
                 .iter()

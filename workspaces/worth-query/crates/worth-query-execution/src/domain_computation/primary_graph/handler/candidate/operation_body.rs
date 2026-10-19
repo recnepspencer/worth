@@ -1,4 +1,5 @@
 //! Execution-only native body write into the existing candidate owner.
+mod reference_input;
 use super::OutputRoleUse;
 use super::{
     ApplicationMutationBinding, ApplicationSchema, CandidateWriter,

@@ -1,6 +1,10 @@
 # Unclassified Rust fence debt. Rows must only decrease; CI compares the predecessor.
 
 [[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/authoring/existing-reference-inputs.md"
+unclassified = 0
+
+[[documents]]
 path = "workspaces/worth-query/crates/worth-query/docs/foundations/workflow-operation-inputs.md"
 unclassified = 0
 

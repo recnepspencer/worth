@@ -10,6 +10,7 @@ mod input_expectation;
 mod installation;
 mod output;
 mod path_value;
+pub(in crate::domain_computation::primary_graph) mod reference_input;
 mod requirement;
 mod retirement;
 mod reuse;
@@ -55,6 +56,7 @@ pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     values: Option<value::PreparedBodyValues>,
     retirements: PreparedBodyRetirements<Schema>,
     path_writes: PreparedBodyPathWrites<Schema>,
+    references: reference_input::PreparedBodyReferences<Schema>,
     creation_disposition: reuse::CreationDisposition,
     children: Option<PreparedBodyChildren<Schema>>,
 }

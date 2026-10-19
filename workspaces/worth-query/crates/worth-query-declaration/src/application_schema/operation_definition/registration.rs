@@ -64,6 +64,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .iter()
                     .flat_map(|step| step.target.decision_reads()),
             );
+            reads.extend(
+                body.reference_inputs()
+                    .iter()
+                    .flat_map(|reference| reference.decision_reads()),
+            );
             if let Some(creation) = body.creation() {
                 if creation.reuses_current_if_unchanged() {
                     reads.extend(creation.fields().iter().map(|field| {
@@ -136,6 +141,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 body.retirements()
                     .iter()
                     .flat_map(|rule| rule.program_targets()),
+            );
+            programs.extend(
+                body.reference_inputs()
+                    .iter()
+                    .flat_map(|reference| reference.program_targets()),
             );
             if let Some(emission) = body.external_emission() {
                 programs.insert(super::super::ApplicationOperationProgramTarget::Emit {
