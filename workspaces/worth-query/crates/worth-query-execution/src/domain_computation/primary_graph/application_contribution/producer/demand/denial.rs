@@ -23,6 +23,7 @@ pub struct WorthQueryOutputDemandDenial {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
+    publication_companion_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     commit_denial_kind:
         Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind>,
     commit_execution: Option<(
@@ -151,6 +152,27 @@ impl WorthQueryOutputDemandDenial {
 
     pub fn kind(&self) -> WorthQueryOutputDemandDenialKind {
         self.kind.as_ref().clone()
+    }
+
+    /// The original publication-companion resource stop from a producer commit.
+    /// Its typed amounts are unchanged; an overflow carries no invented quote.
+    /// Other denial paths return `None`. This is diagnostic data, not cleanup or
+    /// permission to retry, and it does not change the denial kind or posture.
+    pub const fn publication_companion_stop(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::CompanionPreflightStop> {
+        match &self.evidence {
+            Some(evidence) => evidence.publication_companion_stop,
+            None => None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_publication_companion_stop(
+        mut self,
+        stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+    ) -> Self {
+        self.evidence_mut().publication_companion_stop = Some(stop);
+        self
     }
 
     /// The original pre-effect commit refusal, when this demand ran a producer.

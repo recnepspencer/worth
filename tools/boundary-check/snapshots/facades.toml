@@ -419,6 +419,7 @@ exports = [
     "BridgeCorrespondenceDeliveryStop",
     "BridgeExecutionBasisFinalizationFailureKind",
     "CandidateWriter",
+    "CompanionPreflightStop",
     "DecisionReader",
     "DerivedIndexDiscardDenial",
     "DerivedIndexDiscardOutcome",

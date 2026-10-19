@@ -41,6 +41,7 @@ pub use crate::domain_computation::primary_graph::query_test_execution_authority
 pub use worth_relational::facade::{
     indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
     lineage::{LineageEventKind, LineageEventRecord},
+    mvcc::CompanionPreflightStop,
     publication::RecordStructuralChange,
     transactions::RelationalExecutionDenialCause,
 };

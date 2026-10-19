@@ -2504,6 +2504,24 @@ The following fixture deliberately coordinates native output custody through
 
 ---
 
+#### Producer publication diagnostics
+
+Keep the original operation on a terminal or refused advance and borrow its
+returned `WorthQueryOperationAdvanceDenial::Outputs` denial. A native demand
+cause, under `DemandExecution` or `Demand(Demand(..))`, exposes
+`WorthQueryOutputDemandDenial::publication_companion_stop()` through
+`host::primary_graph`. The [host facade example](../workspaces/worth-query/crates/worth-query-host/src/facade.rs)
+compiles this borrow-only path without consuming the operation or its cleanup.
+
+The accessor retains the original `CompanionPreflightStop` when a producer
+commit maps a publication-companion resource refusal. Preparation exhaustion
+carries `required` and `maximum` bytes; retained-companion exhaustion carries
+`requested`, `retained` and `maximum` bytes. Work exhaustion preserves
+`required` when supplied and `maximum`. Counter overflow stays an overflow
+without a fabricated quote. Other denial paths return `None`; that absence does
+not identify a budget. The diagnostic neither changes kind or recovery posture
+nor authorizes a retry, a capacity increase, output completion or cleanup.
+
 ### 5.5 Own a complete no-source output tree
 
 Use the ordinary demand builder when a read request needs the complete installed

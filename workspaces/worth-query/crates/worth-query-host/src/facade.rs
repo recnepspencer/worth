@@ -196,6 +196,36 @@
 //! }
 //! ```
 
+//! Producer publication diagnostics borrow the returned denial while the
+//! application keeps the original terminal operation and its cleanup custody.
+//! Native companion amounts are data, not a new retry or publication authority.
+//!
+//! ```
+//! use worth_query_host::facade::{
+//!     application_entry::{
+//!         WorthQueryApplicationOutputDemandDenial,
+//!         WorthQueryOperationAdvanceDenial,
+//!         WorthQueryRequiredOutputPreparationDenial,
+//!     },
+//!     primary_graph::CompanionPreflightStop,
+//! };
+//! fn publication_companion_stop(
+//!     denial: &WorthQueryOperationAdvanceDenial,
+//! ) -> Option<CompanionPreflightStop> {
+//!     let WorthQueryOperationAdvanceDenial::Outputs(required) = denial else {
+//!         return None;
+//!     };
+//!     let native = match required {
+//!         WorthQueryRequiredOutputPreparationDenial::DemandExecution(native) => native,
+//!         WorthQueryRequiredOutputPreparationDenial::Demand(
+//!             WorthQueryApplicationOutputDemandDenial::Demand(native),
+//!         ) => native,
+//!         _ => return None,
+//!     };
+//!     native.publication_companion_stop()
+//! }
+//! ```
+//!
 pub use worth_query_admission::facade as admission;
 pub use worth_query_declaration::facade as declaration;
 pub use worth_query_declaration::{

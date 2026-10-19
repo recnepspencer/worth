@@ -131,8 +131,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     }
     // A companion with no room for this commit met a budget of the advance
     // that ran it; the producer did not fail, and its row stays claimable.
-    if let Some(kind) = refused_budget(&outcome) {
-        return Err(denial(kind, identity.to_owned()));
+    if let Some((kind, stop)) = refused_budget(&outcome) {
+        return Err(denial(kind, identity.to_owned()).with_publication_companion_stop(stop));
     }
     match outcome {
         WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
@@ -278,7 +278,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 /// commit: the request's work, or what the index and its preparation retain.
 fn refused_budget(
     outcome: &WorthQueryApplicationCommitOutcome,
-) -> Option<WorthQueryOutputDemandDenialKind> {
+) -> Option<(
+    WorthQueryOutputDemandDenialKind,
+    worth_relational::facade::mvcc::CompanionPreflightStop,
+)> {
     use graph::WorthQueryApplicationCommitDeferredKind as Deferred;
     use worth_relational::facade::mvcc::{
         CompanionPreflightStop as Stop, RelationalPublicationDeferred::CompanionPreflight,
@@ -307,17 +310,18 @@ fn refused_budget(
         | WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
         | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
     };
-    match stop {
+    let kind = match stop {
         Stop::WorkExhausted { .. }
         | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
+        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
         | Stop::RetainedCompanionCapacityExhausted { .. } => {
-            Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
+            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
-        _ => None,
-    }
+        _ => return None,
+    };
+    Some((kind, *stop))
 }
 
 #[cfg(test)]
