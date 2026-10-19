@@ -8,6 +8,7 @@ pub(super) fn write(
             ApplicationOperationBodyScopeField::Expect { .. } => 1,
             ApplicationOperationBodyScopeField::Assign { .. } => 2,
             ApplicationOperationBodyScopeField::AssignInput { .. } => 3,
+            ApplicationOperationBodyScopeField::ExpectInput { .. } => 9,
             ApplicationOperationBodyScopeField::AssignValue { .. } => 8,
             ApplicationOperationBodyScopeField::SetOptionalInput { .. } => 4,
             ApplicationOperationBodyScopeField::ClearOptional { .. } => 5,
@@ -24,7 +25,12 @@ pub(super) fn write(
             | ApplicationOperationBodyScopeField::Assign { value, .. } => {
                 super::super::foundational_value::write_aspect_value(output, value)
             }
-            ApplicationOperationBodyScopeField::AssignInput {
+            ApplicationOperationBodyScopeField::ExpectInput {
+                member,
+                scalar_family,
+                ..
+            }
+            | ApplicationOperationBodyScopeField::AssignInput {
                 member,
                 scalar_family,
                 ..
@@ -62,6 +68,7 @@ pub(super) fn decode(
             && !(version >= 6 && tag == 6)
             && !(version >= 9 && tag == 7)
             && !(version >= 28 && tag == 8)
+            && !(version >= 30 && tag == 9)
         {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
@@ -74,10 +81,17 @@ pub(super) fn decode(
                 value: input.text()?.to_owned(),
             });
         }
-        if matches!(tag, 3 | 4 | 7) {
+        if matches!(tag, 3 | 4 | 7 | 9) {
             let scalar_family = super::super::foundational_aspect::decode_scalar_type(input)?;
             let member = input.text()?.to_owned();
-            return Ok(if tag == 3 {
+            return Ok(if tag == 9 {
+                ApplicationOperationBodyScopeField::ExpectInput {
+                    field,
+                    binding,
+                    scalar_family,
+                    member,
+                }
+            } else if tag == 3 {
                 ApplicationOperationBodyScopeField::AssignInput {
                     field,
                     binding,

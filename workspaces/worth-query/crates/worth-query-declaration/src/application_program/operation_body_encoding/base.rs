@@ -30,7 +30,12 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                     .as_str()
                     .to_owned(),
             ),
-            ApplicationOperationBodyScopeField::AssignInput {
+            ApplicationOperationBodyScopeField::ExpectInput {
+                member,
+                scalar_family,
+                ..
+            }
+            | ApplicationOperationBodyScopeField::AssignInput {
                 member,
                 scalar_family,
                 ..
@@ -79,6 +84,7 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                     "kind",
                     match step {
                         ApplicationOperationBodyScopeField::Expect { .. } => "expect",
+                        ApplicationOperationBodyScopeField::ExpectInput { .. } => "expect-input",
                         ApplicationOperationBodyScopeField::Assign { .. } => "assign",
                         ApplicationOperationBodyScopeField::AssignValue { .. } => "assign-value",
                         ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",

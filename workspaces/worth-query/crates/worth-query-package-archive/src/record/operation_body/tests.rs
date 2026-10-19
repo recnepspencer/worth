@@ -12,6 +12,8 @@ mod enrollment;
 mod external_emission;
 #[path = "tests/genesis.rs"]
 mod genesis;
+#[path = "tests/input_expectation.rs"]
+mod input_expectation;
 #[path = "tests/optional_input.rs"]
 mod optional_input;
 #[path = "tests/outputs.rs"]

@@ -162,7 +162,7 @@ pub(crate) fn validate_operation_bodies(
                 } if entity == locus.entity() && aspect == locus.aspect() && field == locus.field()
                     && value_type == step.binding().as_str()
                     && *scalar_family == step.scalar_family()
-                    && *presence == expected_presence
+                    && (matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. }) || *presence == expected_presence)
                     && (step.write_target().is_none() || *writable))
             });
             if !found {

@@ -56,6 +56,7 @@ where
             if matches!(
                 step,
                 ApplicationOperationBodyScopeField::RequirePresent { .. }
+                    | ApplicationOperationBodyScopeField::ExpectInput { .. }
             ) {
                 continue;
             }
@@ -65,6 +66,9 @@ where
                 }
                 ApplicationOperationBodyScopeField::RequirePresent { .. } => {
                     BodyFieldExpectation::Present
+                }
+                ApplicationOperationBodyScopeField::ExpectInput { .. } => {
+                    unreachable!("input guards compare prepared canonical members")
                 }
                 ApplicationOperationBodyScopeField::Assign { .. }
                 | ApplicationOperationBodyScopeField::AssignValue { .. }
@@ -144,6 +148,13 @@ where
             HandlerResult::Cancelled => return HandlerResult::Cancelled,
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         };
+        match super::input_expectation::evaluate(&self.body, inputs.as_ref(), reader) {
+            HandlerResult::Completed(()) => {}
+            HandlerResult::DomainDenied(cause) => return HandlerResult::DomainDenied(cause),
+            HandlerResult::ExecutionDenied(cause) => return HandlerResult::ExecutionDenied(cause),
+            HandlerResult::Cancelled => return HandlerResult::Cancelled,
+            HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
+        }
         let values = match reader.body_values(&self.values) {
             Ok(values) => values,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -198,6 +209,13 @@ where
             .map(|inputs| inputs.values.drain(..));
         let mut source_values = decision.sources.into_iter();
         for step in self.body.scope_fields() {
+            if matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. }) {
+                let _ = input_values
+                    .as_mut()
+                    .and_then(Iterator::next)
+                    .expect("one prepared value per admitted input guard");
+                continue;
+            }
             if let ApplicationOperationBodyScopeField::AssignValue { field, value, .. } = step
                 && let Err(cause) = writer.body_field(
                     &target,

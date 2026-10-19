@@ -55,6 +55,8 @@ them or supply missing joins between them.
 Declare through `worth_query_decl::facade::application_schema`:
 
 - `Operation::reference().body().expect(...).assign(...).assign_input(...).finish()`;
+- `body.expect_input(field, "member")` to require a present field equal to one
+  captured flat scalar, without declaring a write;
 - `body.in_scope(Tenant::reference())` when creation does not touch an existing field;
 - `body.set_optional_input(optional_field, "member")` or
   `body.clear_optional(optional_field)` for distinct optional-value intentions;
@@ -122,7 +124,7 @@ Callers do not supply an independently evaluated context or a `supplied` Boolean
 
 ## How It Executes
 
-For input assignments, the operation's structured input binding must opt in to
+For input assignments and input expectations, the operation's structured input binding must opt in to
 `RETAIN_CANONICAL_INPUT`. Its scalar destination binding must have a readable codec
 and an explicit `NATIVE_INPUT_ADMISSION` decoder resource profile. The built-in
 primitive scalar bindings supply profiles. Custom codecs default to unavailable;
@@ -151,6 +153,58 @@ wrong-family members. This selector does not reinterpret JSON or serialize the
 input again. It reserves selected values and the installed decoder's declared
 peak allocation on the same request, charges declared work, validates through
 the exact installed codec, then moves the prepared values into the candidate.
+
+### Compare a field with captured input
+
+Use `expect_input` when a mutation must compare committed graph truth with a
+value already in its original command. It takes a typed field with
+`OperationReads<Operation>`; it does not need or grant write permission. For
+example, a source operation can guard the document's identity and then assign
+a different input member:
+
+```rust,ignore
+// Illustrative fragment; the surrounding operation declares both reads and its write.
+let body = SetRetention::reference().body()
+    .expect_input(DocumentIdentityField::reference(), "identity")?
+    .assign_input(DocumentRetentionField::reference(), "retention_days")?
+    .finish()?;
+```
+
+Both required and optional stored fields are supported. The input member must
+be a present scalar, not an Option. An absent stored field never matches;
+present-empty, false and zero remain ordinary values. Missing, duplicate, nested,
+wrong-family or codec-invalid input denies with `InputMismatch { member }`.
+A different or absent graph value denies with `SourceMismatch { entity, aspect,
+field }`. Neither publishes an assignment or creation. The source fact remains
+a publication obligation, so another session changing only the compared field
+can stale a prepared candidate.
+
+A realistic use is selecting a provider lot whose captured company must equal
+the NCR's committed company. Resolve and revision-admit the provider selection
+through the installed external-input port, construct the original input with
+that accepted company, then declare:
+
+```rust,ignore
+// Illustrative domain declaration, not a provider transaction or graph grant.
+let body = SelectLot::reference().body()
+    .expect_input(Company::reference(), "company")?
+    .set_optional_input(SelectedLot::reference(), "lot")?
+    .finish()?;
+```
+
+Retain the complete original input and logical key through the normal owning
+action. Exact committed replay recovers its original result; it does not rerun
+the guard against today's graph or fetch today's provider values. Native
+authorization still applies. Provider freshness at admission is not atomic
+with graph publication. Do not replace the guard with a host comparison, a
+copied readiness Boolean or a filtered query created just to enforce equality.
+
+This is a body execution guard, not a new expression operand or a requirement
+assessment finding. Read-only requirement assessment does not report this
+input comparison as Met/Unmet. Use declared requirements for guided readiness.
+Canonical schema body v20 and portable body v30 encode this new meaning only
+when present; older body encodings retain their existing meaning. Decoding or
+inspecting a body never grants execution authority.
 
 An optional Set requires a present flat scalar input member. `""` and zero remain
 present values; they are not Clear. An authored `clear_optional` is a distinct

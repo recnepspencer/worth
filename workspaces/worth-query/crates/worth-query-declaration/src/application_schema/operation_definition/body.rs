@@ -39,6 +39,7 @@ pub use signing::ApplicationOperationBodySigningSpec;
 pub use signing_lifecycle::ApplicationOperationBodySigningLifecycleSpec;
 mod program;
 mod requirement;
+mod scope_field;
 mod source_validation;
 mod succession;
 pub use succession::{

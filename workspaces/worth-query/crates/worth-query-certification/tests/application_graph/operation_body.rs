@@ -21,6 +21,8 @@ mod draft_query;
 mod genesis;
 #[path = "operation_body/input.rs"]
 mod input;
+#[path = "operation_body/input_expectation.rs"]
+mod input_expectation;
 #[path = "operation_body/input_selection.rs"]
 mod input_selection;
 #[path = "operation_body/optional_input.rs"]
@@ -120,7 +122,12 @@ fn install_with_projection<const DESTINATION: u64>() -> (
             )
             .field(DocumentRetentionField::reference(), 7)
             .field(DocumentAuditSourceField::reference(), 7);
-            let document = if matches!(DESTINATION, 25 | 26 | 29) {
+            let document = if matches!(DESTINATION, 113 | 116) {
+                document.field(
+                    DocumentDraftNoteField::reference(),
+                    DOCUMENT_IDENTITY.to_owned(),
+                )
+            } else if matches!(DESTINATION, 25 | 26 | 29) {
                 document.field(DocumentDraftNoteField::reference(), "active".to_owned())
             } else if DESTINATION == 28 {
                 document.field(DocumentDraftNoteField::reference(), String::new())

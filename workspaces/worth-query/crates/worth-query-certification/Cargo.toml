@@ -83,6 +83,10 @@ path = "tests/program_example_authority.rs"
 name = "application_graph"
 path = "tests/application_graph.rs"
 
+[[test]]
+name = "native_operation_bodies"
+path = "tests/native_operation_bodies.rs"
+
 
 [lints]
 workspace = true

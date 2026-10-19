@@ -5,6 +5,7 @@ mod expression;
 mod field_expectation;
 mod handler;
 mod input;
+mod input_expectation;
 mod installation;
 mod output;
 mod requirement;

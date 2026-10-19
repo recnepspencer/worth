@@ -24,17 +24,28 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
     } else {
         record
     };
-    if body.values().is_empty() {
-        return record;
+    let record = if body.values().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-values-v1",
+            std::iter::once(("body", record)).chain(
+                body.values()
+                    .iter()
+                    .map(|value| ("value", value.canonical_record())),
+            ),
+        )
+    };
+    if body.scope_fields().iter().any(|step| {
+        matches!(
+            step,
+            crate::application_schema::ApplicationOperationBodyScopeField::ExpectInput { .. }
+        )
+    }) {
+        framed_record("operation-body-input-expectations-v1", [("body", record)])
+    } else {
+        record
     }
-    framed_record(
-        "operation-body-values-v1",
-        std::iter::once(("body", record)).chain(
-            body.values()
-                .iter()
-                .map(|value| ("value", value.canonical_record())),
-        ),
-    )
 }
 
 fn operation_body_lifecycle_record(body: &ApplicationOperationBodyProgram) -> String {

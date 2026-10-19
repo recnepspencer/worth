@@ -5,6 +5,9 @@ use worth_query_host::facade::declaration::application_schema::*;
 pub(super) fn body<const DESTINATION: u64>(
 ) -> ApplicationOperationBody<DocumentRetentionSchema<DESTINATION>, SetRetention, SetRetentionInput>
 {
+    if matches!(DESTINATION, 110..=116) {
+        return super::input_expectation::body::<DESTINATION>();
+    }
     if matches!(DESTINATION, 37 | 38) {
         return SetRetention::reference().body()
             .in_scope(Document::reference()).unwrap()
