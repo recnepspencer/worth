@@ -11,7 +11,7 @@ use worth_query_package_archive::facade::*;
 use fixture::{collection_operation_package, operation_package};
 
 #[test]
-fn version_seven_domain_operation_frame_matches_and_decodes_the_frozen_vector() {
+fn version_eight_domain_operation_frame_matches_and_decodes_the_frozen_vector() {
     let original =
         decode_hex(include_str!("domain_operation_record/domain_operation_v6.hex").trim());
     let denial =
@@ -24,6 +24,21 @@ fn version_seven_domain_operation_frame_matches_and_decodes_the_frozen_vector() 
     );
     assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
 
+    let previous =
+        decode_hex(include_str!("domain_operation_record/domain_operation_v7.hex").trim());
+    let previous_denial =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
+            .decode_frame(&previous)
+            .unwrap_err();
+    assert_eq!(
+        previous_denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(
+        previous_denial.compatibility().unwrap().observed_version(),
+        7
+    );
+
     let source = operation_package();
     let exported = source.export_typed_records().unwrap();
     let operation = exported
@@ -31,7 +46,7 @@ fn version_seven_domain_operation_frame_matches_and_decodes_the_frozen_vector() 
         .find(|view| view.family() == Family::DomainOperation)
         .unwrap();
     let bytes = encode_record_frame(operation, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let golden = decode_hex(include_str!("domain_operation_record/domain_operation_v7.hex").trim());
+    let golden = decode_hex(include_str!("domain_operation_record/domain_operation_v8.hex").trim());
     assert_eq!(bytes, golden);
     let decoded =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)

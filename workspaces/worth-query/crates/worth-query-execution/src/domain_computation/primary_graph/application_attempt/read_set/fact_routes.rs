@@ -37,6 +37,9 @@ fn address(fact: &Fact) -> Option<(EntityId, &AspectFieldLocator)> {
         }
         | Fact::AbsentField {
             entity_id, locator, ..
+        }
+        | Fact::OptionalAspectAbsent {
+            entity_id, locator, ..
         } => Some((*entity_id, locator)),
         _ => None,
     }

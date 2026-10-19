@@ -113,7 +113,7 @@ where
                     Some(()) => {
                         let mode = slot.claim().commit_authority().clone();
                         let successor_entry = std::sync::Arc::clone(&successor.installed_entry);
-                        super::super::disclosure::bind_required_successor::<Schema, Family>(
+                        super::super::disclosure::validate_required_successor::<Schema, Family>(
                             fresh,
                             slot.claim(),
                             installed,
@@ -253,3 +253,6 @@ fn work_denial() -> WorthQueryOutputDemandDenial {
         "required Fresh source exceeds carried request work",
     )
 }
+
+#[cfg(test)]
+mod admission_court;

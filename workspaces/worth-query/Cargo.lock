@@ -697,6 +697,7 @@ dependencies = [
  "worth-query-decl",
  "worth-query-declaration",
  "worth-query-installation",
+ "worth-query-package-archive",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",

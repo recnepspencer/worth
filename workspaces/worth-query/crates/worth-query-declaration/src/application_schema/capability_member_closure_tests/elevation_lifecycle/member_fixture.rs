@@ -8,6 +8,7 @@ pub(super) fn entity_member(entity: &str) -> ApplicationSchemaMember {
 
 pub(super) fn aspect_member(entity: &str, aspect: &str) -> ApplicationSchemaMember {
     ApplicationSchemaMember::Aspect {
+        absence: worth_foundational::facade::AbsenceLaw::Required,
         entity: entity.to_string(),
         aspect: aspect.to_string(),
         identity: worth_foundational::facade::AspectIdentity(0x91613004),

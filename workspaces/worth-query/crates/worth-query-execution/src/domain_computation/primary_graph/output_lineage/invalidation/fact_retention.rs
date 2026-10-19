@@ -79,7 +79,9 @@ pub(super) fn fact_payload_bytes(
         Fact::SourceAspectRevision { aspect, .. } => {
             charge_usize(aspect.owned_allocation_capacity_bytes())
         }
-        Fact::SourceFieldRevision { locator, .. } | Fact::AbsentField { locator, .. } => {
+        Fact::SourceFieldRevision { locator, .. }
+        | Fact::AbsentField { locator, .. }
+        | Fact::OptionalAspectAbsent { locator, .. } => {
             admit_locator(locator, admission)?;
             charge_usize(locator.owned_allocation_capacity_bytes())
         }

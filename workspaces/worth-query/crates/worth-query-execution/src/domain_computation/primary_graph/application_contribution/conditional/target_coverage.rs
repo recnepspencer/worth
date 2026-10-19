@@ -20,7 +20,7 @@ pub(super) fn validate(
         .values()
         .map(|binding| {
             (
-                binding.contract.operation_binding(),
+                binding.contract.operation_binding().clone(),
                 binding.contract.target().clone(),
             )
         })

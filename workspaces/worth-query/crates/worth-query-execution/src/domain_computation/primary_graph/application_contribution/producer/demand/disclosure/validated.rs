@@ -1,5 +1,3 @@
-use std::any::Any;
-
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -27,7 +25,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     pub(super) value: Value,
     pub(super) source: WorthQueryObservedSource<Query>,
     pub(super) affinity: WorthQueryApplicationQueryRequestAffinity,
-    pub(super) edition: InstalledProducerEdition,
+    // Provenance of source admission; never the final executor seal.
+    pub(super) admission_edition: InstalledProducerEdition,
 }
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct FreshOutputDisclosure<
@@ -46,15 +45,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 > {
     Fresh(FreshOutputDisclosure<Query, Value>),
     RetainedProgram(RetainedProgramOutputDisclosure<Query, Value>),
-}
-
-/// Borrowed transport of the entire owner-issued proof. Its edition guard is
-/// inspected before runtime erasure is opened by an installed executor.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ValidatedProducerInput<
-    'a,
-> {
-    edition: InstalledProducerEdition,
-    proof: &'a mut dyn Any,
 }
 
 impl<Query, Value> ValidatedOutputDisclosure<Query, Value> {
@@ -78,38 +68,6 @@ impl<Query, Value> ValidatedOutputDisclosure<Query, Value> {
     }
 }
 
-impl<Query: 'static, Value: 'static> ValidatedOutputDisclosure<Query, Value> {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn with_erased<
-        Result,
-    >(
-        self,
-        execute: impl FnOnce(ValidatedProducerInput<'_>) -> Result,
-    ) -> Result {
-        let edition = self.admitted().edition;
-        let mut proof = Some(self);
-        execute(ValidatedProducerInput {
-            edition,
-            proof: &mut proof,
-        })
-    }
-}
-
-impl ValidatedProducerInput<'_> {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn take<
-        Query: 'static,
-        Value: 'static,
-    >(
-        self,
-        installed: InstalledProducerEdition,
-    ) -> Option<ValidatedOutputDisclosure<Query, Value>> {
-        if self.edition != installed {
-            return None;
-        }
-        self.proof
-            .downcast_mut::<Option<ValidatedOutputDisclosure<Query, Value>>>()?
-            .take()
-    }
-}
 impl<Query, Value> FreshOutputDisclosure<Query, Value> {
     /// Recheck the actual selected execution operands under its carried meter.
     /// The original disclosure acceptance remains the sole semantic check.

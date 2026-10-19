@@ -103,10 +103,11 @@ pub(super) fn installed_preimage_demand(
     }
 }
 
-pub(super) fn prepare_provider_attempt(
+pub(super) fn prepare_provider_attempt<'layout>(
     unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
-        '_,
+        'layout,
     >,
+    contracts: &'layout effect_lowering::AspectContracts<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     application_effect_count: usize,
     installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
@@ -142,6 +143,7 @@ pub(super) fn prepare_provider_attempt(
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(
         &facts,
         unique_fields,
+        contracts,
         &effects,
         mutation_partition,
         application_effect_count,
@@ -172,12 +174,13 @@ pub(super) fn prepare_provider_attempt(
     })
 }
 
-pub(super) fn prepare_program_migration_batch(
+pub(super) fn prepare_program_migration_batch<'layout>(
     unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
-        '_,
+        'layout,
     >,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     completed_facts: super::CompletedFactRoutes,
+    contracts: &'layout effect_lowering::AspectContracts<'layout>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
 ) -> Result<
     worth_relational::facade::transactions::WorkerIntentBatch,
@@ -187,6 +190,7 @@ pub(super) fn prepare_program_migration_batch(
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(
         &facts,
         unique_fields,
+        contracts,
         &effects,
         mutation_partition,
         effects.len(),

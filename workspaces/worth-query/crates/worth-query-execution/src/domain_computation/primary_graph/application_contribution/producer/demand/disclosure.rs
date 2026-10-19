@@ -15,12 +15,13 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod producer_input;
 mod required_successor;
 mod validated;
-pub(super) use required_successor::bind_required_successor;
+pub(super) use required_successor::validate_required_successor;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use producer_input::ValidatedProducerInput;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use validated::{
     FreshDisclosureAdmissionStop, FreshOutputDisclosure, ValidatedOutputDisclosure,
-    ValidatedProducerInput,
 };
 use validated::{AdmittedDisclosure, RetainedProgramOutputDisclosure};
 
@@ -353,7 +354,7 @@ where
         value,
         source,
         affinity,
-        edition,
+        admission_edition: edition,
     };
     Ok(if fresh {
         ValidatedOutputDisclosure::Fresh(FreshOutputDisclosure(admitted))

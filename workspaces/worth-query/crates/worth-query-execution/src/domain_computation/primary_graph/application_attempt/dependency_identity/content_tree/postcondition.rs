@@ -8,6 +8,21 @@ use std::collections::BTreeMap;
 use worth_foundational::facade::AspectValue;
 
 impl FactContent {
+    // Whole-aspect absence must reach the committed native presence probe,
+    // including ordinary handler reads and clears that leave no aspect.
+    fn normalizable_field_ordinals<'a>(
+        &'a self,
+        entity: worth_relational::facade::identity::EntityId,
+        locator: &worth_foundational::facade::AspectFieldLocator,
+    ) -> impl Iterator<Item = usize> + 'a {
+        self.0
+            .fields
+            .ordinals(entity, locator)
+            .iter()
+            .copied()
+            .filter(|ordinal| !matches!(self.0.body[*ordinal], Fact::OptionalAspectAbsent { .. }))
+    }
+
     pub(in crate::domain_computation::primary_graph) fn postcondition(
         &self,
         effects: &[Effect],
@@ -18,7 +33,7 @@ impl FactContent {
         for effect in effects {
             each_write(effect, |entity, locator, _| {
                 count = count.and_then(|count| {
-                    count.checked_add(self.0.fields.ordinals(entity, locator).len())
+                    count.checked_add(self.normalizable_field_ordinals(entity, locator).count())
                 });
             });
         }
@@ -32,7 +47,7 @@ impl FactContent {
         for effect in effects {
             control.check_live()?;
             each_write(effect, |entity, locator, value| {
-                for &ordinal in self.0.fields.ordinals(entity, locator) {
+                for ordinal in self.normalizable_field_ordinals(entity, locator) {
                     // Preserve the original first matching effect rule.
                     writes.entry(ordinal).or_insert(value);
                 }

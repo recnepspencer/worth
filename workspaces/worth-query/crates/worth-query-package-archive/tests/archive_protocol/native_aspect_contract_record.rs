@@ -11,8 +11,10 @@ use worth_query_installation::facade::{
 use worth_query_package_archive::facade::*;
 
 const VERSION_SIX_NATIVE_ASPECT_HEX: &str = "0006000b00000002000000890000000c4e6174697665536368656d610000000c4e6174697665456e746974790000000750726f66696c650000000750726f66696c650000000091621100000000000000000300020000000200000003416765000a00010001000200000003546167001000010001000200000002000000034167650000000354616700010000000750726f66696c65";
-// Independent current framing; the retained original payload grammar is unchanged.
+// Retained protocol7 framing is unsupported under the current-only reader.
 const VERSION_SEVEN_NATIVE_ASPECT_HEX: &str = "0007000b00000002000000890000000c4e6174697665536368656d610000000c4e6174697665456e746974790000000750726f66696c650000000750726f66696c650000000091621100000000000000000300020000000200000003416765000a00010001000200000003546167001000010001000200000002000000034167650000000354616700010000000750726f66696c65";
+// Current protocol8 literal; whole-contract laws are explicit in native records.
+const VERSION_EIGHT_NATIVE_ASPECT_HEX: &str = "0008000b00000002000000910000000c4e6174697665536368656d610000000c4e6174697665456e746974790000000750726f66696c650000000750726f66696c6500000000916211000000000000000003000100020002000100020000000200000003416765000a00010001000200000003546167001000010001000200000002000000034167650000000354616700010000000750726f66696c65";
 
 struct NativeSchema;
 worth_query_declaration::worth_query_entity!(NativeEntity for NativeSchema);
@@ -51,17 +53,22 @@ impl ApplicationSchema for NativeSchema {
 
 #[test]
 fn native_aspect_frame_is_deterministic_exact_and_freshly_readmitted() {
-    for original in VERSION_SIX_NATIVE_ASPECT_HEX.split('|') {
-        let bytes = decode_hex(original);
-        let denial =
-            WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-                .decode_frame(&bytes)
-                .unwrap_err();
-        assert_eq!(
-            denial.kind(),
-            WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-        );
-        assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
+    for (version, originals) in [
+        (6_u16, VERSION_SIX_NATIVE_ASPECT_HEX),
+        (7_u16, VERSION_SEVEN_NATIVE_ASPECT_HEX),
+    ] {
+        for original in originals.split('|') {
+            let bytes = decode_hex(original);
+            let denial =
+                WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
+                    .decode_frame(&bytes)
+                    .unwrap_err();
+            assert_eq!(
+                denial.kind(),
+                WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+            );
+            assert_eq!(denial.compatibility().unwrap().observed_version(), version);
+        }
     }
     let source = native_package();
     let exported = source.export_typed_records().unwrap();
@@ -69,9 +76,9 @@ fn native_aspect_frame_is_deterministic_exact_and_freshly_readmitted() {
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let first = encode_record_frame(native, limits).unwrap();
     assert_eq!(encode_record_frame(native, limits).unwrap(), first);
-    assert_eq!(encode_hex(&first), VERSION_SEVEN_NATIVE_ASPECT_HEX);
+    assert_eq!(encode_hex(&first), VERSION_EIGHT_NATIVE_ASPECT_HEX);
     assert_eq!(u16::from_be_bytes(first[2..4].try_into().unwrap()), 11);
-    let frozen = decode_hex(VERSION_SEVEN_NATIVE_ASPECT_HEX);
+    let frozen = decode_hex(VERSION_EIGHT_NATIVE_ASPECT_HEX);
     let decoded = WorthQueryPackageArchiveRecordDecoder::new(limits)
         .decode_frame(&frozen)
         .unwrap();
@@ -213,6 +220,27 @@ fn malformed_native_aspect_payloads_fail_without_committing_work() {
         assert!(WorthQueryPackageArchiveRecordDecoder::new(limits)
             .decode_frame(&bytes[..length])
             .is_err());
+    }
+
+    // Fixed law tags precede the shape. Unknown laws never reconstruct defaults.
+    let law_offset = 12
+        + 4
+        + NativeSchema::NAME.len()
+        + 4
+        + "NativeEntity".len()
+        + 4
+        + "Profile".len()
+        + 4
+        + "Profile".len()
+        + 8
+        + 8;
+    for offset in [law_offset, law_offset + 2, law_offset + 4, law_offset + 6] {
+        let mut unsupported = bytes.clone();
+        unsupported[offset..offset + 2].copy_from_slice(&u16::MAX.to_be_bytes());
+        assert_decode_kind(
+            &unsupported,
+            WorthQueryPackageArchiveDenialKind::UnsupportedRecordVariant,
+        );
     }
 
     let mut invalid_aspect = bytes.clone();

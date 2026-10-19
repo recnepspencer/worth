@@ -22,6 +22,9 @@ impl SealedNativeOutputWitness {
             }
             | Fact::AbsentField {
                 entity_id, locator, ..
+            }
+            | Fact::OptionalAspectAbsent {
+                entity_id, locator, ..
             } => (*entity_id, Some(locator.aspect().aspect_key())),
             _ => return Ok(false),
         };

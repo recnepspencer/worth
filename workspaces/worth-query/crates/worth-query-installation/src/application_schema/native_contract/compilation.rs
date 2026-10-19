@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::facade::{
-    aspects, AspectBinding, AspectContract, AspectContractRevision, AspectIdentity, AspectKey,
+    aspects, AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision,
+    AspectEquivalenceBasis, AspectEvolutionPolicy, AspectIdentity, AspectKey, AspectMaskContract,
     CanonicalDigestId, FieldKey, ScalarAspectType, StructAspectShape,
 };
 use worth_query_declaration::facade::application_schema::{
@@ -26,6 +27,7 @@ use super::{
 struct DeclaredAspectSeed {
     identity: AspectIdentity,
     revision: AspectContractRevision,
+    absence: AbsenceLaw,
     fields: BTreeMap<
         FieldKey,
         (
@@ -103,6 +105,7 @@ fn collect_declared_aspects(
             aspect,
             identity,
             revision,
+            absence,
         } = member
         else {
             continue;
@@ -120,6 +123,7 @@ fn collect_declared_aspects(
             DeclaredAspectSeed {
                 identity: *identity,
                 revision: *revision,
+                absence: *absence,
                 fields: BTreeMap::new(),
             },
         );
@@ -285,7 +289,13 @@ fn build_foundational_contract(
         .for_key(aspect_key.clone())
         .identified_by(seed.identity)
         .at_revision(seed.revision)
-        .struct_aspect(shape))
+        .struct_with(
+            shape,
+            AspectMaskContract::struct_fields(),
+            seed.absence,
+            AspectEquivalenceBasis::DeclaredStructFields,
+            AspectEvolutionPolicy::AdditiveFieldsAllowed,
+        ))
 }
 
 fn admit_declared_projection_mask<'a>(

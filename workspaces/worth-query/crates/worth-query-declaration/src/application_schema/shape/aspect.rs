@@ -11,6 +11,7 @@ pub struct ApplicationAspectValueMeaning {
     aspect: String,
     identity: AspectIdentity,
     revision: AspectContractRevision,
+    absence: worth_foundational::facade::AbsenceLaw,
     fields: Vec<ApplicationFieldValueMeaning>,
 }
 
@@ -24,6 +25,7 @@ impl ApplicationAspectValueMeaning {
                 aspect,
                 identity,
                 revision,
+                absence,
             } = member
             else {
                 continue;
@@ -39,6 +41,7 @@ impl ApplicationAspectValueMeaning {
                 aspect: aspect.clone(),
                 identity: *identity,
                 revision: *revision,
+                absence: *absence,
                 fields: Vec::new(),
             };
             if aspects
@@ -82,6 +85,9 @@ impl ApplicationAspectValueMeaning {
     }
     pub const fn revision(&self) -> AspectContractRevision {
         self.revision
+    }
+    pub const fn absence(&self) -> worth_foundational::facade::AbsenceLaw {
+        self.absence
     }
     pub fn fields(&self) -> &[ApplicationFieldValueMeaning] {
         &self.fields

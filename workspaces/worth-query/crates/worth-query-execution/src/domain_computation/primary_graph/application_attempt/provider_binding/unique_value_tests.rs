@@ -213,6 +213,7 @@ fn lower(
     let fixture = WorthQueryUniqueFieldFixture::new(KIND, field("key"), index);
     prepare_provider_attempt(
         fixture.fields(),
+        &|_, _| None,
         PartitionId::main(),
         effects.len(),
         crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(

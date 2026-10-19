@@ -4,50 +4,16 @@ use worth_query_package_archive::facade::*;
 use super::archive_stream::fixture;
 use super::release_envelope_fixture::*;
 
-const RETAINED_VERSION_ONE_RELEASE_ENVELOPE_HEX: &str =
-    include_str!("release_envelope/release_envelope_v1.hex");
-const VERSION_ONE_RELEASE_ENVELOPE_HEX: &str =
-    include_str!("release_envelope/release_envelope_v1_record_v7.hex");
+#[path = "release_envelope/golden.rs"]
+mod golden;
+
 const ENVELOPE_HEADER_BYTES: usize = 18;
 const EXPECTED_IDENTITY_BYTES: usize = 32;
 const CHECKSUM_BYTES: usize = 32;
 
 #[test]
 fn version_one_release_envelope_is_deterministic_frozen_and_decodable() {
-    let original = decode_hex(RETAINED_VERSION_ONE_RELEASE_ENVELOPE_HEX.trim());
-    let untrusted =
-        decode_package_release_envelope(&original, WorthQueryPackageEnvelopeLimits::DEFAULT)
-            .unwrap();
-    let denial =
-        decode_package_archive(untrusted.archive(), WorthQueryPackageArchiveLimits::DEFAULT)
-            .unwrap_err();
-    assert_eq!(
-        denial.kind(),
-        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-    );
-    assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
-
-    // worth-query-installation/src/package/identity.rs:81 fixes identity v4;
-    // encode the fixture archive and descriptor, then checksum the v1 envelope.
-    let records = fixture::minimal_package().export_typed_records().unwrap();
-    let first = signed_envelope_bytes(&records, fixture_descriptor());
-    assert_eq!(signed_envelope_bytes(&records, fixture_descriptor()), first);
-    assert_eq!(encode_hex(&first), VERSION_ONE_RELEASE_ENVELOPE_HEX.trim());
-
-    let frozen = decode_hex(VERSION_ONE_RELEASE_ENVELOPE_HEX.trim());
-    let decoded =
-        decode_package_release_envelope(&frozen, WorthQueryPackageEnvelopeLimits::DEFAULT).unwrap();
-    assert_eq!(decoded.signature(), &[0xa5; 64]);
-    assert_eq!(
-        decoded.expected_package_identity(),
-        records.manifest().package_identity()
-    );
-    assert_eq!(
-        decode_package_archive(decoded.archive(), WorthQueryPackageArchiveLimits::DEFAULT)
-            .unwrap()
-            .manifest(),
-        records.manifest()
-    );
+    golden::assert_current_envelope_and_unsupported_records();
 }
 
 #[test]
@@ -358,25 +324,6 @@ fn find_text(bytes: &[u8], needle: &[u8]) -> usize {
         .windows(needle.len())
         .position(|window| window == needle)
         .unwrap()
-}
-
-fn encode_hex(bytes: &[u8]) -> String {
-    use std::fmt::Write;
-    bytes.iter().fold(String::new(), |mut encoded, byte| {
-        write!(&mut encoded, "{byte:02x}").unwrap();
-        encoded
-    })
-}
-
-fn decode_hex(encoded: &str) -> Vec<u8> {
-    encoded
-        .as_bytes()
-        .chunks_exact(2)
-        .map(|pair| {
-            let digits = std::str::from_utf8(pair).unwrap();
-            u8::from_str_radix(digits, 16).unwrap()
-        })
-        .collect()
 }
 
 fn assert_decode_kind(

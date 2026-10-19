@@ -77,6 +77,7 @@ pub enum ApplicationSchemaMember {
         entity: String,
     },
     Aspect {
+        absence: worth_foundational::facade::AbsenceLaw,
         entity: String,
         aspect: String,
         identity: AspectIdentity,

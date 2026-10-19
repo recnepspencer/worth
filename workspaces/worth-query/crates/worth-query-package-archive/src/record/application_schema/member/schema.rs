@@ -39,11 +39,13 @@ pub(super) fn write(
             aspect,
             identity,
             revision,
+            absence,
         } => {
             output.text(entity)?;
             output.text(aspect)?;
             output.u64(identity.0)?;
-            output.u64(revision.0)
+            output.u64(revision.0)?;
+            super::super::super::foundational_aspect::write_absence(output, *absence)
         }
         ApplicationSchemaMember::Field { .. } => write_field(output, member),
         ApplicationSchemaMember::Relation { .. } => write_relation(output, member),
@@ -156,6 +158,7 @@ pub(super) fn decode(
             aspect: input.text()?.to_owned(),
             identity: AspectIdentity(input.u64()?),
             revision: AspectContractRevision(input.u64()?),
+            absence: super::super::super::foundational_aspect::decode_absence(input)?,
         },
         3 | 25 => ApplicationSchemaMember::Field {
             entity: input.text()?.to_owned(),

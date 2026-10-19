@@ -256,3 +256,8 @@ where
 }
 
 mod bridge_execution_denial;
+
+#[cfg(test)]
+mod own_effect_assertions;
+#[cfg(test)]
+mod own_effect_observation;

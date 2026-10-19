@@ -44,6 +44,7 @@ fn members() -> Vec<ApplicationSchemaMember> {
             entity: text("Entity"),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: text("Entity"),
             aspect: text("Aspect"),
             identity: AspectIdentity(17),

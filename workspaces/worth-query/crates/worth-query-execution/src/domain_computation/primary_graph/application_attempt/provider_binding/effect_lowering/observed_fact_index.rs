@@ -63,8 +63,28 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
         {
             Some(
                 WorthQueryApplicationObservedFact::Field { kind, .. }
-                | WorthQueryApplicationObservedFact::AbsentField { kind, .. },
+                | WorthQueryApplicationObservedFact::AbsentField { kind, .. }
+                | WorthQueryApplicationObservedFact::OptionalAspectAbsent { kind, .. },
             ) => Ok(*kind),
+            _ => Err(progression_denial()),
+        }
+    }
+
+    pub(super) fn aspect_absent(
+        &self,
+        entity: EntityId,
+        locator: &AspectFieldLocator,
+    ) -> Result<bool, WorthQueryApplicationAttemptDenial> {
+        match self
+            .routes
+            .field(entity, locator)
+            .map(|i| self.facts.get(i).expect("indexed observed fact"))
+        {
+            Some(WorthQueryApplicationObservedFact::OptionalAspectAbsent { .. }) => Ok(true),
+            Some(
+                WorthQueryApplicationObservedFact::Field { .. }
+                | WorthQueryApplicationObservedFact::AbsentField { .. },
+            ) => Ok(false),
             _ => Err(progression_denial()),
         }
     }

@@ -7,9 +7,9 @@ use worth_query_installation::facade::{
 };
 use worth_query_package_archive::facade::*;
 
-const VERSION_SIX_PACKAGE_ROOT_FRAMES_HEX: &str = "0006000100000000000000190000000d61636d652e776f726b666c6f770000000300000007|00060002000000010000000e0000000a67726170682e72656164|00060003000000020000001400000010776f726b666c6f772e72756e74696d65|00060004000000030000000b0000000764757261626c65|00060005000000040000002600010000000862616c616e636564000000146465626974732d657175616c2d63726564697473|00060005000000050000002800020000000d6163636f756e742d62792d69640000001165786163742d656e746974792d72656164|00060005000000060000002e00030000000e7061796d656e742d6e6f746963650000001665787465726e616c2d6566666563742d66616d696c79|0006000a0000000700000009000000056175646974";
-// Independent current framing; the retained original payload grammar is unchanged.
-const VERSION_SEVEN_PACKAGE_ROOT_FRAMES_HEX: &str = "0007000100000000000000190000000d61636d652e776f726b666c6f770000000300000007|00070002000000010000000e0000000a67726170682e72656164|00070003000000020000001400000010776f726b666c6f772e72756e74696d65|00070004000000030000000b0000000764757261626c65|00070005000000040000002600010000000862616c616e636564000000146465626974732d657175616c2d63726564697473|00070005000000050000002800020000000d6163636f756e742d62792d69640000001165786163742d656e746974792d72656164|00070005000000060000002e00030000000e7061796d656e742d6e6f746963650000001665787465726e616c2d6566666563742d66616d696c79|0007000a0000000700000009000000056175646974";
+#[path = "package_root_record/golden.rs"]
+mod golden;
+use golden::*;
 
 fn root_package() -> WorthQueryValidatedPortableDomainPackage {
     WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
@@ -77,17 +77,22 @@ fn package_root_frames_are_deterministic_and_reenter_fresh_validation() {
 }
 
 #[test]
-fn version_seven_package_root_frames_match_and_decode_the_frozen_vectors() {
-    for original in VERSION_SIX_PACKAGE_ROOT_FRAMES_HEX.split('|') {
-        let bytes = decode_hex(original);
-        let denial =
-            decode_package_root_record_frame(&bytes, WorthQueryPackageArchiveLimits::DEFAULT)
-                .unwrap_err();
-        assert_eq!(
-            denial.kind(),
-            WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-        );
-        assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
+fn version_eight_package_root_frames_match_and_decode_the_frozen_vectors() {
+    for (version, originals) in [
+        (6_u16, VERSION_SIX_PACKAGE_ROOT_FRAMES_HEX),
+        (7_u16, VERSION_SEVEN_PACKAGE_ROOT_FRAMES_HEX),
+    ] {
+        for original in originals.split('|') {
+            let bytes = decode_hex(original);
+            let denial =
+                decode_package_root_record_frame(&bytes, WorthQueryPackageArchiveLimits::DEFAULT)
+                    .unwrap_err();
+            assert_eq!(
+                denial.kind(),
+                WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+            );
+            assert_eq!(denial.compatibility().unwrap().observed_version(), version);
+        }
     }
     let source = root_package();
     let exported = source.export_typed_records().unwrap();
@@ -101,9 +106,9 @@ fn version_seven_package_root_frames_match_and_decode_the_frozen_vectors() {
         })
         .collect::<Vec<_>>()
         .join("|");
-    assert_eq!(encoded, VERSION_SEVEN_PACKAGE_ROOT_FRAMES_HEX);
+    assert_eq!(encoded, VERSION_EIGHT_PACKAGE_ROOT_FRAMES_HEX);
 
-    let independent_frames = VERSION_SEVEN_PACKAGE_ROOT_FRAMES_HEX
+    let independent_frames = VERSION_EIGHT_PACKAGE_ROOT_FRAMES_HEX
         .split('|')
         .map(decode_hex)
         .collect::<Vec<_>>();
@@ -359,30 +364,6 @@ fn assert_mutation_denial(bytes: &[u8], offset: usize, value: u8, expected: Kind
             .kind(),
         expected
     );
-}
-
-fn encode_hex(bytes: &[u8]) -> String {
-    use std::fmt::Write;
-
-    bytes.iter().fold(
-        String::with_capacity(bytes.len() * 2),
-        |mut encoded, byte| {
-            write!(&mut encoded, "{byte:02x}").expect("writing to String cannot fail");
-            encoded
-        },
-    )
-}
-
-fn decode_hex(encoded: &str) -> Vec<u8> {
-    assert_eq!(encoded.len() % 2, 0, "golden hex must contain whole bytes");
-    encoded
-        .as_bytes()
-        .chunks_exact(2)
-        .map(|pair| {
-            let digits = std::str::from_utf8(pair).expect("golden hex is ASCII");
-            u8::from_str_radix(digits, 16).expect("golden hex contains valid digits")
-        })
-        .collect()
 }
 
 fn encode_package_root_record_frame(

@@ -134,17 +134,15 @@ fn observe_fact_inner(
                 )
             })?;
             let observation = if admitted {
-                super::super::observation::observe_field_value_borrowed_admitted(
+                super::super::observation::observe_field_observation_borrowed_admitted(
                     runtime,
                     execution,
                     snapshot,
                     *entity_id,
                     kind,
                     locator,
-                    |value| {
-                        value.cloned().map_or(
-                        super::super::observation::WorthQueryApplicationFieldObservation::Absent,
-                        super::super::observation::WorthQueryApplicationFieldObservation::Present)
+                    |raw| {
+                        super::super::observation::WorthQueryApplicationFieldObservation::from(raw)
                     },
                 )
             } else {
@@ -176,7 +174,15 @@ fn observe_fact_inner(
                         locator: locator.clone(),
                     }
                 }
-                super::super::observation::WorthQueryApplicationFieldObservation::Absent => {
+                super::super::observation::WorthQueryApplicationFieldObservation::AspectAbsent
+                    if layout.aspect_is_optional(entity, locator) => {
+                        WorthQueryApplicationObservedFact::OptionalAspectAbsent {
+                            entity_id: *entity_id, kind, locator: locator.clone(),
+                        }
+                    }
+                super::super::observation::WorthQueryApplicationFieldObservation::AspectAbsent
+                | super::super::observation::WorthQueryApplicationFieldObservation::UnsupportedAspectShape
+                | super::super::observation::WorthQueryApplicationFieldObservation::Absent => {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
                         entity,

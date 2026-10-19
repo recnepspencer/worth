@@ -22,7 +22,8 @@ pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: Enti
         } => *anchor == candidate || endpoints.contains(&candidate),
         WorthQueryApplicationObservedFact::Entity { entity_id, .. }
         | WorthQueryApplicationObservedFact::Field { entity_id, .. }
-        | WorthQueryApplicationObservedFact::AbsentField { entity_id, .. } => {
+        | WorthQueryApplicationObservedFact::AbsentField { entity_id, .. }
+        | WorthQueryApplicationObservedFact::OptionalAspectAbsent { entity_id, .. } => {
             *entity_id == candidate
         }
         WorthQueryApplicationObservedFact::Relation { from, to, .. } => {

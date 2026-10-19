@@ -23,6 +23,7 @@ pub(in crate::domain_computation::primary_graph) fn take_native_field_contacts()
     NATIVE_FIELD_CONTACTS.with(|count| count.replace(0))
 }
 pub(in crate::domain_computation::primary_graph) use predecode_admission::{
+    observe_aspect_absence, observe_field_observation_borrowed_admitted,
     observe_field_value_borrowed, observe_field_value_borrowed_admitted,
 };
 
@@ -30,6 +31,23 @@ pub(in crate::domain_computation::primary_graph) use predecode_admission::{
 pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFieldObservation {
     Present(worth_foundational::facade::AspectValue),
     Absent,
+    AspectAbsent,
+    UnsupportedAspectShape,
+}
+impl From<worth_relational::facade::runtime::RelationalProjectedFieldObservation<'_>>
+    for WorthQueryApplicationFieldObservation
+{
+    fn from(
+        value: worth_relational::facade::runtime::RelationalProjectedFieldObservation<'_>,
+    ) -> Self {
+        use worth_relational::facade::runtime::RelationalProjectedFieldObservation as Raw;
+        match value {
+            Raw::Present(value) => Self::Present(value.clone()),
+            Raw::AspectAbsent => Self::AspectAbsent,
+            Raw::FieldAbsent => Self::Absent,
+            Raw::UnsupportedAspectShape => Self::UnsupportedAspectShape,
+        }
+    }
 }
 
 pub(in crate::domain_computation::primary_graph) fn observe_field(
@@ -58,14 +76,11 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
     view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
         (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(|| {
             let value = record
-                .aspect_field_value(locator.aspect().aspect_key(), &field)
-                .cloned();
+                .observe_aspect_field(locator.aspect().aspect_key(), &field)
+                .expect("the requested field belongs to its exact projection");
             #[cfg(test)]
             read_rendezvous::reached();
-            value.map_or(
-                WorthQueryApplicationFieldObservation::Absent,
-                WorthQueryApplicationFieldObservation::Present,
-            )
+            WorthQueryApplicationFieldObservation::from(value)
         })
     })
 }
@@ -83,7 +98,12 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value(
 > {
     match observe_field(runtime, execution, snapshot, entity_id, kind, locator)? {
         Some(WorthQueryApplicationFieldObservation::Present(value)) => Ok(Some(value)),
-        Some(WorthQueryApplicationFieldObservation::Absent) | None => Ok(None),
+        Some(
+            WorthQueryApplicationFieldObservation::Absent
+            | WorthQueryApplicationFieldObservation::AspectAbsent
+            | WorthQueryApplicationFieldObservation::UnsupportedAspectShape,
+        )
+        | None => Ok(None),
     }
 }
 

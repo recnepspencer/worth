@@ -62,7 +62,8 @@ fn maximum_keys(
         Fact::SourceAspectRevision { .. }
         | Fact::SourceFieldRevision { .. }
         | Fact::Field { .. }
-        | Fact::AbsentField { .. } => Some(3),
+        | Fact::AbsentField { .. }
+        | Fact::OptionalAspectAbsent { .. } => Some(3),
         Fact::SourceAdjacencyRevision { endpoints, .. } => endpoints.len().checked_add(2),
         Fact::Relation { .. } => Some(3),
         Fact::Adjacency { relations, .. } => relations

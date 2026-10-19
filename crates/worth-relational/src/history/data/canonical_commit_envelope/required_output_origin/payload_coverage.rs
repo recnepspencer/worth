@@ -13,9 +13,8 @@ use worth_foundational::facade::{
 };
 
 mod denial;
-use denial::{
-    DuplicateSummary, EmptyBindingSummary, OperationSummary, PresentSummary, UnsupportedPayload,
-};
+mod empty_entity;
+use denial::{DuplicateSummary, OperationSummary, PresentSummary, UnsupportedPayload};
 
 #[derive(Debug)]
 pub(super) enum OutputPayloadCoverageFailure {
@@ -111,29 +110,7 @@ fn validate_created_payload(
             ));
         }
         if let Some(plan) = entity_plan {
-            // None is storage's canonical empty state, never schema evidence.
-            // Classification comes from the exact admitted branch-root plan.
-            if let Some(binding) = plan.executable_bindings.first() {
-                return Err(OutputPayloadCoverageFailure::Unsupported(
-                    UnsupportedPayload::EmptyWithBindings {
-                        count: plan.executable_bindings.len(),
-                        first: EmptyBindingSummary::capture(0, binding, context)?,
-                    },
-                ));
-            }
-            let kinds = &envelope.schema_authority.entity_kinds;
-            charge(
-                context,
-                (usize::BITS - kinds.len().leading_zeros()) as usize + 1,
-            )?;
-            let kind = kinds
-                .binary_search_by_key(&plan.kind_id, |kind| kind.kind_id)
-                .ok()
-                .map(|index| &kinds[index])
-                .ok_or("required empty output birth schema kind absent")?;
-            if kind.aspect_plan_revision != plan.plan_revision {
-                return Err("required empty output birth schema plan differs".into());
-            }
+            empty_entity::validate(envelope, plan, context)?;
         } else if !matches!(target, RecordRef::Relation(_)) {
             return Err(OutputPayloadCoverageFailure::Unsupported(
                 UnsupportedPayload::EntityWithoutPlan,

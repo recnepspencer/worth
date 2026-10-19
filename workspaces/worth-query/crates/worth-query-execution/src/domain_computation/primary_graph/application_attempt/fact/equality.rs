@@ -114,6 +114,14 @@ impl WorthQueryApplicationObservedFact {
                 super::super::observation::observe_field(runtime, execution, snapshot, *entity_id, *kind, locator)?,
                 Some(super::super::observation::WorthQueryApplicationFieldObservation::Absent)
             ),
+            Self::OptionalAspectAbsent {
+                entity_id,
+                kind,
+                locator,
+            } => matches!(
+                super::super::observation::observe_field(runtime, execution, snapshot, *entity_id, *kind, locator)?,
+                Some(super::super::observation::WorthQueryApplicationFieldObservation::AspectAbsent)
+            ),
             Self::Relation {
                 relation_kind,
                 from,

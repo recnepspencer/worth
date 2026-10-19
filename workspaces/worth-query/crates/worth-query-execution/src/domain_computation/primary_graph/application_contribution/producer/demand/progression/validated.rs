@@ -10,7 +10,12 @@ mod execution_preparation;
 pub(super) mod schedule_progression;
 mod source_guard;
 pub(super) use execution_completion::CompletionRefusal;
-pub(super) use execution_preparation::ExecutionPreparation;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
+enum ExecutionPreparation<'owner, Query, Value> {
+    Reached(OwnStages<Query, Value>),
+    Planned(crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, CheckpointProgress, CompletionRefusal>),
+}
+
 pub(super) use schedule_progression::OwnPublication;
 use schedule_progression::{CheckpointProgress, OwnStages, ScheduleProgression};
 use source_guard::SourceGuard;

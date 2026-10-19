@@ -1,18 +1,17 @@
 //! Semantic mutation touches projected from one owner-validated plan.
-
-use std::collections::BTreeSet;
-
-use worth_foundational::facade::{
-    AspectFieldLocator, CanonicalFieldPath, PortableAspectPatchOperation,
-};
-
 use super::ValidatedRelationalProposal;
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::storage::overlay::PartitionAccess;
-use crate::transactions::data::{
-    planned_aspect_field_locator, AspectFieldPatch, CreateIntent, EntityMutationIntent,
-    MutationIntent, RelationMutationIntent,
-};
+use std::sync::Arc;
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_foundational::facade::{AspectContract, AspectFieldLocator, FieldKey};
+#[path = "proposal_touches/collection.rs"]
+mod collection;
+#[path = "proposal_touches/intent_projection.rs"]
+mod intent_projection;
+#[path = "proposal_touches/preparation.rs"]
+mod preparation;
+#[path = "proposal_touches/struct_aspect.rs"]
+mod struct_aspect;
 
 /// One semantic locus touched by an invariant-validated Relational mutation.
 ///
@@ -90,284 +89,78 @@ impl ValidatedMutationTouchProjectionWork {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ValidatedMutationTouches {
-    touches: Vec<ValidatedMutationTouch>,
-    work: ValidatedMutationTouchProjectionWork,
+/// A whole-struct effect on one actual prior or supplied field. Borrowing the
+/// candidate's admitted contract preserves its full meaning without copying it.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ValidatedEntityStructTouch<'proposal> {
+    kind: KindId,
+    contract: &'proposal AspectContract,
+    entity: EntityId,
+    field: Option<&'proposal FieldKey>,
+    before_present: bool,
+    after_present: bool,
+}
+impl ValidatedEntityStructTouch<'_> {
+    pub const fn kind(&self) -> KindId {
+        self.kind
+    }
+    pub const fn contract(&self) -> &AspectContract {
+        self.contract
+    }
+    pub fn field(&self) -> &FieldKey {
+        self.field
+            .expect("presence-only groups are unrepresentable, never struct field effects")
+    }
+    pub const fn before_present(&self) -> bool {
+        self.before_present
+    }
+    pub const fn after_present(&self) -> bool {
+        self.after_present
+    }
 }
 
-impl ValidatedMutationTouches {
+#[derive(Debug)]
+struct TouchBacking<'proposal> {
+    touches: Vec<ValidatedMutationTouch>,
+    structs: Vec<ValidatedEntityStructTouch<'proposal>>,
+    // Last to drop: all returned allocation and nested locator charges survive
+    // every shared observer and are released only after their owned payload.
+    _memory: Option<ExecutionMemoryReservation>,
+}
+#[derive(Clone, Debug)]
+pub struct ValidatedMutationTouches<'proposal> {
+    backing: Arc<TouchBacking<'proposal>>,
+    work: ValidatedMutationTouchProjectionWork,
+}
+impl ValidatedMutationTouches<'_> {
     pub fn touches(&self) -> &[ValidatedMutationTouch] {
-        &self.touches
+        &self.backing.touches
     }
-
+    pub fn struct_touches(&self) -> &[ValidatedEntityStructTouch<'_>] {
+        &self.backing.structs
+    }
     pub const fn work(&self) -> ValidatedMutationTouchProjectionWork {
         self.work
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ValidatedMutationTouchProjectionError {
     MissingEntityKind(EntityId),
     MissingRelationKind(RelationId),
+    Execution(crate::transactions::data::CommitExecutionDenial),
+    Allocation(worth_execution::ExecutionAllocationDenial),
 }
-
 impl ValidatedRelationalProposal {
-    /// Projects the exact semantic touch set from this owner-validated plan.
+    /// O(reached intents + prior/supplied fields), plus canonical sorting.
+    /// Native retained before/after state supplies presence; no history is read.
     pub fn mutation_touches(
         &self,
-    ) -> Result<ValidatedMutationTouches, ValidatedMutationTouchProjectionError> {
-        let mut touches = BTreeSet::new();
-        let mut work = ValidatedMutationTouchProjectionWork::default();
-        for intent in &self.prepared.merged_plan.merged_intents {
-            work.validated_intents_examined += 1;
-            project_intent(
-                intent,
-                &self.prepared.working_state,
-                &mut touches,
-                &mut work,
-            )?;
-        }
-        work.mutation_targets_materialized = touches.len();
-        Ok(ValidatedMutationTouches {
-            touches: touches.into_iter().collect(),
-            work,
-        })
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
+        preparation::project(self, execution)
     }
 }
-
-fn project_intent(
-    intent: &MutationIntent,
-    state: &crate::storage::overlay::WorkingState,
-    touches: &mut BTreeSet<ValidatedMutationTouch>,
-    work: &mut ValidatedMutationTouchProjectionWork,
-) -> Result<(), ValidatedMutationTouchProjectionError> {
-    match intent {
-        MutationIntent::Create(intent) => {
-            project_create(intent, touches);
-            Ok(())
-        }
-        MutationIntent::Entity(intent) => project_entity(intent, state, touches, work),
-        MutationIntent::Relation(intent) => project_relation(intent, state, touches, work),
-        MutationIntent::Materialization(intent) => {
-            project_materialization(intent, state, touches, work)
-        }
-    }
-}
-
-fn project_materialization(
-    intent: &crate::transactions::data::MaterializationMutationIntent,
-    state: &crate::storage::overlay::WorkingState,
-    touches: &mut BTreeSet<ValidatedMutationTouch>,
-    work: &mut ValidatedMutationTouchProjectionWork,
-) -> Result<(), ValidatedMutationTouchProjectionError> {
-    use crate::transactions::data::MaterializationMutationIntent as Intent;
-    match intent {
-        Intent::SuspendEntity(spec) => {
-            let kind = entity_kind(state, spec.entity_id, work)?;
-            touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
-        }
-        Intent::SuspendRelation(spec) => {
-            let kind = relation_kind(state, spec.relation_id, work)?;
-            touches.insert(ValidatedMutationTouch::UnlinkRelation { kind });
-        }
-        Intent::RematerializeEntity(spec) => {
-            touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation {
-                kind: spec.kind_id,
-            });
-            project_fields(spec.kind_id, &spec.fields, touches);
-        }
-        Intent::RematerializeRelation(spec) => {
-            touches.insert(ValidatedMutationTouch::LinkRelation { kind: spec.kind_id });
-            project_relation_fields(spec.kind_id, &spec.fields, touches);
-        }
-    }
-    Ok(())
-}
-
-fn project_create(intent: &CreateIntent, touches: &mut BTreeSet<ValidatedMutationTouch>) {
-    match intent {
-        CreateIntent::Entity(spec) => {
-            touches.insert(ValidatedMutationTouch::CreateEntity { kind: spec.kind_id });
-            project_fields(spec.kind_id, &spec.fields, touches);
-        }
-        CreateIntent::EntityAspects(spec) => {
-            touches.insert(ValidatedMutationTouch::CreateEntity { kind: spec.kind_id });
-            project_entity_aspect_patch(spec.kind_id, &spec.aspect_patch, touches);
-        }
-        CreateIntent::BulkEntities(spec) => {
-            touches.insert(ValidatedMutationTouch::CreateEntity { kind: spec.kind_id });
-            for fields in &spec.field_patches {
-                project_fields(spec.kind_id, fields, touches);
-            }
-        }
-        CreateIntent::Relation(spec) => {
-            touches.insert(ValidatedMutationTouch::LinkRelation { kind: spec.kind_id });
-            project_relation_fields(spec.kind_id, &spec.fields, touches);
-        }
-        CreateIntent::RelationAspects(spec) => {
-            touches.insert(ValidatedMutationTouch::LinkRelation { kind: spec.kind_id });
-            if !spec.aspect_patch.operations().is_empty() {
-                touches.insert(ValidatedMutationTouch::UnrepresentableRelationMutation {
-                    kind: spec.kind_id,
-                });
-            }
-        }
-        CreateIntent::BulkRelations(spec) => {
-            touches.insert(ValidatedMutationTouch::LinkRelation { kind: spec.kind_id });
-            if spec
-                .field_patches
-                .iter()
-                .any(|fields| fields.locators().next().is_some())
-            {
-                touches.insert(ValidatedMutationTouch::UnrepresentableRelationMutation {
-                    kind: spec.kind_id,
-                });
-            }
-        }
-    }
-}
-
-fn project_entity(
-    intent: &EntityMutationIntent,
-    state: &crate::storage::overlay::WorkingState,
-    touches: &mut BTreeSet<ValidatedMutationTouch>,
-    work: &mut ValidatedMutationTouchProjectionWork,
-) -> Result<(), ValidatedMutationTouchProjectionError> {
-    let entity = match intent {
-        EntityMutationIntent::UpdateFields(spec) => spec.entity_id,
-        EntityMutationIntent::ApplyAspectPatch(spec) => spec.entity_id,
-        EntityMutationIntent::Replace(spec) => spec.entity_id,
-        EntityMutationIntent::Delete(spec) => spec.entity_id,
-        EntityMutationIntent::Revalidate(spec) => spec.entity_id,
-    };
-    let kind = entity_kind(state, entity, work)?;
-    match intent {
-        EntityMutationIntent::UpdateFields(spec) => project_fields(kind, &spec.fields, touches),
-        EntityMutationIntent::ApplyAspectPatch(spec) => {
-            project_entity_aspect_patch(kind, &spec.aspect_patch, touches)
-        }
-        EntityMutationIntent::Replace(_) => {
-            touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
-        }
-        EntityMutationIntent::Delete(_) => {
-            touches.insert(ValidatedMutationTouch::DeleteEntity { kind });
-        }
-        EntityMutationIntent::Revalidate(_) => {
-            touches.insert(ValidatedMutationTouch::RevalidateEntity { kind });
-        }
-    }
-    Ok(())
-}
-
-fn project_relation(
-    intent: &RelationMutationIntent,
-    state: &crate::storage::overlay::WorkingState,
-    touches: &mut BTreeSet<ValidatedMutationTouch>,
-    work: &mut ValidatedMutationTouchProjectionWork,
-) -> Result<(), ValidatedMutationTouchProjectionError> {
-    match intent {
-        RelationMutationIntent::UpdateEndpoints(spec) => {
-            touches.insert(ValidatedMutationTouch::UnlinkRelation { kind: spec.kind_id });
-            touches.insert(ValidatedMutationTouch::LinkRelation { kind: spec.kind_id });
-        }
-        RelationMutationIntent::ApplyAspectPatch(spec) => {
-            let kind = relation_kind(state, spec.relation_id, work)?;
-            touches.insert(ValidatedMutationTouch::UnrepresentableRelationMutation { kind });
-        }
-        RelationMutationIntent::Revalidate(spec) => {
-            let kind = relation_kind(state, spec.relation_id, work)?;
-            touches.insert(ValidatedMutationTouch::RevalidateRelation { kind });
-        }
-        RelationMutationIntent::Delete(spec) => {
-            let kind = relation_kind(state, spec.relation_id, work)?;
-            touches.insert(ValidatedMutationTouch::UnlinkRelation { kind });
-        }
-    }
-    Ok(())
-}
-
-fn project_fields(
-    kind: KindId,
-    fields: &AspectFieldPatch,
-    touches: &mut BTreeSet<ValidatedMutationTouch>,
-) {
-    touches.extend(
-        fields
-            .locators()
-            .cloned()
-            .map(|locator| ValidatedMutationTouch::WriteEntityField { kind, locator }),
-    );
-}
-
-fn project_entity_aspect_patch(
-    kind: KindId,
-    patch: &worth_foundational::facade::PortableRecordAspectPatch,
-    touches: &mut BTreeSet<ValidatedMutationTouch>,
-) {
-    for operation in patch.operations() {
-        match operation {
-            PortableAspectPatchOperation::PatchFields {
-                basis,
-                selected_fields,
-                ..
-            } => touches.extend(selected_fields.iter().cloned().map(|field| {
-                ValidatedMutationTouch::WriteEntityField {
-                    kind,
-                    locator: planned_aspect_field_locator(
-                        basis.key().clone(),
-                        CanonicalFieldPath::single(field),
-                    ),
-                }
-            })),
-            PortableAspectPatchOperation::SetWhole { .. }
-            | PortableAspectPatchOperation::ClearWhole { .. } => {
-                touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
-            }
-        }
-    }
-}
-
-fn project_relation_fields(
-    kind: KindId,
-    fields: &AspectFieldPatch,
-    touches: &mut BTreeSet<ValidatedMutationTouch>,
-) {
-    if fields.locators().next().is_some() {
-        touches.insert(ValidatedMutationTouch::UnrepresentableRelationMutation { kind });
-    }
-}
-
-fn entity_kind(
-    state: &crate::storage::overlay::WorkingState,
-    entity: EntityId,
-    work: &mut ValidatedMutationTouchProjectionWork,
-) -> Result<KindId, ValidatedMutationTouchProjectionError> {
-    work.owner_state_lookups += 1;
-    state
-        .get_partition(entity.partition_id)
-        .and_then(|partition| partition.entity_arena.get(&entity))
-        .and_then(|record| record.kind_id())
-        .ok_or(ValidatedMutationTouchProjectionError::MissingEntityKind(
-            entity,
-        ))
-}
-
-fn relation_kind(
-    state: &crate::storage::overlay::WorkingState,
-    relation: RelationId,
-    work: &mut ValidatedMutationTouchProjectionWork,
-) -> Result<KindId, ValidatedMutationTouchProjectionError> {
-    work.owner_state_lookups += 1;
-    state
-        .get_partition(relation.partition_id)
-        .and_then(|partition| partition.relation_arena.get(&relation))
-        .and_then(|record| record.kind_id())
-        .ok_or(ValidatedMutationTouchProjectionError::MissingRelationKind(
-            relation,
-        ))
-}
-
 #[cfg(test)]
 #[path = "proposal_touches/tests.rs"]
 mod tests;

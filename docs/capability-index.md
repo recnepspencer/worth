@@ -553,3 +553,14 @@ pages (`read_workflow_instances`, explicit Subject/Definition scope) from privat
 complete adoption safety inventory. Adoption accepts opaque-reference choices
 or explicit native carry-compatible intent, and refuses with non-disclosing
 workflow denials. Metadata grants do not authorize instance enumeration or whole-program inventory.
+
+### Explicit optional aspects
+
+Applications declare whole-aspect absence with
+`ApplicationSchemaDeclarationBuilder::optional_aspect` through `worth-query-decl`.
+`aspect` remains Required independently of each field's presence. Installation,
+value meaning, predecessor comparison and current package archive record protocol8
+retain this law. Native producer births with absent payload require every actual
+binding to be a supported Optional EntityField struct; Required and Defaulted
+aspects do not acquire absence permission. Tracked reads retain Optional whole-aspect absence independently of field absence; another field materializing that aspect invalidates the read. See the compiled `optional_aspects.rs`
+example in [build guidance](build-an-application.md#whole-aspect-absence).

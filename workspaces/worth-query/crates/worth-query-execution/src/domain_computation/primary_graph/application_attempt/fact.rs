@@ -122,6 +122,11 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
         kind: KindId,
         locator: AspectFieldLocator,
     },
+    OptionalAspectAbsent {
+        entity_id: EntityId,
+        kind: KindId,
+        locator: AspectFieldLocator,
+    },
     Relation {
         relation_kind: KindId,
         from: EntityId,

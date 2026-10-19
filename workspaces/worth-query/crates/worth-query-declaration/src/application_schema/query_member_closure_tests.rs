@@ -165,6 +165,7 @@ fn dependencies() -> Vec<ApplicationSchemaMember> {
             entity: "Account".to_string(),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Account".to_string(),
             aspect: "AccountFacts".to_string(),
             identity: worth_foundational::facade::AspectIdentity(0x91613005),
@@ -197,6 +198,7 @@ fn relation_predicate_dependencies(equality_queryable: bool) -> Vec<ApplicationS
             entity: "Activity".to_owned(),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Activity".to_owned(),
             aspect: "ActivityFacts".to_owned(),
             identity: worth_foundational::facade::AspectIdentity(0x91613006),

@@ -8,7 +8,7 @@ use crate::transactions::data::{
     UpdateRelationEndpointsIntent, WorkerIntentBatch,
 };
 
-use super::{ValidatedMutationTouch, ValidatedMutationTouches};
+use super::ValidatedMutationTouch;
 
 #[test]
 fn create_and_update_project_exact_entity_touch_loci() {
@@ -17,14 +17,17 @@ fn create_and_update_project_exact_entity_touch_loci() {
 
     let runtime = runtime_with_test_schema();
     let existing = create_entity(execution, &runtime, "existing");
-    let projected = project(validate(
+    let validated = validate(
         execution,
         &runtime,
         [
             MutationIntent::Create(CreateIntent::Entity(entity_spec("created"))),
             update_name(existing, "updated"),
         ],
-    ));
+    );
+    let projected = validated
+        .mutation_touches(execution)
+        .expect("exact native touch projection");
 
     assert!(projected
         .touches()
@@ -53,7 +56,7 @@ fn delete_and_endpoint_rewrite_preserve_unlink_and_link_meaning() {
     let old_target = create_entity(execution, &runtime, "old-target");
     let new_target = create_entity(execution, &runtime, "new-target");
     let relation = create_relation(execution, &runtime, source, old_target, "edge");
-    let projected = project(validate(
+    let validated = validate(
         execution,
         &runtime,
         [
@@ -69,7 +72,10 @@ fn delete_and_endpoint_rewrite_preserve_unlink_and_link_meaning() {
                 },
             )),
         ],
-    ));
+    );
+    let projected = validated
+        .mutation_touches(execution)
+        .expect("exact native touch projection");
 
     assert!(projected
         .touches()
@@ -103,12 +109,6 @@ fn validate(
     transaction
         .validate(execution, runtime)
         .expect("owner validates touch projection fixture")
-}
-
-fn project(validated: crate::mvcc::ValidatedRelationalProposal) -> ValidatedMutationTouches {
-    validated
-        .mutation_touches()
-        .expect("owner-validated mutation projects exact touches")
 }
 
 fn update_name(entity_id: crate::identity::data::EntityId, value: &str) -> MutationIntent {

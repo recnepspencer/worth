@@ -20,6 +20,7 @@ fn complete_comparable_fact_kinds_round_trip_without_losing_absence_or_sets() {
             value: worth_foundational::facade::AspectValue::UInt64(31),
         },
         Fact::AbsentField { entity_id: entity, kind: KindId(14), locator: locator.clone() },
+        Fact::OptionalAspectAbsent { entity_id: entity, kind: KindId(14), locator: locator.clone() },
         Fact::SourceFieldRevision {
             entity_id: entity,
             locator,
@@ -200,7 +201,7 @@ fn optional_absence_is_exact_and_an_older_wire_version_is_never_read() {
         .collect::<Vec<_>>(),
         &[fact]
     );
-    for older in [5, 6, 7, 8, 9] {
+    for older in [5, 6, 7, 8, 9, 10] {
         assert!(decode_for_wire_version(
             &bytes,
             older,

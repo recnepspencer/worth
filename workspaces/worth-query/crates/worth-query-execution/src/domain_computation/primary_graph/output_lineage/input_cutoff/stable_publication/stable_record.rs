@@ -177,7 +177,9 @@ pub(super) fn charge_initialized_clone(
         | Fact::WorkflowDefinitionCurrent { .. } => 0,
         Fact::RetiredOutputEntity { read_locator, .. } => initialized(read_locator.len())?,
         Fact::SourceAspectRevision { aspect, .. } => initialized(aspect.as_str().len())?,
-        Fact::SourceFieldRevision { locator, .. } | Fact::AbsentField { locator, .. } => {
+        Fact::SourceFieldRevision { locator, .. }
+        | Fact::AbsentField { locator, .. }
+        | Fact::OptionalAspectAbsent { locator, .. } => {
             return charge_locator(locator, admission);
         }
         Fact::SourceAdjacencyRevision { endpoints, .. } => initialized(endpoints.len())?,

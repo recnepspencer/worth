@@ -186,6 +186,17 @@ fn append_fact(
                 u64::from(field_kind.as_u32()),
             );
         }
+        WorthQueryApplicationObservedFact::OptionalAspectAbsent {
+            kind: field_kind, ..
+        } => {
+            kind(entries, prefix, "optional-aspect-absent");
+            number_u64(
+                entries,
+                prefix,
+                "entity-kind",
+                u64::from(field_kind.as_u32()),
+            );
+        }
         WorthQueryApplicationObservedFact::Relation {
             matching_relations, ..
         } => {

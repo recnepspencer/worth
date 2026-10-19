@@ -112,6 +112,17 @@ where
         Fact::Entity { entity_id, .. } => {
             projection.key(1, 0, || Key::EntityLifecycle(*entity_id))?;
         }
+        Fact::OptionalAspectAbsent {
+            entity_id, locator, ..
+        } => {
+            projection.key(1, 0, || Key::EntityLifecycle(*entity_id))?;
+            let aspect = locator.aspect().aspect_key();
+            let bytes = aspect.owned_allocation_capacity_bytes();
+            projection.key(bytes.saturating_add(1), bytes, || Key::AspectRevision {
+                entity: *entity_id,
+                aspect: aspect.clone(),
+            })?;
+        }
         Fact::Field {
             entity_id,
             kind: _,

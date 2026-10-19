@@ -28,6 +28,7 @@ fn every_application_schema_member_family_changes_identity() {
             entity: "Entity".to_string(),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Entity".to_string(),
             aspect: "Aspect".to_string(),
             identity: worth_foundational::facade::AspectIdentity(0x91613001),

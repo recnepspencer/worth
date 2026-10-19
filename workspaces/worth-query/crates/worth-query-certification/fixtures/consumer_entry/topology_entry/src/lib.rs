@@ -17,6 +17,7 @@ mod contribution;
 mod final_output;
 mod handler;
 mod initial_adjustment;
+pub mod optional_aspects;
 pub use alternate_output::*;
 pub use application_program::*;
 pub use contribution::TopologyConfiguration;

@@ -2,11 +2,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
-enum ExecutionPreparation<'owner, Query, Value> {
-    Reached(OwnStages<Query, Value>),
-    Planned(OwnerPlan<'owner, CheckpointProgress, CompletionRefusal>),
-}
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn prepare_validated_output_demand_with_schedule<
@@ -323,23 +318,30 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 root,
             )
         };
-        let result = disclosure.with_erased(|input| match schedule_progression {
+        let prepared_input = demand
+            .prepare_disclosed_input(disclosure, request_admission)
+            .map_err(execution::ProducerExecutionStop::ExecutionStopped);
+        let result = match schedule_progression {
             ScheduleProgression::Ordinary => {
-                let result = entry.executor.execute(
-                    phase,
-                    self,
-                    principal,
-                    request_scope,
-                    delivery_branch,
-                    required_execution,
-                    input,
-                    successor_of,
-                    commit_authority,
-                    entry.edition,
-                    demand.limits,
-                    request_admission,
-                    &mut demand.producer_contacts_in_this_demand,
-                );
+                let result = prepared_input.and_then(|proof| {
+                    proof.with_erased(|input| {
+                        entry.executor.execute(
+                            phase,
+                            self,
+                            principal,
+                            request_scope,
+                            delivery_branch,
+                            required_execution,
+                            input,
+                            successor_of,
+                            commit_authority,
+                            entry.edition,
+                            demand.limits,
+                            request_admission,
+                            &mut demand.producer_contacts_in_this_demand,
+                        )
+                    })
+                });
                 match finish(
                     result,
                     request_admission,
@@ -361,22 +363,26 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 matched_predecessors,
                 readiness,
             } => {
-                let prepared = entry.executor.execute_on_selected(
-                    phase,
-                    self,
-                    principal,
-                    request_scope,
-                    shared,
-                    matched_predecessors,
-                    required_execution,
-                    input,
-                    successor_of,
-                    commit_authority,
-                    entry.edition,
-                    demand.limits,
-                    request_admission,
-                    &mut demand.producer_contacts_in_this_demand,
-                );
+                let prepared = prepared_input.and_then(|proof| {
+                    proof.with_erased(|input| {
+                        entry.executor.execute_on_selected(
+                            phase,
+                            self,
+                            principal,
+                            request_scope,
+                            shared,
+                            matched_predecessors,
+                            required_execution,
+                            input,
+                            successor_of,
+                            commit_authority,
+                            entry.edition,
+                            demand.limits,
+                            request_admission,
+                            &mut demand.producer_contacts_in_this_demand,
+                        )
+                    })
+                });
                 // A preparation refusal still owns this Running invocation.
                 // Canonical completion applies its normal failure protocol;
                 // abandonment alone cannot substitute for that typed outcome.
@@ -388,7 +394,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     move |result, admission| finish(result, admission, readiness),
                 )))
             }
-        });
+        };
         result.map_err(execution::ProducerExecutionStop::into_output_denial)
     }
 }

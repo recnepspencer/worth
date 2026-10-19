@@ -38,6 +38,7 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
             };
             if native.contract().identity() != meaning.identity()
                 || native.contract().revision() != meaning.revision()
+                || native.contract().absence() != meaning.absence()
                 || shape.fields().len() != meaning.fields().len()
             {
                 return Err(D::NativeAspectMismatch);

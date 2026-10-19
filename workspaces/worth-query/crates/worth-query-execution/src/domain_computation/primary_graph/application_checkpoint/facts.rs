@@ -33,7 +33,9 @@ pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;
 /// their checkpoint format nor their fact payload is admitted as version 9.
 /// Version 10 additionally carries exact native Field/AbsentField evidence;
 /// these are not relabelled as query source revisions.
-pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 10;
+/// Version 11 distinguishes lawful Optional whole-aspect absence from a
+/// missing field within a present aspect. Displaced version10 is unsupported.
+pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 11;
 pub(super) const MAXIMUM_FACT_BYTES: usize = 16 * 1024 * 1024;
 // SourceEntity is the smallest current fact: one tag and a 16-byte EntityId.
 const MINIMUM_FACT_WIRE_BYTES: usize = 17;
@@ -162,6 +164,16 @@ fn write_facts(facts: &(impl FactSequence + ?Sized), bytes: &mut impl FactBytes)
                 locator,
             } => {
                 bytes.push(9);
+                put_entity(bytes, *entity_id);
+                put_u32(bytes, kind.as_u32());
+                put_locator(bytes, locator)?;
+            }
+            Fact::OptionalAspectAbsent {
+                entity_id,
+                kind,
+                locator,
+            } => {
+                bytes.push(10);
                 put_entity(bytes, *entity_id);
                 put_u32(bytes, kind.as_u32());
                 put_locator(bytes, locator)?;

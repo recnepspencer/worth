@@ -82,7 +82,9 @@ pub(super) fn deep_clone_bytes(fact: &Fact) -> Option<u64> {
     match fact {
         Fact::RetiredOutputEntity { read_locator, .. } => size(read_locator.capacity()),
         Fact::SourceAspectRevision { aspect, .. } => size(aspect.owned_allocation_capacity_bytes()),
-        Fact::SourceFieldRevision { locator, .. } | Fact::AbsentField { locator, .. } => {
+        Fact::SourceFieldRevision { locator, .. }
+        | Fact::AbsentField { locator, .. }
+        | Fact::OptionalAspectAbsent { locator, .. } => {
             size(locator.owned_allocation_capacity_bytes())
         }
         Fact::Field { locator, value, .. } => size(locator.owned_allocation_capacity_bytes())?

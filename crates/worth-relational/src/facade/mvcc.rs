@@ -28,10 +28,11 @@ pub use crate::mvcc::{
     RelationalTransactionFootprint, RelationalTransactionIntent, RelationalTransactionReadLocus,
     RelationalTransactionRelationRead, RelationalTransactionRelationValue,
     RelationalTransactionStagingDenial, RelationalTransactionWriteLocus,
-    ReservedCompanionBranchCell, StaleRelationalBranchObservation, ValidatedMutationFootprint,
-    ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
-    ValidatedMutationFootprintWork, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
-    ValidatedMutationTouchProjectionWork, ValidatedMutationTouches, ValidatedRelationalProposal,
+    ReservedCompanionBranchCell, StaleRelationalBranchObservation, ValidatedEntityStructTouch,
+    ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
+    ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
+    ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,
+    ValidatedMutationTouches, ValidatedRelationalProposal,
 };
 pub use crate::mvcc::{
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,

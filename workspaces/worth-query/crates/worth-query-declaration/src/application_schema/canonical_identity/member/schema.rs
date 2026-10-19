@@ -19,12 +19,21 @@ pub(super) fn append_schema_member(
             aspect,
             identity,
             revision,
+            absence,
         } => {
             basis.text(format!("{prefix}.kind"), "aspect");
             basis.text(format!("{prefix}.entity"), entity);
             basis.text(format!("{prefix}.aspect"), aspect);
             basis.u64(format!("{prefix}.identity"), identity.0);
             basis.u64(format!("{prefix}.revision"), revision.0);
+            basis.text(
+                format!("{prefix}.absence"),
+                match absence {
+                    worth_foundational::facade::AbsenceLaw::Required => "required",
+                    worth_foundational::facade::AbsenceLaw::Optional => "optional",
+                    worth_foundational::facade::AbsenceLaw::Defaulted => "defaulted",
+                },
+            );
         }
         ApplicationSchemaMember::Field { .. } => append_schema_field(basis, prefix, member),
         ApplicationSchemaMember::Relation {

@@ -116,7 +116,11 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
-        let waiting = || CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending);
+        let waiting = || {
+            #[cfg(test)]
+            own_effect_observation::record(Stage::CheckpointWait);
+            CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
+        };
         let wave_authority = commit_authority.clone();
         let checkpoint_progress = match self.advance_ordinary_validated_output_demand(
             phase,

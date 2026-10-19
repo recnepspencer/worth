@@ -26,6 +26,7 @@ pub(super) fn reads_source(fact: &Fact) -> bool {
             | Fact::SourceEntity { .. }
             | Fact::Entity { .. }
             | Fact::SourceFieldRevision { .. }
+            | Fact::OptionalAspectAbsent { .. }
     )
 }
 
@@ -73,7 +74,27 @@ impl PreparedFactRebase {
                     .ok_or(unavailable),
             );
         }
-        if producer_output && reads_source(fact) {
+        if producer_output
+            && let Fact::OptionalAspectAbsent {
+                entity_id,
+                kind,
+                locator,
+            } = fact
+        {
+            admission.charge_external_work(1)?;
+            match crate::domain_computation::primary_graph::application_attempt::observe_aspect_absence(
+                runtime, execution, snapshot, *entity_id, *kind, locator,
+            ) {
+                Err(cause) => return Ok(Err(RebaseVerificationReason::Execution(cause))),
+                Ok(Some(true)) => {},
+                Ok(Some(false)) => return Ok(Ok(Self::KeepSuperseded)),
+                Ok(None) => return Ok(Err(unavailable)),
+            }
+        }
+        if producer_output
+            && reads_source(fact)
+            && !matches!(fact, Fact::OptionalAspectAbsent { .. })
+        {
             return Ok(
                 match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
                     Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => match stop {
@@ -135,6 +156,16 @@ impl PreparedFactRebase {
     ) -> Result<Self, RebaseVerificationReason> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
         match fact {
+            Fact::OptionalAspectAbsent {
+                entity_id, locator, ..
+            } => {
+                let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+                    return Err(unavailable);
+                };
+                view.entity_aspect_version(*entity_id, locator.aspect().aspect_key())
+                    .map(Self::Aspect)
+                    .ok_or(unavailable)
+            }
             Fact::Field {
                 entity_id, locator, ..
             }
@@ -291,6 +322,16 @@ impl PreparedFactRebase {
                 entity_id,
                 locator,
                 native_revision: Some(revision),
+            },
+            (
+                Self::Aspect(native_revision),
+                Fact::OptionalAspectAbsent {
+                    entity_id, locator, ..
+                },
+            ) => Fact::SourceAspectRevision {
+                entity_id,
+                aspect: locator.aspect().aspect_key().clone(),
+                native_revision,
             },
             (
                 Self::Aspect(native_revision),

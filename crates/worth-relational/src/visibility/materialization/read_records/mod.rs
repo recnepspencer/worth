@@ -19,8 +19,8 @@ pub use projection::{
     ProjectionAspectRequirement, ProjectionAspectScope, RelationProjectionRecord,
     RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
     RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalEntityRetirement,
-    RelationalRelationMetadata, RelationalSnapshotProjectionAdmissionStop,
-    VisibilityProjectionView,
+    RelationalProjectedFieldObservation, RelationalRelationMetadata,
+    RelationalSnapshotProjectionAdmissionStop, VisibilityProjectionView,
 };
 pub use reader::{
     AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,

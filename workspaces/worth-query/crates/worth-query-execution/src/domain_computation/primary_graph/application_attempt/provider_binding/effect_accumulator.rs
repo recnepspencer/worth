@@ -26,6 +26,7 @@ pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: Fa
     unique: UniqueValueWrites<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     created: CreatedEffectReferences,
+    contracts: &'layout super::effect_lowering::AspectContracts<'layout>,
     lowered: Vec<WorthQueryLoweredProviderEffect>,
 }
 
@@ -45,6 +46,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
     pub(super) fn new(
         facts: &'facts Facts,
         unique_fields: WorthQueryUniqueFields<'layout>,
+        contracts: &'layout super::effect_lowering::AspectContracts<'layout>,
         effects: &[WorthQueryApplicationRealizedEffect],
         mutation_partition: worth_relational::facade::identity::PartitionId,
         application_effect_count: usize,
@@ -61,6 +63,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
             .unwrap_or(mutation_partition);
         Self {
             facts: ObservedFactIndex::completed(facts, routes),
+            contracts,
             unique: UniqueValueWrites::new(unique_fields),
             mutation_partition,
             created: CreatedEffectReferences::new(effects, mutation_partition),
@@ -75,6 +78,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
         let lowered = lower_provider_effect(
             &self.facts,
             &mut self.unique,
+            self.contracts,
             &self.created,
             self.mutation_partition,
             effect,
@@ -260,6 +264,7 @@ fn materialize_commit_projections(
                 intents.push(intent);
                 Some(steps)
             }
+            WorthQueryLoweredProviderEffect::ObservedNoop { steps } => Some(steps),
             WorthQueryLoweredProviderEffect::Emission(emission) => {
                 emissions.push(emission);
                 None
@@ -290,6 +295,7 @@ mod tests {
         let accumulator = WorthQueryProviderEffectAccumulator::new(
             &[],
             WorthQueryUniqueFields::none(),
+            &|_, _| None,
             &effects,
             issued,
             0,

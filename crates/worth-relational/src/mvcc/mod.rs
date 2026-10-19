@@ -56,7 +56,7 @@ pub use transaction::{
 pub(crate) use validation::RelationalTransactionValidationInput;
 pub use validation::{
     CustomInvariantExecutionReceipt, RelationalMutationInvariantEvidence,
-    RelationalMutationProposalIdentity, ValidatedMutationFootprint,
+    RelationalMutationProposalIdentity, ValidatedEntityStructTouch, ValidatedMutationFootprint,
     ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
     ValidatedMutationFootprintWork, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches, ValidatedRelationalProposal,

@@ -272,7 +272,7 @@ impl WorthQueryApplicationObservedFact {
                 ),
                 1,
             )),
-            Self::Field { .. } | Self::AbsentField { .. } => {
+            Self::Field { .. } | Self::AbsentField { .. } | Self::OptionalAspectAbsent { .. } => {
                 Err(WorthQuerySourceCurrentnessFailure::Unavailable)
             }
         }

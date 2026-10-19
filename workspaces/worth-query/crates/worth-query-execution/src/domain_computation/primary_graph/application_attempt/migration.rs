@@ -113,6 +113,7 @@ where
         read_set.lease.layout.unique_fields(),
         mutation_partition,
         read_set.effect_routes,
+        &|entity, aspect| read_set.lease.layout.aspect_contract(entity, aspect),
         effects,
     )?;
     Ok((candidate_funding, source_product, batch, effect_count))

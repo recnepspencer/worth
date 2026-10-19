@@ -8,7 +8,7 @@ use super::{
     ApplicationSchemaContributionProvenance, ApplicationSchemaIdentity, ApplicationSchemaMember,
 };
 
-const RULE_VERSION: &str = "worth-query-application-schema-v17";
+const RULE_VERSION: &str = "worth-query-application-schema-v18";
 
 /// Reuses the schema's field emitter without the containing schema or aspect
 /// revision. This is descriptive codec meaning, never installation authority.

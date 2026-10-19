@@ -63,6 +63,8 @@ pub(super) fn write(
         }
         | WorthQueryApplicationObservedFact::AbsentField {
             entity_id, locator, ..
+        } | WorthQueryApplicationObservedFact::OptionalAspectAbsent {
+            entity_id, locator, ..
         } => write!(output,
             "application-field:{}:{}:{}:{}/{}",
             entity_id.partition_value(),

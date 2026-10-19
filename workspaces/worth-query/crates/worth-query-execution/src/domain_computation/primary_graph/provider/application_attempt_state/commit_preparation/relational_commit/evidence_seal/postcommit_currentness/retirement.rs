@@ -12,7 +12,8 @@ pub(super) fn retired_anchor(fact: &Fact, retired: &BTreeSet<EntityId>) -> Optio
         | Fact::SourceAspectRevision { entity_id, .. }
         | Fact::SourceFieldRevision { entity_id, .. }
         | Fact::Field { entity_id, .. }
-        | Fact::AbsentField { entity_id, .. } => Some(*entity_id),
+        | Fact::AbsentField { entity_id, .. }
+        | Fact::OptionalAspectAbsent { entity_id, .. } => Some(*entity_id),
         Fact::SourceAdjacencyRevision { anchor, .. } | Fact::Adjacency { anchor, .. } => {
             Some(*anchor)
         }

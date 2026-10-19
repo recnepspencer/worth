@@ -131,6 +131,7 @@ pub(super) fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFac
             | WorthQueryApplicationObservedFact::Entity { .. }
             | WorthQueryApplicationObservedFact::Field { .. }
             | WorthQueryApplicationObservedFact::AbsentField { .. }
+            | WorthQueryApplicationObservedFact::OptionalAspectAbsent { .. }
             | WorthQueryApplicationObservedFact::Relation { .. }
             | WorthQueryApplicationObservedFact::Adjacency { .. }
             | WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }

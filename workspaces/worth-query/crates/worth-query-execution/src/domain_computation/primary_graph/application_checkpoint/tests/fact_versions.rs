@@ -56,6 +56,11 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
         Fact::AbsentField {
             entity_id,
             kind: worth_relational::facade::identity::KindId(14),
+            locator: locator.clone(),
+        },
+        Fact::OptionalAspectAbsent {
+            entity_id,
+            kind: worth_relational::facade::identity::KindId(14),
             locator,
         },
     ];

@@ -59,6 +59,7 @@ fn field<Value: CanonicalValue>(bounds: ValueDecodeBounds) -> ApplicationSchemaM
 fn aspect(field: ApplicationSchemaMember, revision: u64) -> ApplicationAspectValueMeaning {
     ApplicationAspectValueMeaning::from_members(&[
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Document".into(),
             aspect: "Facts".into(),
             identity: AspectIdentity(71),
@@ -203,6 +204,7 @@ fn value_meaning_refuses_ambiguous_rosters() {
     );
     let mut members = vec![
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Document".into(),
             aspect: "Facts".into(),
             identity: AspectIdentity(71),
@@ -218,4 +220,33 @@ fn value_meaning_refuses_ambiguous_rosters() {
     members.pop();
     members.push(members[0].clone());
     assert!(ApplicationAspectValueMeaning::from_members(&members).is_err());
+}
+
+#[test]
+fn whole_aspect_absence_is_revisioned_independently_of_fields() {
+    let required = aspect(field::<Original>(BOUNDS), 3);
+    let members = |revision| {
+        [
+            ApplicationSchemaMember::Aspect {
+                entity: "Document".into(),
+                aspect: "Facts".into(),
+                identity: AspectIdentity(71),
+                revision: AspectContractRevision(revision),
+                absence: worth_foundational::facade::AbsenceLaw::Optional,
+            },
+            field::<Original>(BOUNDS),
+        ]
+    };
+    let optional = ApplicationAspectValueMeaning::from_members(&members(3))
+        .unwrap()
+        .remove(0);
+    assert_eq!(
+        optional.compare_predecessor(&required),
+        Err(ApplicationAspectMeaningPredecessorDenial::MeaningChangedWithoutRevision)
+    );
+    assert_eq!(
+        ApplicationAspectValueMeaning::from_members(&members(4)).unwrap()[0]
+            .compare_predecessor(&required),
+        Ok(ApplicationAspectMeaningChange::MeaningChanged)
+    );
 }

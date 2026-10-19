@@ -72,6 +72,8 @@ where
                 request_admission,
             )?;
         }
+        // The caller retains its authenticated disclosure, not an executable
+        // edition seal. Final input preparation uses this admitted entry.
         *demand = refreshed;
         Ok(())
     }

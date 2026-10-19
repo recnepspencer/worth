@@ -1,5 +1,6 @@
 //! Typed caller disclosure, publication, and requested-output progression.
 use super::*;
+mod own_publication;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// What one pass of a caller over its own row answered.
@@ -14,7 +15,8 @@ pub(super) enum CallerPass<Query, Value> {
     PublishedStale(super::validated::OwnPublication),
 }
 
-/// Each pass owns its source and, for a reobservation, the actual publication.
+/// Each pass owns authenticated source custody and any actual publication.
+/// An executable edition is sealed only after final demand selection.
 enum AdvancePass<Query, Value> {
     Initial,
     Refreshed(super::super::disclosure::ValidatedOutputDisclosure<Query, Value>),
@@ -138,28 +140,10 @@ where
             AdvancePass::OwnPublication(receipt) | AdvancePass::Final(_, receipt) => Some(receipt),
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure => None,
         };
-        if let Some(publication) = publication {
-            self.primary_provider
-                .application_attempt_operation_control
-                .caller_pass
-                .run_interleaving();
-            let selected = self
-                .on_branch(delivery_branch)
-                .select_with_request(execution)
-                .map_err(|stop| {
-                    WorthQueryOutputDemandDenial::product_selection(
-                        stop,
-                        "own publication continuation",
-                    )
-                })?;
-            if !publication
-                .0
-                .is_selected_at(selected.product().observation())
-            {
-                return Ok(AdvancePassProgress::Answer(
-                    WorthQueryOutputDemandAdvance::Pending,
-                ));
-            }
+        if !self.own_publication_is_selected(execution, delivery_branch, publication)? {
+            return Ok(AdvancePassProgress::Answer(
+                WorthQueryOutputDemandAdvance::Pending,
+            ));
         }
         if demand.runtime_authority != self.runtime.authority_identity().as_u64()
             || demand.schema_binding != self.installed_schema.binding_identity()
@@ -306,6 +290,8 @@ where
                 AdvancePass::OwnPublication(receipt) => {
                     let Some(disclosed) = disclosure(&demand.observed_source, request_admission)?
                     else {
+                        #[cfg(test)]
+                        own_effect_observation::record(Stage::DisclosureExhausted);
                         return Ok(AdvancePassProgress::Answer(
                             WorthQueryOutputDemandAdvance::Pending,
                         ));

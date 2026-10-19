@@ -6,6 +6,8 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::WorthQueryProducerCommitAuthority;
 use super::disclosure::validate_disclosure;
+#[cfg(test)]
+use super::own_effect_observation::{self, Stage};
 use super::{
     FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,

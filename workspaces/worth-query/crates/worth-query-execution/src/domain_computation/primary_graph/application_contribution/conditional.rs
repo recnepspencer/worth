@@ -62,14 +62,14 @@ impl WorthQueryApplicationConditionalPackageContract {
         self
     }
 
-    pub(super) fn domain_operation(&self) -> WorthQueryPortableDomainOperationDefinition {
-        self.domain_operation.clone()
+    pub(super) fn domain_operation(&self) -> &WorthQueryPortableDomainOperationDefinition {
+        &self.domain_operation
     }
 
     pub(super) fn operation_binding(
         &self,
-    ) -> WorthQueryPortableApplicationConditionalOperationBinding {
-        self.operation_binding.clone()
+    ) -> &WorthQueryPortableApplicationConditionalOperationBinding {
+        &self.operation_binding
     }
 
     pub(super) fn node_identity(&self) -> &str {
@@ -208,7 +208,7 @@ where
             &declaration.required_producers,
         );
         installation.begin_application_binding_scope(
-            declaration.contract.operation_binding(),
+            declaration.contract.operation_binding().clone(),
             TypeId::of::<Binding::Operation>(),
             declaration.contract.target().clone(),
             declaration.required_producers.clone(),

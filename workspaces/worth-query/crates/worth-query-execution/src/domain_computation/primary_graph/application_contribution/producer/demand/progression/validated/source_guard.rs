@@ -183,6 +183,7 @@ where
             held,
             request_admission,
         )?;
+        // Carry source custody unchanged; the admitted successor supplies its seal.
         Ok(OwnStages::Refreshed(disclosure))
     }
 }

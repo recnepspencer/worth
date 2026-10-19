@@ -51,7 +51,7 @@ impl WorthQueryApplicationObservedFact {
                 candidate_limit, ..
             } => candidate_limit.saturating_add(1),
             Self::Relation { .. } => return None,
-            Self::Field { .. } | Self::AbsentField { .. } => 0,
+            Self::Field { .. } | Self::AbsentField { .. } | Self::OptionalAspectAbsent { .. } => 0,
         })
     }
 
@@ -95,7 +95,10 @@ impl WorthQueryApplicationObservedFact {
         check_request(execution)?;
         // Decision facts are value observations, not native revisions.
         // Output lineage must first rebase them at the committed snapshot.
-        if matches!(self, Self::Field { .. } | Self::AbsentField { .. }) {
+        if matches!(
+            self,
+            Self::Field { .. } | Self::AbsentField { .. } | Self::OptionalAspectAbsent { .. }
+        ) {
             return Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable));
         }
         let most = self.most_comparison_work();

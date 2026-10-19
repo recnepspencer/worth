@@ -15,61 +15,17 @@ use super::sequence::{
     decode_sequence, require_canonical_sequence, require_canonical_sequence_by, write_sequence,
 };
 
-pub(super) fn write_aspect_contract(
-    output: &mut dyn BinaryEncodingSink,
-    contract: &AspectContract,
-) -> Result<(), Denial> {
-    output.text(contract.key().as_str())?;
-    output.u64(contract.identity().0)?;
-    output.u64(contract.revision().0)?;
-    match contract.shape() {
-        AspectShape::Scalar(value_type) => {
-            output.u16(1)?;
-            write_scalar_type(output, *value_type)
-        }
-        AspectShape::Struct(shape) => {
-            output.u16(2)?;
-            write_sequence(output, shape.fields(), |output, field| {
-                write_field_declaration(output, field)
-            })
-        }
-        AspectShape::Opaque(_) => output.u16(3),
-        AspectShape::Reference(_) => output.u16(4),
-        AspectShape::Content => output.u16(5),
-    }
-}
+mod contract;
+pub(super) use contract::{decode_aspect_contract, write_aspect_contract};
 
-pub(super) fn decode_aspect_contract(
-    input: &mut BinaryInput<'_>,
-    budget: &mut RecordDecodeAttempt,
-) -> Result<AspectContract, Denial> {
-    let key = AspectKey::new(input.text()?.to_owned())
-        .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?;
-    let identity = AspectIdentity(input.u64()?);
-    let revision = AspectContractRevision(input.u64()?);
-    match input.u16()? {
-        1 => Ok(AspectContract::scalar(
-            key,
-            identity,
-            revision,
-            decode_scalar_type(input)?,
-        )),
-        2 => {
-            let fields = decode_sequence(input, budget, 12, |input, _| {
-                decode_field_declaration(input)
-            })?;
-            require_canonical_sequence_by(&fields, |field| field.key())?;
-            let shape = StructAspectShape::new(fields)
-                .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?;
-            Ok(AspectContract::struct_aspect(
-                key, identity, revision, shape,
-            ))
-        }
-        3 => Ok(AspectContract::opaque_token(key, identity, revision)),
-        4 => Ok(AspectContract::reference_entity(key, identity, revision)),
-        5 => Ok(AspectContract::content_ref(key, identity, revision)),
-        _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    }
+pub(super) fn write_absence(
+    output: &mut dyn BinaryEncodingSink,
+    absence: AbsenceLaw,
+) -> Result<(), Denial> {
+    output.u16(absence_tag(absence))
+}
+pub(super) fn decode_absence(input: &mut BinaryInput<'_>) -> Result<AbsenceLaw, Denial> {
+    absence_from_tag(input.u16()?)
 }
 
 pub(super) fn write_projection_mask(
@@ -181,6 +137,9 @@ fn write_field_declaration(
     output: &mut dyn BinaryEncodingSink,
     field: &FieldDeclaration,
 ) -> Result<(), Denial> {
+    if field.codec().is_some() {
+        return Err(Denial::new(Kind::UnsupportedCanonicalValueContract));
+    }
     output.text(field.key().as_str())?;
     write_scalar_type_dyn(output, field.value_type())?;
     output.u16(requirement_tag(field.requirement()))?;

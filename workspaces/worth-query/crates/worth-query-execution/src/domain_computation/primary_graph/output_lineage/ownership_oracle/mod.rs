@@ -44,3 +44,5 @@ mod birth;
 mod fixture_values;
 mod installation;
 mod journey;
+
+mod optional_aspects;

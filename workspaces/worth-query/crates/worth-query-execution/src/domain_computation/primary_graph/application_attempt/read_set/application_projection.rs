@@ -88,6 +88,7 @@ impl CompletedFactProjection {
                 Fact::Entity { .. }
                     | Fact::Field { .. }
                     | Fact::AbsentField { .. }
+                    | Fact::OptionalAspectAbsent { .. }
                     | Fact::Relation { .. }
                     | Fact::Adjacency { .. }
             );

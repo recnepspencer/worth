@@ -78,6 +78,7 @@ where
             Some(&completion.authority),
             request_admission,
         )?;
+        // Carry source custody unchanged; no executable seal crosses refresh.
         Ok(OwnStages::Refreshed(disclosure))
     }
 
@@ -204,6 +205,8 @@ where
                     Err(denial)
                         if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
                     {
+                        #[cfg(test)]
+                        own_effect_observation::record(Stage::ReadySuperseded);
                         Err(ReadyUnavailable::Superseded)
                     }
                     Err(denial) => return Err(denial),
@@ -230,14 +233,22 @@ where
         };
         self.output_demands
             .finish_settlement(interest, &completion.authority)?;
+        #[cfg(test)]
+        own_effect_observation::record(Stage::ReadySettled);
         Ok(ReadyVerdict::Settled(settlement))
     }
 }
 
 fn ready_unavailable(denial: &WorthQueryOutputDemandDenial) -> Option<ReadyUnavailable> {
     match denial.kind() {
-        WorthQueryOutputDemandDenialKind::Superseded => Some(ReadyUnavailable::Superseded),
+        WorthQueryOutputDemandDenialKind::Superseded => {
+            #[cfg(test)]
+            own_effect_observation::record(Stage::ReadySuperseded);
+            Some(ReadyUnavailable::Superseded)
+        }
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded => {
+            #[cfg(test)]
+            own_effect_observation::record(Stage::ReadyWorkExhausted);
             Some(ReadyUnavailable::WorkExhausted)
         }
         _ => None,

@@ -357,6 +357,12 @@ fn optional_value(
             });
             Ok(Some(value))
         }
+        WorthQueryApplicationFieldObservation::UnsupportedAspectShape => Err(denial(
+            "workflow evidence dependency aspect has the wrong shape",
+        )),
+        WorthQueryApplicationFieldObservation::AspectAbsent => {
+            Err(denial("workflow evidence dependency aspect is absent"))
+        }
         WorthQueryApplicationFieldObservation::Absent => {
             facts.push(WorthQueryApplicationObservedFact::AbsentField {
                 entity_id: entity,

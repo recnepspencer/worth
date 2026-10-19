@@ -27,7 +27,7 @@ pub use proposal_footprint::{
 };
 pub use proposal_identity::RelationalMutationProposalIdentity;
 pub use proposal_touches::{
-    ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
+    ValidatedEntityStructTouch, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches,
 };
 pub(crate) use validated_proposal::StrategyProposalDecoration;

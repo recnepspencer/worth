@@ -10,8 +10,10 @@ use worth_query_installation::facade::{
 use worth_query_package_archive::facade::*;
 
 const VERSION_SIX_MINIMAL_SCHEMA_HEX: &str = "0006000800000001000000380000000d617263686976652e74657374730000000d4d696e696d616c536368656d610000000100000000000000010001000000044974656d";
-// Independent current framing; the retained original payload grammar is unchanged.
+// Retained protocol7 framing is unsupported under the current-only reader.
 const VERSION_SEVEN_MINIMAL_SCHEMA_HEX: &str = "0007000800000001000000380000000d617263686976652e74657374730000000d4d696e696d616c536368656d610000000100000000000000010001000000044974656d";
+// Current protocol8 literal; whole-contract laws are explicit in native records.
+const VERSION_EIGHT_MINIMAL_SCHEMA_HEX: &str = "0008000800000001000000380000000d617263686976652e74657374730000000d4d696e696d616c536368656d610000000100000000000000010001000000044974656d";
 
 struct Schema;
 struct Entity;
@@ -84,27 +86,32 @@ fn application_schema_frame_is_deterministic_exact_and_freshly_readmitted() {
 }
 
 #[test]
-fn version_seven_minimal_application_schema_matches_the_frozen_vector() {
-    for original in VERSION_SIX_MINIMAL_SCHEMA_HEX.split('|') {
-        let bytes = decode_hex(original);
-        let denial =
-            WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-                .decode_frame(&bytes)
-                .unwrap_err();
-        assert_eq!(
-            denial.kind(),
-            WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-        );
-        assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
+fn version_eight_minimal_application_schema_matches_the_frozen_vector() {
+    for (version, originals) in [
+        (6_u16, VERSION_SIX_MINIMAL_SCHEMA_HEX),
+        (7_u16, VERSION_SEVEN_MINIMAL_SCHEMA_HEX),
+    ] {
+        for original in originals.split('|') {
+            let bytes = decode_hex(original);
+            let denial =
+                WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
+                    .decode_frame(&bytes)
+                    .unwrap_err();
+            assert_eq!(
+                denial.kind(),
+                WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+            );
+            assert_eq!(denial.compatibility().unwrap().observed_version(), version);
+        }
     }
     let exported = schema_package().export_typed_records().unwrap();
     let schema = schema_view(&exported);
     let bytes = encode_record_frame(schema, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    assert_eq!(encode_hex(&bytes), VERSION_SEVEN_MINIMAL_SCHEMA_HEX);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 7);
+    assert_eq!(encode_hex(&bytes), VERSION_EIGHT_MINIMAL_SCHEMA_HEX);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 8);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 8);
 
-    let frozen = decode_hex(VERSION_SEVEN_MINIMAL_SCHEMA_HEX);
+    let frozen = decode_hex(VERSION_EIGHT_MINIMAL_SCHEMA_HEX);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
     let decoded = decoder.decode_frame(&frozen).unwrap();

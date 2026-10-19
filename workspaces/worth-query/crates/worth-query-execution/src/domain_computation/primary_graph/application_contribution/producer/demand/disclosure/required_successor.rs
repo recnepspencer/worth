@@ -1,4 +1,4 @@
-//! Move one validated family source to its admitted lifecycle successor.
+//! Validate source custody against the actual admitted required successor.
 use super::super::super::registry::InstalledProducerProvider;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture;
@@ -6,13 +6,13 @@ use crate::domain_computation::primary_graph::application_output_demand::Selecte
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 /// The query proof keeps its value, source, request affinity and selected
-/// observation. Only its executor guard moves after the typed family selector
-/// has admitted the actual successor. Mutation authorization remains separate.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn bind_required_successor<
+/// observation and original admission edition. Executable sealing happens only
+/// after the typed family selector admits the successor; this does not retag it.
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn validate_required_successor<
     Schema,
     Family,
 >(
-    mut fresh: FreshOutputDisclosure<
+    fresh: FreshOutputDisclosure<
         FamilySourceQuery<Schema, Family>,
         FamilySourceValue<Schema, Family>,
     >,
@@ -43,7 +43,7 @@ where
     let same_family = claim.selected().key().family_identity() == Family::IDENTITY
         && predecessor.declaration.output_family_type == TypeId::of::<Family>()
         && installed.declaration.output_family_type == TypeId::of::<Family>();
-    if fresh.0.edition != predecessor.edition || !same_source || !same_family {
+    if fresh.0.admission_edition != predecessor.edition || !same_source || !same_family {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::ForeignSource,
             "required successor does not own this family disclosure",
@@ -75,6 +75,5 @@ where
             "required disclosure has no declared lifecycle successor",
         ));
     }
-    fresh.0.edition = installed.edition;
     Ok(fresh)
 }

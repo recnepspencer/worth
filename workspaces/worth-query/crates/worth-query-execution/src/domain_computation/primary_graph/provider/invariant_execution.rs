@@ -180,13 +180,16 @@ impl WorthQueryPrimaryGraphProvider {
         })?;
         let touch_admission =
             super::application_touch_admission::admit_validated_application_touches(
+                execution,
                 &candidate,
                 &self.graph.layout,
                 &material.application_graph_reads,
                 &material.application_touches,
                 &material.application_read_touch_overlap,
             )
-            .map_err(|()| touch_failure())?;
+            .map_err(
+                super::application_touch_admission::TouchAdmissionFailure::into_invariant_failure,
+            )?;
         let summary = candidate.invariant_evidence().summary();
         let work = super::mutation_work::WorthQueryPrimaryMutationWorkCounters::new(
             WorthQueryInvariantWorkMint { _private: () },
@@ -300,7 +303,7 @@ fn owner_failure() -> WorthQueryInvariantExecutionFailure {
     )
 }
 
-fn touch_failure() -> WorthQueryInvariantExecutionFailure {
+pub(super) fn touch_failure() -> WorthQueryInvariantExecutionFailure {
     WorthQueryInvariantExecutionFailure::new(
         WorthQueryInvariantExecutionDenialKind::ProviderRejected,
         "Relational validated candidate touches exceed the installed application contract",
