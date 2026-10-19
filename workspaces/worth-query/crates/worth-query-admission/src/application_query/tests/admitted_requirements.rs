@@ -106,7 +106,7 @@ fn installed_contract_refusal_preserves_the_resource_cause() {
             Ok(())
         });
         assert!(
-            matches!(stopped, Err(WorthQueryCanonicalIdentityStop::Admission(cause)) if cause == expected)
+            matches!(stopped, Err(WorthQueryCanonicalIdentityStop::Admission(cause) | WorthQueryCanonicalIdentityStop::Preparation { cause, .. }) if cause == expected)
         );
         assert!(refused);
     }

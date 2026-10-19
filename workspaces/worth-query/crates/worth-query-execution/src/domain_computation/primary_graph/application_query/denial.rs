@@ -8,6 +8,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
 
+mod preparation;
+pub(in crate::domain_computation::primary_graph) use preparation::{
+    QueryPreparationContext, QueryPreparationOperation,
+};
+
 /// The specific reason a query read was refused at admission.
 ///
 /// Admission runs before any read, so nothing was read or disclosed. Families:
@@ -109,6 +114,7 @@ pub struct WorthQueryApplicationQueryAdmissionDenial {
     kind: WorthQueryApplicationQueryAdmissionDenialKind,
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
     preparation_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
+    preparation_context: Option<QueryPreparationContext>,
     subject: String,
 }
 
@@ -121,6 +127,7 @@ impl WorthQueryApplicationQueryAdmissionDenial {
             kind,
             authorization_denial: None,
             preparation_stop: None,
+            preparation_context: None,
             subject: subject.into(),
         }
     }
@@ -133,6 +140,7 @@ impl WorthQueryApplicationQueryAdmissionDenial {
             subject: String::new(),
             authorization_denial: Some(Box::new(denial)),
             preparation_stop: None,
+            preparation_context: None,
         }
     }
 
@@ -143,6 +151,15 @@ impl WorthQueryApplicationQueryAdmissionDenial {
         stop: worth_relational::facade::mvcc::CompanionPreflightStop,
     ) -> Self {
         self.preparation_stop = Some(stop);
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_preparation_context(
+        mut self,
+        context: QueryPreparationContext,
+    ) -> Self {
+        // A more specific rejecting owner always wins over outer phase labels.
+        self.preparation_context.get_or_insert(context);
         self
     }
 

@@ -7,6 +7,10 @@ use crate::application_query::parameter_canonical_basis::{
 #[derive(Debug)]
 pub enum WorthQueryParameterPreparationStop<Stop> {
     Admission(Stop),
+    Preparation {
+        cause: Stop,
+        quote: worth_foundational::facade::CanonicalBasisPreparationQuote,
+    },
     Parameters(WorthQueryApplicationQueryParameterDenial),
     AccountingOverflow,
 }
@@ -86,6 +90,9 @@ pub fn admit_application_query_parameters_admitted<
     )
     .map_err(|stop| match stop {
         ParameterBasisPreparationStop::Admission(stop) => Admission(stop),
+        ParameterBasisPreparationStop::Preparation { cause, quote } => {
+            WorthQueryParameterPreparationStop::Preparation { cause, quote }
+        }
         ParameterBasisPreparationStop::Derivation(stop) => {
             Parameters(canonical_work_denial(query.name(), stop))
         }

@@ -16,7 +16,9 @@ use super::{
 };
 
 mod admitted;
-pub(in crate::domain_computation) use admitted::WorthQueryAdmittedQuerySessionStartStop;
+pub(in crate::domain_computation) use admitted::{
+    SessionPreparationPhase, WorthQueryAdmittedQuerySessionStartStop,
+};
 
 /// One reserved identity for a freshly admitted Query permission. The same
 /// identity starts graph work only after that permission admits its Product.

@@ -22,7 +22,9 @@ pub mod facade;
 pub mod integration {
     pub use crate::application_query::requirements::derive_graph_read_access_requirements_for_contract;
     pub use crate::application_query::requirements::derive_graph_read_access_requirements_for_contract_admitted;
-    pub use crate::canonical_identity_derivation::WorthQueryCanonicalIdentityStop;
+    pub use crate::canonical_identity_derivation::{
+        WorthQueryCanonicalIdentityPreparationContext, WorthQueryCanonicalIdentityStop,
+    };
     pub use crate::domain_computation::execution_resource_admission::{
         admit_execution_resource_plan, reserve_execution_resource_plan,
         reserve_workflow_resource_plan, WorthQueryCapacityReservedExecutionResourcePlan,

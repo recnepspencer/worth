@@ -1,5 +1,9 @@
 //! Graph continuation of the exact permission prepared before a Clean probe.
 
+use crate::domain_computation::primary_graph::application_query::denial::{
+    QueryPreparationContext, QueryPreparationOperation as Operation,
+};
+use crate::domain_computation::provider_session::SessionPreparationPhase;
 use std::fmt::Write;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -107,11 +111,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             selected_access,
             shape,
         } = permission;
-        admission.charge_external_work(1).map_err(|_| {
+        admission.charge_external_work(1).map_err(|stop| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
                 String::new(),
             )
+            .with_preparation_stop(stop)
+            .with_preparation_context(QueryPreparationContext::new(
+                Operation::FinishPermissionVisit,
+                1,
+                0,
+            ))
         })?;
         if !std::ptr::eq(self, issuer) {
             return Err(denial(
@@ -223,9 +233,10 @@ where
     // session may instead own one formatted denial; fund that maximum before
     // session construction, including the physical denial backing.
     const MAX_START_DENIAL_LABEL: usize = 27;
-    admission
-        .charge_external_work(3)
-        .map_err(prepared_session_resource_denial)?;
+    admission.charge_external_work(3).map_err(|stop| {
+        prepared_session_resource_denial(stop)
+            .with_preparation_context(QueryPreparationContext::new(Operation::SessionHeader, 3, 0))
+    })?;
     let authority_len = application
         .primary_graph_authority
         .authority_identity()
@@ -250,12 +261,28 @@ where
         .charge_external_work(
             u64::try_from(copy_work).map_err(|_| prepared_session_work_overflow())?,
         )
-        .map_err(prepared_session_resource_denial)?;
+        .map_err(|stop| {
+            prepared_session_resource_denial(stop).with_preparation_context(
+                QueryPreparationContext::new(
+                    Operation::SessionIdentityBacking,
+                    copy_work as u64,
+                    0,
+                ),
+            )
+        })?;
     admission
         .admit_read_scratch(
             u64::try_from(copy_bytes).map_err(|_| prepared_session_bytes_overflow())?,
         )
-        .map_err(prepared_session_resource_denial)?;
+        .map_err(|stop| {
+            prepared_session_resource_denial(stop).with_preparation_context(
+                QueryPreparationContext::new(
+                    Operation::SessionIdentityBacking,
+                    0,
+                    copy_bytes as u64,
+                ),
+            )
+        })?;
 
     WorthQueryManagedGraphWorkSession::start_query_with_reserved_identity_admitted(
         reserved,
@@ -281,8 +308,14 @@ where
         },
     )
     .map_err(|stop| match stop {
-        WorthQueryAdmittedQuerySessionStartStop::Admission(cause) => {
-            prepared_session_resource_denial(cause)
+        WorthQueryAdmittedQuerySessionStartStop::Admission { cause, quote } => {
+            let operation = match quote.phase {
+                SessionPreparationPhase::Header => Operation::NativeSessionHeader,
+                SessionPreparationPhase::Copies => Operation::NativeSessionCopies,
+            };
+            prepared_session_resource_denial(cause).with_preparation_context(
+                QueryPreparationContext::new(operation, quote.work, quote.bytes as u64),
+            )
         }
         WorthQueryAdmittedQuerySessionStartStop::WorkCounterOverflow => {
             prepared_session_work_overflow()

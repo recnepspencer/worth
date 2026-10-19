@@ -5,6 +5,14 @@ use crate::identity::data::RelationId;
 use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
 
+mod incident_boundary;
+
+#[derive(Clone, Copy)]
+pub(super) enum RelationClosurePurpose {
+    CompletePublicationAssociation,
+    CodecRetirement,
+}
+
 /// Complete cold association uses the same incident-edge court as retirement,
 /// including when no member is selected for retirement.
 pub(super) fn validate_complete_publication(
@@ -28,8 +36,14 @@ pub(super) fn validate_complete_publication(
         .iter()
         .map(|member| (member.id, member.kind, std::sync::Arc::clone(origin)))
         .collect::<Vec<_>>();
-    let (relations, _relation_memory) =
-        derive_closed_relations(runtime, root, &origins, context, lease)?;
+    let (relations, _relation_memory) = derive_closed_relations(
+        runtime,
+        root,
+        &origins,
+        RelationClosurePurpose::CompletePublicationAssociation,
+        context,
+        lease,
+    )?;
     charge(
         context,
         relations.len().saturating_add(origin.relations.len()),
@@ -48,6 +62,7 @@ pub(super) fn derive_closed_relations(
     runtime: &RelationalRuntime,
     root: &RelationalBranchRoot,
     origins: &[OutputOrigin],
+    purpose: RelationClosurePurpose,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(Vec<RelationId>, ExecutionMemoryReservation), CodecRetirementClosureStop> {
@@ -89,7 +104,13 @@ pub(super) fn derive_closed_relations(
                 continue;
             }
             let (Some(source), Some(target)) = (source, target) else {
-                return Err("codec retirement has unsupported incident relation consequences outside its proven output closure".into());
+                return Err(incident_boundary::IncidentRelation {
+                    id: RelationId::new(partition_id, slot as u64, record.generation()),
+                    kind: record.kind_id(),
+                    source: endpoints.source,
+                    target: endpoints.target,
+                }
+                .outside_closure(purpose, (source, target), origins));
             };
             if origins[source].2.commit != origins[target].2.commit {
                 return Err(

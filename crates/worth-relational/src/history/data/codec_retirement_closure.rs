@@ -303,8 +303,14 @@ fn derive_metered(
     charge(context, sort_work)?;
     affected.sort_unstable();
     origins.sort_unstable_by_key(|(entity, _, _)| *entity);
-    let (relations, relation_memory) =
-        relations::derive_closed_relations(runtime, root, &origins, context, lease)?;
+    let (relations, relation_memory) = relations::derive_closed_relations(
+        runtime,
+        root,
+        &origins,
+        relations::RelationClosurePurpose::CodecRetirement,
+        context,
+        lease,
+    )?;
     Ok(OwnedCodecRetirementClosure {
         entities: affected,
         relations,

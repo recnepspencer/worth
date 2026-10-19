@@ -8,6 +8,10 @@ use worth_foundational::facade::{
 #[derive(Debug)]
 pub(in crate::application_query) enum ParameterBasisPreparationStop<Stop> {
     Admission(Stop),
+    Preparation {
+        cause: Stop,
+        quote: worth_foundational::facade::CanonicalBasisPreparationQuote,
+    },
     Derivation(CanonicalDigestDerivationDenial),
     AccountingOverflow,
 }
@@ -29,7 +33,9 @@ pub(in crate::application_query) fn prepare_parameter_basis_admitted<Stop>(
         &mut *admit,
     )
     .map_err(|stop| match stop {
-        CanonicalBasisPreparationStop::Resource(stop) => Admission(stop),
+        CanonicalBasisPreparationStop::Resource { cause, quote } => {
+            ParameterBasisPreparationStop::Preparation { cause, quote }
+        }
         CanonicalBasisPreparationStop::Construction(_) => unreachable!("parameter loci are unique"),
         CanonicalBasisPreparationStop::AccountingOverflow
         | CanonicalBasisPreparationStop::UnsupportedSortImplementation => AccountingOverflow,

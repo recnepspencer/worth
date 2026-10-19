@@ -20,10 +20,24 @@ use super::super::{
 use super::WorthQueryPreparedQuerySessionIdentity;
 
 pub(in crate::domain_computation) enum WorthQueryAdmittedQuerySessionStartStop<Stop> {
-    Admission(Stop),
+    Admission {
+        cause: Stop,
+        quote: SessionPreparationQuote,
+    },
     WorkCounterOverflow,
     PreparationBytesCounterOverflow,
     Session(WorthQueryManagedGraphWorkSessionStartDenial),
+}
+
+pub(in crate::domain_computation) enum SessionPreparationPhase {
+    Header,
+    Copies,
+}
+
+pub(in crate::domain_computation) struct SessionPreparationQuote {
+    pub phase: SessionPreparationPhase,
+    pub work: u64,
+    pub bytes: usize,
 }
 
 impl WorthQueryManagedGraphWorkSession {
@@ -49,7 +63,14 @@ impl WorthQueryManagedGraphWorkSession {
     ) -> Result<Self, WorthQueryAdmittedQuerySessionStartStop<Stop>> {
         // The following preparation reads only fixed-width lengths and
         // selected identity axes. Fund those reads before calculating widths.
-        prepare(24, 0).map_err(WorthQueryAdmittedQuerySessionStartStop::Admission)?;
+        prepare(24, 0).map_err(|cause| WorthQueryAdmittedQuerySessionStartStop::Admission {
+            cause,
+            quote: SessionPreparationQuote {
+                phase: SessionPreparationPhase::Header,
+                work: 24,
+                bytes: 0,
+            },
+        })?;
         let selected_name = match basis.selection() {
             WorthQueryApplicationBasisSelectionIdentity::Product(identity) => {
                 identity.branch_identity().name().as_str()
@@ -86,7 +107,16 @@ impl WorthQueryManagedGraphWorkSession {
             subject_authority,
             provider,
         )?;
-        prepare(work, bytes).map_err(WorthQueryAdmittedQuerySessionStartStop::Admission)?;
+        prepare(work, bytes).map_err(|cause| {
+            WorthQueryAdmittedQuerySessionStartStop::Admission {
+                cause,
+                quote: SessionPreparationQuote {
+                    phase: SessionPreparationPhase::Copies,
+                    work,
+                    bytes,
+                },
+            }
+        })?;
         Self::start_query_with_reserved_identity(
             reserved,
             plan,

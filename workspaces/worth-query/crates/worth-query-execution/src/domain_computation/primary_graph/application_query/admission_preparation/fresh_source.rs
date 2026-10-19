@@ -63,6 +63,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryParameterPreparationStop::Admission(stop) => {
                     validation_preflight::resource_denial(stop)
                 }
+                WorthQueryParameterPreparationStop::Preparation { cause, quote } => {
+                    use crate::domain_computation::primary_graph::application_query::denial::{QueryPreparationContext, QueryPreparationOperation};
+                    let mut context = QueryPreparationContext::new(QueryPreparationOperation::ParameterCanonicalPreparation, quote.work as u64, quote.bytes as u64);
+                    context.canonical = Some(worth_query_admission::integration::WorthQueryCanonicalIdentityPreparationContext { identity: None, quote: Some(quote) });
+                    validation_preflight::resource_denial(cause).with_preparation_context(context)
+                }
                 WorthQueryParameterPreparationStop::AccountingOverflow => {
                     validation_preflight::work_denial()
                 }
