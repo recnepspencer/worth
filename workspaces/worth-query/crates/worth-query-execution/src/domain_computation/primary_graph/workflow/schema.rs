@@ -12,6 +12,7 @@ mod indexes;
 mod instance;
 mod layout;
 mod migration;
+mod operation_output;
 mod proposal;
 mod proposal_coverage;
 mod relations;
@@ -31,9 +32,8 @@ use instance::lower_instance;
 use proposal::lower_proposal;
 use proposal_coverage::lower_proposal_coverage;
 use relations::{
-    allocate_kinds, connection_endpoint_integrity, current_definition_integrity,
-    definition_start_integrity, lower_connection, lower_definition, lower_lineage, lower_node,
-    owned_fact_integrity,
+    allocate_kinds, connection_endpoint_integrity, lower_connection, lower_definition,
+    lower_lineage, lower_node, owned_fact_integrity,
 };
 use transition::lower_transition;
 
@@ -56,7 +56,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
     schema_id: &SchemaId,
     schema_version_id: SchemaVersionId,
     first_kind: KindId,
-    identities: [AspectIdentity; 11],
+    identities: [AspectIdentity; 12],
     subject_kinds: Vec<KindId>,
 ) -> Result<
     (RelationalSchemaRegistry, WorthQueryWorkflowLayout),
@@ -152,62 +152,8 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
     )?;
     registry = next;
 
-    let relations = [
-        (
-            "worth-query-workflow-current-definition",
-            kinds[0],
-            kinds[1],
-            current_definition_integrity(),
-        ),
-        (
-            "worth-query-workflow-lineage-definition",
-            kinds[0],
-            kinds[1],
-            owned_fact_integrity(),
-        ),
-        (
-            "worth-query-workflow-definition-node",
-            kinds[1],
-            kinds[2],
-            owned_fact_integrity(),
-        ),
-        (
-            "worth-query-workflow-definition-connection",
-            kinds[1],
-            kinds[3],
-            owned_fact_integrity(),
-        ),
-        (
-            "worth-query-workflow-connection-source",
-            kinds[3],
-            kinds[2],
-            connection_endpoint_integrity(),
-        ),
-        (
-            "worth-query-workflow-connection-target",
-            kinds[3],
-            kinds[2],
-            connection_endpoint_integrity(),
-        ),
-        (
-            "worth-query-workflow-definition-start",
-            kinds[1],
-            kinds[2],
-            definition_start_integrity(),
-        ),
-    ];
-    for (offset, (name, from, to, integrity)) in relations.into_iter().enumerate() {
-        registry = register_relation(
-            registry,
-            schema_id,
-            schema_version_id,
-            name,
-            kinds[5 + offset],
-            from,
-            to,
-            integrity,
-        )?;
-    }
+    registry =
+        relations::definition_membership::register(registry, schema_id, schema_version_id, &kinds)?;
     registry = register_relation(
         registry,
         schema_id,
@@ -343,10 +289,19 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         schema_version_id,
         first_kind,
         kinds[4],
-        subject_kinds,
+        subject_kinds.clone(),
     )?;
     let (registry, succeeded_from_relation) =
         succession::register(registry, schema_id, schema_version_id, first_kind, kinds[4])?;
+    let (registry, operation_output) = operation_output::lower(
+        registry,
+        schema_id,
+        schema_version_id,
+        first_kind,
+        kinds[14],
+        identities[11],
+        subject_kinds,
+    )?;
     Ok((
         registry,
         WorthQueryWorkflowLayout::new(WorkflowLayoutFields {
@@ -361,6 +316,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             assessment_evidence,
             approval,
             evidence_dependency,
+            operation_output,
             current_definition_relation: kinds[5],
             lineage_definition_relation: kinds[6],
             definition_node_relation: kinds[7],

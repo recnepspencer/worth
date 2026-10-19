@@ -283,8 +283,7 @@ where
             receipt,
             None,
         )?;
-        let (receipt_identity, executor) = performed.into_parts();
-        self.settle_validated(receipt_identity, executor)
+        self.settle_validated(performed)
     }
 
     pub(super) fn settle_recovered<Binding>(
@@ -307,29 +306,20 @@ where
             receipt,
             Some(recovery),
         )?;
-        let (receipt_identity, executor) = performed.into_parts();
-        self.settle_validated(receipt_identity, executor)
+        self.settle_validated(performed)
     }
 
     fn settle_validated(
         self,
-        receipt_identity: [u8; 32],
-        executor: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
+        performed: ValidatedWorkflowOperationReceipt<'_>,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        let mut demand = super::PlatformEffectDemand::default();
-        visit_workflow_operation_transition_facts(
-            &self.layout,
-            &self.admitted,
-            &receipt_identity,
-            executor,
-            |effect| demand.observe(&effect),
-        )?;
-        let reservation = super::admit_platform_effects(self.admitted.read_set(), demand)?;
+        let receipt_identity = performed.identity();
+        let executor = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_performed_receipt(&performed);
         let mut effects = Vec::new();
-        visit_workflow_operation_transition_facts(
+        let transition = visit_workflow_operation_transition_facts(
             &self.layout,
             &self.admitted,
             &receipt_identity,
@@ -339,6 +329,17 @@ where
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
             },
         )?;
+        crate::domain_computation::primary_graph::workflow::operation_output::append_operation_outputs(
+            &self.layout, transition, self.required.binding().expect("validated operation binding"),
+            performed.outputs().native_witness_roles().map(|(role, posture, entity, target)|
+                (role, posture, entity, worth_relational::facade::transactions::EntityReference::Existing(target))),
+            &mut effects,
+        );
+        let mut demand = super::PlatformEffectDemand::default();
+        for effect in &effects {
+            demand.observe(effect)?;
+        }
+        let reservation = super::admit_platform_effects(self.admitted.read_set(), demand)?;
         reservation.materialize(&effects)?;
         let transition_identity = self.admitted.identity().to_owned();
         let transition_identity_bytes = *self.admitted.identity_bytes();

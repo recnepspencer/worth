@@ -609,6 +609,15 @@ builder. On the real commit receipt, read
 ExactlyOne yields the typed entity directly; AtMostOne yields Option. Neither a
 business identity nor the symbolic creation slot substitutes for this reference.
 
+When such a body performs a guarded workflow operation, Query also retains its
+actual output correspondence on that native operation transition. This happens
+in the same publication as the body and transition, not through another host
+write. There is no extra supplier registration or caller-supplied output list.
+For example, a closing body may Preserve its item and Create its audit row;
+the retained entries name those actual entities, not today's selected round.
+See [retained operation correspondence](../foundations/workflows.md#retained-operation-correspondence)
+for the historical identity boundary and the remaining chain-affinity limit.
+
 A conditional assessment publisher can keep its pure producer kernel and native
 source/settlement contract while declaring the effect itself:
 
@@ -744,8 +753,10 @@ custom expression kernels, multiple creations, arbitrary existing-target relatio
 edits, signature consequences and command
 continuation are not implemented here.
 Related outputs have no Optional, reverse or filtered selection form. They return
-the preimage, not a post-write query result, and do not attach that entity to native
-workflow completion context or prove which independent chain is business-current.
+the preimage, not a post-write query result. Guarded operation settlement retains
+that correspondence on the performed operation transition, but it does not yet
+provide an authored join from a completed chain's closing output to today's
+business-current selection. It does not prove which independent chain is current.
 Related copying has no filtered, multi-subject or reverse-selection form and
 cannot initialize a required target from an optional source. Related certified
 captures are refused, not reinterpreted as root-scope captures. Copying alone does

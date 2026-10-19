@@ -10,6 +10,7 @@ mod assessment;
 pub(in crate::domain_computation::primary_graph) mod definition;
 pub(in crate::domain_computation::primary_graph) mod evidence_dependency;
 pub(in crate::domain_computation::primary_graph) mod instance;
+pub(in crate::domain_computation::primary_graph) mod operation_output;
 pub(in crate::domain_computation::primary_graph) mod proposal;
 pub(in crate::domain_computation::primary_graph) mod schema;
 

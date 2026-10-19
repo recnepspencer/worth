@@ -34,6 +34,8 @@ impl std::ops::Deref for WorthQueryWorkflowLayout {
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowLayoutFields {
+    pub(in crate::domain_computation::primary_graph) operation_output:
+        WorkflowOperationOutputLayout,
     pub(in crate::domain_computation::primary_graph) lineage: WorkflowLineageLayout,
     pub(in crate::domain_computation::primary_graph) definition: WorkflowDefinitionLayout,
     pub(in crate::domain_computation::primary_graph) node: WorkflowNodeLayout,
@@ -75,6 +77,16 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowLayoutFields {
     pub(in crate::domain_computation::primary_graph) instance_succeeded_from_relation: KindId,
     /// Successor instance to each receipted transition it inherits as history.
     pub(in crate::domain_computation::primary_graph) instance_prior_effect_relation: KindId,
+}
+
+#[derive(Clone, Debug)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowOperationOutputLayout {
+    pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) role: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) entity: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) posture: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) membership: KindId,
+    pub(in crate::domain_computation::primary_graph) target: KindId,
 }
 
 #[derive(Clone, Debug)]
@@ -301,6 +313,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLayout {
+    pub(in crate::domain_computation::primary_graph) output_binding: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) output_count: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) advancer:
         super::super::actor::record::WorkflowActorFields,
     pub(in crate::domain_computation::primary_graph) executor:

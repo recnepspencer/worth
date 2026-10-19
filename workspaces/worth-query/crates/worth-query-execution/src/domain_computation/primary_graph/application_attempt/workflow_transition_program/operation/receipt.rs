@@ -11,6 +11,11 @@ pub(in crate::domain_computation::primary_graph) struct ValidatedWorkflowOperati
     identity: [u8; 32],
 }
 impl ValidatedWorkflowOperationReceipt<'_> {
+    pub(super) fn outputs(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
+        self.receipt.output_correspondence()
+    }
     pub(in crate::domain_computation::primary_graph) fn principal(
         &self,
     ) -> worth_relational::facade::identity::EntityId {
@@ -25,15 +30,6 @@ impl ValidatedWorkflowOperationReceipt<'_> {
         &self,
     ) -> [u8; 32] {
         self.identity
-    }
-    pub(super) fn into_parts(
-        self,
-    ) -> (
-        [u8; 32],
-        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
-    ) {
-        let actor = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_performed_receipt(&self);
-        (self.identity, actor)
     }
 }
 

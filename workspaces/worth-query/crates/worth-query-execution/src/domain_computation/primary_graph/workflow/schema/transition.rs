@@ -2,7 +2,7 @@ use worth_foundational::facade::{aspects, AspectIdentity, ScalarAspectType};
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId};
 
-use super::relations::register_platform_entity;
+use super::relations::register_platform_entity_at_revision;
 use super::WorkflowTransitionLayout;
 use crate::domain_computation::primary_graph::schema_layout::{
     invalid_member, planned_field_locator,
@@ -25,6 +25,8 @@ pub(super) fn lower_transition(
     let identity_field = planned_field_locator(TRANSITION_ASPECT, "identity")?;
     let protocol_version = planned_field_locator(TRANSITION_ASPECT, "protocol-version")?;
     let occurrence = planned_field_locator(TRANSITION_ASPECT, "occurrence")?;
+    let output_binding = planned_field_locator(TRANSITION_ASPECT, "output-binding")?;
+    let output_count = planned_field_locator(TRANSITION_ASPECT, "output-count")?;
     let outcome = planned_field_locator(TRANSITION_ASPECT, "outcome")?;
     let operation_receipt_identity =
         planned_field_locator(TRANSITION_ASPECT, "operation-receipt-identity")?;
@@ -42,6 +44,8 @@ pub(super) fn lower_transition(
         .required("identity", ScalarAspectType::String)
         .required("protocol-version", ScalarAspectType::UInt64)
         .required("occurrence", ScalarAspectType::UInt64)
+        .optional("output-binding", ScalarAspectType::String)
+        .optional("output-count", ScalarAspectType::UInt64)
         .required("outcome", ScalarAspectType::UInt64)
         .optional("operation-receipt-identity", ScalarAspectType::String)
         .required("live-membership-partition", ScalarAspectType::UInt64)
@@ -55,7 +59,7 @@ pub(super) fn lower_transition(
         .optional("executor-generation", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(TRANSITION_ASPECT))?;
-    let registry = register_platform_entity(
+    let registry = register_platform_entity_at_revision(
         registry,
         schema_id,
         version,
@@ -64,6 +68,7 @@ pub(super) fn lower_transition(
         TRANSITION_ASPECT,
         identity,
         shape,
+        2,
     )?;
     Ok((
         registry,
@@ -75,6 +80,8 @@ pub(super) fn lower_transition(
             identity: identity_field,
             protocol_version,
             occurrence,
+            output_binding,
+            output_count,
             outcome,
             operation_receipt_identity,
             live_membership_partition,

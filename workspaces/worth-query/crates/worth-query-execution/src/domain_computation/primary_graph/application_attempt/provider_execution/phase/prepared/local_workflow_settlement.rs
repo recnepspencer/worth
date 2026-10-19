@@ -84,7 +84,7 @@ impl WorthQueryProviderAttemptPreparation {
                 )]),
             });
         } else {
-            visit_workflow_operation_settlement_facts(
+            let transition = visit_workflow_operation_settlement_facts(
                 &binding.workflow_layout,
                 &binding.settlement_basis,
                 &receipt_identity,
@@ -94,6 +94,10 @@ impl WorthQueryProviderAttemptPreparation {
                     Ok::<(), WorthQueryApplicationAttemptDenial>(())
                 },
             )?;
+            crate::domain_computation::primary_graph::workflow::operation_output::append_operation_outputs(
+                &binding.workflow_layout, transition, &binding.binding,
+                self.output_correspondence.workflow_outputs(), &mut settlement_effects,
+            );
         }
         let mut demand = PlatformEffectDemand::default();
         for effect in &settlement_effects {

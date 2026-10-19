@@ -13,6 +13,8 @@ use std::{collections::BTreeMap, sync::Arc};
 mod commit_tests;
 mod field_pinning;
 mod frontier_reads;
+#[cfg(test)]
+mod historical_relations_tests;
 mod pinning;
 mod record_reads;
 #[cfg(test)]

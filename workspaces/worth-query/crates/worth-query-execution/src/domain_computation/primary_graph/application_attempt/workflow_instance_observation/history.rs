@@ -12,6 +12,7 @@ use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBud
 use worth_relational::facade::identity::EntityId;
 
 mod budget;
+mod operation_outputs;
 use super::super::fact::WorkflowHistoryRequirement;
 use super::super::fact::{observe_adjacency_checked, AdjacencyObservationDenial};
 use budget::HistoryReconstructionCharge;
@@ -186,6 +187,14 @@ pub(super) fn observe(
             layout,
             transition.to,
             &mut scratch,
+        )?;
+        operation_outputs::observe(
+            execution,
+            runtime,
+            snapshot,
+            layout,
+            transition.to,
+            &mut charge,
         )?;
         let identity = match super::observe_field_value(
             runtime,

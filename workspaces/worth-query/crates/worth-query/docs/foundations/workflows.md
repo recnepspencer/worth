@@ -1313,6 +1313,52 @@ permitted destinations and audit behavior. Cross-release adoption, Store crash
 durability and host-owned recovery retention are separate contracts. The live
 requirement is not a serialized restart-stable authority carrier.
 
+### Retained operation correspondence
+
+A performed guarded operation retains its actual output roles, entity types,
+postures and target identities on its native transition. Local body settlement
+captures Existing and same-candidate Created references before native lowering;
+validated external or recovered receipt settlement captures the actual committed
+correspondence. Dispatch alone is not performance. Both paths use the same
+native publisher. Local capture co-publishes with business effects and transition;
+deferred receipt capture co-publishes with native settlement after the business
+receipt exists. Neither adds a separate output-retention commit or host mirror.
+
+The supplier's existing output contract is sufficient. For example:
+
+```rust
+let outputs = receipt.outputs_of::<CompleteOutputs>()?;
+let item = outputs.entity::<CompletedItem>()?; // Preserve/ExactlyOne
+let audit = outputs.entity::<ClosingAudit>()?; // Create/ExactlyOne
+```
+
+The receipt projection remains the caller-facing API. Query's native history
+reconstruction validates the stored closure even if the host kept no receipt.
+It does not expose a new public historical output selector or grant execution
+authority from these identities.
+
+Correspondence is immutable history, not a promise that a business entity stays
+live. Target relations permit 0..1 live incidence and retain audit edges; native
+publication emits exactly one historical target, custody prevents later
+attachment, deletion or repointing, and reconstruction requires that historical
+target. Retire outputs and later business deletion must not erase or retarget it.
+Ordinary graph reads remain live-only; reconstruction uses a bounded, explicitly
+audit-inclusive pinned read. Related business fields remain mutable.
+
+New performed-operation transitions use protocol 3 and require a binding plus
+complete output inventory, including an explicit zero count. Legacy protocol-2
+transitions may have absent context; Query does not backfill it from current
+business pointers or pretend it is available. Malformed or incomplete current
+context refuses reconstruction. Output metadata is charged to the existing
+settlement and history budgets; exceeding either refuses rather than truncates.
+
+This is not yet an authored closing-output-to-current-round comparison. Two
+independent completed chains can share a subject, so retaining a closing output
+alone cannot choose which one may Reopen. Nor does it make old runtime-owned
+instance handles usable after checkpoint restoration. Completed-reference
+reacquisition and checkpoint-to-succession remain separate, unproven boundaries;
+do not invent handle constructors or weaken ForeignOwner checks to bridge them.
+
 ## The ordinary convenience lane
 
 The ordinary lane wraps the common steps on a mutation request:

@@ -17,6 +17,7 @@ use crate::domain_computation::primary_graph::schema_layout::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
 
+pub(super) mod definition_membership;
 #[path = "relations/integrity.rs"]
 mod integrity;
 pub(super) use integrity::*;

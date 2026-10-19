@@ -25,6 +25,7 @@ impl RelationalPinnedRead {
             kind,
             maximum,
             AdjacencyDirection::Outgoing,
+            false,
         )
     }
     pub fn bounded_incoming_relations_for_frontier(
@@ -46,6 +47,32 @@ impl RelationalPinnedRead {
             kind,
             maximum,
             AdjacencyDirection::Incoming,
+            false,
+        )
+    }
+    /// Read live and audit-retained relation identities from this exact basis.
+    /// Endpoint retirement does not erase historical correspondence. This does
+    /// not revive an entity or confer permission to act on it.
+    pub fn bounded_outgoing_relations_including_audit_for_frontier(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        entities: &BTreeSet<EntityId>,
+        kind: KindId,
+        maximum: usize,
+    ) -> Result<
+        BoundedFrontierAdjacencyTruthRead,
+        BoundedFrontierReadStop<
+            FrontierAdjacencyTruthReadLimitExceeded,
+            worth_execution::WorkCeilingDenial,
+        >,
+    > {
+        self.frontier_relations(
+            request,
+            entities,
+            kind,
+            maximum,
+            AdjacencyDirection::Outgoing,
+            true,
         )
     }
     fn frontier_relations(
@@ -55,6 +82,7 @@ impl RelationalPinnedRead {
         kind: KindId,
         maximum: usize,
         direction: AdjacencyDirection,
+        include_audit: bool,
     ) -> Result<
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
@@ -72,6 +100,7 @@ impl RelationalPinnedRead {
                 self.basis.version_id(),
                 direction,
                 maximum,
+                include_audit,
             )
     }
     pub fn bounded_entity_field_equals_for_frontier(

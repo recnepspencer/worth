@@ -172,9 +172,11 @@ fn visit_transition_facts_from_basis<Error>(
         ),
         (
             layout.transition.protocol_version.clone(),
-            AspectValue::UInt64(
-                super::super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
-            ),
+            AspectValue::UInt64(if operation_receipt_identity.is_some() {
+                super::super::super::schema::version::WORKFLOW_OPERATION_OUTPUT_PROTOCOL_VERSION
+            } else {
+                super::super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION
+            }),
         ),
         (
             layout.transition.occurrence.clone(),

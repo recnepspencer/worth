@@ -86,6 +86,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             version_id,
             direction,
             maximum_work_units,
+            false,
         )
         .map_err(|stop| match stop {
             BoundedFrontierReadStop::Limit(limit) => limit,
@@ -182,6 +183,7 @@ impl ProjectionRecordReader<'_> {
         version_id: crate::identity::data::VersionId,
         direction: AdjacencyDirection,
         maximum_work_units: usize,
+        include_audit: bool,
     ) -> Result<
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<FrontierAdjacencyTruthReadLimitExceeded, E>,
@@ -245,7 +247,8 @@ impl ProjectionRecordReader<'_> {
                     continue;
                 };
                 if record.kind.kind_id != kind_id
-                    || record.lifecycle != crate::storage::data::RecordLifecycleState::Live
+                    || !(record.lifecycle == crate::storage::data::RecordLifecycleState::Live
+                        || (include_audit && record.lifecycle == crate::storage::data::RecordLifecycleState::RetainedDanglingForAudit))
                     || !direction.matches_endpoint(&record, *entity_id)
                 {
                     continue;
