@@ -11,10 +11,6 @@ pub(in crate::domain_computation::primary_graph) enum PreflightReadRefusal {
     },
     ForeignCell,
     RegistrationChanged,
-    RetainedCompanionCounterOverflow {
-        requested: u64,
-        retained: u64,
-    },
     RetainedCompanionCapacityExhausted {
         requested: u64,
         retained: u64,
@@ -36,14 +32,9 @@ pub(in crate::domain_computation::primary_graph) fn preflight_execution_cause(
                 admitted: maximum,
             })
         }
-        Stop::PreparationMemoryCounterOverflow => Ok(Cause::ChargedBytesOverflow),
-        Stop::RetainedCompanionCounterOverflow {
-            requested,
-            retained,
-        } => Err(PreflightReadRefusal::RetainedCompanionCounterOverflow {
-            requested,
-            retained,
-        }),
+        Stop::PreparationMemoryCounterOverflow | Stop::RetainedCompanionCounterOverflow { .. } => {
+            Ok(Cause::ChargedBytesOverflow)
+        }
         Stop::Interrupted(event) => Ok(match event.interruption() {
             worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
                 Cause::Cancelled
@@ -91,6 +82,13 @@ mod tests {
                 Stop::PreparationMemoryCounterOverflow,
                 Cause::ChargedBytesOverflow,
             ),
+            (
+                Stop::RetainedCompanionCounterOverflow {
+                    requested: 1,
+                    retained: u64::MAX,
+                },
+                Cause::ChargedBytesOverflow,
+            ),
             (Stop::WorkCounterOverflow, Cause::WorkCounterOverflow),
             (
                 Stop::WorkExhausted {
@@ -102,16 +100,6 @@ mod tests {
         ] {
             assert_eq!(preflight_execution_cause(stop), Ok(cause));
         }
-        assert_eq!(
-            preflight_execution_cause(Stop::RetainedCompanionCounterOverflow {
-                requested: 1,
-                retained: u64::MAX
-            }),
-            Err(PreflightReadRefusal::RetainedCompanionCounterOverflow {
-                requested: 1,
-                retained: u64::MAX
-            })
-        );
         assert_eq!(
             preflight_execution_cause(Stop::TopologyPending),
             Err(PreflightReadRefusal::TopologyPending)

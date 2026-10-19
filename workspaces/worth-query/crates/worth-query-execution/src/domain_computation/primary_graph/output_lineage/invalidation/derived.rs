@@ -100,7 +100,7 @@ impl SourceInvalidationOwner {
     }
 
     /// A child read retains its caller's optional ceiling, including an
-    /// exhausted Some(0). Installation supplies physical preparation bytes.
+    /// exhausted Some(0). Preparation retains the installed optional byte ceiling.
     pub(in crate::domain_computation::primary_graph) fn edit_admission_with_work_limit(
         &self,
         maximum_work: Option<usize>,

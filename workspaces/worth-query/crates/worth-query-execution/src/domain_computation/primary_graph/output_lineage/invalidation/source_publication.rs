@@ -126,9 +126,9 @@ impl SourceInvalidationOwner {
         retention::admit_edited_history(&mut root, &self.resources, context)?;
         retention::admit_root(&mut root, left, &self.resources, context)?;
         // A same-position Query edit must retain its predecessor while it
-        // prepares the replacement. Keep this cache only if a whole current
-        // index still has that headroom; otherwise publish the paid empty
-        // image now, rather than strand subsequent registration behind it.
+        // prepares the replacement. Under a supplied retained-byte ceiling,
+        // keep this cache only if a whole current index has that headroom;
+        // otherwise publish the paid empty image rather than strand later edits.
         let edit_bytes = retention::state_bound(&root.current)
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
         if let Some(maximum) = self.resources.installation().maximum_retained_bytes {

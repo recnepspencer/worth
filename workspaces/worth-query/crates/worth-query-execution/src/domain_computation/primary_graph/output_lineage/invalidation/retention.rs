@@ -54,7 +54,7 @@ pub(super) fn reserve(
                 requested,
                 retained,
             },
-            _ => unreachable!("installed resources have positive capacities"),
+            _ => unreachable!("installation denials cannot arise from an installed ledger"),
         })?;
     let capacity = Arc::new(capacity);
     capacity.observe_custody(std::panic::Location::caller());

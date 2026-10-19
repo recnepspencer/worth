@@ -2511,7 +2511,11 @@ Pass `None` for preparation and retained bytes to
 when the host imposes no logical byte ceiling. `Some(bytes)` supplies a deliberate
 finite ceiling at either boundary; `Some(0)` remains an invalid installation.
 The existing `bounded(work, preparation, retained, positions)` constructor chooses
-finite work and byte ceilings. The retained-position window remains independent.
+finite work and byte ceilings. Ordinary Memory Workspace and Consumer Kit
+installations select no marking-work, preparation-byte or retained-byte ceiling.
+Other application hosts supply their own policies; this does not claim that every
+platform or application profile is uncapped. The retained-position window remains
+independent.
 
 Absence does not disable admission accounting or authorize memory allocation.
 Preparation still checked-adds every original byte quote; retained tickets share
