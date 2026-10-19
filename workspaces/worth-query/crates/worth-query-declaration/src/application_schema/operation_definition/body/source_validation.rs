@@ -29,10 +29,7 @@ pub(super) fn validate(
         _ => None,
     });
     let related_closed = if let Some(path) = step.path_source() {
-        path.has_supported_shape() && path.path.start_entity() == scope
-            && path.path.steps().iter().all(|step| members.iter().any(|member| matches!(member,
-                Member::Relation {relation, from, to, ..} if relation == step.relation() && from == step.from() && to == step.to())))
-            && path.decision_reads().iter().all(|read| has_read(members, operation, read))
+        path.path.start_entity() == scope && path.has_closed_reads(operation, members)
     } else {
         step.related_source().map_or_else(
             || source.entity() == scope,

@@ -84,8 +84,14 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
                     step.input_is_optional(),
                 )
             });
-        for ((member, family, optional), binding) in
-            scope_inputs.chain(created_inputs).zip(bindings)
+        let path_inputs = body
+            .path_input_expectations()
+            .iter()
+            .map(|guard| (guard.member.as_str(), guard.scalar_family, false));
+        for ((member, family, optional), binding) in scope_inputs
+            .chain(created_inputs)
+            .chain(path_inputs)
+            .zip(bindings)
         {
             context
                 .checkpoint(u64::try_from(bytes).unwrap_or(u64::MAX))

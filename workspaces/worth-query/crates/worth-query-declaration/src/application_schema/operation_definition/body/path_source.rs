@@ -17,6 +17,18 @@ pub struct ApplicationOperationBodyPathFieldSource {
     pub presence: ApplicationFieldPresence,
 }
 impl ApplicationOperationBodyPathFieldSource {
+    pub(super) fn has_closed_reads(
+        &self,
+        operation: &str,
+        members: &[crate::application_schema::ApplicationSchemaMember],
+    ) -> bool {
+        use crate::application_schema::ApplicationSchemaMember as Member;
+        self.has_supported_shape()
+            && self.path.steps().iter().all(|step| members.iter().any(|member| matches!(member,
+                Member::Relation { relation, from, to, .. } if relation == step.relation() && from == step.from() && to == step.to())))
+            && self.decision_reads().iter().all(|read| members.iter().any(|member| matches!(member,
+                Member::OperationDecisionRead { operation: declared, target } if declared == operation && target == read)))
+    }
     pub fn canonical_record(&self) -> String {
         use std::fmt::Write;
         let mut result = String::new();

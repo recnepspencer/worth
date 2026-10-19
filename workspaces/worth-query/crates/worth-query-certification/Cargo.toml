@@ -87,6 +87,10 @@ path = "tests/application_graph.rs"
 name = "native_operation_bodies"
 path = "tests/native_operation_bodies.rs"
 
+[[test]]
+name = "native_graph_input_guards"
+path = "tests/native_graph_input_guards.rs"
+
 
 [lints]
 workspace = true

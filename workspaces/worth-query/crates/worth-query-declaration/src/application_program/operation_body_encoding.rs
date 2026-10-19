@@ -46,7 +46,7 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
     } else {
         record
     };
-    if body.retirements().is_empty() {
+    let record = if body.retirements().is_empty() {
         record
     } else {
         framed_record(
@@ -55,6 +55,18 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
                 body.retirements()
                     .iter()
                     .map(|rule| ("retirement", rule.canonical_record())),
+            ),
+        )
+    };
+    if body.path_input_expectations().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-path-input-expectations-v1",
+            std::iter::once(("body", record)).chain(
+                body.path_input_expectations()
+                    .iter()
+                    .map(|guard| ("path-input", guard.canonical_record())),
             ),
         )
     }

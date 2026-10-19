@@ -59,6 +59,8 @@ Declare through `worth_query_decl::facade::application_schema`:
 - `Operation::reference().body().expect(...).assign(...).assign_input(...).finish()`;
 - `body.expect_input(field, "member")` to require a present field equal to one
   captured flat scalar, without declaring a write;
+- `body.expect_input_from_path(path, field, "member")` for a related field,
+  preserving the path-start scope; see [path-input guards](./path-input-guards.md);
 - `body.in_scope(Tenant::reference())` when creation does not touch an existing field;
 - `body.set_optional_input(optional_field, "member")` or
   `body.clear_optional(optional_field)` for distinct optional-value intentions;

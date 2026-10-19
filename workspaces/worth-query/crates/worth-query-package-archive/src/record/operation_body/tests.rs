@@ -20,6 +20,8 @@ mod optional_input;
 mod outputs;
 #[path = "tests/path_capture.rs"]
 mod path_capture;
+#[path = "tests/path_input.rs"]
+mod path_input;
 #[path = "tests/principal.rs"]
 mod principal;
 #[path = "tests/related_outputs.rs"]

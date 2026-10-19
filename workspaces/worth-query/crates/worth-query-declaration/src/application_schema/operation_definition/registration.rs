@@ -54,6 +54,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .iter()
                     .flat_map(|rule| rule.decision_reads()),
             );
+            reads.extend(
+                body.path_input_expectations()
+                    .iter()
+                    .flat_map(|guard| guard.source.decision_reads()),
+            );
             if let Some(creation) = body.creation() {
                 reads.extend(
                     creation

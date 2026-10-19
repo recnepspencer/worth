@@ -17,6 +17,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) external_emission: Option<super::ApplicationOperationBodyExternalEmission>,
     pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
     pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
+    pub(super) path_input_expectations: Vec<super::ApplicationOperationBodyPathInputExpectation>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -127,6 +128,7 @@ impl ApplicationOperationBodyProgram {
             external_emission: None,
             values: Vec::new(),
             retirements: Vec::new(),
+            path_input_expectations: Vec::new(),
         }
     }
     pub fn from_untrusted_with_creation(
@@ -143,6 +145,7 @@ impl ApplicationOperationBodyProgram {
             external_emission: None,
             values: Vec::new(),
             retirements: Vec::new(),
+            path_input_expectations: Vec::new(),
         }
     }
     pub fn from_untrusted_with_requirements(
@@ -160,6 +163,7 @@ impl ApplicationOperationBodyProgram {
             external_emission: None,
             values: Vec::new(),
             retirements: Vec::new(),
+            path_input_expectations: Vec::new(),
         }
     }
     /// Authority-free scope-bound description. Fresh readmission checks the scope
@@ -183,10 +187,24 @@ impl ApplicationOperationBodyProgram {
             external_emission: None,
             values: Vec::new(),
             retirements: Vec::new(),
+            path_input_expectations: Vec::new(),
         }
     }
     pub fn explicit_scope_entity(&self) -> Option<&str> {
         self.explicit_scope.as_deref()
+    }
+    pub fn path_input_expectations(
+        &self,
+    ) -> &[super::ApplicationOperationBodyPathInputExpectation] {
+        &self.path_input_expectations
+    }
+    /// Authority-free carriage; fresh admission rechecks path, field and exact input binding.
+    pub fn with_untrusted_path_input_expectations(
+        mut self,
+        guards: Vec<super::ApplicationOperationBodyPathInputExpectation>,
+    ) -> Self {
+        self.path_input_expectations = guards;
+        self
     }
     pub fn retirements(&self) -> &[super::ApplicationOperationBodyOwnedSelectionRetirement] {
         &self.retirements

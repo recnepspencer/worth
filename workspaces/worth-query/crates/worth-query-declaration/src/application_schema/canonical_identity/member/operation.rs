@@ -15,7 +15,8 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if !body.retirements().is_empty() { "operation-body-v21" }
+        if !body.path_input_expectations().is_empty() { "operation-body-v22" }
+        else if !body.retirements().is_empty() { "operation-body-v21" }
         else if body.scope_fields().iter().any(|step| matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. })) { "operation-body-v20" }
         else if body.creation().is_some_and(|c| c.subject_impact_bound().is_some() || c.fields().iter().any(|f| f.path_source().is_some())) { "operation-body-v19" }
         else if !body.values().is_empty() || body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. })) { "operation-body-v18" }
@@ -90,6 +91,12 @@ pub(super) fn append_body(
                 &rule.canonical_record(),
             );
         }
+    }
+    for (index, guard) in body.path_input_expectations().iter().enumerate() {
+        basis.text(
+            format!("{prefix}.path-input[{index}]"),
+            &guard.canonical_record(),
+        );
     }
     if body.explicit_scope_entity().is_some() || body.is_creation_only() {
         basis.text(

@@ -19,6 +19,7 @@ pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     pub(super) steps: Vec<ApplicationOperationBodyScopeField>,
     pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
     pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
+    pub(super) path_input_expectations: Vec<super::ApplicationOperationBodyPathInputExpectation>,
     requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
@@ -37,6 +38,7 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
             steps: Vec::new(),
             values: Vec::new(),
             retirements: Vec::new(),
+            path_input_expectations: Vec::new(),
             requirements: Vec::new(),
             outputs: Vec::new(),
             succession: None,
@@ -57,15 +59,18 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
     where
         Entity: OperationReads<Operation>,
     {
-        if self
-            .scope
-            .as_deref()
-            .is_some_and(|scope| scope != entity.name())
-        {
+        self.in_named_scope(entity.name())?;
+        Ok(self)
+    }
+    pub(super) fn in_named_scope(
+        &mut self,
+        entity: &str,
+    ) -> Result<(), ApplicationOperationBodyAuthoringDenial> {
+        if self.scope.as_deref().is_some_and(|scope| scope != entity) {
             return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
         }
-        self.scope = Some(entity.name().to_owned());
-        Ok(self)
+        self.scope = Some(entity.to_owned());
+        Ok(())
     }
 
     pub fn expect<Entity, Aspect, Field, Value, Write, Equality, Unit>(
@@ -195,6 +200,14 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         let program = program
             .with_untrusted_values(self.values)
             .with_untrusted_retirements(self.retirements);
+        let program = program.with_untrusted_path_input_expectations(self.path_input_expectations);
+        if program
+            .path_input_expectations()
+            .iter()
+            .any(|guard| !guard.fits_body(&program))
+        {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
         let mut paths = BTreeSet::new();
         if program.retirements().iter().any(|rule| {
             !rule.fits_body(&program)

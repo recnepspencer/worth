@@ -243,6 +243,31 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 }
             }
         }
+        for guard in body.path_input_expectations() {
+            let source = &guard.source;
+            if !source.has_supported_shape()
+                || source.path.start_entity() != Binding::scope_field().entity()
+            {
+                return Err(denied());
+            }
+            let binding = schema
+                .value_bindings()
+                .field(
+                    source.field.entity(),
+                    source.field.aspect(),
+                    source.field.field(),
+                )
+                .ok_or_else(denied)?;
+            if binding.identity() != &guard.binding
+                || binding.scalar_family() != guard.scalar_family
+                || !Binding::InputBinding::RETAIN_CANONICAL_INPUT
+                || !binding.is_readable()
+                || !binding.admits_native_input()
+            {
+                return Err(denied());
+            }
+            input_bindings.push(binding.clone());
+        }
         Ok(Self {
             values: super::value::install(schema, body, Binding::IDENTITY)?,
             selection_reads: super::selection::installed_reads(body),
