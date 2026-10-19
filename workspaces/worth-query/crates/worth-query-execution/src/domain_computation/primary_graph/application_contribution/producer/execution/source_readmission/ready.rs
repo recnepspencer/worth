@@ -144,6 +144,7 @@ mod tests {
         ] {
             let actual = ready_currentness_denial("producer", stop).into_output_denial();
             assert_eq!(actual.producer_admission_stop(), native);
+            assert_eq!(actual.output_verification_capacity_stop(), Some(kept));
             assert_eq!(actual.publication_companion_stop(), None);
             assert_eq!(
                 actual,

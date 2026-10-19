@@ -28,8 +28,9 @@ mod verification;
 pub(in crate::domain_computation::primary_graph) use pending_dependency::SelectedPendingConsumedOutput;
 pub(in crate::domain_computation::primary_graph::invariant_projection) use verification::map_admission_stop;
 pub(in crate::domain_computation::primary_graph) use verification::EvidenceView;
+pub use verification::VerificationCapacityStop;
 pub(in crate::domain_computation::primary_graph) use verification::{
-    ConsumedOutputVerification, ConsumedOutputVerificationStop, VerificationCapacityStop,
+    ConsumedOutputVerification, ConsumedOutputVerificationStop,
 };
 
 /// One output actually selected by a projected read. The lineage owner minted

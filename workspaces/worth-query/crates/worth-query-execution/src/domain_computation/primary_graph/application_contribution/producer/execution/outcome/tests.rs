@@ -175,3 +175,54 @@ fn pending_execution_evidence_keeps_heads_producer_category() {
         Some((Stage::Idempotency, Ok(kind)))
     );
 }
+
+#[test]
+fn consumed_verification_capacity_reaches_the_original_demand_denial() {
+    use crate::domain_computation::primary_graph::{
+        application_attempt::provider_compare_denial::provider_session_denied,
+        VerificationCapacityStop as Capacity, WorthQueryApplicationCommitDenialKind as Kind,
+        WorthQueryApplicationCommitDenialStage as Stage,
+    };
+    use crate::domain_computation::{
+        WorthQueryProviderSessionDenialKind as ProviderKind, WorthQueryProviderSessionFailure,
+        WorthQueryProviderSessionProtocolStage,
+    };
+    for capacity in [
+        Some(Capacity::Meter(Stop::PreparationMemoryExhausted {
+            required: 65,
+            maximum: 64,
+        })),
+        Some(Capacity::ScratchAllocationRefused { bytes: 65 }),
+        None,
+    ] {
+        let mut failure = WorthQueryProviderSessionFailure::new(
+            ProviderKind::ProviderRejected,
+            WorthQueryProviderSessionProtocolStage::Commit,
+            "consumed output currentness exceeded publication capacity",
+            Default::default(),
+        );
+        if let Some(stop) = capacity {
+            failure = failure.with_output_verification_capacity_stop(stop);
+        }
+        let commit = provider_session_denied(failure);
+        assert_eq!(commit.stage(), Stage::ProviderCommit);
+        let denial = commit_receipt(
+            "preserve-producer",
+            WorthQueryApplicationCommitOutcome::Denied(commit),
+        )
+        .unwrap_err();
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable
+        );
+        assert_eq!(denial.commit_denial_kind(), Some(Kind::ProviderRejected));
+        assert_eq!(
+            denial.recovery_posture(),
+            graph::WorthQueryOutputDemandRecoveryPosture::Terminal
+        );
+        assert_eq!(denial.output_verification_capacity_stop(), capacity);
+        assert_eq!(denial.publication_companion_stop(), None);
+        assert_eq!(denial.producer_admission_stop(), None);
+        assert_eq!(denial.clone().output_verification_capacity_stop(), capacity);
+    }
+}

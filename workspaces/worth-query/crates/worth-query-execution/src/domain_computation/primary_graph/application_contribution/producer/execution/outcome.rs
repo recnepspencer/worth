@@ -188,6 +188,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         WorthQueryApplicationCommitOutcome::Denied(commit_denial) => {
             use WorthQueryApplicationCommitDenialKind as Kind;
             let kind = commit_denial.kind();
+            let capacity = commit_denial.output_verification_capacity_stop();
             let execution = commit_denial
                 .execution_denial_cause()
                 .map(|cause| (commit_denial.stage(), cause));
@@ -244,6 +245,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::RecoveryHandoffMismatch { .. } => failed(identity, commit_denial),
             };
             Err(failure
+                .with_capacity_stop(capacity)
                 .with_commit_denial_kind(kind)
                 .with_commit_execution_denial(execution))
         }
