@@ -29,18 +29,10 @@ fn site_record(site: &Creation) -> String {
                     .iter()
                     .map(|p| ("path-link", p.canonical_record())),
             )
-            .chain(site.children().iter().map(|child| {
-                (
-                    "child",
-                    framed_record(
-                        "child-creation-v1",
-                        [
-                            ("parent", child.parent_key.clone()),
-                            ("creation", base::creation_record(&child.creation)),
-                            ("link", child.creation.links()[0].canonical_record()),
-                        ],
-                    ),
-                )
-            })),
+            .chain(
+                site.children()
+                    .iter()
+                    .map(|child| ("child", super::child_record(child))),
+            ),
     )
 }

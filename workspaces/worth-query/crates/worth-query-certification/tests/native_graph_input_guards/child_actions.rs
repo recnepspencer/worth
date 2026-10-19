@@ -30,6 +30,7 @@ const fn owned() -> ApplicationRelationIntegrity {
     )
 }
 worth_query_relation!(pub RowCells in Schema,Row=>Cell;integrity=owned());
+worth_query_relation!(pub RowCellArchive in Schema,Row=>Cell;integrity=owned());
 worth_query_relation!(pub CellDetails in Schema,Cell=>Detail;integrity=owned());
 #[derive(Clone, Serialize)]
 pub struct CreateTree {
@@ -54,7 +55,7 @@ worth_query_operation!(pub Create for Schema,input Input);
 worth_query_operation_reads!(Create=>[Parent,ParentIdentity,ParentRevision]);
 worth_query_operation_writes!(Create=>[ParentRevision,RowIdentity,RowValue,CellIdentity,CellKind,CellNote,DetailLabel]);
 worth_query_operation_creates!(Create=>[Row,Cell,Detail]);
-worth_query_operation_links!(Create=>[ParentRows,RowCells,CellDetails]);
+worth_query_operation_links!(Create=>[ParentRows,RowCells,RowCellArchive,CellDetails]);
 fn scope(input: &CreateTree) -> String {
     input.parent.clone()
 }
@@ -64,7 +65,7 @@ worth_query_mutation_binding!(pub Binding for CreateTree,schema Schema,
     handler identity "worth.query.child.body.v1",program required,outputs NoApplicationMutationOutputs,
     principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
     scope Parent,ParentFacts,ParentIdentity,String,ReadOnly,NoApplicationUnit,field ParentIdentity::reference(),value scope,
-    candidates creates 4,deletes 0,links 4,unlinks 0,writes 10,emits 0,resources retained_representation_bytes 16384);
+    candidates creates 4,deletes 0,links 6,unlinks 0,writes 10,emits 0,resources retained_representation_bytes 16384);
 pub fn body() -> ApplicationOperationBody<Schema, Create, CreateTree> {
     let op = Create::reference();
     let next = ApplicationOperationBodyValue::<Schema, Create, U64ApplicationValueBinding>::admit(
@@ -99,6 +100,7 @@ pub fn body() -> ApplicationOperationBody<Schema, Create, CreateTree> {
             cell.initialize_input(CellIdentity::reference(), "physical")?
                 .initialize(CellKind::reference(), 1)?
                 .initialize_optional_input(CellNote::reference(), "physical_note")?
+                .link_from_parent(RowCellArchive::reference(), "physical-archive")?
                 .with_child(CellDetails::reference(), "detail", |detail| {
                     detail.initialize_input(DetailLabel::reference(), "detail")
                 })
@@ -107,7 +109,8 @@ pub fn body() -> ApplicationOperationBody<Schema, Create, CreateTree> {
         .with_child(RowCells::reference(), "electronic", |cell| {
             cell.initialize_input(CellIdentity::reference(), "electronic")?
                 .initialize(CellKind::reference(), 2)?
-                .initialize_optional_input(CellNote::reference(), "electronic_note")
+                .initialize_optional_input(CellNote::reference(), "electronic_note")?
+                .link_from_parent(RowCellArchive::reference(), "electronic-archive")
         })
         .unwrap()
         .finish()
@@ -126,6 +129,11 @@ pub fn declare(
         .field(Cell::reference(), CellNote::reference())
         .field(Detail::reference(), DetailLabel::reference())
         .relation(RowCells::reference(), Row::reference(), Cell::reference())
+        .relation(
+            RowCellArchive::reference(),
+            Row::reference(),
+            Cell::reference(),
+        )
         .relation(
             CellDetails::reference(),
             Cell::reference(),

@@ -22,6 +22,63 @@ pub struct ApplicationOperationBodyChildCreationBuilder<S, O, I, E> {
     marker: PhantomData<fn() -> (S, O, I, E)>,
 }
 impl<S, O, I, E> ApplicationOperationBodyChildCreationBuilder<S, O, I, E> {
+    /// Adds another incoming-exclusive link from this child's exact authored parent.
+    /// The parent is retained by the native candidate, never resolved from a caller ID.
+    /// ```compile_fail,E0277
+    /// use worth_query_declaration::facade::application_schema::*;
+    /// fn undeclared<S,O,I,E,P,R>(child:ApplicationOperationBodyChildCreationBuilder<S,O,I,E>,relation:ApplicationRelationRef<S,R,P,E>){
+    ///     let _=child.link_from_parent(relation,"history");
+    /// }
+    /// ```
+    /// ```compile_fail,E0308
+    /// use worth_query_declaration::facade::application_schema::*;
+    /// fn wrong_child<S,O,I,E,Other,P,R:OperationLinks<O>>(child:ApplicationOperationBodyChildCreationBuilder<S,O,I,E>,relation:ApplicationRelationRef<S,R,P,Other>){
+    ///     let _=child.link_from_parent(relation,"history");
+    /// }
+    /// ```
+    /// ```no_run
+    /// use worth_query_declaration::facade::application_schema::*;
+    /// fn declared<S,O,I,E,P,R:OperationLinks<O>>(child:ApplicationOperationBodyChildCreationBuilder<S,O,I,E>,relation:ApplicationRelationRef<S,R,P,E>){
+    ///     let _=child.link_from_parent(relation,"history");
+    /// }
+    /// ```
+    pub fn link_from_parent<R, Parent>(
+        mut self,
+        relation: ApplicationRelationRef<S, R, Parent, E>,
+        key: &str,
+    ) -> Result<Self, Denial>
+    where
+        R: OperationLinks<O>,
+    {
+        use crate::application_schema::ApplicationRelationCrossContextPolicy;
+        if key.is_empty()
+            || key.trim() != key
+            || self
+                .creation
+                .links
+                .first()
+                .is_none_or(|link| link.from != relation.from())
+            || relation.integrity().cardinality.target_max != Some(1)
+            || relation.integrity().cross_context_policy()
+                != ApplicationRelationCrossContextPolicy::Forbid
+            || self
+                .creation
+                .links
+                .iter()
+                .any(|link| link.key == key || link.relation == relation.name())
+        {
+            return Err(Denial::InvalidCreationLink);
+        }
+        self.creation.links.push(Link {
+            relation: relation.name().into(),
+            from: relation.from().into(),
+            to: relation.to().into(),
+            key: key.into(),
+            direction: Direction::FromScope,
+            posture: Posture::Append,
+        });
+        Ok(self)
+    }
     pub fn initialize<A, F, V, W, Q, U>(
         mut self,
         field: ApplicationFieldRef<S, E, A, F, V, W, Q, U>,

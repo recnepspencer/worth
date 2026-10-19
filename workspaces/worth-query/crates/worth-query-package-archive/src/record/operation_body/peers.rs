@@ -47,13 +47,14 @@ pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
     root: Option<ApplicationOperationBodyCreation>,
+    version: u16,
 ) -> Result<Option<ApplicationOperationBodyCreation>, Denial> {
     let paths = decode_paths(input, budget)?;
     let peers = decode_sequence(input, budget, 32, |input, budget| {
         let peer = creation_fields::decode(input, budget, 38, true)?.expect("explicit peer site");
         let links = creation_links::decode(input, budget, 38)?;
         let paths = decode_paths(input, budget)?;
-        let children = children::decode(input, budget, 38)?;
+        let children = children::decode(input, budget, version)?;
         Ok(peer
             .with_untrusted_links(links)
             .with_untrusted_path_links(paths)

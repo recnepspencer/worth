@@ -13,6 +13,10 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
         "missing-field",
         "missing-link",
         "shared-owner",
+        "wrong-secondary-parent",
+        "duplicate-secondary-key",
+        "missing-secondary-link",
+        "shared-secondary-owner",
     ] {
         let mut parts = record.clone().into_parts();
         let mut changed = false;
@@ -22,7 +26,12 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
                     if operation == "Create"
                         && matches!(
                             defect,
-                            "cycle" | "duplicate-key" | "wrong-endpoint" | "missing-field"
+                            "cycle"
+                                | "duplicate-key"
+                                | "wrong-endpoint"
+                                | "missing-field"
+                                | "wrong-secondary-parent"
+                                | "duplicate-secondary-key"
                         ) =>
                 {
                     let root = body.creation().unwrap();
@@ -33,6 +42,16 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
                         "wrong-endpoint" => {
                             let mut links = children[0].creation.links().to_vec();
                             links[0].from = "Parent".into();
+                            children[0].creation =
+                                children[0].creation.clone().with_untrusted_links(links);
+                        }
+                        "wrong-secondary-parent" | "duplicate-secondary-key" => {
+                            let mut links = children[0].creation.links().to_vec();
+                            if defect == "wrong-secondary-parent" {
+                                links[1].from = "Parent".into();
+                            } else {
+                                links[1].key = links[0].key.clone();
+                            }
                             children[0].creation =
                                 children[0].creation.clone().with_untrusted_links(links);
                         }
@@ -68,8 +87,8 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
                 }
                 ApplicationSchemaMember::OperationProgram { operation, target }
                     if operation == "Create"
-                        && defect == "missing-link"
-                        && matches!(&*target,ApplicationOperationProgramTarget::Link{relation,..} if relation=="CellDetails") =>
+                        && matches!(defect, "missing-link" | "missing-secondary-link")
+                        && matches!(&*target,ApplicationOperationProgramTarget::Link{relation,..} if relation==if defect=="missing-link" {"CellDetails"}else{"RowCellArchive"}) =>
                 {
                     *target = ApplicationOperationProgramTarget::Create {
                         entity: "Audit".into(),
@@ -80,7 +99,9 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
                     relation,
                     integrity,
                     ..
-                } if relation == "RowCells" && defect == "shared-owner" => {
+                } if (relation == "RowCells" && defect == "shared-owner")
+                    || (relation == "RowCellArchive" && defect == "shared-secondary-owner") =>
+                {
                     *integrity =
                         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
                     changed = true;

@@ -151,7 +151,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=38) {
+    if !matches!(version, 1..=39) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -295,7 +295,7 @@ pub(super) fn decode(
         Vec::new()
     };
     let creation = if version >= 38 {
-        peers::decode(input, budget, creation)?
+        peers::decode(input, budget, creation, version)?
     } else {
         creation
     };

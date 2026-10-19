@@ -243,8 +243,10 @@ where
                 } else {
                     &custody.targets[parent_index - 1]
                 };
-                if let Err(cause) = writer.body_creation_link(parent, &nested, &site.links()[0]) {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                for link in site.links() {
+                    if let Err(cause) = writer.body_creation_link(parent, &nested, link) {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                    }
                 }
                 custody.targets.push(nested);
                 child_index += 1;

@@ -20,11 +20,18 @@ Through `worth_query_decl::facade::application_schema`:
 - `creation.with_child(relation, key, |child| ...)?`;
 - `child.initialize`, `initialize_input`, `initialize_optional_input`;
 - nested `child.with_child(...)` for another explicitly authored level.
+- `child.link_from_parent(relation, key)` for another association from that
+  child's same freshly created parent.
 
 Child kinds require `OperationCreates`; fields require `OperationWrites` and
 relations require `OperationLinks`. The relation must forbid cross-context links
 and have incoming `target_max = Some(1)`. This is relation-local exclusivity,
 not a claim that no other relation can ever refer to the child.
+
+An additional parent association has the same endpoint, context and incoming
+exclusivity rules. It adds a link, not another child or another parent slot.
+The original ownership link stays first and unchanged. Different parents,
+duplicate relations/keys and missing Link membership are refused.
 
 ## Core Mental Model
 
@@ -71,6 +78,21 @@ let body = CreateRecord::reference().body()
     })?
     .finish()?;
 ```
+
+For one initial review occurrence referenced by both current selection and
+retained history, add the second link inside the same child declaration:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+creation.with_child(CurrentReview::reference(), "initial-review", |review| {
+    review.initialize(ReviewOrdinal::reference(), first_ordinal)?
+        .link_from_parent(ReviewHistory::reference(), "review-history")
+})?;
+```
+
+Both relations reach the same retained created handle. A native invariant or
+publication failure lands neither association nor a partial child.
 
 Attach the completed body to the ordinary operation definition and install it
 through `setup.operation_body::<Binding>()?`. Creation output correspondence, if
@@ -122,6 +144,9 @@ Insufficient site capacity refuses native body installation. Program meaning
 includes exact parent correspondence even when the field footprint is unchanged.
 Canonical schema body v26 and portable body v36 identify this opt-in topology;
 older bodies keep their historical identity and wire paths.
+Children with multiple parent links select canonical body v29 and portable v39.
+Earlier portable profiles reject that shape, including inside an independent
+peer tree. Program meaning includes every association, not just ownership.
 
 ## Anti-Patterns
 

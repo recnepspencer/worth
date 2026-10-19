@@ -113,6 +113,8 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
             .application_mutation_binding::<IntroduceBinding>()
             .application_query(super::row_query::definition())
             .application_query(super::child_query::definition())
+            .application_query(super::child_query::archive_definition())
+            .application_query_binding::<super::child_query::ReadArchiveBinding>()
             .application_query_binding::<super::child_query::ReadBinding>()
             .application_query_binding::<super::row_query::ReadBinding>()
             .application_query(super::audit_query::definition())

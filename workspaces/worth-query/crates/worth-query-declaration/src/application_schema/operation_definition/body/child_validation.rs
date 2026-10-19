@@ -23,11 +23,22 @@ impl Child {
             && !c.reuses_current_if_unchanged()
             && !c.key().is_empty()
             && c.key().trim() == c.key()
-            && c.links().len() == 1
+            && !c.links().is_empty()
             && c.links()[0].direction == Direction::FromScope
             && c.links()[0].posture == Posture::Append
             && c.links()[0].key == c.key()
             && c.links()[0].created_entity() == c.entity()
+            && c.links().iter().enumerate().all(|(index, link)| {
+                link.direction == Direction::FromScope
+                    && link.posture == Posture::Append
+                    && link.scope_entity() == c.links()[0].scope_entity()
+                    && link.created_entity() == c.entity()
+                    && !link.key.is_empty()
+                    && link.key.trim() == link.key
+                    && !c.links()[..index]
+                        .iter()
+                        .any(|prior| prior.key == link.key || prior.relation == link.relation)
+            })
             && c.fields().iter().all(|f| {
                 matches!(
                     f,
@@ -37,6 +48,14 @@ impl Child {
     }
 }
 impl Body {
+    /// Multiple parent associations require their own canonical and portable profile.
+    pub fn has_multiple_child_links(&self) -> bool {
+        self.creation()
+            .into_iter()
+            .flat_map(|c| c.creation_roots())
+            .flat_map(|c| c.children())
+            .any(|child| child.creation.links().len() > 1)
+    }
     pub fn has_supported_child_creations(&self) -> bool {
         for root in self
             .creation()
@@ -80,12 +99,13 @@ pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Resu
         .flat_map(|c| c.creation_roots())
         .flat_map(|c| c.children())
     {
-        let link = &child.creation.links()[0];
-        if !members.iter().any(|m|matches!(m,Member::Relation{relation,from,to,integrity}
+        for link in child.creation.links() {
+            if !members.iter().any(|m|matches!(m,Member::Relation{relation,from,to,integrity}
             if relation==&link.relation && from==&link.from && to==&link.to
                 && integrity.cardinality.target_max==Some(1) && integrity.cross_context_policy()==ApplicationRelationCrossContextPolicy::Forbid))
             || !members.iter().any(|m|matches!(m,Member::OperationProgram{operation:op,target} if op==operation && target==&link.program_target())) {
             return Err(Denial::MissingOperationProgramDependency);
+        }
         }
     }
     Ok(())

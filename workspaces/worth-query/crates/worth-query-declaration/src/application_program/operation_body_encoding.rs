@@ -128,20 +128,41 @@ fn append_children(body: &ApplicationOperationBodyProgram, record: String) -> St
     };
     framed_record(
         "operation-body-child-sites-v1",
-        std::iter::once(("body", record)).chain(creation.children().iter().map(|child| {
-            (
-                "child",
-                framed_record(
-                    "child-creation-v1",
-                    [
-                        ("parent", child.parent_key.clone()),
-                        ("creation", base::creation_record(&child.creation)),
-                        ("link", child.creation.links()[0].canonical_record()),
-                    ],
-                ),
-            )
-        })),
+        std::iter::once(("body", record)).chain(
+            creation
+                .children()
+                .iter()
+                .map(|child| ("child", child_record(child))),
+        ),
     )
+}
+pub(super) fn child_record(
+    child: &crate::application_schema::ApplicationOperationBodyChildCreation,
+) -> String {
+    let header = [
+        ("parent", child.parent_key.clone()),
+        ("creation", base::creation_record(&child.creation)),
+    ];
+    if child.creation.links().len() == 1 {
+        framed_record(
+            "child-creation-v1",
+            header.into_iter().chain(std::iter::once((
+                "link",
+                child.creation.links()[0].canonical_record(),
+            ))),
+        )
+    } else {
+        framed_record(
+            "child-creation-v2",
+            header.into_iter().chain(
+                child
+                    .creation
+                    .links()
+                    .iter()
+                    .map(|link| ("link", link.canonical_record())),
+            ),
+        )
+    }
 }
 
 fn operation_body_lifecycle_record(body: &ApplicationOperationBodyProgram) -> String {

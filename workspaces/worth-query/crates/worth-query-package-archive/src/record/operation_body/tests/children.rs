@@ -88,3 +88,57 @@ fn child_sites_v36_preserve_preorder_parent_links_and_exact_nested_measure() {
         Kind::InvalidRecordShape
     );
 }
+#[test]
+fn multiple_child_parent_links_require_v39_in_root_and_peer_trees() {
+    let mut child = child("row", "Row", "Cell", "cell", "Current");
+    let mut links = child.creation.links().to_vec();
+    links.push(Link {
+        relation: "History".into(),
+        key: "history".into(),
+        ..links[0].clone()
+    });
+    child.creation = child.creation.with_untrusted_links(links);
+    let site = ApplicationOperationBodyCreation::from_untrusted("Row".into(), "row".into(), vec![])
+        .with_untrusted_children(vec![child]);
+    for peer in [false, true] {
+        let root = if peer {
+            ApplicationOperationBodyCreation::from_untrusted("Other".into(), "other".into(), vec![])
+                .with_untrusted_peers(vec![site.clone()])
+        } else {
+            site.clone()
+        };
+        let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            "Tenant".into(),
+            vec![],
+            Some(root),
+            vec![],
+        );
+        let mut output = BinaryOutput::with_capacity(4096);
+        write(&mut output, &body).unwrap();
+        let bytes = output.into_bytes();
+        assert_eq!(&bytes[..2], &39_u16.to_be_bytes());
+        let budget = |bytes: &[u8]| {
+            RecordDecodeAttempt::begin(
+                Default::default(),
+                bytes.len() as u64,
+                WorthQueryPackageArchiveLimits::DEFAULT,
+            )
+            .unwrap()
+        };
+        let mut input = BinaryInput::new(&bytes);
+        let mut attempt = budget(&bytes);
+        assert_eq!(decode(&mut input, &mut attempt).unwrap(), body);
+        assert!(input.is_finished());
+        let mut measure = crate::binary_encoding::BinaryEncodingMeasure::default();
+        write(&mut measure, &body).unwrap();
+        assert_eq!(measure.nested_entries(), attempt.finish().nested_entries());
+        let mut old = bytes;
+        old[..2].copy_from_slice(&38_u16.to_be_bytes());
+        assert_eq!(
+            decode(&mut BinaryInput::new(&old), &mut budget(&old))
+                .unwrap_err()
+                .kind(),
+            Kind::InvalidRecordShape
+        );
+    }
+}

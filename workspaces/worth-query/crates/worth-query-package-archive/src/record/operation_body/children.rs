@@ -21,6 +21,9 @@ pub(super) fn decode(
         let creation = super::creation_fields::decode(input, budget, version, true)?
             .expect("explicit child site");
         let links = super::creation_links::decode(input, budget, version)?;
+        if version < 39 && links.len() != 1 {
+            return Err(Denial::new(Kind::InvalidRecordShape));
+        }
         Ok(Child {
             parent_key,
             creation: creation.with_untrusted_links(links),

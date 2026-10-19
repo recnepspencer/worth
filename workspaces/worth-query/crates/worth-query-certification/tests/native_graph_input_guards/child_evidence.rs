@@ -83,6 +83,20 @@ fn one_candidate_creates_distinct_cells_nested_detail_and_computed_root_and_repl
     };
     let observed = cells(&app, "new-row");
     assert_eq!(observed.len(), 2);
+    let scope = request_scope();
+    let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
+    let mut archive = app
+        .request(&principal, &scope)
+        .query(child_query::ReadArchive("new-row".into()))
+        .execute()
+        .unwrap()
+        .rows()
+        .to_vec();
+    archive.sort_by_key(|cell| cell.kind);
+    assert_eq!(
+        archive, observed,
+        "both relations must reach the same actual child identities, not copies"
+    );
     assert_ne!(observed[0].entity, observed[1].entity);
     assert_eq!(
         (
