@@ -98,7 +98,7 @@ fn present_deadlines_run_in_both_bank_histories() {
         // Capture is admitted work; only the fresh stopped advance is billed below.
         observations();
         let request = world.world.runtime.request(&actor, &expired);
-        let outcome = outcome.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap());
+        let outcome = outcome.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()));
         assert!(
             matches!(
                 outcome,

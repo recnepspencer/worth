@@ -203,7 +203,9 @@ impl<'runtime, 'principal>
         let limits = WorthQueryApplicationLiveLimits::bounded(
             controls.buffer_capacity(),
             controls.maximum_materialized_record_count().get(),
-            Some(controls.maximum_work_per_delivery().get()),
+            controls
+                .maximum_work_per_delivery()
+                .map(std::num::NonZeroUsize::get),
         );
         let input = self.request.capability_request();
         let query = self

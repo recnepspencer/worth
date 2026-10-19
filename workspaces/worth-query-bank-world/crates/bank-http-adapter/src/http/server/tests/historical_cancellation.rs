@@ -42,7 +42,7 @@ async fn historical_account_activity_cancellation_preserves_http_class_and_remed
         .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
     let request = application.runtime.request(&principal, &scope);
     let WorthQuerySourceOnlyAdvance::Completed(committed) =
-        committed.advance(&request, NonZeroUsize::new(20_000).unwrap())
+        committed.advance(&request, Some(NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("fresh deposit")
     };

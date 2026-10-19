@@ -67,7 +67,7 @@ fn canceled_foreign_branch_is_refused_and_the_next_good_request_delivers() {
     let advance_request = runtime.request(&teller, &advance_scope);
     let WorthQuerySourceOnlyAdvance::Completed(committed) = operation.advance(
         &advance_request,
-        std::num::NonZeroUsize::new(8_192).unwrap(),
+        Some(std::num::NonZeroUsize::new(8_192).unwrap()),
     ) else {
         panic!("the original deposit should complete");
     };

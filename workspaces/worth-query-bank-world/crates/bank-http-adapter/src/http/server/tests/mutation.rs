@@ -115,7 +115,7 @@ async fn owning_deposit_partial_lost_reply_fresh_recovery_history_and_close() {
     let request = application.runtime.request(&principal, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         completed,
-    ) = completed.advance(&request, std::num::NonZeroUsize::new(128).unwrap())
+    ) = completed.advance(&request, Some(std::num::NonZeroUsize::new(128).unwrap()))
     else {
         panic!("later publication")
     };

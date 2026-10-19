@@ -25,9 +25,9 @@ pub(crate) fn posting_integrity_invariant(
     ApplicationInvariantDefinition::new(
         BankPostingIntegrity::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(
+        RelationalInvariantWorkBudget::new(Some(
             NonZeroU64::new(16_384).expect("bank posting invariant budget is non-zero"),
-        ),
+        )),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::RelationIntegrity],

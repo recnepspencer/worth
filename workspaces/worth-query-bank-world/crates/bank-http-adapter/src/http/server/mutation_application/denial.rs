@@ -42,6 +42,7 @@ pub(in crate::http::server) fn request_mutation_denial(
         Denial::Identity
         | Denial::WorkflowControl
         | Denial::InputNotAdmitted
+        | Denial::SignedCreation
         | Denial::HandlerNotInstalled
         | Denial::IdempotencyIntentUnverifiable
         | Denial::IdempotencyForeignAdmission => BankHttpDenial::new(

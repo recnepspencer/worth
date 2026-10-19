@@ -43,7 +43,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
         ))
         .retain_operation()
         .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
-    let Advance::Completed(performed) = performed.advance(&deposit_request, history) else {
+    let Advance::Completed(performed) = performed.advance(&deposit_request, Some(history)) else {
         panic!("fresh retained deposit")
     };
     let Completion::Fresh {
@@ -102,7 +102,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
         ))
         .retain_operation()
         .unwrap_or_else(|cause| panic!("later construction: {cause:?}"));
-    let Advance::Completed(later) = later.advance(&deposit_request, history) else {
+    let Advance::Completed(later) = later.advance(&deposit_request, Some(history)) else {
         panic!("later fresh deposit")
     };
     assert!(later.close(&deposit_request).is_ok());
@@ -144,10 +144,10 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
         ))
         .retain_operation()
         .unwrap_or_else(|cause| panic!("replay construction: {cause:?}"));
-    let Advance::Progress(replay) = replay.advance(&deposit_request, history) else {
+    let Advance::Progress(replay) = replay.advance(&deposit_request, Some(history)) else {
         panic!("native retained replay pending")
     };
-    let Advance::Completed(replay) = replay.advance(&deposit_request, history) else {
+    let Advance::Completed(replay) = replay.advance(&deposit_request, Some(history)) else {
         panic!("bounded original native replay delivery")
     };
     let Completion::Recovered {

@@ -81,7 +81,7 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
             .with_application_advancement(request, |phase| {
                 let ordinary = application.request(self.principal.external(), request);
                 let selected = ordinary
-                    .at_commit(&phase, commit, maximum_work)
+                    .at_commit(&phase, commit, Some(maximum_work))
                     .map_err(BankApplicationQueryDenial::from_history_selection)?;
                 selected
                     .query(account_activity(self.account))
@@ -131,7 +131,10 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
             .application_runtime()
             .request(self.principal.external(), controls.request())
             .query(account_activity(self.account))
-            .page(controls.maximum_result_count(), controls.maximum_work())
+            .page(
+                controls.maximum_result_count(),
+                Some(controls.maximum_work()),
+            )
             .map_err(BankApplicationQueryDenial::from_request_query)?;
         Ok(output::publish_page(page))
     }
@@ -162,7 +165,7 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
         let limits = WorthQueryApplicationLiveLimits::bounded(
             controls.buffer_capacity(),
             controls.maximum_materialized_record_count().get(),
-            Some(controls.maximum_work_per_delivery().get()),
+            controls.maximum_work_per_delivery().map(NonZeroUsize::get),
         );
         let request = self
             .runtime

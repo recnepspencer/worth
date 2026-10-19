@@ -135,7 +135,7 @@ pub(crate) fn commit_deposit(
     let request = fixture.world.runtime.request(teller, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         completed,
-    ) = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap())
+    ) = outcome.advance(&request, Some(NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("native retained deposit completion")
     };

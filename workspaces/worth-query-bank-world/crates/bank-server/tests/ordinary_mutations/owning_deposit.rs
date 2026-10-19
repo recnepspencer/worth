@@ -34,7 +34,7 @@ fn owning_retained_deposit_recovers_once_with_fresh_authority_and_cleanup() {
             .unwrap_or_else(|denial| panic!("declared deposit: {denial:?}"));
         fixture.world.runtime.fail_next_durable_append_for_test();
         let request = fixture.world.runtime.request(&teller, &scope);
-        let operation = match operation.advance(&request, history) {
+        let operation = match operation.advance(&request, Some(history)) {
             Advance::Progress(operation) => operation,
             _ => panic!("actual append partial retains Bank operation"),
         };
@@ -62,7 +62,7 @@ fn owning_retained_deposit_recovers_once_with_fresh_authority_and_cleanup() {
         let stranger = fixture.authenticate(STRANGER);
         let refused_scope = request_scope();
         let refused = fixture.world.runtime.request(&stranger, &refused_scope);
-        let operation = match operation.advance(&refused, history) {
+        let operation = match operation.advance(&refused, Some(history)) {
             Advance::Refused {
                 operation,
                 denial:
@@ -91,15 +91,15 @@ fn owning_retained_deposit_recovers_once_with_fresh_authority_and_cleanup() {
         let teller = fixture.authenticate(TELLER);
         let scope = request_scope();
         let request = fixture.world.runtime.request(&teller, &scope);
-        let operation = match operation.advance(&request, history) {
+        let operation = match operation.advance(&request, Some(history)) {
             Advance::Progress(operation) => operation,
             _ => panic!("fresh authorized native recovery"),
         };
-        let operation = match operation.advance(&request, history) {
+        let operation = match operation.advance(&request, Some(history)) {
             Advance::Progress(operation) => operation,
             _ => panic!("actual keyed evidence awaits retained commit delivery"),
         };
-        let completed = match operation.advance(&request, history) {
+        let completed = match operation.advance(&request, Some(history)) {
             Advance::Completed(completed) => completed,
             _ => panic!("explicit history bound delivers original World commit"),
         };
@@ -153,7 +153,7 @@ fn owning_retained_deposit_recovers_once_with_fresh_authority_and_cleanup() {
             .retain_operation()
             .unwrap_or_else(|cause| panic!("later deposit construction: {cause:?}"));
         let Advance::Completed(later) =
-            later.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+            later.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
         else {
             panic!("later deposit")
         };

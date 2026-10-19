@@ -142,7 +142,7 @@ fn collect_pages(
                 next,
                 WorthQueryApplicationQueryResumeControls::new(
                     std::num::NonZeroUsize::new(1).unwrap(),
-                    std::num::NonZeroUsize::new(20_000).unwrap(),
+                    Some(std::num::NonZeroUsize::new(20_000).unwrap()),
                     &super::super::fixture::request_scope(),
                 ),
             )
