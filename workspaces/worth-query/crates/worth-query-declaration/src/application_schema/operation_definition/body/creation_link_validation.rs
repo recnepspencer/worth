@@ -1,8 +1,7 @@
 //! Fresh descriptions must retain exact relation endpoints and Link membership.
 use crate::application_schema::{
     ApplicationOperationBodyCreation as Creation, ApplicationOperationBodyCreationLink as Link,
-    ApplicationOperationBodyCreationLinkDirection as Direction,
-    ApplicationOperationBodyCreationLinkPosture as Posture, ApplicationOperationBodyProgram,
+    ApplicationOperationBodyCreationLinkDirection as Direction, ApplicationOperationBodyProgram,
     ApplicationSchemaDeclarationDenial as Denial, ApplicationSchemaMember,
 };
 pub(super) fn validate_links(
@@ -13,6 +12,9 @@ pub(super) fn validate_links(
     let Some(creation) = body.creation() else {
         return Ok(());
     };
+    if !body.has_supported_retiring_replacement() {
+        return Err(Denial::MissingOperationProgramDependency);
+    }
     let mut keys = std::collections::BTreeSet::new();
     for link in creation.links() {
         if link.scope_entity() != body.scope_entity().unwrap_or_default()
@@ -25,7 +27,7 @@ pub(super) fn validate_links(
         if !keys.insert((&link.relation, &link.key)) {
             return Err(Denial::DuplicateMember);
         }
-        if link.posture == Posture::ReplaceSingle
+        if link.posture.replaces_selection()
             && !replacement_is_declared(operation, creation, link, members)
         {
             return Err(Denial::MissingOperationProgramDependency);
@@ -50,6 +52,8 @@ fn replacement_is_declared(
         return false;
     };
     link.direction == Direction::FromScope
+        && (!link.posture.retires_predecessor() || (members.iter().any(|member| matches!(member,ApplicationSchemaMember::Relation {relation,integrity,..} if relation==&link.relation && integrity.cardinality.target_max==Some(1)))
+            && members.iter().any(|member|matches!(member,ApplicationSchemaMember::OperationProgram {operation:declared,target} if declared==operation && Some(target)==link.retirement_target().as_ref()))))
         && creation.links().iter().filter(|other| other.relation == link.relation).count() == 1
         && members.iter().any(|member| matches!(member, ApplicationSchemaMember::Relation { relation, integrity, .. }
             if relation == &link.relation && integrity.cardinality.source_max == Some(1)))

@@ -70,7 +70,7 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
             ),
         )
     };
-    if body.path_value_assignments().is_empty() {
+    let record = if body.path_value_assignments().is_empty() {
         record
     } else {
         framed_record(
@@ -81,6 +81,14 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
                     .map(|step| ("path-value", step.canonical_record())),
             ),
         )
+    };
+    if body
+        .creation()
+        .is_some_and(|creation| creation.retires_predecessor())
+    {
+        framed_record("operation-body-retiring-replacement-v1", [("body", record)])
+    } else {
+        record
     }
 }
 

@@ -207,6 +207,9 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             .with_untrusted_path_input_expectations(self.path_input_expectations)
             .with_untrusted_path_value_assignments(self.path_value_assignments);
         program.validate_path_bindings()?;
+        if !program.has_supported_retiring_replacement() {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidCreationLink);
+        }
         let mut paths = BTreeSet::new();
         if program.retirements().iter().any(|rule| {
             !rule.fits_body(&program)

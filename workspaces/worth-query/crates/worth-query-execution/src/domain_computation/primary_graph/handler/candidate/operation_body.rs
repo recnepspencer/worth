@@ -40,6 +40,18 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .expect("installed replacement posture");
         self.candidate.unlink_at_target(&target, scope, predecessor)
     }
+    pub(in crate::domain_computation::primary_graph) fn body_creation_retire_predecessor(
+        &mut self,
+        predecessor: &WorthQueryApplicationEffectEntity<Schema, ()>,
+        link: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLink,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.delete_at_target(
+            &link
+                .retirement_target()
+                .expect("installed retiring replacement"),
+            predecessor,
+        )
+    }
     pub(in crate::domain_computation::primary_graph) fn body_signing_slot(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, ()>,

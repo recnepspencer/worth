@@ -34,6 +34,8 @@ mod related_source;
 mod requirements;
 #[path = "tests/retirements.rs"]
 mod retirements;
+#[path = "tests/retiring_replacement.rs"]
+mod retiring_replacement;
 #[path = "tests/signed_evidence.rs"]
 mod signed_evidence;
 #[path = "tests/signing.rs"]

@@ -15,6 +15,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         builder: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         let builder = super::path_value_targets::declare(builder);
+        let builder = super::retiring_actions::declare(super::selection_schema::declare(builder));
         builder
             .entity(Mapping::reference())
             .entity(Principal::reference())
@@ -127,6 +128,10 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
                 RowIdentity::reference(),
             )
             .application_mutation_binding::<super::path_value_binding::BumpBinding>()
+            .application_query(super::snapshot_query::definition())
+            .application_query_binding::<super::snapshot_query::ReadBinding>()
+            .application_query(super::current_snapshot_query::definition())
+            .application_query_binding::<super::current_snapshot_query::ReadBinding>()
     }
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
@@ -140,7 +145,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.operation_body::<IntroduceBinding>()?;
         setup.operation_body::<super::path_value_binding::BumpBinding>()?;
         setup.operation_body::<super::path_value_targets::CopyBinding>()?;
-        setup.operation_body::<super::path_value_targets::AliasBinding>()
+        setup.operation_body::<super::path_value_targets::AliasBinding>()?;
+        setup.operation_body::<super::retiring_actions::KeepBinding>()?;
+        setup.operation_body::<super::retiring_actions::RetireBinding>()
     }
 }
 pub struct Feature;
@@ -168,6 +175,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .native_action::<super::path_value_targets::CopyBinding>()
             .finish_action()
             .native_action::<super::path_value_targets::AliasBinding>()
+            .finish_action()
+            .native_action::<super::retiring_actions::KeepBinding>()
+            .finish_action()
+            .native_action::<super::retiring_actions::RetireBinding>()
             .finish_action()
             .finish()]
     }

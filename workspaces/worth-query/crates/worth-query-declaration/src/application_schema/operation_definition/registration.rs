@@ -119,7 +119,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .links()
                     .iter()
                     .flat_map(|link| {
-                        std::iter::once(link.program_target()).chain(link.replacement_target())
+                        std::iter::once(link.program_target())
+                            .chain(link.replacement_target())
+                            .chain(link.retirement_target())
                     })
                     .collect::<std::collections::BTreeSet<_>>()
                 {

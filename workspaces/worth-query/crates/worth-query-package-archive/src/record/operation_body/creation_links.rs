@@ -26,6 +26,10 @@ pub(super) fn write(
             output.u16(match link.posture {
                 Posture::Append => 0,
                 Posture::ReplaceSingle => 1,
+                Posture::ReplaceAndRetireSingle if version >= 34 => 2,
+                Posture::ReplaceAndRetireSingle => {
+                    return Err(Denial::new(Kind::UnsupportedRecordVariant))
+                }
             })?;
         }
         Ok(())
@@ -50,6 +54,7 @@ pub(super) fn decode(
             match input.u16()? {
                 0 => Posture::Append,
                 1 => Posture::ReplaceSingle,
+                2 if version >= 34 => Posture::ReplaceAndRetireSingle,
                 _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
             }
         } else {

@@ -15,7 +15,8 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if !body.path_value_assignments().is_empty() { "operation-body-v23" }
+        if body.creation().is_some_and(|creation| creation.retires_predecessor()) { "operation-body-v24" }
+        else if !body.path_value_assignments().is_empty() { "operation-body-v23" }
         else if !body.path_input_expectations().is_empty() { "operation-body-v22" }
         else if !body.retirements().is_empty() { "operation-body-v21" }
         else if body.scope_fields().iter().any(|step| matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. })) { "operation-body-v20" }

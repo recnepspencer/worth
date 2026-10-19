@@ -44,13 +44,27 @@ fn require_candidate_capacity(
             sum.checked_add(rule.maximum_owners.get())
         })
         .ok_or_else(denied)?;
-    let required_unlinks = body.creation().map_or(0, |creation| creation.links().iter().filter(|link|
-        link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle).count());
+    let required_unlinks = body.creation().map_or(0, |creation| {
+        creation
+            .links()
+            .iter()
+            .filter(|link| link.posture.replaces_selection())
+            .count()
+    });
+    let required_deletes = retirement_capacity
+        .checked_add(body.creation().map_or(0, |creation| {
+            creation
+                .links()
+                .iter()
+                .filter(|link| link.posture.retires_predecessor())
+                .count()
+        }))
+        .ok_or_else(denied)?;
     let required_unlinks = required_unlinks
         .checked_add(retirement_capacity)
         .ok_or_else(denied)?;
     if cardinality.maximum_emits() < usize::from(body.external_emission().is_some())
-        || cardinality.maximum_deletes() < retirement_capacity
+        || cardinality.maximum_deletes() < required_deletes
         || cardinality.maximum_unlinks() < required_unlinks
         || cardinality.maximum_writes() < required_writes
         || cardinality.maximum_creates() < usize::from(body.creation().is_some())
@@ -79,6 +93,9 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             return Err(denied());
         }
         let body = installed.operation().body().ok_or_else(denied)?;
+        if !body.has_supported_retiring_replacement() {
+            return Err(denied());
+        }
         let retirement_inputs = body
             .retirements()
             .iter()

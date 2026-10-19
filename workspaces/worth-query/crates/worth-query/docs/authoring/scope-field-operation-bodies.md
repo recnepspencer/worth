@@ -86,6 +86,8 @@ Declare through `worth_query_decl::facade::application_schema`:
   `creation.link_to_scope(relation, "link-slot")` for links to the new row;
 - `creation.replace_from_scope(relation, "link-slot")` to atomically replace an
   at-most-one outgoing selection with that exact new row;
+- `creation.replace_and_retire_from_scope(relation, "link-slot")` for explicit
+  [disposable predecessor retirement](./retiring-selection-replacement.md);
 - `body.preserve_scope_output::<Binding, Role>()`,
   `body.preserve_related_output::<Binding, Role>(relation)` and
   `creation.create_output::<Binding, Role>()` for fixed typed output correspondence;

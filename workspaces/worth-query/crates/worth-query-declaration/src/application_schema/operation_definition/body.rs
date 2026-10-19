@@ -18,6 +18,7 @@ mod created_field;
 mod creation;
 mod creation_link;
 mod creation_link_validation;
+mod creation_replacement;
 mod enrollment;
 pub use enrollment::ApplicationOperationBodyEnrollment;
 mod output;

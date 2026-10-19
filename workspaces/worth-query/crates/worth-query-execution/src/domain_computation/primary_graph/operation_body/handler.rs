@@ -343,16 +343,30 @@ where
                     }
             }
             for link in creation.links() {
-                if link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle
-                    && let Some(predecessor) = decision.selections.selected(&link.relation, &link.from, &link.to) {
-                        let predecessor = match writer.projected_entity(&predecessor.target) {
-                            Ok(target) => target,
-                            Err(cause) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
-                        };
-                        if let Err(cause) = writer.body_creation_unlink(&target, &predecessor, link) {
-                            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                if link.posture.replaces_selection()
+                    && let Some(predecessor) =
+                        decision
+                            .selections
+                            .selected(&link.relation, &link.from, &link.to)
+                {
+                    let predecessor = match writer.projected_entity(&predecessor.target) {
+                        Ok(target) => target,
+                        Err(cause) => {
+                            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(
+                                cause,
+                            ))
                         }
+                    };
+                    if let Err(cause) = writer.body_creation_unlink(&target, &predecessor, link) {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                     }
+                    if link.posture.retires_predecessor()
+                        && let Err(cause) =
+                            writer.body_creation_retire_predecessor(&predecessor, link)
+                    {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                    }
+                }
                 if let Err(cause) = writer.body_creation_link(&target, &created, link) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }

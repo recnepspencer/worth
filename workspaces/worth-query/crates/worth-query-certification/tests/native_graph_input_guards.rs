@@ -5,6 +5,8 @@ mod actions;
 mod admission;
 #[path = "native_graph_input_guards/audit_query.rs"]
 mod audit_query;
+#[path = "native_graph_input_guards/current_snapshot_query.rs"]
+mod current_snapshot_query;
 #[path = "native_graph_input_guards/evidence.rs"]
 mod evidence;
 #[path = "application_graph/document_retention_model/operator_identity.rs"]
@@ -26,12 +28,22 @@ mod path_value_evidence;
 mod path_value_targets;
 #[path = "native_graph_input_guards/program.rs"]
 mod program;
+#[path = "native_graph_input_guards/retiring_actions.rs"]
+mod retiring_actions;
+#[path = "native_graph_input_guards/retiring_admission.rs"]
+mod retiring_admission;
+#[path = "native_graph_input_guards/retiring_evidence.rs"]
+mod retiring_evidence;
 #[path = "native_graph_input_guards/revision_query.rs"]
 mod revision_query;
 #[path = "native_graph_input_guards/row_query.rs"]
 mod row_query;
 #[path = "native_graph_input_guards/schema.rs"]
 mod schema;
+#[path = "native_graph_input_guards/selection_schema.rs"]
+mod selection_schema;
+#[path = "native_graph_input_guards/snapshot_query.rs"]
+mod snapshot_query;
 #[path = "native_graph_input_guards/world.rs"]
 mod world;
 #[path = "application_graph/document_retention_model/host/world_resources.rs"]

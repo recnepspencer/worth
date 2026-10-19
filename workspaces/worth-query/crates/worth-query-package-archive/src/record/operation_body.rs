@@ -47,7 +47,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if !body.path_value_assignments().is_empty() { 33 }
+    let version = if body.creation().is_some_and(|creation| creation.retires_predecessor()) { 34 }
+    else if !body.path_value_assignments().is_empty() { 33 }
     else if !body.path_input_expectations().is_empty() { 32 }
     else if !body.retirements().is_empty() { 31 }
     else if body.scope_fields().iter().any(|step| matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. })) { 30 }
@@ -227,7 +228,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=33) {
+    if !matches!(version, 1..=34) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
