@@ -21,12 +21,13 @@ Through `worth_query_decl::facade::application_schema`:
 - `ApplicationOperationBodyValue::<Schema, Operation, Binding>::admit(name, operands, draft)`;
 - `ApplicationOperationBodyExpression::PROFILE` for the shared expression profile;
 - `body.assign_value(field, &value)?`;
+- `body.assign_value_at_path(path, field, &value)?` for an exact related destination;
 - `creation.initialize_value(field, &value)?`;
 - `body.emit_external_evaluation::<Binding, _, _, _, _, _>(effect, query, condition)?`;
 - `ApplicationOperationBodyEvaluationSnapshot` for the payload binding's Value.
 
 Use `operation.requirement_operands()` for tracked sources. A computed value
-currently has a unitless UInt64 result and at least one scope or created-field
+currently has a unitless UInt64 result and at least one scope, exact path or created-field
 sink. This is not a general feature-output reference or a host callback API.
 
 ## Core Mental Model
@@ -113,6 +114,10 @@ journey uses an identity-only command and public query DTO, then observes revisi
 publication, not external delivery.
 
 ## How It Relates To Other Features
+
+[Computed graph-target writes](./computed-path-writes.md) use the same prepared
+value at an existing parent or related row. Their native target selection adds
+publication dependencies; it does not grant additional permission.
 
 Boolean requirements, computation and effect conditions share source vocabulary
 and Foundation semantics, not independent evaluators. Requirements deny unmet

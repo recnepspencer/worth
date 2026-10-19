@@ -59,6 +59,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .iter()
                     .flat_map(|guard| guard.source.decision_reads()),
             );
+            reads.extend(
+                body.path_value_assignments()
+                    .iter()
+                    .flat_map(|step| step.target.decision_reads()),
+            );
             if let Some(creation) = body.creation() {
                 reads.extend(
                     creation
@@ -97,6 +102,12 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 .scope_fields()
                 .iter()
                 .filter_map(|step| step.write_target())
+                .chain(
+                    body.path_value_assignments()
+                        .iter()
+                        .map(|step| step.write_target()),
+                )
+                .collect::<std::collections::BTreeSet<_>>()
             {
                 self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
                     operation: operation.clone(),

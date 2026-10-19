@@ -46,9 +46,14 @@ pub fn install() -> App {
                 ("parent-b", Some("company-b")),
                 ("parent-c", Some("company-a")),
                 ("parent-absent", None),
+                ("parent-overflow", None),
             ] {
                 let entity = Entity::new(Parent::reference(), Key::new(id).unwrap())
-                    .field(ParentIdentity::reference(), id.to_string());
+                    .field(ParentIdentity::reference(), id.to_string())
+                    .field(
+                        ParentRevision::reference(),
+                        if id == "parent-overflow" { u64::MAX } else { 1 },
+                    );
                 graph.bind_entity(if let Some(company) = company {
                     entity.field(Company::reference(), company.to_string())
                 } else {
@@ -61,6 +66,8 @@ pub fn install() -> App {
                 "row-absent",
                 "row-missing",
                 "row-ambiguous",
+                "row-sibling",
+                "row-overflow",
             ] {
                 graph.bind_entity(
                     Entity::new(Row::reference(), Key::new(row).unwrap())
@@ -74,6 +81,8 @@ pub fn install() -> App {
                 ("parent-absent", "row-absent"),
                 ("parent-a", "row-ambiguous"),
                 ("parent-c", "row-ambiguous"),
+                ("parent-a", "row-sibling"),
+                ("parent-overflow", "row-overflow"),
             ] {
                 graph.bind_relation(Relation::new(
                     ParentRows::reference(),

@@ -6,6 +6,12 @@ use worth_query_declaration::facade::application_schema::{
 impl WorthQueryPortableApplicationContractReconstructionWork {
     pub(super) fn observe_body_observations(&mut self, body: &ApplicationOperationBodyProgram) {
         let work = self;
+        for step in body.path_value_assignments() {
+            work.observe_text(&step.target.canonical_record());
+            work.observe_fixed(u64::try_from(step.target.path.steps().len()).unwrap_or(u64::MAX));
+            work.observe_text(step.binding.as_str());
+            work.observe_text(&step.value);
+        }
         for requirement in body.observation_requirements() {
             work.observe_text(requirement.identity());
             work.observe_text(requirement.target_name());

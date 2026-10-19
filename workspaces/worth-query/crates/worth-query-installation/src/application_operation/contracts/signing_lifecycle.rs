@@ -1,4 +1,6 @@
 //! Native consequence closure derived from signed-subject declarations, not per-writer registration.
+#[cfg(test)]
+mod tests;
 use crate::{
     application_schema::WorthQueryInstalledApplicationSchemaContractCatalog as Catalog,
     domain_operation::{
@@ -190,6 +192,10 @@ impl SigningLifecycleClosure {
                             body.scope_fields()
                                 .iter()
                                 .any(|step| step.write_target().is_some() && step.field() == field)
+                                || body
+                                    .path_value_assignments()
+                                    .iter()
+                                    .any(|step| &step.target.field == field)
                         }) && scope.entity() == field.entity()
                             && scope.contract().key().as_str() == field.aspect()
                             && scope

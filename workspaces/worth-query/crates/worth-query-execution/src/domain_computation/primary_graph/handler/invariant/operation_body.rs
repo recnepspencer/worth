@@ -1,6 +1,7 @@
 //! Execution-only body read; no raw-field API enters the application facade.
 mod emission;
 mod path_input;
+mod path_value;
 mod retirement;
 mod selection;
 mod source;

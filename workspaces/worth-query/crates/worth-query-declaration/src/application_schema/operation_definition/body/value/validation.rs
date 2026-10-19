@@ -38,6 +38,12 @@ pub(in crate::application_schema::operation_definition::body) fn validate_values
                         _ => None,
                     }),
             )
+            .chain(
+                body.path_value_assignments()
+                    .iter()
+                    .filter(|step| step.value == value.identity())
+                    .map(|step| (&step.target.field, &step.binding)),
+            )
             .collect::<Vec<_>>();
         if sinks.is_empty() || sinks.iter().any(|(field,binding)| *binding != value.binding() || !members.iter().any(|member| matches!(member, Member::Field { entity, aspect, field: name, value_type, scalar_family: worth_foundational::facade::ScalarAspectType::UInt64, unit: None, .. } if entity == field.entity() && aspect == field.aspect() && name == field.field() && value_type == binding.as_str()))) {
             return Err(Denial::MissingOperationProgramDependency);
@@ -58,7 +64,8 @@ pub(in crate::application_schema::operation_definition::body) fn validate_values
                     Created::Computed { value, .. } => Some(value),
                     _ => None,
                 }),
-        );
+        )
+        .chain(body.path_value_assignments().iter().map(|step| &step.value));
     if references
         .into_iter()
         .any(|name| !names.contains(name.as_str()))

@@ -20,6 +20,7 @@ pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
     pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
     pub(super) path_input_expectations: Vec<super::ApplicationOperationBodyPathInputExpectation>,
+    pub(super) path_value_assignments: Vec<super::ApplicationOperationBodyPathValueAssignment>,
     requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
@@ -39,6 +40,7 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
             values: Vec::new(),
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
+            path_value_assignments: Vec::new(),
             requirements: Vec::new(),
             outputs: Vec::new(),
             succession: None,
@@ -182,6 +184,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
         }
         if writes.is_empty()
+            && self.path_value_assignments.is_empty()
             && creation.is_none()
             && self.outputs.is_empty()
             && self.external_emission.is_none()
@@ -200,14 +203,10 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         let program = program
             .with_untrusted_values(self.values)
             .with_untrusted_retirements(self.retirements);
-        let program = program.with_untrusted_path_input_expectations(self.path_input_expectations);
-        if program
-            .path_input_expectations()
-            .iter()
-            .any(|guard| !guard.fits_body(&program))
-        {
-            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
-        }
+        let program = program
+            .with_untrusted_path_input_expectations(self.path_input_expectations)
+            .with_untrusted_path_value_assignments(self.path_value_assignments);
+        program.validate_path_bindings()?;
         let mut paths = BTreeSet::new();
         if program.retirements().iter().any(|rule| {
             !rule.fits_body(&program)

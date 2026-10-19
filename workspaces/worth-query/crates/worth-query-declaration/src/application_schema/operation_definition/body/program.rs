@@ -18,6 +18,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
     pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
     pub(super) path_input_expectations: Vec<super::ApplicationOperationBodyPathInputExpectation>,
+    pub(super) path_value_assignments: Vec<super::ApplicationOperationBodyPathValueAssignment>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -129,6 +130,7 @@ impl ApplicationOperationBodyProgram {
             values: Vec::new(),
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
+            path_value_assignments: Vec::new(),
         }
     }
     pub fn from_untrusted_with_creation(
@@ -146,6 +148,7 @@ impl ApplicationOperationBodyProgram {
             values: Vec::new(),
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
+            path_value_assignments: Vec::new(),
         }
     }
     pub fn from_untrusted_with_requirements(
@@ -164,6 +167,7 @@ impl ApplicationOperationBodyProgram {
             values: Vec::new(),
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
+            path_value_assignments: Vec::new(),
         }
     }
     /// Authority-free scope-bound description. Fresh readmission checks the scope
@@ -188,10 +192,22 @@ impl ApplicationOperationBodyProgram {
             values: Vec::new(),
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
+            path_value_assignments: Vec::new(),
         }
     }
     pub fn explicit_scope_entity(&self) -> Option<&str> {
         self.explicit_scope.as_deref()
+    }
+    pub fn path_value_assignments(&self) -> &[super::ApplicationOperationBodyPathValueAssignment] {
+        &self.path_value_assignments
+    }
+    /// Authority-free carriage requiring fresh declaration admission and installation.
+    pub fn with_untrusted_path_value_assignments(
+        mut self,
+        assignments: Vec<super::ApplicationOperationBodyPathValueAssignment>,
+    ) -> Self {
+        self.path_value_assignments = assignments;
+        self
     }
     pub fn path_input_expectations(
         &self,
@@ -241,6 +257,7 @@ impl ApplicationOperationBodyProgram {
     /// Creation changes no existing scope field; guards and requirements may read it.
     pub fn is_creation_only(&self) -> bool {
         self.creation.is_some()
+            && self.path_value_assignments.is_empty()
             && self
                 .scope_fields
                 .iter()

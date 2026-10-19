@@ -29,6 +29,8 @@ fn require_candidate_capacity(
         .iter()
         .filter(|step| step.write_target().is_some())
         .count()
+        .checked_add(body.path_value_assignments().len())
+        .ok_or_else(denied)?
         .checked_add(
             body.creation()
                 .map_or(0, |creation| creation.fields().len()),
@@ -89,6 +91,16 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .collect::<Result<Vec<_>, _>>()?;
         let external_emission = super::emission::install::<Schema, Binding>(schema, body)?;
         if body.scope_entity() != Some(Binding::scope_field().entity()) {
+            return Err(denied());
+        }
+        if body.path_value_assignments().iter().any(|step| {
+            !step.target.has_supported_shape()
+                || Some(step.target.path.start_entity()) != body.scope_entity()
+        }) || (!body.path_value_assignments().is_empty()
+            && body
+                .creation()
+                .is_some_and(|creation| creation.signing().is_some()))
+        {
             return Err(denied());
         }
         require_candidate_capacity(body, &Binding::CANDIDATES, Binding::IDENTITY)?;

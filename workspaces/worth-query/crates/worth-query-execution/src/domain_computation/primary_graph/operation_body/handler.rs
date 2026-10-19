@@ -126,6 +126,10 @@ where
             Ok(values) => values,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
+        let path_writes = match reader.body_path_writes(&self.body) {
+            Ok(targets) => targets,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         let emission = match self
             .external_emission
             .as_ref()
@@ -146,6 +150,7 @@ where
                 emission,
                 values,
                 retirements,
+                path_writes,
             }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
@@ -243,6 +248,14 @@ where
             HandlerResult::ExecutionDenied(cause) => return HandlerResult::ExecutionDenied(cause),
             HandlerResult::Cancelled => return HandlerResult::Cancelled,
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
+        }
+        if let Err(cause) = super::path_value::apply(
+            decision.path_writes,
+            &self.body,
+            decision.values.as_ref(),
+            writer,
+        ) {
+            return HandlerResult::ExecutionDenied(cause);
         }
         for output in &self.outputs {
             if matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Scope)

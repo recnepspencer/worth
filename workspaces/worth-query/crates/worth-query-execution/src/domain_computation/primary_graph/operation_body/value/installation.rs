@@ -40,6 +40,12 @@ pub(in crate::domain_computation::primary_graph::operation_body) fn install<
                             }
                             _ => None,
                         }),
+                )
+                .chain(
+                    body.path_value_assignments()
+                        .iter()
+                        .filter(|step| step.value == program.identity())
+                        .map(|step| &step.target.field),
                 );
             let bindings = fields
                 .map(|field| {

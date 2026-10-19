@@ -61,6 +61,8 @@ Declare through `worth_query_decl::facade::application_schema`:
   captured flat scalar, without declaring a write;
 - `body.expect_input_from_path(path, field, "member")` for a related field,
   preserving the path-start scope; see [path-input guards](./path-input-guards.md);
+- `body.assign_value_at_path(path, field, &value)` for a computed write to an exact
+  related endpoint; see [computed graph-target writes](./computed-path-writes.md);
 - `body.in_scope(Tenant::reference())` when creation does not touch an existing field;
 - `body.set_optional_input(optional_field, "member")` or
   `body.clear_optional(optional_field)` for distinct optional-value intentions;
@@ -944,6 +946,8 @@ selection replacement, plus fixed
 Preserve-scope, Preserve-single-outgoing-subject and Create-slot output uses. It requires
 at least one real creation, scope assignment, output use or
 [whole-input or native-query-context external emission](./conditional-body-effects.md) and unit results.
+Exact guard-free [computed path writes](./computed-path-writes.md) additionally
+support required unitless UInt64 destinations through the same candidate.
 Output roles are binding-affine; a body cannot silently reinterpret one binding's
 roles under another binding with matching names. Arbitrary target selection,
 Retire and role-family member uses are unsupported. Optional literal assignments,

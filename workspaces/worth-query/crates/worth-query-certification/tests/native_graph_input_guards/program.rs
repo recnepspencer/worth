@@ -14,6 +14,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
     fn register_members(
         builder: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+        let builder = super::path_value_targets::declare(builder);
         builder
             .entity(Mapping::reference())
             .entity(Principal::reference())
@@ -30,6 +31,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
             .field(Principal::reference(), PrincipalIdentity::reference())
             .field(Parent::reference(), ParentIdentity::reference())
             .field(Parent::reference(), Company::reference())
+            .field(Parent::reference(), ParentRevision::reference())
             .field(Row::reference(), RowIdentity::reference())
             .field(Row::reference(), RowValue::reference())
             .field(Audit::reference(), AuditIdentity::reference())
@@ -87,6 +89,8 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
                             .unwrap()
                             .initialize_optional_input(Company::reference(), "optional_company")
                             .unwrap()
+                            .initialize(ParentRevision::reference(), 1)
+                            .unwrap()
                             .link_to_scope(ParentRows::reference(), "parent-row")
                             .unwrap()
                             .finish()
@@ -106,6 +110,23 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
             .application_query_binding::<super::row_query::ReadBinding>()
             .application_query(super::audit_query::definition())
             .application_query_binding::<super::audit_query::ReadBinding>()
+            .application_query(super::revision_query::definition())
+            .application_query_binding::<super::revision_query::ReadBinding>()
+            .operation(
+                super::path_value::Bump::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(super::path_value::body())
+                    .unwrap(),
+            )
+            .operation_projection_work_budget(super::path_value::Bump::reference(), 256)
+            .operation_read_field(
+                super::path_value::Bump::reference(),
+                RowIdentity::reference(),
+            )
+            .application_mutation_binding::<super::path_value_binding::BumpBinding>()
     }
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
@@ -116,7 +137,10 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.operation_body::<SaveBinding>()?;
         setup.operation_body::<ChangeBinding>()?;
-        setup.operation_body::<IntroduceBinding>()
+        setup.operation_body::<IntroduceBinding>()?;
+        setup.operation_body::<super::path_value_binding::BumpBinding>()?;
+        setup.operation_body::<super::path_value_targets::CopyBinding>()?;
+        setup.operation_body::<super::path_value_targets::AliasBinding>()
     }
 }
 pub struct Feature;
@@ -138,6 +162,12 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .native_action::<ChangeBinding>()
             .finish_action()
             .native_action::<IntroduceBinding>()
+            .finish_action()
+            .native_action::<super::path_value_binding::BumpBinding>()
+            .finish_action()
+            .native_action::<super::path_value_targets::CopyBinding>()
+            .finish_action()
+            .native_action::<super::path_value_targets::AliasBinding>()
             .finish_action()
             .finish()]
     }

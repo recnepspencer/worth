@@ -8,12 +8,14 @@ mod input;
 mod input_expectation;
 mod installation;
 mod output;
+mod path_value;
 mod requirement;
 mod retirement;
 mod selection;
 mod source;
 pub(in crate::domain_computation::primary_graph) mod value;
 pub(in crate::domain_computation::primary_graph) use input::{prepare_inputs, PreparedBodyInputs};
+pub(in crate::domain_computation::primary_graph) use path_value::PreparedBodyPathWrites;
 pub(in crate::domain_computation::primary_graph) use retirement::{
     PreparedBodyRetirements, PreparedRetirementBatch,
 };
@@ -48,6 +50,7 @@ pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     emission: Option<emission::BodyExternalEffectSelection>,
     values: Option<value::PreparedBodyValues>,
     retirements: PreparedBodyRetirements<Schema>,
+    path_writes: PreparedBodyPathWrites<Schema>,
 }
 
 /// A declared source expectation failed before any candidate effect.

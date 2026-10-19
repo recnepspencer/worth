@@ -20,7 +20,7 @@ use worth_foundational::{
 };
 
 pub struct ApplicationOperationBodyValue<Schema, Operation, Binding> {
-    program: ApplicationOperationBodyValueProgram,
+    pub(super) program: ApplicationOperationBodyValueProgram,
     marker: PhantomData<fn() -> (Schema, Operation, Binding)>,
 }
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]

@@ -32,6 +32,7 @@ worth_query_field!(pub MappingStatus for Schema, Mapping, MappingFacts: WorthQue
 worth_query_field!(pub PrincipalIdentity for Schema, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_field!(pub ParentIdentity for Schema, Parent, ParentFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub Company for Schema, Parent, ParentFacts: optional String => StringApplicationValueBinding, read_write, equality);
+worth_query_field!(pub ParentRevision for Schema, Parent, ParentFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_field!(pub RowIdentity for Schema, Row, RowFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub RowValue for Schema, Row, RowFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_field!(pub AuditIdentity for Schema, Audit, AuditFacts: String => StringApplicationValueBinding, read_only, equality);

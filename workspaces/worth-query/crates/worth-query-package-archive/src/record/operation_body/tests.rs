@@ -22,6 +22,8 @@ mod outputs;
 mod path_capture;
 #[path = "tests/path_input.rs"]
 mod path_input;
+#[path = "tests/path_value.rs"]
+mod path_value;
 #[path = "tests/principal.rs"]
 mod principal;
 #[path = "tests/related_outputs.rs"]

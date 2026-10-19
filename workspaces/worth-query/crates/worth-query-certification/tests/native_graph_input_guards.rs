@@ -14,8 +14,20 @@ mod evidence;
     reason = "Reuse real authentication ports; reviewer variants are unrelated to this boundary."
 )]
 mod operator_identity;
+#[path = "native_graph_input_guards/path_value.rs"]
+mod path_value;
+#[path = "native_graph_input_guards/path_value_admission.rs"]
+mod path_value_admission;
+#[path = "native_graph_input_guards/path_value_binding.rs"]
+mod path_value_binding;
+#[path = "native_graph_input_guards/path_value_evidence.rs"]
+mod path_value_evidence;
+#[path = "native_graph_input_guards/path_value_targets.rs"]
+mod path_value_targets;
 #[path = "native_graph_input_guards/program.rs"]
 mod program;
+#[path = "native_graph_input_guards/revision_query.rs"]
+mod revision_query;
 #[path = "native_graph_input_guards/row_query.rs"]
 mod row_query;
 #[path = "native_graph_input_guards/schema.rs"]

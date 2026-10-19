@@ -58,7 +58,7 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
             ),
         )
     };
-    if body.path_input_expectations().is_empty() {
+    let record = if body.path_input_expectations().is_empty() {
         record
     } else {
         framed_record(
@@ -67,6 +67,18 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
                 body.path_input_expectations()
                     .iter()
                     .map(|guard| ("path-input", guard.canonical_record())),
+            ),
+        )
+    };
+    if body.path_value_assignments().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-path-value-assignments-v1",
+            std::iter::once(("body", record)).chain(
+                body.path_value_assignments()
+                    .iter()
+                    .map(|step| ("path-value", step.canonical_record())),
             ),
         )
     }

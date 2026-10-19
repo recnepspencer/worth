@@ -17,6 +17,7 @@ mod scope_fields;
 mod values;
 pub(super) use query_context::require_nesting_depth;
 mod path_input;
+mod path_value;
 mod related_source;
 mod requirements;
 mod retirements;
@@ -46,7 +47,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if !body.path_input_expectations().is_empty() { 32 }
+    let version = if !body.path_value_assignments().is_empty() { 33 }
+    else if !body.path_input_expectations().is_empty() { 32 }
     else if !body.retirements().is_empty() { 31 }
     else if body.scope_fields().iter().any(|step| matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. })) { 30 }
     else if body.creation().is_some_and(|c| c.subject_impact_bound().is_some() || c.fields().iter().any(|f| f.path_source().is_some())) { 29 }
@@ -214,6 +216,9 @@ pub(super) fn write(
     if version >= 32 {
         path_input::write(output, body.path_input_expectations())?;
     }
+    if version >= 33 {
+        path_value::write(output, body.path_value_assignments())?;
+    }
     Ok(())
 }
 
@@ -222,7 +227,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=32) {
+    if !matches!(version, 1..=33) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -333,6 +338,11 @@ pub(super) fn decode(
     } else {
         Vec::new()
     };
+    let path_values = if version >= 33 {
+        path_value::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
             scope,
@@ -345,7 +355,8 @@ pub(super) fn decode(
         .with_untrusted_external_emission(external_emission)
         .with_untrusted_values(values)
         .with_untrusted_retirements(retirements)
-        .with_untrusted_path_input_expectations(path_inputs))
+        .with_untrusted_path_input_expectations(path_inputs)
+        .with_untrusted_path_value_assignments(path_values))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             steps,
