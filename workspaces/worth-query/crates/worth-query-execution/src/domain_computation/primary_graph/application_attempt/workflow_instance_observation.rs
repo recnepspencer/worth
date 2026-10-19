@@ -80,6 +80,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         SettledWorkflowTransition,
     pub(in crate::domain_computation::primary_graph::application_attempt) assessment_evidence:
         Option<ObservedWorkflowAssessmentEvidence>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) operation_outputs:
+        Option<history::operation_outputs::ObservedOperationOutputs>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowAssessmentEvidence

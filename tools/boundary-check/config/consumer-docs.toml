@@ -18,6 +18,7 @@ documents = [
   "workspaces/worth-query/crates/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md",
+  "workspaces/worth-query/crates/worth-query/docs/foundations/workflow-succession-output-affinity.md",
 ]
 
 [[doctests]]

@@ -9,6 +9,22 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn matches_predecessor_output(
+        &self,
+        matching: &worth_query_declaration::facade::application_schema::ApplicationOperationBodySuccessionOutputMatch,
+        target: worth_relational::facade::identity::EntityId,
+    ) -> bool {
+        let Some(binding) = self.roles.get(matching.selected_role()) else {
+            return false;
+        };
+        let Some(expected) = self.expected_roles.get(matching.selected_role()) else {
+            return false;
+        };
+        binding.posture == WorthQueryApplicationOutputPosture::Preserve
+            && expected.cardinality == ApplicationMutationOutputRoleCardinality::ExactlyOne
+            && binding.entity_name == matching.producer_role().entity
+            && binding.entity == EntityReference::Existing(target)
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn succession_subject<
         Schema,
         Binding,

@@ -9,11 +9,13 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 use worth_relational::facade::{
     identity::EntityId, runtime::RelationalRuntime, snapshots::SnapshotHandle,
 };
+mod output_match;
 
 /// Has no progression basis, replay collection or step-allowance method.
 pub(in crate::domain_computation::primary_graph::application_attempt) struct CompletedWorkflowSource
 {
     facts: Vec<WorthQueryApplicationObservedFact>,
+    transitions: Vec<super::ObservedWorkflowTransition>,
 }
 
 impl CompletedWorkflowSource {
@@ -77,6 +79,9 @@ impl ObservedWorkflowInstance {
         // consumed source keeps every fact, but cannot issue a step allowance.
         *requirement = WorkflowHistoryRequirement::Exact;
         self.facts.push(custody);
-        Ok(CompletedWorkflowSource { facts: self.facts })
+        Ok(CompletedWorkflowSource {
+            facts: self.facts,
+            transitions: self.transitions,
+        })
     }
 }

@@ -69,7 +69,7 @@ impl Context {
 
     pub(super) fn check(&self) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.read(|execution, runtime, snapshot, layout| super::super::observe(execution, runtime, snapshot, layout, self.transition,
-            &mut super::super::HistoryReconstructionCharge::new(worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget::standard())?))
+            &mut super::super::HistoryReconstructionCharge::new(worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget::standard())?).map(|_| ()))
     }
 
     pub(super) fn targets(&self) -> Vec<(String, EntityId)> {

@@ -754,9 +754,12 @@ edits, signature consequences and command
 continuation are not implemented here.
 Related outputs have no Optional, reverse or filtered selection form. They return
 the preimage, not a post-write query result. Guarded operation settlement retains
-that correspondence on the performed operation transition, but it does not yet
-provide an authored join from a completed chain's closing output to today's
-business-current selection. It does not prove which independent chain is current.
+that correspondence on the performed operation transition.
+`require_predecessor_output::<Binding, Selected, Producer, Produced>()` on an
+authored succession joins a captured Preserve/ExactlyOne selection to the latest
+performed occurrence of the named producer's ExactlyOne output. See
+[succession output affinity](../foundations/workflow-succession-output-affinity.md).
+The supplier still owns the graph and business-current selection meaning.
 Related copying has no filtered, multi-subject or reverse-selection form and
 cannot initialize a required target from an optional source. Related certified
 captures are refused, not reinterpreted as root-scope captures. Copying alone does

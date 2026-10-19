@@ -7,8 +7,9 @@ use crate::domain_computation::primary_graph::{
     },
     workflow::schema::WorthQueryWorkflowLayout,
 };
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
+use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as Posture;
 use worth_relational::facade::{
     identity::{EntityId, KindId},
     runtime::RelationalRuntime,
@@ -17,6 +18,19 @@ use worth_relational::facade::{
 #[cfg(test)]
 mod tests;
 
+pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedOperationOutputs
+{
+    pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
+    pub(in crate::domain_computation::primary_graph::application_attempt) entries:
+        BTreeMap<String, ObservedOperationOutput>,
+}
+pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedOperationOutput
+{
+    pub(in crate::domain_computation::primary_graph::application_attempt) entity: String,
+    pub(in crate::domain_computation::primary_graph::application_attempt) posture: Posture,
+    pub(in crate::domain_computation::primary_graph::application_attempt) target: EntityId,
+}
+
 pub(super) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
@@ -24,7 +38,7 @@ pub(super) fn observe(
     layout: &WorthQueryWorkflowLayout,
     transition: EntityId,
     charge: &mut HistoryReconstructionCharge,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
+) -> Result<Option<ObservedOperationOutputs>, WorthQueryApplicationAttemptDenial> {
     OutputContextReader {
         execution,
         runtime,
@@ -47,8 +61,9 @@ impl OutputContextReader<'_, '_, '_> {
         &self,
         transition: EntityId,
         charge: &mut HistoryReconstructionCharge,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let count = self.count(transition)?;
+    ) -> Result<Option<ObservedOperationOutputs>, WorthQueryApplicationAttemptDenial> {
+        let context = self.count(transition)?;
+        let count = context.as_ref().map_or(0, |(_, count)| *count);
         if count > charge.record_limit() {
             return Err(super::budget::inventory_exhausted());
         }
@@ -71,17 +86,23 @@ impl OutputContextReader<'_, '_, '_> {
                 "workflow operation output count disagrees with membership",
             ));
         }
-        let mut roles = BTreeSet::new();
+        let mut roles = BTreeMap::new();
         for member in members {
-            let role = self.entry(member.to, charge)?;
-            if !roles.insert(role) {
+            let (role, entry) = self.entry(member.to, charge)?;
+            if roles.insert(role, entry).is_some() {
                 return Err(denial("workflow operation output role is duplicated"));
             }
         }
-        Ok(())
+        Ok(context.map(|(binding, _)| ObservedOperationOutputs {
+            binding,
+            entries: roles,
+        }))
     }
 
-    fn count(&self, transition: EntityId) -> Result<usize, WorthQueryApplicationAttemptDenial> {
+    fn count(
+        &self,
+        transition: EntityId,
+    ) -> Result<Option<(String, usize)>, WorthQueryApplicationAttemptDenial> {
         let layout = &self.layout.transition;
         let read = |field| {
             observe_field_value(
@@ -99,14 +120,14 @@ impl OutputContextReader<'_, '_, '_> {
             read(&layout.output_count)?,
         ) {
             // Old missing context is never backfilled from today's selection.
-            (Some(AspectValue::UInt64(2)), None, None) => Ok(0),
+            (Some(AspectValue::UInt64(2)), None, None) => Ok(None),
             (
                 Some(AspectValue::UInt64(3)),
                 Some(AspectValue::String(InternedString::Raw(binding))),
                 Some(AspectValue::UInt64(count)),
-            ) if !binding.is_empty() => {
-                usize::try_from(count).map_err(|_| denial("workflow output count overflows"))
-            }
+            ) if !binding.is_empty() => usize::try_from(count)
+                .map(|count| Some((binding, count)))
+                .map_err(|_| denial("workflow output count overflows")),
             _ => Err(denial("workflow operation output context is malformed")),
         }
     }
@@ -115,7 +136,7 @@ impl OutputContextReader<'_, '_, '_> {
         &self,
         entry: EntityId,
         charge: &mut HistoryReconstructionCharge,
-    ) -> Result<String, WorthQueryApplicationAttemptDenial> {
+    ) -> Result<(String, ObservedOperationOutput), WorthQueryApplicationAttemptDenial> {
         let output = &self.layout.operation_output;
         charge.reserve_record(
             self.execution,
@@ -126,7 +147,7 @@ impl OutputContextReader<'_, '_, '_> {
             &output.role,
         )?;
         let role = self.text(entry, &output.role)?;
-        self.text(entry, &output.entity)?;
+        let entity = self.text(entry, &output.entity)?;
         let posture = observe_field_value(
             self.runtime,
             self.execution,
@@ -135,9 +156,12 @@ impl OutputContextReader<'_, '_, '_> {
             output.entity_kind,
             &output.posture,
         )?;
-        if !matches!(posture, Some(AspectValue::UInt64(1..=3))) {
-            return Err(denial("workflow operation output posture is unsupported"));
-        }
+        let posture = match posture {
+            Some(AspectValue::UInt64(1)) => Posture::Preserve,
+            Some(AspectValue::UInt64(2)) => Posture::Create,
+            Some(AspectValue::UInt64(3)) => Posture::Retire,
+            _ => return Err(denial("workflow operation output posture is unsupported")),
+        };
         let targets = crate::domain_computation::primary_graph::application_attempt::fact::observe_audit_outgoing_adjacency(
             self.runtime, self.execution, self.snapshot, output.target, entry, 4,
         )?.ok_or_else(|| denial("workflow output target is unavailable"))?;
@@ -147,7 +171,14 @@ impl OutputContextReader<'_, '_, '_> {
             ));
         }
         // Retire or later deletion does not reclassify historical correspondence.
-        Ok(role)
+        Ok((
+            role,
+            ObservedOperationOutput {
+                entity,
+                posture,
+                target: targets[0].to,
+            },
+        ))
     }
 
     fn text(

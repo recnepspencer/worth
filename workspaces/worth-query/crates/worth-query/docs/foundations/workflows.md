@@ -1326,7 +1326,10 @@ receipt exists. Neither adds a separate output-retention commit or host mirror.
 
 The supplier's existing output contract is sufficient. For example:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Role declarations and the receipt are supplied by the application.
 let outputs = receipt.outputs_of::<CompleteOutputs>()?;
 let item = outputs.entity::<CompletedItem>()?; // Preserve/ExactlyOne
 let audit = outputs.entity::<ClosingAudit>()?; // Create/ExactlyOne
@@ -1352,10 +1355,12 @@ business pointers or pretend it is available. Malformed or incomplete current
 context refuses reconstruction. Output metadata is charged to the existing
 settlement and history budgets; exceeding either refuses rather than truncates.
 
-This is not yet an authored closing-output-to-current-round comparison. Two
-independent completed chains can share a subject, so retaining a closing output
-alone cannot choose which one may Reopen. Nor does it make old runtime-owned
-instance handles usable after checkpoint restoration. Completed-reference
+Two independent completed chains can share a subject, so retaining an output
+alone cannot choose which one may Reopen. Author a
+[succession output match](workflow-succession-output-affinity.md) to compare the
+latest named producer output with the successor body's captured selection.
+This does not make old runtime-owned instance handles usable after checkpoint
+restoration. Completed-reference
 reacquisition and checkpoint-to-succession remain separate, unproven boundaries;
 do not invent handle constructors or weaken ForeignOwner checks to bridge them.
 

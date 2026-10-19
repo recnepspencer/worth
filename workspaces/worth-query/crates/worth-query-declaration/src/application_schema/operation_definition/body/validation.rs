@@ -35,7 +35,7 @@ pub(crate) fn validate_operation_bodies(
         if !super::enrollment::valid(body) {
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
         }
-        if !super::succession::valid(body) {
+        if !super::succession::valid(body) || !super::succession::readmit(body, members) {
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
         }
         super::principal_validation::validate_principals(operation, body, members)?;

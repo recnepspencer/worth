@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
     input_identity: [u8; 32],
     key_identity: [u8; 32],
     identity: [u8; 32],
+    output_match: Option<worth_query_declaration::facade::application_schema::ApplicationOperationBodySuccessionOutputMatch>,
 }
 impl WorkflowSuccessionBindingProof {
     fn permits(
@@ -26,6 +27,7 @@ impl WorkflowSuccessionBindingProof {
         handler: &super::super::super::read_set::MutationHandlerBindingProof,
     ) -> bool {
         self.binding == body.binding()
+            && self.output_match.as_ref() == body.output_match()
             && self.role == body.role()
             && handler.binding == self.binding
             && handler.input_identity == self.input_identity
@@ -41,7 +43,7 @@ impl<Schema, Operation, Input, Scope>
     pub fn bind_workflow_succession_authority(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        authority: WorkflowSuccessionAuthority,
+        mut authority: WorkflowSuccessionAuthority,
         allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
         let execution = phase
@@ -67,6 +69,11 @@ impl<Schema, Operation, Input, Scope>
             || self.read_set.workflow_authority_binding.is_some()
             || body.binding() != authority.binding
             || body.role() != authority.role
+            || body.output_match()
+                != authority
+                    .output_match
+                    .as_ref()
+                    .map(|matching| &matching.declaration)
         {
             return Err(mismatch("succession admission affinity changed"));
         }
@@ -76,6 +83,19 @@ impl<Schema, Operation, Input, Scope>
                 "succession output is not this exact existing scope",
             ));
         }
+        let output_match = authority.output_match.map(|matching| {
+            let failure = match matching.target {
+                Ok(target) if self.output_correspondence.matches_predecessor_output(&matching.declaration, target) => None,
+                Ok(_) => Some(WorthQueryApplicationAttemptDenial::new(
+                    super::WorthQueryApplicationAttemptDenialKind::WorkflowPredecessorOutputMismatch,
+                    "selected output differs from the predecessor producer output",
+                )),
+                Err(denial) => Some(denial),
+            };
+            // Exact native replay resolves before this fresh-commit-only refusal.
+            if authority.refusal.is_none() { authority.refusal = failure; }
+            matching.declaration
+        });
         self.read_set
             .append_authority_facts(&execution, &authority.facts, allocation)?;
         let layout = self.read_set.lease.layout.workflow();
@@ -112,6 +132,7 @@ impl<Schema, Operation, Input, Scope>
             input_identity: authority.input_identity,
             key_identity: authority.key_identity,
             identity: authority.identity,
+            output_match,
         });
         Ok(self)
     }

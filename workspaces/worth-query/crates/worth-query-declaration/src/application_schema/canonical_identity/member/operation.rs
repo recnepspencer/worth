@@ -14,7 +14,8 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.outputs().iter().any(|output| matches!(output.target, crate::application_schema::ApplicationOperationBodyOutputTarget::Related { .. })) {
+        if body.succession().is_some_and(|s| s.output_match().is_some()) { "operation-body-v15" }
+        else if body.outputs().iter().any(|output| matches!(output.target, crate::application_schema::ApplicationOperationBodyOutputTarget::Related { .. })) {
             "operation-body-v14"
         } else if body.succession().is_some() {
             "operation-body-v13"

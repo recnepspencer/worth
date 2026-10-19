@@ -59,7 +59,7 @@ impl WorthQueryWorkflowSuccessionAdapter {
             .execution_request_for(&selected.application().product_runtime)
             .map_err(|_| denied("foreign succession phase"))?;
         let mut read = selected.begin_instance_read_set(&execution, installed, admission)?;
-        let (compiled, carry) = read
+        let (compiled, carry, output_match) = read
             .observe_succession_basis(
                 &execution,
                 installed,
@@ -84,6 +84,7 @@ impl WorthQueryWorkflowSuccessionAdapter {
             input_identity: *identities.input_identity(), key_identity: *identities.key_identity(), identity, instance_identity: instance_identity.clone(),
             capability, facts: read.facts.iter().cloned().collect(), compiled: compiled.clone(), carry, refusal: read.new_commit_refusal,
             subject: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::succession_subject::<Schema, Binding, Role>,
+            output_match,
         };
         Ok(RequiredWorkflowSuccession {
             branch,

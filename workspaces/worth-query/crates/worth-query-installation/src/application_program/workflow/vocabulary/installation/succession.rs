@@ -17,6 +17,36 @@ use worth_query_declaration::facade::{
 impl<Schema: ApplicationSchema, Spec: ApplicationWorkflowSpec<Schema = Schema>, Program>
     WorthQueryApplicationWorkflowSpecInstallation<'_, Schema, Spec, Program>
 {
+    pub(super) fn validate_succession_producers(&self) -> Result<(), Denial> {
+        use worth_query_declaration::facade::application_schema::ApplicationSchemaMember;
+        for member in self.schema.installed_declaration().members() {
+            let ApplicationSchemaMember::OperationBody { body, .. } = member else {
+                continue;
+            };
+            let Some(succession) = body.succession() else {
+                continue;
+            };
+            if !self
+                .successions
+                .iter()
+                .any(|binding| binding.binding_identity == succession.binding())
+            {
+                continue;
+            }
+            if let Some(matching) = succession.output_match()
+                && !self.operations.iter().any(|producer| {
+                    producer.binding_identity == matching.producer_binding()
+                        && producer.requires_workflow_authority
+                })
+            {
+                return Err(denial(
+                    Kind::SuccessionBindingNotInstalled,
+                    matching.producer_binding(),
+                ));
+            }
+        }
+        Ok(())
+    }
     pub fn succession_operation<Binding, Role>(mut self) -> Result<Self, Denial>
     where
         Binding: ApplicationMutationBinding<Schema> + ApplicationCapabilityMutationBinding<Schema>,

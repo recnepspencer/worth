@@ -13,6 +13,9 @@ use crate::{
     application_program::ApplicationWorkflowSpec,
     application_schema::ApplicationSchema,
 };
+mod output_match;
+pub(super) use output_match::readmit;
+pub use output_match::ApplicationOperationBodySuccessionOutputMatch;
 
 /// Pure meaning. A predecessor reference or decoded attachment grants no succession authority.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -20,6 +23,7 @@ pub struct ApplicationOperationBodySuccession {
     workflow_spec: String,
     binding: String,
     role: String,
+    output_match: Option<ApplicationOperationBodySuccessionOutputMatch>,
 }
 impl ApplicationOperationBodySuccession {
     pub fn from_untrusted(workflow_spec: String, binding: String, role: String) -> Self {
@@ -27,6 +31,7 @@ impl ApplicationOperationBodySuccession {
             workflow_spec,
             binding,
             role,
+            output_match: None,
         }
     }
     pub fn workflow_spec(&self) -> &str {
@@ -38,11 +43,29 @@ impl ApplicationOperationBodySuccession {
     pub fn role(&self) -> &str {
         &self.role
     }
+    pub fn output_match(&self) -> Option<&ApplicationOperationBodySuccessionOutputMatch> {
+        self.output_match.as_ref()
+    }
+    pub fn with_untrusted_output_match(
+        mut self,
+        matching: ApplicationOperationBodySuccessionOutputMatch,
+    ) -> Self {
+        self.output_match = Some(matching);
+        self
+    }
     pub fn canonical_record(&self) -> String {
         use std::fmt::Write;
-        let mut record = String::from("workflow-succession-v1;");
+        let mut record = String::from(if self.output_match.is_some() {
+            "workflow-succession-v2;"
+        } else {
+            "workflow-succession-v1;"
+        });
         for part in [&self.workflow_spec, &self.binding, &self.role] {
             write!(&mut record, "{}:{part};", part.len()).expect("String write");
+        }
+        if let Some(matching) = &self.output_match {
+            let matching = matching.canonical_record();
+            write!(&mut record, "{}:{matching};", matching.len()).expect("String write");
         }
         record
     }
@@ -107,14 +130,15 @@ pub(super) fn valid(body: &ApplicationOperationBodyProgram) -> bool {
     {
         return false;
     }
-    body.outputs().iter().any(|output| {
-        output.binding == succession.binding()
-            && output.role.name == succession.role()
-            && Some(output.role.entity.as_str()) == body.scope_entity()
-            && output.role.posture == Posture::Preserve
-            && output.role.cardinality == Cardinality::ExactlyOne
-            && output.target == super::ApplicationOperationBodyOutputTarget::Scope
-    })
+    output_match::valid(body)
+        && body.outputs().iter().any(|output| {
+            output.binding == succession.binding()
+                && output.role.name == succession.role()
+                && Some(output.role.entity.as_str()) == body.scope_entity()
+                && output.role.posture == Posture::Preserve
+                && output.role.cardinality == Cardinality::ExactlyOne
+                && output.target == super::ApplicationOperationBodyOutputTarget::Scope
+        })
 }
 
 #[cfg(test)]

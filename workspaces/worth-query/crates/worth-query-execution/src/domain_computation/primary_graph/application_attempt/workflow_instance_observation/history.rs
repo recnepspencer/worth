@@ -12,7 +12,7 @@ use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBud
 use worth_relational::facade::identity::EntityId;
 
 mod budget;
-mod operation_outputs;
+pub(super) mod operation_outputs;
 use super::super::fact::WorkflowHistoryRequirement;
 use super::super::fact::{observe_adjacency_checked, AdjacencyObservationDenial};
 use budget::HistoryReconstructionCharge;
@@ -188,7 +188,7 @@ pub(super) fn observe(
             transition.to,
             &mut scratch,
         )?;
-        operation_outputs::observe(
+        let operation_outputs = operation_outputs::observe(
             execution,
             runtime,
             snapshot,
@@ -244,6 +244,7 @@ pub(super) fn observe(
             identity,
             settlement,
             assessment_evidence,
+            operation_outputs,
         });
     }
     // Every read above used this immutable native basis. A compact exact-basis

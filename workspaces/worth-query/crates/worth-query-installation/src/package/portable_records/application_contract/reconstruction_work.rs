@@ -92,6 +92,17 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                     work.observe_text(text);
                 }
                 work.observe_fixed(1);
+                if let Some(matching) = succession.output_match() {
+                    for text in [
+                        matching.selected_role(),
+                        matching.producer_binding(),
+                        &matching.producer_role().name,
+                        &matching.producer_role().entity,
+                    ] {
+                        work.observe_text(text);
+                    }
+                    work.observe_fixed(4);
+                }
             }
             for output in body.outputs() {
                 work.observe_text(&output.binding);

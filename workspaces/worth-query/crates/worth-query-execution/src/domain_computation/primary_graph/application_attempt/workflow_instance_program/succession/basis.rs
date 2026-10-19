@@ -40,7 +40,11 @@ impl<
         predecessor: &PublishedWorkflowInstanceRef,
         clock: &WorthQueryRuntimeClock,
     ) -> Result<
-        (CompiledWorkflowDefinition, WorkflowLineageCarry),
+        (
+            CompiledWorkflowDefinition,
+            WorkflowLineageCarry,
+            Option<super::CompletedOutputExpectation>,
+        ),
         WorthQueryApplicationAttemptDenial,
     >
     where
@@ -109,6 +113,16 @@ impl<
                 "predecessor already has a fresh successor",
             ));
         }
+        let output_match = self
+            .admission
+            .allowed_graph_contract()
+            .body()
+            .and_then(|body| body.succession())
+            .and_then(|s| s.output_match())
+            .map(|matching| super::CompletedOutputExpectation {
+                declaration: matching.clone(),
+                target: source.output_matching(&compiled, matching),
+            });
         facts.extend(source.into_facts());
         facts.push(WorthQueryApplicationObservedFact::Adjacency {
             relation_kind: layout.instance_succeeded_from_relation,
@@ -119,6 +133,6 @@ impl<
         });
         let carry =
             self.observe_fresh_instance_capacity(execution, installed, &fresh, facts, clock)?;
-        Ok((fresh, carry))
+        Ok((fresh, carry, output_match))
     }
 }

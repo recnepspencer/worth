@@ -21,6 +21,7 @@ where
         let actor_policy = Spec::actor_policy();
         let observation_policy = Spec::observation_policy();
         self.validate_policies(&actor_policy, &observation_policy)?;
+        self.validate_succession_producers()?;
         let authoring_capability = self.authoring_capability.ok_or_else(|| {
             denial(
                 WorthQueryApplicationWorkflowInstallationDenialKind::MissingAuthoringCapability,

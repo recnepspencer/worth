@@ -38,7 +38,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.outputs().iter().any(|output| matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Related { .. })) { 22 }
+    let version = if body.succession().is_some_and(|s| s.output_match().is_some()) { 23 }
+    else if body.outputs().iter().any(|output| matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Related { .. })) { 22 }
     else if body.succession().is_some() { 21 }
     else if body.creation().is_some_and(|creation| creation.fields().iter().any(|step| step.related_source().is_some())) { 20 }
     else if body.creation().is_some_and(|creation| creation.links().iter().any(|link|
@@ -220,7 +221,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=22) {
+    if !matches!(version, 1..=23) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -355,7 +356,7 @@ pub(super) fn decode(
         None => return Err(Denial::new(Kind::InvalidRecordShape)),
     };
     let succession = if version >= 21 {
-        succession::decode(input)?
+        succession::decode(input, version)?
     } else {
         None
     };

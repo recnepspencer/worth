@@ -72,6 +72,11 @@ pub struct WorkflowSuccessionAuthority {
     carry: WorkflowLineageCarry,
     refusal: Option<WorthQueryApplicationAttemptDenial>,
     subject: SubjectSelector,
+    output_match: Option<CompletedOutputExpectation>,
+}
+pub(super) struct CompletedOutputExpectation {
+    declaration: worth_query_declaration::facade::application_schema::ApplicationOperationBodySuccessionOutputMatch,
+    target: Result<EntityId, WorthQueryApplicationAttemptDenial>,
 }
 pub struct WorkflowSuccessionAuthoritySlot {
     authority: Mutex<Option<WorkflowSuccessionAuthority>>,

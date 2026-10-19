@@ -27,7 +27,9 @@ mod program;
 mod requirement;
 mod source_validation;
 mod succession;
-pub use succession::ApplicationOperationBodySuccession;
+pub use succession::{
+    ApplicationOperationBodySuccession, ApplicationOperationBodySuccessionOutputMatch,
+};
 mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;
