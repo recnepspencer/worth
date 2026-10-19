@@ -107,6 +107,9 @@ impl PostingContinuation {
         let Some(binding) = state.posting_bindings.get(&projection.id) else {
             return Ok(None);
         };
+        let Some(binding) = binding.settlements() else {
+            return Ok(None);
+        };
         admission.ordered_read(binding.settlements.len())?;
         if !Arc::ptr_eq(&binding.projection, projection)
             || !binding.settlements.contains(&completed.basis.prior)

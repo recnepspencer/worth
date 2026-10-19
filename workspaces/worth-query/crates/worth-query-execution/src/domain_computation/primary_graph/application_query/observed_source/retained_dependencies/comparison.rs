@@ -50,7 +50,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 }
                 Ok(())
             });
-        observation::record(runtime, admission.charged_work());
+        runtime
+            .required_set_comparison_observations
+            .record(admission.charged_work());
         outcome
     }
     // Single-member comparison is owner-local. It issues no complete-set proof;
@@ -59,15 +61,38 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
-        source: &WorthQueryObservedSource<()>,
+        source: &super::RetainedQuerySource,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         request: &WorthQueryRequestScope,
         admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
         let runtime = self.application();
         policy.check_live().map_err(storage)?;
-        admit_descriptor(admission, source)?;
-        self.validate_dependency(source, false)?;
+        admit_descriptor(admission, &source.source)?;
+        self.validate_dependency(&source.source, false)?;
+        let selected = if source.coverage.is_some() {
+            super::coverage::selected_basis(
+                relational,
+                self.application_basis().snapshot_handle(),
+                admission,
+            )?
+        } else {
+            None
+        };
+        if let (Some(coverage), Some(selected)) = (&source.coverage, &selected)
+            && runtime
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner
+                .query_facts_clean_at(coverage, selected, policy, admission)
+                .map_err(super::coverage::coverage_stop)?
+                .is_some()
+        {
+            return Ok(());
+        }
+        let retained = source;
+        let source = &retained.source;
         let prepared = source.admit_fact_materialization(
             &runtime.primary_provider.graph.layout,
             admission,
@@ -95,6 +120,16 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 )
             }
         }
+        if let (Some(coverage), Some(selected)) = (&retained.coverage, &selected) {
+            runtime
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner
+                .reestablish_query_read(coverage, selected, policy, admission)
+                .map_err(super::coverage::coverage_stop)?;
+        }
+        policy.check_live().map_err(storage)?;
         Ok(())
     }
 }

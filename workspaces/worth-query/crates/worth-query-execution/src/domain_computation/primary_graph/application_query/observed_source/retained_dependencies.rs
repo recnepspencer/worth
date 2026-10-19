@@ -10,7 +10,9 @@ use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 use worth_query_installation::facade::ApplicationSchema;
 
 mod comparison;
+mod coverage;
 pub(in crate::domain_computation::primary_graph) use comparison::observation::RequiredSetComparisonObservations;
+use coverage::RetainedQuerySource;
 #[cfg(test)]
 mod cumulative_court;
 #[cfg(test)]
@@ -41,7 +43,7 @@ mod storage_court;
 /// }
 /// ```
 pub struct WorthQueryRetainedQueryDependencies {
-    sources: ExecutionArray<WorthQueryObservedSource<()>>,
+    sources: ExecutionArray<RetainedQuerySource>,
 }
 
 /// Native causes remain distinct from a moved output or discovery fact.
@@ -133,11 +135,18 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 ));
             }
         }
-        retain_descriptors(
-            std::iter::once(set.source()).chain(source.observed_sources()),
-            count,
-            execution.allocation_policy(),
-        )
+        self.application()
+            .primary_provider
+            .graph
+            .with_runtime(&execution, |relational| {
+                self.retain_original_dependencies(
+                    &execution,
+                    relational,
+                    std::iter::once(set.source()).chain(source.observed_sources()),
+                    count,
+                    &mut admission,
+                )
+            })
     }
 
     /// Joins retained complete proofs while every original remains owned by its
@@ -173,8 +182,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     .allocation_policy()
                     .check_live()
                     .map_err(storage)?;
-                admit_descriptor(&mut admission, source)?;
-                self.validate_dependency(source, false)?;
+                admit_descriptor(&mut admission, &source.source)?;
+                self.validate_dependency(&source.source, false)?;
             }
         }
         retain_descriptors(
@@ -259,14 +268,14 @@ fn admit_descriptor<Query>(
 
 // Only validated native descriptors reach this storage owner. Original complete
 // owners stay borrowed throughout the exact allocation and each fallible move.
-fn retain_descriptors<'a, Query: 'a>(
-    sources: impl Iterator<Item = &'a WorthQueryObservedSource<Query>>,
+fn retain_descriptors<'a>(
+    sources: impl Iterator<Item = &'a RetainedQuerySource>,
     count: usize,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial> {
     let mut array = ExecutionArrayBuilder::allocate(count, policy).map_err(storage)?;
     for source in sources {
-        array.push(source.retyped()).map_err(storage)?;
+        array.push(source.shared()).map_err(storage)?;
     }
     Ok(WorthQueryRetainedQueryDependencies {
         sources: array.seal().map_err(storage)?,

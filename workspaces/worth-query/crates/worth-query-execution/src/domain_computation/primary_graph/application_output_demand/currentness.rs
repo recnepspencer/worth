@@ -33,7 +33,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 ))
             })?;
         let mut admission = self.request_admission(maximum_work);
-        runtime
+        let outcome = runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
@@ -43,7 +43,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     settlements,
                     &mut admission,
                 )
-            })
+            });
+        runtime
+            .required_set_comparison_observations
+            .record(admission.charged_work());
+        outcome
     }
 
     /// Checks a set of retained producer receipts against this exact product
@@ -114,10 +118,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .edit_admission_within(maximum_work)
     }
 
-    /// Compares the output witness and every source fact at this observation.
-    /// That full verification re-establishes the row's marks, so the next
-    /// demand at this image reads them instead of verifying again. The
-    /// request pays for re-establishing them; their outcome changes no answer.
+    /// Checks the output witness and exact selected-image native marks. Missing
+    /// or unqualified marks use full source verification and re-establishment;
+    /// neither path borrows authority from content equality or another image.
     pub(in crate::domain_computation::primary_graph) fn require_current_read(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -138,6 +141,26 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             read.native_output_witness.as_ref(),
             admission,
         )?;
+        // Exact lineage selection and the output witness precede the native mark.
+        // Missing/dirty/discontinuous rows retain the original funded comparison.
+        if let Some(selected) = currentness_basis(relational, snapshot, admission)? {
+            use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+            currentness_live(execution)?;
+            let current = crate::domain_computation::primary_graph::output_reuse::owner_read(
+                owner.currentness(&selected, &read.identity, admission),
+                "settled source marks unavailable",
+            )?;
+            currentness_live(execution)?;
+            if matches!(current, SourceSettlementCurrentness::Clean) {
+                owner.carry_read_basis(relational, snapshot, &selected, std::slice::from_ref(&read.identity), admission)
+                    .map_err(|stop| crate::domain_computation::primary_graph::output_reuse::verification_denial(
+                        crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_verification_stop(stop),
+                        "settled output basis carriage",
+                    ))?;
+                currentness_live(execution)?;
+                return Ok(());
+            }
+        }
         require_current_facts(execution, relational, snapshot, read, admission).map_err(
             |error| match read.verification_requirement {
                 Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::NativeFactRevisionUnavailable(ordinal)) => WorthQueryOutputDemandDenial::new(
@@ -234,4 +257,66 @@ fn denial(kind: WorthQueryOutputDemandDenialKind) -> WorthQueryOutputDemandDenia
         kind,
         "settled output is not current at the selected observation",
     )
+}
+
+fn currentness_live(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    execution.allocation_policy().check_live().map_err(|cause| {
+        use worth_execution::{
+            ExecutionAllocationDenialClass as Class, MapKernelStop, WorkCeilingDenial,
+        };
+        let kind = match cause.classify() {
+            Class::Request(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)) => {
+                WorthQueryOutputDemandDenialKind::Cancelled
+            }
+            Class::Request(WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed)) => {
+                WorthQueryOutputDemandDenialKind::TimedOut
+            }
+            Class::Request(
+                WorkCeilingDenial::Admission(_)
+                | WorkCeilingDenial::Panicked
+                | WorkCeilingDenial::Stopped(
+                    MapKernelStop::WorkCounterOverflow
+                    | MapKernelStop::WorkCeiling
+                    | MapKernelStop::NestedStopped,
+                ),
+            )
+            | Class::Physical(_) => WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+        };
+        WorthQueryOutputDemandDenial::new(kind, "settled output request control")
+    })
+}
+
+fn currentness_basis(
+    relational: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<
+    Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
+    WorthQueryOutputDemandDenial,
+> {
+    use crate::domain_computation::primary_graph::output_reuse::{
+        preflight_stop, retained_fact_denial,
+    };
+    use worth_relational::facade::{
+        mvcc::CompanionPreflightStop, runtime::RelationalSnapshotPositionAdmissionStop as Stop,
+    };
+    match relational
+        .read_truth()
+        .positioned_snapshot_admitted(snapshot, |work, bytes| {
+            admission.charge_external_work(work)?;
+            admission.admit_read_scratch(bytes)
+        }) {
+        Ok(selected) => Ok(Some(selected)),
+        Err(Stop::Position(_)) => Ok(None),
+        Err(Stop::Admission(stop)) => Err(retained_fact_denial(
+            preflight_stop(stop),
+            "selected output image unavailable",
+        )),
+        Err(Stop::AccountingOverflow) => Err(retained_fact_denial(
+            preflight_stop(CompanionPreflightStop::WorkCounterOverflow),
+            "selected output image overflow",
+        )),
+    }
 }

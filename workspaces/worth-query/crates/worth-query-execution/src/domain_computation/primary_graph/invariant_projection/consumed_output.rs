@@ -26,9 +26,11 @@ mod requested_read;
 mod test_support;
 mod verification;
 pub(in crate::domain_computation::primary_graph) use pending_dependency::SelectedPendingConsumedOutput;
-pub(in crate::domain_computation::primary_graph) use verification::map_admission_stop;
 pub(in crate::domain_computation::primary_graph) use verification::reserve_pending;
 pub(in crate::domain_computation::primary_graph) use verification::EvidenceView;
+pub(in crate::domain_computation::primary_graph) use verification::{
+    map_admission_stop, map_verification_stop,
+};
 pub(in crate::domain_computation::primary_graph) use verification::{
     ConsumedOutputVerification, ConsumedOutputVerificationStop, VerificationCapacityStop,
 };

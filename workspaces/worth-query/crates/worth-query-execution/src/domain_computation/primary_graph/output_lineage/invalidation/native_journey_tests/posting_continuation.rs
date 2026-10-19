@@ -206,6 +206,8 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     assert_eq!(installed.payload().current.posting_bindings.len(), 1);
     assert_eq!(
         installed.payload().current.posting_bindings[&a.id]
+            .settlements()
+            .unwrap()
             .settlements
             .len(),
         2
@@ -235,6 +237,8 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         .settlements
         .contains_key(&first));
     assert!(retired_image.payload().current.posting_bindings[&a.id]
+        .settlements()
+        .unwrap()
         .settlements
         .contains(&second));
     assert!(historical

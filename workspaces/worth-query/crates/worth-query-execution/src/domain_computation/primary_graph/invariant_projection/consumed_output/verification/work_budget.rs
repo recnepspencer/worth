@@ -39,7 +39,7 @@ pub(in crate::domain_computation::primary_graph) fn map_admission_stop(
     }
 }
 
-pub(super) fn map_verification_stop(
+pub(in crate::domain_computation::primary_graph) fn map_verification_stop(
     stop: SettlementVerificationStop,
 ) -> ConsumedOutputVerificationStop {
     match stop {

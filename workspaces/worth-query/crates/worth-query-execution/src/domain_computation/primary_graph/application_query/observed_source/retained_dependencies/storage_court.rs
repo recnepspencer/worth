@@ -16,7 +16,7 @@ impl WorthQueryRetainedQueryDependencies {
             "the complete real pairing includes selection and projected rows"
         );
         let quote = u64::try_from(
-            std::alloc::Layout::array::<WorthQueryObservedSource<()>>(count)
+            std::alloc::Layout::array::<RetainedQuerySource>(count)
                 .unwrap()
                 .size(),
         )
@@ -62,13 +62,9 @@ impl WorthQueryRetainedQueryDependencies {
         let mut building =
             ExecutionArrayBuilder::allocate(count, ExecutionAllocationPolicy::Execution(&child))
                 .unwrap();
-        building
-            .push(self.sources.elements()[0].retyped::<()>())
-            .unwrap();
+        building.push(self.sources.elements()[0].shared()).unwrap();
         stop.cancel();
-        assert!(building
-            .push(self.sources.elements()[1].retyped::<()>())
-            .is_err());
+        assert!(building.push(self.sources.elements()[1].shared()).is_err());
         assert!(building.seal().is_err());
         assert_eq!(
             self.sources.len(),

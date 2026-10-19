@@ -39,19 +39,34 @@ fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop(
     let physical = state.postings.clone();
     posting_bindings::bind(&mut state, &projection, &second, &mut admission).unwrap();
     assert_eq!(state.postings, physical);
-    assert_eq!(state.posting_bindings[&0].settlements.len(), 2);
+    assert_eq!(
+        state.posting_bindings[&0]
+            .settlements()
+            .unwrap()
+            .settlements
+            .len(),
+        2
+    );
     posting_removal::remove(&mut state, &first, &projection, &mut admission).unwrap();
     assert_eq!(state.postings, physical);
     assert_eq!(
         state.posting_bindings[&0]
+            .settlements()
+            .unwrap()
             .settlements
             .iter()
             .cloned()
             .collect::<Vec<_>>(),
         vec![second.clone()]
     );
-    assert!(historical.posting_bindings[&0].settlements.contains(&first));
+    assert!(historical.posting_bindings[&0]
+        .settlements()
+        .unwrap()
+        .settlements
+        .contains(&first));
     assert!(!historical.posting_bindings[&0]
+        .settlements()
+        .unwrap()
         .settlements
         .contains(&second));
     posting_removal::remove(&mut state, &second, &projection, &mut admission).unwrap();
@@ -152,7 +167,18 @@ fn a_refused_successor_binding_leaves_the_original_image_usable() {
     });
     assert!(posting_bindings::bind(&mut candidate, &projection, &second, &mut stopped).is_err());
     drop(candidate);
-    assert_eq!(original.posting_bindings[&0].settlements.len(), 1);
-    assert!(original.posting_bindings[&0].settlements.contains(&first));
+    assert_eq!(
+        original.posting_bindings[&0]
+            .settlements()
+            .unwrap()
+            .settlements
+            .len(),
+        1
+    );
+    assert!(original.posting_bindings[&0]
+        .settlements()
+        .unwrap()
+        .settlements
+        .contains(&first));
     assert!(!original.postings.is_empty());
 }

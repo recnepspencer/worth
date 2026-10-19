@@ -24,11 +24,13 @@ mod posting_continuation;
 mod posting_projection;
 mod posting_removal;
 mod postings;
-pub(super) use posting_bindings::PostingBindings;
+pub(super) use posting_bindings::{install_physical, PostingBindings};
 pub(in crate::domain_computation::primary_graph) use posting_continuation::{
     PostingContinuation, PostingRebaseBasis,
 };
 pub(super) use posting_projection::{PostingComputationStorage, PostingProjection};
+pub(super) use posting_removal::{remove_physical, remove_physical_key};
+pub(super) use postings::PreparedPostingOrdinals;
 
 pub(super) enum SettlementReadAlignment {
     Current,

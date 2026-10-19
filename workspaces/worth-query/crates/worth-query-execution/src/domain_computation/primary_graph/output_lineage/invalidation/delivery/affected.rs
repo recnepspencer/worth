@@ -63,6 +63,7 @@ pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) f
             .posting_key_lookups
             .checked_add(1)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+        super::super::query_coverage::mark_query_reads(state, key, meter, counts)?;
         let Some(mut postings) =
             posting_order::LogicalPostings::prepare(state, key, meter, counts)?
         else {

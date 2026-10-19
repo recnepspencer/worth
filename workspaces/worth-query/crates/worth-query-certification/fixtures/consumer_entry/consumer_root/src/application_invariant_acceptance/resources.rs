@@ -21,6 +21,15 @@ pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
         ),
     );
 
+// The native continuity court uses the SAME installation window, unchanged.
+pub(super) const INVALIDATION_INSTALLATION: WorthQueryInvalidationResourceInstallation =
+    WorthQueryInvalidationResourceInstallation::bounded(
+        1_000_000,
+        64 * 1_024 * 1_024,
+        128 * 1_024 * 1_024,
+        64,
+    );
+
 pub(super) fn world_resources() -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
@@ -50,15 +59,8 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
             },
         },
         WorthQueryProductWorldClock::start(),
-        WorthQueryInvalidationResources::install(
-            WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1_024 * 1_024,
-                128 * 1_024 * 1_024,
-                64,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+        WorthQueryInvalidationResources::install(INVALIDATION_INSTALLATION)
+            .expect("the Query invalidation installation is valid"),
         EXECUTION_POLICY,
     )
     .expect("the consumer's finite World resources are valid")

@@ -30,9 +30,11 @@ use crate::domain_computation::primary_graph::{
     SourceInvalidationOwner,
 };
 pub(in crate::domain_computation::primary_graph) use capacity_stop::VerificationCapacityStop;
-pub(in crate::domain_computation::primary_graph) use work_budget::map_admission_stop;
 pub(in crate::domain_computation::primary_graph) use work_budget::reserve_pending;
-use work_budget::{charge_external, fact_is_current, map_verification_stop};
+use work_budget::{charge_external, fact_is_current};
+pub(in crate::domain_computation::primary_graph) use work_budget::{
+    map_admission_stop, map_verification_stop,
+};
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct EvidenceView<'a> {

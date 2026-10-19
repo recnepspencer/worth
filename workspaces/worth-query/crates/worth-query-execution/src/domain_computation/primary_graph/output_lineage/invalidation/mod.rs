@@ -50,7 +50,11 @@ mod output_witness_capacity;
 mod owner;
 mod publication;
 mod publication_cell;
+mod query_coverage;
 mod read_basis_carry;
+pub(in crate::domain_computation::primary_graph) use query_coverage::{
+    QueryCoverageStop, QueryFactCoverage,
+};
 mod reestablishment;
 mod retention;
 mod retirement;

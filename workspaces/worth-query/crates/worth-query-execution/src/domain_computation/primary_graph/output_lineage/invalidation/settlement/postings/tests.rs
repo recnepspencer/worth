@@ -99,6 +99,7 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
     let global = state.postings.get(&key).unwrap();
     assert_eq!(global.iter().copied().collect::<Vec<_>>(), vec![0]);
     let binding = state.posting_bindings.get(&0).unwrap();
+    let binding = binding.settlements().unwrap();
     assert_eq!(binding.settlements.len(), 1);
     assert!(binding.settlements.contains(&identity));
 }

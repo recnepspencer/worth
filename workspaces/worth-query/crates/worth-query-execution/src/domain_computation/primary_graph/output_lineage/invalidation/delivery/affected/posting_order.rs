@@ -32,6 +32,9 @@ impl LogicalPostings {
                     .posting_bindings
                     .get(id)
                     .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
+                let Some(binding) = binding.settlements() else {
+                    continue;
+                };
                 admission.key_read(key, binding.projection.ordinals().len())?;
                 let ordinals = binding
                     .projection
@@ -79,6 +82,9 @@ impl LogicalPostings {
         let binding = state
             .posting_bindings
             .get(&id)
+            .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
+        let binding = binding
+            .settlements()
             .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
         admission.key_read(key, binding.projection.ordinals().len())?;
         let ordinals = binding

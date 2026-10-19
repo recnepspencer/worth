@@ -91,7 +91,9 @@ use crate::domain_computation::primary_graph::{
 
 struct StatusOutput;
 
-fn snapshot(runtime: &RelationalRuntime) -> (SnapshotHandle, PositionedRelationalSnapshot) {
+pub(super) fn snapshot(
+    runtime: &RelationalRuntime,
+) -> (SnapshotHandle, PositionedRelationalSnapshot) {
     let basis = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
@@ -103,7 +105,7 @@ fn snapshot(runtime: &RelationalRuntime) -> (SnapshotHandle, PositionedRelationa
     (handle, proof)
 }
 
-fn write_field(
+pub(super) fn write_field(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     entity: EntityId,
@@ -155,7 +157,7 @@ fn write_batch(
     runtime.settle_performed_publication(performed).unwrap()
 }
 
-fn field_fact(
+pub(super) fn field_fact(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     handle: &SnapshotHandle,

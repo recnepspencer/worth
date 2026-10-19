@@ -28,6 +28,21 @@ pub(in crate::application_invariant_acceptance) fn install_program<
         Outputs = <MembershipProgram as ApplicationProgramDefinition<Schema>>::Outputs,
     >,
 >() -> MembershipWorld<P> {
+    install_program_seeded::<P>(false)
+}
+pub(in crate::application_invariant_acceptance) fn install_with_isolated_cycle() -> MembershipWorld
+{
+    install_program_seeded::<MembershipProgram>(true)
+}
+fn install_program_seeded<
+    P: ApplicationProgramDefinition<
+        Schema,
+        Contributions = <MembershipProgram as ApplicationProgramDefinition<Schema>>::Contributions,
+        Outputs = <MembershipProgram as ApplicationProgramDefinition<Schema>>::Outputs,
+    >,
+>(
+    isolated_cycle: bool,
+) -> MembershipWorld<P> {
     let configuration = (
         TopologyConfiguration {
             setup_calls: Arc::new(AtomicUsize::new(0)),
@@ -59,6 +74,9 @@ pub(in crate::application_invariant_acceptance) fn install_program<
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
             seed::seed_cycles(phase, graph);
+            if isolated_cycle {
+                seed::seed_isolated_cycle(phase, graph);
+            }
             Ok(())
         },
     )

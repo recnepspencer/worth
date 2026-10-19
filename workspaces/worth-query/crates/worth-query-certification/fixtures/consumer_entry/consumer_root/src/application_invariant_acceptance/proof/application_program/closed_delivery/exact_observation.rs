@@ -181,9 +181,16 @@ fn one_caller_observation(
     closed_fixed
         .deliver_current_at(&pinned, policy)
         .expect("original action and full lineage at the common observation");
+    let _ = worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
     closed_tree
         .deliver_current_at(&pinned, policy)
         .expect("selected typed root and full tree at the common observation");
+    let gate = worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
+    assert_eq!(
+        gate.source_currentness_visits, 0,
+        "closed tree gate before projection: {gate:?}"
+    );
+    println!("closed complete tree gate: {gate:?}");
     assert_eq!(
         pinned
             .query(PlanarOutputRead {

@@ -179,3 +179,159 @@ fn closed_no_projection_compares_the_action_selected_at_the_caller_observation()
         .close_conditional_runtime()
         .expect("original native custody closed; readonly keepalives released");
 }
+
+#[test]
+fn closed_leaf_clean_currentness_uses_native_marks_before_projection() {
+    use crate::application_program::fixed_source_receipts::{self as source, Program, Root};
+    let _observations = WorthQueryExecutionObservation::install_on_this_thread();
+    let program = ApplicationProgramAuthoring::<ConsumerSchema, Program>::begin()
+        .validated_program()
+        .unwrap();
+    let grants = [model_owner_grant::<Program>()];
+    let mut world = installation::install_selected_program(
+        &crate::installed_schema(),
+        8192,
+        4096,
+        WorthQueryApplicationProgramRoster::new(),
+        &grants,
+        program,
+    )
+    .unwrap();
+    let closed = {
+        let scope = authentication::request_scope();
+        let adapter = authentication::admit(world.application.installed_schema());
+        let principal = authentication::block_on(adapter.authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &scope,
+        ))
+        .unwrap();
+        let request = world.application.request(&principal, &scope);
+        source::assert_y(&request, "sibling-a", length(21));
+        let mut operation = request
+            .demand(PlanarOutputDemand::new("sibling-a"))
+            .retain_program_outputs::<Program, Root>(&world.application)
+            .unwrap_or_else(|stop| panic!("leaf construction: {:?}", stop.denial()));
+        let settled = loop {
+            operation = match operation.advance(&request) {
+                TreeAdvance::Pending(next) => next,
+                TreeAdvance::Settled(settled) => break settled,
+                TreeAdvance::Refused { denial, .. } => panic!("leaf: {denial:?}"),
+                TreeAdvance::Terminal(terminal) => panic!("leaf terminal: {:?}", terminal.denial()),
+            };
+        };
+        settled
+            .close_for_delivery(&request)
+            .unwrap_or_else(|stop| panic!("leaf close: {:?}", stop.denial()))
+    };
+    {
+        let scope = authentication::request_scope();
+        let adapter = authentication::admit(world.application.installed_schema());
+        let principal = authentication::block_on(adapter.authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &scope,
+        ))
+        .unwrap();
+        let request = world.application.request(&principal, &scope);
+        let observation = request.retain_current_read().unwrap();
+        let policy = WorthQueryOperationDeliveryPolicy::currentness(
+            NonZeroUsize::new(
+                world
+                    .application
+                    .runtime()
+                    .output_demand_resource_profile()
+                    .limits()
+                    .source_currentness_work(),
+            )
+            .unwrap(),
+        );
+        let _ =
+            worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
+        closed
+            .deliver_current_at(&request.at(&observation), policy)
+            .unwrap();
+        let gate =
+            worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
+        assert_eq!(
+            gate.source_currentness_visits, 0,
+            "original closed leaf gate: {gate:?}"
+        );
+        println!("closed original leaf gate: {gate:?}");
+        let window = crate::application_invariant_acceptance::resources::INVALIDATION_INSTALLATION
+            .maximum_retained_positions;
+        source::assert_y(&request, "remote-a", length(41));
+        let mut repeated_work = None;
+        for step in 0..=window {
+            let replacement = length(if step % 2 == 0 { 42 } else { 41 });
+            let before = request
+                .query(PlanarRead {
+                    body_key: "remote-a".into(),
+                })
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .y;
+            assert_ne!(
+                before, replacement,
+                "unrelated edit must change Y at step={step}"
+            );
+            let edit = source::prepare(
+                &world.application,
+                &request,
+                source::input("remote-a", replacement),
+                0x9176_6380 + step as u64,
+            );
+            source::finish(edit, &request)
+                .close(&request)
+                .unwrap_or_else(|(_, cause)| {
+                    panic!("unrelated Fixed close at step={step}: {cause:?}")
+                });
+            source::assert_y(&request, "remote-a", replacement);
+            let selected = request.retain_current_read().unwrap();
+            let _ = world
+                .application
+                .take_required_set_comparison_work_for_test();
+            let _ =
+                worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test(
+                );
+            for _ in 0..2 {
+                closed
+                    .deliver_current_at(&request.at(&selected), policy)
+                    .unwrap();
+            }
+            let facts =
+                worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test(
+                );
+            assert_eq!(
+                facts.source_currentness_visits, 0,
+                "closed leaf continuity step={step} window={window}: {facts:?}"
+            );
+            let work = world
+                .application
+                .take_required_set_comparison_work_for_test();
+            assert_eq!(work.len(), 2);
+            assert!(work[0] >= work[1]);
+            match repeated_work {
+                None => repeated_work = Some(work[1]),
+                Some(expected) => assert_eq!(
+                    work[1], expected,
+                    "closed leaf repeated cost grows with old history at step={step}"
+                ),
+            }
+            println!("closed leaf continuity step={step} window={window} charges={work:?} fact_visits={}", facts.source_currentness_visits);
+        }
+        assert_eq!(
+            request
+                .at(&observation)
+                .query(PlanarOutputRead {
+                    body_key: "sibling-a".into()
+                })
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .value,
+            length(21 + 1)
+        );
+    }
+    drop(closed);
+    world.application.close_conditional_runtime().unwrap();
+}

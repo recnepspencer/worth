@@ -24,7 +24,7 @@ use super::super::{
 
 mod ordering;
 
-pub(super) struct PreparedPostingOrdinals {
+pub(in super::super) struct PreparedPostingOrdinals {
     ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
     retained_bytes: u64,
 }
@@ -80,7 +80,7 @@ fn maximum_keys(
 }
 
 impl PreparedPostingOrdinals {
-    pub(super) fn prepare(
+    pub(in super::super) fn prepare(
         facts: &(impl FactSequence + ?Sized),
         output_facts: Option<&[WorthQueryApplicationObservedFact]>,
         verification_requirement: &mut Option<FullVerificationReason>,
@@ -198,6 +198,12 @@ impl PreparedPostingOrdinals {
             ordinals,
             retained_bytes: retained,
         })
+    }
+
+    pub(in super::super) fn into_query_parts(
+        self,
+    ) -> (OrdMap<Arc<FactPostingKey>, OrdSet<usize>>, u64) {
+        (self.ordinals, self.retained_bytes)
     }
 
     pub(super) fn into_projection(

@@ -10,26 +10,28 @@ struct Reports {
     registered: bool,
     work: Vec<u64>,
 }
-pub(super) fn record<S>(runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, work: u64) {
-    if !crate::domain_computation::execution_observation::is_installed() {
-        return;
+impl RequiredSetComparisonObservations {
+    pub(in crate::domain_computation::primary_graph) fn record(&self, work: u64) {
+        if !crate::domain_computation::execution_observation::is_installed() {
+            return;
+        }
+        let owner = &self.reports;
+        let mut reports = owner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !reports.registered {
+            let weak = Arc::downgrade(owner);
+            crate::domain_computation::execution_observation::register_owned_cleanup(move || {
+                if let Some(owner) = weak.upgrade() {
+                    *owner
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner) = Reports::default();
+                }
+            });
+            reports.registered = true;
+        }
+        reports.work.push(work);
     }
-    let owner = &runtime.required_set_comparison_observations.reports;
-    let mut reports = owner
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if !reports.registered {
-        let weak = Arc::downgrade(owner);
-        crate::domain_computation::execution_observation::register_owned_cleanup(move || {
-            if let Some(owner) = weak.upgrade() {
-                *owner
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner) = Reports::default();
-            }
-        });
-        reports.registered = true;
-    }
-    reports.work.push(work);
 }
 impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// Drains actual complete-comparison charges from this receiver under an owned listener.
