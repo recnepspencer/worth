@@ -21,7 +21,7 @@ fn edit_capacity_overflow_rebuilds_and_matches_reuse_off() {
     const DECLARED: u64 = u64::MAX / 1024;
     let request = live_scope();
     let execution = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, u64::MAX)),
+        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, None)),
         &request,
     );
     let reducer = WorthQueryDeterministicReducer::canonical(|| 0, counted);

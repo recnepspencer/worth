@@ -19,7 +19,7 @@ pub(super) fn append(
     working: &crate::runtime::WorkingState,
     adjacency: &[AdjacencyDelta],
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
     if working.clone_mode() != PartitionCloneMode::Full {
         return Ok(false);
@@ -83,7 +83,7 @@ pub(super) fn append(
 pub(super) fn push(
     touches: &mut Vec<Touch>,
     touch: Touch,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<(), Failure> {
     if touches.len() == touches.capacity() {
         let new_capacity = touches.capacity().saturating_mul(2).max(4);

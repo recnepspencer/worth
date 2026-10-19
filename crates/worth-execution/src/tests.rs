@@ -32,6 +32,7 @@ mod byte_counter_ownership;
 mod controlled_child;
 mod decompose_unknown_identity;
 mod map_dispatch;
+mod measured_result;
 mod memory_level;
 mod nested_certification_refusal;
 mod nested_request_stops;
@@ -64,7 +65,11 @@ pub(crate) fn request(workers: usize, memory: u64, work: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, Some(work)),
+            ExecutionBudget::new(
+                NonZeroUsize::new(workers).unwrap(),
+                Some(memory),
+                Some(work),
+            ),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -132,7 +137,7 @@ fn reservations_charge_every_ancestor_and_process_cap() {
     assert_eq!(
         second.try_reserve(1, 26).err(),
         Some(SlotRefusal::Denied(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial {
+            MemoryLimitDenial::Capacity {
                 requested: 26,
                 admitted: 25,
                 level: MemoryLimitLevel::Policy { ancestor: 1 },
@@ -154,7 +159,7 @@ fn reservations_charge_every_ancestor_and_process_cap() {
     assert_eq!(
         sibling.try_reserve(1, 1).err(),
         Some(SlotRefusal::Denied(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial {
+            MemoryLimitDenial::Capacity {
                 requested: 1,
                 admitted: 0,
                 level: MemoryLimitLevel::Policy { ancestor: 0 },
@@ -186,7 +191,7 @@ fn batch_memory_denial_precedes_kernel_dispatch() {
     assert!(matches!(
         outcome.stop,
         Some(BatchStop::Admission(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial { admitted: 10, .. }
+            MemoryLimitDenial::Capacity { admitted: 10, .. }
         )))
     ));
     assert_eq!(outcome.report.charged_work(), 0);

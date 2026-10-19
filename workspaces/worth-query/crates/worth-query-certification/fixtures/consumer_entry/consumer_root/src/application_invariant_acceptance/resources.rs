@@ -16,7 +16,7 @@ pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
         worth_foundational::DeterminismContract::CanonicalBitwise,
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
-            64 * 1024 * 1024,
+            None,
             Some(8_000_000),
         ),
     );
@@ -70,13 +70,18 @@ pub(super) fn application_limits(
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
     worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
         world_resources(),
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            4096,
-            candidate_bytes,
+        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::policy(
+            Some(4096),
+            Some(candidate_bytes),
         )
         .unwrap(),
-        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, query_bytes, 4096, 32)
-            .unwrap(),
+        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::bounded(
+            4096,
+            query_bytes,
+            4096,
+            32,
+        )
+        .unwrap(),
         worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }

@@ -39,6 +39,26 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn retained_representation_bytes(
+        &self,
+    ) -> Option<usize> {
+        let mut bytes = 0usize;
+        for role in self.expected_roles.keys() {
+            bytes = bytes.checked_add(role.len())?;
+        }
+        for family in &self.expected_families {
+            bytes = bytes.checked_add(family.prefix.len())?;
+        }
+        for (role, binding) in &self.roles {
+            bytes = bytes.checked_add(super::super::retained_representation::output_binding(
+                role,
+                &binding.entity_name,
+                &binding.entity,
+            )?)?;
+        }
+        Some(bytes)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str)> + Clone

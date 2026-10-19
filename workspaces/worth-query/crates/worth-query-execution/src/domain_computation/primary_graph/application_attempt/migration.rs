@@ -65,6 +65,8 @@ where
         );
     }
     let WorthQueryApplicationEffectProgram {
+        candidate_requirements: _candidate_requirements,
+        effect_backing_memory: _effect_backing_memory,
         read_set,
         effects,
         emission_retained_bytes,

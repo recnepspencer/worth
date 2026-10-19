@@ -63,8 +63,10 @@ impl WorthQueryExecutionResourceEnvelope {
         self.resource_ceilings.get(dimension)
     }
     pub fn admits_resource(&self, dimension: WorthQueryResourceDimension, value: u64) -> bool {
-        self.optional_resource_ceiling(dimension)
-            .is_some_and(|maximum| value <= maximum)
+        match self.optional_resource_ceiling(dimension) {
+            Some(maximum) => value <= maximum,
+            None => dimension == WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
+        }
     }
 
     pub fn bounded(
@@ -90,7 +92,11 @@ impl WorthQueryExecutionResourceEnvelope {
     pub fn admits_scale(&self, axis: WorthQuerySemanticScaleAxis, value: u64) -> bool {
         match self.optional_scale_ceiling(axis) {
             Some(maximum) => value <= maximum,
-            None => axis == WorthQuerySemanticScaleAxis::WorkItems,
+            None => matches!(
+                axis,
+                WorthQuerySemanticScaleAxis::WorkItems
+                    | WorthQuerySemanticScaleAxis::CandidateItems
+            ),
         }
     }
 

@@ -88,7 +88,7 @@ fn trial(base: &SignalGraph, sources: &[NodeId], targets: &[NodeId], memory: u64
         admission.policy.determinism(),
         ExecutionBudget::new(
             admission.policy.budget().max_workers(),
-            memory,
+            Some(memory),
             Some(100_000_000),
         ),
     );

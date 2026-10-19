@@ -60,7 +60,11 @@ fn cold_reconstruction_meets_the_derived_serial_memory_edge() {
         full_bytes(rows + 1)
     );
     for n in [rows, rows + 1] {
-        let host = crate::test_execution_policy::serial_request();
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(Some(MEMORY)),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
         let execution = ExecutionRequest::serial(&host);
         let mut offered = edits(n, true);
         let result = request_payment::run(&execution, budget(), |work| {

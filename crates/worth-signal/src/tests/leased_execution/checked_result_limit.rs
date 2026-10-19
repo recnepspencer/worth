@@ -38,38 +38,83 @@ fn declared_checked_result_heap_is_enforced_before_publication() {
         .unwrap()
         .bytes();
     assert!(heap > 0);
-    for maximum in [0, heap] {
-        let mut graph = SignalGraph::new();
-        let node = graph
-            .node()
-            .with_contract(
-                NodeContract::wildcard()
-                    .with_produces(VALUE)
-                    .with_bounded_inputs(BoundedSignalInputs::default())
-                    .with_max_checked_result_heap_bytes(maximum),
-            )
-            .build();
-        let calls = AtomicUsize::new(0);
-        let lease = authority().request_lease(request(2, 2_000_000)).unwrap();
-        let outcome = graph.evaluate_checked(
+    for memory in [None, Some(32 << 20)] {
+        for maximum in [0, heap] {
+            let mut graph = SignalGraph::new();
+            let node = graph
+                .node()
+                .with_contract(
+                    NodeContract::wildcard()
+                        .with_produces(VALUE)
+                        .with_bounded_inputs(BoundedSignalInputs::default())
+                        .with_max_checked_result_heap_bytes(maximum),
+                )
+                .build();
+            let calls = AtomicUsize::new(0);
+            let mut admission = request(2, 2_000_000);
+            admission.policy = worth_foundational::ExecutionRequestPolicy::new(
+                admission.policy.posture(),
+                admission.policy.determinism(),
+                worth_foundational::ExecutionBudget::new(
+                    admission.policy.budget().max_workers(),
+                    memory,
+                    Some(2_000_000),
+                ),
+            );
+            let lease = authority().request_lease(admission).unwrap();
+            let outcome = graph.evaluate_checked(
+                &[node],
+                EvaluationRequestMode::Default,
+                &(),
+                &|_| {
+                    calls.fetch_add(1, Ordering::SeqCst);
+                    Ok(result())
+                },
+                worth_execution::ExecutionRequest::leased(&lease),
+            );
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            if maximum == 0 {
+                let error = outcome.unwrap_err();
+                assert!(contains_checked_result_violation(&error), "{error:?}");
+                assert_eq!(graph.node_aspect_version(node).unwrap().get(VALUE), 0);
+            } else {
+                let report = outcome.unwrap();
+                assert_eq!(report.tasks_executed, 1);
+                assert_eq!(graph.node_aspect_version(node).unwrap().get(VALUE), 7);
+            }
+        }
+    }
+}
+
+#[test]
+fn omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets() {
+    let mut graph = SignalGraph::new();
+    let node = graph
+        .node()
+        .with_contract(
+            NodeContract::wildcard()
+                .with_produces(VALUE)
+                .with_bounded_inputs(BoundedSignalInputs::default()),
+        )
+        .build();
+    let calls = AtomicUsize::new(0);
+    let lease = authority().request_lease(request(2, 2_000_000)).unwrap();
+    assert_eq!(lease.policy().budget().charged_memory_bytes(), None);
+    let report = graph
+        .evaluate_checked(
             &[node],
             EvaluationRequestMode::Default,
             &(),
-            &|_| {
+            &|context| {
+                assert_eq!(context.result_capacity_bytes(), None);
                 calls.fetch_add(1, Ordering::SeqCst);
-                Ok(result())
+                Ok(result().with_label("owned-output".repeat(8192)))
             },
             worth_execution::ExecutionRequest::leased(&lease),
-        );
-        assert_eq!(calls.load(Ordering::SeqCst), 1);
-        if maximum == 0 {
-            let error = outcome.unwrap_err();
-            assert!(contains_checked_result_violation(&error), "{error:?}");
-            assert_eq!(graph.node_aspect_version(node).unwrap().get(VALUE), 0);
-        } else {
-            let report = outcome.unwrap();
-            assert_eq!(report.tasks_executed, 1);
-            assert_eq!(graph.node_aspect_version(node).unwrap().get(VALUE), 7);
-        }
-    }
+        )
+        .unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
+    assert_eq!(report.tasks_executed, 1);
+    assert_eq!(graph.node_aspect_version(node).unwrap().get(VALUE), 7);
+    assert_eq!(lease.charged_memory_bytes(), 0);
 }

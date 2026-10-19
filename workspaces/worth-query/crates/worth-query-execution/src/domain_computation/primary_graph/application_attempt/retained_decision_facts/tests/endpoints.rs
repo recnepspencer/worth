@@ -60,7 +60,7 @@ fn retained_endpoint_capture_and_union_keep_full_exact_ids_and_charge_coexistenc
     assert_eq!(
         denied.kind(),
         Kind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial {
+            worth_execution::MemoryLimitDenial::Capacity {
                 requested: quote,
                 admitted: quote
                     - u64::try_from(Layout::array::<EntityId>(1).unwrap().size()).unwrap(),

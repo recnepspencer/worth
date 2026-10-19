@@ -321,7 +321,7 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
         .published_generation_for_observation(selected, &changed_basis.observation())
         .is_none());
     let unfunded = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(0),
+        worth_execution::SerialMemoryBudget::new(Some(0)),
         worth_execution::CancellationSource::new().token(),
         None,
     );

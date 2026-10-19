@@ -37,7 +37,7 @@ fn refused_basis_advancement_fails_the_slot_and_closes_the_lane() {
         place(Placement::Leased(std::num::NonZeroUsize::MIN)),
         bound(Some(worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
-            64 * 1024 * 1024,
+            None,
             Some(0),
         ))),
     );

@@ -136,4 +136,12 @@ impl crate::storage::overlay::PartitionAccess for SinglePartitionAccess<'_> {
     fn partition_ids(&self) -> Vec<crate::identity::data::PartitionId> {
         vec![self.partition.partition_id]
     }
+
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<crate::identity::data::PartitionId>, crate::storage::overlay::PartitionIdsDenial>
+    {
+        crate::storage::overlay::collect_partition_ids(1, [self.partition.partition_id], memory)
+    }
 }

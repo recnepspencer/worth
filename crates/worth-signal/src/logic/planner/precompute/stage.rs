@@ -14,6 +14,7 @@ pub(in crate::logic::planner) enum PreparedStageEpoch<'tasks, 'request, 'authori
     Checked {
         metadata: EpochMetadata<'tasks>,
         proposals: StageExecutionData,
+        result_memory: Vec<worth_execution::ExecutionMemoryReservation>,
         batch: DisjointGraphBatch,
         request: worth_execution::ExecutionRequest<'request, 'authority>,
         apply: super::graph_batch::CheckedApplyCapacity,
@@ -89,6 +90,7 @@ pub(in crate::logic::planner) fn perform_stage_precompute<'tasks, 'request, 'aut
         PreparedEpoch::Checked {
             metadata,
             values,
+            result_memory,
             batch,
             request,
             apply,
@@ -98,6 +100,7 @@ pub(in crate::logic::planner) fn perform_stage_precompute<'tasks, 'request, 'aut
         } => PreparedStageEpoch::Checked {
             metadata,
             proposals: StageExecutionData::Prepared(SingleConsumer::new(values)),
+            result_memory,
             batch,
             request,
             apply,

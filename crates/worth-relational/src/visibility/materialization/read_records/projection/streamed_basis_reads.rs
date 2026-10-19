@@ -1,3 +1,5 @@
+mod preclaimed_records;
+mod record_clone_quotes;
 use super::super::read_stop::ReadStop;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
@@ -7,6 +9,9 @@ use crate::visibility::materialization::read_records::visibility::{
     visible_metadata, visible_relation_metadata,
 };
 
+/// Zero-work callback events prepare or settle the original caller's temporary
+/// claim. Record bytes use the established owner-accounted payload measure;
+/// that measure does not prove allocator or BTree node structural backing.
 pub(crate) trait ProjectionRecordSource {
     fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>>;
     fn is_exact_basis(&self) -> bool;
@@ -21,8 +26,9 @@ pub(crate) trait ProjectionRecordSource {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         id: EntityId,
     ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        super::super::read_work::point(
+        super::super::read_work::point_with_quote(
             execution,
+            || self.candidate_entity_heap_for_id(id),
             || {
                 let root = self.selected_root()?;
                 super::super::reader::record_identity_materialization::authoritative_entity_record_for_id_from_exact_state(root.as_ref(), root.schema_authority().registry(), id)
@@ -39,8 +45,9 @@ pub(crate) trait ProjectionRecordSource {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         id: RelationId,
     ) -> Result<Option<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        super::super::read_work::point(
+        super::super::read_work::point_with_quote(
             execution,
+            || self.candidate_relation_heap_for_id(id),
             || {
                 let root = self.selected_root()?;
                 super::super::reader::record_identity_materialization::authoritative_relation_record_for_id_from_exact_state(root.as_ref(), root.schema_authority().registry(), id)
@@ -53,12 +60,49 @@ pub(crate) trait ProjectionRecordSource {
         )
     }
 
+    fn with_entity_record<E, T>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: EntityId,
+        mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
+        inspect: impl FnOnce(&EntityReadRecord) -> T,
+    ) -> Result<Option<T>, ReadStop<E>> {
+        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        let bytes = self
+            .candidate_entity_heap_for_id(id)
+            .and_then(|heap| {
+                heap.checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
+                    .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            })
+            .map_err(ReadStop::Request)?;
+        before_candidate(super::super::read_prices::KEYED_RECORD, bytes)
+            .map_err(ReadStop::Admission)?;
+        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        let record = preclaimed_records::entity(self, id);
+        let actual = record
+            .as_ref()
+            .map_or(0, super::super::read_footprint::entity)
+            .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
+            .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            .map_err(ReadStop::Request)?;
+        assert!(
+            actual <= bytes,
+            "the owner-accounted payload quote bounds the clone payload"
+        );
+        before_candidate(0, actual).map_err(ReadStop::Admission)?;
+        let result = record.as_ref().map(inspect);
+        drop(record);
+        // The original caller may now restore its enclosing temporary claim.
+        before_candidate(0, 0).map_err(ReadStop::Admission)?;
+        Ok(result)
+    }
+
     fn try_for_each_entity_record_in<E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
         kind_id: Option<KindId>,
-        mut before_candidate: impl FnMut(u64) -> Result<(), E>,
+        mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
@@ -68,27 +112,71 @@ pub(crate) trait ProjectionRecordSource {
         let Some(partition) = root.get_partition(partition_id) else {
             return Ok(());
         };
-        let mut examine = |slot: usize| {
-            before_candidate(self.candidate_entity_bytes(partition, slot))
-                .map_err(ReadStop::Admission)?;
-            if let Some(record) = self
-                .authoritative_entity_record(execution, EntityId::new(partition_id, slot as u64, 0))
-                .map_err(ReadStop::Request)?
-                && kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id)
+        let mut iterator_bytes = 0;
+        let (live, historical) = {
+            let mut prepare = |_navigation, bytes| {
+                before_candidate(0, bytes).map_err(ReadStop::Admission)?;
+                iterator_bytes = bytes;
+                Ok(())
+            };
+            let live = if self.is_exact_basis() {
+                Some(
+                    partition
+                        .entity_arena
+                        .live_bitset
+                        .try_set_slots(&mut prepare)?,
+                )
+            } else {
+                None
+            };
+            let historical = if self.is_exact_basis() {
+                None
+            } else {
+                Some(partition.entity_arena.try_occupied_slots(&mut prepare)?)
+            };
+            (live, historical)
+        };
+        let slots = live
+            .into_iter()
+            .flatten()
+            .chain(historical.into_iter().flatten());
+        for slot in slots {
+            let id = EntityId::new(partition_id, slot as u64, 0);
+            let bytes =
+                self.candidate_entity_heap_for_id(id)
+                    .and_then(|heap| {
+                        heap.checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
+                    .and_then(|row| row.checked_add(iterator_bytes))
+                    .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+                    })
+                    .map_err(ReadStop::Request)?;
+            before_candidate(
+                super::super::read_prices::EXAMINE_SLOT + super::super::read_prices::KEYED_RECORD,
+                bytes,
+            )
+            .map_err(ReadStop::Admission)?;
+            crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+            let record = preclaimed_records::entity(self, id);
+            let actual = record
+                .as_ref()
+                .map_or(0, super::super::read_footprint::entity)
+                .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
+                .and_then(|row| row.checked_add(iterator_bytes))
+                .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+                .map_err(ReadStop::Request)?;
+            assert!(
+                actual <= bytes,
+                "the owner-accounted payload quote bounds the clone payload"
+            );
+            before_candidate(0, actual).map_err(ReadStop::Admission)?;
+            if let Some(record) = record
+                && kind_id.is_none_or(|kind| record.kind.kind_id == kind)
             {
                 visit(&record).map_err(ReadStop::Admission)?;
             }
-            Ok(())
-        };
-        if self.is_exact_basis() {
-            for slot in partition.entity_arena.live_bitset.set_slots() {
-                examine(slot)?;
-            }
-        } else {
-            for slot in partition.entity_arena.occupied_slots_iter() {
-                examine(slot)?;
-            }
         }
+        // The iterator has dropped before the caller removes its temporary claim.
+        before_candidate(0, 0).map_err(ReadStop::Admission)?;
         Ok(())
     }
 
@@ -97,7 +185,7 @@ pub(crate) trait ProjectionRecordSource {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
         kind_id: Option<KindId>,
-        mut before_candidate: impl FnMut(u64) -> Result<(), E>,
+        mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
@@ -107,30 +195,71 @@ pub(crate) trait ProjectionRecordSource {
         let Some(partition) = root.get_partition(partition_id) else {
             return Ok(());
         };
-        let mut examine = |slot: usize| {
-            before_candidate(self.candidate_relation_bytes(partition, slot))
-                .map_err(ReadStop::Admission)?;
-            if let Some(record) = self
-                .authoritative_relation_record(
-                    execution,
-                    RelationId::new(partition_id, slot as u64, 0),
+        let mut iterator_bytes = 0;
+        let (live, historical) = {
+            let mut prepare = |_navigation, bytes| {
+                before_candidate(0, bytes).map_err(ReadStop::Admission)?;
+                iterator_bytes = bytes;
+                Ok(())
+            };
+            let live = if self.is_exact_basis() {
+                Some(
+                    partition
+                        .relation_arena
+                        .live_bitset
+                        .try_set_slots(&mut prepare)?,
                 )
-                .map_err(ReadStop::Request)?
-                && kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id)
+            } else {
+                None
+            };
+            let historical = if self.is_exact_basis() {
+                None
+            } else {
+                Some(partition.relation_arena.try_occupied_slots(&mut prepare)?)
+            };
+            (live, historical)
+        };
+        let slots = live
+            .into_iter()
+            .flatten()
+            .chain(historical.into_iter().flatten());
+        for slot in slots {
+            let id = RelationId::new(partition_id, slot as u64, 0);
+            let bytes =
+                self.candidate_relation_heap_for_id(id)
+                    .and_then(|heap| {
+                        heap.checked_add(std::mem::size_of::<RelationReadRecord>() as u64)
+                    .and_then(|row| row.checked_add(iterator_bytes))
+                    .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+                    })
+                    .map_err(ReadStop::Request)?;
+            before_candidate(
+                super::super::read_prices::EXAMINE_SLOT + super::super::read_prices::KEYED_RECORD,
+                bytes,
+            )
+            .map_err(ReadStop::Admission)?;
+            crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+            let record = preclaimed_records::relation(self, id);
+            let actual = record
+                .as_ref()
+                .map_or(0, super::super::read_footprint::relation)
+                .checked_add(std::mem::size_of::<RelationReadRecord>() as u64)
+                .and_then(|row| row.checked_add(iterator_bytes))
+                .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+                .map_err(ReadStop::Request)?;
+            assert!(
+                actual <= bytes,
+                "the owner-accounted payload quote bounds the clone payload"
+            );
+            before_candidate(0, actual).map_err(ReadStop::Admission)?;
+            if let Some(record) = record
+                && kind_id.is_none_or(|kind| record.kind.kind_id == kind)
             {
                 visit(&record).map_err(ReadStop::Admission)?;
             }
-            Ok(())
-        };
-        if self.is_exact_basis() {
-            for slot in partition.relation_arena.live_bitset.set_slots() {
-                examine(slot)?;
-            }
-        } else {
-            for slot in partition.relation_arena.occupied_slots_iter() {
-                examine(slot)?;
-            }
         }
+        // The iterator has dropped before the caller removes its temporary claim.
+        before_candidate(0, 0).map_err(ReadStop::Admission)?;
         Ok(())
     }
 
@@ -138,7 +267,7 @@ pub(crate) trait ProjectionRecordSource {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: Option<KindId>,
-        mut before_candidate: impl FnMut(u64) -> Result<(), E>,
+        mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
@@ -160,7 +289,7 @@ pub(crate) trait ProjectionRecordSource {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: Option<KindId>,
-        mut before_candidate: impl FnMut(u64) -> Result<(), E>,
+        mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
@@ -176,6 +305,46 @@ pub(crate) trait ProjectionRecordSource {
                 &mut visit,
             )
         })
+    }
+
+    fn candidate_entity_heap_for_id(
+        &self,
+        id: EntityId,
+    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
+        let Some(root) = self.selected_root() else {
+            return Ok(0);
+        };
+        let visibility = if self.is_exact_basis() {
+            super::super::reader::KindScanVisibility::Live
+        } else {
+            super::super::reader::KindScanVisibility::AtVersion(self.version_id())
+        };
+        super::super::read_work::record_quote::entity_for_id(
+            root.as_ref(),
+            root.schema_authority().registry(),
+            id,
+            visibility,
+        )
+    }
+
+    fn candidate_relation_heap_for_id(
+        &self,
+        id: RelationId,
+    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
+        let Some(root) = self.selected_root() else {
+            return Ok(0);
+        };
+        let visibility = if self.is_exact_basis() {
+            super::super::reader::KindScanVisibility::Live
+        } else {
+            super::super::reader::KindScanVisibility::AtVersion(self.version_id())
+        };
+        super::super::read_work::record_quote::relation_for_id(
+            root.as_ref(),
+            root.schema_authority().registry(),
+            id,
+            visibility,
+        )
     }
 
     fn candidate_entity_bytes_for_id(&self, entity_id: EntityId) -> u64 {
@@ -195,86 +364,9 @@ pub(crate) trait ProjectionRecordSource {
     }
 
     fn candidate_entity_bytes(&self, partition: &PartitionState, slot: usize) -> u64 {
-        let selected = if self.is_exact_basis() {
-            partition.entity_arena.get_slot(slot).and_then(|record| {
-                Some((
-                    record.kind_id()?,
-                    record
-                        .extra()
-                        .authoritative_aspect_state
-                        .as_ref()
-                        .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
-                ))
-            })
-        } else {
-            partition
-                .entity_arena
-                .metadata_history_at(slot)
-                .and_then(|history| visible_metadata(history, self.version_id()))
-                .map(|metadata| {
-                    (
-                        metadata.kind_id,
-                        metadata
-                            .authoritative_aspect_state
-                            .as_ref()
-                            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
-                    )
-                })
-        };
-        let Some((kind_id, state_bytes)) = selected else {
-            return 0;
-        };
-        let names = self
-            .selected_schema_authority()
-            .and_then(|authority| authority.registry().entity_registration(kind_id).ok())
-            .map_or(0, |registration| {
-                registration
-                    .kind_name
-                    .capacity()
-                    .saturating_add(registration.schema_id.0.capacity()) as u64
-            });
-        (std::mem::size_of::<EntityReadRecord>() as u64)
-            .saturating_add(names)
-            .saturating_add(state_bytes)
+        record_clone_quotes::candidate_entity_bytes(self, partition, slot)
     }
-
     fn candidate_relation_bytes(&self, partition: &PartitionState, slot: usize) -> u64 {
-        let selected = if self.is_exact_basis() {
-            partition.relation_arena.get_slot(slot).and_then(|record| {
-                Some((
-                    record.kind_id()?,
-                    record
-                        .extra()
-                        .authoritative_aspect_state
-                        .as_ref()
-                        .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
-                ))
-            })
-        } else {
-            visible_relation_metadata(partition, slot, self.version_id()).map(|metadata| {
-                (
-                    metadata.kind_id,
-                    metadata
-                        .authoritative_aspect_state
-                        .as_ref()
-                        .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
-                )
-            })
-        };
-        let Some((kind_id, state_bytes)) = selected else {
-            return 0;
-        };
-        let names = self
-            .selected_schema_authority()
-            .and_then(|authority| authority.registry().relation_registration(kind_id).ok())
-            .map_or(0, |registration| {
-                registration
-                    .kind_name
-                    .capacity()
-                    .saturating_add(registration.schema_id.0.capacity()) as u64
-            });
-        (std::mem::size_of::<RelationReadRecord>() as u64)
-            .saturating_add(names)
-            .saturating_add(state_bytes)
+        record_clone_quotes::candidate_relation_bytes(self, partition, slot)
     }
 }

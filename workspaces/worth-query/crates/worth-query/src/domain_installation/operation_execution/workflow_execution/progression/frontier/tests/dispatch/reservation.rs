@@ -22,7 +22,7 @@ pub(super) fn start_reservation(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, Some(1024)),
+                ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1024)),
             ),
             cancellation: worth_execution::CancellationToken::new(),
             deadline: None,

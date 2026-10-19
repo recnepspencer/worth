@@ -373,7 +373,9 @@ where
         family_prefixes.push(family.prefix());
     }
     let candidates = descriptor.candidates().cardinality();
-    if creates > candidates.maximum_creates() || retires > candidates.maximum_deletes() {
+    if candidates.is_some_and(|ceiling| {
+        creates > ceiling.maximum_creates() || retires > ceiling.maximum_deletes()
+    }) {
         return Err(denial(
             DenialKind::MutationOutputCandidateMismatch,
             descriptor.identity(),

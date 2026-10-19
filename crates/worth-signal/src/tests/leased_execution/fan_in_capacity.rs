@@ -24,7 +24,7 @@ fn admission(memory: u64) -> LeaseRequest {
         admission.policy.determinism(),
         ExecutionBudget::new(
             admission.policy.budget().max_workers(),
-            memory,
+            Some(memory),
             Some(1_000_000_000),
         ),
     );

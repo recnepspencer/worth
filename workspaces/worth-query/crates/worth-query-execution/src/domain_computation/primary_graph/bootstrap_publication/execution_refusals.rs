@@ -56,7 +56,7 @@ pub(in crate::domain_computation::primary_graph) fn authority() -> &'static Exec
     OWNER.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::MIN,
-            charged_memory_bytes: Some(64 * 1024 * 1024),
+            charged_memory_bytes: None,
         })
         .unwrap()
     })
@@ -67,7 +67,7 @@ pub(in crate::domain_computation::primary_graph) fn request() -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, Some(1_000_000)),
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1_000_000)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,
@@ -175,7 +175,7 @@ fn unleased_bootstrap_index_stop_keeps_execution_denial() {
             source.cancel();
         }
         let host = SerialRequest::from_memory(
-            SerialMemoryBudget::new(64 * 1024 * 1024),
+            SerialMemoryBudget::new(None),
             source.token(),
             expired.then(Instant::now),
         );

@@ -72,30 +72,37 @@ fn collect_join_relations_checked(
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
 ) -> Result<(), IndexKernelStop> {
     let budget = std::cell::RefCell::new(context);
+    let stream_bytes = std::cell::Cell::new(0_u64);
     projection
         .try_for_each_relation(
             request_execution,
             leg.relation_kind(),
-            |bytes| {
-                budget.borrow_mut().checkpoint(1)?;
-                budget.borrow().check_scratch_peak(bytes)
+            |units, bytes| {
+                budget.borrow_mut().checkpoint(units)?;
+                stream_bytes.set(bytes);
+                budget.borrow().settle_temporary_scratch(bytes)
             },
             |relation| {
                 let (shared, external) = join_endpoints(relation, leg.shared_endpoint());
                 budget.borrow_mut().checkpoint(2)?;
-                budget
-                    .borrow()
-                    .check_scratch_peak(projection.candidate_entity_bytes(shared))?;
-                budget
-                    .borrow()
-                    .check_scratch_peak(projection.candidate_entity_bytes(external))?;
+                let before = |units, bytes| {
+                    budget.borrow_mut().checkpoint(units)?;
+                    budget.borrow().settle_temporary_scratch(
+                        stream_bytes.get().checked_add(bytes).ok_or_else(||
+                            super::checked_entry_map::read_request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?
+                    )
+                };
                 if projection
-                    .with_entity(request_execution, shared, |record| record.kind.kind_id)
-                    .map_err(super::checked_entry_map::read_request)?
+                    .with_entity_checked(request_execution, shared, before, |record| {
+                        record.kind.kind_id
+                    })
+                    .map_err(super::checked_entry_map::read_stop)?
                     != Some(shared_entity_kind)
                     || projection
-                        .with_entity(request_execution, external, |record| record.kind.kind_id)
-                        .map_err(super::checked_entry_map::read_request)?
+                        .with_entity_checked(request_execution, external, before, |record| {
+                            record.kind.kind_id
+                        })
+                        .map_err(super::checked_entry_map::read_stop)?
                         != Some(leg.external_entity_kind())
                 {
                     return Ok(());

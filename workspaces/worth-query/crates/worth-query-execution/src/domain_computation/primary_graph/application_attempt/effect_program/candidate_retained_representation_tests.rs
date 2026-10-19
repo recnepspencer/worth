@@ -12,6 +12,8 @@ use super::{
     candidate_retained_representation as representation, CandidateItemKind,
     WorthQueryCandidateReservation,
 };
+#[path = "candidate_quote_tests.rs"]
+mod candidate_quote_tests;
 #[path = "candidate_retained_representation_fixture.rs"]
 mod fixture;
 use crate::domain_computation::primary_graph::tests::fixture::{live_scope, MutationFreeNotice};
@@ -74,8 +76,15 @@ fn external_encoded_width_participates_in_candidate_denial() {
 #[test]
 fn multi_unlink_preflight_preserves_effects_and_reservation_on_denial() {
     let requirement = requirements(0, 0, 0, 1, 0, 0, 0);
-    let mut reservation =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 1, 0).unwrap();
+    let mut reservation = WorthQueryCandidateReservation::admit(
+        requirement,
+        worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy::finite(
+            requirement,
+        ),
+        Some(1),
+        Some(0),
+    )
+    .unwrap();
     let effects: Vec<()> = Vec::new();
 
     let denial = reservation
@@ -173,9 +182,11 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
     let insufficient = requirements(1, 0, 0, 0, 1, 0, exact_capacity - 1);
     let mut denied = WorthQueryCandidateReservation::admit(
         insufficient,
-        insufficient,
-        2,
-        u64::try_from(exact_capacity - 1).unwrap(),
+        worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy::finite(
+            insufficient,
+        ),
+        Some(2),
+        Some(u64::try_from(exact_capacity - 1).unwrap()),
     )
     .unwrap();
     denied
@@ -192,9 +203,11 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
     let exact = requirements(1, 0, 0, 0, 1, 0, exact_capacity);
     let mut admitted = WorthQueryCandidateReservation::admit(
         exact,
-        exact,
-        2,
-        u64::try_from(exact_capacity).unwrap(),
+        worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy::finite(
+            exact,
+        ),
+        Some(2),
+        Some(u64::try_from(exact_capacity).unwrap()),
     )
     .unwrap();
     admitted
@@ -258,7 +271,7 @@ fn reserved_external_builder(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
-        .begin_reserved_effect_program(requirement, requirement)
+        .begin_reserved_effect_program(requirement, worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy::finite(requirement), worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
 }
 
@@ -319,7 +332,7 @@ fn reserved_touch_builder(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
-        .begin_reserved_effect_program(requirement, requirement)
+        .begin_reserved_effect_program(requirement, worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy::finite(requirement), worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
 }
 
@@ -339,3 +352,6 @@ fn requirements(
         ApplicationCandidateResourceCeiling::representation_bytes(retained_representation_bytes),
     )
 }
+
+#[path = "candidate_policy_tests.rs"]
+mod candidate_policy_tests;

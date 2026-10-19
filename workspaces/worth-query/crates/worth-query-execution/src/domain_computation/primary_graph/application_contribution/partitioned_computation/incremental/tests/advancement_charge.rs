@@ -9,7 +9,7 @@ fn a_carried_stop_after_a_recomputed_slot_has_the_full_runs_bill() {
         let installed = installed(StatusRead::Gather(0), sum);
         *installed.owner.steps.lock().unwrap() = Some([vec![1; 20], vec![1]]);
         let request = live_scope();
-        let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::new(width).unwrap(), 1 << 30);
+        let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::new(width).unwrap(), None);
         let billed = |prior, ceiling| {
             projected_attempt::attempt_billed(&world, &installed, prior, &request, RuntimeWorldExecutionPlacement::Leased { authority: super::super::super::super::request_execution::query_test_execution_authority_for_test(), policy }, Some(ceiling))
         };
@@ -60,7 +60,7 @@ fn a_public_nested_map_cost_cannot_be_retained_as_owner_steps() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let request = live_scope();
-    let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, 1 << 30);
+    let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, None);
     let billed = || {
         projected_attempt::attempt_billed(
             &world,
@@ -103,7 +103,7 @@ fn carrying_every_partition_has_the_full_bill_and_the_same_one_unit_short_stop()
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let request = live_scope();
-    let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, 1 << 30);
+    let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, None);
     let billed = |prior, ceiling| {
         projected_attempt::attempt_billed(
             &world,
@@ -173,7 +173,7 @@ fn a_ceiling_inside_carried_checkpoint_steps_has_the_full_runs_exact_stop() {
             // ceiling before canonical settlement accepts or discards it.
             *installed.owner.steps.lock().unwrap() = Some([vec![1], steps.clone()]);
             let request = live_scope();
-            let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, 1 << 30);
+            let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, None);
             let billed = |prior, ceiling| {
                 projected_attempt::attempt_billed(
                     &world,

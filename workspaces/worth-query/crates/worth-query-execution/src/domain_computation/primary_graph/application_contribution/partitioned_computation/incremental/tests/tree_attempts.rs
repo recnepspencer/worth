@@ -56,7 +56,7 @@ fn edit_memory_refusal_keeps_prior_work_and_releases_transient_hold_before_rebui
     let execution = QueryRequestExecution::open(
         RuntimeWorldExecutionPlacement::Serial(test_policy(
             NonZeroUsize::new(1).unwrap(),
-            full_hold,
+            Some(full_hold),
         )),
         &request,
     );

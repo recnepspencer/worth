@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
@@ -145,11 +146,11 @@ macro_rules! mutation_binding {
             const HANDLER_IDENTITY: &'static str = $handler_identity;
             const IDEMPOTENCY_IDENTITY: &'static str =
                 "worth.query.installation-test.idempotency.v1";
-            const CANDIDATES: ApplicationCandidateRequirements =
-                ApplicationCandidateRequirements::fixed_shape(
+            const CANDIDATES: ApplicationCandidatePolicy =
+                ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
                     ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
                     ApplicationCandidateResourceCeiling::representation_bytes($bytes),
-                );
+                ));
 
             fn scope_field() -> ApplicationFieldRef<
                 MutationSchema,

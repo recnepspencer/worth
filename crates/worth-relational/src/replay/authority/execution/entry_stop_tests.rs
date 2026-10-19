@@ -9,7 +9,7 @@ fn pre_cancelled_replay_has_no_reader_contact_or_diagnostic() {
     let cancellation = CancellationSource::new();
     cancellation.cancel();
     let host =
-        SerialRequest::from_memory(SerialMemoryBudget::new(1024), cancellation.token(), None);
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let before = format!("{runtime:#?}");
     let contacts = crate::replay::planning::replay_contacts::count();
     let result = runtime.replay_authority().replay_commit(

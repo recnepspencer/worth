@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 mod operation_body;
 
-use worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements;
+use worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationExecution, DeterminismContract,
@@ -29,7 +29,7 @@ struct PendingMutationHandler {
     decision_type: TypeId,
     denial_type: TypeId,
     value: Arc<dyn Any + Send + Sync>,
-    candidates: ApplicationCandidateRequirements,
+    candidates: ApplicationCandidatePolicy,
 }
 
 struct TypedHandlerSlot<Schema, Binding>
@@ -196,7 +196,7 @@ where
                 value: Arc::new(TypedHandlerSlot::<Schema, Binding> {
                     handler: Arc::new(handler),
                 }),
-                candidates: installed.candidate_requirements(),
+                candidates: installed.candidate_policy(),
             },
         );
         Ok(())
@@ -335,7 +335,7 @@ where
         &self,
     ) -> Option<(
         Arc<dyn OperationHandler<Schema, Binding>>,
-        ApplicationCandidateRequirements,
+        ApplicationCandidatePolicy,
     )>
     where
         Binding: ApplicationMutationBinding<Schema>,
@@ -367,7 +367,7 @@ where
     ) -> Result<
         (
             Arc<dyn OperationHandler<Schema, Binding>>,
-            ApplicationCandidateRequirements,
+            ApplicationCandidatePolicy,
         ),
         MutationHandlerExecutionDenial,
     >

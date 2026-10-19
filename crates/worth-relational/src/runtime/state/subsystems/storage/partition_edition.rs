@@ -112,4 +112,16 @@ impl PartitionAccess for PartitionEdition {
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(self.partitions.keys().copied())
     }
+
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
+        use crate::storage::overlay::collect_partition_ids;
+        collect_partition_ids(
+            self.partitions.len(),
+            self.partitions.keys().copied(),
+            memory,
+        )
+    }
 }

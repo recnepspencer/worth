@@ -124,7 +124,7 @@ macro_rules! retention_artifact {
             const REUSE_RULE: &'static str =
                 "worth.query.certification.retention-artifact-reuse.v1";
             const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-                ApplicationArtifactResourceCeiling::new(Some($work), $bytes);
+                ApplicationArtifactResourceCeiling::new(Some($work), Some($bytes));
             const STOPPED_OUTCOME: &'static str =
                 "worth.query.certification.retention-artifact-stopped.v1";
         }

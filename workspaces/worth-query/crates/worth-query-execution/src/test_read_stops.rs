@@ -98,11 +98,8 @@ fn selected_consult_answers_under<T: Eq + Debug, E: Eq + Debug>(
         with_door(&|door| {
             let source = CancellationSource::new();
             let cancel = source.clone();
-            let host = SerialRequest::from_memory(
-                SerialMemoryBudget::new(64 * 1024 * 1024),
-                source.token(),
-                None,
-            );
+            let host =
+                SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
             let child = parent.map(|request| {
                 request
                     .in_scope(|lease| {
@@ -261,7 +258,7 @@ pub(crate) fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
         bound_advancement_requests_on_this_thread_for_test(Some(
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
-                64 * 1024 * 1024,
+                None,
                 Some(100_000),
             ),
         ));

@@ -38,6 +38,7 @@ pub(crate) mod mixed_retirement;
 mod parallel_history;
 mod producer_domain_denial;
 pub(crate) mod required_chain;
+pub(crate) mod resource_quote;
 mod reuse_opt_out;
 mod root_delivery;
 mod stable_refresh;

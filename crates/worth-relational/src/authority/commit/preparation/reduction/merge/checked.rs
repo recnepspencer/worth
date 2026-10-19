@@ -83,11 +83,8 @@ fn canonical_merge_projected<K, T, O>(
 where
     K: Ord + Clone,
 {
-    let owned_bytes = (streams.capacity() as u64)
-        .saturating_mul(size_of::<OrderedReductionStream<K, T>>() as u64)
-        .saturating_add(streams.iter().fold(0_u64, |bytes, stream| {
-            bytes.saturating_add(stream.owned_allocation_capacity_bytes(&item_bytes))
-        }));
+    let (owned_bytes, declared_bytes) =
+        extent::declaration::<K, T, O>(&streams, &item_bytes, &key_clone_bytes)?;
     let identity = PartitionIdentity::new(1);
     let scan = crate::execution::admit_ordered_scan(vec![(
         identity,
@@ -96,7 +93,11 @@ where
             owned_bytes,
         },
     )])?;
-    let ceiling = lease.policy().budget().charged_memory_bytes() / 4;
+    let ceiling = lease
+        .policy()
+        .budget()
+        .charged_memory_bytes()
+        .map_or(declared_bytes, |limit| limit / 4);
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,
         work_budget,
@@ -272,11 +273,7 @@ mod tests {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(
-                        NonZeroUsize::new(4).unwrap(),
-                        4 * 1024 * 1024,
-                        Some(work),
-                    ),
+                    ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), None, Some(work)),
                 ),
                 deadline: None,
                 cancellation,
@@ -373,3 +370,5 @@ mod tests {
         ));
     }
 }
+
+mod extent;

@@ -50,7 +50,7 @@ fn verification_memory_stop_has_no_serialized_mismatch_outcome() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Serial,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(std::num::NonZeroUsize::MIN, MEMORY, None),
+                    ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(MEMORY), None),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),
@@ -69,10 +69,11 @@ fn verification_memory_stop_has_no_serialized_mismatch_outcome() {
                 if validation == 2 {
                     // Reconstruction has completed. Occupy the measured remaining
                     // room immediately before strategy re-validation allocates.
-                    let room = observed_lease
-                        .reserve_memory(MEMORY + 1)
-                        .unwrap_err()
-                        .admitted;
+                    let worth_execution::MemoryLimitDenial::Capacity { admitted: room, .. } =
+                        observed_lease.reserve_memory(MEMORY + 1).unwrap_err()
+                    else {
+                        panic!("the finite policy must supply a capacity refusal")
+                    };
                     held = Some(observed_lease.reserve_memory(room).unwrap());
                     observed_reached.fetch_add(1, Ordering::SeqCst);
                 }

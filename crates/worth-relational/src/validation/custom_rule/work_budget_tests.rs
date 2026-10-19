@@ -103,11 +103,7 @@ fn pure_invariant_observers_preserve_original_serial_and_leased_interruption() {
                     policy: ExecutionRequestPolicy::new(
                         ExecutionPosture::Serial,
                         DeterminismContract::CanonicalBitwise,
-                        ExecutionBudget::new(
-                            std::num::NonZeroUsize::MIN,
-                            1024 * 1024,
-                            Some(100_000),
-                        ),
+                        ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(100_000)),
                     ),
                     cancellation: cancellation.token(),
                     deadline,

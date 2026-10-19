@@ -22,14 +22,15 @@ pub use authority::{
     ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter,
     ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes,
     ExecutionLeaseStatus, ExecutionMemoryReservation, ExecutionPhysicalAllocationDenialKind,
-    ExecutionPolicyDenial, ExecutionRequest, ExecutionResourceLease, LeaseDenial, LeaseRequest,
-    MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
+    ExecutionPolicyDenial, ExecutionRequest, ExecutionResourceLease, ExecutionResultMemory,
+    LeaseDenial, LeaseRequest, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget,
+    SerialRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 
 #[cfg(test)]
 mod tests;
-pub use backend::{ExecutionOwnerContext, NestedComputationStop};
+pub use backend::{ExecutionOwnerContext, NestedComputationStop, ScopeOutcome, ScopeStop};
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
     KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId,

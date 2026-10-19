@@ -28,5 +28,41 @@ serde = { version = "1", features = ["derive"] }
 opt-level = 0
 debug = "line-tables-only"
 
-[profile.dev.package."*"]
-opt-level = 2
+[profile.dev.package]
+"*".opt-level = 2
+# Query and its path foundations are dependencies here, rather than members.
+# Keep their existing normal owner profile; third-party dependencies stay at 2.
+worth-query-declaration.opt-level = 0
+worth-query-installation.opt-level = 0
+worth-query-decl.opt-level = 0
+worth-query-admission.opt-level = 0
+worth-query-execution.opt-level = 0
+worth-query-publication.opt-level = 0
+worth-query-host.opt-level = 0
+worth-proof.opt-level = 0
+worth-foundational.opt-level = 0
+worth-execution.opt-level = 0
+worth-relational.opt-level = 0
+worth-signal.opt-level = 0
+worth-runtime-bridge.opt-level = 0
+worth-runtime-world.opt-level = 0
+
+[profile.test]
+opt-level = 0
+
+[profile.test.package]
+"*".opt-level = 2
+worth-query-declaration.opt-level = 0
+worth-query-installation.opt-level = 0
+worth-query-decl.opt-level = 0
+worth-query-admission.opt-level = 0
+worth-query-execution.opt-level = 0
+worth-query-publication.opt-level = 0
+worth-query-host.opt-level = 0
+worth-proof.opt-level = 0
+worth-foundational.opt-level = 0
+worth-execution.opt-level = 0
+worth-relational.opt-level = 0
+worth-signal.opt-level = 0
+worth-runtime-bridge.opt-level = 0
+worth-runtime-world.opt-level = 0

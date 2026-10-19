@@ -101,7 +101,7 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
 fn cold_retry_and_cancellation_use_the_same_request_payer() {
     let source = worth_execution::CancellationSource::new();
     let host = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::SerialMemoryBudget::new(None),
         source.token(),
         None,
     );

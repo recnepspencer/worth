@@ -26,7 +26,7 @@ fn currency_consumer(consumer: u8) {
   let (healthy,count)=with_request_consult_observer_for_test(|_|{},||handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis));healthy.unwrap();assert!(count>2);eprintln!("currency consults={count}");
   for k in 1..=count+1 {
    discard(runtime);let source=CancellationSource::new();let cancel=source.clone();
-   let host=SerialRequest::from_memory(SerialMemoryBudget::new(64*1024*1024),source.token(),None);let execution=ExecutionRequest::serial(&host);
+   let host=SerialRequest::from_memory(SerialMemoryBudget::new(None),source.token(),None);let execution=ExecutionRequest::serial(&host);
    let (result,_)=with_request_consult_observer_for_test(move |at|if at==k{cancel.cancel();},||handle.ensure_primary_indexes_for_basis(&execution,runtime,&basis));
    if k>count {result.unwrap();continue;}
    let Err(crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop))=result else{panic!("consult {k} must return its request stop")};

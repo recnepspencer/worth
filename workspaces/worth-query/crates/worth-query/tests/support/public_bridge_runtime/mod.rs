@@ -76,7 +76,7 @@ fn public_product_resources() -> WorthQueryConditionalExecutionResources {
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
             maximum_retained_slots: 128,
             maximum_retained_bytes: 512 * 1024 * 1024,
-            maximum_attempt_visits: 8_000_000,
+            maximum_attempt_visits: None,
         },
     )
 }
@@ -88,15 +88,11 @@ pub fn public_product_world_resources() -> WorthQueryProductWorldResources {
 pub fn public_product_world_resources_with_branch_limit(
     live_product_branches: u64,
 ) -> WorthQueryProductWorldResources {
-    // Bounds this fixture World's serial request memory and deterministic work.
+    // Serial requests retain accounting without a fixture-imposed byte or work ceiling.
     let execution_policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(
-            std::num::NonZeroUsize::MIN,
-            64 * 1024 * 1024,
-            Some(8_000_000),
-        ),
+        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
     );
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {

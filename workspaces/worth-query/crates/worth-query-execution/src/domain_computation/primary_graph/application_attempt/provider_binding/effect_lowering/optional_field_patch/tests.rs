@@ -30,7 +30,12 @@ fn optional_aspect_initialization_lowering_requires_exact_presence_evidence() {
             },
         )])
     };
-    assert!(portable_patch(&ObservedFactIndex::new(&[absent.clone()]), entity, writes()).is_err());
+    assert!(portable_patch(
+        &ObservedFactIndex::new(std::slice::from_ref(&absent)),
+        entity,
+        writes(),
+    )
+    .is_err());
     for present in [false, true] {
         let facts = [
             absent.clone(),

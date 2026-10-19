@@ -146,6 +146,17 @@ pub struct WorthQueryProducerDemandResources {
     retained_bytes: usize,
 }
 
+/// Why the original source cannot supply a concrete producer resource quote.
+/// A successfully quoted demand exceeding a receiving policy is reported by
+/// the demand's existing work or retention denial instead.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryProducerResourceQuoteDenial {
+    /// Checked source-dependent storage arithmetic is not representable.
+    SizeOverflow,
+    /// Encoding needed to measure the original source failed.
+    SourceNotEncodable,
+}
+
 impl WorthQueryProducerDemandResources {
     pub const fn new(work: Option<usize>, retained_bytes: usize) -> Self {
         Self {
@@ -226,7 +237,7 @@ where
     fn demand_resources(
         &self,
         source: &<<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
-    ) -> WorthQueryProducerDemandResources;
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial>;
 }
 
 pub trait WorthQueryApplicationProducerBinding<Schema>: Sized + 'static

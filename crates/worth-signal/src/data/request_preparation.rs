@@ -3,7 +3,7 @@ use crate::data::error::SignalError;
 /// Framework preparation consumes one explicit request scratch reservation.
 /// Claims precede growth and cloning; they cannot widen the lease allowance.
 pub(crate) struct SignalPreparationBudget {
-    capacity: u64,
+    capacity: Option<u64>,
     claimed: u64,
     retained: u64,
     memory: worth_execution::ExecutionMemoryReservation,
@@ -17,7 +17,7 @@ pub(crate) struct PreparationMark {
 
 impl SignalPreparationBudget {
     pub(crate) fn for_request(
-        capacity: u64,
+        capacity: Option<u64>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     ) -> Result<Self, SignalError> {
         let memory = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, 0)
@@ -31,7 +31,7 @@ impl SignalPreparationBudget {
     }
 
     #[cfg(test)]
-    pub(crate) fn new(capacity: u64) -> Self {
+    pub(crate) fn new(capacity: Option<u64>) -> Self {
         let policy = worth_foundational::ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,
             worth_foundational::DeterminismContract::CanonicalBitwise,
@@ -51,18 +51,18 @@ impl SignalPreparationBudget {
         }
     }
 
-    pub(crate) fn remaining(&self) -> u64 {
-        self.capacity - self.claimed
+    pub(crate) fn remaining(&self) -> Option<u64> {
+        self.capacity.map(|capacity| capacity - self.claimed)
     }
 
     pub(crate) fn claim(&mut self, bytes: u64) -> Result<(), SignalError> {
         let required = self.claimed.checked_add(bytes);
-        let next = required.filter(|next| *next <= self.capacity).ok_or(
-            SignalError::PreparationMemoryExhausted {
+        let next = required
+            .filter(|next| self.capacity.is_none_or(|capacity| *next <= capacity))
+            .ok_or(SignalError::PreparationMemoryExhausted {
                 required,
                 reserved: self.capacity,
-            },
-        )?;
+            })?;
         self.memory.resize(next).map_err(|denial| {
             SignalError::execution_admission_denied(worth_execution::LeaseDenial::MemoryExhausted(
                 denial,
@@ -148,3 +148,6 @@ pub(crate) fn push<T>(
     values.push(value);
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

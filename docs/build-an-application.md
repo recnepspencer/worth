@@ -1172,6 +1172,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         _: &WorthQueryInvariantMutationTarget<Schema, Body>,
     ) -> ApplicationCandidateRequirements {
         RegionTotalsDemandBinding::<Schema>::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(
@@ -1233,7 +1235,7 @@ let runtime = application_installation::in_memory_program(
 // Same file: limits.
 application_installation::WorthQueryInMemoryApplicationLimits::new(
     product_world_resources(),
-    runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(5_120, 2_048)
+    runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(5_120), Some(2_048))
         .expect("valid candidate limits"),
     runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
         .expect("valid query limits"),
@@ -1453,7 +1455,7 @@ A mutation has three parts:
 | Part | Trait | Written by | Role |
 |---|---|---|---|
 | Intent | `ApplicationMutationIntent<Schema>` | Your request code | The value you pass to `mutate(..)`: its input and the entity it targets |
-| Binding | `ApplicationMutationBinding<Schema>` | Declared once | Ties the operation to its input, result, denial, decision type, idempotency key, principal binding, scope field, and candidate ceilings |
+| Binding | `ApplicationMutationBinding<Schema>` | Declared once | Ties the operation to its input, result, denial, decision type, idempotency key, principal binding, scope field, and optional candidate policy |
 | Handler | `OperationHandler<Schema, Binding>` | Registered in the contribution's `configure` | Decides, then builds the candidate |
 
 <!-- illustrative -->
@@ -1474,7 +1476,7 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     const IDENTITY: &'static str = "worth.query.example.temporal-amend.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.example.temporal-amend-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.example.temporal-amend-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = /* fixed ceilings */;
+    const CANDIDATES: ApplicationCandidatePolicy = ApplicationCandidatePolicy::new(None, None);
     // fn scope_field, principal_binding
 }
 
@@ -1495,6 +1497,79 @@ impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTempora
         -> HandlerResult<AmendTemporalResult, AmendTemporalDenial> { /* write fields */ }
 }
 ```
+
+`CANDIDATES` is declaration policy. `ApplicationCandidatePolicy::new(None, None)`
+imposes no intrinsic candidate cardinality or retained-representation ceiling.
+Each dimension can instead carry a finite ceiling independently. The binding
+macro accepts `candidates policy ApplicationCandidatePolicy::new(None, None)`;
+its `candidates creates …, … resources retained_representation_bytes …` form
+expresses a genuine finite policy.
+
+The handler's `candidate_requirements(input, decision)` still returns concrete,
+finite `ApplicationCandidateRequirements::fixed_shape(cardinality, resources)`
+for this actual source/member shape. Compute checked shape/storage during the
+decision and return that carried demand. Do not use an absent policy as a demand,
+a maximum integer, or a fitted fixture ceiling. Fixed-shape handlers may explicitly
+use `Binding::CANDIDATES.finite_requirements().expect("fixed candidate policy")`.
+
+The host's `WorthQueryApplicationCandidateResourceProfile::policy(None, None)`
+and its ordinary default impose no candidate item or representation-byte policy.
+`Some(limit)` retains finite refusal, independently for each dimension; zero finite
+host limits are rejected. Operation width, producer dependency storage and shared
+concurrency retain their separate policies. A logical candidate reservation does
+not authorize allocation: the ordinary handler path carries the original request's
+allocation policy into checked effect backing admission and retains its ticket
+through consumption or discard. Nested payload storage keeps its own allocation
+owner.
+
+Native authored bodies currently require a complete finite candidate policy.
+Dynamic signed-creation assembly and signing-lifecycle sidecars still have a
+separate finite-only owner seam; absent policy does not bypass those contracts.
+Use a real measured ordinary handler for the supported absent-policy path.
+
+#### Candidate representation quotes
+
+During `decide`, use the existing `DecisionReader` to measure SDK-owned
+representation before returning finite actual `candidate_requirements`:
+
+- `candidate_create_bytes(entity, &key)` measures the actual typed create key.
+- `candidate_initial_field_bytes(field, encoded_value_bytes)` includes the
+  original installed locator for one new initialized field.
+- `candidate_write_field_bytes(field, encoded_value_bytes)` includes the
+  original installed locator and, for an optional existing-field write, its
+  portable contract. Add `candidate_update_bytes(entity)` once per target effect.
+- `candidate_field_promotion_bytes(required_field)` measures contract backing
+  for each required-field entry stored in an optional patch: either an earlier
+  required write promoted by a later optional write, or a required entry inserted
+  after the patch exists. Add it once per entry; replacement adds no second contract.
+- `candidate_link_bytes(relation, &link_key, from_created, to_created)` measures
+  the actual owned link key and endpoint references. Each endpoint is `Some(&key)`
+  for a candidate-created entity or `None` for an existing entity.
+- `candidate_output_contract_bytes()` counts declared role/family backing once.
+  Add `candidate_output_bytes::<Role>(created_key)` for each actual fixed binding,
+  or `candidate_output_member_bytes::<Family, Action>(suffix, created_key)` for
+  each actual family member. These use the writer's declared-role checks.
+
+The checked methods return `Result<usize, WorthQueryApplicationAttemptDenial>`;
+the update-name measurement is infallible `usize`. Combine components with checked
+addition and carry the result in the decision. Move the same measured owned keys
+to the writer. Supply actual encoded-value retained heap bytes from its original
+binding or value owner, such as an encoded value's
+`owned_allocation_capacity_bytes()`. Wire width is sufficient only when the
+binding guarantees the same retained footprint.
+
+Each field quote describes a new entry, counted once. Include the promotion
+component for every required entry that joins the optional patch, in either
+write order. Replacement credits and write ordering remain with the original
+writer; these component methods do not simulate a write sequence.
+For repeated writes, quote the largest retained payload in the sequence, rather
+than only the final payload.
+Clearing an optional field retains its patch entry. A later set or repeated clear
+reuses that locator and contract; quote the entry once with its actual sequential
+peak payload, rather than adding its metadata again.
+Quotes grant no read, target, field, effect, publication or
+allocation authority. They measure the logical candidate representation rather
+than total process memory. Existing writer debits still reject an underestimate.
 
 The full, compiling version of all three is
 `.../examples/product_workflow_support/application_entry.rs` (about 320
@@ -2269,8 +2344,9 @@ attempt. Ordinary currentness, producer work and query work have no intrinsic
 operation-count ceiling. Any explicit finite host, declaration or attempt work
 limit still intersects the others; result and retained-byte limits remain physical
 admission. Omit `.operation_projection_work_budget(..)` to declare no decision-read
-work ceiling, and use `ApplicationArtifactResourceCeiling::new(None, bytes)` for
-uncapped producer work with retained-byte admission. At the demand boundary,
+work ceiling, and use `ApplicationArtifactResourceCeiling::new(None, Some(bytes))` for
+uncapped producer work with explicit artifact retained-byte admission. An absent
+artifact retention policy leaves the independent host ceiling active. At the demand boundary,
 `WorthQueryOutputDemandControls::default().producer_retained_bytes(bytes)` narrows
 producer custody without adding a work restriction; `.producer_work(work)`
 independently selects a finite producer-only allowance. Neither widens host policy.
@@ -2280,6 +2356,26 @@ absent. `with_maximum_waiter_resolution_visits(Some(n))` and
 `None` keeps the original request and physical admission without a local work cap.
 The installed workflow fact-custody rule likewise checks every candidate on the
 original request without imposing a fixed candidate count.
+### Producer resource quotes
+
+The existing producer `demand_resources(&source)` hook returns
+`Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial>`.
+Use checked source-dependent sizing and return `SizeOverflow` if its concrete
+retained requirement is not representable. `SourceNotEncodable` reports an
+intrinsic encoding failure required for that measurement; it does not stand for
+a byte policy, cancellation or allocation refusal. Neither error supplies a
+successful quote. Execution preserves the typed cause and producer identity in
+`WorthQueryOutputDemandDenialKind::ProducerResourceQuote(cause)` before effects.
+Wrong-source erasure remains `ForeignSource`.
+
+`WorthQueryProducerDemandResources::new(work, retained_bytes)` keeps a concrete
+retained requirement. Current and restored output reuse retain their original
+resource description without contacting the provider for work that will not run.
+`ApplicationArtifactResourceCeiling::new(work, None)` omits only the artifact's
+retention ceiling; `Some(bytes)` narrows the host allowance, including `Some(0)`.
+Absence and zero have distinct canonical program meaning. The standard output
+host still applies its independent 4 MiB producer-retention policy.
+
 Operation-body requirement expressions retain their separately admitted Foundation
 expression profile; an absent request ceiling adds no further work restriction.
 Retry uses fresh
@@ -2772,6 +2868,34 @@ selecting a new source. On refusal, retain the returned owner and its original
 application context; retry lawful explicit discard on that owner. Dropping either
 phase is abandonment, and does not post a successful discard record. Preview
 liveness observation is not proof of cleanup or promotion.
+
+### Optional request-memory policy
+
+Use `ExecutionBudget::new(workers, None, work_ceiling)` for no request-memory
+ceiling, or pass `Some(bytes)` for an explicitly finite caller policy.
+`SerialMemoryBudget::new(None)` has the same meaning for a serial owner. Absence
+is not a memory grant: actual backing, operation declarations and allocation
+failures keep their original owners. Worker counts remain concrete.
+
+Every reservation still charges the same serial or lease ledger, including its
+ancestors and process. An absent child ceiling does not escape a finite ancestor.
+`available_memory_bytes()` returns the minimum remaining supplied ceiling, or
+`None` when that lineage has no ceiling. Actual held-byte getters remain concrete
+counters. A finite refusal is `MemoryLimitDenial::Capacity`; an unrepresentable
+live charge is `MemoryLimitDenial::CounterOverflow`. Refusal preserves the old
+reservation, and final-holder release refunds only its original charge.
+Cancellation and deadlines retain the original request and lineage.
+
+A result without a genuine prior heap maximum uses the original
+`request.run_measured_result(ceiling, known_bytes, &mut reservation, kernel)`.
+The callback borrows its `ExecutionResultMemory` view to reserve source-owned
+clone/growth backing on that same ticket before allocation. The view protects
+known input/framework bytes. For an opaque callback, the framework measures and
+admits the actual returned value or domain error before retention or publication;
+that does not claim pre-allocation admission. The result/error remains charged on
+the caller's original reservation until released or transferred. The returned
+`ScopeOutcome` keeps the genuine admission/callback stop and original report.
+Known finite Scan/Map result declarations retain their existing checks.
 
 ### Optional invariant work and original interruption
 

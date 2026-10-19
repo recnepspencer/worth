@@ -89,7 +89,7 @@ fn memory_request(workers: usize, memory_bytes: u64) -> worth_execution::LeaseRe
         admission.policy.determinism(),
         ExecutionBudget::new(
             admission.policy.budget().max_workers(),
-            memory_bytes,
+            Some(memory_bytes),
             Some(100_000_000),
         ),
     );

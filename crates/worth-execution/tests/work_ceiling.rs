@@ -68,7 +68,7 @@ fn funded_serial_request() -> SerialRequest {
         worth_execution::SerialMemoryBudget::from_policy(&ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, Some(10_000)),
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(10_000)),
         )),
         CancellationToken::new(),
         None,
@@ -129,7 +129,7 @@ fn the_narrower_of_the_lease_and_the_declared_ceiling_binds() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 1 << 20, Some(work)),
+                    ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), None, Some(work)),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),

@@ -132,7 +132,7 @@ mod tests {
         );
         let correspondence = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         );

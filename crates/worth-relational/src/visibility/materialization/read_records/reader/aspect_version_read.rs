@@ -32,7 +32,25 @@ pub(super) fn read_versions(
             let identity = PartitionIdentity::new(1);
             let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())])
                 .map_err(QueryReadExecutionStop::PreparationAdmission)?;
-            let ceiling = execution.memory_limit() / 4;
+            let declared = runtime
+                .services
+                .symbols
+                .with_read(|symbols| {
+                    symbolic.iter().try_fold(
+                        (symbolic.len() as u64)
+                            .checked_mul(std::mem::size_of::<(AspectKey, u64)>() as u64)?
+                            .checked_add(std::mem::size_of::<ReadVersions>() as u64)?,
+                        |total, (symbol, _)| {
+                            total.checked_add(
+                                symbols.resolve(*symbol).map_or(0, |text| text.len() as u64),
+                            )
+                        },
+                    )
+                })
+                .ok_or(QueryReadExecutionStop::PreparationAdmission(
+                    worth_execution::ScanDenial::MemoryOverflow,
+                ))?;
+            let ceiling = execution.memory_limit().map_or(declared, |limit| limit / 4);
             let outcome = scan.run(lease, (), 0, ceiling, 0, ceiling, |_, _, context| {
                 context.checkpoint(0).map_err(MapKernelFailure::Stop)?;
                 let mut versions = Vec::new();

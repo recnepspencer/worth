@@ -56,6 +56,8 @@ impl OperationHandler<SourceOnlyRetentionSchema, SetRetentionBinding> for Retent
         _: &WorthQueryInvariantMutationTarget<SourceOnlyRetentionSchema, Document>,
     ) -> ApplicationCandidateRequirements {
         SetRetentionBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
     fn build_candidate(
         &self,

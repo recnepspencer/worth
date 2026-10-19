@@ -15,8 +15,6 @@ mod cases;
 mod fixture;
 mod refusals;
 
-const MEMORY: u64 = 64 * 1024 * 1024;
-
 #[test]
 fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
     let host = crate::test_execution_policy::serial_request();
@@ -39,7 +37,7 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
                                 DeterminismContract::CanonicalBitwise,
                                 ExecutionBudget::new(
                                     std::num::NonZeroUsize::new(width).unwrap(),
-                                    MEMORY,
+                                    None,
                                     Some(100_000),
                                 ),
                             ),

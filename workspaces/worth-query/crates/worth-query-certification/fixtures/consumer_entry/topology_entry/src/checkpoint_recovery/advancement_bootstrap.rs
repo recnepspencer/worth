@@ -46,7 +46,7 @@ fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
                 worth_foundational::DeterminismContract::CanonicalBitwise,
                 worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
-                    if zero_memory { 0 } else { 64 * 1_024 * 1_024 },
+                    if zero_memory { Some(0) } else { None },
                     Some(if zero_memory { 8_000_000 } else { 0 }),
                 ),
             );

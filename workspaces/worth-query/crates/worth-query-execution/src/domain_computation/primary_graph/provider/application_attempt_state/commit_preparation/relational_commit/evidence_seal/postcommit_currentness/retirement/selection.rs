@@ -144,7 +144,7 @@ fn restored_role(
         }],
         |_| Some(TypeId::of::<Account>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         )),

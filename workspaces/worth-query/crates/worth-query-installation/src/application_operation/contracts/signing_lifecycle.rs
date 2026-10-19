@@ -58,7 +58,7 @@ impl SigningLifecycleClosure {
         members: &[Member],
         operation: &str,
         touches: &Contract,
-        maximum_records: usize,
+        maximum_records: Option<usize>,
         body: Option<
             &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
         >,
@@ -127,7 +127,11 @@ impl SigningLifecycleClosure {
             let spec = &rule.spec;
             let count = spec
                 .maximum_evidence
-                .checked_mul(if body.is_some() { 1 } else { maximum_records })
+                .checked_mul(if body.is_some() {
+                    1
+                } else {
+                    maximum_records.ok_or(())?
+                })
                 .ok_or(())?;
             records = records.checked_add(count).ok_or(())?;
             // Native scalar quote plus the actual fixed effect keys/locators. No payload values are copied into the event.

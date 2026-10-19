@@ -35,6 +35,10 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
     >,
     lease: &Lease,
     effects: &mut Vec<Effect>,
+    effect_backing_memory: &mut Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::CandidateBackingReservation>,
+    candidate_requirements: &mut Option<
+        worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements,
+    >,
     facts: worth_execution::ExecutionArray<Fact>,
     execution: &QueryRequestExecution<'_>,
     logical_request: [u8; 32],
@@ -60,7 +64,7 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
         .map_err(resource)?;
     let request = execution.execution_request().map_err(resource)?;
     let actor = admission.graph_work().principal();
-    let batch = execution
+    let (batch, sidecar) = execution
         .decision_stage(|context| {
             let mut batch = consequences::Batch::default();
             for rule in rules {
@@ -82,10 +86,16 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
                     )?;
                 }
             }
-            batch.admit(admission)?;
-            Ok::<_, Outcome>(batch)
+            let sidecar = batch.admit(admission)?;
+            Ok::<_, Outcome>((batch, sidecar))
         })
         .map_err(|cause| cause.into_commit_outcome())??;
+    let combined_requirements = super::effect_program::validate_candidate_extension(
+        admission,
+        *candidate_requirements,
+        sidecar,
+    )
+    .map_err(attempt)?;
     let total = facts
         .len()
         .checked_add(batch.facts.len())
@@ -102,7 +112,14 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
         },
     )
     .map_err(attempt)?;
-    effects.extend(batch.effects);
+    super::effect_program::candidate_backing::extend(
+        effects,
+        effect_backing_memory,
+        batch.effects,
+        admission.publication_request(),
+    )
+    .map_err(attempt)?;
+    *candidate_requirements = combined_requirements;
     Ok(PreparedLifecycle {
         facts,
         memory: Some(memory),

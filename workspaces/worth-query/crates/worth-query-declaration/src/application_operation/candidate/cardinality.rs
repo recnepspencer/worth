@@ -55,7 +55,7 @@ impl ApplicationCandidateCardinalityCeiling {
     }
 }
 
-/// Complete declaration-time candidate reservation contract.
+/// Concrete finite demand reserved before this candidate is constructed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ApplicationCandidateRequirements {
     cardinality: ApplicationCandidateCardinalityCeiling,

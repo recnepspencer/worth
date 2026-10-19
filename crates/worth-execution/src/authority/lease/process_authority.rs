@@ -68,12 +68,11 @@ impl ExecutionAuthority {
         if budget.max_workers().get() > self.inner.config.max_workers.get() {
             return Err(ExecutionPolicyDenial::WorkersExceedAuthority);
         }
-        if self
-            .inner
-            .config
-            .charged_memory_bytes
-            .is_some_and(|cap| budget.charged_memory_bytes() > cap)
-        {
+        if self.inner.config.charged_memory_bytes.is_some_and(|cap| {
+            budget
+                .charged_memory_bytes()
+                .is_some_and(|bytes| bytes > cap)
+        }) {
             return Err(ExecutionPolicyDenial::MemoryExceedsAuthority);
         }
         Ok(())

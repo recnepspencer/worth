@@ -73,7 +73,7 @@ impl ApplicationDerivedArtifact<TemporalHostSchema, TemporalInstallationFeature>
         )];
     const REUSE_RULE: &'static str = "worth.query.host.temporal-same-basis.v1";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(Some(64), 1_024);
+        ApplicationArtifactResourceCeiling::new(Some(64), Some(1_024));
     const STOPPED_OUTCOME: &'static str = "worth.query.host.temporal-artifact-stopped.v1";
 }
 
@@ -257,8 +257,9 @@ pub(super) fn zero_route_installation_is_denied() {
         },),
         WorthQueryInMemoryApplicationLimits::new(
             product_world_resources(1_024),
-            runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-                5_120, 2_048,
+            runtime::WorthQueryApplicationCandidateResourceProfile::policy(
+                Some(5_120),
+                Some(2_048),
             )
             .unwrap(),
             runtime::WorthQueryApplicationQueryResourceProfile::bounded(

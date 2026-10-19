@@ -194,8 +194,7 @@ fn with_indexed_fact<R>(
         .unwrap()
         .kind;
     let source = CancellationSource::new();
-    let serial =
-        SerialRequest::from_memory(SerialMemoryBudget::new(64 << 20), source.token(), None);
+    let serial = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&serial);
     let outcome = graph
         .integration_handle()

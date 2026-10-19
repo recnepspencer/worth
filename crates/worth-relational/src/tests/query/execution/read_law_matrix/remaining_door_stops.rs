@@ -16,7 +16,7 @@ fn stopped_backings(mut run: impl FnMut(&ExecutionRequest<'_, '_>, Cause)) {
         let deadline_at =
             deadline.then(|| std::time::Instant::now() - std::time::Duration::from_secs(1));
         let serial = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(MEMORY),
+            worth_execution::SerialMemoryBudget::new(None),
             source.token(),
             deadline_at,
         );
@@ -27,7 +27,7 @@ fn stopped_backings(mut run: impl FnMut(&ExecutionRequest<'_, '_>, Cause)) {
                     DeterminismContract::CanonicalBitwise,
                     ExecutionBudget::new(
                         std::num::NonZeroUsize::new(1).unwrap(),
-                        MEMORY,
+                        None,
                         Some(100_000),
                     ),
                 ),

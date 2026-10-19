@@ -51,7 +51,12 @@ where
         .into());
     }
     let (source, observed_source) = disclosure.into_parts();
-    let resources = provider.demand_resources(&source);
+    let resources = provider.demand_resources(&source).map_err(|cause| {
+        denial(
+            WorthQueryOutputDemandDenialKind::ProducerResourceQuote(cause),
+            Binding::IDENTITY,
+        )
+    })?;
     super::super::demand::validate_retained_resources(resources, Binding::IDENTITY, limits)?;
     let input = provider.operation_input(&source);
     let binding = runtime

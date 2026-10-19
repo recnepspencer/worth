@@ -31,7 +31,7 @@ fn bridge_snapshot_custody_adds_no_work_to_the_direct_native_read() {
                     DeterminismContract::CanonicalBitwise,
                     ExecutionBudget::new(
                         std::num::NonZeroUsize::new(workers).unwrap(),
-                        64 * 1024 * 1024,
+                        None,
                         Some(100_000),
                     ),
                 ),

@@ -34,7 +34,7 @@ fn request(memory: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, Some(1)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(memory), Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -125,7 +125,7 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
     assert_eq!(
         cause.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial {
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
                 requested: modeled_capture,
                 admitted: 0,
                 level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
@@ -186,7 +186,7 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
     assert_eq!(
         native_cause.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial {
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
                 requested: staging_quote,
                 admitted: read_set_bytes - staging_child_retained,
                 level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 },

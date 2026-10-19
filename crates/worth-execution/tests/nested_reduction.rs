@@ -25,7 +25,7 @@ fn request(width: usize) -> ExecutionResourceLease<'static> {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), MEMORY, Some(100)),
+                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), Some(MEMORY), Some(100)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -49,7 +49,7 @@ fn reducer_panic_is_taken_as_data_at_every_request_backing() {
     let _guard = TEST_LOCK.lock().unwrap();
     for width in [0, 1, 2, 4] {
         let serial = SerialRequest::from_memory(
-            SerialMemoryBudget::new(MEMORY),
+            SerialMemoryBudget::new(Some(MEMORY)),
             CancellationToken::new(),
             None,
         );
@@ -103,7 +103,7 @@ fn reducer_admission_overflow_is_request_owned_at_every_backing() {
     let _guard = TEST_LOCK.lock().unwrap();
     for width in [0, 1, 2, 4] {
         let serial = SerialRequest::from_memory(
-            SerialMemoryBudget::new(MEMORY),
+            SerialMemoryBudget::new(Some(MEMORY)),
             CancellationToken::new(),
             None,
         );

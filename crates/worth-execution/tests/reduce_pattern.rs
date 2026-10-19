@@ -48,7 +48,11 @@ fn lease_with_workers(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 1 << 20, Some(work)),
+                ExecutionBudget::new(
+                    NonZeroUsize::new(workers).unwrap(),
+                    Some(1 << 20),
+                    Some(work),
+                ),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -313,7 +317,7 @@ fn reduction_hook_error_bytes_obey_map_result_capacity() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 4096, Some(10)),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(4096), Some(10)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

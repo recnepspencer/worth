@@ -58,7 +58,7 @@ fn actual_borrowed_material_retains_its_key_byte_charge_past_lease_drop() {
     assert_eq!(key.predicate_material(), Some((expected.as_slice(), 2)));
     assert!(matches!(
         parent.reserve_memory(1),
-        Err(memory) if memory == worth_execution::MemoryLimitDenial { requested: 1, admitted: 0, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
+        Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: 1, admitted: 0, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
     ));
     drop(key);
     assert_eq!(parent.reserve_memory(quote).unwrap().bytes(), quote);

@@ -80,32 +80,66 @@ impl<Schema, Operation, Input, Scope>
             .field_write_positions
             .position(field.entity(), entity_id);
         let matching_effect = position.map(|position| &self.effects[position]);
-        let replaced_representation_bytes = matching_effect.and_then(|effect| match effect {
-            WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. } => fields
-                .get(&locator)
-                .map(super::retained_representation::value),
-            WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields { fields, .. } => fields
-                .get(&locator)
-                .and_then(|write| write.value.as_ref())
-                .map(super::retained_representation::value),
-            _ => None,
-        });
-        let retains_locator = replaced_representation_bytes.is_none();
-        let retained_representation_bytes =
-            super::retained_representation::field_entry(&locator, &value, retains_locator)
-                .and_then(|bytes| {
-                    bytes.checked_add(if matching_effect.is_none() {
-                        field.entity().len()
-                    } else {
-                        0
-                    })
+        let (replaced_representation_bytes, retains_entry) = match matching_effect {
+            Some(WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. }) => {
+                fields.get(&locator).map_or((None, true), |value| {
+                    (Some(super::retained_representation::value(value)), false)
                 })
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        field.field(),
-                    )
-                })?;
+            }
+            Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+                fields, ..
+            }) => fields.get(&locator).map_or((None, true), |write| {
+                (
+                    write
+                        .value
+                        .as_ref()
+                        .map(super::retained_representation::value),
+                    false,
+                )
+            }),
+            _ => (None, true),
+        };
+        // Required fields stored in an optional patch retain the same contract
+        // as optional entries. Resolve it before changing reservation credit.
+        let patch_contract = match matching_effect {
+            Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields { .. }) => Some(
+                self.layout
+                    .aspect_contract(field.entity(), locator.aspect().aspect_key())
+                    .map(worth_foundational::facade::PortableAspectContractBasis::from_contract)
+                    .ok_or_else(|| {
+                        denial(
+                            WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+                            field.field(),
+                        )
+                    })?,
+            ),
+            _ => None,
+        };
+        let entry_bytes = match patch_contract.as_ref() {
+            Some(contract) => super::retained_representation::optional_field_entry(
+                &locator,
+                contract,
+                Some(value.as_ref()),
+                retains_entry,
+            ),
+            None => {
+                super::retained_representation::field_entry(&locator, value.as_ref(), retains_entry)
+            }
+        };
+        let retained_representation_bytes = entry_bytes
+            .and_then(|bytes| {
+                bytes.checked_add(if matching_effect.is_none() {
+                    field.entity().len()
+                } else {
+                    0
+                })
+            })
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
+                    field.field(),
+                )
+            })?;
         self.charge_candidate_representation(
             CandidateItemKind::Write,
             retained_representation_bytes,
@@ -116,16 +150,8 @@ impl<Schema, Operation, Input, Scope>
             Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
                 fields, ..
             }) => {
-                let contract = self
-                    .layout
-                    .aspect_contract(field.entity(), locator.aspect().aspect_key())
-                    .map(worth_foundational::facade::PortableAspectContractBasis::from_contract)
-                    .ok_or_else(|| {
-                        denial(
-                            WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                            field.field(),
-                        )
-                    })?;
+                let contract =
+                    patch_contract.expect("existing patch contract prepared before debit");
                 fields.insert(
                     locator,
                     WorthQueryApplicationOptionalFieldWrite {

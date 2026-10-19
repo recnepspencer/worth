@@ -13,11 +13,7 @@ fn lease(posture: ExecutionPosture, workers: usize) -> ExecutionResourceLease<'s
             policy: ExecutionRequestPolicy::new(
                 posture,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(
-                    NonZeroUsize::new(workers).unwrap(),
-                    8 * 1024 * 1024,
-                    Some(100_000),
-                ),
+                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), None, Some(100_000)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

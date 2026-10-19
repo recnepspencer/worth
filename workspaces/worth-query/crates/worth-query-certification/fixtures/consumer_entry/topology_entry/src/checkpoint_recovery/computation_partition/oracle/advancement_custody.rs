@@ -181,7 +181,7 @@ fn producer_caller_pass_refuses_before_its_source_or_handler_reads() {
                 bound(Some(worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
                     if zero_memory {
-                        0
+                        Some(0)
                     } else {
                         policy.charged_memory_bytes()
                     },

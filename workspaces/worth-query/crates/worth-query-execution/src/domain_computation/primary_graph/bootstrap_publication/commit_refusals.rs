@@ -84,7 +84,7 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                 request.policy = ExecutionRequestPolicy::new(
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, Some(0)),
+                    ExecutionBudget::new(NonZeroUsize::MIN, None, Some(0)),
                 );
                 let error = refused_commit(execution, request);
                 let worth_relational::facade::transactions::TransactionCommitError::Execution {
@@ -219,7 +219,7 @@ pub(in crate::domain_computation::primary_graph) fn work_refusal(
     request.policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, Some(0)),
+        ExecutionBudget::new(NonZeroUsize::MIN, None, Some(0)),
     );
     refused_commit(execution, request)
 }

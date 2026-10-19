@@ -55,7 +55,7 @@ fn main() {
 }
 fn publication_workflow() {
     let seed_request = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::SerialMemoryBudget::new(None),
         worth_execution::CancellationToken::new(),
         None,
     );
@@ -100,7 +100,7 @@ fn publication_workflow() {
             worth_foundational::DeterminismContract::CanonicalBitwise,
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
-                64 << 20,
+                None,
                 Some(8_000_000),
             ),
         ))

@@ -2,6 +2,7 @@
 //! region output operation over the set the scope's ordinate names, first to
 //! create the output and then to keep it.
 
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 const DECISION_FACTS_PER_ENTRY: usize = 8;
 /// The scope, the set, its weight and the entry an armed decision writes.
 const DECISION_FACTS_BESIDE_ENTRIES: usize = 32;
@@ -119,14 +120,19 @@ impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
             key
         }
     }
-    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        if MODE == 1 {
-            // The wide-key decision may disclose every declared Native fact.
-            // Reserve its finite projection bound, including own-write rebasing.
-            WorthQueryProducerDemandResources::new(Some(4096), DECISION_FACT_BUDGET * 512)
-        } else {
-            planar_producer_resources()
-        }
+    fn demand_resources(
+        &self,
+        _: &PlanarReadResult,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({
+            if MODE == 1 {
+                // The wide-key decision may disclose every declared Native fact.
+                // Reserve its finite projection bound, including own-write rebasing.
+                WorthQueryProducerDemandResources::new(Some(4096), DECISION_FACT_BUDGET * 512)
+            } else {
+                planar_producer_resources()
+            }
+        })
     }
 }
 

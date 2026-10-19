@@ -108,6 +108,8 @@ impl OperationHandler<ReservationSchema, ReservedEmissionBinding> for ReservedEm
         _: &MutationFreeEmitInput,
     ) -> ApplicationCandidateRequirements {
         ReservedEmissionBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
     fn build_candidate(
         &self,
@@ -143,6 +145,8 @@ impl OperationHandler<ReservationSchema, ReservedDeletionBinding> for ReservedDe
         _: &TouchAccountInput,
     ) -> ApplicationCandidateRequirements {
         ReservedDeletionBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
     fn build_candidate(
         &self,

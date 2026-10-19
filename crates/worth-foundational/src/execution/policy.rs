@@ -44,19 +44,19 @@ pub enum DeterminismContract {
     ContractEquivalent(EquivalenceContractId),
 }
 
-/// Limits the worker slots, charged bytes, and charged operation units of one
-/// request. The runtime enforces these; this value grants no execution rights.
+/// Required worker slots and optional charged-byte and operation ceilings.
+/// Absence leaves accounting active without a caller ceiling. This grants no execution rights.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ExecutionBudget {
     max_workers: NonZeroUsize,
-    charged_memory_bytes: u64,
+    charged_memory_bytes: Option<u64>,
     work_ceiling: Option<u64>,
 }
 
 impl ExecutionBudget {
     pub const fn new(
         max_workers: NonZeroUsize,
-        charged_memory_bytes: u64,
+        charged_memory_bytes: Option<u64>,
         work_ceiling: Option<u64>,
     ) -> Self {
         Self {
@@ -70,7 +70,7 @@ impl ExecutionBudget {
         self.max_workers
     }
 
-    pub const fn charged_memory_bytes(self) -> u64 {
+    pub const fn charged_memory_bytes(self) -> Option<u64> {
         self.charged_memory_bytes
     }
 
@@ -122,14 +122,14 @@ mod tests {
 
     #[test]
     fn portable_request_preserves_independent_limits() {
-        let budget = ExecutionBudget::new(NonZeroUsize::new(3).unwrap(), 4096, Some(77));
+        let budget = ExecutionBudget::new(NonZeroUsize::new(3).unwrap(), Some(4096), Some(77));
         let policy = ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
             budget,
         );
         assert_eq!(policy.budget().max_workers().get(), 3);
-        assert_eq!(policy.budget().charged_memory_bytes(), 4096);
+        assert_eq!(policy.budget().charged_memory_bytes(), Some(4096));
         assert_eq!(policy.budget().work_ceiling(), Some(77));
         assert_eq!(policy.determinism(), DeterminismContract::CanonicalBitwise);
     }

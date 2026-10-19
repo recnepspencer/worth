@@ -109,7 +109,7 @@ fn assert_epoch_fits_forecast(
     let (_, peak) = measure(|| {
         // This witness isolates allocation; separate tests enforce visit denials.
         let mut work = Work::new(None);
-        let mut request = SignalPreparationBudget::new(forecast);
+        let mut request = SignalPreparationBudget::new(Some(forecast));
         let mut draft = state
             .prepare_epoch_diagnostics(&mut work, Some(&mut request), Some(&ledger), 1)
             .unwrap();

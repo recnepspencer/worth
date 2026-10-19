@@ -87,7 +87,7 @@ fn product_world_resources(
         worth_foundational::DeterminismContract::CanonicalBitwise,
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
-            64 * 1024 * 1024,
+            None,
             Some(8_000_000),
         ),
     );

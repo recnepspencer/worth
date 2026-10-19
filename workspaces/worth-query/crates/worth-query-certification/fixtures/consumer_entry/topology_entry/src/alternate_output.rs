@@ -1,4 +1,6 @@
 use std::marker::PhantomData;
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
@@ -81,7 +83,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.alternate-planar-output-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.alternate-planar-output-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 2, 1024);
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(requirements(0, 0, 0, 2, 1024));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -181,6 +184,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         _: &worth_query_consumer_values::PositiveLength,
     ) -> ApplicationCandidateRequirements {
         AlternatePlanarOutputBinding::<Schema>::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(
@@ -237,8 +242,11 @@ impl<Schema: TopologySchemaBinding>
         super::planar_source_key(source_identity) ^ u64::MAX
     }
 
-    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(Some(1024), 1024)
+    fn demand_resources(
+        &self,
+        _: &PlanarReadResult,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({ WorthQueryProducerDemandResources::new(Some(1024), 1024) })
     }
 }
 

@@ -22,14 +22,10 @@ pub(super) fn complete_leased_query(
         .map_err(QueryReadExecutionStop::CompletionAdmission)?;
     let memory = execution.memory_limit();
     let captured_bytes = fragments.additional_charged_bytes();
-    let scratch_ceiling = captured_bytes
-        .saturating_mul(8)
-        .saturating_add(4096)
-        .min(memory / 3);
-    let result_ceiling = captured_bytes
-        .saturating_mul(2)
-        .saturating_add(1024)
-        .min(memory / 3);
+    let scratch_bound = captured_bytes.saturating_mul(8).saturating_add(4096);
+    let scratch_ceiling = memory.map_or(scratch_bound, |limit| scratch_bound.min(limit / 3));
+    let result_bound = captured_bytes.saturating_mul(2).saturating_add(1024);
+    let result_ceiling = memory.map_or(result_bound, |limit| result_bound.min(limit / 3));
     let mut fragments = Some(fragments);
     match scan.run(
         lease,

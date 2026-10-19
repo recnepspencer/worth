@@ -16,7 +16,7 @@ fn refusal(
     batch: u64,
 ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceAdmissionDenial {
     let profile =
-        WorthQueryApplicationCandidateResourceProfile::physical_resources(maximum_items, 64)
+        WorthQueryApplicationCandidateResourceProfile::policy(Some(maximum_items), Some(64))
             .unwrap()
             .with_maximum_operation_width(maximum_batch)
             .unwrap();

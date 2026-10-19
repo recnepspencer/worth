@@ -44,7 +44,7 @@ pub(crate) fn test_execution_lease(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 4096, Some(10)),
+                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), Some(4096), Some(10)),
             ),
             deadline: None,
             cancellation,

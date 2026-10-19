@@ -24,7 +24,7 @@ fn request(bytes: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, Some(1)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -71,7 +71,7 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
     assert_eq!(
         refusal.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial {
+            worth_execution::MemoryLimitDenial::Capacity {
                 requested: refusal.requested_payload_bytes().unwrap(),
                 admitted: 0,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
@@ -145,7 +145,7 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
     // after the originating lease, Query frame and original World have gone.
     assert!(matches!(
         parent.reserve_memory(LIMIT - charge + 1),
-        Err(memory) if memory == worth_execution::MemoryLimitDenial { requested: LIMIT - charge + 1, admitted: LIMIT - charge, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
+        Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: LIMIT - charge + 1, admitted: LIMIT - charge, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
     ));
     assert_eq!(
         parent.reserve_memory(LIMIT - charge).unwrap().bytes(),

@@ -48,7 +48,7 @@ fn wave_and_member_descendants_share_the_advancements_work_ceiling() {
             place(posture),
             bound(Some(ExecutionBudget::new(
                 NonZeroUsize::new(4).unwrap(),
-                1 << 20,
+                None,
                 Some(2 * UNITS),
             ))),
         );

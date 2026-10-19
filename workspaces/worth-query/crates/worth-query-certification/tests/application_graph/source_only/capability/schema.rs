@@ -6,6 +6,7 @@ pub use crate::document_retention_model::retention_entry::{
 pub use crate::document_retention_model::schema::{SetRetentionInput, SetRetentionInputBinding};
 use declaration::application_operation::*;
 use declaration::application_schema::*;
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_host::facade::{declaration, *};
 
 worth_query_application! {
@@ -96,11 +97,11 @@ impl ApplicationMutationBinding<CapabilitySchema> for SetRetentionBinding {
     const IDENTITY: &'static str = "capability-retention.set.v1";
     const HANDLER_IDENTITY: &'static str = "capability-retention.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-retention.key.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(1024),
-        );
+        ));
     fn scope_field() -> ApplicationFieldRef<
         CapabilitySchema,
         Document,

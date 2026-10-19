@@ -107,7 +107,15 @@ fn every_lease_refusal_and_kernel_stop_is_its_own_cause() {
         ),
     ];
     for (level, named) in levels {
-        let refused = MemoryLimitDenial {
+        assert_eq!(
+            memory_denial(MemoryLimitDenial::CounterOverflow {
+                requested: 1,
+                charged: u64::MAX,
+                level
+            }),
+            Resource::ChargedBytesOverflow,
+        );
+        let refused = MemoryLimitDenial::Capacity {
             requested: 9,
             admitted: 8,
             level,
@@ -280,7 +288,7 @@ fn a_partitions_refusal_round_trips_through_its_kernel() {
 /// serially are refused by one policy, and say so the same way.
 #[test]
 fn a_dispatch_child_and_a_serial_run_are_refused_by_the_same_policy() {
-    let policy = test_policy(NonZeroUsize::new(2).unwrap(), 1000);
+    let policy = test_policy(NonZeroUsize::new(2).unwrap(), Some(1000));
     let request = |policy| LeaseRequest {
         policy,
         deadline: None,
@@ -292,12 +300,26 @@ fn a_dispatch_child_and_a_serial_run_are_refused_by_the_same_policy() {
     let _routing = parent.reserve_memory(600).unwrap();
     let child = parent.child(request(policy)).unwrap();
     let leased = child.reserve_memory(500).unwrap_err();
-    assert_eq!(leased.level, MemoryLimitLevel::Policy { ancestor: 1 });
+    assert_eq!(
+        leased,
+        MemoryLimitDenial::Capacity {
+            requested: 500,
+            admitted: 400,
+            level: MemoryLimitLevel::Policy { ancestor: 1 }
+        }
+    );
 
     let serial = SerialMemoryBudget::from_policy(&policy);
     let _routing = serial.reserve(600).unwrap();
     let serially = serial.reserve(500).unwrap_err();
-    assert_eq!(serially.level, MemoryLimitLevel::Policy { ancestor: 0 });
+    assert_eq!(
+        serially,
+        MemoryLimitDenial::Capacity {
+            requested: 500,
+            admitted: 400,
+            level: MemoryLimitLevel::Policy { ancestor: 0 }
+        }
+    );
 
     let refused = Resource::MemoryLimit {
         requested: 500,

@@ -19,15 +19,20 @@ impl Batch {
     pub(super) fn admit<Schema, Operation, Input, Scope>(
         &self,
         admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    ) -> Result<(), Outcome> {
+    ) -> Result<
+        worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements,
+        Outcome,
+    > {
         let mut demand = super::super::effect_program::PlatformEffectDemand::default();
         for effect in &self.effects {
             demand.observe(effect).map_err(attempt)?;
         }
+        let requirements = demand.requirements();
         super::super::effect_program::admit_signing_lifecycle_effects(admission, demand)
             .map_err(attempt)?
             .materialize(&self.effects)
-            .map_err(attempt)
+            .map_err(attempt)?;
+        Ok(requirements)
     }
 }
 

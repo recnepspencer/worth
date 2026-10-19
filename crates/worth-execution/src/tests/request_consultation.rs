@@ -159,11 +159,11 @@ fn nested_latch_case(backend: BackendKind, workers: usize) {
     policy.cancellation = cancellation.token();
     let parent = authority().request_lease(policy).unwrap();
     let child = parent
-        .child(request(
-            workers,
-            parent.policy().budget().charged_memory_bytes(),
-            100,
-        ))
+        .child(LeaseRequest {
+            policy: *parent.policy(),
+            cancellation: CancellationToken::new(),
+            deadline: None,
+        })
         .unwrap();
     let inputs = (1..=workers as u64).collect::<Vec<_>>();
     let rendezvous = (std::sync::Mutex::new(0_usize), std::sync::Condvar::new());

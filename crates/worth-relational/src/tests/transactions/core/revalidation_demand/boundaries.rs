@@ -22,7 +22,7 @@ fn a_refused_demand_leaves_no_staging_residue() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), 0, Some(1)),
+                ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), Some(0), Some(1)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

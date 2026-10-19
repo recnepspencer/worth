@@ -18,7 +18,7 @@ fn lease(memory: u64, work: u64) -> worth_execution::ExecutionResourceLease<'sta
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, Some(work)),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(memory), Some(work)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

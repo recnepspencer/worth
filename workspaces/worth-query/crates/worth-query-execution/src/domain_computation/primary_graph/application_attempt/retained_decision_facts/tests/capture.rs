@@ -90,7 +90,7 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     assert_eq!(
         allocation.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial {
+            worth_execution::MemoryLimitDenial::Capacity {
                 requested: allocation.requested_payload_bytes().unwrap(),
                 admitted: 0,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
@@ -131,7 +131,7 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     assert!(
         matches!(
             parent.reserve_memory(PAYLOAD),
-            Err(memory) if memory.requested == PAYLOAD && memory.admitted < PAYLOAD && memory.level == worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
+            Err(worth_execution::MemoryLimitDenial::Capacity { requested, admitted, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }) if requested == PAYLOAD && admitted < PAYLOAD
         ),
         "sealed snapshot retains its actual inline/key backings"
     );

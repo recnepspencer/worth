@@ -29,8 +29,6 @@ use worth_query_host::facade::{
 // this capacity and does not depend on its absolute size.
 const AUTHORITY_BYTES: usize = 64 * 1024;
 const RETAINED_BYTES: usize = 96;
-// This proof constrains memory; ordinary principal/product reads also need work.
-const ORDINARY_READ_WORK: u64 = 1024;
 
 fn install(
     authority: Arc<ExecutionAuthority>,
@@ -47,7 +45,7 @@ fn install(
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, AUTHORITY_BYTES as u64, Some(work)),
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(AUTHORITY_BYTES as u64), work),
     );
     let limits = example_limits(Some(policy)).with_execution_authority(authority);
     let runtime = match checkpoint {
@@ -88,8 +86,8 @@ fn request() -> LeaseRequest {
             DeterminismContract::CanonicalBitwise,
             ExecutionBudget::new(
                 NonZeroUsize::new(1).unwrap(),
-                AUTHORITY_BYTES as u64,
-                Some(ORDINARY_READ_WORK),
+                Some(AUTHORITY_BYTES as u64),
+                None,
             ),
         ),
         deadline: None,
@@ -205,7 +203,7 @@ fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_r
             .unwrap();
         assert!(matches!(
             payload(&lease, AUTHORITY_BYTES - RETAINED_BYTES + 1, &allocations),
-            Err(LeaseDenial::MemoryExhausted(memory)) if memory == (MemoryLimitDenial {
+            Err(LeaseDenial::MemoryExhausted(memory)) if memory == (MemoryLimitDenial::Capacity {
                 requested: (AUTHORITY_BYTES - RETAINED_BYTES + 1) as u64,
                 admitted: (AUTHORITY_BYTES - RETAINED_BYTES) as u64,
                 level: MemoryLimitLevel::Process,
@@ -244,7 +242,7 @@ fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_r
             .unwrap();
         assert!(matches!(
             payload(&lease, AUTHORITY_BYTES - RETAINED_BYTES + 1, &allocations),
-            Err(LeaseDenial::MemoryExhausted(memory)) if memory == (MemoryLimitDenial {
+            Err(LeaseDenial::MemoryExhausted(memory)) if memory == (MemoryLimitDenial::Capacity {
                 requested: (AUTHORITY_BYTES - RETAINED_BYTES + 1) as u64,
                 admitted: (AUTHORITY_BYTES - RETAINED_BYTES) as u64,
                 level: MemoryLimitLevel::Process,
@@ -272,7 +270,7 @@ fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_r
     let probe = authority.request_lease(request()).unwrap();
     assert!(matches!(
         probe.reserve_memory((RETAINED_BYTES + 1) as u64),
-        Err(memory) if memory == (MemoryLimitDenial {
+        Err(memory) if memory == (MemoryLimitDenial::Capacity {
                 requested: (RETAINED_BYTES + 1) as u64,
                 admitted: RETAINED_BYTES as u64,
                 level: MemoryLimitLevel::Process,

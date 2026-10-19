@@ -32,11 +32,7 @@ fn refresh_preserves_the_stop_at_every_counted_consult() {
         discard();
         let source = CancellationSource::new();
         let cancel = source.clone();
-        let host = SerialRequest::from_memory(
-            SerialMemoryBudget::new(64 * 1024 * 1024),
-            source.token(),
-            None,
-        );
+        let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
         let execution = ExecutionRequest::serial(&host);
         let mut observation = None;
         let result = handle.execute_mutation_with_index_refresh(&execution, |runtime| {

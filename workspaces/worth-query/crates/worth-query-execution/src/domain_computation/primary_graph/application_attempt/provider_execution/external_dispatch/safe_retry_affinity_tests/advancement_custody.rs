@@ -31,7 +31,7 @@ fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
         for memory in [false, true] {
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
-                if memory { 0 } else { 64 * 1024 * 1024 },
+                if memory { Some(0) } else { None },
                 Some(if memory { 8_000_000 } else { 0 }),
             )));
             let before = reads();

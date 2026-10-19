@@ -168,7 +168,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let requirements =
                         handler.candidate_requirements(identities.mutation_input(), &decision);
                     let mut candidate = reads
-                        .begin_reserved_effect_program(requirements, installed_ceiling)
+                        .begin_reserved_effect_program(
+                            requirements,
+                            installed_ceiling,
+                            allocation_control.policy(),
+                        )
                         .map_err(MutationHandlerExecutionDenial::Attempt)?;
                     candidate
                         .prepare_output_contract::<Binding>()

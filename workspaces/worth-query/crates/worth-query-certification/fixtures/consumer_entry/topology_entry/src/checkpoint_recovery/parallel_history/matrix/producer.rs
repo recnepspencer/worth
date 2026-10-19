@@ -1,6 +1,7 @@
 //! Source inputs derive from the declared partition set and real revision field.
 use super::{application::*, control::Control, operation, source};
 use std::sync::Arc;
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 use worth_query_host::facade::application_contribution::*;
 use worth_query_host::facade::primary_graph::*;
 const APPLICABILITY: &[WorthQueryProducerApplicability] = &[
@@ -72,8 +73,11 @@ impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
             .fold(0, u64::wrapping_add))
             | (3 << 62)
     }
-    fn demand_resources(&self, _: &source::Result) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(Some(4096), 16384)
+    fn demand_resources(
+        &self,
+        _: &source::Result,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({ WorthQueryProducerDemandResources::new(Some(4096), 16384) })
     }
 }
 impl WorthQueryApplicationRequiredOutputConnection<Schema> for Connection {

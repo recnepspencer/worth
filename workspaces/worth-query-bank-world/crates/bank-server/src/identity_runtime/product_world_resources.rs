@@ -14,7 +14,7 @@ const BANK_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
         worth_foundational::DeterminismContract::CanonicalBitwise,
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
-            128 * 1024 * 1024,
+            Some(128 * 1024 * 1024),
             Some(16_000_000),
         ),
     );

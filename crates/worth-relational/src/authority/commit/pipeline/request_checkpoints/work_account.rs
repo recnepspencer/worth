@@ -47,7 +47,7 @@ fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommit
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 * 1024 * 1024, Some(ceiling)),
+                ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(ceiling)),
             ),
             deadline: None,
             cancellation: cancellation.token(),

@@ -60,6 +60,22 @@ impl RecordSlotDirectory {
         Ok(copied_bytes.saturating_add(self.physical_by_logical.insert(logical_slot, physical)))
     }
 
+    pub(crate) fn try_occupied_slots<Stop>(
+        &self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<
+        std::iter::Map<
+            crate::storage::substrate::SharedMapIter<'_, u64, usize>,
+            fn((&u64, &usize)) -> usize,
+        >,
+        Stop,
+    > {
+        Ok(self
+            .physical_by_logical
+            .try_iter(prepare)?
+            .map(logical_slot as fn((&u64, &usize)) -> usize))
+    }
+
     pub(crate) fn occupied_slots(&self) -> Vec<usize> {
         self.occupied_slots_iter().collect()
     }
@@ -98,4 +114,8 @@ impl RecordSlotDirectory {
             &mut crate::storage::substrate::visit_inline_value,
         );
     }
+}
+
+fn logical_slot((&slot, _): (&u64, &usize)) -> usize {
+    slot as usize
 }

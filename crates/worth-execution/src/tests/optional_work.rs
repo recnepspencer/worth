@@ -10,7 +10,7 @@ fn optional_request(work: Option<u64>) -> LeaseRequest {
     admitted.policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 2_000, work),
+        ExecutionBudget::new(NonZeroUsize::MIN, None, work),
     );
     admitted
 }

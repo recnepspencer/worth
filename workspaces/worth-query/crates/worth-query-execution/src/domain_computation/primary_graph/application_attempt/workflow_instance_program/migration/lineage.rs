@@ -63,7 +63,7 @@ mod request_stops {
             let selected = world.selected_product(&host);
             let graph = world.application.runtime.primary_graph().unwrap();
             let request = worth_execution::CancellationSource::new();
-            let serial = worth_execution::SerialRequest::from_memory(worth_execution::SerialMemoryBudget::new(64 << 20), request.token(), None);
+            let serial = worth_execution::SerialRequest::from_memory(worth_execution::SerialMemoryBudget::new(None), request.token(), None);
             let cancelled = worth_execution::ExecutionRequest::serial(&serial);
             let anchor = selected.resolve_entity(&phase, crate::domain_computation::primary_graph::tests::fixture::AccountStatus::reference(), "open".to_owned(), &crate::domain_computation::primary_graph::tests::fixture::live_scope(), crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary).unwrap().entity_id();
             graph.integration_handle().with_runtime(&execution, |runtime| {

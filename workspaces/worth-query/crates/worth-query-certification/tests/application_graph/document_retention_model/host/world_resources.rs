@@ -31,11 +31,7 @@ fn world_resources_with_work(
     let execution_policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(
-            std::num::NonZeroUsize::MIN,
-            64 * 1024 * 1024,
-            Some(work),
-        ),
+        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(work)),
     );
     runtime::WorthQueryProductWorldResources::install(
         runtime::RuntimeWorldBudgetInstallation {

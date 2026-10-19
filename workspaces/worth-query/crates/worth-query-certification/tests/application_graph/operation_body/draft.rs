@@ -2,6 +2,7 @@
 use super::{program, request_scope, schema::*, DOCUMENT_IDENTITY};
 use serde::Serialize;
 use std::marker::PhantomData;
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationMutationOutcome as Outcome, WorthQueryApplicationRequestExt,
@@ -88,7 +89,7 @@ where
     const HANDLER_IDENTITY: &'static str = Operation::HANDLER_IDENTITY;
     const IDEMPOTENCY_IDENTITY: &'static str = Operation::IDEMPOTENCY_IDENTITY;
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements =
+    const CANDIDATES: ApplicationCandidatePolicy =
         <super::binding::BodyBinding<DESTINATION> as ApplicationMutationBinding<
             DocumentRetentionSchema<DESTINATION>,
         >>::CANDIDATES;

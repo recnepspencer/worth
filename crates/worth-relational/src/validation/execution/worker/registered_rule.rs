@@ -130,7 +130,7 @@ fn evaluate_custom_registration<'state>(
     retained_touched: &std::sync::Arc<crate::validation::data::TouchedStructuralSet>,
     budget: Option<&dyn InvariantBudget>,
 ) -> RegisteredInvariantEvaluation {
-    let structural_budget = budget.map(InvariantBudget::custom_structural_budget);
+    let structural_budget = budget.and_then(InvariantBudget::custom_structural_budget);
     let work = prepared_execution.work_meter();
     let work = structural_budget
         .as_ref()

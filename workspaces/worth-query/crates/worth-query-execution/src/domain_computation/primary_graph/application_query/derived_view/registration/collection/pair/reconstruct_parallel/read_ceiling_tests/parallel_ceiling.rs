@@ -68,7 +68,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
                                     parent.policy().determinism(),
                                     worth_foundational::ExecutionBudget::new(
                                         NonZeroUsize::new(workers).unwrap(),
-                                        16 << 20,
+                                        None,
                                         parent.policy().budget().work_ceiling(),
                                     ),
                                 ),

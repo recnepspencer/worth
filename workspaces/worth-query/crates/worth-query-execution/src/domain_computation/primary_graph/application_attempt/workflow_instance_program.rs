@@ -141,6 +141,8 @@ where
         let definition_content_identity = compiled.content_identity().clone();
         let program_revision = *compiled.program_revision();
         let program = WorthQueryApplicationEffectProgram {
+            candidate_requirements: None,
+            effect_backing_memory: None,
             read_set: self,
             effects,
             emission_retained_bytes: 0,

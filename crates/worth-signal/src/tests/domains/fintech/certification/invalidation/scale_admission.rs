@@ -16,7 +16,7 @@ pub(super) fn scheduled_request() -> FinancialLocalityResourceRequest {
     let mut policy = SignalRuntimePolicy::operational().with_maximum_waiter_resolution_visits(
         Some(outputs.saturating_mul(outputs).saturating_mul(16)),
     );
-    policy.serial_memory_bytes = 512 * 1024 * 1024;
+    policy.serial_memory_bytes = Some(512 * 1024 * 1024);
     FinancialLocalityResourceRequest {
         policy,
         maximum_work: 160_000_000_000,

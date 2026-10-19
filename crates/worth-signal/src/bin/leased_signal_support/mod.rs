@@ -25,7 +25,7 @@ pub(super) fn lease(host: &ExecutionAuthority, workers: usize) -> ExecutionResou
             DeterminismContract::CanonicalBitwise,
             ExecutionBudget::new(
                 NonZeroUsize::new(workers).unwrap(),
-                128 * 1024 * 1024,
+                Some(128 * 1024 * 1024),
                 Some(100_000_000),
             ),
         ),

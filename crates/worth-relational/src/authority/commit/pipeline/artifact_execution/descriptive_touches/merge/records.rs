@@ -20,7 +20,7 @@ pub(super) fn entity(
     old: Option<&RecordArena<EntityRecordKind>>,
     new: &RecordArena<EntityRecordKind>,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
     record(
         runtime,
@@ -45,7 +45,7 @@ pub(super) fn relation(
     old: Option<&RecordArena<RelationRecordKind>>,
     new: &RecordArena<RelationRecordKind>,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
     let old_view = old.and_then(|arena| arena.get_slot(slot));
     let new_view = new.get_slot(slot);
@@ -142,7 +142,7 @@ fn record<K: RecordKind>(
     new: &RecordArena<K>,
     target: impl Fn(PartitionId, usize, u32) -> RecordRef,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
     budget.checkpoint(2)?;
     let old_view = old.and_then(|arena| arena.get_slot(slot));

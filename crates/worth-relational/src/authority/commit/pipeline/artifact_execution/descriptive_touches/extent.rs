@@ -9,10 +9,14 @@ pub(super) fn memory_bound(
     maximum: usize,
     mode: &TouchPreparationMode,
     lease: &ExecutionResourceLease<'_>,
-) -> Result<u64, TransactionCommitError> {
+) -> Result<Option<u64>, TransactionCommitError> {
     if matches!(mode, TouchPreparationMode::NativeMerge) {
         // Full-partition merge growth retains its existing preparation bound.
-        return Ok(lease.policy().budget().charged_memory_bytes() / 8);
+        return Ok(lease
+            .policy()
+            .budget()
+            .charged_memory_bytes()
+            .map(|limit| limit / 8));
     }
     let mut bytes = (maximum as u64)
         .saturating_mul(size_of::<Touch>() as u64)
@@ -54,5 +58,5 @@ pub(super) fn memory_bound(
             }).map_err(|failure| TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial { kind: crate::transactions::data::CommitExecutionDenialKind::Cause(crate::execution::kernel_failure(failure)), partition_identity: None }))?;
         }
     }
-    Ok(bytes)
+    Ok(Some(bytes))
 }

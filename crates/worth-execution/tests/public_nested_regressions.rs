@@ -36,7 +36,11 @@ fn request(work_ceiling: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 4_000, Some(work_ceiling)),
+            ExecutionBudget::new(
+                NonZeroUsize::new(2).unwrap(),
+                Some(4_000),
+                Some(work_ceiling),
+            ),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

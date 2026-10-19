@@ -178,7 +178,7 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
             worth_foundational::DeterminismContract::CanonicalBitwise,
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
-                64 * 1_024 * 1_024,
+                None,
                 Some(8_000_000),
             ),
         ),

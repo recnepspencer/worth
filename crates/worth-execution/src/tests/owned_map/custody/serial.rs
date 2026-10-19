@@ -14,7 +14,7 @@ fn owned_map_serial_taking_keeps_input_custody() {
         Stop::Capacity,
         Stop::Memory,
     ] {
-        let budget = SerialMemoryBudget::new(BUDGET);
+        let budget = SerialMemoryBudget::new(Some(BUDGET));
         let ledger = Ledger::Serial(&budget);
         let baseline = ledger.reserve(BASELINE).unwrap();
         let hold = ledger.reserve(input_bytes()).unwrap();
@@ -76,7 +76,7 @@ fn owned_map_serial_taking_keeps_input_custody() {
 #[test]
 fn expired_serial_request_preserves_callers_input_hold() {
     let _lock = TEST_LOCK.lock().unwrap();
-    let budget = SerialMemoryBudget::new(BUDGET);
+    let budget = SerialMemoryBudget::new(Some(BUDGET));
     let ledger = Ledger::Serial(&budget);
     let baseline = ledger.reserve(BASELINE).unwrap();
     let mut hold = Some(ledger.reserve(input_bytes()).unwrap());
@@ -125,7 +125,7 @@ fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
     let _lock = TEST_LOCK.lock().unwrap();
     let watchdog = Instant::now() + Duration::from_secs(60);
     loop {
-        let budget = SerialMemoryBudget::new(BUDGET);
+        let budget = SerialMemoryBudget::new(Some(BUDGET));
         let ledger = Ledger::Serial(&budget);
         let baseline = ledger.reserve(BASELINE).unwrap();
         let mut hold = Some(ledger.reserve(input_bytes()).unwrap());

@@ -2,6 +2,10 @@
 
 #[path = "candidate_retained_representation_fixture/bindings.rs"]
 mod bindings;
+#[path = "candidate_retained_representation_fixture/measured.rs"]
+mod measured;
+#[path = "candidate_retained_representation_fixture/quoted.rs"]
+mod quoted;
 #[path = "candidate_retained_representation_fixture/schema.rs"]
 mod schema;
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntimeInstaller;
@@ -15,6 +19,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAuthenticatedPrincipal, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode, WorthQuerySelectedProductOperation,
 };
+pub(super) use measured::{MeasuredBinding, MeasuredEmitOperation, MeasuredInput};
+pub(super) use quoted::{QuotedBinding, QuotedInput, QuotedOperation, QuotedWriteOrder};
 pub(super) use schema::*;
 use std::time::Duration;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -27,6 +33,8 @@ use worth_query_installation::facade::{
 pub(super) struct ReservationWorld {
     pub(super) application: WorthQueryPrimaryGraphApplicationRuntime<ReservationSchema>,
     pub(super) invariant: WorthQueryApplicationInvariantProjectionAuthority<ReservationSchema>,
+    pub(super) candidate_contacts: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    pub(super) cancel_on_requirements: std::sync::Arc<std::sync::Mutex<Option<worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource>>>,
 }
 
 impl ReservationWorld {
@@ -47,6 +55,11 @@ impl ReservationWorld {
 }
 
 pub(super) fn installed_world() -> ReservationWorld {
+    installed_world_with_candidate_policy(Default::default())
+}
+pub(super) fn installed_world_with_candidate_policy(
+    profile: crate::domain_computation::execution_runtime::WorthQueryApplicationCandidateResourceProfile,
+) -> ReservationWorld {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
         let phase = active_phase.bootstrap_for_test();
         let declaration = ReservationSchema::declaration().unwrap();
@@ -62,6 +75,7 @@ pub(super) fn installed_world() -> ReservationWorld {
             .admit(package)
             .unwrap();
         let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
+            .application_candidate_resources(profile)
             .install(WorthQueryInstallationGeneration::initial(), [admitted])
             .unwrap()
             .into_parts();
@@ -103,6 +117,27 @@ pub(super) fn installed_world() -> ReservationWorld {
             ))
             .unwrap();
         bindings::install_handlers(&schema, &mut bootstrap);
+        let candidate_contacts = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let cancel_on_requirements = std::sync::Arc::new(std::sync::Mutex::new(None));
+        bootstrap
+            .install_handler(
+                &schema
+                    .installed_mutation_binding::<MeasuredBinding>()
+                    .unwrap(),
+                measured::MeasuredHandler {
+                    contacts: std::sync::Arc::clone(&candidate_contacts),
+                    cancel_on_requirements: std::sync::Arc::clone(&cancel_on_requirements),
+                },
+            )
+            .unwrap();
+        bootstrap
+            .install_handler(
+                &schema
+                    .installed_mutation_binding::<QuotedBinding>()
+                    .unwrap(),
+                quoted::QuotedHandler,
+            )
+            .unwrap();
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
             .publish_application_runtime(
@@ -116,6 +151,8 @@ pub(super) fn installed_world() -> ReservationWorld {
         ReservationWorld {
             application,
             invariant,
+            candidate_contacts,
+            cancel_on_requirements,
         }
     })
 }

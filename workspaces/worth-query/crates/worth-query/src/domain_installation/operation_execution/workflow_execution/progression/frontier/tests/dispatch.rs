@@ -18,14 +18,14 @@ const COSTS: [u64; 3] = [3, 17, 41];
 #[derive(Clone, Copy)]
 struct Policy {
     workers: usize,
-    memory: u64,
+    memory: Option<u64>,
     work: u64,
 }
 impl Policy {
     fn width(workers: usize) -> Self {
         Self {
             workers,
-            memory: 64 * 1024 * 1024,
+            memory: None,
             work: 1024,
         }
     }

@@ -67,11 +67,8 @@ fn verification_replay_returns_control_outside_its_serialized_outcome() {
     let (source, _bytes) = fixture();
     let cancellation = CancellationSource::new();
     cancellation.cancel();
-    let host = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
-        cancellation.token(),
-        None,
-    );
+    let host =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let request = crate::replay::data::RelationalReplayRequest {
         commit_id: source.history().latest_commit().unwrap().commit_id,
         branch_id: crate::history::data::BranchId("main".into()),
@@ -155,11 +152,8 @@ fn interrupted_mid_range() {
     let mut target = runtime_with_test_schema();
     let before = observable_state(&target);
     let cancellation = CancellationSource::new();
-    let host = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
-        cancellation.token(),
-        None,
-    );
+    let host =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let applied = Arc::new(AtomicUsize::new(0));
     let observed = applied.clone();
     let mut validations = 0;
@@ -218,7 +212,7 @@ fn recovery_entry_stops_change_no_record_or_diagnostic() {
             cancellation.cancel();
         }
         let host = SerialRequest::from_memory(
-            SerialMemoryBudget::new(64 * 1024 * 1024),
+            SerialMemoryBudget::new(None),
             cancellation.token(),
             (cause == Cause::DeadlineElapsed).then(Instant::now),
         );
@@ -263,11 +257,8 @@ fn cancelled_checkpoint_restore_consults_before_decoding_corrupt_bytes() {
     let before = observable_state(&target);
     let cancellation = CancellationSource::new();
     cancellation.cancel();
-    let host = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
-        cancellation.token(),
-        None,
-    );
+    let host =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let corrupt =
         crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes(vec![0xff]);
     assert_eq!(

@@ -19,7 +19,7 @@ fn request(memory: u64) -> LeaseRequest {
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
             // This allocation witness had an unbounded serial commit request.
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, None),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(memory), None),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -88,11 +88,13 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
         >()) as u64;
     assert_eq!(
         cause.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
-            requested: normalization_bytes,
-            admitted: 1,
-            level: MemoryLimitLevel::Policy { ancestor: 0 }
-        }))
+        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+            MemoryLimitDenial::Capacity {
+                requested: normalization_bytes,
+                admitted: 1,
+                level: MemoryLimitLevel::Policy { ancestor: 0 }
+            }
+        ))
     );
     assert!(cause
         .requested_payload_bytes()
@@ -156,11 +158,13 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
         >()) as u64;
     assert_eq!(
         denial.allocation_denial().unwrap().kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
-            requested: validation_bytes,
-            admitted: 1,
-            level: MemoryLimitLevel::Policy { ancestor: 0 }
-        }))
+        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+            MemoryLimitDenial::Capacity {
+                requested: validation_bytes,
+                admitted: 1,
+                level: MemoryLimitLevel::Policy { ancestor: 0 }
+            }
+        ))
     );
     assert!(denial
         .allocation_denial()

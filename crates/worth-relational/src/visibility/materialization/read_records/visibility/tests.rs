@@ -153,28 +153,52 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
     );
 
     let state = runtime.storage_access().current_edition();
-    let historical_records = runtime
-        .read_truth()
-        .paid_entities_in_partition(
-            &state,
-            &runtime.config.schema.registry,
-            partition_id,
-            Some(KindId(11)),
-            super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
-            &mut |_| Ok(()),
-        )
-        .unwrap();
-    let reused_kind_records = runtime
-        .read_truth()
-        .paid_entities_in_partition(
-            &state,
-            &runtime.config.schema.registry,
-            partition_id,
-            Some(KindId(12)),
-            super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
-            &mut |_| Ok(()),
-        )
-        .unwrap();
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let historical_records = super::super::read_work::metered_with_memory(
+        &execution,
+        |context, memory| {
+            runtime.read_truth().paid_entities_in_partition(
+                &state,
+                &runtime.config.schema.registry,
+                partition_id,
+                Some(KindId(11)),
+                super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
+                &mut |units| context.checkpoint(units),
+                memory,
+            )
+        },
+        |answer| {
+            answer
+                .as_ref()
+                .map_or(0, super::super::read_footprint::entities)
+        },
+    )
+    .unwrap()
+    .unwrap();
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let reused_kind_records = super::super::read_work::metered_with_memory(
+        &execution,
+        |context, memory| {
+            runtime.read_truth().paid_entities_in_partition(
+                &state,
+                &runtime.config.schema.registry,
+                partition_id,
+                Some(KindId(12)),
+                super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
+                &mut |units| context.checkpoint(units),
+                memory,
+            )
+        },
+        |answer| {
+            answer
+                .as_ref()
+                .map_or(0, super::super::read_footprint::entities)
+        },
+    )
+    .unwrap()
+    .unwrap();
 
     assert_eq!(historical_records.len(), 1);
     assert_eq!(
@@ -240,28 +264,52 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
     );
 
     let state = runtime.storage_access().current_edition();
-    let historical_records = runtime
-        .read_truth()
-        .paid_relations_in_partition(
-            &state,
-            &runtime.config.schema.registry,
-            partition_id,
-            Some(KindId(21)),
-            super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
-            &mut |_| Ok(()),
-        )
-        .unwrap();
-    let reused_kind_records = runtime
-        .read_truth()
-        .paid_relations_in_partition(
-            &state,
-            &runtime.config.schema.registry,
-            partition_id,
-            Some(KindId(22)),
-            super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
-            &mut |_| Ok(()),
-        )
-        .unwrap();
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let historical_records = super::super::read_work::metered_with_memory(
+        &execution,
+        |context, memory| {
+            runtime.read_truth().paid_relations_in_partition(
+                &state,
+                &runtime.config.schema.registry,
+                partition_id,
+                Some(KindId(21)),
+                super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
+                &mut |units| context.checkpoint(units),
+                memory,
+            )
+        },
+        |answer| {
+            answer
+                .as_ref()
+                .map_or(0, super::super::read_footprint::relations)
+        },
+    )
+    .unwrap()
+    .unwrap();
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let reused_kind_records = super::super::read_work::metered_with_memory(
+        &execution,
+        |context, memory| {
+            runtime.read_truth().paid_relations_in_partition(
+                &state,
+                &runtime.config.schema.registry,
+                partition_id,
+                Some(KindId(22)),
+                super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
+                &mut |units| context.checkpoint(units),
+                memory,
+            )
+        },
+        |answer| {
+            answer
+                .as_ref()
+                .map_or(0, super::super::read_footprint::relations)
+        },
+    )
+    .unwrap()
+    .unwrap();
 
     assert_eq!(historical_records.len(), 1);
     assert_eq!(

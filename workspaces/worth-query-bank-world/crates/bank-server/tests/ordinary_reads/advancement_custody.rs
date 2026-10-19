@@ -87,7 +87,7 @@ fn page_resume_and_live_entries_refuse_before_their_own_reader() {
                 let mut live = (entry == 3).then(|| activity().subscribe(live_controls()).unwrap());
                 bound(Some(worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
-                    if zero_memory { 0 } else { 64 * 1_024 * 1_024 },
+                    Some(if zero_memory { 0 } else { 64 * 1_024 * 1_024 }),
                     Some(if zero_memory { 16_000_000 } else { 0 }),
                 )));
                 let before = reads();

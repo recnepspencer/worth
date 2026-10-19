@@ -44,6 +44,8 @@ impl OperationHandler<BankSchema, OpenEstateCaseMutationBinding> for OpenEstateC
         _: &EstateAction,
     ) -> ApplicationCandidateRequirements {
         OpenEstateCaseMutationBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

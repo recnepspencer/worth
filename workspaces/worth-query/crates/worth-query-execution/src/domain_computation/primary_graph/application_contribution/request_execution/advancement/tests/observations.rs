@@ -167,7 +167,7 @@ fn member_host_refusals_do_not_add_thread_dependent_observations() {
                             with_bootstrap_advancement(
                                 super::super::super::test_placement::test_policy(
                                     NonZeroUsize::MIN,
-                                    1 << 20,
+                                    None,
                                 ),
                                 |_| (),
                             )

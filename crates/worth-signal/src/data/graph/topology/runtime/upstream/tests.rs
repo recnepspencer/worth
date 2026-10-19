@@ -189,7 +189,7 @@ fn absent_upstream_limit_keeps_original_attempt_checkpoint_and_edge_visits() {
     for expired in [false, true] {
         let cancellation = CancellationSource::new();
         let serial = SerialRequest::from_memory(
-            SerialMemoryBudget::new(64 << 20),
+            SerialMemoryBudget::new(None),
             cancellation.token(),
             expired.then(std::time::Instant::now),
         );

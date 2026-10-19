@@ -1,3 +1,4 @@
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_host::facade::{
     declaration::{
         application_operation::{
@@ -169,11 +170,11 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     const IDENTITY: &'static str = "worth.query.example.temporal-amend.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.example.temporal-amend-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.example.temporal-amend-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+                ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 5, 0),
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::representation_bytes(1024),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         TemporalHostSchema,
@@ -263,6 +264,8 @@ impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTempora
         _: &WorthQueryInvariantMutationTarget<TemporalHostSchema, TemporalIntent>,
     ) -> ApplicationCandidateRequirements {
         AmendTemporalBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

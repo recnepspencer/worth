@@ -108,7 +108,7 @@ mod tests {
     #[test]
     fn latched_stop_keeps_its_origin_and_a_late_observer_reports_unknown() {
         let serial = crate::SerialRequest::from_memory(
-            crate::SerialMemoryBudget::new(64 * 1024),
+            crate::SerialMemoryBudget::new(None),
             crate::CancellationToken::new(),
             None,
         );

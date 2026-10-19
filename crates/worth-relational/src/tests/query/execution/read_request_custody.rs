@@ -9,8 +9,6 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
-const MEMORY: u64 = 1 << 26;
-
 fn fixture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> (RelationalRuntime, SnapshotPinnedQueryPlan) {
@@ -54,7 +52,7 @@ fn lease(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), MEMORY, Some(work)),
+                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), None, Some(work)),
             ),
             deadline: None,
             cancellation,
@@ -82,7 +80,7 @@ fn production_kind_scan_spends_its_callers_work_ceiling() {
 
 fn serial(cancellation: CancellationToken) -> worth_execution::SerialRequest {
     worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(MEMORY),
+        worth_execution::SerialMemoryBudget::new(None),
         cancellation,
         None,
     )
@@ -159,7 +157,7 @@ fn serial_scope_admission_precedes_unavailable_snapshot() {
     let mut unavailable = plan.clone();
     unavailable.snapshot = other.visibility_authority().snapshot();
     let host = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(0),
+        worth_execution::SerialMemoryBudget::new(Some(0)),
         CancellationToken::new(),
         None,
     );
@@ -172,11 +170,13 @@ fn serial_scope_admission_precedes_unavailable_snapshot() {
         admission,
         crate::runtime::QueryReadExecutionStop::Request(
             worth_execution::WorkCeilingDenial::Admission(
-                worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial {
-                    admitted: 0,
-                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
-                    ..
-                })
+                worth_execution::LeaseDenial::MemoryExhausted(
+                    worth_execution::MemoryLimitDenial::Capacity {
+                        admitted: 0,
+                        level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                        ..
+                    }
+                )
             )
         )
     ));

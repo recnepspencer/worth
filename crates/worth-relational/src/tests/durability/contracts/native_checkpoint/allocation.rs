@@ -15,7 +15,7 @@ fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, Some(1)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1)),
         ),
         deadline: None,
         cancellation,
@@ -49,11 +49,13 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     };
     assert_eq!(
         error.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
-            requested: quote,
-            admitted: 0,
-            level: MemoryLimitLevel::Policy { ancestor: 0 }
-        }))
+        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+            MemoryLimitDenial::Capacity {
+                requested: quote,
+                admitted: 0,
+                level: MemoryLimitLevel::Policy { ancestor: 0 }
+            }
+        ))
     );
     assert_eq!(error.requested_payload_bytes(), Some(quote));
     assert_eq!(
@@ -93,7 +95,7 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     };
     assert_eq!(
         parent.reserve_memory(1).unwrap_err(),
-        MemoryLimitDenial {
+        MemoryLimitDenial::Capacity {
             requested: 1,
             admitted: 0,
             level: MemoryLimitLevel::Policy { ancestor: 0 }

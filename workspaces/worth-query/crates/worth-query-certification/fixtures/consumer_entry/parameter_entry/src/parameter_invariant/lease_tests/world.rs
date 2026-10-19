@@ -35,7 +35,7 @@ pub(super) fn install() -> World {
     let mut binding = None;
     let limits = WorthQueryInMemoryApplicationLimits::new(
         super::resources::world_resources(),
-        WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192).unwrap(),
+        WorthQueryApplicationCandidateResourceProfile::policy(Some(4096), Some(8192)).unwrap(),
         WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         SignalConditionalEvaluationBudget::development(),
     );

@@ -16,7 +16,7 @@ fn interruption_present_at_dispatch_has_equal_outcome_charge_and_commits() {
         );
         let policy = test_policy(
             std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
-            1 << 20,
+            None,
         );
         let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
             RuntimeWorldExecutionPlacement::Leased {

@@ -10,9 +10,12 @@ impl RelationalPinnedRead {
         let QueryScope::ExplicitTargets { targets } = &plan.packet.scope else {
             return Ok(None);
         };
-        let (packets, preparation) = prepare_query_packets(execution, lease, |budget| {
-            prepare_explicit_packets(targets, budget)
-        })?;
+        let declared_bytes =
+            super::super::query_preparation_extent::declared_bytes(&plan.packet, 0)?;
+        let (packets, preparation) =
+            prepare_query_packets(execution, lease, declared_bytes, |budget| {
+                prepare_explicit_packets(targets, budget)
+            })?;
         let metrics = PacketizedQueryMetrics::from_packets(&packets);
         record_query_packet_metrics(&self.performance_access(), &plan, &metrics);
         let basis = &self.basis;

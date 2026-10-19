@@ -59,7 +59,7 @@ pub(crate) fn work_exhausted(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, Some(0)),
+                ExecutionBudget::new(NonZeroUsize::MIN, None, Some(0)),
             ),
             cancellation: CancellationToken::new(),
             deadline: None,

@@ -31,7 +31,7 @@ fn parent(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 1024 * 1024, Some(100)),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), None, Some(100)),
             ),
             cancellation,
             deadline,
@@ -44,8 +44,10 @@ fn packet() -> Vec<ReadOnlyPacket<u64>> {
         identity: PartitionIdentity::new(0),
         value: 2,
         input_bytes: 0,
-        kernel_scratch_bytes: 0,
-        max_result_bytes: 0,
+        memory: crate::execution::PacketMemory::Declared {
+            scratch: 0,
+            result: 0,
+        },
     }]
 }
 

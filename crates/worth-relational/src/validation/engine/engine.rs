@@ -119,8 +119,7 @@ impl<'runtime> InvariantEngine<'runtime> {
                     input_bytes: scope_bytes
                         .saturating_add((packet.reduction_key.partition_scope.len() as u64)
                             .saturating_mul(std::mem::size_of::<crate::identity::data::PartitionId>() as u64)),
-                    kernel_scratch_bytes: 0,
-                    max_result_bytes: 0,
+                    memory: crate::execution::PacketMemory::Declared { scratch: 0, result: 0 },
                     value: packet,
                 }
             }).collect();

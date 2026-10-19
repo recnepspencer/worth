@@ -32,7 +32,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         &[],
         |_| None,
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         )),

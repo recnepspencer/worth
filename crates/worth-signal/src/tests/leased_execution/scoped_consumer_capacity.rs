@@ -35,7 +35,7 @@ fn admission(memory: u64) -> LeaseRequest {
         request.policy.determinism(),
         ExecutionBudget::new(
             request.policy.budget().max_workers(),
-            memory,
+            Some(memory),
             Some(FUNDED_WORK),
         ),
     );

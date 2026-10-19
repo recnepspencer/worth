@@ -20,21 +20,36 @@ pub(super) fn stopped(cause: Bridge) -> Result<Kind, Control> {
         Bridge::WorkerLimitExceedsParent => resource(Resource::WorkerLimit, None),
         Bridge::MemoryLimitExceedsParent => resource(Resource::PolicyMemoryLimit, None),
         Bridge::WorkLimitExceedsParent => resource(Resource::WorkLimit, None),
-        Bridge::MemoryExhausted(memory) => resource(
-            Resource::MemoryLimit {
-                requested: memory.requested,
-                admitted: memory.admitted,
-                level: match memory.level {
-                    worth_execution::MemoryLimitLevel::Policy { .. } => Level::Policy,
-                    worth_execution::MemoryLimitLevel::Process => Level::Process,
-                    worth_execution::MemoryLimitLevel::Declared => Level::Declared,
+        Bridge::MemoryExhausted(memory) => {
+            let (denial, level) = match memory {
+                worth_execution::MemoryLimitDenial::CounterOverflow { level, .. } => {
+                    (Resource::ChargedBytesOverflow, level)
+                }
+                worth_execution::MemoryLimitDenial::Capacity {
+                    requested,
+                    admitted,
+                    level,
+                } => (
+                    Resource::MemoryLimit {
+                        requested,
+                        admitted,
+                        level: match level {
+                            worth_execution::MemoryLimitLevel::Policy { .. } => Level::Policy,
+                            worth_execution::MemoryLimitLevel::Process => Level::Process,
+                            worth_execution::MemoryLimitLevel::Declared => Level::Declared,
+                        },
+                    },
+                    level,
+                ),
+            };
+            resource(
+                denial,
+                match level {
+                    worth_execution::MemoryLimitLevel::Policy { ancestor } => Some(ancestor),
+                    _ => None,
                 },
-            },
-            match memory.level {
-                worth_execution::MemoryLimitLevel::Policy { ancestor } => Some(ancestor),
-                _ => None,
-            },
-        ),
+            )
+        }
         Bridge::ChargedBytesOverflow => resource(Resource::ChargedBytesOverflow, None),
         Bridge::UnrelatedNestedLease => resource(Resource::NestedLeaseMisuse, None),
         Bridge::NoActiveExecutionScope => resource(Resource::NoActiveExecutionScope, None),

@@ -1,5 +1,6 @@
 //! Root publication keeps its Native output while its successor input changes.
 use super::*;
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_decl::facade::application_operation::*;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::{
@@ -46,7 +47,7 @@ impl ApplicationMutationBinding<Schema> for Binding {
     const IDENTITY: &'static str = "courtroom-equal-dependent-publication";
     const HANDLER_IDENTITY: &'static str = "courtroom-equal-dependent-handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "courtroom-equal-dependent-command";
-    const CANDIDATES: ApplicationCandidateRequirements = RegionOutputBinding::<Schema>::CANDIDATES;
+    const CANDIDATES: ApplicationCandidatePolicy = RegionOutputBinding::<Schema>::CANDIDATES;
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,
@@ -132,6 +133,8 @@ impl OperationHandler<Schema, Binding> for Handler {
         _: &PositiveLength,
     ) -> ApplicationCandidateRequirements {
         Binding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
     fn build_candidate(
         &self,

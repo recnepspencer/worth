@@ -120,6 +120,8 @@ struct WorthQueryProviderAttemptPreparation {
     facts: ExecutionArray<WorthQueryApplicationObservedFact>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
+    candidate_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements>,
+    effect_backing_memory: Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::CandidateBackingReservation>,
     application_effect_count: usize,
     emission_retained_bytes: u64,
     emission_retained_bytes_ceiling: u64,
@@ -177,6 +179,16 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
                 ))
             }
         };
+    if let Err(denial) = super::super::super::effect_program::check_combined_host_capacity(
+        &admission,
+        &provider.effects,
+        &provider.output_correspondence,
+        provider.candidate_requirements,
+    ) {
+        return terminal(WorthQueryApplicationCommitOutcome::Denied(
+            WorthQueryApplicationCommitDenial::effect_lowering_denied(&denial),
+        ));
+    }
     let authorization = match take_commit_authorization(application, &mut admission) {
         Ok(authorization) => authorization,
         Err(outcome) => return terminal(outcome),

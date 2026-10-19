@@ -5,6 +5,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 use worth_query_consumer_values::{PlanarVertex, PlanarVertexReplacement};
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 use worth_query_host::facade::application_contribution::*;
 
 pub(super) struct ReplacementFamily;
@@ -95,8 +96,13 @@ impl<Schema: TopologySchemaBinding>
         CONTACTS.fetch_add(1, Ordering::SeqCst);
         planar_source_key(identity) ^ 0x9176_7301
     }
-    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        CONTACTS.fetch_add(1, Ordering::SeqCst);
-        planar_producer_resources()
+    fn demand_resources(
+        &self,
+        _: &PlanarReadResult,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({
+            CONTACTS.fetch_add(1, Ordering::SeqCst);
+            planar_producer_resources()
+        })
     }
 }

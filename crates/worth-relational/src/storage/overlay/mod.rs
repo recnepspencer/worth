@@ -6,7 +6,10 @@ mod partition_content;
 mod publication;
 mod working_state;
 
-pub(crate) use access::{OverlayStateView, PartitionAccess};
+pub(crate) use access::{
+    collect_partition_ids, partition_id_bytes, OverlayStateView, PartitionAccess,
+    PartitionIdMemory, PartitionIdsDenial,
+};
 pub(crate) use partition::{
     summarize_entity_chunk_plan, EntityWorkingSetLayout, PartitionCloneMode,
     PartitionMutationJournal, PartitionState, RelationalPartitionAllocationInventory,

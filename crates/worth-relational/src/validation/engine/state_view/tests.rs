@@ -147,6 +147,13 @@ impl PartitionAccess for NoWorldPartitionEnumeration<'_> {
         panic!("touched-scope discovery must not enumerate all partitions")
     }
 
+    fn partition_ids_with_memory(
+        &self,
+        _: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
+        panic!("touched-scope discovery must not enumerate all partitions")
+    }
+
     fn touched_partition_ids(&self) -> Option<Vec<PartitionId>> {
         self.state.touched_partition_ids()
     }
@@ -182,6 +189,13 @@ impl PartitionAccess for NoSlotEnumerationForRead<'_> {
     }
 
     fn partition_ids(&self) -> Vec<PartitionId> {
+        panic!("aspect reads must not enumerate partitions")
+    }
+
+    fn partition_ids_with_memory(
+        &self,
+        _: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
         panic!("aspect reads must not enumerate partitions")
     }
 

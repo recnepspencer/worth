@@ -124,7 +124,7 @@ impl WorthQueryApplicationCheckpoint {
     #[cfg(test)]
     pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         );

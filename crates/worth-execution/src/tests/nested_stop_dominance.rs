@@ -222,7 +222,7 @@ fn concurrent_request_dominance_returns_the_serial_failure_work_and_span() {
                                 // This request's real ledger refuses the reservation.
                                 assert!(matches!(
                                     child.reserve_memory(u64::MAX),
-                                    Err(MemoryLimitDenial { .. })
+                                    Err(MemoryLimitDenial::Capacity { .. })
                                 ));
                             }
                             Err::<u64, _>(KernelFailure::Domain(*value))

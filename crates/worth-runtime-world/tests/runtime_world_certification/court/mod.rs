@@ -99,7 +99,7 @@ impl CompositeSupplyChainCourt {
                 worth_foundational::DeterminismContract::CanonicalBitwise,
                 worth_foundational::ExecutionBudget::new(
                     std::num::NonZeroUsize::MIN,
-                    64 << 20,
+                    None,
                     Some(8_000_000),
                 ),
             ))

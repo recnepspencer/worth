@@ -7,19 +7,24 @@ use crate::{
     report::ChargedBytes,
 };
 
+mod settlement;
+use settlement::settle_hold;
+
 use super::meter::{
     record_nested_outcome, KernelContext, KernelFailure, KernelStop, NestedStopOwner, RunLimits,
 };
 
+/// The original admission or callback stop of one executed scope.
 #[derive(Debug)]
-pub(crate) enum ScopeStop<E> {
+pub enum ScopeStop<E> {
     Admission(LeaseDenial),
     Failure(KernelFailure<E>),
 }
 
-pub(crate) struct ScopeOutcome<R, E> {
-    pub(crate) result: Result<R, ScopeStop<E>>,
-    pub(crate) report: ExecutionReport,
+/// One scope result and its original measured execution report.
+pub struct ScopeOutcome<R, E> {
+    pub result: Result<R, ScopeStop<E>>,
+    pub report: ExecutionReport,
 }
 
 /// A caller's reservation a scope's memory admission takes over, in one
@@ -89,12 +94,12 @@ where
     run_scope_inner(
         lease,
         retained_bytes,
-        max_result_bytes,
+        Some(max_result_bytes),
         charge_parent,
         None,
         None,
         hold,
-        kernel,
+        |context, _| kernel(context),
     )
 }
 
@@ -120,19 +125,50 @@ where
     run_scope_inner(
         lease,
         retained_bytes,
-        max_result_bytes,
+        Some(max_result_bytes),
         charge_parent,
         work_ceiling,
         serial,
         None,
-        kernel,
+        |context, _| kernel(context),
+    )
+}
+
+pub(crate) fn run_scope_measured<R: ChargedBytes, E: ChargedBytes>(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    serial: Option<&SerialRequest>,
+    work: Option<u64>,
+    retained_bytes: u64,
+    reservation: &mut ExecutionMemoryReservation,
+    kernel: impl FnOnce(
+        &mut KernelContext<'_, '_>,
+        &mut crate::ExecutionResultMemory<'_>,
+    ) -> Result<R, KernelFailure<E>>,
+) -> ScopeOutcome<R, E> {
+    run_scope_inner(
+        lease,
+        retained_bytes,
+        None,
+        true,
+        work,
+        serial,
+        Some(ScopeHold {
+            reservation,
+            kept: &|value: &R| Some(value.additional_charged_bytes()),
+        }),
+        |context, memory| {
+            kernel(
+                context,
+                &mut memory.expect("measured scope lends result memory"),
+            )
+        },
     )
 }
 
 fn run_scope_inner<R, E, F>(
     lease: Option<&ExecutionResourceLease<'_>>,
     retained_bytes: u64,
-    max_result_bytes: u64,
+    max_result_bytes: Option<u64>,
     charge_parent: bool,
     work_ceiling: Option<u64>,
     serial: Option<&SerialRequest>,
@@ -142,7 +178,10 @@ fn run_scope_inner<R, E, F>(
 where
     R: ChargedBytes,
     E: ChargedBytes,
-    F: FnOnce(&mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>>,
+    F: FnOnce(
+        &mut KernelContext<'_, '_>,
+        Option<crate::ExecutionResultMemory<'_>>,
+    ) -> Result<R, KernelFailure<E>>,
 {
     if lease.is_none() && RunLimits::has_leased_parent() {
         return denied(LeaseDenial::unrelated_nested_lease(), charge_parent);
@@ -154,7 +193,7 @@ where
         .ok()
         .and_then(|bytes| bytes.checked_add(u64::try_from(size_of::<E>()).ok()?))
         .and_then(|bytes| bytes.checked_add(retained_bytes))
-        .and_then(|bytes| bytes.checked_add(max_result_bytes))
+        .and_then(|bytes| bytes.checked_add(max_result_bytes.unwrap_or(0)))
         .and_then(|bytes| bytes.checked_add(limits.framework_context_bytes(1, 1)?));
     let Some(memory_bytes) = memory_bytes else {
         return denied(LeaseDenial::charged_bytes_overflow(), charge_parent);
@@ -170,7 +209,7 @@ where
     } else {
         None
     };
-    let hold = match hold {
+    let mut hold = match hold {
         Some(hold) => {
             if let Err(denial) =
                 hold.reservation
@@ -189,9 +228,15 @@ where
         },
         _ => None,
     };
-    let _memory_activity =
-        (reservation.is_some() || serial_reservation.is_some() || hold.is_some())
-            .then(|| limits.enter_memory(memory_bytes));
+    if max_result_bytes.is_none() {
+        hold.as_mut()
+            .expect("measured scope retains its original reservation")
+            .reservation
+            .track_activity(&limits);
+    }
+    let _memory_activity = (max_result_bytes.is_some()
+        && (reservation.is_some() || serial_reservation.is_some() || hold.is_some()))
+    .then(|| limits.enter_memory(memory_bytes));
     let newly_active = lease.map_or_else(
         || !RunLimits::has_parent(),
         |value| !value.is_current_worker_in_lineage(),
@@ -203,27 +248,69 @@ where
         Err(stop) => Err(KernelFailure::Stop(stop)),
         Ok(()) => {
             let _meter_context = context.enter();
-            super::panic_boundary::contain(AssertUnwindSafe(|| kernel(&mut context)))
+            let result_memory = max_result_bytes.is_none().then(|| {
+                crate::ExecutionResultMemory::new(
+                    hold.as_mut()
+                        .expect("measured scope owns its reservation")
+                        .reservation,
+                    memory_bytes,
+                )
+            });
+            super::panic_boundary::contain(AssertUnwindSafe(|| kernel(&mut context, result_memory)))
                 .unwrap_or(Err(KernelFailure::Panic))
         }
     };
     let result = if let Some(stop) = context.checkpoint_stop() {
+        let _ = super::panic_boundary::contain(AssertUnwindSafe(|| drop(result)));
         Err(KernelFailure::Stop(stop))
     } else if context.nested_stopped() && result.is_ok() {
+        let _ = super::panic_boundary::contain(AssertUnwindSafe(|| drop(result)));
         Err(KernelFailure::Stop(KernelStop::NestedStopped))
     } else {
         result
     };
     let result = match result {
-        Ok(value) if value.additional_charged_bytes() > max_result_bytes => {
+        Ok(value) if max_result_bytes.is_some_and(|cap| value.additional_charged_bytes() > cap) => {
             Err(KernelFailure::ResultCapacityExceeded)
         }
         Err(KernelFailure::Domain(error))
-            if error.additional_charged_bytes() > max_result_bytes =>
+            if max_result_bytes.is_some_and(|cap| error.additional_charged_bytes() > cap) =>
         {
             Err(KernelFailure::ResultCapacityExceeded)
         }
         other => other,
+    };
+    // Measured scopes have reserved known input/framework bytes already. The callback's
+    // actual heap is admitted before framework retention/publication. Cooperating
+    // callback owners still reserve their allocations before cloning or growth.
+    let measured = max_result_bytes.is_none().then(|| match &result {
+        Ok(value) => value.additional_charged_bytes(),
+        Err(KernelFailure::Domain(error)) => error.additional_charged_bytes(),
+        Err(_) => 0,
+    });
+    let result = if let Some(bytes) = measured {
+        let owner = hold
+            .as_mut()
+            .expect("measured scope retains its original reservation");
+        let admitted = memory_bytes
+            .checked_add(bytes)
+            .ok_or_else(LeaseDenial::charged_bytes_overflow)
+            .and_then(|total| {
+                owner
+                    .reservation
+                    .resize(total)
+                    .map_err(LeaseDenial::MemoryExhausted)
+            });
+        match admitted {
+            Ok(()) => result.map_err(ScopeStop::Failure),
+            Err(denial) => {
+                // Keep the original reservation until the unretained materialized payload is gone.
+                let _ = super::panic_boundary::contain(AssertUnwindSafe(|| drop(result)));
+                Err(ScopeStop::Admission(denial))
+            }
+        }
+    } else {
+        result.map_err(ScopeStop::Failure)
     };
     let (work, span) = context.cost();
     let report = ExecutionReport::new(
@@ -242,9 +329,29 @@ where
             limits.discarded_work(),
         ),
     );
-    let result = match hold {
-        Some(hold) => settle_hold(hold, result),
-        None => result.map_err(ScopeStop::Failure),
+    let result = match (hold, measured) {
+        (Some(hold), Some(_)) => {
+            let kept = match &result {
+                Ok(value) => value.additional_charged_bytes(),
+                Err(ScopeStop::Failure(KernelFailure::Domain(error))) => {
+                    error.additional_charged_bytes()
+                }
+                Err(_) => 0,
+            };
+            // Shrinking cannot refuse. Keep the measured value/error charged until its caller releases it.
+            hold.reservation
+                .resize(kept)
+                .expect("measured settlement only releases bytes");
+            result
+        }
+        (Some(hold), None) => settle_hold(
+            hold,
+            result.map_err(|stop| match stop {
+                ScopeStop::Failure(failure) => failure,
+                ScopeStop::Admission(_) => unreachable!("declared scope has no measured admission"),
+            }),
+        ),
+        (None, _) => result,
     };
     let stop_owner = context.settle_result(&result, |stop| match stop {
         ScopeStop::Admission(_) => NestedStopOwner::Request,
@@ -254,31 +361,6 @@ where
     drop(reservation);
     drop(serial_reservation);
     ScopeOutcome { result, report }
-}
-
-/// Leaves `hold` holding what a completed result keeps, and nothing after a
-/// failure. Holding less never refuses.
-fn settle_hold<R, E>(
-    hold: ScopeHold<'_, R>,
-    result: Result<R, KernelFailure<E>>,
-) -> Result<R, ScopeStop<E>> {
-    let kept = match &result {
-        Ok(value) => (hold.kept)(value).ok_or_else(LeaseDenial::charged_bytes_overflow),
-        Err(_) => Ok(0),
-    };
-    let held = kept.and_then(|bytes| {
-        hold.reservation
-            .resize(bytes)
-            .map_err(LeaseDenial::MemoryExhausted)
-    });
-    match (result, held) {
-        (Ok(value), Ok(())) => Ok(value),
-        (Ok(_), Err(denial)) => {
-            let _ = hold.reservation.resize(0);
-            Err(ScopeStop::Admission(denial))
-        }
-        (Err(failure), _) => Err(ScopeStop::Failure(failure)),
-    }
 }
 
 fn denied<R, E>(denial: LeaseDenial, charge_parent: bool) -> ScopeOutcome<R, E> {

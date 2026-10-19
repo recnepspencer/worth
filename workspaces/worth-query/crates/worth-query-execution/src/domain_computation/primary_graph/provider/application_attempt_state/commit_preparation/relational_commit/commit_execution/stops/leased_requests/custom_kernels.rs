@@ -105,11 +105,7 @@ fn commit_probe(probe: Probe) -> Outcome {
         lease_request.policy = ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(
-                NonZeroUsize::new(2).unwrap(),
-                32 * 1024 * 1024,
-                Some(1_000_000),
-            ),
+            ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), None, Some(1_000_000)),
         );
     }
     let lease = authority().request_lease(lease_request).unwrap();

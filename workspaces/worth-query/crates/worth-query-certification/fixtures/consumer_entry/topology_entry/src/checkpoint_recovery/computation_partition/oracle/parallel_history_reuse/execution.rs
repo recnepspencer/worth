@@ -165,12 +165,9 @@ fn install_configured(
     configuration: HistoryConfiguration,
 ) -> Application {
     let width = u64::try_from(DECISION_FACT_BUDGET + WIDTH_BESIDE_DECISION).unwrap();
-    let host = support::candidates();
     let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            host.maximum_items().max(width),
-            host.maximum_retained_representation_bytes()
-                .max((1024 * LARGEST_SET + 320 * 256) as u64),
+        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::policy(
+            None, None,
         )
         .and_then(|candidates| candidates.with_maximum_operation_width(width))
         .unwrap();

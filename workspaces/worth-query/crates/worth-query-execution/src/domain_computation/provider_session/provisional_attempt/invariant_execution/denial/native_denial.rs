@@ -37,7 +37,9 @@ impl NativeDenial {
                 Kind::RequestInterrupted(RelationalOperationInterruption::TimedOut),
                 Posture::Denied,
             ),
-            Class::Request(Request::Admission(LeaseDenial::MemoryExhausted(_)))
+            Class::Request(Request::Admission(LeaseDenial::MemoryExhausted(
+                worth_execution::MemoryLimitDenial::Capacity { .. },
+            )))
             | Class::Physical(Physical::Allocator) => (Kind::AllocationDenied, Posture::Exhausted),
             Class::Request(Request::Admission(_))
             | Class::Request(Request::Stopped(

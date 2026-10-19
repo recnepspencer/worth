@@ -66,6 +66,8 @@ where
         _: &WorthQueryInvariantMutationTarget<CapabilitySchema, Document>,
     ) -> ApplicationCandidateRequirements {
         B::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
     fn build_candidate(
         &self,

@@ -287,7 +287,7 @@ fn topology_configuration(calls: &Arc<AtomicUsize>) -> TopologyConfiguration {
 fn limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         super::resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+        runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(4096), Some(8192))
             .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),

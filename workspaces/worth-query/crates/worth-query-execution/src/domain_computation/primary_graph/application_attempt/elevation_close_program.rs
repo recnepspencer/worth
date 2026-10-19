@@ -67,6 +67,8 @@ impl<Schema, Operation, Input, Scope>
             self.admission.operation(),
         )?;
         let program = WorthQueryApplicationEffectProgram {
+            candidate_requirements: None,
+            effect_backing_memory: None,
             read_set: self,
             effects,
             emission_retained_bytes,

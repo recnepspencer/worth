@@ -14,7 +14,7 @@ fn earlier_completion_failure_does_not_refund_the_later_request_boundary() {
         );
         let policy = test_policy(
             std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
-            1 << 20,
+            None,
         );
         let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
             RuntimeWorldExecutionPlacement::Leased {

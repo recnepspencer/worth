@@ -9,7 +9,7 @@ fn a_refusal_names_the_process_or_the_policy_that_refused() {
     let _serial = TEST_LOCK.lock().unwrap();
     let authority = authority();
     let small = authority.request_lease(request(1, 300, 10)).unwrap();
-    let over_its_own = MemoryLimitDenial {
+    let over_its_own = MemoryLimitDenial::Capacity {
         requested: 400,
         admitted: 300,
         level: MemoryLimitLevel::Policy { ancestor: 0 },
@@ -26,7 +26,7 @@ fn a_refusal_names_the_process_or_the_policy_that_refused() {
     let roomy = authority.request_lease(request(1, 1_000, 10)).unwrap();
     assert_eq!(
         roomy.reserve_memory(400).unwrap_err(),
-        MemoryLimitDenial {
+        MemoryLimitDenial::Capacity {
             requested: 400,
             admitted: 300,
             level: MemoryLimitLevel::Process,
@@ -39,7 +39,7 @@ fn a_refusal_names_the_process_or_the_policy_that_refused() {
     let nested = roomy.child(request(1, 1_000, 10)).unwrap();
     assert_eq!(
         nested.reserve_memory(400).err(),
-        Some(MemoryLimitDenial {
+        Some(MemoryLimitDenial::Capacity {
             requested: 400,
             admitted: 200,
             level: MemoryLimitLevel::Policy { ancestor: 1 },

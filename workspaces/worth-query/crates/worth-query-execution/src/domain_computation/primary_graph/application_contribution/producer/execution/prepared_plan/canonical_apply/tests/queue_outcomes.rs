@@ -21,7 +21,7 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
             );
             let policy = test_policy(
                 std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
-                1 << 20,
+                None,
             );
             let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
                 RuntimeWorldExecutionPlacement::Leased {
@@ -98,7 +98,7 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
         );
         let policy = test_policy(
             std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
-            1 << 20,
+            None,
         );
         let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
             RuntimeWorldExecutionPlacement::Leased {

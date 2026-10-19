@@ -21,6 +21,14 @@ pub(super) fn assert_both(
 fn every_lease_cause_survives_both_domain_doors() {
     let cases = [
         (
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::CounterOverflow {
+                requested: 1,
+                charged: u64::MAX,
+                level: MemoryLimitLevel::Policy { ancestor: 2 },
+            }),
+            Cause::ChargedBytesOverflow,
+        ),
+        (
             LeaseDenial::WorkerLimitExceedsParent,
             Cause::WorkerLimitExceedsParent,
         ),
@@ -49,7 +57,7 @@ fn every_lease_cause_survives_both_domain_doors() {
             Cause::EquivalenceContractUnavailable,
         ),
         (
-            LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                 requested: 31,
                 admitted: 17,
                 level: MemoryLimitLevel::Policy { ancestor: 2 },
@@ -61,7 +69,7 @@ fn every_lease_cause_survives_both_domain_doors() {
             },
         ),
         (
-            LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                 requested: 31,
                 admitted: 17,
                 level: MemoryLimitLevel::Process,
@@ -72,7 +80,7 @@ fn every_lease_cause_survives_both_domain_doors() {
             },
         ),
         (
-            LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                 requested: 31,
                 admitted: 17,
                 level: MemoryLimitLevel::Declared,

@@ -29,7 +29,7 @@ fn limit(memory: bool) {
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         if memory {
-            0
+            Some(0)
         } else {
             policy.charged_memory_bytes()
         },

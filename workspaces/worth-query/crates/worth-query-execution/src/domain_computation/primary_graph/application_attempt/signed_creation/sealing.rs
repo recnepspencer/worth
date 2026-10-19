@@ -136,6 +136,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
     }
     let maximum_bytes = Binding::CANDIDATES
         .resources()
+        .ok_or(Denial::RepresentationCapacity)?
         .maximum_retained_representation_bytes();
     let metadata_memory = execution
         .reserve(

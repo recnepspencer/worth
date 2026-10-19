@@ -91,7 +91,7 @@ mod tests {
                         DeterminismContract::CanonicalBitwise,
                         ExecutionBudget::new(
                             std::num::NonZeroUsize::new(1).unwrap(),
-                            memory,
+                            Some(memory),
                             Some(work),
                         ),
                     ),
@@ -145,7 +145,7 @@ mod tests {
                         DeterminismContract::CanonicalBitwise,
                         ExecutionBudget::new(
                             std::num::NonZeroUsize::new(1).unwrap(),
-                            memory,
+                            Some(memory),
                             Some(work),
                         ),
                     ),

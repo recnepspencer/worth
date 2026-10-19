@@ -14,7 +14,7 @@ use super::{
     ApplicationMutationPrincipalBindingContract, ApplicationMutationScopeBinding,
     ApplicationMutationScopeContract,
 };
-use crate::application_operation::ApplicationCandidateRequirements;
+use crate::application_operation::ApplicationCandidatePolicy;
 
 type MutationScopeFieldRef<Schema, Binding> = ApplicationFieldRef<
     Schema,
@@ -85,7 +85,7 @@ where
     /// Explicit workflow applicability. Guarded bindings must choose occurrence
     /// or approval evidence; a direct/control binding declares NotApplicable.
     fn workflow_execution_requirements() -> super::ApplicationWorkflowExecutionRequirements;
-    const CANDIDATES: ApplicationCandidateRequirements;
+    const CANDIDATES: ApplicationCandidatePolicy;
 
     /// Binds input-selected subjects to the exact parameters of retained source evidence.
     /// Return `None` only when the operation accepts any selection of its source query.

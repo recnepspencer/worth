@@ -242,11 +242,7 @@ pub(super) fn invalidation(
             retained_invalidation_bytes,
             retained_positions,
         ),
-        None => Installation::new(
-            64 * 1_024 * 1_024,
-            retained_invalidation_bytes,
-            retained_positions,
-        ),
+        None => Installation::new(None, Some(retained_invalidation_bytes), retained_positions),
     };
     WorthQueryInvalidationResources::install(installation)
         .expect("the Query invalidation installation is valid")
@@ -262,7 +258,7 @@ pub(super) fn limits(
 
 /// The candidate resources of a host whose widest operation is the default.
 pub(super) fn candidates() -> WorthQueryApplicationCandidateResourceProfile {
-    WorthQueryApplicationCandidateResourceProfile::physical_resources(4_096, 8_192).unwrap()
+    WorthQueryApplicationCandidateResourceProfile::policy(Some(4_096), Some(8_192)).unwrap()
 }
 
 /// A world with room for a long history under open demands. Rows settled at

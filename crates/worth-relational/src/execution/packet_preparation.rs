@@ -12,13 +12,14 @@ const PREPARATION_MEMORY_DIVISOR: u64 = 8;
 #[cfg(test)]
 mod memory_tests;
 
-pub(crate) struct PacketPreparationBudget<'a, 'b, 'c> {
+pub(crate) struct PacketPreparationBudget<'a, 'b, 'c, 'memory> {
     context: &'a mut MapKernelContext<'b, 'c>,
-    ceiling: u64,
+    ceiling: Option<u64>,
     claimed: u64,
+    memory: Option<&'a mut worth_execution::ExecutionResultMemory<'memory>>,
 }
 
-impl PacketPreparationBudget<'_, '_, '_> {
+impl PacketPreparationBudget<'_, '_, '_, '_> {
     pub(crate) const fn claimed_bytes(&self) -> u64 {
         self.claimed
     }
@@ -35,11 +36,28 @@ impl PacketPreparationBudget<'_, '_, '_> {
         &mut self,
         bytes: u64,
     ) -> Result<(), MapKernelFailure<super::PacketBudgetDenial>> {
-        self.claimed = self
-            .claimed
-            .checked_add(bytes)
-            .filter(|claimed| *claimed <= self.ceiling)
-            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
+        let next = self.claimed.checked_add(bytes).ok_or_else(|| {
+            if self.ceiling.is_none() {
+                MapKernelFailure::Domain(super::PacketBudgetDenial::ReadRequest(
+                    super::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                ))
+            } else {
+                MapKernelFailure::ResultCapacityExceeded
+            }
+        })?;
+        if self.ceiling.is_some_and(|ceiling| next > ceiling) {
+            return Err(MapKernelFailure::ResultCapacityExceeded);
+        }
+        if let Some(memory) = self.memory.as_mut() {
+            memory.resize(next).map_err(|denial| {
+                MapKernelFailure::Domain(super::PacketBudgetDenial::ReadRequest(
+                    super::denial::lease_denial(worth_execution::LeaseDenial::MemoryExhausted(
+                        denial,
+                    )),
+                ))
+            })?;
+        }
+        self.claimed = next;
         Ok(())
     }
 
@@ -77,7 +95,7 @@ pub(crate) fn prepare_borrowed_artifact<T>(
     work_budget: Option<&super::RequestWorkBudget>,
     ceiling: u64,
     build: impl FnOnce(
-        &mut PacketPreparationBudget<'_, '_, '_>,
+        &mut PacketPreparationBudget<'_, '_, '_, '_>,
     ) -> Result<(T, u64), MapKernelFailure<super::PacketBudgetDenial>>,
 ) -> Result<T, PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
@@ -90,8 +108,9 @@ pub(crate) fn prepare_borrowed_artifact<T>(
             scan.run(Some(child_lease), (), 0, ceiling, 0, 0, |_, _, context| {
                 let mut budget = PacketPreparationBudget {
                     context,
-                    ceiling,
+                    ceiling: Some(ceiling),
                     claimed: 0,
+                    memory: None,
                 };
                 budget.checkpoint(0)?;
                 let (value, owned_bytes) =
@@ -122,14 +141,19 @@ impl<T> ChargedBytes for PreparedPackets<T> {
 pub(crate) fn prepare_borrowed_packets<T>(
     lease: &ExecutionResourceLease<'_>,
     work_budget: Option<&super::RequestWorkBudget>,
+    declared_bytes: u64,
     build: impl FnOnce(
-        &mut PacketPreparationBudget<'_, '_, '_>,
+        &mut PacketPreparationBudget<'_, '_, '_, '_>,
     )
         -> Result<Vec<ReadOnlyPacket<T>>, MapKernelFailure<super::PacketBudgetDenial>>,
 ) -> Result<(Vec<ReadOnlyPacket<T>>, ExecutionReport), PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
     let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
-    let ceiling = lease.policy().budget().charged_memory_bytes() / PREPARATION_MEMORY_DIVISOR;
+    let ceiling = lease
+        .policy()
+        .budget()
+        .charged_memory_bytes()
+        .map_or(declared_bytes, |limit| limit / PREPARATION_MEMORY_DIVISOR);
     let mut build = Some(build);
     let outcome = super::run_with_remaining_request_work(
         lease,
@@ -145,8 +169,9 @@ pub(crate) fn prepare_borrowed_packets<T>(
                 |_, _, context| {
                     let mut budget = PacketPreparationBudget {
                         context,
-                        ceiling,
+                        ceiling: Some(ceiling),
                         claimed: 0,
+                        memory: None,
                     };
                     budget.checkpoint(0)?;
                     let packets = build.take().expect("one packet preparation step")(&mut budget)?;
@@ -170,3 +195,15 @@ pub(crate) fn prepare_borrowed_packets<T>(
         } => Err(PacketExecutionStop::Execution { boundary, reason }),
     }
 }
+
+/// Descriptor storage retained while a borrowed packet batch is assembled.
+pub(crate) fn packet_preparation_bytes<T>(count: usize) -> Result<u64, PacketExecutionStop> {
+    (count as u64)
+        .checked_mul((4 * size_of::<ReadOnlyPacket<T>>() + size_of::<PartitionIdentity>()) as u64)
+        .ok_or(PacketExecutionStop::Admission(
+            super::read_only_packets::PacketAdmissionDenial::MemoryOverflow,
+        ))
+}
+
+mod tracked;
+pub(crate) use tracked::prepare_tracked_artifact;

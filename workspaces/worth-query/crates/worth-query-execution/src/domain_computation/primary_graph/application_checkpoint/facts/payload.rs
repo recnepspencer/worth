@@ -22,10 +22,13 @@ impl CodecPayloadReservation {
             ExecutionAllocationPolicy::SystemAllocation => None,
             ExecutionAllocationPolicy::Execution(lease) => Some(lease.reserve_memory(quote).map_err(|cause| {
                 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
-                FactDecodeDenial::Execution(match cause.level {
-                    MemoryLimitLevel::Policy { ancestor } => Native::PolicyMemoryExhausted { requested: cause.requested, admitted: cause.admitted, ancestor },
-                    MemoryLimitLevel::Process => Native::ProcessMemoryExhausted { requested: cause.requested, admitted: cause.admitted },
-                    MemoryLimitLevel::Declared => Native::DeclaredMemoryExhausted { requested: cause.requested, admitted: cause.admitted },
+                FactDecodeDenial::Execution(match cause {
+                    worth_execution::MemoryLimitDenial::CounterOverflow { .. } => Native::ChargedBytesOverflow,
+                    worth_execution::MemoryLimitDenial::Capacity { requested, admitted, level } => match level {
+                        MemoryLimitLevel::Policy { ancestor } => Native::PolicyMemoryExhausted { requested, admitted, ancestor },
+                        MemoryLimitLevel::Process => Native::ProcessMemoryExhausted { requested, admitted },
+                        MemoryLimitLevel::Declared => Native::DeclaredMemoryExhausted { requested, admitted },
+                    },
                 })
             })?),
         };
