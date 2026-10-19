@@ -1,4 +1,5 @@
 //! Authored static application composition.
+pub use worth_foundational::facade::CanonicalDigestWorkBudget;
 
 mod action;
 mod adoption_authorization;

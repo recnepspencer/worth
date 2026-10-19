@@ -487,6 +487,14 @@ pub(crate) fn validated_bank_application() -> Result<
   `normalized_manifest()`.
 - `revision()` is the content-addressed `ApplicationProgramRevision`: the same
   meaning always gives the same revision.
+- Validation uses `ApplicationProgramDefinition::CANONICAL_REVISION_BUDGET`,
+  a finite `CanonicalDigestWorkBudget` available from the same program facade.
+  Its default remains 4096 basis entries and 1 MiB encoded bytes. Large authored
+  programs may override that associated constant; exceeding either ceiling is
+  a typed `CanonicalRevisionBudgetExceeded` denial. The budget governs cold
+  declaration work, is not part of the manifest, and does not change the revision
+  when the accepted program meaning is identical. It grants no runtime resource
+  or publication permission.
 - A denial is an `ApplicationProgramValidationDenial` with `kind()` and
   `subject()`. Kinds include `DuplicateFeature`, `DuplicateAction`,
   `DanglingFeature`, `MissingRequiredInput`, `UndeclaredOutput`,

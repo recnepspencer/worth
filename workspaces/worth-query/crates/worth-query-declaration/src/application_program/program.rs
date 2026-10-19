@@ -38,6 +38,24 @@ where
     /// Complete scoped invariant inventory owned by this composition.
     type Rules: ApplicationProgramRulesShape<Schema>;
     const IDENTITY: ApplicationProgramIdentity;
+    /// Finite declaration-time canonicalization work, not program meaning or permission.
+    /// Raising this budget does not change an otherwise identical program revision.
+    /// The default preserves the original 4096-entry, 1 MiB admission ceiling.
+    ///
+    /// ```
+    /// use worth_query_declaration::facade::application_program::CanonicalDigestWorkBudget;
+    /// const LARGE_PROGRAM: CanonicalDigestWorkBudget =
+    ///     match CanonicalDigestWorkBudget::new(4096, 2 * 1024 * 1024) {
+    ///         Some(budget) => budget,
+    ///         None => panic!("finite nonzero declaration budget"),
+    ///     };
+    /// assert_eq!(LARGE_PROGRAM.maximum_encoded_bytes(), 2 * 1024 * 1024);
+    /// ```
+    const CANONICAL_REVISION_BUDGET: super::CanonicalDigestWorkBudget =
+        match super::CanonicalDigestWorkBudget::new(4096, 1024 * 1024) {
+            Some(budget) => budget,
+            None => panic!("the default canonical revision budget is nonzero"),
+        };
     const DERIVED_ARTIFACT_GOVERNANCE: super::ApplicationDerivedArtifactGovernance =
         super::ApplicationDerivedArtifactGovernance::Compatible;
 

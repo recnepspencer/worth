@@ -59,6 +59,13 @@ Do all five steps, in order.
 
 ## Task index
 
+Program validation admits finite canonicalization work through
+`ApplicationProgramDefinition::CANONICAL_REVISION_BUDGET` and the program facade's
+`CanonicalDigestWorkBudget`. The 4096-entry/1 MiB default is unchanged; override
+the declaration's finite ceiling for larger actual meaning. A sufficient budget
+does not alter canonical revision identity or grant execution authority. See
+[program validation](build-an-application.md#35-validate).
+
 "Guide" links to the section that shows the exact calls. The "Never build"
 column names the substitute that this capability makes wrong.
 
