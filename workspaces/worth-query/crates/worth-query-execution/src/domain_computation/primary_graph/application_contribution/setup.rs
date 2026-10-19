@@ -268,6 +268,28 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         )
     }
 
+    /// Installs the schema-owned executable body. No host handler or values can
+    /// replace it; program admission separately binds the same body revision.
+    pub fn operation_body<Binding>(&mut self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Binding: ApplicationMutationBinding<Schema, Result = (),
+            Denial = super::super::operation_body::WorthQueryOperationBodyDenial,
+            Decision = super::super::operation_body::WorthQueryOperationBodyDecision<Schema,
+                <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding<Schema>>::Scope>>,
+    {
+        let installed = self.require_owned_mutation::<Binding>()?;
+        let handler =
+            super::super::operation_body::OperationBodyHandler::<Schema, Binding>::install(
+                self.installed_schema,
+                &installed,
+            )?;
+        self.handlers.register_body(
+            &self.installed_schema.binding_identity(),
+            &installed,
+            handler,
+        )
+    }
+
     pub fn invariant<Invariant, Rule>(
         &mut self,
         reference: ApplicationInvariantRef<Schema, Invariant>,

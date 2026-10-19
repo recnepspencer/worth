@@ -40,6 +40,40 @@ pub(super) fn validate_member_identifiers(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for member in members {
         match member {
+            ApplicationSchemaMember::OperationBody { operation, body } => {
+                validate_simple_identifier(operation)?;
+                for step in body.scope_fields() {
+                    for identifier in [
+                        step.field().entity(),
+                        step.field().aspect(),
+                        step.field().field(),
+                    ] {
+                        validate_simple_identifier(identifier)?;
+                    }
+                }
+                if let Some(creation) = body.creation() {
+                    validate_simple_identifier(creation.entity())?;
+                    for step in creation.fields() {
+                        for identifier in [
+                            step.field().entity(),
+                            step.field().aspect(),
+                            step.field().field(),
+                        ] {
+                            validate_simple_identifier(identifier)?;
+                        }
+                        if let Some(source) = step.source_field() {
+                            for identifier in [source.entity(), source.aspect(), source.field()] {
+                                validate_simple_identifier(identifier)?;
+                            }
+                        }
+                        if let Some(source) = step.related_source() {
+                            for identifier in [&source.relation, &source.from, &source.to] {
+                                validate_simple_identifier(identifier)?;
+                            }
+                        }
+                    }
+                }
+            }
             ApplicationSchemaMember::ApplicationMutation { description } => {
                 super::mutation_description_validation::validate_identifiers(description)?;
             }

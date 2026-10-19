@@ -49,6 +49,9 @@ pub(super) fn append_member(
         | ApplicationSchemaMember::OperationAftermath { .. } => {
             operation::append_operation_member(basis, &prefix, member)
         }
+        ApplicationSchemaMember::OperationBody { operation, body } => {
+            operation::append_body(basis, &prefix, operation, body);
+        }
         ApplicationSchemaMember::Policy { .. }
         | ApplicationSchemaMember::Ability { .. }
         | ApplicationSchemaMember::OperationAbility { .. }

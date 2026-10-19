@@ -166,7 +166,7 @@ where
             .map_err(WorkflowInstancePreparationDenial::Attempt)
     }
 
-    fn begin_instance_read_set<Operation, Input, Scope, Spec>(
+    pub(super) fn begin_instance_read_set<Operation, Input, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

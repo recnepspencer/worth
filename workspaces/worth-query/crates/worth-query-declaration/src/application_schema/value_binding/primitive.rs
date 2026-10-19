@@ -1,12 +1,12 @@
 use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
 
 use super::{
-    ApplicationIdentityScalarValueBinding, ApplicationReadableScalarValueBinding,
-    ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,
-    ApplicationValueDecodeAvailable, ApplicationValueDecodeDenial, ApplicationValueEncodeDenial,
-    ApplicationValueIsIdentity, ApplicationValueIsNotIdentity,
-    ApplicationValueSignedAggregateAvailable, ApplicationValueSignedAggregateUnavailable,
-    ApplicationValueValidationDenial,
+    ApplicationIdentityScalarValueBinding, ApplicationNativeInputDecodeProfile,
+    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationSignedAggregateValueBinding, ApplicationValueDecodeAvailable,
+    ApplicationValueDecodeDenial, ApplicationValueEncodeDenial, ApplicationValueIsIdentity,
+    ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateAvailable,
+    ApplicationValueSignedAggregateUnavailable, ApplicationValueValidationDenial,
 };
 
 macro_rules! primitive_binding {
@@ -24,6 +24,13 @@ macro_rules! primitive_binding {
 
             const IDENTITY_NAME: &'static str = $identity;
             const SCALAR_FAMILY: ScalarAspectType = ScalarAspectType::$family;
+            const NATIVE_INPUT_ADMISSION: Option<ApplicationNativeInputDecodeProfile> =
+                Some(ApplicationNativeInputDecodeProfile::new(
+                    1,
+                    1,
+                    std::mem::size_of::<Self::Value>() as u64,
+                    1,
+                ));
 
             fn validate(_: &Self::Value) -> Result<(), ApplicationValueValidationDenial> {
                 Ok(())

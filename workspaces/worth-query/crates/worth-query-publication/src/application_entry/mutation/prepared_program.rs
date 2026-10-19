@@ -18,6 +18,7 @@ use super::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
+mod authentication;
 
 /// Preparation either retains an unpublished candidate or settles without a new result.
 pub enum WorthQueryApplicationProgramMutationPreparation<
@@ -139,6 +140,7 @@ where
             identities,
             extension,
             decision_work,
+            principal: _,
         } = self.candidate;
         let binding = WorthQueryMutationCommitBinding::new(&identities, extension);
         let outcome = match self.selected_owner {
@@ -168,148 +170,5 @@ where
     }
 }
 
-impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
-    WorthQueryApplicationMutationRequestWithIdempotency<
-        'application,
-        'principal,
-        'scope,
-        'key,
-        Schema,
-        Intent,
-        SourcePreparation,
-    >
-where
-    Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
-    <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
-        ApplicationMutationScopeResolution<
-            Schema,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
-        >,
-{
-    /// Runs the installed decision and candidate phases, retaining the unpublished
-    /// result outside the commit lane. Call `commit` once ready to publish.
-    pub fn prepare_in_program<'request, Program>(
-        &'request mut self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        WorthQueryApplicationProgramMutationPreparation<
-            'request,
-            'application,
-            Schema,
-            Intent::Binding,
-            Program,
-        >,
-        WorthQueryApplicationRequestMutationDenial,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-    {
-        self.prepare_in_program_report(application, allocation_policy)
-            .into_outcome()
-    }
-
-    /// Reports decision work without releasing the candidate's unpublished result.
-    pub fn prepare_in_program_report<'request, Program>(
-        &'request mut self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> super::WorthQueryApplicationMutationAttemptReport<
-        Result<
-            WorthQueryApplicationProgramMutationPreparation<
-                'request,
-                'application,
-                Schema,
-                Intent::Binding,
-                Program,
-            >,
-            WorthQueryApplicationRequestMutationDenial,
-        >,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-    {
-        let scope = self.request_scope().clone();
-        let runtime = self.request.application;
-        runtime
-            .with_application_advancement(&scope, |phase| {
-                let mut decision_work =
-            worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
-                let outcome = self.prepare_in_program_with_work(
-                    &phase,
-                    application,
-                    &mut decision_work,
-                    allocation_policy,
-                );
-                super::WorthQueryApplicationMutationAttemptReport::new(outcome, decision_work)
-            })
-            .unwrap_or_else(|cause| {
-                super::WorthQueryApplicationMutationAttemptReport::new(
-            Err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)),
-            worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted,
-        )
-            })
-    }
-
-    pub(super) fn prepare_in_program_with_work<'request, Program>(
-        &'request mut self,
-        phase: &AdvancementPhase<'_>,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
-        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        WorthQueryApplicationProgramMutationPreparation<
-            'request,
-            'application,
-            Schema,
-            Intent::Binding,
-            Program,
-        >,
-        WorthQueryApplicationRequestMutationDenial,
-    >
-    where
-        Program: ApplicationProgramDefinition<Schema>,
-    {
-        if !std::ptr::eq(application.runtime(), self.request.application) {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
-        }
-        let selected = self
-            .request
-            .application
-            .on_branch(self.request.branch)
-            .select(phase)
-            .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-        let owner = application
-            .selected_program_owner(&selected)
-            .map_err(map_selected_program_owner_denial)?;
-        let selected_owns_action = owner.contains_action::<Intent::Binding>();
-        if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
-        match self.prepare_candidate(
-            phase,
-            move |request, identities, staged| {
-                super::authorization::prepare_selected(
-                    phase, request, identities, staged, &selected,
-                )
-            },
-            decision_work,
-            allocation_policy,
-        )? {
-            CandidatePreparation::Prepared(candidate) => {
-                Ok(WorthQueryApplicationProgramMutationPreparation::Prepared(
-                    WorthQueryPreparedProgramMutation {
-                        candidate,
-                        application,
-                        selected_owner: selected_owns_action.then_some(owner),
-                    },
-                ))
-            }
-            CandidatePreparation::Settled(outcome) => Ok(
-                WorthQueryApplicationProgramMutationPreparation::Settled(outcome),
-            ),
-        }
-    }
-}
+mod capability_preparation;
+mod preparation;

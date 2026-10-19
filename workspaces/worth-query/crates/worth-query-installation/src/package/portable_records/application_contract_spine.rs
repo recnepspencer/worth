@@ -91,6 +91,9 @@ pub(crate) fn compile_application_contract_spine(
                     OperationDenial::AmbiguousAftermath => {
                         DenialKind::ApplicationOperationContractAmbiguousAftermath
                     }
+                    OperationDenial::AmbiguousBody => {
+                        DenialKind::ApplicationOperationContractAmbiguousBody
+                    }
                 };
                 WorthQueryPortablePackageValidationDenial::invalid_application_contract_spine(
                     kind,

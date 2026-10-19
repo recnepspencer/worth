@@ -17,6 +17,8 @@ mod fork_decision_reads;
 mod history_retirement;
 #[path = "application_graph/mutation_binding_guard.rs"]
 mod mutation_binding_guard;
+#[path = "application_graph/operation_body.rs"]
+mod operation_body;
 #[path = "application_graph/producer_predicate_checkpoint.rs"]
 mod producer_predicate_checkpoint;
 #[path = "application_graph/restored_primary_backend.rs"]
@@ -85,6 +87,8 @@ mod workflow_retirement;
 mod workflow_retry;
 #[path = "application_graph/workflow_start_intent.rs"]
 mod workflow_start_intent;
+#[path = "application_graph/workflow_vocabulary.rs"]
+mod workflow_vocabulary;
 
 #[path = "application_graph/source_bound_replay.rs"]
 mod source_bound_replay;

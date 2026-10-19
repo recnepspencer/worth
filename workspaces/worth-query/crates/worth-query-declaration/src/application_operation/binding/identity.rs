@@ -42,14 +42,21 @@
 //! one key; a commit the host authors itself uses `for_host_commit`, scoped to
 //! the operation it commits under, and is the only constructor a host names.
 
+mod captured_input;
 mod encoder;
 mod input;
+#[cfg(test)]
+#[path = "identity/input_validation_tests.rs"]
+mod input_validation_tests;
 mod shared_input;
 pub use shared_input::ApplicationSharedInput;
 mod partition;
 mod request;
 mod work;
 
+pub use captured_input::{
+    ApplicationCanonicalInput, ApplicationCanonicalInputDenial, ApplicationCanonicalInputScalar,
+};
 pub use encoder::CanonicalEncodingCharge;
 pub use input::ApplicationEncodedInput;
 pub use partition::{
@@ -141,31 +148,43 @@ impl ApplicationCanonicalIdentity {
 /// identity beside the value it was encoded from.
 fn input_identity<InputBinding>(
     input: &InputBinding::Value,
-) -> Result<ApplicationCanonicalIdentity, ApplicationValueEncodeDenial>
+) -> Result<captured_input::EncodedInputIdentity, ApplicationValueEncodeDenial>
 where
     InputBinding: ApplicationStructuredValueBinding,
     InputBinding::Value: Serialize,
 {
+    InputBinding::validate(input).map_err(ApplicationValueEncodeDenial::from)?;
     let input_type = InputBinding::IDENTITY;
-    canonical_identity(INPUT_DOMAIN, input_type.as_str(), input).map_err(|_| rejected(input_type))
+    canonical_identity_with_capture(
+        INPUT_DOMAIN,
+        input_type.as_str(),
+        input,
+        encoder::HashingSink::new().capturing(InputBinding::RETAIN_CANONICAL_INPUT),
+    )
+    .map_err(|_| rejected(input_type))
 }
 
 fn input_identity_admitted<InputBinding, F, E>(
     input: &InputBinding::Value,
     admission: &mut F,
-) -> Result<ApplicationCanonicalIdentity, encoder::CanonicalEncodeError<E>>
+) -> Result<captured_input::EncodedInputIdentity, ApplicationMutationIdentityAdmittedDenial<E>>
 where
     InputBinding: ApplicationStructuredValueBinding,
     InputBinding::Value: Serialize,
     F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
     E: std::fmt::Debug,
 {
-    canonical_identity_admitted(
+    InputBinding::validate(input).map_err(|cause| {
+        ApplicationMutationIdentityAdmittedDenial::Input(ApplicationValueEncodeDenial::from(cause))
+    })?;
+    canonical_identity_with_capture(
         INPUT_DOMAIN,
         InputBinding::IDENTITY.as_str(),
         input,
-        admission,
+        encoder::HashingSink::with_admission(encoder::CallbackAdmission::new(admission))
+            .capturing(InputBinding::RETAIN_CANONICAL_INPUT),
     )
+    .map_err(|cause| request::admitted_denial(cause, rejected(InputBinding::IDENTITY), false))
 }
 
 /// Identity of one client idempotency key, scoped to the binding's key namespace.
@@ -245,8 +264,17 @@ fn canonical_identity_in_sink<T: Serialize + ?Sized, A: encoder::EncodingAdmissi
     domain: &str,
     scope: &str,
     value: &T,
-    mut sink: encoder::HashingSink<A>,
+    sink: encoder::HashingSink<A>,
 ) -> Result<ApplicationCanonicalIdentity, encoder::CanonicalEncodeError<A::Error>> {
+    canonical_identity_with_capture(domain, scope, value, sink).map(|encoded| encoded.canonical)
+}
+
+fn canonical_identity_with_capture<T: Serialize + ?Sized, A: encoder::EncodingAdmission>(
+    domain: &str,
+    scope: &str,
+    value: &T,
+    mut sink: encoder::HashingSink<A>,
+) -> Result<captured_input::EncodedInputIdentity, encoder::CanonicalEncodeError<A::Error>> {
     let encoded = (|| {
         let mut framing = 0_usize;
         for part in [domain, scope] {
@@ -268,9 +296,14 @@ fn canonical_identity_in_sink<T: Serialize + ?Sized, A: encoder::EncodingAdmissi
         hashed,
         sink.buffered_bytes(),
     );
-    Ok(ApplicationCanonicalIdentity {
+    let capture = sink.take_capture();
+    let canonical = ApplicationCanonicalIdentity {
         identity: sink.finish()?,
         work,
+    };
+    Ok(captured_input::EncodedInputIdentity {
+        canonical,
+        capture: capture.map(|bytes| ApplicationCanonicalInput::new(bytes, framing)),
     })
 }
 

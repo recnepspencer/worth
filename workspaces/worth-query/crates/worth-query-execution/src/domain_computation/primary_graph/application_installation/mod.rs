@@ -28,9 +28,10 @@ pub use program::{
     WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
     WorthQueryRecoveredProgramOutputSource, WorthQuerySelectedProgramOwner,
     WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
-    WorthQuerySupportedProgramHandle, WorthQueryUnpublishedProgramOutputSource,
-    WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
-    WorthQueryWorkflowRuntimeBindingRefusal, WorthQueryWorkflowVocabulary,
+    WorthQuerySigningOwnerInstallationDenial, WorthQuerySupportedProgramHandle,
+    WorthQueryUnpublishedProgramOutputSource, WorthQueryWorkflowApplicationRuntime,
+    WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowRuntimeBindingRefusal,
+    WorthQueryWorkflowVocabulary,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
 
@@ -245,6 +246,9 @@ where
     }
     .map_err(Denial::Graph)?;
     graph.mutation_handlers = handlers;
+    graph.program_activation = admitted_program_support
+        .as_ref()
+        .map(|_| activation.clone());
     if restoring && let Some(support) = &admitted_program_support {
         if let Some(transition) = checkpoint_transition {
             super::bootstrap::checkpoint_transition::transition_checkpoint(

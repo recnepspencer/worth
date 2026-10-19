@@ -30,6 +30,41 @@ fn workflow_settlement_ceiling() -> ApplicationCandidateRequirements {
 }
 
 impl WorthQueryApplicationCandidateDemand {
+    pub(in crate::application_operation) fn with_workflow_birth(
+        mut self,
+        enrolled: bool,
+    ) -> Result<Self, ()> {
+        if enrolled {
+            if self.workflow_settlement_ceiling.is_some() {
+                return Err(());
+            }
+            // One fresh instance, four endpoint links, six identity/state
+            // fields, start revision, admitted actor and optional native deadline. Never broadens the
+            // business handler's independently admitted writer reservation.
+            self.workflow_settlement_ceiling = Some(ApplicationCandidateRequirements::fixed_shape(
+                ApplicationCandidateCardinalityCeiling::fixed(1, 0, 4, 0, 11, 0),
+                ApplicationCandidateResourceCeiling::representation_bytes(65_536),
+            ));
+            self.include_platform_ceiling()?;
+        }
+        Ok(self)
+    }
+    pub(in crate::application_operation) fn with_signing_lifecycle(
+        mut self,
+        ceiling: Option<ApplicationCandidateRequirements>,
+    ) -> Result<Self, ()> {
+        if let Some(ceiling) = ceiling {
+            self.candidate_items = self
+                .candidate_items
+                .checked_add(cardinality_items(ceiling.cardinality())?)
+                .ok_or(())?;
+            self.retained_representation_bytes = self
+                .retained_representation_bytes
+                .checked_add(retained_bytes(ceiling)?)
+                .ok_or(())?;
+        }
+        Ok(self)
+    }
     pub(in crate::application_operation) fn derive(
         bindings: &[ApplicationMutationBindingDescriptor],
         operation: &str,

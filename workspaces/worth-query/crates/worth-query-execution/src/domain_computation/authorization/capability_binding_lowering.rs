@@ -38,7 +38,8 @@ pub(super) fn capability_principal(
         for requirement in graph.requirements() {
             for clause in requirement.clauses() {
                 if clause.path().principal_entity() != principal
-                    || clause.path().scope_entity() != contract.target().resource().to()
+                    || clause.path().scope_entity()
+                        != contract.target().resource_path().scope_entity()
                 {
                     return Err(authorization_denial(
                         contract.name(),
@@ -86,7 +87,7 @@ pub(super) fn request_bindings(
     Ok(WorthQueryCapabilityRequestBindings {
         action: target.action().value().clone(),
         purpose: target.purpose().value().clone(),
-        resource_entity: target.resource().to().to_string(),
+        resource_entity: target.resource_path().scope_entity().to_string(),
         related_relation: match target.relation() {
             ApplicationCapabilityRelationDimension::NotApplicable => None,
             ApplicationCapabilityRelationDimension::Bound(binding) => Some(relation(

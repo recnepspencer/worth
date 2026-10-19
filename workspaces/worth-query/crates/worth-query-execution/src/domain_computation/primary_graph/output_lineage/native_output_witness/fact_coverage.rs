@@ -13,6 +13,9 @@ impl SealedNativeOutputWitness {
             Fact::SourceEntity { entity_id } | Fact::Entity { entity_id, .. } => (*entity_id, None),
             Fact::SourceAspectRevision {
                 entity_id, aspect, ..
+            }
+            | Fact::AspectPresence {
+                entity_id, aspect, ..
             } => (*entity_id, Some(aspect)),
             Fact::SourceFieldRevision {
                 entity_id, locator, ..

@@ -3,6 +3,12 @@ use super::{
 };
 
 impl WorthQueryApplicationIdempotencyBinding {
+    pub(in crate::domain_computation::primary_graph) fn matches_workflow_birth(
+        &self,
+        identity: &[u8; 32],
+    ) -> bool {
+        self.workflow_instance_identity.as_ref() == Some(identity)
+    }
     pub(in crate::domain_computation::primary_graph) const fn bind_workflow_instance(
         mut self,
         identity: &[u8; 32],

@@ -10,8 +10,8 @@ use external_effect_contract::install_portable_external_effect;
 use worth_query_declaration::facade::application_aftermath::PortableApplicationAftermathContract;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationDecisionReadTarget, ApplicationSchemaBindingIdentity,
-    ApplicationSchemaMember,
+    ApplicationOperationBodyProgram, ApplicationOperationDecisionReadTarget,
+    ApplicationSchemaBindingIdentity, ApplicationSchemaMember,
 };
 
 use crate::application_aftermath::{
@@ -64,6 +64,7 @@ pub(super) struct WorthQueryApplicationOperationCompilation<'a> {
 
 /// Opaque, whole-operation input accepted by the compiled-contract owner.
 pub(in crate::application_operation) struct WorthQuerySealedOperationContractCompilation {
+    body: Option<ApplicationOperationBodyProgram>,
     authorization: WorthQueryInstalledApplicationOperationAuthorization,
     ability_requirements: Vec<WorthQueryInstalledAbilityRequirement>,
     authored_program_width: usize,
@@ -78,6 +79,7 @@ pub(in crate::application_operation) struct WorthQuerySealedOperationContractCom
     emissions: WorthQueryOperationEmissionContract,
     graph_mutation_count: usize,
     candidate_demand: WorthQueryApplicationCandidateDemand,
+    signing_lifecycle: super::super::contracts::SigningLifecycleClosure,
     invariant_invocations: Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
 }
 
@@ -192,7 +194,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 &self.operation,
             )
         })?;
-        let (touches, graph_mutation_count) =
+        let (touches, _) =
             super::super::contracts::install_portable_graph_touches(
             &self.binding,
             native_contracts,
@@ -207,6 +209,27 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
         let emissions = super::super::contracts::install_portable_effect_emissions(
             self.portable_contract.emissions(),
         );
+        let maximum_records = self
+            .mutation_bindings
+            .iter()
+            .filter(|binding| binding.operation_name() == self.operation)
+            .map(|binding| {
+                binding
+                    .candidates()
+                    .cardinality()
+                    .maximum_writes()
+                    .saturating_add(binding.candidates().cardinality().maximum_deletes())
+            })
+            .max()
+            .unwrap_or(0);
+        let signing_lifecycle = super::super::contracts::SigningLifecycleClosure::derive(
+            &self.binding, native_contracts, self.members, &self.operation, &touches, maximum_records, self.portable_contract.body(),
+        ).map_err(|()| operation_denial(WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract, &self.operation))?;
+        let candidate_demand = WorthQueryApplicationCandidateDemand::derive(
+            self.mutation_bindings, &self.operation, &self.input_type,
+        ).and_then(|demand| demand.with_signing_lifecycle(signing_lifecycle.ceiling))
+            .map_err(|()| operation_denial(WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract, &self.operation))?;
+        let graph_mutation_count = signing_lifecycle.publication_touches.scopes().len();
         let aftermath = install_application_aftermath(&self).map_err(|_| {
             operation_denial(
                 WorthQueryApplicationOperationInstallationDenialKind::AftermathInstallationDenied,
@@ -233,24 +256,26 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 else {
                     return None;
                 };
-                invariant_selection::requires(&touches, applicability).then(|| {
-                    WorthQueryInstalledApplicationInvariantDescriptor::from_installed_parts(
-                        invariant.clone(),
-                        *major,
-                        *minor,
-                        *execution_point,
-                        *maximum_work_units,
-                        *enforcement,
-                        required_groups.clone(),
-                        read_closure.clone(),
-                        applicability.clone(),
-                        provider.clone(),
-                        *cost_posture,
-                    )
-                })
+                invariant_selection::requires(&signing_lifecycle.publication_touches, applicability)
+                    .then(|| {
+                        WorthQueryInstalledApplicationInvariantDescriptor::from_installed_parts(
+                            invariant.clone(),
+                            *major,
+                            *minor,
+                            *execution_point,
+                            *maximum_work_units,
+                            *enforcement,
+                            required_groups.clone(),
+                            read_closure.clone(),
+                            applicability.clone(),
+                            provider.clone(),
+                            *cost_posture,
+                        )
+                    })
             })
             .collect();
         let sealed = WorthQuerySealedOperationContractCompilation {
+            body: self.portable_contract.body().cloned(),
             authorization,
             ability_requirements,
             authored_program_width: self.authored_program_width,
@@ -264,14 +289,8 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             touches,
             emissions,
             graph_mutation_count,
-            candidate_demand: WorthQueryApplicationCandidateDemand::derive(
-                self.mutation_bindings,
-                &self.operation,
-                &self.input_type,
-            ).map_err(|()| operation_denial(
-                WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract,
-                &self.operation,
-            ))?,
+            candidate_demand,
+            signing_lifecycle,
             invariant_invocations,
         };
         WorthQueryCompiledApplicationOperationContracts::compile(sealed).map_err(|()| {
@@ -338,43 +357,4 @@ impl super::WorthQueryOperationAftermathInstallationSource
     }
 }
 
-impl WorthQuerySealedOperationContractCompilation {
-    #[allow(clippy::type_complexity)]
-    pub(in crate::application_operation) fn into_parts(
-        self,
-    ) -> (
-        WorthQueryInstalledApplicationOperationAuthorization,
-        Vec<WorthQueryInstalledAbilityRequirement>,
-        usize,
-        Option<usize>,
-        usize,
-        Vec<WorthQueryInstalledMutationPrecondition>,
-        WorthQueryInstalledApplicationOperationExecutionPosture,
-        InstalledExternalEffectContract,
-        Option<WorthQueryInstalledAftermathContract>,
-        WorthQueryOperationGraphReadContract,
-        WorthQueryOperationTouchContract,
-        WorthQueryOperationEmissionContract,
-        usize,
-        WorthQueryApplicationCandidateDemand,
-        Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
-    ) {
-        (
-            self.authorization,
-            self.ability_requirements,
-            self.authored_program_width,
-            self.projection_work_budget,
-            self.additional_authorization_fact_count,
-            self.mutation_preconditions,
-            self.execution_posture,
-            self.external_effect,
-            self.aftermath,
-            self.graph_reads,
-            self.touches,
-            self.emissions,
-            self.graph_mutation_count,
-            self.candidate_demand,
-            self.invariant_invocations,
-        )
-    }
-}
+mod sealed_input;

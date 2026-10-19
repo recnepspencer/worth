@@ -27,7 +27,10 @@ impl ChargedBytes for WorthQueryApplicationFactKey {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
             Self::Entity { entity, .. } => bytes(entity.capacity()),
-            Self::Field {
+            Self::AspectPresence {
+                entity, locator, ..
+            }
+            | Self::Field {
                 entity, locator, ..
             } => bytes(entity.capacity())
                 .saturating_add(bytes(locator.owned_allocation_capacity_bytes())),
@@ -42,7 +45,7 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
             Self::RetiredOutputEntity { read_locator, .. } => bytes(read_locator.capacity()),
-            Self::SourceAspectRevision { aspect, .. } => {
+            Self::SourceAspectRevision { aspect, .. } | Self::AspectPresence { aspect, .. } => {
                 bytes(aspect.owned_allocation_capacity_bytes())
             }
             Self::SourceFieldRevision { locator, .. } | Self::AbsentField { locator, .. } => {

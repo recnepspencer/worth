@@ -276,7 +276,7 @@ fn require_acyclic(
     Ok(order)
 }
 
-const ALL_OUTCOMES: [ApplicationWorkflowControlOutcome; 9] = [
+const ALL_OUTCOMES: [ApplicationWorkflowControlOutcome; 11] = [
     ApplicationWorkflowControlOutcome::Completed,
     ApplicationWorkflowControlOutcome::Approved,
     ApplicationWorkflowControlOutcome::Rejected,
@@ -286,4 +286,6 @@ const ALL_OUTCOMES: [ApplicationWorkflowControlOutcome; 9] = [
     ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
     ApplicationWorkflowControlOutcome::RetryExhausted,
     ApplicationWorkflowControlOutcome::NavigatedBack,
+    ApplicationWorkflowControlOutcome::Returned,
+    ApplicationWorkflowControlOutcome::Terminated,
 ];

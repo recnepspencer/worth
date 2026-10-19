@@ -13,6 +13,10 @@ pub enum WorthQueryWorkflowIncompatibility {
     NodeUncovered { node_path: String },
     /// A program name this node acts through changes meaning in the target.
     DependencyChanged { node_path: String, name: String },
+    /// A definition-level action no longer has its exact installed body.
+    GlobalActionUncovered { binding: String },
+    /// A name used by a definition-level action changes meaning.
+    GlobalActionDependencyChanged { binding: String, name: String },
 }
 
 /// Whether a retained workflow definition can run under the target program.

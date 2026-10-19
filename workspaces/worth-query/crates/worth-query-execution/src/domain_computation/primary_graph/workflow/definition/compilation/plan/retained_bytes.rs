@@ -82,6 +82,15 @@ impl CompiledWorkflowConnectionKind {
     ) -> usize {
         match self {
             Self::Retry { reason, .. } => reason.len(),
+            Self::BackAction {
+                operation,
+                input_type,
+                binding,
+                ..
+            } => operation
+                .len()
+                .saturating_add(input_type.len())
+                .saturating_add(binding.len()),
             Self::Control(_) | Self::Data(_) => 0,
         }
     }
@@ -90,6 +99,24 @@ impl CompiledWorkflowConnectionKind {
         &self,
     ) -> String {
         match self {
+            Self::BackAction {
+                operation,
+                input_type,
+                binding,
+                requirements,
+            } => {
+                use std::fmt::Write;
+                let mut encoded = String::from("back-action-v1;");
+                for value in [
+                    operation.as_str(),
+                    input_type.as_str(),
+                    binding.as_str(),
+                    &requirements.persistence_identity(),
+                ] {
+                    write!(&mut encoded, "{}:{value};", value.len()).expect("String write");
+                }
+                encoded
+            }
             Self::Control(outcome) => WorkflowConnectionTag::control(*outcome)
                 .identity()
                 .to_owned(),

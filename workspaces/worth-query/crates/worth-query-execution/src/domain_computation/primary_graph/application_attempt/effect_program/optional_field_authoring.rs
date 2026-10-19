@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use worth_foundational::facade::PortableAspectContractBasis;
+use worth_foundational::facade::{AspectFieldLocator, AspectValue, PortableAspectContractBasis};
+use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget,
     ApplicationScalarValueBinding, OperationWrites, OptionalApplicationFieldValue,
@@ -58,6 +59,21 @@ impl<Schema, Operation, Input, Scope>
             ));
         };
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
+        self.write_optional_value(
+            &ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
+            entity_id,
+            locator,
+            value,
+        )
+    }
+
+    pub(super) fn write_optional_value(
+        &mut self,
+        field: &ApplicationFieldBindingLocus,
+        entity_id: EntityId,
+        locator: AspectFieldLocator,
+        value: Option<AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let contract = self
             .layout
             .aspect_contract(field.entity(), locator.aspect().aspect_key())

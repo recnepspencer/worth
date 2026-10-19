@@ -9,6 +9,7 @@ mod foundational_aspect;
 mod foundational_value;
 mod frame;
 mod native_aspect_contract;
+mod operation_body;
 mod package_root;
 mod protocol;
 mod sequence;

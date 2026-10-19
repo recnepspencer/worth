@@ -3,6 +3,7 @@ use super::WorthQueryApplicationEffectProgram;
 mod canonical_encoding;
 mod output_postcondition;
 
+pub(super) use canonical_encoding::authentication_observation_identity;
 use canonical_encoding::{dependency_identity, lineage_identity};
 pub(in crate::domain_computation::primary_graph) use output_postcondition::OutputCurrentnessFacts;
 use output_postcondition::{complete_output_currentness_facts, normalized_output_facts};

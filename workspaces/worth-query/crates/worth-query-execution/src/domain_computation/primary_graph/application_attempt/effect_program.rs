@@ -5,6 +5,7 @@ mod emission;
 mod entity_creation;
 mod entity_selection;
 mod model;
+mod operation_body;
 mod optional_field_authoring;
 mod ordinary_field_authoring;
 pub(super) mod output_correspondence;
@@ -65,7 +66,8 @@ pub use output_correspondence::{
     WorthQueryApplicationTypedOutputCorrespondence,
 };
 pub(in crate::domain_computation::primary_graph) use platform_reservation::{
-    admit_platform_effects, admit_workflow_settlement_effects, PlatformEffectDemand,
+    admit_platform_effects, admit_signing_lifecycle_effects, admit_workflow_settlement_effects,
+    PlatformEffectDemand,
 };
 use target_admission::installed_contract_admits_program_target;
 use worth_query_declaration::facade::{
@@ -200,6 +202,32 @@ impl<Schema, Operation, Input, Scope>
                 field.field(),
             )
         })?;
+        self.initialize_encoded_field(
+            target,
+            &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
+                field.entity(),
+                field.aspect(),
+                field.field(),
+            ),
+            std::borrow::Cow::Owned(value),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn initialize_body_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.initialize_encoded_field(target, field, value)
+    }
+
+    fn initialize_encoded_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.validate_target(target, field.entity())?;
         self.admit_program_target(&ApplicationOperationProgramTarget::Write {
             entity: field.entity().to_string(),
@@ -237,7 +265,7 @@ impl<Schema, Operation, Input, Scope>
         else {
             unreachable!("validated created effect changed before field retention");
         };
-        fields.insert(locator, value);
+        fields.insert(locator, value.into_owned());
         Ok(())
     }
 

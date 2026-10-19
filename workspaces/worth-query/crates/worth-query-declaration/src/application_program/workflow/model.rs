@@ -101,6 +101,10 @@ pub enum ApplicationWorkflowControlOutcome {
     RetryExhausted,
     /// Owner-published navigation over the settled path, never an authored control arm.
     NavigatedBack,
+    /// A declared business return body and its cursor change settled together.
+    Returned,
+    /// A definition-level business ending and its native body settled together.
+    Terminated,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -151,6 +155,9 @@ pub enum ApplicationWorkflowConnectionKind {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
     Retry(ApplicationWorkflowRetry),
+    /// An explicitly requested business action returns to this exact target.
+    /// It is neither an automatic control edge nor historical cursor-only Back.
+    BackAction(super::ApplicationWorkflowOperationRef),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -199,6 +206,7 @@ where
     pub(super) start: Option<ApplicationWorkflowNodeIdentity>,
     pub(super) nodes: Vec<ApplicationWorkflowNode>,
     pub(super) connections: Vec<ApplicationWorkflowConnection>,
+    pub(super) global_actions: Vec<super::ApplicationWorkflowGlobalAction>,
     pub(super) component_expansions: Vec<ApplicationWorkflowComponentExpansion>,
     pub(super) marker: PhantomData<fn() -> Spec>,
 }
@@ -228,6 +236,7 @@ where
     pub(super) start: ApplicationWorkflowNodeIdentity,
     pub(super) nodes: Box<[ApplicationWorkflowNode]>,
     pub(super) connections: Box<[ApplicationWorkflowConnection]>,
+    pub(super) global_actions: Box<[super::ApplicationWorkflowGlobalAction]>,
     pub(super) component_expansions: Box<[ApplicationWorkflowComponentExpansion]>,
     pub(super) validation_work: super::ApplicationWorkflowValidationWork,
     pub(super) marker: PhantomData<fn() -> Spec>,
@@ -259,6 +268,9 @@ where
 
     pub fn connections(&self) -> &[ApplicationWorkflowConnection] {
         &self.connections
+    }
+    pub fn global_actions(&self) -> &[super::ApplicationWorkflowGlobalAction] {
+        &self.global_actions
     }
 
     pub fn component_expansions(&self) -> &[ApplicationWorkflowComponentExpansion] {

@@ -28,6 +28,7 @@ impl SealedNativeOutputWitness {
             admission.charge_external_work(1)?;
             match fact {
                 Fact::SourceEntity { .. }
+                | Fact::AspectPresence { .. }
                 | Fact::SourceFieldRevision { .. }
                 | Fact::Entity { .. }
                 | Fact::SourceAdjacencyRevision { .. }

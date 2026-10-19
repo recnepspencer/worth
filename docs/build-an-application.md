@@ -2280,6 +2280,8 @@ absent. `with_maximum_waiter_resolution_visits(Some(n))` and
 `None` keeps the original request and physical admission without a local work cap.
 The installed workflow fact-custody rule likewise checks every candidate on the
 original request without imposing a fixed candidate count.
+Operation-body requirement expressions retain their separately admitted Foundation
+expression profile; an absent request ceiling adds no further work restriction.
 Retry uses fresh
 request authority on the same settled owner. Native consumed-fact movement
 returns `Stale`; unrelated progress does not itself make settlement stale.

@@ -40,4 +40,7 @@ pub struct WorthQueryPortableApplicationOperationContractParts {
     pub emissions: Vec<String>,
     pub external_effect: Option<WorthQueryPortableExternalEffectContractRecord>,
     pub reconciliation: Option<WorthQueryPortableInstalledReconciliationProcedureRecord>,
+    pub body: Option<
+        worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
+    >,
 }

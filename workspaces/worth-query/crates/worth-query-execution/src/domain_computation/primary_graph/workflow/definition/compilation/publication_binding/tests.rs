@@ -122,6 +122,7 @@ fn cold_definition(
         start_node: entity(node_slot),
         nodes: nodes.into_boxed_slice(),
         connections: connections.into_boxed_slice(),
+        global_actions: Box::new([]),
         revisions: WorkflowDefinitionPublicationRevisions {
             start: None,
             nodes: None,

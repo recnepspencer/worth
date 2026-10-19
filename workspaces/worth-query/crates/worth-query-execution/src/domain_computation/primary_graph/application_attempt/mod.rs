@@ -30,6 +30,7 @@ mod mandatory_review_program;
 mod mandatory_review_replay;
 mod migration;
 mod observation;
+pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;
 #[cfg(test)]
@@ -47,6 +48,8 @@ mod provider_recomparison;
 mod read_phase;
 mod read_scope;
 mod read_set;
+pub(in crate::domain_computation::primary_graph) mod signed_creation;
+mod signing_lifecycle;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 #[cfg(test)]
@@ -54,6 +57,9 @@ pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactRe
 pub(in crate::domain_computation::primary_graph) use read_set::{
     observe_admitted_fact, CompletedDecisionReuseProof, ComputationFactAttribution,
     ComputationRead, PreparedDecisionReuseContext, SealedComputationFacts,
+};
+pub use signed_creation::{
+    WorthQuerySignedCreationAdapter, WorthQuerySignedCreationPreparationDenial,
 };
 mod retained_commit;
 pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;
@@ -181,10 +187,11 @@ pub use workflow_definition_program::{
 pub use workflow_instance_program::{
     PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
     PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
-    PublishedWorkflowInstanceRef, RetiredWorkflowDefinitionStart,
-    SupersededWorkflowDefinitionStart, WorkflowInstanceBindingDenial,
-    WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceAdapter,
+    PublishedWorkflowInstanceRef, RequiredWorkflowBirth, RetiredWorkflowDefinitionStart,
+    SupersededWorkflowDefinitionStart, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
+    WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
+    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
+    WorthQueryWorkflowBirthAdapter, WorthQueryWorkflowInstanceAdapter,
     WorthQueryWorkflowInstanceDiscoveryIntent,
 };
 pub use workflow_proposal_program::{
@@ -197,10 +204,10 @@ pub use workflow_transition_program::{
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    RequiredWorkflowProposal, WorkflowApprovalDecision, WorkflowOperationAuthority,
-    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
-    WorkflowTransitionPreparationDenial, WorthQueryWorkflowActorContext,
-    WorthQueryWorkflowAdvanceAdapter,
+    RequiredWorkflowProposal, WorkflowApprovalDecision, WorkflowLocalActionKind,
+    WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
+    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorthQueryWorkflowActorContext, WorthQueryWorkflowAdvanceAdapter,
 };
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;

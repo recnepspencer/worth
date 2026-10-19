@@ -60,6 +60,46 @@ impl<Schema, Operation, Input, Scope>
     where
         Entity: OperationCreates<Operation>,
     {
+        self.create_entity_named_at(entity.name(), key.into_string(), partition)
+    }
+
+    /// Only the installed native body may enter this dynamic bridge. The
+    /// complete body and its Create membership were readmitted at installation.
+    pub(in crate::domain_computation::primary_graph) fn create_body_entity_in_context<
+        ContextEntity,
+    >(
+        &mut self,
+        context: &WorthQueryApplicationEffectEntity<Schema, ContextEntity>,
+        entity: &str,
+        key: &str,
+    ) -> Result<WorthQueryApplicationEffectEntity<Schema, ()>, WorthQueryApplicationAttemptDenial>
+    {
+        if !Arc::ptr_eq(&context.program, &self.program) {
+            return Err(foreign_context_denial());
+        }
+        let EntityReference::Existing(existing) = context.reference else {
+            return Err(foreign_context_denial());
+        };
+        let key = WorthQueryApplicationEntityKey::<Schema, ()>::new(key).map_err(|_| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
+                entity,
+            )
+        })?;
+        self.create_entity_named_at(
+            entity,
+            key.into_string(),
+            WorthQueryApplicationCreationPartition::Context(existing.partition_id),
+        )
+    }
+
+    fn create_entity_named_at<Entity>(
+        &mut self,
+        entity_name: &str,
+        key: String,
+        partition: WorthQueryApplicationCreationPartition,
+    ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
+    {
         if self
             .creation_partition
             .is_some_and(|selected| selected != partition)
@@ -70,22 +110,21 @@ impl<Schema, Operation, Input, Scope>
             ));
         }
         self.admit_program_target(&ApplicationOperationProgramTarget::Create {
-            entity: entity.name().to_string(),
+            entity: entity_name.to_string(),
         })?;
-        let kind = self.layout.entity_kind(entity.name()).ok_or_else(|| {
+        let kind = self.layout.entity_kind(entity_name).ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                entity.name(),
+                entity_name,
             )
         })?;
-        let key = key.into_string();
         if self.keys.contains(&(kind, key.clone())) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::DuplicateEffectKey,
-                entity.name(),
+                entity_name,
             ));
         }
-        let retained_bytes = retained_representation::created_entity(&key, entity.name())
+        let retained_bytes = retained_representation::created_entity(&key, entity_name)
             .ok_or_else(candidate_representation_denial)?;
         self.charge_candidate_representation(CandidateItemKind::Create, retained_bytes, 0)?;
         self.keys.insert((kind, key.clone()));
@@ -106,7 +145,7 @@ impl<Schema, Operation, Input, Scope>
             });
         Ok(WorthQueryApplicationEffectEntity {
             reference,
-            entity: entity.name().to_string(),
+            entity: entity_name.to_string(),
             created_effect: Some(created_effect),
             program: Arc::clone(&self.program),
             _marker: PhantomData,

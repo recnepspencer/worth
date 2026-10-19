@@ -3,10 +3,10 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 
 use super::{
     InstalledWorkflowAdvanceCapability, InstalledWorkflowApproval, InstalledWorkflowAssessment,
-    InstalledWorkflowAuthoringCapability, InstalledWorkflowCapabilityBinding,
-    InstalledWorkflowCondition, InstalledWorkflowInstanceStartCapability,
-    InstalledWorkflowOperation, WorthQueryApplicationWorkflowResourceCeiling,
-    WorthQueryInstalledApplicationWorkflowSpec,
+    InstalledWorkflowAuthoringCapability, InstalledWorkflowBirth,
+    InstalledWorkflowCapabilityBinding, InstalledWorkflowCondition,
+    InstalledWorkflowInstanceStartCapability, InstalledWorkflowOperation,
+    WorthQueryApplicationWorkflowResourceCeiling, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
 impl<Schema, Spec> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
@@ -32,6 +32,7 @@ pub(super) fn derive(
     start: &InstalledWorkflowInstanceStartCapability,
     advance: &InstalledWorkflowAdvanceCapability,
     operations: &[InstalledWorkflowOperation],
+    births: &[InstalledWorkflowBirth],
     assessments: &[InstalledWorkflowAssessment],
     conditions: &[InstalledWorkflowCondition],
     approvals: &[InstalledWorkflowApproval],
@@ -104,6 +105,15 @@ pub(super) fn derive(
             &values.iter().map(String::as_str).collect::<Vec<_>>(),
         )
     }));
+    for birth in births {
+        let capability = capability("birth-capability", &birth.capability);
+        let mut entry = fields(
+            "birth",
+            &[birth.binding_identity, birth.role_name, birth.entity_name],
+        );
+        append_frame(&mut entry, &capability);
+        entries.push(entry);
+    }
     entries.extend(assessments.iter().map(|assessment| {
         fields(
             "assessment",

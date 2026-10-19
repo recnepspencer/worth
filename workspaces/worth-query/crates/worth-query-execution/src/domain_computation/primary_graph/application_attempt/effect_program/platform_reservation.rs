@@ -92,6 +92,24 @@ fn admit_query_owned_effects(
     Ok(PlatformEffectReservation { reservation })
 }
 
+pub(in crate::domain_computation::primary_graph) fn admit_signing_lifecycle_effects<
+    Schema,
+    Operation,
+    Input,
+    Scope,
+>(
+    admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+    demand: PlatformEffectDemand,
+) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
+    let contracts = admission.allowed_graph_contract();
+    admit_query_owned_effects(contracts, contracts.signing_lifecycle_ceiling(), demand)
+}
+
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct PlatformEffectDemand {
     creates: usize,

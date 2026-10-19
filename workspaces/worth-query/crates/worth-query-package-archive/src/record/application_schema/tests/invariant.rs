@@ -66,7 +66,7 @@ fn invariant_archive_preserves_absent_work_ceiling_without_reinterpreting_finite
     };
     *maximum_work_units = None;
     let bytes = encode_member(&unlimited);
-    assert_eq!(&bytes[..2], &32_u16.to_be_bytes());
+    assert_eq!(&bytes[..2], &34_u16.to_be_bytes());
     assert_eq!(decode_member(&bytes), unlimited);
     assert_eq!(encode_member(&decode_member(&bytes)), bytes);
     let finite = validate_portable_application_schema_freshly(schema(finite)).unwrap();

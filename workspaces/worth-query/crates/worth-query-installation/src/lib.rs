@@ -164,7 +164,8 @@ pub mod facade {
         WorthQueryInstalledAuthorizationPath, WorthQueryInstalledBoundMutationOperation,
         WorthQueryInstalledBoundMutationPrincipal, WorthQueryInstalledHostConditionalProvider,
         WorthQueryInstalledMutationPrecondition, WorthQueryInstalledNamedClockConditionalNode,
-        WorthQueryInstalledTemporalConditionalOperation, WorthQueryOperationEmissionContract,
+        WorthQueryInstalledSigningLifecycleRule, WorthQueryInstalledTemporalConditionalOperation,
+        WorthQueryOperationEmissionContract,
         WorthQueryPortableApplicationConditionalOperationBinding,
         WorthQueryPortableApplicationConditionalOperationBindingParts,
         APPLICATION_AUTHORIZATION_FACT_FAMILY, APPLICATION_DECISION_FACT_FAMILY,
@@ -200,8 +201,8 @@ pub mod facade {
         WorthQueryProgramSupportRetirementDenial, WorthQueryProgramSupportRetirementInventory,
         WorthQueryProgramSupportRoster, WorthQueryProgramValidationScope,
         WorthQueryRepeatedOptionalMemberState, WorthQueryWorkflowDependencyName,
-        WorthQueryWorkflowHistoryReconstructionBudget, WorthQueryWorkflowNodeDependency,
-        WorthQueryWorkflowVocabularyCoverage,
+        WorthQueryWorkflowGlobalActionDependency, WorthQueryWorkflowHistoryReconstructionBudget,
+        WorthQueryWorkflowNodeDependency, WorthQueryWorkflowVocabularyCoverage,
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryAdmittedReadGraphPlanningInventory,

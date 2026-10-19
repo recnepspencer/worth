@@ -27,6 +27,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 mod accumulator;
 mod elevation;
 mod installed_plan;
+mod resource_extent;
 #[cfg(test)]
 mod semantic_model_tests;
 
@@ -60,12 +61,15 @@ fn compile_grant_path(
         contract.target().resource(),
         RelationalAuthorizationTraversalDirection::Forward,
     )?;
-    if resource.from_kind() != grant_kind || resource.to_kind() != scope_kind {
+    if resource.from_kind() != grant_kind {
         return Err(authorization_denial(
             contract.name(),
             "capability resource relation endpoints changed",
         ));
     }
+    let (traversals, context_anchors) =
+        resource_extent::lower(contract, layout, grantee, resource)?;
+    let scope_ordinal = traversals.len();
     let currentness = contract.constraints().currentness();
     let predicates = vec![
         predicate(layout, 1, grant_kind, contract.target().action())?,
@@ -76,17 +80,17 @@ fn compile_grant_path(
     let workflow_constraint = RelationalAuthorizationFieldConstraint::new(
         operand(layout, 1, grant_kind, workflow.grant())?,
         RelationalAuthorizationFieldComparison::Equal,
-        operand(layout, 2, scope_kind, workflow.resource())?,
+        operand(layout, scope_ordinal, scope_kind, workflow.resource())?,
     );
     Ok(WorthQueryCapabilityPathTemplate {
-        plan: RelationalAuthorizationPathPlan::new([grantee, resource], predicates)
+        plan: RelationalAuthorizationPathPlan::new(traversals, predicates)
             .with_field_constraints([workflow_constraint]),
         identity: clause_identity(capability, 0),
         guard: WorthQueryCapabilityRequestGuard::Unconditional,
         grant_ordinal: Some(1),
         elevation_ordinals: Vec::new(),
         elevation_resource_ordinal: None,
-        context_anchors: Vec::new(),
+        context_anchors,
     })
 }
 

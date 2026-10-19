@@ -49,6 +49,7 @@ where
                 crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::Entity { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
+                    | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::AspectPresence { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
                 )

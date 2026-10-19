@@ -21,6 +21,97 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             operation: operation.clone(),
             input_type: definition.input_type,
         });
+        if let Some(body) = definition.body {
+            let mut reads = body
+                .scope_fields()
+                .iter()
+                .map(|step| step.decision_read())
+                .collect::<std::collections::BTreeSet<_>>();
+            if let Some(scope) = body
+                .explicit_scope_entity()
+                .filter(|_| body.scope_fields().is_empty())
+            {
+                reads.insert(
+                    super::super::ApplicationOperationDecisionReadTarget::Entity {
+                        entity: scope.to_owned(),
+                    },
+                );
+            }
+            reads.extend(
+                body.requirements()
+                    .iter()
+                    .flat_map(|requirement| requirement.operands())
+                    .flat_map(|operand| operand.source().decision_reads()),
+            );
+            if let Some(creation) = body.creation() {
+                reads.extend(
+                    creation
+                        .links()
+                        .iter()
+                        .flat_map(|link| link.replacement_reads()),
+                );
+                reads.extend(
+                    creation
+                        .fields()
+                        .iter()
+                        .filter_map(|step| step.source_read()),
+                );
+                reads.extend(
+                    creation
+                        .fields()
+                        .iter()
+                        .filter_map(|step| step.related_source())
+                        .flat_map(|source| source.decision_reads()),
+                );
+            }
+            for target in reads {
+                self.push_member_in_place(ApplicationSchemaMember::OperationDecisionRead {
+                    operation: operation.clone(),
+                    target,
+                });
+            }
+            for target in body
+                .scope_fields()
+                .iter()
+                .filter_map(|step| step.write_target())
+            {
+                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                    operation: operation.clone(),
+                    target,
+                });
+            }
+            if let Some(creation) = body.creation() {
+                for target in creation
+                    .links()
+                    .iter()
+                    .flat_map(|link| {
+                        std::iter::once(link.program_target()).chain(link.replacement_target())
+                    })
+                    .collect::<std::collections::BTreeSet<_>>()
+                {
+                    self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                        operation: operation.clone(),
+                        target,
+                    });
+                }
+                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                    operation: operation.clone(),
+                    target: super::super::ApplicationOperationProgramTarget::Create {
+                        entity: creation.entity().to_owned(),
+                    },
+                });
+                for field in creation.fields() {
+                    self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                        operation: operation.clone(),
+                        target: field.write_target(),
+                    });
+                }
+            }
+            self.push_member_in_place(ApplicationSchemaMember::OperationBody {
+                operation: operation.clone(),
+                body,
+            });
+        }
         if let Some(external_effect) = definition.external_effect {
             if let Some(inbound) = external_effect.inbound {
                 self.push_member_in_place(ApplicationSchemaMember::OperationInboundOccurrence {

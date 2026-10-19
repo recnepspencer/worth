@@ -1,4 +1,5 @@
 mod authoring;
+mod birth;
 mod completion;
 mod contract;
 

@@ -65,6 +65,11 @@ pub(super) fn decode_payload(
     require_canonical_sequence(&emissions)?;
     let external_effect = external_effect::decode(input)?;
     let reconciliation = reconciliation::decode(input)?;
+    let body = if input.is_finished() {
+        None
+    } else {
+        Some(super::operation_body::decode(input, budget)?)
+    };
     Ok(
         WorthQueryPortablePackageRecord::ApplicationOperationContract(
             WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
@@ -77,6 +82,7 @@ pub(super) fn decode_payload(
                     emissions,
                     external_effect,
                     reconciliation,
+                    body,
                 },
             ),
         ),
@@ -96,5 +102,9 @@ fn write_record(
         output.text(emission)
     })?;
     external_effect::write(output, record.external_effect())?;
-    reconciliation::write(output, record.reconciliation())
+    reconciliation::write(output, record.reconciliation())?;
+    if let Some(body) = record.body() {
+        super::operation_body::write(output, body)?;
+    }
+    Ok(())
 }

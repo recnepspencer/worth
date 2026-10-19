@@ -4,10 +4,11 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
 use super::{
-    ApplicationFrameIdentity, ApplicationScalarValueBinding, ApplicationUnitIdentity,
-    ApplicationValueDecodePosture, ApplicationValueEncodeDenial, ApplicationValueIdentityPosture,
-    ApplicationValueSignedAggregatePosture, ApplicationValueValidationDenial,
-    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueDecode,
+    ApplicationFrameIdentity, ApplicationNativeInputDecodeProfile, ApplicationScalarValueBinding,
+    ApplicationUnitIdentity, ApplicationValueDecodePosture, ApplicationValueEncodeDenial,
+    ApplicationValueIdentityPosture, ApplicationValueSignedAggregatePosture,
+    ApplicationValueValidationDenial, ErasedApplicationSignedAggregateDecode,
+    ErasedApplicationValueDecode,
 };
 use crate::application_schema::ApplicationSchemaMember;
 
@@ -16,7 +17,8 @@ pub type ErasedApplicationValueValidation =
 pub type ErasedApplicationValueEncode =
     fn(&dyn Any) -> Result<AspectValue, ApplicationValueEncodeDenial>;
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ApplicationFieldBindingLocus {
     entity: String,
     aspect: String,
@@ -59,6 +61,7 @@ pub struct ApplicationFieldBindingRecipe {
     decode: Option<ErasedApplicationValueDecode>,
     identity_capable: bool,
     signed_aggregate_decode: Option<ErasedApplicationSignedAggregateDecode>,
+    native_input_admission: Option<ApplicationNativeInputDecodeProfile>,
 }
 
 impl ApplicationFieldBindingRecipe {
@@ -78,6 +81,7 @@ impl ApplicationFieldBindingRecipe {
             decode: Binding::Decode::erased_decode(),
             identity_capable: Binding::Identity::CAPABLE,
             signed_aggregate_decode: Binding::SignedAggregate::erased_decode(),
+            native_input_admission: Binding::NATIVE_INPUT_ADMISSION,
         }
     }
 
@@ -128,6 +132,10 @@ impl ApplicationFieldBindingRecipe {
         self.signed_aggregate_decode
     }
 
+    pub const fn native_input_admission(&self) -> Option<ApplicationNativeInputDecodeProfile> {
+        self.native_input_admission
+    }
+
     pub(crate) fn has_same_contract(&self, other: &Self) -> bool {
         self.binding_identity == other.binding_identity
             && self.scalar_family == other.scalar_family
@@ -138,6 +146,7 @@ impl ApplicationFieldBindingRecipe {
             && self.decode.is_some() == other.decode.is_some()
             && self.identity_capable == other.identity_capable
             && self.signed_aggregate_decode.is_some() == other.signed_aggregate_decode.is_some()
+            && self.native_input_admission == other.native_input_admission
     }
 
     pub(crate) fn matches_member(&self, member: &ApplicationSchemaMember) -> bool {

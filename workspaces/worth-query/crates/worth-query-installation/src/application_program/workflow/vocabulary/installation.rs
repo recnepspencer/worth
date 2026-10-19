@@ -19,7 +19,7 @@ use crate::application_schema::WorthQueryInstalledApplicationSchema;
 
 use super::{
     denial, InstalledWorkflowAdvanceCapability, InstalledWorkflowApproval,
-    InstalledWorkflowAssessment, InstalledWorkflowAuthoringCapability,
+    InstalledWorkflowAssessment, InstalledWorkflowAuthoringCapability, InstalledWorkflowBirth,
     InstalledWorkflowCapabilityBinding, InstalledWorkflowCondition,
     InstalledWorkflowInstanceStartCapability, InstalledWorkflowOperation,
     WorthQueryApplicationWorkflowInstallationDenial,
@@ -27,9 +27,11 @@ use super::{
     WorthQueryApplicationWorkflowResourceCeiling, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
+mod birth;
 #[path = "installation/capability_binding.rs"]
 mod capability_binding;
 mod finish;
+mod operation;
 mod policies;
 
 pub struct WorthQueryApplicationWorkflowSpecInstallation<'installed, Schema, Spec, Program>
@@ -43,6 +45,7 @@ where
     instance_start_capability: Option<InstalledWorkflowInstanceStartCapability>,
     advance_capability: Option<InstalledWorkflowAdvanceCapability>,
     operations: Vec<InstalledWorkflowOperation>,
+    births: Vec<InstalledWorkflowBirth>,
     assessments: Vec<InstalledWorkflowAssessment>,
     conditions: Vec<InstalledWorkflowCondition>,
     approvals: Vec<InstalledWorkflowApproval>,
@@ -69,6 +72,7 @@ where
             instance_start_capability: None,
             advance_capability: None,
             operations: Vec::new(),
+            births: Vec::new(),
             assessments: Vec::new(),
             conditions: Vec::new(),
             approvals: Vec::new(),
@@ -76,40 +80,6 @@ where
             markers: HashSet::new(),
             marker: PhantomData,
         }
-    }
-
-    pub fn operation<Binding>(
-        mut self,
-    ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
-    where
-        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
-    {
-        self.insert_marker(0, TypeId::of::<Binding>(), Binding::IDENTITY)?;
-        if !self
-            .program
-            .actions()
-            .iter()
-            .any(|action| action.mutation_binding_type() == Some(TypeId::of::<Binding>()))
-        {
-            return Err(denial(
-                WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInProgram,
-                Binding::IDENTITY,
-            ));
-        }
-        self.schema
-            .installed_mutation_binding::<Binding>()
-            .map_err(|_| {
-                denial(
-                    WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInstalled,
-                    Binding::IDENTITY,
-                )
-            })?;
-        let mut operation = InstalledWorkflowOperation::declared::<Spec, Binding>();
-        operation.inbound_ref = self
-            .schema
-            .installed_workflow_inbound_ref(Binding::Operation::IDENTIFIER);
-        self.operations.push(operation);
-        Ok(self)
     }
 
     pub fn assessment<Binding>(

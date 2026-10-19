@@ -49,6 +49,33 @@ impl<Schema, Operation, Input, Scope>
             ));
         };
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
+        if self.layout.field_is_optional(field.entity(), &locator) {
+            return self.write_optional_value(
+                &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
+                    field.entity(), field.aspect(), field.field(),
+                ),
+                entity_id, locator, Some(value),
+            );
+        }
+        self.write_required_value(
+            &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
+                field.entity(),
+                field.aspect(),
+                field.field(),
+            ),
+            entity_id,
+            locator,
+            std::borrow::Cow::Owned(value),
+        )
+    }
+
+    pub(super) fn write_required_value(
+        &mut self,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        entity_id: worth_relational::facade::identity::EntityId,
+        locator: worth_foundational::facade::AspectFieldLocator,
+        value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let position = self
             .field_write_positions
             .position(field.entity(), entity_id);
@@ -84,6 +111,7 @@ impl<Schema, Operation, Input, Scope>
             retained_representation_bytes,
             replaced_representation_bytes.unwrap_or(0),
         )?;
+        let value = value.into_owned();
         match position.map(|position| &mut self.effects[position]) {
             Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
                 fields, ..

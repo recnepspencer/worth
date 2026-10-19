@@ -59,6 +59,15 @@ impl WorthQueryCandidateReservation {
         })
     }
 
+    /// Reserves a write and the remaining representation after ordinary effects.
+    pub(super) fn reserve_deferred_initializer(
+        &mut self,
+    ) -> Result<usize, WorthQueryApplicationAttemptDenial> {
+        let bytes = self.remaining_retained_representation_bytes;
+        self.charge_retained_representation(CandidateItemKind::Write, bytes, 0)?;
+        Ok(bytes)
+    }
+
     pub(super) fn total_items(&self) -> usize {
         total(self.remaining).unwrap_or(usize::MAX)
     }

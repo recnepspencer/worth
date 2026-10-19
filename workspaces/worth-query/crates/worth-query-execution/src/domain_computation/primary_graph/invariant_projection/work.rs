@@ -142,6 +142,9 @@ impl WorthQueryInvariantProjectionWork {
     pub(super) fn record_field(&mut self) {
         self.field_reads += 1;
     }
+    pub(super) fn record_endpoint(&mut self) {
+        self.endpoint_records_read += 1;
+    }
 
     pub(super) fn record_aggregate_lookup(&mut self, cache_hit: bool, rebuild_rows: usize) {
         self.aggregate_lookups += 1;

@@ -6,7 +6,7 @@ use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
     ApplicationRelationRef, ApplicationSchema, ApplicationSignedAggregateValueBinding,
     DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
-    WorthQueryOperationGraphReadContract, WritePosture,
+    WorthQueryCompiledApplicationOperationContracts, WritePosture,
 };
 
 mod prepared_inputs;
@@ -59,11 +59,12 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     Operation,
 > {
     reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
-    admitted_graph_reads: Option<&'reader WorthQueryOperationGraphReadContract>,
+    admitted_contracts: Option<&'reader WorthQueryCompiledApplicationOperationContracts>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
+    admitted_principal: Option<worth_relational::facade::identity::EntityId>,
     operation_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeBinding>,
     decision_facts: &'reader mut DecisionReads,
@@ -148,10 +149,11 @@ where
                 let mut operation_reader =
                     WorthQueryApplicationOperationInvariantProjectionReader {
                         reader,
-                        admitted_graph_reads: None,
+                        admitted_contracts: None,
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
+                        admitted_principal: None,
                         operation_scope: None,
                         decision_facts: &mut decision_facts,
                         _operation: PhantomData,
@@ -195,10 +197,11 @@ where
                 let mut operation_reader =
                     WorthQueryApplicationOperationInvariantProjectionReader {
                         reader,
-                        admitted_graph_reads: None,
+                        admitted_contracts: None,
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
+                        admitted_principal: None,
                         operation_scope: None,
                         decision_facts: &mut decision_facts,
                         _operation: PhantomData,
@@ -300,12 +303,11 @@ where
                     let mut operation_reader =
                         WorthQueryApplicationOperationInvariantProjectionReader {
                             reader,
-                            admitted_graph_reads: Some(
-                                admission.allowed_graph_contract().graph_reads(),
-                            ),
+                            admitted_contracts: Some(admission.allowed_graph_contract()),
                             runtime_authority: self.runtime_authority,
                             binding_identity: &self.binding_identity,
                             admission_identity: Some(admission.admission_identity()),
+                            admitted_principal: Some(admission.graph_work().principal()),
                             operation_scope: Some(admission.operation_scope_binding().clone()),
                             decision_facts: &mut decision_facts,
                             _operation: PhantomData,

@@ -34,6 +34,12 @@ pub(super) fn validate_capability_identifiers(
     }
     validate_field(contract.target().action().field())?;
     validate_relation(contract.target().resource())?;
+    if let Some(slot) = contract.target().resource_path().root_slot() {
+        validate_context_slot(slot)?;
+    }
+    for step in contract.target().resource_path().traversals() {
+        validate_identifiers([step.relation(), step.from(), step.to()])?;
+    }
     validate_relation_dimension(contract.target().relation())?;
     validate_field_dimension(contract.target().field())?;
     validate_field(contract.target().purpose().field())?;

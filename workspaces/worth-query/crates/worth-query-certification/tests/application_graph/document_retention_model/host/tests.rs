@@ -1,4 +1,6 @@
 use super::*;
+#[path = "tests/workflow_registration.rs"]
+mod workflow_registration;
 use declaration::application_operation::ApplicationMutationBinding;
 
 use super::super::retention_entry::DOCUMENT_IDENTITY;

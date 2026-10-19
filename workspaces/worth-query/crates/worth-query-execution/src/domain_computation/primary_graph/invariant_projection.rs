@@ -84,6 +84,7 @@ pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     binding_identity: ApplicationSchemaBindingIdentity,
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
     authority_identity: u64,
+    program_activation: Option<super::program_occurrence::WorthQueryProgramActivationCell>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -159,6 +160,7 @@ where
             runtime_authority: self.runtime_authority,
             binding_identity: self.graph.binding_identity().clone(),
             entity_resolution: self.graph.retain_entity_resolution_context(),
+            program_activation: self.program_activation.clone(),
             authority_identity: NEXT_INVARIANT_PROJECTION_AUTHORITY
                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             _schema: PhantomData,

@@ -49,6 +49,9 @@ pub(super) fn reconstruct_cold_definition(
     let definition = observed.definition;
     let lineage = observed.lineage;
     let mut facts = observed.facts;
+    let global_actions = super::global_actions::read_global_actions(
+        execution, runtime, snapshot, layout, definition, &mut facts,
+    )?;
     let revisions = observe_publication_revisions(
         execution, runtime, snapshot, layout, definition, None, &mut facts,
     )?;
@@ -145,6 +148,7 @@ pub(super) fn reconstruct_cold_definition(
             start_node,
             nodes: compiled_nodes.into_boxed_slice(),
             connections: compiled_connections.into_boxed_slice(),
+            global_actions,
             revisions,
         },
         facts,

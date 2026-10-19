@@ -175,6 +175,13 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionEntity<'
 }
 
 impl WorkflowAdoptionEntity<'_> {
+    pub(in crate::domain_computation::primary_graph) fn is_absent(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        locator: &AspectFieldLocator,
+    ) -> Result<bool, WorkflowAdoptionReadDenial> {
+        Ok(self.value(execution, locator)?.is_none())
+    }
     fn value(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

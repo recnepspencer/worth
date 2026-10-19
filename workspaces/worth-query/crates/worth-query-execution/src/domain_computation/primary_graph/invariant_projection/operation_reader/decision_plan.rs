@@ -12,7 +12,12 @@ use super::WorthQueryApplicationOperationInvariantProjectionReader;
 mod indexed_selection;
 mod prepared_selection;
 pub use prepared_selection::WorthQueryPreparedEntitySelection;
+mod body_requirement;
+mod body_selection;
+mod field_presence;
+mod operation_body;
 mod predecode_admission;
+mod signed_evidence;
 use crate::domain_computation::application_contract_admission::graph_reads_admit_target;
 use crate::domain_computation::primary_graph::{
     application_attempt::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey},
@@ -53,19 +58,27 @@ where
     where
         Entity: OperationReads<Operation>,
     {
+        self.require_named_decision_entity(identity, entity.name())
+    }
+
+    fn require_named_decision_entity<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        entity: &str,
+    ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
         let target = ApplicationOperationDecisionReadTarget::Entity {
-            entity: entity.name().to_string(),
+            entity: entity.to_string(),
         };
         self.admit_decision_target(&target)?;
-        if !self.reader.identity_is_local(identity, entity.name()) {
+        if !self.reader.identity_is_local(identity, entity) {
             return Err(WorthQueryInvariantDecisionPlanDenial::new(
                 WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
-                entity.name(),
+                entity,
             ));
         }
         self.decision_facts.record(
             WorthQueryApplicationFactKey::Entity {
-                entity: entity.name().to_string(),
+                entity: entity.to_string(),
                 entity_id: identity.entity_id,
             },
             DecisionReadOutcome::Observed,
@@ -142,15 +155,15 @@ where
     /// returned, so no early return skips the recording. A read that failed
     /// is recorded as failed: whoever swallows the failure has an outcome its
     /// fact does not hold, and the projection seals nothing.
-    fn recorded_adjacency<Relations>(
+    fn recorded_adjacency<Relations, Cause>(
         &mut self,
         target: &ApplicationOperationDecisionReadTarget,
         anchor: EntityId,
         direction: WorthQueryApplicationAdjacencyDirection,
         read: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
-        ) -> Result<Relations, WorthQueryInvariantProjectionTraversalDenial>,
-    ) -> Result<Relations, WorthQueryInvariantProjectionTraversalDenial> {
+        ) -> Result<Relations, Cause>,
+    ) -> Result<Relations, Cause> {
         let before = self.reader.work;
         let relations = read(self.reader);
         let maximum_work_units = adjacency_recomparison_limit(before, self.reader.work);
@@ -204,15 +217,38 @@ where
                     field.field(),
                 )
             })?;
+        self.record_field_dependency(identity, field.entity(), locator);
+        Ok(())
+    }
+
+    fn record_field_dependency<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        entity: &str,
+        locator: worth_foundational::facade::AspectFieldLocator,
+    ) {
+        if self.reader.layout.field_is_optional(entity, &locator)
+            && self.admitted_contracts.is_some_and(|contract| {
+                field_presence::may_write(contract.touches(), entity, &locator)
+            })
+        {
+            self.decision_facts.record(
+                WorthQueryApplicationFactKey::AspectPresence {
+                    entity: entity.to_owned(),
+                    entity_id: identity.entity_id,
+                    locator: locator.clone(),
+                },
+                DecisionReadOutcome::Observed,
+            );
+        }
         self.decision_facts.record(
             WorthQueryApplicationFactKey::Field {
-                entity: field.entity().to_string(),
+                entity: entity.to_owned(),
                 entity_id: identity.entity_id,
                 locator,
             },
             DecisionReadOutcome::Observed,
         );
-        Ok(())
     }
 
     pub fn require_decision_relation<Relation, From, To>(
@@ -254,8 +290,8 @@ where
         target: &ApplicationOperationDecisionReadTarget,
     ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
         if self
-            .admitted_graph_reads
-            .is_none_or(|reads| graph_reads_admit_target(reads, target))
+            .admitted_contracts
+            .is_none_or(|contract| graph_reads_admit_target(contract.graph_reads(), target))
         {
             Ok(())
         } else {

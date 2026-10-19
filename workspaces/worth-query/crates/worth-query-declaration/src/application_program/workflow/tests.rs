@@ -16,6 +16,7 @@ mod guarded_binding;
 use guarded_binding::{ApplyBinding, ProposalInput};
 mod condition;
 mod content_identity;
+mod global_actions;
 mod inbound;
 mod operation_input;
 mod resource_limits;

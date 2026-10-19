@@ -99,6 +99,11 @@ impl WorthQueryApplicationObservedFact {
                 runtime, execution, snapshot, *entity_id, *kind, locator,
             )?
             .is_some_and(|current| current == *value),
+            Self::AspectPresence { entity_id, kind, aspect, present } => {
+                super::super::observation::observe_aspect_presence(
+                    runtime, execution, snapshot, *entity_id, *kind, aspect,
+                )? == Some(*present)
+            }
             Self::AbsentField {
                 entity_id,
                 kind,

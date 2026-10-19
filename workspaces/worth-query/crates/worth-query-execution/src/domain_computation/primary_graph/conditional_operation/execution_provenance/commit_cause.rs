@@ -29,6 +29,14 @@ pub(super) fn application_commit_cause(
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch
+        | Kind::OperationBodyExecutionRequired
+        | Kind::SignedCreationAuthentication { .. }
+        | Kind::SignedEntityImmutable
+        | Kind::SigningLifecycleForgery
+        | Kind::SigningLifecycleUnavailable
+        | Kind::SigningLifecycleEvidenceCapacity { .. }
+        | Kind::SigningLifecycleRepresentationCapacity
+        | Kind::SigningLifecycleObservation { .. }
         | Kind::ElevationTransitionRequired
         | Kind::ElevationRequestProgramMismatch
         | Kind::ElevationApprovalProgramMismatch

@@ -203,6 +203,7 @@ impl WorthQueryExecutionInstallationAuthority {
             recovered_checkpoint_restore_work,
             mutation_handlers: Default::default(),
             program_activation_seed: None,
+            program_activation: None,
             invariant_installation_receipt,
             expected_invariant_inventory_digest,
             _schema: PhantomData,

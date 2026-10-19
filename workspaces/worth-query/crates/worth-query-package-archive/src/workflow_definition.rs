@@ -13,12 +13,11 @@
 //! bytes, supplies omitted requirements or backfills actors. Logical migration
 //! between valid current workflow definitions remains a separate native operation.
 
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowConnectionKind, ApplicationWorkflowDefinitionLimits,
-};
+use worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionLimits;
 
 mod codec;
 mod compatibility;
+mod global_actions;
 mod records;
 #[cfg(test)]
 mod tests;
@@ -44,6 +43,7 @@ pub struct WorthQueryUntrustedWorkflowDefinitionDraft {
     start: String,
     nodes: Box<[DraftNode]>,
     connections: Box<[DraftConnection]>,
+    global_actions: Box<[global_actions::DraftGlobalAction]>,
 }
 
 impl WorthQueryUntrustedWorkflowDefinitionDraft {
@@ -139,5 +139,17 @@ pub(crate) struct DraftConditionOperand {
 pub(crate) struct DraftConnection {
     source: String,
     target: String,
-    kind: ApplicationWorkflowConnectionKind,
+    kind: DraftConnectionKind,
+}
+
+/// Untrusted names rebind through installed vocabulary; bytes reconstruct no markers or authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum DraftConnectionKind {
+    Control(worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome),
+    Data(worth_query_declaration::facade::application_program::ApplicationWorkflowDataFlow),
+    Retry(worth_query_declaration::facade::application_program::ApplicationWorkflowRetry),
+    BackAction {
+        operation: String, input_type: String, binding: String,
+        requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
+    },
 }

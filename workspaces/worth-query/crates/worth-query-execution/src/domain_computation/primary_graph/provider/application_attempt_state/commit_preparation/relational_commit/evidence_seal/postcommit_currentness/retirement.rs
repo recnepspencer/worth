@@ -9,6 +9,7 @@ pub(super) fn retired_anchor(fact: &Fact, retired: &BTreeSet<EntityId>) -> Optio
     let anchor = match fact {
         Fact::SourceEntity { entity_id }
         | Fact::Entity { entity_id, .. }
+        | Fact::AspectPresence { entity_id, .. }
         | Fact::SourceAspectRevision { entity_id, .. }
         | Fact::SourceFieldRevision { entity_id, .. }
         | Fact::Field { entity_id, .. }

@@ -18,7 +18,12 @@ mod marker_identity;
 mod operation_binding;
 mod recorded_actor;
 mod reference;
+mod resource_path;
 pub use recorded_actor::*;
+pub use resource_path::{
+    ApplicationCapabilityResourcePath, ApplicationCapabilityResourcePathBuilder,
+    ApplicationCapabilityResourcePathDenial,
+};
 mod request_projection;
 mod rule_clause;
 mod scope;

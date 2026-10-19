@@ -44,6 +44,7 @@ pub struct WorthQueryProgramSupportEntry {
     rules: Box<[WorthQueryProgramRuleKey]>,
     action_operations: HashSet<TypeId>,
     mutation_bindings: HashSet<TypeId>,
+    conditional_mutation_bindings: HashSet<TypeId>,
     semantic_description: ApplicationSemanticDescription,
     effectful_action_subjects: Box<[String]>,
     action_dependencies: Box<[WorthQueryProgramActionDependency]>,
@@ -83,6 +84,7 @@ impl WorthQueryProgramSupportEntry {
         rules: BTreeSet<WorthQueryProgramRuleKey>,
         action_operations: HashSet<TypeId>,
         mutation_bindings: HashSet<TypeId>,
+        conditional_mutation_bindings: HashSet<TypeId>,
         semantic_description: ApplicationSemanticDescription,
         effectful_action_subjects: BTreeSet<String>,
         action_dependencies: BTreeSet<WorthQueryProgramActionDependency>,
@@ -93,6 +95,7 @@ impl WorthQueryProgramSupportEntry {
             rules: rules.into_iter().collect(),
             action_operations,
             mutation_bindings,
+            conditional_mutation_bindings,
             semantic_description,
             effectful_action_subjects: effectful_action_subjects.into_iter().collect(),
             action_dependencies: action_dependencies.into_iter().collect(),
@@ -134,6 +137,12 @@ impl WorthQueryProgramSupportEntry {
     }
 
     pub fn acts_through_mutation_binding(&self, binding: TypeId) -> bool {
+        self.mutation_bindings.contains(&binding)
+            && !self.conditional_mutation_bindings.contains(&binding)
+    }
+
+    /// Complete declaration inventory; this does not admit an ordinary call.
+    pub fn declares_mutation_binding(&self, binding: TypeId) -> bool {
         self.mutation_bindings.contains(&binding)
     }
 
@@ -180,6 +189,11 @@ impl WorthQueryProgramSupportEntry {
                     .saturating_mul(std::mem::size_of::<TypeId>()),
             )
             .saturating_add(fact_bytes)
+            .saturating_add(
+                self.conditional_mutation_bindings
+                    .len()
+                    .saturating_mul(std::mem::size_of::<TypeId>()),
+            )
             .saturating_add(effect_bytes)
             .saturating_add(dependency_bytes)
     }

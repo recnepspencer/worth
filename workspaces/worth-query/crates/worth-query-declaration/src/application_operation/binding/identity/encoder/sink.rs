@@ -249,6 +249,7 @@ pub struct HashingSink<A: EncodingAdmission = NoAdmission> {
     buffered_bytes: usize,
     admission: A,
     fatal: Option<OwnerFatal>,
+    captured: Option<Vec<u8>>,
 }
 
 #[derive(Clone, Copy)]
@@ -280,11 +281,21 @@ impl<A: EncodingAdmission> HashingSink<A> {
             buffered_bytes: 0,
             admission,
             fatal: None,
+            captured: None,
         }
     }
 
     pub const fn hashed_bytes(&self) -> usize {
         self.hashed_bytes
+    }
+
+    pub fn capturing(mut self, enabled: bool) -> Self {
+        self.captured = enabled.then(Vec::new);
+        self
+    }
+
+    pub fn take_capture(&mut self) -> Option<Vec<u8>> {
+        self.captured.take()
     }
 
     pub const fn buffered_bytes(&self) -> usize {
@@ -365,6 +376,13 @@ impl<A: EncodingAdmission> Sink for HashingSink<A> {
             .and_then(|units| u64::try_from(units).ok())
             .ok_or_else(|| self.fail_capacity())?;
         self.admit(CanonicalEncodingCharge::Work(units))?;
+        if let Some(mut captured) = self.captured.take() {
+            reserve(self, &mut captured, bytes.len())?;
+            self.admit(CanonicalEncodingCharge::Work(bytes.len() as u64))?;
+            captured.extend_from_slice(bytes);
+            self.buffered(bytes.len())?;
+            self.captured = Some(captured);
+        }
         Digest::update(&mut self.digest, bytes);
         self.hashed_bytes = next;
         Ok(())

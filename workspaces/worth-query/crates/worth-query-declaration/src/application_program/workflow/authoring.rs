@@ -28,6 +28,7 @@ mod command;
 mod component;
 mod connections;
 mod denial;
+mod global_actions;
 pub use command::{ApplicationWorkflowAuthoringCommand, ApplicationWorkflowCommandAdapter};
 pub use component::{
     ApplicationWorkflowComponentBuilder, ApplicationWorkflowComponentInputBinding,
@@ -119,6 +120,7 @@ where
     nodes: Vec<ApplicationWorkflowNode>,
     node_is_operation: BTreeMap<ApplicationWorkflowNodeIdentity, bool>,
     connections: Vec<ApplicationWorkflowConnection>,
+    global_actions: Vec<super::ApplicationWorkflowGlobalAction>,
     component_expansions: Vec<super::ApplicationWorkflowComponentExpansion>,
     component_occurrences: BTreeSet<String>,
     component_expansion_usage: component::ComponentExpansionUsage,
@@ -141,6 +143,7 @@ where
             nodes: Vec::new(),
             node_is_operation: BTreeMap::new(),
             connections: Vec::new(),
+            global_actions: Vec::new(),
             component_expansions: Vec::new(),
             component_occurrences: BTreeSet::new(),
             component_expansion_usage: component::ComponentExpansionUsage::default(),
@@ -347,6 +350,7 @@ where
             start: self.start,
             nodes: self.nodes,
             connections: self.connections,
+            global_actions: self.global_actions,
             component_expansions: self.component_expansions,
             marker: PhantomData,
         })

@@ -127,6 +127,22 @@ impl PreparedFactRebase {
     ) -> Result<Self, RebaseVerificationReason> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
         match fact {
+            Fact::AspectPresence {
+                entity_id,
+                kind,
+                aspect,
+                ..
+            } => {
+                let present = crate::domain_computation::primary_graph::application_attempt::observe_aspect_presence(
+                    runtime, execution, snapshot, *entity_id, *kind, aspect,
+                ).map_err(RebaseVerificationReason::Execution)?.ok_or(unavailable)?;
+                Ok(Self::Replace(Fact::AspectPresence {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    aspect: aspect.clone(),
+                    present,
+                }))
+            }
             Fact::Field {
                 entity_id, locator, ..
             }

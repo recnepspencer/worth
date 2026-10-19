@@ -64,7 +64,7 @@ fn lookup_candidate_grants(
         snapshot,
         installed.grant_join_index_id(),
         request.principal(),
-        request.resource(),
+        indexed_resource(installed, request)?,
         MAX_BOUNDED_INDEX_CANDIDATES,
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
@@ -103,6 +103,19 @@ fn lookup_candidate_grants(
     Ok(lookup)
 }
 
+fn indexed_resource(
+    installed: &WorthQueryInstalledCapabilityPlan,
+    request: &WorthQueryRetainedCapabilityRequest,
+) -> Result<worth_relational::facade::identity::EntityId, WorthQueryOperationAuthorizationDenial> {
+    let template = grant_template(installed)?;
+    let anchors = super::path_preparation::context_anchors(request, template)?;
+    match anchors.as_slice() {
+        [] => Ok(request.resource()),
+        [root] => Ok(root.entity()),
+        _ => Err(invalid_policy(installed.contract().name())),
+    }
+}
+
 fn prepare_candidate_paths(
     installed: &WorthQueryInstalledCapabilityPlan,
     request: &WorthQueryRetainedCapabilityRequest,
@@ -113,11 +126,13 @@ fn prepare_candidate_paths(
         .iter()
         .map(|grant| {
             prepare_grant_path(installed, request, sample).map(|path| {
-                path.with_entity_anchors([RelationalAuthorizationEntityAnchor::new(
+                let mut anchors = path.entity_anchors().to_vec();
+                anchors.push(RelationalAuthorizationEntityAnchor::new(
                     installed.grant_witness().entity_ordinal(),
                     installed.grant_kind(),
                     *grant,
-                )])
+                ));
+                path.with_entity_anchors(anchors)
             })
         })
         .collect()
@@ -198,7 +213,11 @@ pub(super) fn prepare_grant_path(
     let template = grant_template(installed)?;
     let mut predicates = template.plan.predicates().to_vec();
     append_grant_predicates(installed, request, sample, &mut predicates);
-    let mut plan = template.plan.clone().with_predicates(predicates);
+    let mut plan = template
+        .plan
+        .clone()
+        .with_predicates(predicates)
+        .with_entity_anchors(super::path_preparation::context_anchors(request, template)?);
     if let (Some(traversal), Some(entity)) =
         (&installed.request().related_relation, request.related())
     {
@@ -221,9 +240,13 @@ fn grant_template(
         .paths()
         .get(installed.grant_witness().path_index())
         .ok_or_else(|| invalid_policy(installed.contract().name()))?;
-    if !template.context_anchors.is_empty()
-        || template.grant_ordinal != Some(installed.grant_witness().entity_ordinal())
-    {
+    let expected_root = !installed.contract().target().resource_path().is_direct();
+    let root_shape = match template.context_anchors.as_slice() {
+        [] => !expected_root,
+        [root] => expected_root && root.ordinal == 2,
+        _ => false,
+    };
+    if !root_shape || template.grant_ordinal != Some(installed.grant_witness().entity_ordinal()) {
         return Err(invalid_policy(installed.contract().name()));
     }
     Ok(template)

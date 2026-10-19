@@ -569,6 +569,15 @@ worker equivalence or replace warm reconciliation and entry refresh.
 
 ## Typed Handler And Invariant Access
 
+For literal guards and assignments on required scope fields, prefer an
+[executable scope-field body](../worth-query/docs/authoring/scope-field-operation-bodies.md).
+Attach its completed typed body to the operation definition, bind that schema
+into program authoring, and call `setup.operation_body::<Binding>()`. Query owns
+the installed values and native execution; ordinary handler registration cannot
+replace them. This bounded form does not yet cover creations, general expressions,
+audit construction, requirements or command composition. Advanced handlers remain
+honest advanced operations, not a way to claim those missing declarative joins.
+
 Installed mutation handlers use `DecisionReader` for tracked typed field and
 relation reads and `CandidateWriter` for the one reserved effect program. The
 writer exposes create, initialize, write, link, unlink, delete, emit, and output

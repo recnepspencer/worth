@@ -4,6 +4,9 @@ mod emissions;
 mod graph_reads;
 mod graph_touches;
 mod invariant_compilation;
+mod signing_lifecycle;
+pub(in crate::application_operation) use signing_lifecycle::SigningLifecycleClosure;
+pub use signing_lifecycle::WorthQueryInstalledSigningLifecycleRule;
 
 pub use compilation::{
     APPLICATION_AUTHORIZATION_FACT_FAMILY, APPLICATION_DECISION_FACT_FAMILY,

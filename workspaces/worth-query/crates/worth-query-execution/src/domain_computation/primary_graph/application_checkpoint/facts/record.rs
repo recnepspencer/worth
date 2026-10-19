@@ -5,6 +5,7 @@ pub(super) fn decode(
     control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
 ) -> Result<Fact, FactDecodeDenial> {
     Ok(match cursor.next_byte()? {
+        10 => aspect_presence::decode(cursor)?,
         6 => Fact::RetiredOutputEntity {
             entity_id: cursor.next_entity()?,
             kind: KindId(cursor.next_u32()?),

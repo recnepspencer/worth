@@ -7,6 +7,8 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowInstanceState {
     Cancelled,
     /// Ended by an explicit migration; its successor continues the work.
     Migrated,
+    /// Ended by an authored business action; its source stage and history remain.
+    Terminated,
 }
 
 impl WorkflowInstanceState {
@@ -30,6 +32,7 @@ impl WorkflowInstanceState {
             Self::Completed => 4,
             Self::Cancelled => 5,
             Self::Migrated => 6,
+            Self::Terminated => 7,
         }
     }
 }

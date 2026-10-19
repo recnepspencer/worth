@@ -15,6 +15,7 @@ use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 mod fact_decode_denial;
 pub(in crate::domain_computation::primary_graph) use fact_decode_denial::FactDecodeDenial;
+mod aspect_presence;
 mod encoding;
 mod indexed_selection;
 pub(in crate::domain_computation::primary_graph) use encoding::encode_funded;
@@ -59,6 +60,10 @@ fn write_facts(facts: &[Fact], bytes: &mut impl FactBytes) -> Option<()> {
     put_u32(bytes, u32::try_from(facts.len()).ok()?);
     for fact in facts {
         match fact {
+            Fact::AspectPresence { .. } => {
+                bytes.push(10);
+                aspect_presence::encode(bytes, fact)?;
+            }
             Fact::RetiredOutputEntity {
                 entity_id,
                 kind,

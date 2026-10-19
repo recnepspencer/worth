@@ -257,6 +257,9 @@ impl ApplicationProgramManifest {
                         .to_owned(),
                 ),
             ];
+            if let Some(binding) = action.conditional_mutation_identity() {
+                fields.push(("conditional-mutation-binding", binding.to_owned()));
+            }
             {
                 let requirements = action.workflow_execution_requirements();
                 fields.push((
@@ -265,6 +268,21 @@ impl ApplicationProgramManifest {
                 ));
             }
             records.push(framed_record("action", fields));
+            if let Some(body) = action.operation_body() {
+                records.push(framed_record(
+                    "action-body-v1",
+                    [
+                        ("owner", action.composition_instance().to_owned()),
+                        ("feature", action.feature().to_owned()),
+                        ("binding", action.binding().to_owned()),
+                        ("operation", action.operation_identifier().to_owned()),
+                        (
+                            "body",
+                            super::operation_body_encoding::operation_body_record(body),
+                        ),
+                    ],
+                ));
+            }
         }
         records.extend(connections.iter().map(|connection| {
             framed_record(

@@ -18,6 +18,7 @@ use super::super::{
 };
 use super::invariant::HandlerInterruption;
 
+mod operation_body;
 mod verbs;
 
 /// Borrow of the already-reserved candidate builder for one exact binding.

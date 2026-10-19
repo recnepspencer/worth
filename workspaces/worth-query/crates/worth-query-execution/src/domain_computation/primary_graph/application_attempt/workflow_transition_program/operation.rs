@@ -238,7 +238,7 @@ where
             branch,
             runtime_authority,
             instance.clone(),
-            original_sources,
+            Some(original_sources),
             admitted.node_path().to_owned(),
             admitted.identity().to_owned(),
             *admitted.identity_bytes(),

@@ -68,6 +68,8 @@ fn malformed_or_missing_current_operation_evidence_is_not_legacy_absence() {
     }
     // Current nodes always carry the field; omission cannot request a default.
     let mut truncated = operation(WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION, None);
-    truncated.truncate(truncated.len() - 4);
+    // Remove both the connection and global-action counts. Leaving a zero
+    // count would encode an empty evidence field, not an omitted field.
+    truncated.truncate(truncated.len() - 8);
     assert_eq!(refused(&truncated), Kind::Truncated);
 }

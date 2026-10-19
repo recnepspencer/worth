@@ -9,6 +9,32 @@ use crate::domain_computation::primary_graph::workflow::actor::encoding::{self, 
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
+    /// Original live native admission identity, across ordinary and capability lanes.
+    pub(in crate::domain_computation) fn signed_creation_principal(
+        &self,
+    ) -> Option<
+        &std::sync::Arc<
+            worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity,
+        >,
+    > {
+        self.authorization
+            .as_ref()
+            .map(WorthQueryRetainedAuthorizationDecisionFacts::signing_principal)
+    }
+    /// Live admission provenance is distinct from the serializable snapshots below.
+    pub(in crate::domain_computation) fn workflow_approval_signing_principal(
+        &self,
+    ) -> Option<
+        &std::sync::Arc<
+            worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity,
+        >,
+    > {
+        self.authorization
+            .as_ref()
+            .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
+            .map(|authorization| authorization.principal().external_identity())
+    }
+
     pub(in crate::domain_computation) fn workflow_approval_request_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

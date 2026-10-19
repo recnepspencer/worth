@@ -214,6 +214,7 @@ where
                     instance.entity_id(),
                     settled.settlement(),
                     observed.progress_basis.progress().back_edge_iterations(),
+                    required.transition_identity(),
                 )?;
                 (
                     selected.node_path().to_owned(),
@@ -374,7 +375,8 @@ where
             authentication_intent,
             signing_basis,
             &prepared,
-        );
+        )
+        .map_err(|_| affinity("approval lacks its natively admitted signing principal"))?;
         if let PreparedWorkflowAdvance::Transition {
             approval_authentication,
             ..

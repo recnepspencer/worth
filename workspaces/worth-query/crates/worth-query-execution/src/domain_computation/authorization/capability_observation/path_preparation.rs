@@ -114,20 +114,7 @@ fn exact_anchors(
     template: &WorthQueryCapabilityPathTemplate,
     exact_grant: worth_relational::facade::identity::EntityId,
 ) -> Result<Vec<RelationalAuthorizationEntityAnchor>, WorthQueryOperationAuthorizationDenial> {
-    let mut anchors = template
-        .context_anchors
-        .iter()
-        .map(|anchor| {
-            request
-                .context()
-                .get(&context_key(anchor))
-                .copied()
-                .map(|entity| {
-                    RelationalAuthorizationEntityAnchor::new(anchor.ordinal, anchor.kind, entity)
-                })
-                .ok_or_else(|| projection_denial(&anchor.slot))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut anchors = context_anchors(request, template)?;
     if let Some(ordinal) = template.grant_ordinal {
         anchors.push(RelationalAuthorizationEntityAnchor::new(
             ordinal,
@@ -148,6 +135,26 @@ fn exact_anchors(
         }));
     }
     Ok(anchors)
+}
+
+pub(super) fn context_anchors(
+    request: &WorthQueryRetainedCapabilityRequest,
+    template: &WorthQueryCapabilityPathTemplate,
+) -> Result<Vec<RelationalAuthorizationEntityAnchor>, WorthQueryOperationAuthorizationDenial> {
+    template
+        .context_anchors
+        .iter()
+        .map(|anchor| {
+            request
+                .context()
+                .get(&context_key(anchor))
+                .copied()
+                .map(|entity| {
+                    RelationalAuthorizationEntityAnchor::new(anchor.ordinal, anchor.kind, entity)
+                })
+                .ok_or_else(|| projection_denial(&anchor.slot))
+        })
+        .collect()
 }
 
 fn is_temporal_path(installed: &WorthQueryInstalledCapabilityPlan, index: usize) -> bool {

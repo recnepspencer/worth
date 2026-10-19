@@ -16,7 +16,7 @@ use worth_query_host::facade::domain::{
     WorthQueryNamedClockReading, WorthQueryNamedClockSource,
 };
 
-use super::super::operator_identity::operator_identity;
+use super::super::operator_identity::{operator_identity, secondary_signer_identity};
 use super::super::schema::DocumentRetentionSchema;
 
 pub struct CertificationAuthenticationClock;
@@ -105,8 +105,12 @@ impl WorthQueryAuthenticationEventVerifier for CertificationAuthenticationVerifi
         _scope: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationEventFuture<'a> {
         Box::pin(async move {
-            if (challenge.principal() != &operator_identity()
-                && challenge.principal() != &super::super::operator_identity::reviewer_identity())
+            if ![
+                operator_identity(),
+                secondary_signer_identity(),
+                super::super::operator_identity::reviewer_identity(),
+            ]
+            .contains(challenge.principal())
                 || !matches!(
                     challenge.intent().purpose(),
                     "workflow-approval-signature" | "certification-account-login"

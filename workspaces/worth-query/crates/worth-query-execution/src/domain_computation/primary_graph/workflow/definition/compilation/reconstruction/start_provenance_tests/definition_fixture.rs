@@ -119,6 +119,7 @@ pub(super) fn publish_definition(
         start_node: node,
         nodes: vec![compiled_node].into_boxed_slice(),
         connections: Box::new([]),
+        global_actions: Box::new([]),
         revisions: WorkflowDefinitionPublicationRevisions {
             start: None,
             nodes: None,

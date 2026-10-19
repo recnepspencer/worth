@@ -184,6 +184,7 @@ fn key_entities_are_in_scope(
 ) -> bool {
     match key {
         WorthQueryApplicationFactKey::Entity { entity_id, .. }
+        | WorthQueryApplicationFactKey::AspectPresence { entity_id, .. }
         | WorthQueryApplicationFactKey::Field { entity_id, .. } => scope.admits(*entity_id),
         WorthQueryApplicationFactKey::Relation { from, to, .. } => {
             scope.admits(*from) && scope.admits(*to)

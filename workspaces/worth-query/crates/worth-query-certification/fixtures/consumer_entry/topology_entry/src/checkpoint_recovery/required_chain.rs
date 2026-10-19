@@ -45,7 +45,7 @@ where
 {
     ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
         .derived_artifact::<Artifact>()
-        .conditional_operation::<MutatePlanar>()
+        .conditional_mutation::<PlanarMutationBinding<CheckpointSchema>>()
         .conditional_operation::<PublishChain>()
         .finish()
 }

@@ -24,6 +24,7 @@ impl WorthQueryApplicationObservedFact {
             Self::RetiredOutputEntity { .. }
             | Self::SourceEntity { .. }
             | Self::Entity { .. }
+            | Self::AspectPresence { .. }
             | Self::WorkflowHistoryBasis { .. }
             | Self::WorkflowDefinitionPredecessor { lineage: None, .. } => 1,
             // A revision recorded with no comparison work cannot be compared.

@@ -30,6 +30,7 @@ pub enum WorthQueryPortablePackageValidationDenialKind {
     ApplicationOperationContractInvalidProjectionMask,
     ApplicationOperationContractAmbiguousExternalEffect,
     ApplicationOperationContractAmbiguousAftermath,
+    ApplicationOperationContractAmbiguousBody,
     DuplicateConditionalApplicationOperation,
     ConflictingConditionalApplicationOperation,
     ConditionalApplicationSchemaMissing,

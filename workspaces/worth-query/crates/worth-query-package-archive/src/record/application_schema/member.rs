@@ -24,6 +24,7 @@ pub(super) fn require_nesting_depth(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
+            | ApplicationSchemaMember::OperationBody { .. }
     ) && maximum_depth < 2
     {
         return Err(Denial::new(Kind::NestingDepthBudgetExceeded));
@@ -39,6 +40,10 @@ pub(super) fn write(
     match member {
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::write(output, description)
+        }
+        ApplicationSchemaMember::OperationBody { operation, body } => {
+            output.text(operation)?;
+            super::super::operation_body::write(output, body)
         }
         ApplicationSchemaMember::ApplicationInvariant { .. } => invariant::write(output, member),
         ApplicationSchemaMember::Entity { .. }
@@ -77,12 +82,16 @@ pub(super) fn decode(
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
         tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input),
-        tag @ 6..=10 => capability::decode(tag, input, budget),
+        tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
         tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30) => operation::decode(tag, input, budget),
         tag @ 19..=22 => authorization::decode(tag, input, budget),
         tag @ 23..=24 => vocabulary::decode(tag, input),
-        tag @ (27 | 32) => invariant::decode(tag, input, budget),
+        tag @ (27 | 34) => invariant::decode(tag, input, budget),
         31 => mutation_description::decode(input, budget),
+        32 => Ok(ApplicationSchemaMember::OperationBody {
+            operation: input.text()?.to_owned(),
+            body: super::super::operation_body::decode(input, budget)?,
+        }),
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
 }
@@ -90,7 +99,7 @@ pub(super) fn decode(
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
         ApplicationSchemaMember::ApplicationMutation { .. } => 31,
-        ApplicationSchemaMember::ApplicationInvariant { maximum_work_units: None, .. } => 32,
+        ApplicationSchemaMember::ApplicationInvariant { maximum_work_units: None, .. } => 34,
         ApplicationSchemaMember::ApplicationInvariant { .. } => 27,
         ApplicationSchemaMember::Entity { .. } => 1,
         ApplicationSchemaMember::Aspect { .. } => 2,
@@ -105,6 +114,8 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::Relation { .. } => 4,
         ApplicationSchemaMember::PrincipalBinding { .. } => 5,
         ApplicationSchemaMember::ApplicationQuery { .. } => 6,
+        ApplicationSchemaMember::ApplicationCapability { contract }
+            if !contract.target().resource_path().is_direct() => 33,
         ApplicationSchemaMember::ApplicationCapability { .. } => 7,
         ApplicationSchemaMember::ApplicationCapabilityContext { .. } => 8,
         ApplicationSchemaMember::ApplicationCapabilityContextEntitySlot { .. } => 9,
@@ -117,6 +128,7 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::OperationExternalEffect { .. } => 17,
         ApplicationSchemaMember::OperationInboundOccurrence { .. } => 30,
         ApplicationSchemaMember::OperationAftermath { .. } => 18,
+        ApplicationSchemaMember::OperationBody { .. } => 32,
         ApplicationSchemaMember::Policy { .. } => 19,
         ApplicationSchemaMember::Ability { .. } => 20,
         ApplicationSchemaMember::OperationAbility { .. } => 21,

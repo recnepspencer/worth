@@ -456,6 +456,94 @@ Application usage:
 and How WORTH Works
 [§9.5](../../../../../docs/how-it-works.md#95-execution).
 
+For authored scalar edits and one in-scope creation, use an
+[executable scope-bound body](./authoring/scope-field-operation-bodies.md), attach
+it to the completed operation definition, bind the same completed schema through
+program authoring's `with_schema`, and install with `setup.operation_body::<Binding>()`.
+Its literals, flat canonical-input assignments, optional Set/Clear and one-level
+Option-valued replacement/initialization, tracked
+preimage initializers and field/count expression requirements enter canonical
+schema/program meaning and drive native tracked execution. A replacement handler
+is denied. A creation-only body declares `in_scope(Entity::reference())`; it does
+not need a dummy scope write or bootstrapped business entity. Fixed output uses
+`preserve_scope_output::<Binding, Role>()` and creation `create_output::<Binding, Role>()`
+bind the exact typed output contract through the existing candidate/commit owner.
+Output-only scope preservation observes Entity membership and needs no dummy write.
+Portable output labels never grant native authority; mandatory uncovered roles
+and unsupported mandatory families deny. Producer/source/settlement currentness
+remain separate owners. Guidance and native
+submission share the installed requirements. Creation `link_from_scope` and
+`link_to_scope` bind only the admitted scope and that body's actual created row,
+derive Link membership, and use the existing native relation-effect owner.
+For an at-most-one current-subject link, use creation `replace_from_scope`.
+The installed relation must have outgoing edge maximum exactly one, and the
+operation must declare Reads, Links and Unlinks. Query seals empty/nonempty
+selection and liveness, carries the predecessor, retires only its observed edges
+and links the actual created row in the same guarded publication. Declare a
+separate append-only history/ownership link. Replacement does not delete the old
+subject or supersede signatures. Body v19 preserves this distinct posture;
+old Append bytes remain unchanged. This does not provide arbitrary retargeting,
+approval-round policy, Reopen or existing-subject enrollment. Do not fill those
+joins with host effects or a mutable certified generation counter.
+Creation `initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor)`
+binds a unitless actor field to the exact mutation/principal identity codec and
+captures admission's actual principal through the tracked decision observation.
+It records unsigned actor attribution, not a signing event or approval grant.
+For authenticated creation, use the same body's
+[`signed_by` handoff](./authoring/signed-operation-creations.md). The v2 native
+subject-provenance codec also persists source-to-snapshot dependencies from the
+installed `capture_from_scope`/`capture_from_present_scope` initializers explicitly
+classified `Subject`. `AuditContext` values are authenticated, immutable and
+tracked for publication, but excluded from the certified dependency footprint.
+V2 refuses unclassified captures; role and source presence travel in body v14
+without reinterpreting v1–v13. Admission facts remain separate. Neither that descriptive
+carrier nor a coverage digest grants approval or implements business supersession.
+For permanent supersession, declare `supersede_on_subject_change` on the same v2
+signed creation, with distinct history/current/consequence relations and the
+native read-only supersession payload field. Query derives source-writer
+publication closure, bounded current-evidence observation and same-commit
+consequences. Only each immutable row's own `Subject` dependencies count; no-op,
+unrelated and audit-context edits preserve it. A dependency edit appends immutable
+supersession and removes current membership without rewriting history; ABA never
+revives it. Membership observation is native currentness, not an evictable cache.
+Retained replay precedes this work; stale/refused batches publish neither half.
+Lifecycle declarations use body v15 without changing older versions. The host
+must not author changed-field maps, relationship repairs or supersession effects.
+Effectful program migration for such a schema currently fails closed.
+For a later business requirement over early attestation, derive
+`completed_signing_body.signed_evidence::<Binding>()` once and bind it with
+`operation.requirement_operands().signed_evidence(name, &reference)`. The native
+Boolean observes matching Current membership, exact producer-body meaning,
+binding/purpose/subject and the same canonical active program revision. Guidance
+and admission use the same evaluator and retained native observation. Healthy
+other attestations do not match; unavailable/malformed observations deny. Do not
+reconstruct approval authority, compare field stamps for continued validity,
+or duplicate evidence selectors in the host. Body v16 carries this operand;
+cross-program-revision compatibility is not inferred and mismatch does not supersede history.
+When the consumer root differs from the signable subject, use
+`signed_evidence_from_related(name, relation, &reference)`. The typed outgoing
+relation targets the producer binding's actual scope. Native selection admits
+one distinct live subject, evaluates that subject's evidence, and seals selection
+adjacency/liveness together with the evidence facts. Zero yields Boolean false
+(requirement status comes from the authored expression); multiple
+subjects deny with `AmbiguousRelation`; dangling endpoints remain unavailable.
+No first/latest choice, evidence union or host-selected ID supplies this truth.
+Body v18 carries the distinct selector; older encodings keep their meaning.
+Changing selection is not signature supersession. Model historical rounds as
+separate signable subjects; this selector does not supply round creation,
+relationship replacement, business-open policy or Reopen. Do not implement
+those missing joins with host effects or a mutable certified round counter.
+Context alone is not domain membership; membership alone is not authorization
+and does not replace a capability's grant witness. General assignment expressions,
+multiple creations, arbitrary relation edits, conversion into kernel approval authority and multi-operation commands
+remain unsupported here; do not fill those missing joins with a host substitute
+and call it declarative.
+
+Operation input identity minting validates the structured binding before input
+serialization, through both ordinary and admitted producers. Preencoded handoffs
+carry that validated input rather than recreating or revalidating it. A binding's
+validator is not optional host guidance.
+
 - The three handler roles (`decide`, `candidate_requirements`,
   `build_candidate`) are bounded. Query retains and completes the decision's
   actual read dependencies, reserves the candidate's demand against the
@@ -513,8 +601,22 @@ a retained decision fact: a competing absent-to-present change makes the older
 attempt stale. Required fields cannot call `write_optional_field`; the field
 marker enforces that at compile time. Never encode absence as an empty string,
 zero, `AspectValue::Null`, or a sentinel, and never bypass the projection with a
-direct Relational patch. Query lowers the admitted effect to Relational's
-native, contract-validated field patch.
+direct Relational patch. For optional fields the admitted operation declares as
+writable, Query also retains the aspect's presence at the same decision
+observation. Read-only decisions keep their narrower value/absence dependency.
+When the aspect is absent, a first set initializes it
+through native complete-struct validation; missing required siblings still deny.
+When it is present, including present-empty, the write remains a native field
+patch. Clearing a field in an absent aspect leaves the aspect absent. The same
+rules apply when `write_field` sets a concrete value on an optional field.
+
+Do not bootstrap a dummy value or relocate a derived field merely to make its
+first write possible. A concurrent materialization of the aspect invalidates the
+captured absence even if the selected field remains absent. Native validated
+touch evidence grants exact initialization fields only from its own pre-effect
+basis; ordinary whole-aspect replacement does not acquire field-only authority.
+Presence dependencies remain explicit in native output currentness, checkpoint
+facts and durable workflow assessment evidence.
 
 ### Output correspondence and program outputs
 
@@ -680,6 +782,18 @@ current Relational truth through the installed Bridge lowering and Signal
 decision boundary. The path answers **who may perform the requested command**.
 Query also verifies the installed operation, input scope, purpose, exact grant,
 prohibitions, and composition rules.
+
+For a parent grant authorizing an actual descendant mutation/signing scope, use
+`ApplicationCapabilityResourcePath::root(grant_resource_relation, parent_slot)`
+and its typed forward/reverse continuation on the ordinary capability target.
+The request binds the parent through its declared context slot; Query resolves
+that claim and proves the full required path to the actual child. Every Allow
+clause must anchor the same parent slot. Parent predicates and current-child
+membership remain native path semantics, not host lookups or copied grants.
+The rich grant's enabled/purpose/action/trusted-time/revision checks and exact
+retained witness still apply. Rooted delegation/elevation/lifecycle profiles
+are cold-refused, not silently downgraded. Direct resources remain unchanged.
+See the descendant-scope example in the authorization guide below.
 
 - **Exact-grant binding.** When several grants could satisfy a capability,
   Query retains the exact grant witness that authorized the request, and later
@@ -1031,6 +1145,24 @@ and [Signal Orchestration](./domain-capabilities/signal-compatibility-orchestrat
 The checks a workflow-bound business operation passes are in
 [Workflow-bound operations: three independent checks](#three-independent-checks).
 
+Business lifecycle actions use this same native funnel: attach an explicit prior
+route with `back_action::<Binding, _, _>` or one definition-wide ending with
+`termination_action::<Binding>()`. Fresh preparation uses the binding's own
+capability; its guarded native body and kernel return/ending publish together.
+Do not implement a business mutation followed by a separate cursor/end call.
+See the workflows guide for retained exact retry and current support limits.
+
+When a new subject must be born enrolled, attach
+`creation.enroll_in_workflow::<Spec, Binding, Role>()` and install its
+`birth_operation::<Binding, Role>()`. The creator's own container-scoped
+capability and the current published definition prepare `RequiredWorkflowBirth`;
+`for_workflow_birth` binds its exact intent/key before the normal capability
+mutation funnel co-publishes the body creation and native instance. Never
+predict the subject ID, enroll a placeholder, reuse an ended instance's permit,
+or substitute two commits for that join. This is current-definition enrollment,
+not full Reopen or a restart-persistable authority. See
+[Workflow-Enrolled Creations](./authoring/workflow-enrolled-creations.md).
+
 Application workflows are in How WORTH Works
 [§13](../../../../../docs/how-it-works.md#13-workflows) and the full
 [workflows guide](foundations/workflows.md). Underneath, a
@@ -1274,6 +1406,8 @@ Application API guides:
 
 - [`worth-query-decl` README](../../worth-query-decl/README.md) and [`worth-query-host` README](../../worth-query-host/README.md)
 - [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md)
+- [Executable Scope-Field Operation Bodies](./authoring/scope-field-operation-bodies.md)
+- [Signed Operation Creations](./authoring/signed-operation-creations.md): immutable early attestation, not a replacement for workflow approval authority.
 - [Branches And Previews](./foundations/branches-and-previews.md)
 - [Application Authorization And Emergency Elevation](./capabilities/application-authorization-and-emergency-elevation.md)
 - [Application Aftermath, External Effects, And Recovery](./execution/application-aftermath-and-recovery.md)

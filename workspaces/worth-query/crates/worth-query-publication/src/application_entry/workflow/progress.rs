@@ -11,7 +11,7 @@ use worth_query_execution::facade::application_contribution::WorthQueryAdvanceme
 use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
 use worth_query_execution::publication_boundary::workflow_advance::{
     PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, RequiredWorkflowAssessment,
-    WorkflowProgressOutcome, WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
+    WorkflowProgressOutcome, WorthQueryWorkflowAdvanceAdapter,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -62,34 +62,16 @@ pub(super) type WorkflowAdvancePreparationResult<
 pub(super) enum WorkflowRequestedAction {
     Advance,
     NavigateBack,
+    BackAction,
+    TerminationAction,
     CollectAssessment { node_path: String },
 }
 
-/// The kind of a `WorthQueryWorkflowAdvancePreparationDenial`.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryWorkflowAdvancePreparationDenialKind {
-    RuntimeMismatch,
-    RequestAdmission,
-    TransitionPreparation,
-    Authentication,
-    AwaitingActor,
-}
-
-/// Why a workflow advance did not prepare. `RuntimeMismatch` means the workflow belongs to
-/// another runtime.
-#[derive(Debug)]
-pub enum WorthQueryWorkflowAdvancePreparationDenial {
-    RuntimeMismatch,
-    RequestAdmission(WorthQueryApplicationRequestMutationDenial),
-    TransitionPreparation(WorkflowTransitionPreparationDenial),
-    Authentication(
-        worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial,
-    ),
-    /// Observation-time readiness; no transition attempt was prepared.
-    AwaitingActor(
-        worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowActor,
-    ),
-}
+#[path = "progress/preparation_denial.rs"]
+mod preparation_denial;
+pub use preparation_denial::{
+    WorthQueryWorkflowAdvancePreparationDenial, WorthQueryWorkflowAdvancePreparationDenialKind,
+};
 
 /// Why `accept_assessment` refused a settled assessment.
 #[derive(Debug)]
@@ -143,38 +125,6 @@ impl std::fmt::Display for WorthQueryWorkflowAssessmentAcceptanceDenial {
 }
 
 impl std::error::Error for WorthQueryWorkflowAssessmentAcceptanceDenial {}
-
-impl WorthQueryWorkflowAdvancePreparationDenial {
-    pub const fn kind(&self) -> WorthQueryWorkflowAdvancePreparationDenialKind {
-        match self {
-            Self::RuntimeMismatch => {
-                WorthQueryWorkflowAdvancePreparationDenialKind::RuntimeMismatch
-            }
-            Self::RequestAdmission(_) => {
-                WorthQueryWorkflowAdvancePreparationDenialKind::RequestAdmission
-            }
-            Self::TransitionPreparation(_) => {
-                WorthQueryWorkflowAdvancePreparationDenialKind::TransitionPreparation
-            }
-            Self::Authentication(_) => {
-                WorthQueryWorkflowAdvancePreparationDenialKind::Authentication
-            }
-            Self::AwaitingActor(_) => WorthQueryWorkflowAdvancePreparationDenialKind::AwaitingActor,
-        }
-    }
-}
-
-impl std::fmt::Display for WorthQueryWorkflowAdvancePreparationDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "workflow advance preparation denied: {:?}",
-            self.kind()
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryWorkflowAdvancePreparationDenial {}
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
@@ -279,6 +229,14 @@ where
             }
         };
         let prepared = match action {
+            WorkflowRequestedAction::BackAction | WorkflowRequestedAction::TerminationAction => WorthQueryWorkflowAdvanceAdapter::prepare_local_action::<
+                Schema, <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
+                MutationOperation<Schema, Intent>, MutationInput<Schema, Intent>,
+                MutationScope<Schema, IntentBinding<Schema, Intent>>, Spec, IntentBinding<Schema, Intent>
+            >(phase, &selected, workflow.workflow_spec_for(&selected), instance, mutation.admission,
+                if matches!(action, WorkflowRequestedAction::TerminationAction) {
+                    worth_query_execution::publication_boundary::workflow_advance::WorkflowLocalActionKind::Terminate
+                } else { worth_query_execution::publication_boundary::workflow_advance::WorkflowLocalActionKind::Return }),
             WorkflowRequestedAction::Advance => WorthQueryWorkflowAdvanceAdapter::prepare::<
                 Schema,
                 <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,

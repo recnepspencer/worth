@@ -77,18 +77,28 @@ pub(super) fn validate_requirements(
 
 pub(super) fn validate(
     graph: &ValidationGraph<'_>,
+    effects: usize,
+    maximum_effects: u16,
     work: &mut ValidationWorkMeter,
 ) -> Result<(), ApplicationWorkflowValidationDenial> {
-    validate_flows(graph, work)?;
+    validate_flows(graph, effects, maximum_effects, work)?;
     require_unique_connections(graph, work)
 }
 
 fn validate_flows(
     graph: &ValidationGraph<'_>,
+    effects: usize,
+    maximum_effects: u16,
     work: &mut ValidationWorkMeter,
 ) -> Result<(), ApplicationWorkflowValidationDenial> {
+    let mut back = super::back_actions::BackActionValidation::new(effects, maximum_effects);
     for indexed in graph.connections() {
         work.visit_connection_semantics();
+        if let ApplicationWorkflowConnectionKind::BackAction(operation) =
+            indexed.connection.kind_ref()
+        {
+            back.validate(graph, indexed, operation, work)?;
+        }
         if let ApplicationWorkflowConnectionKind::Data(flow) = indexed.connection.kind_ref() {
             validate_flow(
                 graph.node(indexed.source).kind(),

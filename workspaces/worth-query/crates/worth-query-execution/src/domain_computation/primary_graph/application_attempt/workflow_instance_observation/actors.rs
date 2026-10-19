@@ -40,6 +40,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         Some(
             WorkflowInstanceState::Completed
             | WorkflowInstanceState::Cancelled
+            | WorkflowInstanceState::Terminated
             | WorkflowInstanceState::Migrated,
         ) => true,
         None => return Err(denial("workflow instance state is unsupported")),

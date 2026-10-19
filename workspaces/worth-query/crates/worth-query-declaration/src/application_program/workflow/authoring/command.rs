@@ -20,9 +20,15 @@ pub enum ApplicationWorkflowAuthoringCommand {
     Node(ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind),
     Start(ApplicationWorkflowNodeIdentity),
     Connection(ApplicationWorkflowConnection),
+    GlobalAction(super::super::ApplicationWorkflowGlobalAction),
 }
 
 impl ApplicationWorkflowAuthoringCommand {
+    pub fn termination_action(operation: ApplicationWorkflowOperationRef) -> Self {
+        Self::GlobalAction(super::super::ApplicationWorkflowGlobalAction::Terminate(
+            operation,
+        ))
+    }
     pub fn operation<Spec, Operation>(
         identity: impl Into<String>,
         requires_workflow_authority: bool,
@@ -161,6 +167,19 @@ impl ApplicationWorkflowAuthoringCommand {
         )
     }
 
+    /// Rebound typed meaning, including when readmitting an untrusted draft.
+    pub fn back_action(
+        source: impl Into<String>,
+        operation: ApplicationWorkflowOperationRef,
+        target: impl Into<String>,
+    ) -> Result<Self, ApplicationWorkflowAuthoringDenial> {
+        Self::connection(
+            source,
+            target,
+            ApplicationWorkflowConnectionKind::BackAction(operation),
+        )
+    }
+
     fn node(
         identity: impl Into<String>,
         kind: ApplicationWorkflowNodeKind,
@@ -203,6 +222,9 @@ impl ApplicationWorkflowCommandAdapter {
                 }
                 ApplicationWorkflowAuthoringCommand::Connection(connection) => {
                     builder.connections.push(connection);
+                }
+                ApplicationWorkflowAuthoringCommand::GlobalAction(action) => {
+                    builder.global_actions.push(action)
                 }
             }
         }

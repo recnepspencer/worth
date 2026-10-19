@@ -15,7 +15,8 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::adoption::{WorkflowAdoptionReadDenial, WorkflowAdoptionTruth};
 use super::super::schema::version::{
-    WORKFLOW_FACT_PROTOCOL_VERSION, WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
+    WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION, WORKFLOW_FACT_PROTOCOL_VERSION,
+    WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
 };
 use super::super::schema::WorthQueryWorkflowLayout;
 use super::WorkflowInstanceState;
@@ -60,9 +61,11 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
         let instance = membership.source;
         let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity: instance };
         let record = truth.entity(execution, instance, layout.instance.entity_kind)?;
-        if record.u64(execution, &layout.instance.protocol_version)?
-            != WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION
-        {
+        let protocol = record.u64(execution, &layout.instance.protocol_version)?;
+        if !matches!(
+            protocol,
+            WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION | WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION
+        ) {
             return Err(unreadable);
         }
         if record.u64(execution, &layout.instance.branch_occurrence)? != branch_occurrence {
@@ -89,8 +92,22 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
         record.text(execution, &layout.instance.program_revision)?;
         record.required_symbol(execution, &layout.instance.started_program_revision)?;
         let owner_custody = record.optional_text(execution, &layout.instance.owner_custody)?;
+        if protocol == WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION {
+            for locator in [
+                &layout.instance.subject_partition,
+                &layout.instance.subject_slot,
+                &layout.instance.subject_generation,
+            ] {
+                if !record.is_absent(execution, locator)? {
+                    return Err(unreadable);
+                }
+            }
+        }
         let definition =
             truth.single_target(execution, instance, layout.instance_definition_relation)?;
+        if protocol == WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION {
+            truth.single_target(execution, instance, layout.instance_subject_relation)?;
+        }
         let mut transitions = Vec::new();
         let mut owner_custody_pending = owner_custody.is_some();
         for relation in truth.outgoing(execution, instance, layout.instance_transition_relation)? {

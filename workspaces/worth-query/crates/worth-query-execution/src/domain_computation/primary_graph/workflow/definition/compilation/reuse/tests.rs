@@ -247,6 +247,7 @@ fn compilation(
         }]
         .into_boxed_slice(),
         connections: Box::default(),
+        global_actions: Box::new([]),
         revisions: WorkflowDefinitionPublicationRevisions {
             start: None,
             nodes: None,

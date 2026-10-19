@@ -102,6 +102,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// An explicit cancellation or program adoption cancelled the instance;
     /// no request can advance it.
     WorkflowInstanceCancelled,
+    WorkflowInstanceTerminated,
     /// The instance completed; nothing is left to cancel.
     WorkflowInstanceCompleted,
     /// An external operation the instance ran committed into its owner's
@@ -142,6 +143,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// neither outcome; [`expression`](WorthQueryApplicationAttemptDenial::expression)
     /// carries the language denial.
     WorkflowConditionExpressionDenied,
+    OperationBodyRequirementExpressionDenied,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,
@@ -205,6 +207,17 @@ impl WorthQueryApplicationAttemptDenial {
     ) -> Self {
         Self {
             kind: WorthQueryApplicationAttemptDenialKind::WorkflowConditionExpressionDenied,
+            subject: subject.into(),
+            cause: AttemptDenialCause::Expression(Box::new(denial)),
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn body_requirement_expression(
+        subject: impl Into<String>,
+        denial: worth_foundational::expression_api::ExpressionDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationAttemptDenialKind::OperationBodyRequirementExpressionDenied,
             subject: subject.into(),
             cause: AttemptDenialCause::Expression(Box::new(denial)),
         }
@@ -309,7 +322,7 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
-    /// The language denial behind `WorkflowConditionExpressionDenied`.
+    /// The language denial behind a workflow condition or body requirement refusal.
     pub const fn expression(
         &self,
     ) -> Option<&worth_foundational::expression_api::ExpressionDenial> {

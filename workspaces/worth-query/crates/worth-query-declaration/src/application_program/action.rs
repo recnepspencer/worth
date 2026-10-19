@@ -1,4 +1,5 @@
 mod authoring;
+mod conditional_mutation;
 pub use authoring::ApplicationActionSpecBuilder;
 mod output_delivery;
 pub use output_delivery::ApplicationOutputActionDeliveryDeclaration;
@@ -117,6 +118,8 @@ pub struct ApplicationActionDeclaration {
     action_type: TypeId,
     mutation_binding_type: Option<TypeId>,
     operation_type: TypeId,
+    operation_identifier: &'static str,
+    operation_body: Option<crate::application_schema::ApplicationOperationBodyProgram>,
     operation_input_type: TypeId,
     operation_input_identity: WorthQueryPortableTypeIdentity,
     conditional_only: bool,
@@ -132,6 +135,22 @@ pub struct ApplicationActionDeclaration {
 }
 
 impl ApplicationActionDeclaration {
+    pub const fn operation_identifier(&self) -> &'static str {
+        self.operation_identifier
+    }
+
+    pub fn operation_body(
+        &self,
+    ) -> Option<&crate::application_schema::ApplicationOperationBodyProgram> {
+        self.operation_body.as_ref()
+    }
+
+    pub(crate) fn bind_operation_body(
+        &mut self,
+        body: crate::application_schema::ApplicationOperationBodyProgram,
+    ) {
+        self.operation_body = Some(body);
+    }
     pub fn workflow_execution_requirements(
         &self,
     ) -> &crate::application_operation::ApplicationWorkflowExecutionRequirements {
@@ -155,6 +174,15 @@ impl ApplicationActionDeclaration {
 
     pub const fn mutation_binding_type(&self) -> Option<TypeId> {
         self.mutation_binding_type
+    }
+
+    /// Ordinary-call membership, distinct from a conditional owner's declaration.
+    pub const fn ordinary_mutation_binding_type(&self) -> Option<TypeId> {
+        if self.conditional_only {
+            None
+        } else {
+            self.mutation_binding_type
+        }
     }
 
     pub const fn operation_type(&self) -> TypeId {
@@ -271,6 +299,8 @@ where
             mutation_binding_type: Some(TypeId::of::<Binding>()),
             workflow_execution_requirements: Binding::workflow_execution_requirements(),
             operation_type: TypeId::of::<Binding::Operation>(),
+            operation_identifier: Binding::Operation::IDENTIFIER,
+            operation_body: None,
             operation_input_type: TypeId::of::<Binding::Input>(),
             operation_input_identity:
                 <Binding::InputBinding as ApplicationStructuredValueBinding>::IDENTITY,
@@ -307,6 +337,8 @@ where
             mutation_binding_type: None,
             workflow_execution_requirements: crate::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
             operation_type: TypeId::of::<Operation>(),
+            operation_identifier: Operation::IDENTIFIER,
+            operation_body: None,
             operation_input_type: TypeId::of::<
                 <Operation::InputBinding as ApplicationStructuredValueBinding>::Value,
             >(),

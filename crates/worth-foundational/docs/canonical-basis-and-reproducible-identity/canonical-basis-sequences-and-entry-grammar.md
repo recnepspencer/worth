@@ -77,12 +77,22 @@ and its recorded comparison count. Resource admission uses a checked upper bound
 and preserves the caller's original refusal in `CanonicalBasisPreparationStop`;
 a refusal cannot produce a Ready artifact.
 
-The sorting bound is reviewed against Rust 1.94.0, commit
-`4a4ef493e3a1488c6e321570238084b38948f6db`, including both its ordinary and
-size-optimized standard-library sort implementations. A different configured
+The sorting bound is reviewed against Rust 1.94.0 and Rust 1.98.0, including
+both their ordinary and size-optimized standard-library sort implementations.
+The reviewed release/build pairs are enforced in the crate's build script.
+For 1.98, the same bound covers insertion through 20 entries, small sorts through
+32, the 48-entry scratch minimum, 4096-byte stack storage, a depth decrement on
+every quicksort partition, and the bounded outer/fallback merge trees.
+A different configured
 compiler returns `UnsupportedSortImplementation` on the admitted preparation
 port until its bound is reviewed. Ordinary canonical preparation continues to
 use its existing compiler and semantics.
+
+Qualification only admits resource accounting; it does not replace the sorting
+algorithm. The recorded comparison count participates in existing canonical
+digest material, so changing the sorter would require an explicit versioned
+identity decision, not a transparent optimization. Qualification alone does not
+assert digest equivalence between different compiler builds.
 
 ## Core Mental Model
 

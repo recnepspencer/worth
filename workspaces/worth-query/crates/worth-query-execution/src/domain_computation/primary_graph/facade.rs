@@ -18,21 +18,22 @@ pub use super::application_attempt::{
     WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
     WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
-    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowOperationAuthority,
-    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowProposalBindingDenial,
-    WorkflowProposalOutcome, WorkflowProposalPreparationDenial, WorkflowTransitionBindingDenial,
-    WorkflowTransitionPreparationDenial, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCleanupRequired,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDeferred,
-    WorthQueryApplicationCommitDeferredKind, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitOutcomeIdentity,
-    WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommitTerminalEvidence,
-    WorthQueryApplicationCommitTerminalKind, WorthQueryApplicationCommittedChanges,
-    WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowLocalActionKind,
+    WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
+    WorkflowProposalBindingDenial, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
+    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationCleanupRequired, WorthQueryApplicationCommitAuthorityBinding,
+    WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
+    WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitOutcomeIdentity, WorthQueryApplicationCommitPublicationSource,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
+    WorthQueryApplicationCommitTerminalEvidence, WorthQueryApplicationCommitTerminalKind,
+    WorthQueryApplicationCommittedChanges, WorthQueryApplicationEffectEntity,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
+    WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationManagedCleanup,
     WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationOutputEntity,
@@ -388,7 +389,9 @@ pub use crate::domain_computation::primary_graph::application_query::{
 };
 pub use worth_execution::ExecutionRequest;
 
+mod operation_body;
 pub use super::output_lineage::invalidation::carried_read_basis_custody_for_test;
+pub use operation_body::*;
 
 pub use super::provider::{
     WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,

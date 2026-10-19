@@ -34,7 +34,7 @@ impl WorthQueryProviderPlanDeclarations {
         bind_application_candidate_effect_closure(
             &mut closure,
             posture,
-            !contracts.touches().scopes().is_empty(),
+            !contracts.publication_touches().scopes().is_empty(),
             &effect_families(contracts.effects()),
             &invariant_slots(contracts.invariants()),
         );
@@ -50,7 +50,7 @@ impl WorthQueryProviderPlanDeclarations {
             },
             reconciliation_posture: "provisional-discard".to_owned(),
             application_graph_reads: Some(contracts.graph_reads().clone()),
-            application_touches: Some(contracts.touches().clone()),
+            application_touches: Some(contracts.publication_touches().clone()),
             application_read_touch_overlap: Some(contracts.read_touch_overlap().clone()),
         }
     }

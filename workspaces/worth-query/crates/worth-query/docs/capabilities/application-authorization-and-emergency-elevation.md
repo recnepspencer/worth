@@ -90,6 +90,76 @@ Application code should not import those lower runtimes to rebuild the answer.
 
 ## How It Executes
 
+### Authorize a descendant without changing mutation scope
+
+When a grant targets a parent item but a command changes an owned child, keep
+the command binding, capability request and signing subject scoped to the
+actual child. Do not copy grants onto the child or resolve the parent in host
+code. Declare a context-rooted resource path on the ordinary capability target:
+
+```rust
+let resource = ApplicationCapabilityResourcePath::root(
+    GrantItems::reference(), ParentItemSlot::reference(),
+)
+.forward(CurrentRound::reference())
+.finish()?;
+// Pass `resource` to ApplicationCapabilityTargetDefinition::new(...).
+```
+
+`ParentItemSlot` is a declared capability-context entity slot for Item. The
+request supplies its parent selector through
+`ApplicationCapabilityRequestContext::entity(slot, selector)`, alongside its
+Round resource selector. These selectors are claims, not grants. Query resolves
+and type-checks both, uses the resolved parent for its bounded indexed grant
+lookup, and proves the complete principal→grant→parent→round path. The required
+path and every Allow clause must bind the same slot. Author the Allow clause
+with the matching anchor, adding parent predicates where they belong:
+
+```rust
+let path = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
+    .forward(Grantees::reference())
+    .forward(GrantItems::reference())
+    .where_equal(ItemStatus::reference(), active_status)
+    .forward(CurrentRound::reference())
+    .allow(Round::reference());
+let allow = ApplicationCapabilityGraphClause::new(path).anchored([
+    ApplicationCapabilityPathContextAnchor::after_forward(
+        GrantItems::reference(), ParentItemSlot::reference(),
+    ),
+]);
+```
+
+This is useful for an item-owned approval round: its signing body captures the
+round's certified fields, while its capability checks the parent is Active and
+still selects that round. Early signing need not depend on a later workflow
+frontier. Replacing the current pointer makes historical rounds ineligible for
+new signing/editing without changing their immutable attestations. A later edit
+supersedes evidence only through its declared certified dependencies; permission
+facts and a natively captured readonly policy revision are not certified fields
+unless explicitly authored as such.
+
+The grant's action, purpose, enabled state, trusted-time bounds and resource
+revision comparison remain mandatory. The revision's resource field belongs to
+the final child scope. Native admission retains the exact grant and both parent
+and child path evidence, and publication revalidates them. A changed pointer,
+closed parent or revoked grant cannot inherit retained commit authority.
+
+`target.resource()` still names the indexed head; use
+`target.resource_path().scope_entity()` for the final scope. Existing direct
+relation bindings remain accepted by the same target constructor with unchanged
+canonical meaning and member-tag-7 encoding. Rooted paths have distinct
+canonical meaning and archive member tag 33; cold admission validates their
+declared relations, continuity, context slot and matching Allow anchors.
+
+The rooted profile currently refuses delegated propagation, governed elevation,
+delegation activation and capability-revocation programs. Actor-wide deny rules
+remain independent prohibitions. Do not infer child ownership, currentness or
+parent state merely from the presence of a path type: author the actual relations
+and predicates. This capability does not implement Reopen, terminal workflow
+revival, approval authority or a multi-operation Submit transaction.
+
+### Emergency elevation progression
+
 The elevation path is a small typestate graph:
 
 ```text
@@ -218,6 +288,11 @@ policy explanation from strings.
 Start with the exact typed outcome and denial kind. For successful governed
 queries, inspect the public authorization work evidence and disclosure receipt.
 For lifecycle work, retain the commit receipt and terminal outcome identity.
+For `Commit(Denied)` outcomes, `authorization_denial_kind()` returns the retained
+typed request-authorization cause when present. For example, retained capability
+drift is `Refused(StaleAuthorization)` under that denial, not necessarily the
+graph-level `Stale` variant. `None` means no such cause is carried. This accessor
+is descriptive evidence, not a permit or instruction to retry.
 
 Useful questions are:
 

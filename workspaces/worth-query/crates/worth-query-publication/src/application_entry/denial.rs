@@ -167,6 +167,7 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     /// This keyed request already consumed its one-shot preparation. Build a new request to retry.
     PreparationSpent,
     WorkflowTransitionCurrentness,
+    SignedCreation,
 }
 
 /// Why an application mutation request was refused before its commit was attempted.
@@ -205,11 +206,17 @@ pub enum WorthQueryApplicationRequestMutationDenial {
     WorkflowTransitionCurrentness(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial,
     ),
+    SignedCreation(
+        worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial,
+    ),
 }
 
 impl WorthQueryApplicationRequestMutationDenial {
     pub fn kind(&self) -> WorthQueryApplicationRequestMutationDenialKind {
         match self {
+            Self::SignedCreation(_) => {
+                WorthQueryApplicationRequestMutationDenialKind::SignedCreation
+            }
             Self::BindingInstallation(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::BindingInstallation
             }

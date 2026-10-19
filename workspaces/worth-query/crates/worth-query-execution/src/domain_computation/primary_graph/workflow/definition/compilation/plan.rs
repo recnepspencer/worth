@@ -6,8 +6,10 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_relational::facade::identity::EntityId;
 
+mod back_action;
 mod coverage;
 mod dispatch;
+mod global_actions;
 mod identity;
 mod resume;
 mod retained_bytes;
@@ -33,6 +35,8 @@ pub(super) struct CompiledWorkflowPublicationPlan {
     pub(super) start: usize,
     pub(super) nodes: Box<[CompiledWorkflowNode]>,
     pub(super) connections: Box<[CompiledWorkflowConnection]>,
+    pub(super) global_actions:
+        Arc<[worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency]>,
     pub(super) node_ordinals: Arc<[(EntityId, usize)]>,
     pub(super) dispatch: Arc<CompiledWorkflowDispatch>,
 }
@@ -107,6 +111,12 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConnecti
 pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConnectionKind {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
+    BackAction {
+        operation: String,
+        input_type: String,
+        binding: String,
+        requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
+    },
     Retry {
         trigger: ApplicationWorkflowControlOutcome,
         reason: String,
@@ -126,6 +136,8 @@ pub(super) struct CompiledWorkflowSemanticPlan {
     pub(super) start: usize,
     pub(super) nodes: Box<[Arc<CompiledWorkflowNodeMeaning>]>,
     pub(super) connections: Box<[CompiledWorkflowSemanticConnection]>,
+    pub(super) global_actions:
+        Arc<[worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency]>,
     pub(super) dispatch: Arc<CompiledWorkflowDispatch>,
     pub(super) retained_bytes: usize,
 }

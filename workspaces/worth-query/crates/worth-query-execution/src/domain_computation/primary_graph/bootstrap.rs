@@ -89,6 +89,7 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     /// The initial program this installation activates, seeded before any
     /// ordinary bootstrap row so those rows are validated under its rules.
     pub(super) program_activation_seed: Option<WorthQueryProgramActivationSeed>,
+    pub(super) program_activation: Option<super::program_occurrence::WorthQueryProgramActivationCell>,
     invariant_installation_receipt:
         worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt,
     expected_invariant_inventory_digest: [u8; 32],
