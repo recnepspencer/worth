@@ -35,9 +35,20 @@ fn require_candidate_capacity(
         )
         .ok_or_else(denied)?;
     let cardinality = requirements.cardinality();
+    let retirement_capacity = body
+        .retirements()
+        .iter()
+        .try_fold(0usize, |sum, rule| {
+            sum.checked_add(rule.maximum_owners.get())
+        })
+        .ok_or_else(denied)?;
     let required_unlinks = body.creation().map_or(0, |creation| creation.links().iter().filter(|link|
         link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle).count());
+    let required_unlinks = required_unlinks
+        .checked_add(retirement_capacity)
+        .ok_or_else(denied)?;
     if cardinality.maximum_emits() < usize::from(body.external_emission().is_some())
+        || cardinality.maximum_deletes() < retirement_capacity
         || cardinality.maximum_unlinks() < required_unlinks
         || cardinality.maximum_writes() < required_writes
         || cardinality.maximum_creates() < usize::from(body.creation().is_some())
@@ -66,6 +77,16 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             return Err(denied());
         }
         let body = installed.operation().body().ok_or_else(denied)?;
+        let retirement_inputs = body
+            .retirements()
+            .iter()
+            .map(|rule| {
+                if !rule.fits_body(body) {
+                    return Err(denied());
+                }
+                rule.source_input_index(body).ok_or_else(denied)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         let external_emission = super::emission::install::<Schema, Binding>(schema, body)?;
         if body.scope_entity() != Some(Binding::scope_field().entity()) {
             return Err(denied());
@@ -230,6 +251,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             marker: PhantomData,
             input_bindings,
             external_emission,
+            retirement_inputs,
         })
     }
 }

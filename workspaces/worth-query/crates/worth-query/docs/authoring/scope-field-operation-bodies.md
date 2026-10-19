@@ -27,6 +27,8 @@ body needs no dummy business-field write.
 The creation may also link to/from that admitted scope through typed declared
 relations, so domain membership does not depend on a later host effect.
 This remains a bounded body form; it does not dispatch workflow commands.
+For source changes that must remove obsolete selections beneath persistent rows,
+use [owned-selection retirement](./owned-selection-retirement.md), not a host cascade.
 For a conditional typed external request using the exact operation input, use
 [Authored Conditional External Effects](./conditional-body-effects.md). Its guard
 suppresses the effect, not the business operation, and uses the ordinary outbox.

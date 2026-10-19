@@ -25,9 +25,11 @@ mod output_validation;
 mod path_source;
 mod present_source;
 mod related_source;
+mod retirement;
 pub use created_field::ApplicationOperationBodyCaptureRole;
 pub use path_source::ApplicationOperationBodyPathFieldSource;
 pub use related_source::ApplicationOperationBodyRelatedFieldSource;
+pub use retirement::ApplicationOperationBodyOwnedSelectionRetirement;
 mod principal;
 mod principal_validation;
 mod signing;
@@ -96,6 +98,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     InvalidCreationLink,
     InvalidWorkflowEnrollment,
     InvalidWorkflowSuccession,
+    InvalidSelectionRetirement,
     Requirement(ApplicationOperationBodyRequirementDenial),
 }
 

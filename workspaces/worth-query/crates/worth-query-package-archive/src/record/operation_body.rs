@@ -18,6 +18,7 @@ mod values;
 pub(super) use query_context::require_nesting_depth;
 mod related_source;
 mod requirements;
+mod retirements;
 mod signing;
 mod signing_lifecycle;
 mod succession;
@@ -44,7 +45,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.scope_fields().iter().any(|step| matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. })) { 30 }
+    let version = if !body.retirements().is_empty() { 31 }
+    else if body.scope_fields().iter().any(|step| matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. })) { 30 }
     else if body.creation().is_some_and(|c| c.subject_impact_bound().is_some() || c.fields().iter().any(|f| f.path_source().is_some())) { 29 }
     else if !body.values().is_empty() || body.external_emission().is_some_and(|emission| matches!(emission.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. })) { 28 }
     else if body.external_emission().is_some_and(|emission| matches!(emission.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { 27 }
@@ -204,6 +206,9 @@ pub(super) fn write(
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
         )?;
     }
+    if version >= 31 {
+        retirements::write(output, body.retirements())?;
+    }
     Ok(())
 }
 
@@ -212,7 +217,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=30) {
+    if !matches!(version, 1..=31) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -313,6 +318,11 @@ pub(super) fn decode(
     } else {
         creation
     };
+    let retirements = if version >= 31 {
+        retirements::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
             scope,
@@ -323,7 +333,8 @@ pub(super) fn decode(
         .with_untrusted_outputs(outputs)
         .with_untrusted_succession(succession)
         .with_untrusted_external_emission(external_emission)
-        .with_untrusted_values(values))
+        .with_untrusted_values(values)
+        .with_untrusted_retirements(retirements))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             steps,

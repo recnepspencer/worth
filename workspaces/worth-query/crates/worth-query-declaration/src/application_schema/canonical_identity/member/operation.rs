@@ -15,7 +15,8 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.scope_fields().iter().any(|step| matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. })) { "operation-body-v20" }
+        if !body.retirements().is_empty() { "operation-body-v21" }
+        else if body.scope_fields().iter().any(|step| matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. })) { "operation-body-v20" }
         else if body.creation().is_some_and(|c| c.subject_impact_bound().is_some() || c.fields().iter().any(|f| f.path_source().is_some())) { "operation-body-v19" }
         else if !body.values().is_empty() || body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. })) { "operation-body-v18" }
         else if body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { "operation-body-v17" }
@@ -79,6 +80,14 @@ pub(super) fn append_body(
             basis.text(
                 format!("{prefix}.output[{index}]"),
                 &output.canonical_record(),
+            );
+        }
+    }
+    if !body.retirements().is_empty() {
+        for (index, rule) in body.retirements().iter().enumerate() {
+            basis.text(
+                format!("{prefix}.retirement[{index}]"),
+                &rule.canonical_record(),
             );
         }
     }

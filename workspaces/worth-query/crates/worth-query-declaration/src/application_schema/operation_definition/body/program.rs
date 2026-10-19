@@ -16,6 +16,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
     pub(super) external_emission: Option<super::ApplicationOperationBodyExternalEmission>,
     pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
+    pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -125,6 +126,7 @@ impl ApplicationOperationBodyProgram {
             succession: None,
             external_emission: None,
             values: Vec::new(),
+            retirements: Vec::new(),
         }
     }
     pub fn from_untrusted_with_creation(
@@ -140,6 +142,7 @@ impl ApplicationOperationBodyProgram {
             succession: None,
             external_emission: None,
             values: Vec::new(),
+            retirements: Vec::new(),
         }
     }
     pub fn from_untrusted_with_requirements(
@@ -156,6 +159,7 @@ impl ApplicationOperationBodyProgram {
             succession: None,
             external_emission: None,
             values: Vec::new(),
+            retirements: Vec::new(),
         }
     }
     /// Authority-free scope-bound description. Fresh readmission checks the scope
@@ -178,10 +182,22 @@ impl ApplicationOperationBodyProgram {
             succession: None,
             external_emission: None,
             values: Vec::new(),
+            retirements: Vec::new(),
         }
     }
     pub fn explicit_scope_entity(&self) -> Option<&str> {
         self.explicit_scope.as_deref()
+    }
+    pub fn retirements(&self) -> &[super::ApplicationOperationBodyOwnedSelectionRetirement] {
+        &self.retirements
+    }
+    /// Descriptive transported rules require fresh schema admission and installation.
+    pub fn with_untrusted_retirements(
+        mut self,
+        retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
+    ) -> Self {
+        self.retirements = retirements;
+        self
     }
     /// Untrusted output descriptions must be admitted with their mutation contract.
     pub fn with_untrusted_outputs(

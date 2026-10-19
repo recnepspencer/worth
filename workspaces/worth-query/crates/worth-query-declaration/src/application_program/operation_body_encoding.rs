@@ -36,7 +36,7 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
             ),
         )
     };
-    if body.scope_fields().iter().any(|step| {
+    let record = if body.scope_fields().iter().any(|step| {
         matches!(
             step,
             crate::application_schema::ApplicationOperationBodyScopeField::ExpectInput { .. }
@@ -45,6 +45,18 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
         framed_record("operation-body-input-expectations-v1", [("body", record)])
     } else {
         record
+    };
+    if body.retirements().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-owned-selection-retirements-v1",
+            std::iter::once(("body", record)).chain(
+                body.retirements()
+                    .iter()
+                    .map(|rule| ("retirement", rule.canonical_record())),
+            ),
+        )
     }
 }
 

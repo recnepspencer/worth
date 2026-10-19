@@ -45,6 +45,8 @@ mod requirement;
 mod requirement_control;
 #[path = "operation_body/retention_body.rs"]
 mod retention_body;
+#[path = "operation_body/retirement.rs"]
+mod retirement;
 #[path = "operation_body/schema.rs"]
 mod schema;
 
@@ -136,6 +138,7 @@ fn install_with_projection<const DESTINATION: u64>() -> (
             };
             graph.bind_entity(document)?;
             output::related::seed_members::<DESTINATION>(graph)?;
+            retirement::seed::seed::<DESTINATION>(graph)?;
             Ok(())
         },
     )

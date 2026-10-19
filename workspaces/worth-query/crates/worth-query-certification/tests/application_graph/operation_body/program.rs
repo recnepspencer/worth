@@ -144,7 +144,14 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             )
             .operation_read_relation(UnlinkMember::reference(), DocumentMembers::reference())
             .operation_unlink(UnlinkMember::reference(), DocumentMembers::reference())
-            .operation_projection_work_budget(SetRetention::reference(), 8)
+            .operation_projection_work_budget(
+                SetRetention::reference(),
+                if matches!(DESTINATION, 120..=125) {
+                    128
+                } else {
+                    8
+                },
+            )
             .operation_projection_work_budget(SetAuditSource::reference(), 8)
             .operation_projection_work_budget(SetDraftNote::reference(), 8)
             .operation_projection_work_budget(ClearDraftNote::reference(), 8)
@@ -193,6 +200,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
         } else {
             schema
         };
+        let schema = super::retirement::declaration::declare::<DESTINATION>(schema);
         super::genesis::declaration::declare::<DESTINATION>(schema)
     }
 }
@@ -269,6 +277,11 @@ impl<const DESTINATION: u64> WorthQueryApplicationContribution<DocumentRetention
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         match install {
             Installation::Native => {
+                if matches!(DESTINATION, 120..=125) {
+                    setup
+                        .operation_body::<super::retirement::binding::ReplaceBinding<DESTINATION>>(
+                        )?;
+                }
                 if matches!(DESTINATION, 30 | 31) {
                     setup
                         .operation_body::<super::genesis::binding::CreateBinding<DESTINATION>>()?;
@@ -337,6 +350,13 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
         let feature = if matches!(DESTINATION, 30 | 31) {
             feature
                 .native_action::<super::genesis::binding::CreateBinding<DESTINATION>>()
+                .finish_action()
+        } else {
+            feature
+        };
+        let feature = if matches!(DESTINATION, 120..=125) {
+            feature
+                .native_action::<super::retirement::binding::ReplaceBinding<DESTINATION>>()
                 .finish_action()
         } else {
             feature

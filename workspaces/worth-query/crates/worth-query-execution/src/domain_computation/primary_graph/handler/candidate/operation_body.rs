@@ -16,6 +16,19 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.candidate.body_external_emission(selection)
     }
+    pub(in crate::domain_computation::primary_graph) fn body_retire_owned_selection(
+        &mut self,
+        owner: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
+        selected: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
+        rule:&worth_query_declaration::facade::application_schema::ApplicationOperationBodyOwnedSelectionRetirement,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let owner = self.projected_entity(owner)?;
+        let selected = self.projected_entity(selected)?;
+        let [unlink, delete] = rule.program_targets();
+        self.candidate
+            .unlink_at_target(&unlink, &owner, &selected)?;
+        self.candidate.delete_at_target(&delete, &selected)
+    }
     pub(in crate::domain_computation::primary_graph) fn body_creation_unlink<Entity>(
         &mut self,
         scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,

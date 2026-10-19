@@ -4,6 +4,7 @@ mod candidate_retained_representation;
 mod conditional_definition;
 mod emission;
 mod entity_creation;
+mod entity_retirement;
 mod entity_selection;
 mod model;
 mod operation_body;
@@ -278,20 +279,12 @@ impl<Schema, Operation, Input, Scope>
     where
         Entity: OperationDeletes<Operation>,
     {
-        self.validate_target(target, entity.name())?;
-        self.admit_program_target(&ApplicationOperationProgramTarget::Delete {
-            entity: entity.name().to_string(),
-        })?;
-        let EntityReference::Existing(entity_id) = target.reference else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                entity.name(),
-            ));
-        };
-        self.charge_candidate_item(CandidateItemKind::Delete)?;
-        self.effects
-            .push(WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id });
-        Ok(())
+        self.delete_at_target(
+            &ApplicationOperationProgramTarget::Delete {
+                entity: entity.name().into(),
+            },
+            target,
+        )
     }
 
     pub fn finish(

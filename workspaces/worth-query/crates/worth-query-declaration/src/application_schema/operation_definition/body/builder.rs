@@ -18,6 +18,7 @@ pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     scope: Option<String>,
     pub(super) steps: Vec<ApplicationOperationBodyScopeField>,
     pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
+    pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
     requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
@@ -35,6 +36,7 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
             scope: None,
             steps: Vec::new(),
             values: Vec::new(),
+            retirements: Vec::new(),
             requirements: Vec::new(),
             outputs: Vec::new(),
             succession: None,
@@ -190,7 +192,16 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         .with_untrusted_outputs(self.outputs)
         .with_untrusted_succession(self.succession)
         .with_untrusted_external_emission(self.external_emission);
-        let program = program.with_untrusted_values(self.values);
+        let program = program
+            .with_untrusted_values(self.values)
+            .with_untrusted_retirements(self.retirements);
+        let mut paths = BTreeSet::new();
+        if program.retirements().iter().any(|rule| {
+            !rule.fits_body(&program)
+                || !paths.insert((&rule.owners_relation, &rule.selection_relation))
+        }) {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidSelectionRetirement);
+        }
         if program
             .observation_operands()
             .any(|operand| Some(operand.source().scope_entity()) != program.scope_entity())

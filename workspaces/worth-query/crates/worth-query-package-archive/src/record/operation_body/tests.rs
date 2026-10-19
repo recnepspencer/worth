@@ -28,6 +28,8 @@ mod related_outputs;
 mod related_source;
 #[path = "tests/requirements.rs"]
 mod requirements;
+#[path = "tests/retirements.rs"]
+mod retirements;
 #[path = "tests/signed_evidence.rs"]
 mod signed_evidence;
 #[path = "tests/signing.rs"]

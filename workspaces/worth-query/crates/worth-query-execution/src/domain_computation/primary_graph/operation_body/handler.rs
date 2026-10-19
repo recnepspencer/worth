@@ -2,7 +2,9 @@
 use super::super::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
-use super::{BodyFieldExpectation, WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial};
+use super::{WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial};
+#[path = "handler/scope_expectations.rs"]
+mod scope_expectations;
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding, ApplicationMutationScopeBinding,
@@ -27,6 +29,7 @@ pub(in crate::domain_computation::primary_graph) struct OperationBodyHandler<Sch
     pub(super) selection_reads: Vec<
         worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget,
     >,
+    pub(super) retirement_inputs:Vec<usize>,
 }
 
 impl<Schema, Binding> OperationBodyHandler<Schema, Binding> {
@@ -52,58 +55,12 @@ where
         input: &Binding::Input,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Binding::Decision, Binding::Denial> {
-        for step in self.body.scope_fields() {
-            if matches!(
-                step,
-                ApplicationOperationBodyScopeField::RequirePresent { .. }
-                    | ApplicationOperationBodyScopeField::ExpectInput { .. }
-            ) {
-                continue;
-            }
-            let expected = match step {
-                ApplicationOperationBodyScopeField::Expect { value, .. } => {
-                    BodyFieldExpectation::Equals(value)
-                }
-                ApplicationOperationBodyScopeField::RequirePresent { .. } => {
-                    BodyFieldExpectation::Present
-                }
-                ApplicationOperationBodyScopeField::ExpectInput { .. } => {
-                    unreachable!("input guards compare prepared canonical members")
-                }
-                ApplicationOperationBodyScopeField::Assign { .. }
-                | ApplicationOperationBodyScopeField::AssignValue { .. }
-                | ApplicationOperationBodyScopeField::AssignInput { .. }
-                | ApplicationOperationBodyScopeField::SetOptionalInput { .. }
-                | ApplicationOperationBodyScopeField::AssignOptionalInput { .. }
-                | ApplicationOperationBodyScopeField::ClearOptional { .. } => {
-                    BodyFieldExpectation::Any
-                }
-            };
-            let matches = match reader.body_scope_field(step.field(), expected) {
-                Ok(value) => value,
-                Err(cause) => return HandlerResult::ExecutionDenied(cause),
-            };
-            if !matches {
-                let field = step.field();
-                return HandlerResult::DomainDenied(
-                    if matches!(
-                        step,
-                        ApplicationOperationBodyScopeField::RequirePresent { .. }
-                    ) {
-                        WorthQueryOperationBodyDenial::RequirementUnmet {
-                            entity: field.entity().to_owned(),
-                            aspect: field.aspect().to_owned(),
-                            field: field.field().to_owned(),
-                        }
-                    } else {
-                        WorthQueryOperationBodyDenial::SourceMismatch {
-                            entity: field.entity().to_owned(),
-                            aspect: field.aspect().to_owned(),
-                            field: field.field().to_owned(),
-                        }
-                    },
-                );
-            }
+        match scope_expectations::evaluate(&self.body, reader) {
+            HandlerResult::Completed(()) => {}
+            HandlerResult::DomainDenied(cause) => return HandlerResult::DomainDenied(cause),
+            HandlerResult::ExecutionDenied(cause) => return HandlerResult::ExecutionDenied(cause),
+            HandlerResult::Cancelled => return HandlerResult::Cancelled,
+            HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         }
         let findings = match reader.body_scope_requirements(&self.body) {
             Ok(findings) => findings,
@@ -155,6 +112,16 @@ where
             HandlerResult::Cancelled => return HandlerResult::Cancelled,
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         }
+        let retirements =
+            match reader.body_retirements(&self.body, &self.retirement_inputs, inputs.as_ref()) {
+                HandlerResult::Completed(value) => value,
+                HandlerResult::DomainDenied(cause) => return HandlerResult::DomainDenied(cause),
+                HandlerResult::ExecutionDenied(cause) => {
+                    return HandlerResult::ExecutionDenied(cause)
+                }
+                HandlerResult::Cancelled => return HandlerResult::Cancelled,
+                HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
+            };
         let values = match reader.body_values(&self.values) {
             Ok(values) => values,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -178,6 +145,7 @@ where
                 selections,
                 emission,
                 values,
+                retirements,
             }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
@@ -268,6 +236,13 @@ where
             {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
             }
+        }
+        match super::retirement::apply(decision.retirements, &self.body, writer) {
+            HandlerResult::Completed(()) => {}
+            HandlerResult::DomainDenied(cause) => return HandlerResult::DomainDenied(cause),
+            HandlerResult::ExecutionDenied(cause) => return HandlerResult::ExecutionDenied(cause),
+            HandlerResult::Cancelled => return HandlerResult::Cancelled,
+            HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         }
         for output in &self.outputs {
             if matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Scope)

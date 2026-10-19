@@ -49,6 +49,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 body.observation_operands()
                     .flat_map(|operand| operand.source().decision_reads()),
             );
+            reads.extend(
+                body.retirements()
+                    .iter()
+                    .flat_map(|rule| rule.decision_reads()),
+            );
             if let Some(creation) = body.creation() {
                 reads.extend(
                     creation
@@ -119,6 +124,17 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                         target: field.write_target(),
                     });
                 }
+            }
+            for target in body
+                .retirements()
+                .iter()
+                .flat_map(|rule| rule.program_targets())
+                .collect::<std::collections::BTreeSet<_>>()
+            {
+                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                    operation: operation.clone(),
+                    target,
+                });
             }
             if let Some(emission) = body.external_emission() {
                 self.push_member_in_place(ApplicationSchemaMember::OperationProgram {

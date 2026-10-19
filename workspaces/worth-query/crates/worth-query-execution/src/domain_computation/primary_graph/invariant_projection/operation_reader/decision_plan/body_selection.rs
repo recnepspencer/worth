@@ -58,20 +58,29 @@ impl<Schema: ApplicationSchema, Operation>
             Direction::Outgoing => to,
             Direction::Incoming => from,
         };
+        Ok(Some(self.body_observed_selection(entity_id, terminal)?))
+    }
+
+    /// Only body observers pass IDs from their sealed native endpoint collections.
+    pub(super) fn body_observed_selection(
+        &self,
+        entity_id: worth_relational::facade::identity::EntityId,
+        terminal: &str,
+    ) -> Result<PreparedBodySelection<Schema>, HandlerExecutionDenial> {
         let kind = self.reader.layout.entity_kind(terminal).ok_or_else(|| {
             HandlerExecutionDenial::new(Denial::new(Kind::MissingAuthoritativeFact, terminal))
         })?;
         let identity = WorthQueryInvariantEntityIdentity::<Schema, ()> {
             entity_id,
             kind,
-            entity: terminal.clone().into(),
+            entity: terminal.into(),
             authority_identity: self.reader.authority_identity,
             _marker: std::marker::PhantomData,
         };
         let target = self
             .mutation_target(&identity)
             .map_err(HandlerExecutionDenial::new)?;
-        Ok(Some(PreparedBodySelection { identity, target }))
+        Ok(PreparedBodySelection { identity, target })
     }
 
     pub(in crate::domain_computation::primary_graph) fn body_path_selection<Entity>(
