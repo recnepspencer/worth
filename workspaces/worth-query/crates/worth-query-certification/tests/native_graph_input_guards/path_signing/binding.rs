@@ -12,7 +12,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,
 };
 macro_rules! binding {
-    ($name:ident,$input:ty,$input_binding:ty,$operation:ty,$writes:literal) => {
+    ($name:ident,$input:ty,$input_binding:ty,$operation:ty,$writes:literal,$creates:literal,$links:literal) => {
         pub struct $name;
         impl ApplicationMutationAdmissionBinding<Schema> for $name {
             type Admission = ApplicationConventionalAdmission;
@@ -51,7 +51,9 @@ macro_rules! binding {
             const REQUIRES_APPLICATION_PROGRAM: bool = true;
             const CANDIDATES: ApplicationCandidateRequirements =
                 ApplicationCandidateRequirements::fixed_shape(
-                    ApplicationCandidateCardinalityCeiling::fixed(1, 0, 1, 0, $writes, 0),
+                    ApplicationCandidateCardinalityCeiling::fixed(
+                        $creates, 0, $links, 0, $writes, 0,
+                    ),
                     ApplicationCandidateResourceCeiling::representation_bytes(65536),
                 );
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
@@ -91,18 +93,22 @@ macro_rules! binding {
         }
     };
 }
-binding!(GraphBinding, SignGraph, GraphInput, GraphSign, 6);
+binding!(GraphBinding, SignGraph, GraphInput, GraphSign, 9, 2, 2);
 binding!(
     GraphAliasBinding,
     SignGraphAlias,
     GraphAliasInput,
     GraphAliasSign,
-    6
+    6,
+    1,
+    1
 );
 binding!(
     ScopeAliasBinding,
     SignScopeAlias,
     ScopeAliasInput,
     ScopeAliasSign,
-    4
+    4,
+    1,
+    1
 );

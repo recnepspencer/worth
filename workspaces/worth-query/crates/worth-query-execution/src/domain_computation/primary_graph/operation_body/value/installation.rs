@@ -31,6 +31,7 @@ pub(in crate::domain_computation::primary_graph::operation_body) fn install<
                 .chain(
                     body.creation()
                         .into_iter()
+                        .flat_map(|creation| creation.initialization_sites())
                         .flat_map(|creation| creation.fields())
                         .filter_map(|step| match step {
                             Created::Computed { field, value, .. }

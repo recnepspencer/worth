@@ -1,5 +1,6 @@
 //! Ordered, portable native values for one operation's scope-bound body.
 
+mod creation;
 mod query_context;
 
 pub use super::created_field::ApplicationOperationBodyCreatedField;
@@ -22,125 +23,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) reference_inputs: Vec<super::ApplicationOperationBodyReferenceInput>,
 }
 
-/// One typed, candidate-local creation site in the admitted scope's context.
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct ApplicationOperationBodyCreation {
-    pub(super) entity: String,
-    pub(super) key: String,
-    pub(super) fields: Vec<ApplicationOperationBodyCreatedField>,
-    pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
-    pub(super) signing: Option<super::ApplicationOperationBodySigningSpec>,
-    pub(super) signing_lifecycle: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
-    pub(super) subject_impact_bound: Option<std::num::NonZeroUsize>,
-    pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
-    pub(super) reuse_current_if_unchanged: bool,
-    pub(super) children: Vec<super::ApplicationOperationBodyChildCreation>,
-}
-
-impl ApplicationOperationBodyCreation {
-    pub fn from_untrusted(
-        entity: String,
-        key: String,
-        fields: Vec<ApplicationOperationBodyCreatedField>,
-    ) -> Self {
-        Self {
-            entity,
-            key,
-            fields,
-            links: Vec::new(),
-            signing: None,
-            signing_lifecycle: None,
-            subject_impact_bound: None,
-            enrollment: None,
-            reuse_current_if_unchanged: false,
-            children: Vec::new(),
-        }
-    }
-    pub fn entity(&self) -> &str {
-        &self.entity
-    }
-    pub fn children(&self) -> &[super::ApplicationOperationBodyChildCreation] {
-        &self.children
-    }
-    /// Inert flat site inventory; fresh admission checks topology and complete initialization.
-    pub fn with_untrusted_children(
-        mut self,
-        children: Vec<super::ApplicationOperationBodyChildCreation>,
-    ) -> Self {
-        self.children = children;
-        self
-    }
-    /// Root first, followed by authored child sites. All native input/capacity owners use this order.
-    pub fn initialization_sites(&self) -> impl Iterator<Item = &Self> {
-        std::iter::once(self).chain(self.children.iter().map(|child| &child.creation))
-    }
-    pub fn reuses_current_if_unchanged(&self) -> bool {
-        self.reuse_current_if_unchanged
-    }
-    /// Authority-free carriage; fresh admission checks the complete comparison profile.
-    pub fn with_untrusted_reuse_current_if_unchanged(mut self, reuse: bool) -> Self {
-        self.reuse_current_if_unchanged = reuse;
-        self
-    }
-    pub fn subject_impact_bound(&self) -> Option<std::num::NonZeroUsize> {
-        self.subject_impact_bound
-    }
-    pub fn with_untrusted_subject_impact_bound(
-        mut self,
-        bound: Option<std::num::NonZeroUsize>,
-    ) -> Self {
-        self.subject_impact_bound = bound;
-        self
-    }
-    pub fn enrollment(&self) -> Option<&super::ApplicationOperationBodyEnrollment> {
-        self.enrollment.as_ref()
-    }
-    pub fn with_untrusted_enrollment(
-        mut self,
-        enrollment: Option<super::ApplicationOperationBodyEnrollment>,
-    ) -> Self {
-        self.enrollment = enrollment;
-        self
-    }
-    pub fn signing(&self) -> Option<&super::ApplicationOperationBodySigningSpec> {
-        self.signing.as_ref()
-    }
-    pub fn signing_lifecycle(
-        &self,
-    ) -> Option<&super::ApplicationOperationBodySigningLifecycleSpec> {
-        self.signing_lifecycle.as_ref()
-    }
-    pub fn with_untrusted_signing_lifecycle(
-        mut self,
-        spec: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
-    ) -> Self {
-        self.signing_lifecycle = spec;
-        self
-    }
-    pub fn with_untrusted_signing(
-        mut self,
-        signing: Option<super::ApplicationOperationBodySigningSpec>,
-    ) -> Self {
-        self.signing = signing;
-        self
-    }
-    pub fn with_untrusted_links(
-        mut self,
-        links: Vec<super::ApplicationOperationBodyCreationLink>,
-    ) -> Self {
-        self.links = links;
-        self
-    }
-    pub fn links(&self) -> &[super::ApplicationOperationBodyCreationLink] {
-        &self.links
-    }
-    pub fn key(&self) -> &str {
-        &self.key
-    }
-    pub fn fields(&self) -> &[ApplicationOperationBodyCreatedField] {
-        &self.fields
-    }
-}
+pub use creation::ApplicationOperationBodyCreation;
 
 impl ApplicationOperationBodyProgram {
     /// Authority-free decoded description; fresh schema readmission validates it.

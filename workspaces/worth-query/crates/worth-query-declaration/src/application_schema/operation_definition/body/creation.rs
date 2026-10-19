@@ -25,6 +25,8 @@ pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Ent
     pub(super) subject_impact_bound: Option<std::num::NonZeroUsize>,
     pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
     pub(super) reuse_current_if_unchanged: bool,
+    pub(super) peers: Vec<ApplicationOperationBodyCreation>,
+    pub(super) path_links: Vec<super::ApplicationOperationBodyCreationPathLink>,
     pub(super) children: Vec<super::ApplicationOperationBodyChildCreation>,
     marker: PhantomData<fn() -> Entity>,
 }
@@ -58,6 +60,8 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             enrollment: None,
             reuse_current_if_unchanged: false,
             children: Vec::new(),
+            peers: Vec::new(),
+            path_links: Vec::new(),
             marker: PhantomData,
         })
     }
@@ -219,6 +223,8 @@ impl<Schema, Operation, Input, Entity>
             enrollment: self.enrollment,
             reuse_current_if_unchanged: self.reuse_current_if_unchanged,
             children: self.children,
+            peers: self.peers,
+            path_links: self.path_links,
         };
         super::classified_capture::validate_creation(&creation)?;
         if !super::signing_lifecycle::validation::validate_creation(&creation) {
@@ -250,27 +256,30 @@ impl<Schema, Operation, Input, Entity>
         {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidCreationLink);
         }
-        for step in body
+        for creation in body
             .program
             .creation()
-            .expect("creation attached before finishing")
-            .fields()
+            .into_iter()
+            .flat_map(|c| c.creation_roots())
         {
-            if !fields.insert(step.field()) {
-                return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
-            }
-            let foreign_source = if let Some(path) = step.path_source() {
-                !path.has_supported_shape() || path.path.start_entity() != scope
-            } else {
-                match step.related_source() {
-                    Some(source) => source.from != scope || source.field.entity() != source.to,
-                    None => step
-                        .source_field()
-                        .is_some_and(|source| source.entity() != scope),
+            fields.clear();
+            for step in creation.fields() {
+                if !fields.insert(step.field()) {
+                    return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
                 }
-            };
-            if foreign_source {
-                return Err(ApplicationOperationBodyAuthoringDenial::ForeignSourceEntity);
+                let foreign_source = if let Some(path) = step.path_source() {
+                    !path.has_supported_shape() || path.path.start_entity() != scope
+                } else {
+                    match step.related_source() {
+                        Some(source) => source.from != scope || source.field.entity() != source.to,
+                        None => step
+                            .source_field()
+                            .is_some_and(|source| source.entity() != scope),
+                    }
+                };
+                if foreign_source {
+                    return Err(ApplicationOperationBodyAuthoringDenial::ForeignSourceEntity);
+                }
             }
         }
         Ok(body)

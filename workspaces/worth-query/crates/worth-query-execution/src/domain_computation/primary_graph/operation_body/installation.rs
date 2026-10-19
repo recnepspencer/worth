@@ -71,13 +71,19 @@ fn require_candidate_capacity(
         || cardinality.maximum_deletes() < required_deletes
         || cardinality.maximum_unlinks() < required_unlinks
         || cardinality.maximum_writes() < required_writes
-        || cardinality.maximum_creates() < body.creation().map_or(0, |c| 1 + c.children().len())
+        || cardinality.maximum_creates()
+            < body
+                .creation()
+                .map_or(0, |c| c.initialization_sites().count())
         || cardinality.maximum_links()
             < body
                 .creation()
                 .into_iter()
                 .flat_map(|c| c.initialization_sites())
-                .try_fold(0usize, |sum, site| sum.checked_add(site.links().len()))
+                .try_fold(0usize, |sum, site| {
+                    sum.checked_add(site.links().len())?
+                        .checked_add(site.path_links().len())
+                })
                 .and_then(|count| count.checked_add(body.reference_inputs().len()))
                 .ok_or_else(denied)?
     {
@@ -106,6 +112,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         if !body.has_supported_retiring_replacement()
             || !body.has_supported_creation_reuse()
             || !body.has_supported_child_creations()
+            || !body.has_supported_peer_creations()
         {
             return Err(denied());
         }
@@ -215,7 +222,11 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .into_iter()
             .flat_map(|root| root.initialization_sites())
         {
-            for link in creation.links() {
+            for link in creation
+                .links()
+                .iter()
+                .chain(creation.path_links().iter().map(|path| &path.link))
+            {
                 super::super::WorthQueryApplicationEntityKey::<Schema, ()>::new(&link.key)
                     .map_err(|_| denied())?;
             }

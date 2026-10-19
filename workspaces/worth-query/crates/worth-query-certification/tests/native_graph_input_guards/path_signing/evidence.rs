@@ -79,6 +79,12 @@ fn signed_parent_bookkeeping_is_atomic_and_original_replay_needs_no_new_event() 
         .execute()
         .unwrap();
     assert_eq!(history.rows().len(), 1);
+    let audits = super::super::peer_evidence::journal(&app, "parent-a");
+    assert_eq!(audits.len(), 1);
+    assert_eq!(
+        (audits[0].name.as_str(), audits[0].revision, audits[0].actor),
+        ("signed", 2, 1)
+    );
     let signed = &history.rows()[0];
     assert_eq!((signed.value, signed.revision, signed.actor), (7, 1, 1));
     assert_eq!(signed.company.as_deref(), Some("company-a"));
@@ -150,6 +156,10 @@ fn signed_parent_bookkeeping_is_atomic_and_original_replay_needs_no_new_event() 
             .0,
         3
     );
+    assert_eq!(
+        super::super::peer_evidence::journal(&app, "parent-a"),
+        audits
+    );
 }
 #[test]
 fn signed_parent_race_preserves_only_the_winner_without_losing_evidence_or_revision() {
@@ -205,6 +215,7 @@ fn signed_parent_race_preserves_only_the_winner_without_losing_evidence_or_revis
         prepared.commit(Allocation::SystemAllocation),
         Outcome::Commit(Uncommitted::Stale(_))
     ));
+    assert!(super::super::peer_evidence::journal(&app, "parent-a").is_empty());
     assert_eq!(
         app.request(&principal, &scope)
             .query(revision_query::Read("row-a".into()))

@@ -69,7 +69,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .iter()
                     .flat_map(|reference| reference.decision_reads()),
             );
-            if let Some(creation) = body.creation() {
+            for creation in body
+                .creation()
+                .into_iter()
+                .flat_map(|c| c.initialization_sites())
+            {
                 if creation.reuses_current_if_unchanged() {
                     reads.extend(creation.fields().iter().map(|field| {
                         super::super::ApplicationOperationDecisionReadTarget::Field {
@@ -106,6 +110,13 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                         .flat_map(|source| source.decision_reads()),
                 );
             }
+            reads.extend(
+                body.creation()
+                    .into_iter()
+                    .flat_map(|c| c.initialization_sites())
+                    .flat_map(|c| c.path_links())
+                    .flat_map(|p| p.decision_reads()),
+            );
             for target in reads {
                 self.push_member_in_place(ApplicationSchemaMember::OperationDecisionRead {
                     operation: operation.clone(),
@@ -131,6 +142,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     entity: site.entity().to_owned(),
                 });
                 programs.extend(site.fields().iter().map(|field| field.write_target()));
+                programs.extend(site.path_links().iter().map(|p| p.link.program_target()));
                 programs.extend(site.links().iter().flat_map(|link| {
                     std::iter::once(link.program_target())
                         .chain(link.replacement_target())

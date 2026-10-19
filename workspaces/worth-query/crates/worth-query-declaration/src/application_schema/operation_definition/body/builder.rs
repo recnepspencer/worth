@@ -15,7 +15,7 @@ use super::{
 };
 
 pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
-    scope: Option<String>,
+    pub(super) scope: Option<String>,
     pub(super) steps: Vec<ApplicationOperationBodyScopeField>,
     pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
     pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
@@ -31,27 +31,7 @@ pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
-impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input> {
-    /// Begins scope-bound source expectations and assignments. Membership is
-    /// derived when the completed body is attached to this operation definition.
-    pub fn body(self) -> ApplicationOperationBodyBuilder<Schema, Operation, Input> {
-        ApplicationOperationBodyBuilder {
-            scope: None,
-            steps: Vec::new(),
-            values: Vec::new(),
-            retirements: Vec::new(),
-            path_input_expectations: Vec::new(),
-            path_value_assignments: Vec::new(),
-            reference_inputs: Vec::new(),
-            requirements: Vec::new(),
-            outputs: Vec::new(),
-            succession: None,
-            external_emission: None,
-            external_emission_recipe: None,
-            marker: PhantomData,
-        }
-    }
-}
+mod entrance;
 
 impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     /// Selects the existing admitted scope without requiring a write to it.
@@ -215,6 +195,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         if !program.has_supported_retiring_replacement()
             || !program.has_supported_creation_reuse()
             || !program.has_supported_child_creations()
+            || !program.has_supported_peer_creations()
         {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidCreationLink);
         }

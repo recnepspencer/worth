@@ -46,6 +46,7 @@ pub(super) fn installed_reads(
 ) -> Vec<ApplicationOperationDecisionReadTarget> {
     body.creation()
         .into_iter()
+        .flat_map(|root| root.initialization_sites())
         .flat_map(|creation| {
             creation
                 .fields()

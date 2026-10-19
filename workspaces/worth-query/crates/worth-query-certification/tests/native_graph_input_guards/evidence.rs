@@ -58,7 +58,7 @@ fn read_row(app: &App, row: &str) -> u64 {
         .rows()[0]
         .0
 }
-fn audit(app: &App, row: &str) -> Option<u64> {
+pub(super) fn audit(app: &App, row: &str) -> Option<u64> {
     let scope = request_scope();
     let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
     match app

@@ -228,6 +228,10 @@ impl<Schema, Operation, Input, Entity>
             || self.links.iter().any(|link| {
                 link.relation == relation && (link.key == key || link.posture.replaces_selection())
             })
+            || self
+                .path_links
+                .iter()
+                .any(|path| path.link.relation == relation && path.link.key == key)
         {
             return Err(Denial::InvalidCreationLink);
         }

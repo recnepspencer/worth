@@ -11,6 +11,18 @@ pub(super) fn append(
     prefix: &str,
     creation: &ApplicationOperationBodyCreation,
 ) {
+    if !creation.peers().is_empty() {
+        basis.usize(format!("{prefix}.created.peers"), creation.peers().len());
+        for (index, peer) in creation.peers().iter().enumerate() {
+            append(basis, &format!("{prefix}.created.peer[{index}]"), peer);
+        }
+    }
+    for (index, path) in creation.path_links().iter().enumerate() {
+        basis.text(
+            format!("{prefix}.created.path-link[{index}]"),
+            &path.canonical_record(),
+        );
+    }
     if !creation.children().is_empty() {
         basis.usize(
             format!("{prefix}.created.children"),

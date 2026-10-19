@@ -28,6 +28,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_values
             .chain(
                 body.creation()
                     .into_iter()
+                    .flat_map(|creation| creation.initialization_sites())
                     .flat_map(|creation| creation.fields())
                     .filter_map(|step| match step {
                         Created::Computed {
@@ -59,6 +60,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_values
         .chain(
             body.creation()
                 .into_iter()
+                .flat_map(|creation| creation.initialization_sites())
                 .flat_map(|creation| creation.fields())
                 .filter_map(|step| match step {
                     Created::Computed { value, .. } => Some(value),

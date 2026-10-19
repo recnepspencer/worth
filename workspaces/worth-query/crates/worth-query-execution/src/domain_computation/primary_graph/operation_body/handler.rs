@@ -5,6 +5,8 @@ use super::super::{
 use super::{WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial};
 #[path = "handler/candidate.rs"]
 mod candidate;
+#[path = "handler/creation_initializers.rs"]
+mod creation_initializers;
 #[path = "handler/scope_expectations.rs"]
 mod scope_expectations;
 use std::marker::PhantomData;
@@ -12,8 +14,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationBodyCreatedField, ApplicationOperationBodyProgram,
-    ApplicationOperationBodyScopeField,
+    ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -138,6 +139,10 @@ where
             Ok(targets) => targets,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
+        let path_links = match reader.body_path_links(&self.body) {
+            Ok(anchors) => anchors,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         let children = match reader.body_child_custody(&self.body) {
             Ok(children) => children,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -167,6 +172,7 @@ where
                 values,
                 retirements,
                 path_writes,
+                path_links,
                 references,
                 creation_disposition,
                 children,

@@ -23,7 +23,8 @@ impl Body {
         let Some(creation) = self.creation().filter(|c| c.reuses_current_if_unchanged()) else {
             return true;
         };
-        creation.retires_predecessor()
+        creation.path_links().is_empty()
+            && creation.retires_predecessor()
             && self.has_supported_retiring_replacement()
             && creation.enrollment().is_none()
             && creation.signing_lifecycle().is_none()

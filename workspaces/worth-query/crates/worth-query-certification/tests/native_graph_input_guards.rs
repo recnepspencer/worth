@@ -72,3 +72,12 @@ mod world;
     reason = "Reuse the ordinary bounded World policy, not its separate scale profiles."
 )]
 mod world_resources;
+
+#[path = "native_graph_input_guards/peer_admission.rs"]
+mod peer_admission;
+#[path = "native_graph_input_guards/peer_audit.rs"]
+mod peer_audit;
+#[path = "native_graph_input_guards/peer_evidence.rs"]
+mod peer_evidence;
+#[path = "native_graph_input_guards/peer_path_evidence.rs"]
+mod peer_path_evidence;

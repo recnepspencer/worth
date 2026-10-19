@@ -129,6 +129,16 @@ pub(in crate::application_schema::operation_definition::body) fn validate_subjec
                             body.reference_inputs()
                                 .iter()
                                 .any(|reference| reference.relation == step.relation())
+                                || body
+                                    .creation()
+                                    .into_iter()
+                                    .flat_map(|c| c.initialization_sites())
+                                    .flat_map(|c| {
+                                        c.links()
+                                            .iter()
+                                            .chain(c.path_links().iter().map(|p| &p.link))
+                                    })
+                                    .any(|link| link.relation == step.relation())
                         })
                     });
                     !scope_write && !path_write && !retarget

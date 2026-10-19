@@ -40,7 +40,8 @@ pub(super) fn validate_principals(
     let denied = Denial::MissingOperationProgramDependency;
     for step in body
         .creation()
-        .iter()
+        .into_iter()
+        .flat_map(|creation| creation.initialization_sites())
         .flat_map(|creation| creation.fields())
     {
         let ApplicationOperationBodyCreatedField::PrincipalIdentity {

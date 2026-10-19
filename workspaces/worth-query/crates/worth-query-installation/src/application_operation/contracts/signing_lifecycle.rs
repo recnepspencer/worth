@@ -296,12 +296,22 @@ fn link_can_change_existing_anchor(
         .iter()
         .any(|reference| reference.relation == step.relation())
         || body.creation().is_none_or(|creation| {
-            creation.links().iter().any(|link| {
-                link.relation == step.relation()
-                    && matches!(
-                        (link.direction, step.direction()),
-                        (Link::FromScope, Path::Forward) | (Link::ToScope, Path::Reverse)
-                    )
-            })
+            creation
+                .initialization_sites()
+                .flat_map(|site| {
+                    site.links()
+                        .iter()
+                        .chain(site.path_links().iter().map(|path| &path.link))
+                })
+                .any(|link| {
+                    link.relation == step.relation()
+                        && matches!(
+                            (link.direction, step.direction()),
+                            (Link::FromScope, Path::Forward) | (Link::ToScope, Path::Reverse)
+                        )
+                })
         })
 }
+
+#[cfg(test)]
+mod link_touch_tests;

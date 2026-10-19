@@ -21,7 +21,7 @@ pub(super) fn workflow_scale_resources() -> runtime::WorthQueryProductWorldResou
     world_resources_with_work(1_024, 256 * 1024 * 1024, 2_048, u64::MAX)
 }
 
-fn world_resources_with_work(
+pub(super) fn world_resources_with_work(
     commits: u64,
     metadata_bytes: u64,
     pins: u64,

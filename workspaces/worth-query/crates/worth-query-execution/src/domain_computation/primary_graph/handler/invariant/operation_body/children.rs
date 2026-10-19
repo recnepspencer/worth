@@ -12,7 +12,12 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, 
         &self,
         body: &ApplicationOperationBodyProgram,
     ) -> Result<Option<PreparedBodyChildren<S>>, HandlerExecutionDenial> {
-        let count = body.creation().map_or(0, |c| c.children().len());
+        let count = body
+            .creation()
+            .into_iter()
+            .flat_map(|c| c.creation_roots())
+            .map(|c| c.children().len())
+            .sum::<usize>();
         if count == 0 {
             return Ok(None);
         }

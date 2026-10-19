@@ -2,6 +2,7 @@
 mod children;
 mod emission;
 mod path_input;
+mod path_links;
 mod path_value;
 mod reference_input;
 mod retirement;

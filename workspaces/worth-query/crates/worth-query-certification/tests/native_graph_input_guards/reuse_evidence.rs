@@ -15,7 +15,11 @@ use worth_query_host::facade::{
     primary_graph::{WorthQueryApplicationUncommitted, WorthQueryOperationBodyDenial},
     runtime::ExecutionAllocationPolicy as Allocation,
 };
-fn select(app: &App, input: Select, key: u64) -> Outcome<WorthQueryOperationBodyDenial, ()> {
+pub(super) fn select(
+    app: &App,
+    input: Select,
+    key: u64,
+) -> Outcome<WorthQueryOperationBodyDenial, ()> {
     let scope = request_scope();
     let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
     app.request(&principal, &scope)
@@ -26,7 +30,7 @@ fn select(app: &App, input: Select, key: u64) -> Outcome<WorthQueryOperationBody
         .execute_in_program(app, Allocation::SystemAllocation)
         .unwrap()
 }
-fn identity(app: &App) -> impl Eq + std::fmt::Debug + use<> {
+pub(super) fn identity(app: &App) -> impl Eq + std::fmt::Debug + use<> {
     let scope = request_scope();
     let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
     app.request(&principal, &scope)
@@ -36,7 +40,7 @@ fn identity(app: &App) -> impl Eq + std::fmt::Debug + use<> {
         .rows()[0]
         .1
 }
-fn values(app: &App) -> (u64, u64) {
+pub(super) fn values(app: &App) -> (u64, u64) {
     let scope = request_scope();
     let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
     let row = app
@@ -55,7 +59,7 @@ fn values(app: &App) -> (u64, u64) {
         .0;
     (row, revision)
 }
-fn input(note: Option<&str>, row_value: u64) -> Select {
+pub(super) fn input(note: Option<&str>, row_value: u64) -> Select {
     Select {
         row: "row-a".into(),
         identity: "same-source".into(),

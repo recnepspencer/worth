@@ -69,33 +69,12 @@ impl ApplicationOperationBodyPathFieldSource {
     /// This profile selects one distinct live identity at every hop. Guarded paths
     /// are not silently weakened into unguarded captures.
     pub fn has_supported_shape(&self) -> bool {
-        if !self.path.guards().is_empty() || self.path.terminal_entity() != self.field.entity() {
-            return false;
-        }
-        let mut current = self.path.start_entity();
-        for step in self.path.steps() {
-            if current != step.parent_entity() {
-                return false;
-            }
-            current = step.child_entity();
-        }
-        current == self.path.terminal_entity()
+        supported_path(&self.path) && self.path.terminal_entity() == self.field.entity()
     }
     pub fn decision_reads(&self) -> Vec<Read> {
-        let mut reads = std::collections::BTreeSet::new();
-        reads.insert(Read::Entity {
-            entity: self.path.start_entity().into(),
-        });
-        for step in self.path.steps() {
-            reads.insert(Read::Entity {
-                entity: step.child_entity().into(),
-            });
-            reads.insert(Read::Relation {
-                relation: step.relation().into(),
-                from: step.from().into(),
-                to: step.to().into(),
-            });
-        }
+        let mut reads = path_reads(&self.path)
+            .into_iter()
+            .collect::<std::collections::BTreeSet<_>>();
         reads.insert(Read::Field {
             entity: self.field.entity().into(),
             aspect: self.field.aspect().into(),
@@ -103,4 +82,34 @@ impl ApplicationOperationBodyPathFieldSource {
         });
         reads.into_iter().collect()
     }
+}
+
+pub(super) fn supported_path(path: &ApplicationQueryRootPathMeaning) -> bool {
+    if !path.guards().is_empty() {
+        return false;
+    }
+    let mut current = path.start_entity();
+    for step in path.steps() {
+        if current != step.parent_entity() {
+            return false;
+        }
+        current = step.child_entity();
+    }
+    current == path.terminal_entity()
+}
+pub(super) fn path_reads(path: &ApplicationQueryRootPathMeaning) -> Vec<Read> {
+    let mut reads = std::collections::BTreeSet::from([Read::Entity {
+        entity: path.start_entity().into(),
+    }]);
+    for step in path.steps() {
+        reads.insert(Read::Entity {
+            entity: step.child_entity().into(),
+        });
+        reads.insert(Read::Relation {
+            relation: step.relation().into(),
+            from: step.from().into(),
+            to: step.to().into(),
+        });
+    }
+    reads.into_iter().collect()
 }

@@ -1,6 +1,8 @@
 //! Content reuse shares one initializer declaration and the ordinary native body.
 use super::{
     actions::{DenialBinding, ResultBinding},
+    child_actions::{Detail, DetailLabel},
+    peer_audit::*,
     schema::*,
     selection_schema::*,
 };
@@ -33,10 +35,10 @@ impl ApplicationStructuredValueBinding for Input {
 }
 worth_query_operation!(pub Reuse for Schema, input Input);
 worth_query_operation_reads!(Reuse=>[Row,RowIdentity,RowValue,Parent,ParentRows,ParentRevision,Snapshot,CurrentSnapshot]);
-worth_query_operation_writes!(Reuse=>[RowValue,ParentRevision,SnapshotIdentity,SnapshotValue,SnapshotNote,SnapshotLabel,SnapshotKind]);
-worth_query_operation_creates!(Reuse=>[Snapshot]);
+worth_query_operation_writes!(Reuse=>[RowValue,ParentRevision,SnapshotIdentity,SnapshotValue,SnapshotNote,SnapshotLabel,SnapshotKind,JournalName,JournalRevision,JournalActor,DetailLabel]);
+worth_query_operation_creates!(Reuse=>[Snapshot,Journal,Detail]);
 worth_query_operation_deletes!(Reuse=>[Snapshot]);
-worth_query_operation_links!(Reuse=>[CurrentSnapshot]);
+worth_query_operation_links!(Reuse=>[CurrentSnapshot,ParentJournal,JournalDetails]);
 worth_query_operation_unlinks!(Reuse=>[CurrentSnapshot]);
 fn scope(input: &Select) -> String {
     input.row.clone()
@@ -47,7 +49,7 @@ worth_query_mutation_binding!(pub Binding for Select,schema Schema,
     handler identity "worth.query.reuse.body.v1",program required,outputs NoApplicationMutationOutputs,
     principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
     scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value scope,
-    candidates creates 1,deletes 1,links 1,unlinks 1,writes 7,emits 0,resources retained_representation_bytes 8192);
+    candidates creates 3,deletes 1,links 3,unlinks 1,writes 11,emits 0,resources retained_representation_bytes 8192);
 pub fn body() -> ApplicationOperationBody<Schema, Reuse, Select> {
     let op = Reuse::reference();
     let next = ApplicationOperationBodyValue::<Schema, Reuse, U64ApplicationValueBinding>::admit(
@@ -85,6 +87,24 @@ pub fn body() -> ApplicationOperationBody<Schema, Reuse, Select> {
         .replace_and_retire_from_scope(CurrentSnapshot::reference(), "current")
         .unwrap()
         .reuse_current_if_unchanged()
+        .with_peer(Journal::reference(), "selection-audit", |audit| {
+            audit
+                .initialize_input(JournalName::reference(), "identity")?
+                .initialize_value(JournalRevision::reference(), &next)?
+                .initialize_from_principal_identity::<Binding, _, _, _, _, _>(
+                    JournalActor::reference(),
+                )?
+                .with_child(JournalDetails::reference(), "audit-detail", |detail| {
+                    detail.initialize(DetailLabel::reference(), "independent".into())
+                })?
+                .link_from_path(
+                    ApplicationQueryRootPath::from(Row::reference())
+                        .reverse(ParentRows::reference()),
+                    ParentJournal::reference(),
+                    "parent-audit",
+                )
+        })
+        .unwrap()
         .finish()
         .unwrap()
 }

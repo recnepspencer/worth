@@ -13,6 +13,10 @@ pub use emission::{
     ApplicationOperationBodyExternalEffectRecipe, ApplicationOperationBodyExternalEmission,
     ApplicationOperationBodyExternalPayloadSource,
 };
+mod creation_path;
+mod peer_creation;
+mod peer_validation;
+pub use creation_path::ApplicationOperationBodyCreationPathLink;
 mod child_creation;
 mod child_validation;
 mod classified_capture;

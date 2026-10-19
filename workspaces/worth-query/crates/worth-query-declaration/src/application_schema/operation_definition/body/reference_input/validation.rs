@@ -25,7 +25,11 @@ pub(in crate::application_schema::operation_definition::body) fn validate_shape(
                 .creation()
                 .into_iter()
                 .flat_map(|root| root.initialization_sites())
-                .flat_map(|site| site.links())
+                .flat_map(|site| {
+                    site.links()
+                        .iter()
+                        .chain(site.path_links().iter().map(|p| &p.link))
+                })
                 .any(|link| link.relation == reference.relation)
             || body.retirements().iter().any(|retirement| {
                 retirement.owners_relation == reference.relation

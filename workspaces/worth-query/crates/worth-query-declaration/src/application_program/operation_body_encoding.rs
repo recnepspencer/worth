@@ -2,6 +2,9 @@
 use super::semantic_encoding::framed_record;
 use crate::application_schema::ApplicationOperationBodyProgram;
 mod base;
+mod peers;
+#[cfg(test)]
+mod peers_tests;
 use base::operation_body_base_record;
 
 #[cfg(test)]
@@ -117,6 +120,9 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
             ),
         )
     };
+    peers::append(body, append_children(body, record))
+}
+fn append_children(body: &ApplicationOperationBodyProgram, record: String) -> String {
     let Some(creation) = body.creation().filter(|c| !c.children().is_empty()) else {
         return record;
     };

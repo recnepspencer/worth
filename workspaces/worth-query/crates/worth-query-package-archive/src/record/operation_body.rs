@@ -12,6 +12,7 @@ mod enrollment;
 mod external_emission;
 mod outputs;
 mod path_capture;
+mod peers;
 mod principal;
 mod query_context;
 mod scope_fields;
@@ -139,6 +140,9 @@ pub(super) fn write(
     if version >= 37 {
         reference_input::write(output, body.reference_inputs())?;
     }
+    if version >= 38 {
+        peers::write(output, body)?;
+    }
     Ok(())
 }
 
@@ -147,7 +151,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=37) {
+    if !matches!(version, 1..=38) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -289,6 +293,11 @@ pub(super) fn decode(
         reference_input::decode(input, budget)?
     } else {
         Vec::new()
+    };
+    let creation = if version >= 38 {
+        peers::decode(input, budget, creation)?
+    } else {
+        creation
     };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(

@@ -28,6 +28,7 @@ mod path_capture;
 mod path_input;
 #[path = "tests/path_value.rs"]
 mod path_value;
+mod peers;
 #[path = "tests/principal.rs"]
 mod principal;
 #[path = "tests/reference_input.rs"]

@@ -4,6 +4,7 @@ use super::{
     binding::*,
     schema::*,
 };
+use crate::peer_audit::{Journal, JournalActor, JournalName, JournalRevision, ParentJournal};
 use worth_query_decl::facade::{
     application_query::ApplicationQueryRootPath, application_schema::*, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
@@ -58,6 +59,9 @@ operation!(
     ScopeHistory,
     [RowValue, ScopeValue, ScopeActor, ScopeProvenance]
 );
+worth_query_operation_creates!(GraphSign=>[Journal]);
+worth_query_operation_links!(GraphSign=>[ParentJournal]);
+worth_query_operation_writes!(GraphSign=>[JournalName,JournalRevision,JournalActor]);
 pub fn parent() -> ApplicationQueryRootPath<Schema, Row, Parent> {
     ApplicationQueryRootPath::from(Row::reference()).reverse(ParentRows::reference())
 }
@@ -109,6 +113,16 @@ pub fn graph_body() -> ApplicationOperationBody<Schema, GraphSign, SignGraph> {
         )
         .unwrap()
         .link_from_scope(GraphHistory::reference(), "history")
+        .unwrap()
+        .with_peer(Journal::reference(), "signed-audit", |audit| {
+            audit
+                .initialize(JournalName::reference(), "signed".to_string())?
+                .initialize_value(JournalRevision::reference(), &next)?
+                .initialize_from_principal_identity::<GraphBinding, _, _, _, _, _>(
+                    JournalActor::reference(),
+                )?
+                .link_from_path(parent(), ParentJournal::reference(), "parent-audit")
+        })
         .unwrap()
         .finish()
         .unwrap()

@@ -2,7 +2,8 @@
 use super::*;
 pub(super) fn select(body: &ApplicationOperationBodyProgram) -> u16 {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    if !body.reference_inputs().is_empty() {37}
+    if body.creation().is_some_and(|c|!c.peers().is_empty()||!c.path_links().is_empty()) {38}
+    else if !body.reference_inputs().is_empty() {37}
     else if body.creation().is_some_and(|creation| !creation.children().is_empty()) { 36 }
     else if body.creation().is_some_and(|creation| creation.reuses_current_if_unchanged()) { 35 }
     else if body.creation().is_some_and(|creation| creation.retires_predecessor()) { 34 }

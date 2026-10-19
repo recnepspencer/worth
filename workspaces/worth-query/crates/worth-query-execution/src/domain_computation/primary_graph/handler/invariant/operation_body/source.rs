@@ -23,7 +23,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         let Some(creation) = body.creation() else {
             return HandlerResult::Completed(sources);
         };
-        for step in creation.fields() {
+        for step in creation.initialization_sites().flat_map(|c| c.fields()) {
             let (source, captured) = if let Some(path) = step.path_source() {
                 let selected = self
                     .execution

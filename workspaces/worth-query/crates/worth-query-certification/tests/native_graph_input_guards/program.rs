@@ -16,7 +16,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         let builder = super::path_value_targets::declare(builder);
         let builder = super::retiring_actions::declare(super::selection_schema::declare(builder));
-        let builder = super::reuse_actions::declare(builder);
+        let builder = super::reuse_actions::declare(super::peer_audit::declare(builder));
         let builder = super::child_actions::declare(builder);
         let builder = super::path_signing::declare(builder);
         let builder = super::reference_input::declare(builder);
@@ -146,6 +146,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         _: (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.operation_body::<super::peer_audit::Binding>()?;
         setup.operation_body::<SaveBinding>()?;
         setup.operation_body::<ChangeBinding>()?;
         setup.operation_body::<IntroduceBinding>()?;
@@ -178,6 +179,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ApplicationProgramIdentity::new("worth.query.path-input.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![ApplicationFeatureSpec::root::<Schema, Feature>()
+            .native_action::<super::peer_audit::Binding>()
+            .finish_action()
             .native_action::<SaveBinding>()
             .finish_action()
             .native_action::<ChangeBinding>()

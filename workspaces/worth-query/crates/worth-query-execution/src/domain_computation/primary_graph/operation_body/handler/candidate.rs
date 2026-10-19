@@ -123,29 +123,34 @@ where
                 }
             }
         }
-        if let Some(creation) = self.body.creation()
-            && matches!(
-                decision.creation_disposition,
-                reuse::CreationDisposition::Reuse
-            )
+        let mut anchors = decision.path_links.targets.into_iter();
+        let mut child_index = 0;
+        let mut signing_target = None;
+        for (root_index, creation) in self
+            .body
+            .creation()
+            .into_iter()
+            .flat_map(|c| c.creation_roots())
+            .enumerate()
         {
-            for _ in creation
-                .fields()
-                .iter()
-                .filter(|field| field.input_member().is_some())
+            if root_index == 0
+                && matches!(
+                    decision.creation_disposition,
+                    reuse::CreationDisposition::Reuse
+                )
             {
-                let _ = input_values
-                    .as_mut()
-                    .and_then(Iterator::next)
-                    .expect("validated reused initializer");
+                for _ in creation
+                    .fields()
+                    .iter()
+                    .filter(|f| f.input_member().is_some())
+                {
+                    let _ = input_values
+                        .as_mut()
+                        .and_then(Iterator::next)
+                        .expect("validated reused initializer");
+                }
+                continue;
             }
-        }
-        if let Some(creation) = self.body.creation()
-            && matches!(
-                decision.creation_disposition,
-                reuse::CreationDisposition::Create
-            )
-        {
             let created =
                 match writer.body_create_in_scope(&target, creation.entity(), creation.key()) {
                     Ok(created) => created,
@@ -153,63 +158,18 @@ where
                         return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                     }
                 };
-            for step in creation.fields() {
-                let mut source_reservation = None;
-                let value = match step {
-                    ApplicationOperationBodyCreatedField::Computed { value, .. } => {
-                        std::borrow::Cow::Borrowed(
-                            decision
-                                .values
-                                .as_ref()
-                                .expect("installed computed value")
-                                .value(value),
-                        )
-                    }
-                    ApplicationOperationBodyCreatedField::Literal { value, .. } => {
-                        std::borrow::Cow::Borrowed(value)
-                    }
-                    ApplicationOperationBodyCreatedField::Input { .. } => std::borrow::Cow::Owned(
-                        input_values
-                            .as_mut()
-                            .and_then(Iterator::next)
-                            .expect("one prepared value per installed input initializer")
-                            .expect("required initializer input is present"),
-                    ),
-                    ApplicationOperationBodyCreatedField::OptionalInput { .. } => {
-                        let Some(value) = input_values
-                            .as_mut()
-                            .and_then(Iterator::next)
-                            .expect("one prepared option per installed optional initializer")
-                        else {
-                            continue;
-                        };
-                        std::borrow::Cow::Owned(value)
-                    }
-                    ApplicationOperationBodyCreatedField::ScopeField { .. }
-                    | ApplicationOperationBodyCreatedField::PresentScopeField { .. }
-                    | ApplicationOperationBodyCreatedField::CapturedScopeField { .. }
-                    | ApplicationOperationBodyCreatedField::CapturedPathField { .. }
-                    | ApplicationOperationBodyCreatedField::RelatedField { .. }
-                    | ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => {
-                        let Some(source) = source_values
-                            .next()
-                            .expect("one captured source per installed initializer")
-                        else {
-                            continue;
-                        };
-                        let (source, reservation) = source.into_parts();
-                        source_reservation = Some(reservation);
-                        std::borrow::Cow::Owned(source)
-                    }
-                    ApplicationOperationBodyCreatedField::SigningProvenance { .. } => continue,
-                };
-                if let Err(cause) = writer.body_initialize_field(&created, step.field(), value) {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
-                }
-                drop(source_reservation);
+            if let Err(cause) = super::creation_initializers::initialize(
+                creation,
+                &created,
+                &mut input_values,
+                &mut source_values,
+                decision.values.as_ref(),
+                writer,
+            ) {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
             }
             for output in &self.outputs {
-                if matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Creation { .. })
+                if root_index == 0 && matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Creation { .. })
                     && let Err(cause) = writer.body_output(&created, output.role.clone()) {
                         return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                     }
@@ -243,7 +203,20 @@ where
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
             }
-            for (index, child) in creation.children().iter().enumerate() {
+            for path in creation.path_links() {
+                let anchor = match writer
+                    .projected_entity(&anchors.next().expect("prepared exact existing anchor"))
+                {
+                    Ok(anchor) => anchor,
+                    Err(cause) => {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
+                    }
+                };
+                if let Err(cause) = writer.body_creation_link(&anchor, &created, &path.link) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+            }
+            for child in creation.children() {
                 let site = &child.creation;
                 // Creation partition remains the original admitted Existing scope,
                 // not the new parent. The parent is used only as a retained link endpoint.
@@ -253,30 +226,18 @@ where
                         return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
                     }
                 };
-                for step in site.fields() {
-                    let value = match step {
-                        ApplicationOperationBodyCreatedField::Literal { value, .. } => {
-                            std::borrow::Cow::Borrowed(value)
-                        }
-                        ApplicationOperationBodyCreatedField::Input { .. }
-                        | ApplicationOperationBodyCreatedField::OptionalInput { .. } => {
-                            let Some(value) = input_values
-                                .as_mut()
-                                .and_then(Iterator::next)
-                                .expect("validated child initializer")
-                            else {
-                                continue;
-                            };
-                            std::borrow::Cow::Owned(value)
-                        }
-                        _ => unreachable!("installed child scalar profile"),
-                    };
-                    if let Err(cause) = writer.body_initialize_field(&nested, step.field(), value) {
-                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
-                    }
+                if let Err(cause) = super::creation_initializers::initialize(
+                    site,
+                    &nested,
+                    &mut input_values,
+                    &mut source_values,
+                    decision.values.as_ref(),
+                    writer,
+                ) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
                 let custody = children.as_mut().expect("funded child sites");
-                let parent_index = self.child_parents[index];
+                let parent_index = self.child_parents[child_index];
                 let parent = if parent_index == 0 {
                     &created
                 } else {
@@ -286,15 +247,27 @@ where
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
                 custody.targets.push(nested);
+                child_index += 1;
             }
-            if let Some(signing) = creation.signing()
-                && let Err(cause) = writer.body_signing_slot(&created, signing)
-            {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+            if creation.signing().is_some() {
+                signing_target = Some(created);
             }
         }
         if let Some(emission) = decision.emission
             && let Err(cause) = writer.body_external_emission(emission)
+        {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+        }
+        // The deferred provenance slot owns the remaining representation budget.
+        // Reserve it only after every independent ordinary effect is assembled.
+        if let Some(created) = signing_target
+            && let Err(cause) = writer.body_signing_slot(
+                &created,
+                self.body
+                    .creation()
+                    .and_then(|root| root.signing())
+                    .expect("installed signed root"),
+            )
         {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
         }

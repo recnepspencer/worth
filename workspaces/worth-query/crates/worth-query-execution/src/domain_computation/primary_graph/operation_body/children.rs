@@ -13,16 +13,16 @@ pub(super) fn parent_indices(
     let Some(root) = body.creation() else {
         return Vec::new();
     };
-    let mut sites = std::collections::BTreeMap::from([(root.key(), 0)]);
-    root.children()
-        .iter()
-        .enumerate()
-        .map(|(index, child)| {
+    let mut parents = Vec::new();
+    for tree in root.creation_roots() {
+        let mut sites = std::collections::BTreeMap::from([(tree.key(), 0)]);
+        for child in tree.children() {
             let parent = *sites
                 .get(child.parent_key.as_str())
                 .expect("installed prior parent");
-            sites.insert(child.creation.key(), index + 1);
-            parent
-        })
-        .collect()
+            parents.push(parent);
+            sites.insert(child.creation.key(), parents.len());
+        }
+    }
+    parents
 }

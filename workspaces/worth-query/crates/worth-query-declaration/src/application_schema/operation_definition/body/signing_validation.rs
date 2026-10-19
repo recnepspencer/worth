@@ -15,88 +15,92 @@ pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial
         let Member::OperationBody { body, .. } = member else {
             continue;
         };
-        let Some(creation) = body.creation() else {
-            continue;
-        };
-        super::classified_capture::validate_creation(creation).map_err(|_| denied())?;
-        let provenance_count = creation
-            .fields()
-            .iter()
-            .filter(|field| matches!(field, Step::SigningProvenance { .. }))
-            .count();
-        let Some(signing) = creation.signing() else {
-            if provenance_count != 0 {
-                return Err(denied());
-            }
-            continue;
-        };
-        if crate::authentication::WorthQueryAuthenticationPurpose::validate(signing.purpose()).is_err()
+        for creation in body
+            .creation()
+            .into_iter()
+            .flat_map(|c| c.initialization_sites())
+        {
+            super::classified_capture::validate_creation(creation).map_err(|_| denied())?;
+            let provenance_count = creation
+                .fields()
+                .iter()
+                .filter(|field| matches!(field, Step::SigningProvenance { .. }))
+                .count();
+            let Some(signing) = creation.signing() else {
+                if provenance_count != 0 {
+                    return Err(denied());
+                }
+                continue;
+            };
+            if crate::authentication::WorthQueryAuthenticationPurpose::validate(signing.purpose()).is_err()
             || signing.actor().entity() != creation.entity() || signing.provenance().entity() != creation.entity()
             || provenance_count != 1 || actor(creation).is_none()
             || !creation.fields().iter().any(|field| matches!(field, Step::SigningProvenance { field, binding }
                 if field == signing.provenance() && ApplicationSigningProvenanceEncoding::for_binding(binding).is_some())) {
             return Err(denied());
         }
-        for target in [signing.actor(), signing.provenance()] {
-            if !members.iter().any(|member| matches!(member, Member::Field { entity, aspect, field, presence: Presence::Required, writable: false, unit: None, .. }
+            for target in [signing.actor(), signing.provenance()] {
+                if !members.iter().any(|member| matches!(member, Member::Field { entity, aspect, field, presence: Presence::Required, writable: false, unit: None, .. }
                 if entity == target.entity() && aspect == target.aspect() && field == target.field())) {
                 return Err(denied());
             }
-        }
-        for member in members {
-            match member {
-                Member::Field {
-                    entity,
-                    aspect,
-                    field,
-                    presence: Presence::Required,
-                    ..
-                } if entity == creation.entity()
-                    && !creation.fields().iter().any(|step| {
-                        step.field().entity() == entity
-                            && step.field().aspect() == aspect
-                            && step.field().field() == field
-                    }) =>
-                {
-                    return Err(denied())
-                }
-                Member::Field {
-                    entity,
-                    writable: true,
-                    ..
-                } if entity == creation.entity() => return Err(denied()),
-                Member::OperationProgram {
-                    target: Target::Delete { entity },
-                    ..
-                } if entity == creation.entity() => return Err(denied()),
-                Member::OperationProgram {
-                    operation,
-                    target: Target::Create { entity },
-                } if entity == creation.entity() => {
-                    let Some(other) = members
-                        .iter()
-                        .find_map(|member| match member {
-                            Member::OperationBody {
-                                operation: candidate,
-                                body,
-                            } if candidate == operation => body.creation(),
-                            _ => None,
-                        })
-                        .filter(|other| other.entity() == entity)
-                    else {
-                        return Err(denied());
-                    };
-                    let Some(other_signing) = other.signing() else {
-                        return Err(denied());
-                    };
-                    if other_signing.actor() != signing.actor()
-                        || other_signing.provenance() != signing.provenance()
-                        || actor(other) != actor(creation)
+            }
+            for member in members {
+                match member {
+                    Member::Field {
+                        entity,
+                        aspect,
+                        field,
+                        presence: Presence::Required,
+                        ..
+                    } if entity == creation.entity()
+                        && !creation.fields().iter().any(|step| {
+                            step.field().entity() == entity
+                                && step.field().aspect() == aspect
+                                && step.field().field() == field
+                        }) =>
                     {
-                        return Err(denied());
+                        return Err(denied())
                     }
+                    Member::Field {
+                        entity,
+                        writable: true,
+                        ..
+                    } if entity == creation.entity() => return Err(denied()),
+                    Member::OperationProgram {
+                        target: Target::Delete { entity },
+                        ..
+                    } if entity == creation.entity() => return Err(denied()),
+                    Member::OperationProgram {
+                        operation,
+                        target: Target::Create { entity },
+                    } if entity == creation.entity() => {
+                        let others = members
+                            .iter()
+                            .filter_map(|member| match member {
+                                Member::OperationBody {
+                                    operation: candidate,
+                                    body,
+                                } if candidate == operation => body.creation(),
+                                _ => None,
+                            })
+                            .flat_map(|root| root.initialization_sites())
+                            .filter(|other| other.entity() == entity)
+                            .collect::<Vec<_>>();
+                        if others.is_empty()
+                            || others.into_iter().any(|other| {
+                                other.signing().is_none_or(|other_signing| {
+                                    other_signing.actor() != signing.actor()
+                                        || other_signing.provenance() != signing.provenance()
+                                        || actor(other) != actor(creation)
+                                })
+                            })
+                        {
+                            return Err(denied());
+                        }
+                    }
+                    _ => {}
                 }
-                _ => {}
             }
         }
     }
