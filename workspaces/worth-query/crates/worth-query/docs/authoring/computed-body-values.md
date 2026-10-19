@@ -122,6 +122,16 @@ not automatically computed-body references. Signature dependency declarations,
 workflow occurrences, authorization and external delivery keep their existing
 owners; this API does not replace any of them.
 
+A signed creation may include computed scope bookkeeping. For example, assign
+`next` to CurrentRevision on the body, then use
+`capture_from_scope(CurrentRevision, VerifiedAuditRevision, AuditContext)` on the
+signed creation. The audit capture authenticates the observed old revision;
+the root assignment publishes the prepared next revision in the same candidate.
+Neither is calculated again by the signing adapter. The existing current-evidence
+lifecycle rejects writing a `Subject` capture's source in that same operation.
+An `initialize_value` inside a signed artifact is still refused: it is not an
+explicitly classified source capture and cannot become certified by omission.
+
 ## Inspection And Debugging
 
 Inspect `body.values()` for the single definition and the scope/created sink
@@ -142,8 +152,10 @@ domain codec. A failed computation or codec is not a false optional condition.
 
 Computed results are unitless, frameless UInt64 only. Operands use the existing
 supported body-source vocabulary. A value must feed a scope assignment or created
-field; payload-only definitions are not currently supported. Computed signing
-creation is refused rather than attaching a signature to a guessed postimage.
+field; payload-only definitions are not currently supported. Computed field
+initializers inside signed artifacts are refused rather than attaching a signature
+to a guessed postimage. Computed scope writes outside the certified subject may
+accompany signing through the normal native candidate/authentication owners.
 The evaluation payload inherits the one-slot, unit-result native-body and query
 context limits described in [conditional effects](./conditional-body-effects.md).
 

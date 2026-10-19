@@ -16,13 +16,6 @@ pub(in crate::domain_computation::primary_graph::operation_body) fn install<
     operation: &str,
 ) -> Result<Vec<InstalledBodyValue>, Denial> {
     let denied = || Denial::new(Kind::OperationBodyUnavailable, operation);
-    if !body.values().is_empty()
-        && body
-            .creation()
-            .is_some_and(|creation| creation.signing().is_some())
-    {
-        return Err(denied());
-    }
     body.values()
         .iter()
         .map(|program| {

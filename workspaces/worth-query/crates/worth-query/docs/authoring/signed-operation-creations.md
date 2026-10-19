@@ -82,6 +82,14 @@ Choose `AuditContext` for copied context that must be authenticated but does not
 determine continued signature validity, such as the document revision or stage
 at signing. Both roles use the same tracked initializer and stale checks; audit
 values remain in the immutable signed snapshot but not in `dependencies()`.
+The same candidate can advance bookkeeping with a
+[computed scope assignment](./computed-body-values.md). Capturing CurrentRevision
+as `AuditContext` records its observed pre-sign value, while assigning the native
+`next-revision` result publishes the next value to the root. The normal signing
+intent authenticates both effects. A concurrent revision-only change stales that
+candidate; later changes to audit context alone do not supersede settled evidence.
+This does not permit a computed initializer inside the signed artifact: such an
+initializer lacks an explicit subject/audit capture classification and is refused.
 V2 rejects unclassified scope captures. Classified captures require v2 signing;
 they cannot be silently interpreted by an unsigned creation or the legacy profile.
 
@@ -410,7 +418,9 @@ authority. Do not substitute current-value equality for Current lifecycle member
 
 This body form admits one signed creation per candidate. It uses the existing
 bounded scalar body and canonicalization support; unsupported encoding, resource
-or compiler profiles fail closed. Old portable body versions remain unchanged;
+or compiler profiles fail closed. Unitless UInt64 computed scope bookkeeping may
+accompany signing, but `initialize_value` on a signed creation remains unsupported.
+The lifecycle's Subject source-write exclusion is unchanged. Old portable body versions remain unchanged;
 the original signed form and principal operand use body record v13. Explicit
 capture role and source presence use body record v14; earlier versions cannot
 reinterpret its new opcode. The v2 provenance binding has a distinct codec
@@ -436,5 +446,6 @@ signature manifestation and UTC evidence are not supplied by this feature.
 ## Related Docs
 
 - [Executable Scope-Bound Operation Bodies](./scope-field-operation-bodies.md)
+- [Shared Computed Body Values](./computed-body-values.md)
 - [Ordinary Application Front Door](../foundations/ordinary-application-front-door.md)
 - [Programs and Adoption](../foundations/programs-and-adoption.md)

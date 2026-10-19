@@ -65,8 +65,5 @@ pub(in crate::application_schema::operation_definition::body) fn validate_values
     {
         return Err(Denial::MissingOperationProgramDependency);
     }
-    if !body.values().is_empty() && body.creation().is_some_and(|c| c.signing().is_some()) {
-        return Err(Denial::MissingOperationProgramDependency);
-    }
     Ok(())
 }

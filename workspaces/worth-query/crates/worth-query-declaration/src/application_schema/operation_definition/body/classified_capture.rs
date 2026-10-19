@@ -170,7 +170,7 @@ pub(super) fn validate_creation(creation: &ApplicationOperationBodyCreation) -> 
         && creation
             .fields()
             .iter()
-            .any(|step| step.related_source().is_some())
+            .any(|step| step.related_source().is_some() || matches!(step, Step::Computed { .. }))
     {
         return Err(Denial::UnclassifiedSignedCapture);
     }
