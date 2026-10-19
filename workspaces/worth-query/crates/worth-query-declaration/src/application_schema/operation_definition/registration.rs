@@ -38,6 +38,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 );
             }
             reads.extend(
+                body.outputs()
+                    .iter()
+                    .flat_map(|output| output.target.decision_reads()),
+            );
+            reads.extend(
                 body.requirements()
                     .iter()
                     .flat_map(|requirement| requirement.operands())

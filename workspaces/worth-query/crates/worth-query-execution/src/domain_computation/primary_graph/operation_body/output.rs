@@ -55,6 +55,14 @@ pub(super) fn install_outputs<
                         creation.key() == key && creation.entity() == role.entity()
                     })
             }
+            ApplicationOperationBodyOutputTarget::Related { relation, from, to } => {
+                role.posture() == Posture::Preserve
+                    && role.cardinality() == worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleCardinality::ExactlyOne
+                    && Some(from.as_str()) == body.scope_entity() && to == role.entity()
+                    && schema.installed_declaration().members().iter().any(|member| matches!(member,
+                        worth_query_declaration::facade::application_schema::ApplicationSchemaMember::Relation { relation: name, from: root, to: child, .. }
+                        if name == relation && root == from && child == to))
+            }
         };
         if !target_matches {
             return Err(denied());
@@ -84,4 +92,21 @@ pub(super) fn install_outputs<
         return Err(denied());
     }
     Ok(outputs)
+}
+
+pub(super) fn require_related_outputs<Schema>(
+    outputs: &[InstalledBodyOutput],
+    selections: &super::PreparedBodySelections<Schema>,
+) -> Result<(), super::super::WorthQueryApplicationAttemptDenial> {
+    for output in outputs {
+        if let ApplicationOperationBodyOutputTarget::Related { relation, from, to } = &output.target
+            && selections.selected(relation, from, to).is_none()
+        {
+            return Err(super::super::WorthQueryApplicationAttemptDenial::new(
+                super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                relation,
+            ));
+        }
+    }
+    Ok(())
 }

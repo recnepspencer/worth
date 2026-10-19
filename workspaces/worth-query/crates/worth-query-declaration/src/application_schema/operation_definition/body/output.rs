@@ -9,12 +9,20 @@ use crate::application_operation::{
     WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryPreserveOutput,
 };
 use crate::application_schema::ApplicationSchema;
+mod related;
 
 /// Descriptive target within this body; never a caller-selected entity identity.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationOperationBodyOutputTarget {
     Scope,
-    Creation { key: String },
+    Creation {
+        key: String,
+    },
+    Related {
+        relation: String,
+        from: String,
+        to: String,
+    },
 }
 
 /// Portable meaning. Fresh readmission and native installation confer authority.
@@ -35,6 +43,9 @@ impl ApplicationOperationBodyOutput {
         let (target, key) = match &self.target {
             ApplicationOperationBodyOutputTarget::Scope => ("scope", ""),
             ApplicationOperationBodyOutputTarget::Creation { key } => ("creation", key.as_str()),
+            ApplicationOperationBodyOutputTarget::Related { relation, .. } => {
+                ("related", relation.as_str())
+            }
         };
         let parts = [
             self.binding.as_str(),
@@ -52,12 +63,61 @@ impl ApplicationOperationBodyOutput {
             target,
             key,
         ];
-        let mut record = String::from("body-output-v1;");
+        let mut record = String::from(
+            if matches!(
+                self.target,
+                ApplicationOperationBodyOutputTarget::Related { .. }
+            ) {
+                "body-output-v2;"
+            } else {
+                "body-output-v1;"
+            },
+        );
         for part in parts {
             use std::fmt::Write;
             write!(record, "{}:{part};", part.len()).expect("String write");
         }
+        if let ApplicationOperationBodyOutputTarget::Related { from, to, .. } = &self.target {
+            for part in [from, to] {
+                use std::fmt::Write;
+                write!(&mut record, "{}:{part};", part.len()).expect("String write");
+            }
+        }
         record
+    }
+}
+
+impl ApplicationOperationBodyOutputTarget {
+    /// Exact native outgoing selection required by a related correspondence.
+    pub fn selection_read(
+        &self,
+    ) -> Option<crate::application_schema::ApplicationOperationDecisionReadTarget> {
+        match self {
+            Self::Related { relation, from, to } => Some(
+                crate::application_schema::ApplicationOperationDecisionReadTarget::Relation {
+                    relation: relation.clone(),
+                    from: from.clone(),
+                    to: to.clone(),
+                },
+            ),
+            _ => None,
+        }
+    }
+    /// Registration and cold readmission share the same dependency closure.
+    pub fn decision_reads(
+        &self,
+    ) -> Vec<crate::application_schema::ApplicationOperationDecisionReadTarget> {
+        use crate::application_schema::ApplicationOperationDecisionReadTarget as Read;
+        match self {
+            Self::Related { from, to, .. } => vec![
+                self.selection_read().expect("related selection"),
+                Read::Entity {
+                    entity: from.clone(),
+                },
+                Read::Entity { entity: to.clone() },
+            ],
+            _ => Vec::new(),
+        }
     }
 }
 

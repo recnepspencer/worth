@@ -124,6 +124,9 @@ where
             Ok(selections) => selections,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
+        if let Err(cause) = super::output::require_related_outputs(&self.outputs, &selections) {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+        }
         let sources = match reader.body_created_sources(&self.body, &selections) {
             HandlerResult::Completed(sources) => sources,
             HandlerResult::DomainDenied(cause) => return HandlerResult::DomainDenied(cause),
@@ -220,6 +223,16 @@ where
                 && let Err(cause) = writer.body_output(&target, output.role.clone()) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
+            if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Related { relation, from, to } = &output.target {
+                let selected = decision.selections.selected(relation, from, to).as_ref().expect("required output validated at decision");
+                let preserved = match writer.projected_entity(&selected.target) {
+                    Ok(target) => target,
+                    Err(cause) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+                };
+                if let Err(cause) = writer.body_output(&preserved, output.role.clone()) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+            }
         }
         if let Some(creation) = self.body.creation() {
             let created =

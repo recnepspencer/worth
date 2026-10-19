@@ -98,8 +98,12 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                 work.observe_text(&output.role.name);
                 work.observe_text(&output.role.entity);
                 work.observe_fixed(6);
-                if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Creation { key } = &output.target {
-                    work.observe_text(key);
+                match &output.target {
+                    worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Scope => {}
+                    worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Creation { key } => { work.observe_text(key); }
+                    worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Related { relation, from, to } => {
+                        for text in [relation, from, to] { work.observe_text(text); }
+                    }
                 }
             }
             if let Some(scope) = body.explicit_scope_entity() {

@@ -52,6 +52,15 @@ pub(super) fn validate_outputs(
                         creation.key() == key && creation.entity() == output.role.entity
                     })
             }
+            ApplicationOperationBodyOutputTarget::Related { relation, from, to } => {
+                output.role.posture == ApplicationMutationOutputPosture::Preserve
+                    && output.role.cardinality == crate::application_operation::ApplicationMutationOutputRoleCardinality::ExactlyOne
+                    && Some(from.as_str()) == body.scope_entity() && to == &output.role.entity
+                    && members.iter().any(|member| matches!(member, ApplicationSchemaMember::Relation { relation: name, from: root, to: child, .. }
+                        if name == relation && root == from && child == to))
+                    && output.target.decision_reads().iter().all(|read| members.iter().any(|member| matches!(member,
+                        ApplicationSchemaMember::OperationDecisionRead { operation: owner, target } if owner == operation && target == read)))
+            }
         };
         if !target_valid {
             return Err(denied);

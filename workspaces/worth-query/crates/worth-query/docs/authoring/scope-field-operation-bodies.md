@@ -17,8 +17,9 @@ values; the host does not choose a handler that independently restates them.
 An operation may declare presence requirements or Boolean Foundation expressions
 over typed scope fields and related-item counts. The same installed requirements
 drive admission and authorized read-only guidance.
-Fixed typed output roles may preserve the admitted scope or identify the body's
-created row through Query's existing commit correspondence. A preservation-only
+Fixed typed output roles may preserve the admitted scope, preserve its single
+selected outgoing subject, or identify the body's created row through Query's
+existing commit correspondence. A preservation-only
 body needs no dummy business-field write.
 The creation may also link to/from that admitted scope through typed declared
 relations, so domain membership does not depend on a later host effect.
@@ -71,7 +72,8 @@ Declare through `worth_query_decl::facade::application_schema`:
   `creation.link_to_scope(relation, "link-slot")` for links to the new row;
 - `creation.replace_from_scope(relation, "link-slot")` to atomically replace an
   at-most-one outgoing selection with that exact new row;
-- `body.preserve_scope_output::<Binding, Role>()` and
+- `body.preserve_scope_output::<Binding, Role>()`,
+  `body.preserve_related_output::<Binding, Role>(relation)` and
   `creation.create_output::<Binding, Role>()` for fixed typed output correspondence;
 - a completed operation definition's `with_body(body)`;
 - `ApplicationProgramAuthoring::begin().with_schema(&schema).validated_program()`.
@@ -281,6 +283,20 @@ The existing candidate owner binds and validates the role, and Relational's actu
 commit resolves a creation slot to its durable entity identity. No host manufactures
 an output receipt. A preservation-only body observes scope Entity kind/liveness
 through the decision-read owner even though it has no scalar reads or writes.
+
+`preserve_related_output` requires a Preserve/ExactlyOne role whose Entity is the
+typed relation's target. The source must be the binding's actual scope; both
+entities and the relation need normal `OperationReads<Operation>` permission.
+Registration derives those three installed reads. Cold admission checks them,
+the endpoints and the exact binding/role contract independently. No live target
+refuses with `MissingAuthoritativeFact`; multiple distinct live targets refuse
+with `AmbiguousRelation`, both naming the relation. Neither produces a receipt.
+The body seals the same tracked selection used by related-source initializers
+and selection replacement. Candidate output binding uses that retained target,
+not a fresh relation lookup. A racing replacement stales the whole candidate.
+Exact committed replay returns the original correspondence even if the pointer
+later changes. This reference identifies a committed output; it is not by itself
+current workflow, signature or assessment authority.
 
 Creation links name typed relations with `OperationLinks<Operation>`. The created
 endpoint is fixed by the creation builder; finishing and fresh readmission bind
@@ -544,6 +560,47 @@ deviation supplier exercises this path, source/selection races and retry after a
 later current selection. The Active guard is intentional: this is not a Reopen
 operation or fresh enrollment of an existing item.
 
+To return only the selected round without changing it, declare `CheckedRound` as
+a Preserve/ExactlyOne role in `CheckRoundBinding::Output`, with Entity
+`ApprovalRound`, and author:
+
+```rust
+let body = CheckRound::reference().body()
+    .in_scope(Deviation::reference())?
+    .preserve_related_output::<CheckRoundBinding, CheckedRound>(CurrentRound::reference())?
+    .finish()?;
+```
+
+To expose both the copied preimage and the new round, the copy operation's own
+output contract declares `SourceRound` as Preserve/ExactlyOne and `CreatedRound`
+as Create/ExactlyOne. Attach the first before creating, and the second to the
+creation builder:
+
+```rust
+let body = CopyRound::reference().body()
+    .in_scope(Deviation::reference())?
+    .preserve_related_output::<CopyRoundBinding, SourceRound>(CurrentRound::reference())?
+    .create_in_scope(ApprovalRound::reference(), "copied-round")?
+    .initialize_input(RoundIdentity::reference(), "identity")?
+    .initialize_optional_from_related(
+        CurrentRound::reference(), RoundDescription::reference(), RoundDescription::reference(),
+    )?
+    .initialize_from_related(
+        CurrentRound::reference(), RoundAssignee::reference(), RoundAssignee::reference(),
+    )?
+    .link_from_scope(RoundHistory::reference(), "history")?
+    .replace_from_scope(CurrentRound::reference(), "current")?
+    .create_output::<CopyRoundBinding, CreatedRound>()?
+    .finish()?;
+```
+
+Keep any real domain guards and required initializers from the complete operation.
+On commit, `receipt.outputs_of::<CopyRoundOutputs>()?.entity::<SourceRound>()?`
+names the original round; `entity::<CreatedRound>()?` names the new one. Both
+ExactlyOne roles return typed entities directly. Copying and returning the source
+share one decision observation even though the candidate replaces CurrentRound.
+Do not resolve the source again after commit: it now points at the created round.
+
 To expose its actual committed identity, give `CreateDocumentBinding::Output` a
 fixed role whose Entity is Document and Action is `WorthQueryCreateOutput`, then
 add `.create_output::<CreateDocumentBinding, CreatedDocument>()?` to that creation
@@ -616,6 +673,9 @@ Optional-input assignment and initialization use portable body record v9.
 Older versions reject those opcodes rather than reinterpret their intent.
 Fixed output uses select portable body record v10; valid no-output v1–v9 records
 retain their previous bytes. Their meaning enters both schema and program identity.
+Related Preserve outputs select portable body record v22, schema body meaning v14
+and program body meaning v17. Earlier Scope/Create encodings remain unchanged.
+Profiles older than v22 reject related-output tag 3 rather than reinterpreting it.
 Creation links select portable body record v11; valid no-link v1–v10 encodings
 retain their previous bytes. Direction, endpoints, relation and key enter both
 schema and program meaning, and fresh reconstruction keeps that exact linkage.
@@ -674,7 +734,7 @@ single outgoing related-subject required/optional preimage
 initializers or an exact unitless admitted-principal identity initializer,
 links between that creation and its admitted scope, including at-most-one outgoing
 selection replacement, plus fixed
-Preserve-scope/Create-slot output uses. It requires
+Preserve-scope, Preserve-single-outgoing-subject and Create-slot output uses. It requires
 at least one real creation, scope assignment or output use and unit results.
 Output roles are binding-affine; a body cannot silently reinterpret one binding's
 roles under another binding with matching names. Arbitrary target selection,
@@ -683,6 +743,9 @@ general input/source assignments, filtered collections, governed-query operands,
 custom expression kernels, multiple creations, arbitrary existing-target relation
 edits, signature consequences and command
 continuation are not implemented here.
+Related outputs have no Optional, reverse or filtered selection form. They return
+the preimage, not a post-write query result, and do not attach that entity to native
+workflow completion context or prove which independent chain is business-current.
 Related copying has no filtered, multi-subject or reverse-selection form and
 cannot initialize a required target from an optional source. Related certified
 captures are refused, not reinterpreted as root-scope captures. Copying alone does

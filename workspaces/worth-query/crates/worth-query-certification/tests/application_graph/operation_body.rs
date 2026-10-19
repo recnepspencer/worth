@@ -128,23 +128,7 @@ fn install_with_projection<const DESTINATION: u64>() -> (
                 document
             };
             graph.bind_entity(document)?;
-            if matches!(DESTINATION, 25..=27 | 29) {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Audit::reference(),
-                        WorthQueryApplicationEntityKey::new("body-member").unwrap(),
-                    )
-                    .field(AuditIdentityField::reference(), "member".to_owned())
-                    .field(AuditRetentionField::reference(), 7)
-                    .field(AuditPriorRetentionField::reference(), 7),
-                )?;
-                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    DocumentMembers::reference(),
-                    "body-member-edge",
-                    WorthQueryApplicationEntityKey::new("body-document").unwrap(),
-                    WorthQueryApplicationEntityKey::new("body-member").unwrap(),
-                ))?;
-            }
+            output::related::seed_members::<DESTINATION>(graph)?;
             Ok(())
         },
     )

@@ -5,6 +5,12 @@ use worth_query_host::facade::declaration::application_schema::*;
 pub(super) fn body<const DESTINATION: u64>(
 ) -> ApplicationOperationBody<DocumentRetentionSchema<DESTINATION>, SetRetention, SetRetentionInput>
 {
+    if matches!(DESTINATION, 37 | 38) {
+        return SetRetention::reference().body()
+            .in_scope(Document::reference()).unwrap()
+            .preserve_related_output::<super::output::related::binding::RelatedBinding<DESTINATION>, super::output::related::RelatedOutput<DESTINATION>>(DocumentMembers::reference()).unwrap()
+            .finish().unwrap();
+    }
     if DESTINATION == 31 {
         return SetRetention::reference()
             .body()

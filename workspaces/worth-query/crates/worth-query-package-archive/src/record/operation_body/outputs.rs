@@ -37,6 +37,13 @@ pub(super) fn write(
                 output.u16(2)?;
                 output.text(key)
             }
+            Target::Related { relation, from, to } => {
+                output.u16(3)?;
+                for text in [relation, from, to] {
+                    output.text(text)?;
+                }
+                Ok(())
+            }
         }
     })
 }
@@ -44,6 +51,7 @@ pub(super) fn write(
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
+    version: u16,
 ) -> Result<Vec<ApplicationOperationBodyOutput>, Denial> {
     decode_sequence(input, budget, 22, |input, _| {
         let binding = input.text()?.to_owned();
@@ -64,6 +72,11 @@ pub(super) fn decode(
             1 => Target::Scope,
             2 => Target::Creation {
                 key: input.text()?.to_owned(),
+            },
+            3 if version >= 22 => Target::Related {
+                relation: input.text()?.to_owned(),
+                from: input.text()?.to_owned(),
+                to: input.text()?.to_owned(),
             },
             _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
         };
