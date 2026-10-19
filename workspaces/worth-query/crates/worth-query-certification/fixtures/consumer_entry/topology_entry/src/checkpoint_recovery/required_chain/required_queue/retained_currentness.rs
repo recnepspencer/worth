@@ -1,6 +1,8 @@
 //! Original consumed lineage is checked before any source-triggered regeneration.
 use super::*;
-use worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial;
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationOutputDemandDenial, WorthQueryOutputCurrentnessDenial,
+};
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
 
 fn assert_superseded(answer: Result<(), WorthQueryOutputCurrentnessDenial>, subject: &str) {
