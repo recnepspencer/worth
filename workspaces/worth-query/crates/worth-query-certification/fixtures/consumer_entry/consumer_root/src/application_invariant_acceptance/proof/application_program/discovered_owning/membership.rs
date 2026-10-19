@@ -158,7 +158,7 @@ fn discovered_ordinary_membership_refuses_current_but_keeps_original_history_and
     assert!(matches!(
         settled.read_current_with_policy(
             &request,
-            Policy::currentness(NonZeroUsize::new(world.application.runtime().output_demand_resource_profile().limits().source_currentness_work()).expect("installed finite positive currentness allowance"))
+            Policy::default()
         ),
         Err(DeliveryDenial::Stale(denial)) if denial.kind()==worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded
     ));

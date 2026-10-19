@@ -203,17 +203,7 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         Err(WorthQueryOperationDeliveryDenial::Currentness(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial)))
         if denial.kind()==worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
     ));
-    let policy = Policy::currentness(
-        NonZeroUsize::new(
-            world
-                .application
-                .runtime()
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
-        .expect("installed finite positive currentness allowance"),
-    );
+    let policy = Policy::default();
     let query_denial = settled
         .read_current_with_policy(&request, policy.query(one, one))
         .err()

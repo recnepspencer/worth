@@ -73,20 +73,9 @@ fn discovered_ordinary_batch_is_complete_and_same_basis_after_aggregate_work_ref
     }
     let cap = *works.iter().max().unwrap();
     assert!(cap < works.iter().sum::<usize>());
-    let policy = Policy::currentness(
-        NonZeroUsize::new(
-            world
-                .application
-                .runtime()
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
-        .expect("installed finite positive currentness allowance"),
-    )
-    .batch(Limits::new(
+    let policy = Policy::default().batch(Limits::new(
         NonZeroUsize::new(2).unwrap(),
-        NonZeroUsize::new(cap).unwrap(),
+        Some(NonZeroUsize::new(cap).unwrap()),
         NonZeroUsize::MAX,
         NonZeroUsize::MAX,
     ));
@@ -226,20 +215,7 @@ fn discovered_ordinary_no_projection_closes_actual_nonempty_fanout_without_query
         .unwrap();
     assert_eq!(settled.settlement().output_count(), 6);
     let current = settled
-        .deliver_current(
-            &request,
-            Policy::currentness(
-                NonZeroUsize::new(
-                    world
-                        .application
-                        .runtime()
-                        .output_demand_resource_profile()
-                        .limits()
-                        .source_currentness_work(),
-                )
-                .expect("installed finite positive currentness allowance"),
-            ),
-        )
+        .deliver_current(&request, Policy::default())
         .unwrap();
     assert_eq!(
         current.selected_commit(),
