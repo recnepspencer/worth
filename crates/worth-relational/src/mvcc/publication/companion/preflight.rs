@@ -23,6 +23,17 @@ pub struct CompanionPreflightBudget {
     pub maximum_preparation_bytes: u64,
 }
 
+/// The original reason native companion admission or preparation stopped.
+///
+/// Resource variants retain their supplied work amounts or byte capacities;
+/// counter overflow carries no inferred requirement. Structural variants name
+/// pending topology, a mismatched source or position, a foreign cell, or changed
+/// registration, without implying resource exhaustion. Execution and interruption
+/// variants retain the native cause and, when supplied, its boundary.
+///
+/// This is diagnostic data, not publication, currentness or cleanup authority.
+/// The receiving owner supplies the reporting stage and decides recovery;
+/// a stop alone neither identifies that stage nor promises a successful retry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompanionPreflightStop {
     Execution(crate::execution::RelationalExecutionDenialCause),
