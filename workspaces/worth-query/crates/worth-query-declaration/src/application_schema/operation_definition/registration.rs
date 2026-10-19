@@ -107,7 +107,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     target,
                 });
             }
-            for target in body
+            let mut programs = body
                 .scope_fields()
                 .iter()
                 .filter_map(|step| step.write_target())
@@ -116,59 +116,36 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                         .iter()
                         .map(|step| step.write_target()),
                 )
-                .collect::<std::collections::BTreeSet<_>>()
+                .collect::<std::collections::BTreeSet<_>>();
+            for site in body
+                .creation()
+                .into_iter()
+                .flat_map(|root| root.initialization_sites())
             {
-                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
-                    operation: operation.clone(),
-                    target,
+                programs.insert(super::super::ApplicationOperationProgramTarget::Create {
+                    entity: site.entity().to_owned(),
                 });
+                programs.extend(site.fields().iter().map(|field| field.write_target()));
+                programs.extend(site.links().iter().flat_map(|link| {
+                    std::iter::once(link.program_target())
+                        .chain(link.replacement_target())
+                        .chain(link.retirement_target())
+                }));
             }
-            if let Some(creation) = body.creation() {
-                for target in creation
-                    .links()
+            programs.extend(
+                body.retirements()
                     .iter()
-                    .flat_map(|link| {
-                        std::iter::once(link.program_target())
-                            .chain(link.replacement_target())
-                            .chain(link.retirement_target())
-                    })
-                    .collect::<std::collections::BTreeSet<_>>()
-                {
-                    self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
-                        operation: operation.clone(),
-                        target,
-                    });
-                }
-                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
-                    operation: operation.clone(),
-                    target: super::super::ApplicationOperationProgramTarget::Create {
-                        entity: creation.entity().to_owned(),
-                    },
+                    .flat_map(|rule| rule.program_targets()),
+            );
+            if let Some(emission) = body.external_emission() {
+                programs.insert(super::super::ApplicationOperationProgramTarget::Emit {
+                    effect: emission.effect.clone(),
                 });
-                for field in creation.fields() {
-                    self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
-                        operation: operation.clone(),
-                        target: field.write_target(),
-                    });
-                }
             }
-            for target in body
-                .retirements()
-                .iter()
-                .flat_map(|rule| rule.program_targets())
-                .collect::<std::collections::BTreeSet<_>>()
-            {
+            for target in programs {
                 self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
                     operation: operation.clone(),
                     target,
-                });
-            }
-            if let Some(emission) = body.external_emission() {
-                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
-                    operation: operation.clone(),
-                    target: super::super::ApplicationOperationProgramTarget::Emit {
-                        effect: emission.effect.clone(),
-                    },
                 });
             }
             self.push_member_in_place(ApplicationSchemaMember::OperationBody {

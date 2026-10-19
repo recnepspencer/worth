@@ -12,6 +12,7 @@ pub(crate) use body::validate_operation_bodies;
 pub use body::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
+    ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
     ApplicationOperationBodyCreationBuilder, ApplicationOperationBodyCreationLink,
     ApplicationOperationBodyCreationLinkDirection, ApplicationOperationBodyCreationLinkPosture,

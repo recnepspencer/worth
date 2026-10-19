@@ -956,9 +956,11 @@ Output roles are binding-affine; a body cannot silently reinterpret one binding'
 roles under another binding with matching names. Arbitrary target selection,
 Retire and role-family member uses are unsupported. Optional literal assignments,
 general input/source assignments, filtered collections, governed-query operands,
-custom expression kernels, multiple creations, arbitrary existing-target relation
+custom expression kernels, arbitrary existing-target relation
 edits, signature consequences and command
 continuation are not implemented here.
+Explicit unsigned [atomic child creation](./atomic-child-creation.md) supports
+multiple newly created sites through this same native body, not a host effect loop.
 Related outputs have no Optional, reverse or filtered selection form. They return
 the preimage, not a post-write query result. Guarded operation settlement retains
 that correspondence on the performed operation transition.

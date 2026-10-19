@@ -75,7 +75,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
         let created_inputs = body
             .creation()
             .into_iter()
-            .flat_map(|creation| creation.fields())
+            .flat_map(|creation| creation.initialization_sites())
+            .flat_map(|site| site.fields())
             .filter(|step| step.input_member().is_some())
             .map(|step| {
                 (

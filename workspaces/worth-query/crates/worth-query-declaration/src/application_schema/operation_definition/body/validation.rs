@@ -46,6 +46,7 @@ pub(crate) fn validate_operation_bodies(
         super::principal_validation::validate_principals(operation, body, members)?;
         super::creation_link_validation::validate_links(operation, body, members)?;
         super::creation_reuse::validate(operation, body, members)?;
+        super::child_validation::validate(operation, body, members)?;
         if !super::signing_lifecycle::validate(body, members) {
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
         }
@@ -58,7 +59,11 @@ pub(crate) fn validate_operation_bodies(
                 return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
             }
         }
-        if let Some(creation) = body.creation() {
+        for creation in body
+            .creation()
+            .into_iter()
+            .flat_map(|root| root.initialization_sites())
+        {
             if creation.key().is_empty() || creation.key().trim() != creation.key() {
                 return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
             }

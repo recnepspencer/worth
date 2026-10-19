@@ -25,6 +25,7 @@ pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Ent
     pub(super) subject_impact_bound: Option<std::num::NonZeroUsize>,
     pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
     pub(super) reuse_current_if_unchanged: bool,
+    pub(super) children: Vec<super::ApplicationOperationBodyChildCreation>,
     marker: PhantomData<fn() -> Entity>,
 }
 
@@ -56,6 +57,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             subject_impact_bound: None,
             enrollment: None,
             reuse_current_if_unchanged: false,
+            children: Vec::new(),
             marker: PhantomData,
         })
     }
@@ -73,18 +75,17 @@ impl<Schema, Operation, Input, Entity>
         Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
-        Field::Binding::validate(&value)
-            .map_err(crate::application_schema::ApplicationValueEncodeDenial::from)?;
-        self.fields
-            .push(ApplicationOperationBodyCreatedField::Literal {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
-                binding: Field::Binding::IDENTITY,
-                value: Field::Binding::encode(&value)?,
-            });
+        self.fields.push(super::initialization::literal::<
+            Schema,
+            Operation,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            Equality,
+            Unit,
+        >(field, value)?);
         Ok(self)
     }
 
@@ -97,20 +98,17 @@ impl<Schema, Operation, Input, Entity>
         Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
-        if member.is_empty() || member.trim() != member {
-            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
-        }
-        self.fields
-            .push(ApplicationOperationBodyCreatedField::Input {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
-                binding: Field::Binding::IDENTITY,
-                scalar_family: Field::Binding::SCALAR_FAMILY,
-                member: member.to_owned(),
-            });
+        self.fields.push(super::initialization::input::<
+            Schema,
+            Operation,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            Equality,
+            Unit,
+        >(field, member, false)?);
         Ok(self)
     }
 
@@ -125,20 +123,17 @@ impl<Schema, Operation, Input, Entity>
         Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
-        if member.is_empty() || member.trim() != member {
-            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
-        }
-        self.fields
-            .push(ApplicationOperationBodyCreatedField::OptionalInput {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
-                binding: Field::Binding::IDENTITY,
-                scalar_family: Field::Binding::SCALAR_FAMILY,
-                member: member.to_owned(),
-            });
+        self.fields.push(super::initialization::input::<
+            Schema,
+            Operation,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            Equality,
+            Unit,
+        >(field, member, true)?);
         Ok(self)
     }
 
@@ -223,6 +218,7 @@ impl<Schema, Operation, Input, Entity>
             subject_impact_bound: self.subject_impact_bound,
             enrollment: self.enrollment,
             reuse_current_if_unchanged: self.reuse_current_if_unchanged,
+            children: self.children,
         };
         super::classified_capture::validate_creation(&creation)?;
         if !super::signing_lifecycle::validation::validate_creation(&creation) {

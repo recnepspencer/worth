@@ -1,5 +1,6 @@
 //! Execution of a complete installed body, never a caller-selected replacement.
 mod assessment;
+mod children;
 pub(in crate::domain_computation::primary_graph) mod emission;
 mod expression;
 mod field_expectation;
@@ -12,6 +13,7 @@ mod path_value;
 mod requirement;
 mod retirement;
 mod reuse;
+pub(in crate::domain_computation::primary_graph) use children::PreparedBodyChildren;
 pub(in crate::domain_computation::primary_graph) use reuse::CreationDisposition;
 mod selection;
 mod source;
@@ -54,6 +56,7 @@ pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     retirements: PreparedBodyRetirements<Schema>,
     path_writes: PreparedBodyPathWrites<Schema>,
     creation_disposition: reuse::CreationDisposition,
+    children: Option<PreparedBodyChildren<Schema>>,
 }
 
 /// A declared source expectation failed before any candidate effect.

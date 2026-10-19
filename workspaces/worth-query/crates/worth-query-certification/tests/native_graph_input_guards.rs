@@ -5,6 +5,14 @@ mod actions;
 mod admission;
 #[path = "native_graph_input_guards/audit_query.rs"]
 mod audit_query;
+#[path = "native_graph_input_guards/child_actions.rs"]
+mod child_actions;
+#[path = "native_graph_input_guards/child_admission.rs"]
+mod child_admission;
+#[path = "native_graph_input_guards/child_evidence.rs"]
+mod child_evidence;
+#[path = "native_graph_input_guards/child_query.rs"]
+mod child_query;
 #[path = "native_graph_input_guards/current_snapshot_query.rs"]
 mod current_snapshot_query;
 #[path = "native_graph_input_guards/evidence.rs"]

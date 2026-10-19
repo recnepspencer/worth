@@ -33,6 +33,7 @@ pub struct ApplicationOperationBodyCreation {
     pub(super) subject_impact_bound: Option<std::num::NonZeroUsize>,
     pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
     pub(super) reuse_current_if_unchanged: bool,
+    pub(super) children: Vec<super::ApplicationOperationBodyChildCreation>,
 }
 
 impl ApplicationOperationBodyCreation {
@@ -51,10 +52,26 @@ impl ApplicationOperationBodyCreation {
             subject_impact_bound: None,
             enrollment: None,
             reuse_current_if_unchanged: false,
+            children: Vec::new(),
         }
     }
     pub fn entity(&self) -> &str {
         &self.entity
+    }
+    pub fn children(&self) -> &[super::ApplicationOperationBodyChildCreation] {
+        &self.children
+    }
+    /// Inert flat site inventory; fresh admission checks topology and complete initialization.
+    pub fn with_untrusted_children(
+        mut self,
+        children: Vec<super::ApplicationOperationBodyChildCreation>,
+    ) -> Self {
+        self.children = children;
+        self
+    }
+    /// Root first, followed by authored child sites. All native input/capacity owners use this order.
+    pub fn initialization_sites(&self) -> impl Iterator<Item = &Self> {
+        std::iter::once(self).chain(self.children.iter().map(|child| &child.creation))
     }
     pub fn reuses_current_if_unchanged(&self) -> bool {
         self.reuse_current_if_unchanged

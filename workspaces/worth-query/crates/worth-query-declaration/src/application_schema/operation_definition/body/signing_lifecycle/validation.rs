@@ -83,7 +83,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
             }
             Member::OperationProgram { target: Target::Unlink { relation, .. }, .. }
                 if relation == &spec.history_relation || relation == &spec.current_relation || relation == &spec.consequence_relation => return false,
-            Member::OperationBody { body: other, .. } if other.creation().is_some_and(|other|
+            Member::OperationBody { body: other, .. } if other.creation().into_iter().flat_map(|root|root.initialization_sites()).any(|other|
                 other.entity() == creation.entity() && other.signing_lifecycle() != Some(spec)) => return false,
             _ => {}
         }

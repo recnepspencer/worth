@@ -33,7 +33,10 @@ fn require_candidate_capacity(
         .ok_or_else(denied)?
         .checked_add(
             body.creation()
-                .map_or(0, |creation| creation.fields().len()),
+                .into_iter()
+                .flat_map(|c| c.initialization_sites())
+                .try_fold(0usize, |sum, site| sum.checked_add(site.fields().len()))
+                .ok_or_else(denied)?,
         )
         .ok_or_else(denied)?;
     let cardinality = requirements.cardinality();
@@ -67,9 +70,14 @@ fn require_candidate_capacity(
         || cardinality.maximum_deletes() < required_deletes
         || cardinality.maximum_unlinks() < required_unlinks
         || cardinality.maximum_writes() < required_writes
-        || cardinality.maximum_creates() < usize::from(body.creation().is_some())
+        || cardinality.maximum_creates() < body.creation().map_or(0, |c| 1 + c.children().len())
         || cardinality.maximum_links()
-            < body.creation().map_or(0, |creation| creation.links().len())
+            < body
+                .creation()
+                .into_iter()
+                .flat_map(|c| c.initialization_sites())
+                .try_fold(0usize, |sum, site| sum.checked_add(site.links().len()))
+                .ok_or_else(denied)?
     {
         return Err(denied());
     }
@@ -93,7 +101,10 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             return Err(denied());
         }
         let body = installed.operation().body().ok_or_else(denied)?;
-        if !body.has_supported_retiring_replacement() || !body.has_supported_creation_reuse() {
+        if !body.has_supported_retiring_replacement()
+            || !body.has_supported_creation_reuse()
+            || !body.has_supported_child_creations()
+        {
             return Err(denied());
         }
         let retirement_inputs = body
@@ -201,7 +212,11 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 input_bindings.push(binding.clone());
             }
         }
-        if let Some(creation) = body.creation() {
+        for creation in body
+            .creation()
+            .into_iter()
+            .flat_map(|root| root.initialization_sites())
+        {
             for link in creation.links() {
                 super::super::WorthQueryApplicationEntityKey::<Schema, ()>::new(&link.key)
                     .map_err(|_| denied())?;
@@ -306,6 +321,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             input_bindings,
             external_emission,
             retirement_inputs,
+            child_parents: super::children::parent_indices(body),
         })
     }
 }

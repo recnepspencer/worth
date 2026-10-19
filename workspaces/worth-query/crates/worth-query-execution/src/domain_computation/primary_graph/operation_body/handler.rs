@@ -32,6 +32,7 @@ pub(in crate::domain_computation::primary_graph) struct OperationBodyHandler<Sch
         worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget,
     >,
     pub(super) retirement_inputs:Vec<usize>,
+    pub(super) child_parents: Vec<usize>,
 }
 
 impl<Schema, Binding> OperationBodyHandler<Schema, Binding> {
@@ -137,6 +138,10 @@ where
             Ok(targets) => targets,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
+        let children = match reader.body_child_custody(&self.body) {
+            Ok(children) => children,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         let emission = match self
             .external_emission
             .as_ref()
@@ -159,6 +164,7 @@ where
                 retirements,
                 path_writes,
                 creation_disposition,
+                children,
             }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }

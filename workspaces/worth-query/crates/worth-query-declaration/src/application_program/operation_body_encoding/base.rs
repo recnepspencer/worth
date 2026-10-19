@@ -128,6 +128,28 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
         .fields()
         .iter()
         .any(|step| step.source_field().is_some());
+    let created = creation_record(creation);
+    framed_record(
+        if has_requirement {
+            "operation-body-v5"
+        } else if has_optional {
+            "operation-body-v4"
+        } else if has_scope_source {
+            "operation-body-v3"
+        } else {
+            "operation-body-v2"
+        },
+        [("scope", scope), ("creation", created)],
+    )
+}
+
+pub(super) fn creation_record(
+    creation: &crate::application_schema::ApplicationOperationBodyCreation,
+) -> String {
+    let has_scope_source = creation
+        .fields()
+        .iter()
+        .any(|step| step.source_field().is_some());
     let has_principal_source = creation
         .fields()
         .iter()
@@ -294,7 +316,7 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
             ],
         )
     });
-    let created = framed_record(
+    framed_record(
         if has_principal_source {
             "operation-body-creation-v3"
         } else if has_scope_source {
@@ -310,17 +332,5 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                 framed_record("fields-v1", fields.map(|field| ("field", field))),
             ),
         ],
-    );
-    framed_record(
-        if has_requirement {
-            "operation-body-v5"
-        } else if has_optional {
-            "operation-body-v4"
-        } else if has_scope_source {
-            "operation-body-v3"
-        } else {
-            "operation-body-v2"
-        },
-        [("scope", scope), ("creation", created)],
     )
 }

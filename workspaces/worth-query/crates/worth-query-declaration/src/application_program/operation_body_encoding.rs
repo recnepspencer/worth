@@ -4,6 +4,8 @@ use crate::application_schema::ApplicationOperationBodyProgram;
 mod base;
 use base::operation_body_base_record;
 
+#[cfg(test)]
+mod children_tests;
 mod enrollment;
 mod related_output;
 mod related_source;
@@ -90,7 +92,7 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
     } else {
         record
     };
-    if body
+    let record = if body
         .creation()
         .is_some_and(|creation| creation.reuses_current_if_unchanged())
     {
@@ -100,7 +102,26 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
         )
     } else {
         record
-    }
+    };
+    let Some(creation) = body.creation().filter(|c| !c.children().is_empty()) else {
+        return record;
+    };
+    framed_record(
+        "operation-body-child-sites-v1",
+        std::iter::once(("body", record)).chain(creation.children().iter().map(|child| {
+            (
+                "child",
+                framed_record(
+                    "child-creation-v1",
+                    [
+                        ("parent", child.parent_key.clone()),
+                        ("creation", base::creation_record(&child.creation)),
+                        ("link", child.creation.links()[0].canonical_record()),
+                    ],
+                ),
+            )
+        })),
+    )
 }
 
 fn operation_body_lifecycle_record(body: &ApplicationOperationBodyProgram) -> String {

@@ -11,6 +11,17 @@ pub(super) fn append(
     prefix: &str,
     creation: &ApplicationOperationBodyCreation,
 ) {
+    if !creation.children().is_empty() {
+        basis.usize(
+            format!("{prefix}.created.children"),
+            creation.children().len(),
+        );
+        for (index, child) in creation.children().iter().enumerate() {
+            let child_prefix = format!("{prefix}.created.child[{index}]");
+            basis.text(format!("{child_prefix}.parent"), &child.parent_key);
+            append(basis, &child_prefix, &child.creation);
+        }
+    }
     if creation.reuses_current_if_unchanged() {
         basis.text(
             format!("{prefix}.created.reuse-current"),

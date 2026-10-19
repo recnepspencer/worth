@@ -15,7 +15,8 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.creation().is_some_and(|creation| creation.reuses_current_if_unchanged()) { "operation-body-v25" }
+        if body.creation().is_some_and(|creation| !creation.children().is_empty()) { "operation-body-v26" }
+        else if body.creation().is_some_and(|creation| creation.reuses_current_if_unchanged()) { "operation-body-v25" }
         else if body.creation().is_some_and(|creation| creation.retires_predecessor()) { "operation-body-v24" }
         else if !body.path_value_assignments().is_empty() { "operation-body-v23" }
         else if !body.path_input_expectations().is_empty() { "operation-body-v22" }

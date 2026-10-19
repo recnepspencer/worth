@@ -13,6 +13,8 @@ pub use emission::{
     ApplicationOperationBodyExternalEffectRecipe, ApplicationOperationBodyExternalEmission,
     ApplicationOperationBodyExternalPayloadSource,
 };
+mod child_creation;
+mod child_validation;
 mod classified_capture;
 mod created_field;
 mod creation;
@@ -20,6 +22,10 @@ mod creation_link;
 mod creation_link_validation;
 mod creation_replacement;
 mod creation_reuse;
+mod initialization;
+pub use child_creation::{
+    ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
+};
 mod enrollment;
 pub use enrollment::ApplicationOperationBodyEnrollment;
 mod output;

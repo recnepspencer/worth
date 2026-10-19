@@ -17,6 +17,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         let builder = super::path_value_targets::declare(builder);
         let builder = super::retiring_actions::declare(super::selection_schema::declare(builder));
         let builder = super::reuse_actions::declare(builder);
+        let builder = super::child_actions::declare(builder);
         builder
             .entity(Mapping::reference())
             .entity(Principal::reference())
@@ -109,6 +110,8 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
             .application_mutation_binding::<ChangeBinding>()
             .application_mutation_binding::<IntroduceBinding>()
             .application_query(super::row_query::definition())
+            .application_query(super::child_query::definition())
+            .application_query_binding::<super::child_query::ReadBinding>()
             .application_query_binding::<super::row_query::ReadBinding>()
             .application_query(super::audit_query::definition())
             .application_query_binding::<super::audit_query::ReadBinding>()
@@ -150,7 +153,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.operation_body::<super::retiring_actions::KeepBinding>()?;
         setup.operation_body::<super::retiring_actions::RetireBinding>()?;
         setup.operation_body::<super::reuse_actions::Binding>()?;
-        setup.operation_body::<super::reuse_actions::NoteBinding>()
+        setup.operation_body::<super::reuse_actions::NoteBinding>()?;
+        setup.operation_body::<super::child_actions::Binding>()
     }
 }
 pub struct Feature;
@@ -186,6 +190,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .native_action::<super::reuse_actions::Binding>()
             .finish_action()
             .native_action::<super::reuse_actions::NoteBinding>()
+            .finish_action()
+            .native_action::<super::child_actions::Binding>()
             .finish_action()
             .finish()]
     }

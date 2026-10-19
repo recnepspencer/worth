@@ -23,6 +23,7 @@ where
             }
         };
         let mut prepared_inputs = decision.inputs;
+        let mut children = decision.children;
         let mut input_values = prepared_inputs
             .as_mut()
             .map(|inputs| inputs.values.drain(..));
@@ -238,6 +239,50 @@ where
                 if let Err(cause) = writer.body_creation_link(&target, &created, link) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
+            }
+            for (index, child) in creation.children().iter().enumerate() {
+                let site = &child.creation;
+                // Creation partition remains the original admitted Existing scope,
+                // not the new parent. The parent is used only as a retained link endpoint.
+                let nested = match writer.body_create_in_scope(&target, site.entity(), site.key()) {
+                    Ok(created) => created,
+                    Err(cause) => {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
+                    }
+                };
+                for step in site.fields() {
+                    let value = match step {
+                        ApplicationOperationBodyCreatedField::Literal { value, .. } => {
+                            std::borrow::Cow::Borrowed(value)
+                        }
+                        ApplicationOperationBodyCreatedField::Input { .. }
+                        | ApplicationOperationBodyCreatedField::OptionalInput { .. } => {
+                            let Some(value) = input_values
+                                .as_mut()
+                                .and_then(Iterator::next)
+                                .expect("validated child initializer")
+                            else {
+                                continue;
+                            };
+                            std::borrow::Cow::Owned(value)
+                        }
+                        _ => unreachable!("installed child scalar profile"),
+                    };
+                    if let Err(cause) = writer.body_initialize_field(&nested, step.field(), value) {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                    }
+                }
+                let custody = children.as_mut().expect("funded child sites");
+                let parent_index = self.child_parents[index];
+                let parent = if parent_index == 0 {
+                    &created
+                } else {
+                    &custody.targets[parent_index - 1]
+                };
+                if let Err(cause) = writer.body_creation_link(parent, &nested, &site.links()[0]) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+                custody.targets.push(nested);
             }
             if let Some(signing) = creation.signing()
                 && let Err(cause) = writer.body_signing_slot(&created, signing)
