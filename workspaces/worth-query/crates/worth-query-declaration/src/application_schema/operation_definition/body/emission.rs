@@ -1,5 +1,6 @@
 //! One external slot, with an explicit native payload source and optional guard.
 mod authoring;
+mod evaluation_authoring;
 mod recipe;
 mod validation;
 use super::ApplicationOperationBodyRequirementProgram;
@@ -23,6 +24,10 @@ pub struct ApplicationOperationBodyExternalEmission {
 pub enum ApplicationOperationBodyExternalPayloadSource {
     OperationInput,
     QueryContext {
+        mutation_binding: String,
+        query: Box<crate::application_query::ErasedApplicationQueryDefinition>,
+    },
+    Evaluation {
         mutation_binding: String,
         query: Box<crate::application_query::ErasedApplicationQueryDefinition>,
     },

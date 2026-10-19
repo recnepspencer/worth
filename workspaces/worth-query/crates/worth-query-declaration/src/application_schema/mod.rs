@@ -170,7 +170,8 @@ pub use operation_definition::{
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
     ApplicationOperationBodyCreationBuilder, ApplicationOperationBodyCreationLink,
     ApplicationOperationBodyCreationLinkDirection, ApplicationOperationBodyCreationLinkPosture,
-    ApplicationOperationBodyEnrollment, ApplicationOperationBodyExternalEffectRecipe,
+    ApplicationOperationBodyEnrollment, ApplicationOperationBodyEvaluationSnapshot,
+    ApplicationOperationBodyExpression, ApplicationOperationBodyExternalEffectRecipe,
     ApplicationOperationBodyExternalEmission, ApplicationOperationBodyExternalPayloadSource,
     ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
     ApplicationOperationBodyProgram, ApplicationOperationBodyRelatedFieldSource,
@@ -180,9 +181,10 @@ pub use operation_definition::{
     ApplicationOperationBodyRequirementProgram, ApplicationOperationBodyRequirementSource,
     ApplicationOperationBodyScopeField, ApplicationOperationBodySigningLifecycleSpec,
     ApplicationOperationBodySigningSpec, ApplicationOperationBodySuccession,
-    ApplicationOperationBodySuccessionOutputMatch, ApplicationOperationDefinition,
-    ApplicationOperationDefinitionBuilder, ApplicationSigningEvidenceRef,
-    ApplicationSigningEvidenceSource,
+    ApplicationOperationBodySuccessionOutputMatch, ApplicationOperationBodyValue,
+    ApplicationOperationBodyValueProgram, ApplicationOperationBodyValueSnapshot,
+    ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
+    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
 };
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{

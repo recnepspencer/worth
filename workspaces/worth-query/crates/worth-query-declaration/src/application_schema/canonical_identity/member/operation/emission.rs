@@ -8,6 +8,11 @@ pub(super) fn append(
     emission: &ApplicationOperationBodyExternalEmission,
 ) {
     match &emission.source {
+        crate::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { mutation_binding, query } => {
+            basis.text(format!("{prefix}.emission.source"), "native-body-evaluation-v1");
+            basis.text(format!("{prefix}.emission.source-binding"), mutation_binding);
+            basis.extend_embedded(query.canonical_basis().basis(), &format!("{prefix}.emission.query"), worth_foundational::facade::CanonicalBasisEntryKind::Identity);
+        }
         crate::application_schema::ApplicationOperationBodyExternalPayloadSource::OperationInput => basis.text(format!("{prefix}.emission.source"), "exact-operation-input-v1"),
         crate::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { mutation_binding, query } => {
             basis.text(format!("{prefix}.emission.source"), "exact-native-query-context-v1");

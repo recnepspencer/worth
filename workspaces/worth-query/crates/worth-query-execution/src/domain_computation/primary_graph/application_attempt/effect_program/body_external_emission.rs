@@ -38,6 +38,7 @@ impl<Schema, Operation, Input, Scope>
                 payload,
                 selection.funding(),
                 selection.backing(),
+                selection.values(),
             );
             let retained = self
                 .emission_retained_bytes

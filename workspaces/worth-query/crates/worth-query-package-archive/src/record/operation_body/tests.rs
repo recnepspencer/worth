@@ -30,6 +30,8 @@ mod signed_evidence;
 mod signing;
 #[path = "tests/succession.rs"]
 mod succession;
+#[path = "tests/values.rs"]
+mod values;
 
 #[test]
 fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {

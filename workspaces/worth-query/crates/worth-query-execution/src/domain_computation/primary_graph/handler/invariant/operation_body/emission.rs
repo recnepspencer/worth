@@ -7,6 +7,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         &mut self,
         recipe: std::sync::Arc<worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalEffectRecipe>,
         input: &Binding::Input,
+        values: Option<&crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues>,
     ) -> Result<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection, HandlerExecutionDenial>{
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;
         self.context_use.set(self.context_use.get().scope());
@@ -18,6 +19,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             self.scope,
             recipe,
             input,
+            values,
             self.execution,
         )
     }

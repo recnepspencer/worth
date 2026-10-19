@@ -1,17 +1,14 @@
 //! One installed evaluator for descriptive guidance and handler admission.
 use super::{
-    PreparedRequirementOperand, WorthQueryOperationBodyRequirementFinding as Finding,
+    WorthQueryOperationBodyRequirementFinding as Finding,
     WorthQueryOperationBodyRequirementStatus as Status,
 };
 use crate::domain_computation::primary_graph::{
-    application_contribution::{advancement_denial, QueryRequestExecution},
+    application_contribution::QueryRequestExecution,
     operation_body::{BodyFieldExpectation, WorthQueryCurrentBodyRequirementAssessment},
     HandlerExecutionDenial, WorthQueryAdvancementDenial,
     WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
     WorthQueryManagedComputationResourceDenial,
-};
-use worth_foundational::expression_api::{
-    ExpressionDenialDetail, ExpressionInputs, ExpressionResource, ExpressionStep, MAX_SLICE_QUANTUM,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyProgram, ApplicationOperationBodyRequirementExpression as Expression,
@@ -155,113 +152,18 @@ fn evaluate<Schema: worth_query_installation::facade::ApplicationSchema, Operati
     expression: &Expression,
     execution: &QueryRequestExecution<'_>,
 ) -> Result<bool, HandlerExecutionDenial> {
-    let fixed_memory = [
-        ExpressionResource::ScratchBytes,
-        ExpressionResource::RetainedConsumptionBytes,
-        ExpressionResource::OutputBytes,
-    ]
-    .into_iter()
-    .try_fold(0_u64, |total, resource| {
-        total.checked_add(Expression::PROFILE.limit(resource))
-    })
-    .ok_or_else(overflow)?;
-    let slots = expression.compiled().slots().len();
-    let slot_memory = slots
-        .checked_mul(
-            size_of::<PreparedRequirementOperand>()
-                + size_of::<worth_foundational::expression_api::ExpressionValue>() * 3,
-        )
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or_else(overflow)?;
-    let _memory = execution
-        .reserve(fixed_memory.checked_add(slot_memory).ok_or_else(overflow)?)
-        .map_err(|cause| {
-            HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause))
-        })?;
-    execution
-        .decision_stage(|context| {
-            context.checkpoint(0).map_err(stopped)?;
-            let mut held = Vec::with_capacity(slots);
-            let mut inputs = ExpressionInputs::builder(expression.schema());
-            for (name, _) in expression.compiled().slots() {
-                let source = requirement
-                    .operand(name)
-                    .expect("admitted operand slot")
-                    .source();
-                let observed =
-                    reader.body_requirement_operand(identity, source, execution, context)?;
-                inputs = inputs
-                    .bind(name, observed.value.clone())
-                    .map_err(super::expression_denial)?;
-                held.push(observed);
-            }
-            let remaining = context.remaining_work();
-            if remaining == 0 {
-                return Err(exhausted());
-            }
-            let limit = remaining.min(Expression::PROFILE.limit(ExpressionResource::SemanticWork));
-            let profile = Expression::PROFILE
-                .narrowed(ExpressionResource::SemanticWork, limit)
-                .map_err(super::expression_denial)?;
-            let mut continuation = expression
-                .compiled()
-                .start(&inputs.build(), &profile)
-                .map_err(super::expression_denial)?;
-            let mut charged = 0;
-            loop {
-                context.checkpoint(0).map_err(stopped)?;
-                let step = continuation.step(MAX_SLICE_QUANTUM);
-                let used = match &step {
-                    ExpressionStep::Complete(result) => {
-                        result.cost().used(ExpressionResource::SemanticWork)
-                    }
-                    ExpressionStep::Suspended(next) => {
-                        next.cost().used(ExpressionResource::SemanticWork)
-                    }
-                };
-                context
-                    .account_completed_work(used.checked_sub(charged).ok_or_else(overflow)?)
-                    .map_err(stopped)?;
-                charged = used;
-                context.checkpoint(0).map_err(stopped)?;
-                match step {
-                    ExpressionStep::Suspended(next) => continuation = next,
-                    ExpressionStep::Complete(result) => {
-                        let result = result.into_result().map_err(|cause| {
-                            if limit < Expression::PROFILE.limit(ExpressionResource::SemanticWork)
-                                && matches!(
-                                    cause.detail(),
-                                    ExpressionDenialDetail::ResourceExceeded {
-                                        resource: ExpressionResource::SemanticWork,
-                                        ..
-                                    }
-                                )
-                            {
-                                exhausted()
-                            } else {
-                                super::expression_denial(cause)
-                            }
-                        })?;
-                        return Ok(result.as_bool().expect("requirement admitted as Bool"));
-                    }
-                }
-            }
-        })
-        .map_err(HandlerExecutionDenial::new)?
+    super::super::expression::evaluate(
+        reader,
+        identity,
+        requirement.operands(),
+        expression.expression(),
+        execution,
+        super::super::expression::Purpose::Requirement,
+    )
+    .map(|value| value.as_bool().expect("requirement admitted as Bool"))
 }
-
 fn overflow() -> HandlerExecutionDenial {
     HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(
         WorthQueryManagedComputationResourceDenial::CapacityOverflow,
-    ))
-}
-fn exhausted() -> HandlerExecutionDenial {
-    HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(
-        WorthQueryManagedComputationResourceDenial::WorkExhausted,
-    ))
-}
-fn stopped(cause: worth_execution::MapKernelStop) -> HandlerExecutionDenial {
-    HandlerExecutionDenial::new(advancement_denial(
-        worth_execution::WorkCeilingDenial::Stopped(cause),
     ))
 }

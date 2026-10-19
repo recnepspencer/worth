@@ -8,7 +8,20 @@ mod enrollment;
 mod related_output;
 mod related_source;
 mod succession;
-pub(super) use related_output::operation_body_record;
+pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let record = related_output::operation_body_record(body);
+    if body.values().is_empty() {
+        return record;
+    }
+    framed_record(
+        "operation-body-values-v1",
+        std::iter::once(("body", record)).chain(
+            body.values()
+                .iter()
+                .map(|value| ("value", value.canonical_record())),
+        ),
+    )
+}
 
 fn operation_body_lifecycle_record(body: &ApplicationOperationBodyProgram) -> String {
     if let Some(lifecycle) = body

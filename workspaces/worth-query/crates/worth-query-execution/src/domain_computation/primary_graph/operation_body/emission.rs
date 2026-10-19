@@ -18,6 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct BodyExternalEffectSelect
     funding: Option<Arc<QueryMemoryReservation>>,
     payload: Option<worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection>,
     backing: Option<ObservedQueryExpressionContext>,
+    values: Option<super::value::PreparedBodyValues>,
 }
 impl BodyExternalEffectSelection {
     /// A missing disposition preserves the ordinary mandatory external slot.
@@ -60,6 +61,11 @@ impl BodyExternalEffectSelection {
     ) -> Option<ObservedQueryExpressionContext> {
         self.backing.clone()
     }
+    pub(in crate::domain_computation::primary_graph) fn values(
+        &self,
+    ) -> Option<super::value::PreparedBodyValues> {
+        self.values.clone()
+    }
     pub(in crate::domain_computation::primary_graph) fn matches(&self, meaning: &Meaning) -> bool {
         self.recipe.meaning() == meaning
     }
@@ -91,6 +97,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
     >,
     recipe: Arc<Recipe>,
     input: &dyn std::any::Any,
+    values: Option<&super::value::PreparedBodyValues>,
     execution: &crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution<'_>,
 ) -> Result<
     BodyExternalEffectSelection,
@@ -112,12 +119,19 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
     let backing = if emit {
         match &recipe.meaning().source {
             worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::OperationInput => None,
-            worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { query, .. } => Some(reader.body_query_context(query.name())?),
+            worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { query, .. }
+            | worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { query, .. } => Some(reader.body_query_context(query.name())?),
         }
     } else {
         None
     };
-    let source: &dyn std::any::Any = backing.as_ref().map_or(input, |context| context.snapshot());
+    let values = if emit && matches!(recipe.meaning().source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. }) { Some(values.cloned().ok_or_else(|| invalid_payload(&recipe, DenialKind::MissingAuthoritativeFact))?) } else { None };
+    let evaluation = backing.as_ref().zip(values.as_ref()).map(|(context, values)| worth_query_declaration::facade::application_schema::ApplicationOperationBodyEvaluationSnapshot::from_untrusted_parts(context.snapshot().clone(), values.snapshot().clone()));
+    let source: &dyn std::any::Any = if let Some(evaluation) = &evaluation {
+        evaluation
+    } else {
+        backing.as_ref().map_or(input, |context| context.snapshot())
+    };
     let (funding, payload) = if emit {
         let retained = recipe
             .quote(source)
@@ -148,6 +162,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
         funding,
         payload,
         backing,
+        values,
     })
 }
 

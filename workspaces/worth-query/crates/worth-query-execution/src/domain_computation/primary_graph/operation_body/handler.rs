@@ -18,6 +18,7 @@ type Scope<Schema, Binding> = <<Binding as ApplicationMutationBinding<Schema>>::
 
 pub(in crate::domain_computation::primary_graph) struct OperationBodyHandler<Schema, Binding> {
     pub(super) body: ApplicationOperationBodyProgram,
+    pub(super) values: Vec<super::value::InstalledBodyValue>,
     pub(super) external_emission: Option<std::sync::Arc<worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalEffectRecipe>>,
     pub(super) marker: PhantomData<fn() -> (Schema, Binding)>,
     pub(super) input_bindings:
@@ -66,6 +67,7 @@ where
                     BodyFieldExpectation::Present
                 }
                 ApplicationOperationBodyScopeField::Assign { .. }
+                | ApplicationOperationBodyScopeField::AssignValue { .. }
                 | ApplicationOperationBodyScopeField::AssignInput { .. }
                 | ApplicationOperationBodyScopeField::SetOptionalInput { .. }
                 | ApplicationOperationBodyScopeField::AssignOptionalInput { .. }
@@ -142,10 +144,16 @@ where
             HandlerResult::Cancelled => return HandlerResult::Cancelled,
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         };
+        let values = match reader.body_values(&self.values) {
+            Ok(values) => values,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         let emission = match self
             .external_emission
             .as_ref()
-            .map(|recipe| reader.body_external_emission(std::sync::Arc::clone(recipe), input))
+            .map(|recipe| {
+                reader.body_external_emission(std::sync::Arc::clone(recipe), input, values.as_ref())
+            })
             .transpose()
         {
             Ok(emission) => emission,
@@ -158,6 +166,7 @@ where
                 sources,
                 selections,
                 emission,
+                values,
             }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
@@ -189,6 +198,19 @@ where
             .map(|inputs| inputs.values.drain(..));
         let mut source_values = decision.sources.into_iter();
         for step in self.body.scope_fields() {
+            if let ApplicationOperationBodyScopeField::AssignValue { field, value, .. } = step
+                && let Err(cause) = writer.body_field(
+                    &target,
+                    field,
+                    decision
+                        .values
+                        .as_ref()
+                        .expect("installed computed value")
+                        .value(value),
+                )
+            {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+            }
             if let ApplicationOperationBodyScopeField::Assign { field, value, .. } = step
                 && let Err(cause) = writer.body_field(&target, field, value)
             {
@@ -256,6 +278,15 @@ where
             for step in creation.fields() {
                 let mut source_reservation = None;
                 let value = match step {
+                    ApplicationOperationBodyCreatedField::Computed { value, .. } => {
+                        std::borrow::Cow::Borrowed(
+                            decision
+                                .values
+                                .as_ref()
+                                .expect("installed computed value")
+                                .value(value),
+                        )
+                    }
                     ApplicationOperationBodyCreatedField::Literal { value, .. } => {
                         std::borrow::Cow::Borrowed(value)
                     }

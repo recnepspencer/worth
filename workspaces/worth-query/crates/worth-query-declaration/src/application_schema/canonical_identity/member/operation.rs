@@ -15,7 +15,8 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { "operation-body-v17" }
+        if !body.values().is_empty() || body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. })) { "operation-body-v18" }
+        else if body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { "operation-body-v17" }
         else if body.external_emission().is_some() { "operation-body-v16" }
         else if body.succession().is_some_and(|s| s.output_match().is_some()) { "operation-body-v15" }
         else if body.outputs().iter().any(|output| matches!(output.target, crate::application_schema::ApplicationOperationBodyOutputTarget::Related { .. })) {
@@ -95,6 +96,14 @@ pub(super) fn append_body(
         }
     }
     basis.usize(format!("{prefix}.steps"), body.scope_fields().len());
+    if !body.values().is_empty() {
+        for (index, value) in body.values().iter().enumerate() {
+            basis.text(
+                format!("{prefix}.value[{index}]"),
+                &value.canonical_record(),
+            );
+        }
+    }
     for (index, step) in body.scope_fields().iter().enumerate() {
         let prefix = format!("{prefix}.step[{index}]");
         basis.text(
@@ -103,6 +112,7 @@ pub(super) fn append_body(
                 ApplicationOperationBodyScopeField::Expect { .. } => "expect",
                 ApplicationOperationBodyScopeField::Assign { .. } => "assign",
                 ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
+                ApplicationOperationBodyScopeField::AssignValue { .. } => "assign-value",
                 ApplicationOperationBodyScopeField::SetOptionalInput { .. } => "set-optional-input",
                 ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => {
                     "assign-optional-input"
@@ -115,7 +125,9 @@ pub(super) fn append_body(
         basis.text(format!("{prefix}.aspect"), step.field().aspect());
         basis.text(format!("{prefix}.field"), step.field().field());
         basis.text(format!("{prefix}.binding"), step.binding().as_str());
-        if let Some(value) = step.literal_value() {
+        if let ApplicationOperationBodyScopeField::AssignValue { value, .. } = step {
+            basis.text(format!("{prefix}.computed-value"), value);
+        } else if let Some(value) = step.literal_value() {
             basis.value(
                 format!("{prefix}.value"),
                 worth_foundational::facade::canonical_basis_value_for_aspect_value(value),

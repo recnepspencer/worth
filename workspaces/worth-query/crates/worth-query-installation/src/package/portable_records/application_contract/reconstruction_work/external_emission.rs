@@ -6,7 +6,8 @@ impl WorthQueryPortableApplicationContractReconstructionWork {
         &mut self,
         emission: &ApplicationOperationBodyExternalEmission,
     ) {
-        if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { mutation_binding, query } = &emission.source {
+        if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { mutation_binding, query }
+            | worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { mutation_binding, query } = &emission.source {
             self.observe_query_context(mutation_binding, query);
         }
         for text in [

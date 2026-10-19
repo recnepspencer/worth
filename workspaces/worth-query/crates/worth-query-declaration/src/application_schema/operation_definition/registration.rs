@@ -46,8 +46,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .flat_map(|output| output.target.decision_reads()),
             );
             reads.extend(
-                body.observation_requirements()
-                    .flat_map(|requirement| requirement.operands())
+                body.observation_operands()
                     .flat_map(|operand| operand.source().decision_reads()),
             );
             if let Some(creation) = body.creation() {

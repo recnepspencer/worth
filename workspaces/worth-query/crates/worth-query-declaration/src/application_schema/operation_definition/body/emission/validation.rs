@@ -11,7 +11,18 @@ pub(crate) fn validate_emission(
     let Some(emission) = body.external_emission() else {
         return Ok(());
     };
+    if matches!(
+        emission.source,
+        super::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. }
+    ) && body.values().is_empty()
+    {
+        return Err(Denial::MissingOperationProgramDependency);
+    }
     if let super::ApplicationOperationBodyExternalPayloadSource::QueryContext {
+        mutation_binding,
+        query,
+    }
+    | super::ApplicationOperationBodyExternalPayloadSource::Evaluation {
         mutation_binding,
         query,
     } = &emission.source

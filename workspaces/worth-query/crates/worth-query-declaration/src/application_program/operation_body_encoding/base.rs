@@ -20,6 +20,9 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
     });
     let steps = body.scope_fields().iter().enumerate().map(|(index, step)| {
         let (source_name, source) = match step {
+            ApplicationOperationBodyScopeField::AssignValue { value, .. } => {
+                ("computed-value", value.clone())
+            }
             ApplicationOperationBodyScopeField::Expect { value, .. }
             | ApplicationOperationBodyScopeField::Assign { value, .. } => (
                 "literal",
@@ -77,6 +80,7 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                     match step {
                         ApplicationOperationBodyScopeField::Expect { .. } => "expect",
                         ApplicationOperationBodyScopeField::Assign { .. } => "assign",
+                        ApplicationOperationBodyScopeField::AssignValue { .. } => "assign-value",
                         ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
                         ApplicationOperationBodyScopeField::SetOptionalInput { .. } => {
                             "set-optional-input"
@@ -124,6 +128,9 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
         .any(|step| step.principal_source().is_some());
     let fields = creation.fields().iter().enumerate().map(|(index, step)| {
         let (source_name, source) = match step {
+            ApplicationOperationBodyCreatedField::Computed { value, .. } => {
+                ("computed-value", value.clone())
+            }
             ApplicationOperationBodyCreatedField::Literal { value, .. } => (
                 "literal",
                 worth_foundational::facade::prepare_aspect_value_identity_basis(value)

@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationEmi
     external_payload: Option<WorthQueryExternalPayloadProjection>,
     _native_body_funding: Option<Arc<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>>,
     _native_query_backing: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
+    _native_values_backing: Option<crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues>,
 }
 
 #[derive(Clone)]
@@ -48,6 +49,7 @@ impl WorthQueryApplicationEmission {
             external_payload: None,
             _native_body_funding: None,
             _native_query_backing: None,
+            _native_values_backing: None,
         }
     }
 
@@ -60,7 +62,7 @@ impl WorthQueryApplicationEmission {
         Binding::Value: Send + Sync,
     {
         let projection = worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection::encode::<Binding>(effect, payload).map_err(|_| ())?;
-        Ok(Self::from_external_projection(projection, None, None))
+        Ok(Self::from_external_projection(projection, None, None, None))
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt) fn from_lifecycle(
@@ -76,6 +78,7 @@ impl WorthQueryApplicationEmission {
             external_payload: None,
             _native_body_funding: None,
             _native_query_backing: None,
+            _native_values_backing: None,
         }
     }
 
@@ -110,6 +113,9 @@ impl WorthQueryApplicationEmission {
         projection: worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection,
         funding: Option<Arc<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>>,
         backing: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
+        values: Option<
+            crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues,
+        >,
     ) -> Self {
         Self {
             effect: projection.effect(),
@@ -124,6 +130,7 @@ impl WorthQueryApplicationEmission {
             }),
             _native_body_funding: funding,
             _native_query_backing: backing,
+            _native_values_backing: values,
         }
     }
 

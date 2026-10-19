@@ -23,12 +23,14 @@ pub(super) fn write(
             ApplicationOperationBodyCreatedField::SigningProvenance { .. } => 7,
             ApplicationOperationBodyCreatedField::CapturedScopeField { .. } => 8,
             ApplicationOperationBodyCreatedField::RelatedField { .. } => 9,
+            ApplicationOperationBodyCreatedField::Computed { .. } => 10,
         })?;
         output.text(step.field().entity())?;
         output.text(step.field().aspect())?;
         output.text(step.field().field())?;
         output.text(step.binding().as_str())?;
         match step {
+            ApplicationOperationBodyCreatedField::Computed { value, .. } => output.text(value),
             ApplicationOperationBodyCreatedField::Literal { value, .. } => {
                 super::super::foundational_value::write_aspect_value(output, value)
             }
@@ -93,6 +95,7 @@ pub(super) fn decode(
                 && !(version >= 13 && matches!(tag, 6 | 7))
                 && !(version >= 14 && tag == 8)
                 && !(version >= 20 && tag == 9)
+                && !(version >= 28 && tag == 10)
             {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }
@@ -141,6 +144,11 @@ pub(super) fn decode(
                 7 => ApplicationOperationBodyCreatedField::SigningProvenance { field, binding },
                 8 => super::classified_capture::decode(input, field, binding)?,
                 9 => super::related_source::decode(input, field, binding)?,
+                10 => ApplicationOperationBodyCreatedField::Computed {
+                    field,
+                    binding,
+                    value: input.text()?.to_owned(),
+                },
                 _ => unreachable!("creation opcode admitted before operands"),
             })
         })?;

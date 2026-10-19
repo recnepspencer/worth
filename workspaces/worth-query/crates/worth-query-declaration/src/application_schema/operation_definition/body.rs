@@ -1,6 +1,13 @@
 //! Typed values in an operation body, distinct from its derived effect ceiling.
 
 mod builder;
+mod expression;
+mod value;
+pub use expression::ApplicationOperationBodyExpression;
+pub use value::{
+    ApplicationOperationBodyEvaluationSnapshot, ApplicationOperationBodyValue,
+    ApplicationOperationBodyValueProgram, ApplicationOperationBodyValueSnapshot,
+};
 mod emission;
 pub use emission::{
     ApplicationOperationBodyExternalEffectRecipe, ApplicationOperationBodyExternalEmission,

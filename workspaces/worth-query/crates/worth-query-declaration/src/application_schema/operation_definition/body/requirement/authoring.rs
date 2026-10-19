@@ -30,6 +30,11 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
 }
 
 impl<Schema, Operation> ApplicationOperationBodyRequirementOperands<Schema, Operation> {
+    pub(in crate::application_schema::operation_definition::body) fn into_operands(
+        self,
+    ) -> Vec<Operand> {
+        self.operands
+    }
     /// Reads a scalar value with its exact optionality. Unit-bearing values
     /// need a quantity binding rather than silently becoming unitless scalars.
     pub fn field<Entity, Aspect, Field, Value, Write, Equality>(

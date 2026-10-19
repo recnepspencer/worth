@@ -151,6 +151,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// carries the language denial.
     WorkflowConditionExpressionDenied,
     OperationBodyRequirementExpressionDenied,
+    OperationBodyValueExpressionDenied,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,
@@ -225,6 +226,17 @@ impl WorthQueryApplicationAttemptDenial {
     ) -> Self {
         Self {
             kind: WorthQueryApplicationAttemptDenialKind::OperationBodyRequirementExpressionDenied,
+            subject: subject.into(),
+            cause: AttemptDenialCause::Expression(Box::new(denial)),
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn body_value_expression(
+        subject: impl Into<String>,
+        denial: worth_foundational::expression_api::ExpressionDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationAttemptDenialKind::OperationBodyValueExpressionDenied,
             subject: subject.into(),
             cause: AttemptDenialCause::Expression(Box::new(denial)),
         }

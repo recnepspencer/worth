@@ -48,6 +48,7 @@ pub(super) fn append(
             match step {
                 Field::Literal { .. } => "literal",
                 Field::Input { .. } => "input",
+                Field::Computed { .. } => "computed-value",
                 Field::OptionalInput { .. } => "optional-input",
                 Field::ScopeField { .. } => "scope-field",
                 Field::RelatedField { .. } => "related-field",
@@ -62,6 +63,7 @@ pub(super) fn append(
         basis.text(format!("{field}.field"), step.field().field());
         basis.text(format!("{field}.binding"), step.binding().as_str());
         match step {
+            Field::Computed { value, .. } => basis.text(format!("{field}.computed-value"), value),
             Field::Literal { value, .. } => basis.value(
                 format!("{field}.value"),
                 worth_foundational::facade::canonical_basis_value_for_aspect_value(value),

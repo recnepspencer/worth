@@ -36,6 +36,11 @@ pub enum ApplicationOperationBodyCreatedField {
         scalar_family: ScalarAspectType,
         member: String,
     },
+    Computed {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        value: String,
+    },
     OptionalInput {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -86,6 +91,7 @@ impl ApplicationOperationBodyCreatedField {
         match self {
             Self::Literal { field, .. }
             | Self::Input { field, .. }
+            | Self::Computed { field, .. }
             | Self::OptionalInput { field, .. }
             | Self::ScopeField { field, .. }
             | Self::RelatedField { field, .. }
@@ -99,6 +105,7 @@ impl ApplicationOperationBodyCreatedField {
         match self {
             Self::Literal { binding, .. }
             | Self::Input { binding, .. }
+            | Self::Computed { binding, .. }
             | Self::OptionalInput { binding, .. }
             | Self::ScopeField { binding, .. }
             | Self::RelatedField { binding, .. }
@@ -118,6 +125,7 @@ impl ApplicationOperationBodyCreatedField {
         match self {
             Self::Literal { value, .. } => value.value_family(),
             Self::SigningProvenance { .. } => ScalarAspectType::String,
+            Self::Computed { .. } => ScalarAspectType::UInt64,
             Self::Input { scalar_family, .. }
             | Self::OptionalInput { scalar_family, .. }
             | Self::ScopeField { scalar_family, .. }

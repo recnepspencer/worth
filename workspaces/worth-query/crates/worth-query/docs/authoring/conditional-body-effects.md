@@ -24,6 +24,9 @@ Declare through `worth_query_decl::facade::application_schema`:
 
 - `body.emit_external_input(effect, condition)?`;
 - `body.emit_external_query_context::<Binding, _, _, _, _, _>(effect, query, condition)?`;
+- `body.emit_external_evaluation::<Binding, _, _, _, _, _>(effect, query, condition)?`
+  for [shared computed body values](./computed-body-values.md), with payload Value
+  `ApplicationOperationBodyEvaluationSnapshot`;
 - `worth_query_decl::facade::application_query::ApplicationQueryExpressionSnapshot`
   for pure schema/value inspection inside a query-backed payload codec;
 - `ApplicationOperationBodyRequirement::admit(...)` for the optional condition;
@@ -198,8 +201,9 @@ read failures into an Unmet condition.
 
 ## Current Limits
 
-One external effect slot, either the exact whole input or the bound native
-query expression snapshot, unit-result native bodies, and optional native
+One external effect slot, either the exact whole input, the bound native
+query expression snapshot, or that snapshot paired with shared computed body
+values, unit-result native bodies, and optional native
 Boolean conditions are supported. Query sources remain parameter-free and
 ExactlyOne, with the existing expression-context scalar/unit/disclosure limits.
 Arbitrary host graph traversal and multiple external emissions are not supplied here.
@@ -209,13 +213,15 @@ partially executing. Ordinary workflow business operations may use it.
 
 Input-only bodies keep canonical v16 and portable body v26 unchanged. Query
 payloads use canonical v17 and portable body v27, including the full query
-declaration. Older profiles cannot silently reinterpret them. Transported records remain descriptive until freshly admitted against
+declaration. Computed values/evaluation payloads use canonical v18 and portable
+body v28. Older profiles cannot silently reinterpret them. Transported records remain descriptive until freshly admitted against
 native typed schema provenance. This API does not itself establish Store restart
 durability or external exactly-once delivery.
 
 ## Related Docs
 
 - [Executable Scope-Bound Operation Bodies](./scope-field-operation-bodies.md)
+- [Shared Computed Body Values](./computed-body-values.md)
 - [Native Query Expression Contexts](./native-query-expression-contexts.md)
 - [Application Aftermath And Recovery](../execution/application-aftermath-and-recovery.md)
 - [Workflows](../foundations/workflows.md)

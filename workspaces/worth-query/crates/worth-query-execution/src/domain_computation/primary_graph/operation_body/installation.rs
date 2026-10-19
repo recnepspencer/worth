@@ -72,11 +72,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         }
         require_candidate_capacity(body, &Binding::CANDIDATES, Binding::IDENTITY)?;
         let mut input_bindings = Vec::new();
-        for source in body
-            .observation_requirements()
-            .flat_map(|requirement| requirement.operands())
-            .map(|operand| operand.source())
-        {
+        for source in body.observation_operands().map(|operand| operand.source()) {
             use worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource as Source;
             if let Source::PrincipalIdentity {
                 scope,
@@ -220,6 +216,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             }
         }
         Ok(Self {
+            values: super::value::install(schema, body, Binding::IDENTITY)?,
             selection_reads: super::selection::installed_reads(body),
             outputs: super::output::install_outputs::<Schema, Binding>(schema, body)?,
             body: body.clone(),

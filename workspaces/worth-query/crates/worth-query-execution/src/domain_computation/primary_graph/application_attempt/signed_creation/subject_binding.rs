@@ -152,6 +152,6 @@ fn scope_capture(
         | Field::SigningProvenance { .. }
         | Field::PrincipalIdentity { .. } => None,
         Field::RelatedField { .. } => None,
-        Field::ScopeField { .. } | Field::PresentScopeField { .. } | Field::CapturedScopeField { .. } => None,
+        Field::ScopeField { .. } | Field::PresentScopeField { .. } | Field::CapturedScopeField { .. } | Field::Computed { .. } => None,
     }
 }

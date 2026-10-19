@@ -159,7 +159,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
     }
 }
 
-fn validate_admitted(
+pub(super) fn validate_admitted(
     execution: &QueryRequestExecution<'_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     profile: worth_query_declaration::facade::application_schema::ApplicationNativeInputDecodeResources,

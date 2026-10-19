@@ -1,7 +1,7 @@
 //! Installed expression meaning and typed sources for an operation precondition.
 mod authoring;
 mod collection;
-mod encoding;
+pub(super) mod encoding;
 mod expression;
 mod operands;
 mod principal;

@@ -12,6 +12,8 @@ mod external_emission;
 mod outputs;
 mod principal;
 mod query_context;
+mod scope_fields;
+mod values;
 pub(super) use query_context::require_nesting_depth;
 mod related_source;
 mod requirements;
@@ -41,7 +43,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.external_emission().is_some_and(|emission| matches!(emission.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { 27 }
+    let version = if !body.values().is_empty() || body.external_emission().is_some_and(|emission| matches!(emission.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. })) { 28 }
+    else if body.external_emission().is_some_and(|emission| matches!(emission.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { 27 }
     else if body.external_emission().is_some() { 26 }
     else if body.requires_query_context() { 25 }
     else if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
@@ -137,49 +140,7 @@ pub(super) fn write(
                 .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
         )?;
     }
-    write_sequence(output, body.scope_fields(), |output, step| {
-        output.u16(match step {
-            ApplicationOperationBodyScopeField::Expect { .. } => 1,
-            ApplicationOperationBodyScopeField::Assign { .. } => 2,
-            ApplicationOperationBodyScopeField::AssignInput { .. } => 3,
-            ApplicationOperationBodyScopeField::SetOptionalInput { .. } => 4,
-            ApplicationOperationBodyScopeField::ClearOptional { .. } => 5,
-            ApplicationOperationBodyScopeField::RequirePresent { .. } => 6,
-            ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => 7,
-        })?;
-        output.text(step.field().entity())?;
-        output.text(step.field().aspect())?;
-        output.text(step.field().field())?;
-        output.text(step.binding().as_str())?;
-        match step {
-            ApplicationOperationBodyScopeField::Expect { value, .. }
-            | ApplicationOperationBodyScopeField::Assign { value, .. } => {
-                super::foundational_value::write_aspect_value(output, value)
-            }
-            ApplicationOperationBodyScopeField::AssignInput {
-                member,
-                scalar_family,
-                ..
-            }
-            | ApplicationOperationBodyScopeField::SetOptionalInput {
-                member,
-                scalar_family,
-                ..
-            }
-            | ApplicationOperationBodyScopeField::AssignOptionalInput {
-                member,
-                scalar_family,
-                ..
-            } => {
-                super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
-                output.text(member)
-            }
-            ApplicationOperationBodyScopeField::ClearOptional { scalar_family, .. }
-            | ApplicationOperationBodyScopeField::RequirePresent { scalar_family, .. } => {
-                super::foundational_aspect::write_scalar_type(output, *scalar_family)
-            }
-        }
-    })?;
+    scope_fields::write(output, body.scope_fields())?;
     if version >= 5 {
         output.u16(u16::from(body.creation().is_some()))?;
     }
@@ -221,8 +182,14 @@ pub(super) fn write(
     if version >= 21 {
         succession::write(output, body.succession())?;
     }
+    if version >= 28 {
+        output.u8(u8::from(body.external_emission().is_some()))?;
+    }
     if let Some(emission) = body.external_emission() {
-        external_emission::write(output, emission)?;
+        external_emission::write(output, emission, version)?;
+    }
+    if version >= 28 {
+        values::write(output, body.values())?;
     }
     Ok(())
 }
@@ -232,7 +199,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=27) {
+    if !matches!(version, 1..=28) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -240,75 +207,7 @@ pub(super) fn decode(
     } else {
         None
     };
-    let steps = decode_sequence(input, budget, 20, |input, _| {
-        let tag = input.u16()?;
-        if !matches!(tag, 1 | 2)
-            && !(version >= 2 && tag == 3)
-            && !(version >= 5 && matches!(tag, 4 | 5))
-            && !(version >= 6 && tag == 6)
-            && !(version >= 9 && tag == 7)
-        {
-            return Err(Denial::new(Kind::UnsupportedRecordVariant));
-        }
-        let field = ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-        let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
-        if matches!(tag, 3 | 4 | 7) {
-            let scalar_family = super::foundational_aspect::decode_scalar_type(input)?;
-            let member = input.text()?.to_owned();
-            return Ok(if tag == 3 {
-                ApplicationOperationBodyScopeField::AssignInput {
-                    field,
-                    binding,
-                    scalar_family,
-                    member,
-                }
-            } else if tag == 4 {
-                ApplicationOperationBodyScopeField::SetOptionalInput {
-                    field,
-                    binding,
-                    scalar_family,
-                    member,
-                }
-            } else {
-                ApplicationOperationBodyScopeField::AssignOptionalInput {
-                    field,
-                    binding,
-                    scalar_family,
-                    member,
-                }
-            });
-        }
-        if matches!(tag, 5 | 6) {
-            let scalar_family = super::foundational_aspect::decode_scalar_type(input)?;
-            return Ok(if tag == 5 {
-                ApplicationOperationBodyScopeField::ClearOptional {
-                    field,
-                    binding,
-                    scalar_family,
-                }
-            } else {
-                ApplicationOperationBodyScopeField::RequirePresent {
-                    field,
-                    binding,
-                    scalar_family,
-                }
-            });
-        }
-        let value = super::foundational_value::decode_aspect_value(input)?;
-        Ok(match tag {
-            1 => ApplicationOperationBodyScopeField::Expect {
-                field,
-                binding,
-                value,
-            },
-            2 => ApplicationOperationBodyScopeField::Assign {
-                field,
-                binding,
-                value,
-            },
-            _ => unreachable!("tag admitted before operands"),
-        })
-    })?;
+    let steps = scope_fields::decode(input, budget, version)?;
     let has_creation = if version >= 5 {
         match input.u16()? {
             0 => false,
@@ -371,10 +270,24 @@ pub(super) fn decode(
     } else {
         None
     };
-    let external_emission = if version >= 26 {
+    let has_emission = if version >= 28 {
+        match input.u8()? {
+            0 => false,
+            1 => true,
+            _ => return Err(Denial::new(Kind::InvalidBooleanEncoding)),
+        }
+    } else {
+        version >= 26
+    };
+    let external_emission = if has_emission {
         Some(external_emission::decode(input, budget, version)?)
     } else {
         None
+    };
+    let values = if version >= 28 {
+        values::decode(input, budget)?
+    } else {
+        Vec::new()
     };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
@@ -385,7 +298,8 @@ pub(super) fn decode(
         )
         .with_untrusted_outputs(outputs)
         .with_untrusted_succession(succession)
-        .with_untrusted_external_emission(external_emission))
+        .with_untrusted_external_emission(external_emission)
+        .with_untrusted_values(values))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             steps,

@@ -15,7 +15,8 @@ pub use body::{
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
     ApplicationOperationBodyCreationBuilder, ApplicationOperationBodyCreationLink,
     ApplicationOperationBodyCreationLinkDirection, ApplicationOperationBodyCreationLinkPosture,
-    ApplicationOperationBodyEnrollment, ApplicationOperationBodyExternalEffectRecipe,
+    ApplicationOperationBodyEnrollment, ApplicationOperationBodyEvaluationSnapshot,
+    ApplicationOperationBodyExpression, ApplicationOperationBodyExternalEffectRecipe,
     ApplicationOperationBodyExternalEmission, ApplicationOperationBodyExternalPayloadSource,
     ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
     ApplicationOperationBodyProgram, ApplicationOperationBodyRelatedFieldSource,
@@ -25,8 +26,9 @@ pub use body::{
     ApplicationOperationBodyRequirementProgram, ApplicationOperationBodyRequirementSource,
     ApplicationOperationBodyScopeField, ApplicationOperationBodySigningLifecycleSpec,
     ApplicationOperationBodySigningSpec, ApplicationOperationBodySuccession,
-    ApplicationOperationBodySuccessionOutputMatch, ApplicationSigningEvidenceRef,
-    ApplicationSigningEvidenceSource,
+    ApplicationOperationBodySuccessionOutputMatch, ApplicationOperationBodyValue,
+    ApplicationOperationBodyValueProgram, ApplicationOperationBodyValueSnapshot,
+    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
 };
 pub(crate) use builder::AftermathAssociationAuthority;
 pub use builder::ApplicationOperationDefinitionBuilder;

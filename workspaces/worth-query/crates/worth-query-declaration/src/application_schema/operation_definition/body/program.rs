@@ -28,6 +28,11 @@ pub enum ApplicationOperationBodyScopeField {
         scalar_family: ScalarAspectType,
         member: String,
     },
+    AssignValue {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        value: String,
+    },
     SetOptionalInput {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -58,6 +63,7 @@ impl ApplicationOperationBodyScopeField {
             Self::Expect { field, .. }
             | Self::Assign { field, .. }
             | Self::AssignInput { field, .. }
+            | Self::AssignValue { field, .. }
             | Self::SetOptionalInput { field, .. }
             | Self::AssignOptionalInput { field, .. }
             | Self::ClearOptional { field, .. }
@@ -70,6 +76,7 @@ impl ApplicationOperationBodyScopeField {
             Self::Expect { binding, .. }
             | Self::Assign { binding, .. }
             | Self::AssignInput { binding, .. }
+            | Self::AssignValue { binding, .. }
             | Self::SetOptionalInput { binding, .. }
             | Self::AssignOptionalInput { binding, .. }
             | Self::ClearOptional { binding, .. }
@@ -81,6 +88,7 @@ impl ApplicationOperationBodyScopeField {
         match self {
             Self::Expect { value, .. } | Self::Assign { value, .. } => Some(value),
             Self::AssignInput { .. }
+            | Self::AssignValue { .. }
             | Self::SetOptionalInput { .. }
             | Self::AssignOptionalInput { .. }
             | Self::ClearOptional { .. }
@@ -91,6 +99,7 @@ impl ApplicationOperationBodyScopeField {
     pub fn scalar_family(&self) -> ScalarAspectType {
         match self {
             Self::Expect { value, .. } | Self::Assign { value, .. } => value.value_family(),
+            Self::AssignValue { .. } => ScalarAspectType::UInt64,
             Self::AssignInput { scalar_family, .. }
             | Self::SetOptionalInput { scalar_family, .. }
             | Self::AssignOptionalInput { scalar_family, .. }
@@ -142,6 +151,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
     pub(super) external_emission: Option<super::ApplicationOperationBodyExternalEmission>,
+    pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -238,6 +248,7 @@ impl ApplicationOperationBodyProgram {
             outputs: Vec::new(),
             succession: None,
             external_emission: None,
+            values: Vec::new(),
         }
     }
     pub fn from_untrusted_with_creation(
@@ -252,6 +263,7 @@ impl ApplicationOperationBodyProgram {
             outputs: Vec::new(),
             succession: None,
             external_emission: None,
+            values: Vec::new(),
         }
     }
     pub fn from_untrusted_with_requirements(
@@ -267,6 +279,7 @@ impl ApplicationOperationBodyProgram {
             outputs: Vec::new(),
             succession: None,
             external_emission: None,
+            values: Vec::new(),
         }
     }
     /// Authority-free scope-bound description. Fresh readmission checks the scope
@@ -288,6 +301,7 @@ impl ApplicationOperationBodyProgram {
             outputs: Vec::new(),
             succession: None,
             external_emission: None,
+            values: Vec::new(),
         }
     }
     pub fn explicit_scope_entity(&self) -> Option<&str> {
