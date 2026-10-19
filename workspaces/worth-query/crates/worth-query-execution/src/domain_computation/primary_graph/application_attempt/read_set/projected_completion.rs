@@ -92,44 +92,64 @@ impl<Schema, Operation, Input, Scope>
         ),
         WorthQueryApplicationAttemptDenial,
     > {
-        if !key_entities_are_in_scope(key, &self.read_scope) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
-                self.admission.operation(),
-            ));
-        }
-        let read_scope = self.projected_read_scope(key)?;
-        let fact = self.lease.handle().with_runtime(execution, |runtime| {
-            super::fact_observation::observe_fact(
-                execution,
-                runtime,
-                self.lease.snapshot(),
-                &self.layout,
-                key,
+        observe_projection_dependency(
+            execution,
+            &self.admission,
+            &self.lease,
+            &self.read_scope,
+            key,
+        )
+    }
+}
+
+pub(super) fn observe_projection_dependency<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+    lease: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
+    read_scope: &super::super::read_scope::WorthQueryApplicationReadScope,
+    key: &WorthQueryApplicationFactKey,
+) -> Result<
+    (
+        WorthQueryOperationGraphReadScope,
+        WorthQueryApplicationObservedFact,
+    ),
+    WorthQueryApplicationAttemptDenial,
+> {
+    if !key_entities_are_in_scope(key, read_scope) {
+        return Err(denial(
+            WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
+            admission.operation(),
+        ));
+    }
+    let read_scope = admission
+        .allowed_graph_contract()
+        .graph_reads()
+        .roles()
+        .iter()
+        .flat_map(|role| role.read_scopes())
+        .find(|scope| super::observation_admission::graph_read_scope_matches_key(scope, key))
+        .cloned()
+        .ok_or_else(|| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
+                admission.operation(),
             )
         })?;
-        Ok((read_scope, fact))
-    }
-
-    fn projected_read_scope(
-        &self,
-        key: &WorthQueryApplicationFactKey,
-    ) -> Result<WorthQueryOperationGraphReadScope, WorthQueryApplicationAttemptDenial> {
-        self.admission
-            .allowed_graph_contract()
-            .graph_reads()
-            .roles()
-            .iter()
-            .flat_map(|role| role.read_scopes())
-            .find(|scope| super::observation_admission::graph_read_scope_matches_key(scope, key))
-            .cloned()
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
-                    self.admission.operation(),
-                )
-            })
-    }
+    let fact = lease.handle().with_runtime(execution, |runtime| {
+        super::fact_observation::observe_fact(
+            execution,
+            runtime,
+            lease.snapshot(),
+            &lease.layout,
+            key,
+        )
+    })?;
+    Ok((read_scope, fact))
 }
 
 impl<Schema, Operation, Input, Scope>

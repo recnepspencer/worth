@@ -10,6 +10,7 @@ mod inventory;
 mod locked_reader;
 mod operation_projection_denial;
 mod operation_reader;
+pub(in crate::domain_computation::primary_graph) use operation_reader::BorrowedOperationProjection;
 mod realized_scope;
 mod relation_identity;
 mod traversal;

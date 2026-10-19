@@ -11,12 +11,20 @@ pub enum WorthQueryWorkflowAdvancePreparationDenialKind {
     AwaitingActor,
     BackActionUnavailable,
     TerminationActionUnavailable,
+    ApprovalBodyRequired,
+    ApprovalBodyUnavailable,
+    ApprovalBody,
 }
 
 /// Why a workflow advance did not prepare. `RuntimeMismatch` means the workflow belongs to
 /// another runtime.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowAdvancePreparationDenial {
+    ApprovalBodyRequired,
+    ApprovalBodyUnavailable,
+    ApprovalBody(
+        worth_query_execution::publication_boundary::workflow_advance::WorkflowApprovalBodyDenial,
+    ),
     /// No fresh business Back requirement was produced; preparation changed nothing.
     BackActionUnavailable,
     TerminationActionUnavailable,
@@ -35,6 +43,13 @@ pub enum WorthQueryWorkflowAdvancePreparationDenial {
 impl WorthQueryWorkflowAdvancePreparationDenial {
     pub const fn kind(&self) -> WorthQueryWorkflowAdvancePreparationDenialKind {
         match self {
+            Self::ApprovalBodyRequired => {
+                WorthQueryWorkflowAdvancePreparationDenialKind::ApprovalBodyRequired
+            }
+            Self::ApprovalBodyUnavailable => {
+                WorthQueryWorkflowAdvancePreparationDenialKind::ApprovalBodyUnavailable
+            }
+            Self::ApprovalBody(_) => WorthQueryWorkflowAdvancePreparationDenialKind::ApprovalBody,
             Self::TerminationActionUnavailable => {
                 WorthQueryWorkflowAdvancePreparationDenialKind::TerminationActionUnavailable
             }

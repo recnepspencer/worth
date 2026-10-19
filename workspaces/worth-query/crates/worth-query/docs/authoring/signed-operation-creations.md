@@ -47,6 +47,13 @@ Prepare through the ordinary application entry's `prepare_in_program`, or
 exposes `authentication_intent()`, accepts `sign(&event)`, then `commit(...)`.
 These methods come from `worth_query_host::facade::application_entry`.
 
+For an approval capability whose installed control operation also declares a
+signed creation, use `prepare_workflow_approval_with_body` instead. It returns
+`WorkflowApprovalBodyPreparation::Prepared(signing_request)` or
+`Settled(native_progress)`. `Settled` is a resolved native outcome, not necessarily
+success: inspect its `WorkflowProgressOutcome`, including denials. The sign-only `prepare_workflow_approval` refuses a
+declared body rather than silently skipping it.
+
 ## Core Mental Model
 
 The supplier authors the snapshot fields, purpose, requirements and assignment
@@ -300,6 +307,64 @@ The ordinary handler's candidate ceiling stays unchanged; installation derives
 a separate bounded native consequence reservation and publication touch closure.
 
 ## How It Relates To Other Features
+
+### One approval action with a business attestation
+
+An approval frontier can require a fresh signature and publish an immutable
+business attestation through one action. Declare the attestation on that
+approval capability's `WORKFLOW_CONTROL` operation, install its compiled body
+with `operation_body::<Binding>()`, and register the capability through
+the workflow vocabulary's `.approval::<Capability, Operation, Input>()`.
+The binding uses the usual native body decision and denial types, unit result,
+and its real output contract. Author/start/advance roles cannot accept this
+body; neither can an ordinary workflow `.operation()` registration.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+match request.prepare_workflow_approval_with_body(
+    workflow, instance, &required_approval, &proposal, decision,
+)? {
+    WorkflowApprovalBodyPreparation::Settled(progress) => consume_progress(progress),
+    WorkflowApprovalBodyPreparation::Prepared(signing) => {
+        let intent = signing.authentication_intent().expect("declared signed body").clone();
+        let event = installed_owner.authenticate(credential, principal, intent, scope).await?;
+        consume_progress(signing.sign(&event)?.execute())
+    }
+}
+```
+
+Query retains the original approval decision and its snapshot, evaluates the
+installed body on that same snapshot, appends the native approval effects, and
+seals the combined candidate once. One genuine event authenticates that exact
+candidate; it is not consumed separately for each half. Publication rechecks
+both body and native approval dependencies and publishes both or neither.
+The principal, proposal, decision, native evidence and capability checks remain
+mandatory. No host coordinator or signature-to-grant mapping is involved.
+
+For example, a manager-review body captures the document description as
+`Subject`, the signing stage as `AuditContext`, declares a typed created output,
+and uses the ordinary supersession lifecycle. Its approval node still consumes
+the authored assessment evidence and grants only its native approval meaning.
+Read the attestation through a governed query or its actual transition receipt's
+`outputs_of::<Contract>()`; neither observation becomes reusable authority.
+Another early-verification producer stays independent and cannot supply this
+approval merely because it also contains a signature.
+
+Exact settled replay returns the original native progress before evaluating
+today's body requirements or requesting another event. Changed logical intent
+is not replay. A stale fresh attempt never publishes one half; retain native
+deferred/indeterminate results rather than automatically rerunning it.
+Both Approve and Reject execute the declared body: name its business meaning
+accordingly (for example, "reviewed", not an unconditional "approved").
+
+This join supports the existing bounded scalar signed-creation body, not
+partitioned-computation-producing profiles, enrolled birth, succession, external
+effects, or arbitrary additional native output/emission profiles. Unsupported
+composition is refused rather than dropping carried state. Resource budgets
+must fund canonicalization of the full combined effects and admission readset,
+including publication's candidate recheck; body-only signing costs are not a
+sufficient estimate. This does not add Store/process durability guarantees.
 
 Workflow operation authority and workflow approval remain separate native
 capabilities. A signature does not advance a workflow or satisfy an approval

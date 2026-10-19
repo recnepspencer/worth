@@ -872,6 +872,17 @@ action's `retain_operation`, and fresh owning `advance`/`close`.
 Do not invent signed/unsigned authorization modes, dummy approvals, host permit
 flags, or a parallel state machine to bridge it.
 
+When the approval action must also publish a business attestation, attach its
+compiled signed body to that approval control and call
+`prepare_workflow_approval_with_body`. Query joins both into one candidate on
+the original snapshot and consumes one genuine event. Plain
+`prepare_workflow_approval` refuses an attached body; it never ignores it.
+`Settled` carries the resolved native outcome, including denials; inspect it.
+Exact committed replay precedes new body evaluation or authentication.
+This is explicit same-action composition, not conversion of old signature
+rows into grants. See [approval with attestation](./authoring/signed-operation-creations.md#one-approval-action-with-a-business-attestation)
+for the supported scalar profile and refusal boundaries.
+
 The full contract is in the
 [workflows guide, Operations](foundations/workflows.md#operations); the
 [information-gathering example](../../worth-query-certification/examples/authored_workflow/information.rs)

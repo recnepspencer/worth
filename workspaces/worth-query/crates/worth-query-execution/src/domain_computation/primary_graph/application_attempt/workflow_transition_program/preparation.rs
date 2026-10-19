@@ -21,6 +21,7 @@ use crate::domain_computation::primary_graph::{
 
 #[path = "preparation/actor_denial.rs"]
 mod actor_denial;
+mod adapter_body;
 #[path = "preparation/adapter_commit.rs"]
 mod adapter_commit;
 #[path = "preparation/adapter_owner.rs"]

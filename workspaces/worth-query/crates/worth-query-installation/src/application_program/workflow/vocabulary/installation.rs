@@ -30,6 +30,7 @@ use super::{
 mod birth;
 #[path = "installation/capability_binding.rs"]
 mod capability_binding;
+use capability_binding::ControlBodyProfile;
 mod finish;
 mod operation;
 mod policies;
@@ -149,8 +150,9 @@ where
         Input: 'static,
     {
         self.insert_marker(2, TypeId::of::<Capability>(), Capability::IDENTIFIER)?;
-        let binding = self.bind_capability::<Capability, Operation, Input>(
+        let binding = self.bind_control_capability::<Capability, Operation, Input>(
             WorthQueryApplicationWorkflowInstallationDenialKind::ApprovalNotInstalled,
+            ControlBodyProfile::SignedApproval,
         )?;
         self.approvals.push(InstalledWorkflowApproval {
             binding,
@@ -203,8 +205,9 @@ where
             ));
         }
         self.insert_marker(3, TypeId::of::<Capability>(), Capability::IDENTIFIER)?;
-        let binding = self.bind_capability::<Capability, Operation, Input>(
+        let binding = self.bind_control_capability::<Capability, Operation, Input>(
             WorthQueryApplicationWorkflowInstallationDenialKind::AuthoringCapabilityNotInstalled,
+            ControlBodyProfile::None,
         )?;
         self.authoring_capability = Some(InstalledWorkflowAuthoringCapability { binding });
         Ok(self)
@@ -250,8 +253,9 @@ where
             ));
         }
         self.insert_marker(4, TypeId::of::<Capability>(), Capability::IDENTIFIER)?;
-        let binding = self.bind_capability::<Capability, Operation, Input>(
+        let binding = self.bind_control_capability::<Capability, Operation, Input>(
             WorthQueryApplicationWorkflowInstallationDenialKind::InstanceStartCapabilityNotInstalled,
+            ControlBodyProfile::None,
         )?;
         self.instance_start_capability = Some(InstalledWorkflowInstanceStartCapability { binding });
         Ok(self)
@@ -295,8 +299,9 @@ where
             }
         }
         self.insert_marker(5, TypeId::of::<Capability>(), Capability::IDENTIFIER)?;
-        let binding = self.bind_capability::<Capability, Operation, Input>(
+        let binding = self.bind_control_capability::<Capability, Operation, Input>(
             WorthQueryApplicationWorkflowInstallationDenialKind::AdvanceCapabilityNotInstalled,
+            ControlBodyProfile::None,
         )?;
         self.advance_capability = Some(InstalledWorkflowAdvanceCapability { binding });
         Ok(self)

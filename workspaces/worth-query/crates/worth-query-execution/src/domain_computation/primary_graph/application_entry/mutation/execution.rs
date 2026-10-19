@@ -4,8 +4,10 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
+mod candidate;
 mod completion;
 mod preparation;
+pub(in crate::domain_computation::primary_graph) use candidate::build_handler_candidate;
 pub(in crate::domain_computation::primary_graph) use completion::PreparedMutationHandler;
 
 use super::{

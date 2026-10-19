@@ -129,7 +129,7 @@ where
                         worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::WrongOwner,
                     );
                 }
-                if let Err(denial) = authentication.readmit() {
+                if let Err(denial) = authentication.readmit(&program) {
                     return WorkflowProgressOutcome::AuthenticationDenied(denial);
                 }
             }

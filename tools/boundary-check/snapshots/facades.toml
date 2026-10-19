@@ -159,6 +159,8 @@ exports = [
     "RequiredWorkflowSuccession",
     "RetiredWorkflowDefinitionStart",
     "SupersededWorkflowDefinitionStart",
+    "WorkflowApprovalBodyDenial",
+    "WorkflowApprovalBodyPreparation",
     "WorkflowApprovalDecision",
     "WorkflowConditionOperand",
     "WorkflowDefinitionBindingDenial",

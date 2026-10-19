@@ -776,6 +776,17 @@ Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalSta
 `WorkflowApprovalGrantUnavailable`, `WorkflowApprovalExpired`,
 `WorkflowApprovalDelegationChanged`, and `WorkflowApprovalAuthorityDenied`.
 
+An approval action may also declare an immutable signed business creation on its
+control operation. Use `prepare_workflow_approval_with_body` for that installed
+profile: `Prepared` retains the joint signing request, while `Settled` returns
+a resolved native outcome, including denials. Inspect `WorkflowProgressOutcome`;
+exact committed replay needs no fresh event. The plain sign-only entrance refuses
+attached bodies. Query evaluates the body on the approval's original snapshot
+and publishes both under one consumed event and one atomic candidate. See
+[approval with attestation](../authoring/signed-operation-creations.md#one-approval-action-with-a-business-attestation)
+for declaration, output, resource and unsupported-profile boundaries. Existing
+signature rows never manufacture this approval authority.
+
 Evidence cardinality does not establish reviewer quorum or independence. One
 authored assessment may feed the existing evidence join; `AllRequiredPassing`
 requires that applicable check to be current, completed and passing, while

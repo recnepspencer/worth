@@ -47,6 +47,7 @@ pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFac
 mod observation_admission;
 mod observations;
 mod projected_completion;
+mod projected_extension;
 mod relation_observation;
 mod source_facts;
 

@@ -39,6 +39,12 @@ where
                     Binding::IDENTITY,
                 )
             })?;
+        if Binding::WORKFLOW_CONTROL && installed.operation().body().is_some() {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInstalled,
+                Binding::IDENTITY,
+            ));
+        }
         if installed
             .operation()
             .body()
