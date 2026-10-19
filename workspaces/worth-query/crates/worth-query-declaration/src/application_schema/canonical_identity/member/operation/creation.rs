@@ -11,6 +11,12 @@ pub(super) fn append(
     prefix: &str,
     creation: &ApplicationOperationBodyCreation,
 ) {
+    if creation.reuses_current_if_unchanged() {
+        basis.text(
+            format!("{prefix}.created.reuse-current"),
+            "complete-content-v1",
+        );
+    }
     if !creation.links().is_empty() {
         basis.usize(format!("{prefix}.created.links"), creation.links().len());
         for (index, link) in creation.links().iter().enumerate() {

@@ -8,6 +8,9 @@ worth_query_entity!(pub Snapshot for Schema);
 worth_query_aspect!(pub SnapshotFacts for Schema, Snapshot; identity = AspectIdentity(0x9175_F001), revision = AspectContractRevision(1),);
 worth_query_field!(pub SnapshotIdentity for Schema, Snapshot, SnapshotFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub SnapshotValue for Schema, Snapshot, SnapshotFacts: u64 => U64ApplicationValueBinding, read_only, equality);
+worth_query_field!(pub SnapshotNote for Schema, Snapshot, SnapshotFacts: optional String => super::reuse_note_codec::NoteCodec, read_write, equality);
+worth_query_field!(pub SnapshotLabel for Schema, Snapshot, SnapshotFacts: optional String => StringApplicationValueBinding, read_only, equality);
+worth_query_field!(pub SnapshotKind for Schema, Snapshot, SnapshotFacts: optional String => StringApplicationValueBinding, read_only, equality);
 const fn ownership() -> ApplicationRelationIntegrity {
     let base = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
     ApplicationRelationIntegrity::new(
@@ -23,8 +26,12 @@ pub fn declare(
     schema
         .entity(Snapshot::reference())
         .aspect(Snapshot::reference(), SnapshotFacts::reference())
-        .unique_field(Snapshot::reference(), SnapshotIdentity::reference())
+        // A provider source row is not a global snapshot allocation identity.
+        .field(Snapshot::reference(), SnapshotIdentity::reference())
         .field(Snapshot::reference(), SnapshotValue::reference())
+        .field(Snapshot::reference(), SnapshotNote::reference())
+        .field(Snapshot::reference(), SnapshotLabel::reference())
+        .field(Snapshot::reference(), SnapshotKind::reference())
         .relation(
             CurrentSnapshot::reference(),
             Row::reference(),

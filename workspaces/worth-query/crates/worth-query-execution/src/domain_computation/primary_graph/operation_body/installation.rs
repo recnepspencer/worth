@@ -93,7 +93,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             return Err(denied());
         }
         let body = installed.operation().body().ok_or_else(denied)?;
-        if !body.has_supported_retiring_replacement() {
+        if !body.has_supported_retiring_replacement() || !body.has_supported_creation_reuse() {
             return Err(denied());
         }
         let retirement_inputs = body

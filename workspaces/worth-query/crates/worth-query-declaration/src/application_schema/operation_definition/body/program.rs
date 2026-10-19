@@ -32,6 +32,7 @@ pub struct ApplicationOperationBodyCreation {
     pub(super) signing_lifecycle: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
     pub(super) subject_impact_bound: Option<std::num::NonZeroUsize>,
     pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
+    pub(super) reuse_current_if_unchanged: bool,
 }
 
 impl ApplicationOperationBodyCreation {
@@ -49,10 +50,19 @@ impl ApplicationOperationBodyCreation {
             signing_lifecycle: None,
             subject_impact_bound: None,
             enrollment: None,
+            reuse_current_if_unchanged: false,
         }
     }
     pub fn entity(&self) -> &str {
         &self.entity
+    }
+    pub fn reuses_current_if_unchanged(&self) -> bool {
+        self.reuse_current_if_unchanged
+    }
+    /// Authority-free carriage; fresh admission checks the complete comparison profile.
+    pub fn with_untrusted_reuse_current_if_unchanged(mut self, reuse: bool) -> Self {
+        self.reuse_current_if_unchanged = reuse;
+        self
     }
     pub fn subject_impact_bound(&self) -> Option<std::num::NonZeroUsize> {
         self.subject_impact_bound

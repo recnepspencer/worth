@@ -34,6 +34,14 @@ mod retiring_actions;
 mod retiring_admission;
 #[path = "native_graph_input_guards/retiring_evidence.rs"]
 mod retiring_evidence;
+#[path = "native_graph_input_guards/reuse_actions.rs"]
+mod reuse_actions;
+#[path = "native_graph_input_guards/reuse_admission.rs"]
+mod reuse_admission;
+#[path = "native_graph_input_guards/reuse_evidence.rs"]
+mod reuse_evidence;
+#[path = "native_graph_input_guards/reuse_note_codec.rs"]
+mod reuse_note_codec;
 #[path = "native_graph_input_guards/revision_query.rs"]
 mod revision_query;
 #[path = "native_graph_input_guards/row_query.rs"]

@@ -19,6 +19,7 @@ mod creation;
 mod creation_link;
 mod creation_link_validation;
 mod creation_replacement;
+mod creation_reuse;
 mod enrollment;
 pub use enrollment::ApplicationOperationBodyEnrollment;
 mod output;

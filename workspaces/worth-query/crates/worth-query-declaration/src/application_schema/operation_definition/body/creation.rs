@@ -24,6 +24,7 @@ pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Ent
     pub(super) signing_lifecycle: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
     pub(super) subject_impact_bound: Option<std::num::NonZeroUsize>,
     pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
+    pub(super) reuse_current_if_unchanged: bool,
     marker: PhantomData<fn() -> Entity>,
 }
 
@@ -54,6 +55,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             signing_lifecycle: None,
             subject_impact_bound: None,
             enrollment: None,
+            reuse_current_if_unchanged: false,
             marker: PhantomData,
         })
     }
@@ -220,6 +222,7 @@ impl<Schema, Operation, Input, Entity>
             signing_lifecycle: self.signing_lifecycle,
             subject_impact_bound: self.subject_impact_bound,
             enrollment: self.enrollment,
+            reuse_current_if_unchanged: self.reuse_current_if_unchanged,
         };
         super::classified_capture::validate_creation(&creation)?;
         if !super::signing_lifecycle::validation::validate_creation(&creation) {

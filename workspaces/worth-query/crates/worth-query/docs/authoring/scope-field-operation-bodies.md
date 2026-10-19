@@ -88,6 +88,8 @@ Declare through `worth_query_decl::facade::application_schema`:
   at-most-one outgoing selection with that exact new row;
 - `creation.replace_and_retire_from_scope(relation, "link-slot")` for explicit
   [disposable predecessor retirement](./retiring-selection-replacement.md);
+- `creation.reuse_current_if_unchanged()` for explicit
+  [complete-content selection reuse](./complete-content-selection-reuse.md);
 - `body.preserve_scope_output::<Binding, Role>()`,
   `body.preserve_related_output::<Binding, Role>(relation)` and
   `creation.create_output::<Binding, Role>()` for fixed typed output correspondence;

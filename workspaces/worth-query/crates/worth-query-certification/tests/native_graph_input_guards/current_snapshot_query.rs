@@ -11,10 +11,10 @@ use worth_query_host::facade::primary_graph::{
 #[derive(Clone)]
 pub struct Read(pub String);
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Value(pub String);
-worth_query_portable_type!(Value=>"worth.query.retiring.current-identity.v1");
+pub struct Value(pub String, pub worth_relational::facade::identity::EntityId);
+worth_query_portable_type!(Value=>"worth.query.retiring.current-identity.v2");
 worth_query_structured_value_binding!(pub Input for Read {identity:"worth.query.retiring.current-read.v1"});
-worth_query_structured_value_binding!(pub ResultBinding for Value {identity:"worth.query.retiring.current-identity.v1"});
+worth_query_structured_value_binding!(pub ResultBinding for Value {identity:"worth.query.retiring.current-identity.v2"});
 worth_query_structured_value_binding!(pub Parameters for () {identity:"worth.query.retiring.current-parameters.v1"});
 pub struct IdentitySlot;
 worth_query_portable_type!(IdentitySlot=>"worth.query.retiring.current-slot.v1");
@@ -44,7 +44,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Value {
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
-        Ok(Self(row.field(field())?))
+        Ok(Self(row.field(field())?, row.entity_id()))
     }
 }
 fn identity(read: Read) -> String {

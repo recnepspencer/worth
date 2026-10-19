@@ -16,6 +16,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         let builder = super::path_value_targets::declare(builder);
         let builder = super::retiring_actions::declare(super::selection_schema::declare(builder));
+        let builder = super::reuse_actions::declare(builder);
         builder
             .entity(Mapping::reference())
             .entity(Principal::reference())
@@ -147,7 +148,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.operation_body::<super::path_value_targets::CopyBinding>()?;
         setup.operation_body::<super::path_value_targets::AliasBinding>()?;
         setup.operation_body::<super::retiring_actions::KeepBinding>()?;
-        setup.operation_body::<super::retiring_actions::RetireBinding>()
+        setup.operation_body::<super::retiring_actions::RetireBinding>()?;
+        setup.operation_body::<super::reuse_actions::Binding>()?;
+        setup.operation_body::<super::reuse_actions::NoteBinding>()
     }
 }
 pub struct Feature;
@@ -179,6 +182,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .native_action::<super::retiring_actions::KeepBinding>()
             .finish_action()
             .native_action::<super::retiring_actions::RetireBinding>()
+            .finish_action()
+            .native_action::<super::reuse_actions::Binding>()
+            .finish_action()
+            .native_action::<super::reuse_actions::NoteBinding>()
             .finish_action()
             .finish()]
     }

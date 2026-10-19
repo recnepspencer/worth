@@ -47,7 +47,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.creation().is_some_and(|creation| creation.retires_predecessor()) { 34 }
+    let version = if body.creation().is_some_and(|creation| creation.reuses_current_if_unchanged()) { 35 }
+    else if body.creation().is_some_and(|creation| creation.retires_predecessor()) { 34 }
     else if !body.path_value_assignments().is_empty() { 33 }
     else if !body.path_input_expectations().is_empty() { 32 }
     else if !body.retirements().is_empty() { 31 }
@@ -220,6 +221,12 @@ pub(super) fn write(
     if version >= 33 {
         path_value::write(output, body.path_value_assignments())?;
     }
+    if version >= 35 {
+        output
+            .u8(u8::from(body.creation().is_some_and(|creation| {
+                creation.reuses_current_if_unchanged()
+            })))?;
+    }
     Ok(())
 }
 
@@ -228,7 +235,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=34) {
+    if !matches!(version, 1..=35) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -343,6 +350,19 @@ pub(super) fn decode(
         path_value::decode(input, budget)?
     } else {
         Vec::new()
+    };
+    let creation = if version >= 35 {
+        let reuse = match input.u8()? {
+            0 => false,
+            1 => true,
+            _ => return Err(Denial::new(Kind::InvalidBooleanEncoding)),
+        };
+        if reuse && creation.is_none() {
+            return Err(Denial::new(Kind::InvalidRecordShape));
+        }
+        creation.map(|creation| creation.with_untrusted_reuse_current_if_unchanged(reuse))
+    } else {
+        creation
     };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(

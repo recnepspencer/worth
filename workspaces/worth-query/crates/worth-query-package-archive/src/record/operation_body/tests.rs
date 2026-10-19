@@ -6,6 +6,8 @@ use worth_foundational::facade::{AspectValue, ScalarAspectType};
 mod collection_values;
 #[path = "tests/creation_links.rs"]
 mod creation_links;
+#[path = "tests/creation_reuse.rs"]
+mod creation_reuse;
 #[path = "tests/enrollment.rs"]
 mod enrollment;
 #[path = "tests/external_emission.rs"]

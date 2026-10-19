@@ -12,6 +12,46 @@ use crate::domain_computation::primary_graph::{
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
+    /// Same canonical equivalence owner as native signing consequences. Both present
+    /// values are funded before encoding; absence is observed by the ordinary reader.
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn body_scalar_equivalent<
+        Entity,
+    >(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        locator: &AspectFieldLocator,
+        expected: Option<&AspectValue>,
+        required: bool,
+        execution: &crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution<'_>,
+    ) -> Result<bool, HandlerExecutionDenial> {
+        use worth_relational::facade::storage::AuthoritativeFieldComparisonKey as Comparison;
+        let resource =
+            |cause| HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause));
+        execution
+            .decision_stage(|context| {
+                self.body_scalar_observe(identity, locator, |observed| {
+                    if required && observed.is_none() {
+                        return Err(HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::new(
+                            WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                            "reuse predecessor field",
+                        )));
+                    }
+                    let (Some(observed), Some(expected)) = (observed, expected) else {
+                        return Ok(observed.is_none() && expected.is_none());
+                    };
+                    let bytes = Comparison::required_encoded_capacity_bytes(observed)
+                        .and_then(|n| n.checked_add(Comparison::required_encoded_capacity_bytes(expected)?))
+                        .ok_or_else(|| resource(WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+                    let _memory = execution.reserve(bytes).map_err(resource)?;
+                    context.checkpoint(bytes).map_err(|cause| {
+                        use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+                        HandlerExecutionDenial::new(advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause)))
+                    })?;
+                    Ok(Comparison::from_aspect_value(observed) == Comparison::from_aspect_value(expected))
+                })
+            })
+            .map_err(HandlerExecutionDenial::new)?
+    }
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn body_scalar_matches<
         Entity,
     >(

@@ -65,6 +65,15 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .flat_map(|step| step.target.decision_reads()),
             );
             if let Some(creation) = body.creation() {
+                if creation.reuses_current_if_unchanged() {
+                    reads.extend(creation.fields().iter().map(|field| {
+                        super::super::ApplicationOperationDecisionReadTarget::Field {
+                            entity: field.field().entity().to_owned(),
+                            aspect: field.field().aspect().to_owned(),
+                            field: field.field().field().to_owned(),
+                        }
+                    }));
+                }
                 reads.extend(
                     creation
                         .links()

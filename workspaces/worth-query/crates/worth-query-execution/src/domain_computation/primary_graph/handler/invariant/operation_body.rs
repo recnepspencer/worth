@@ -3,6 +3,7 @@ mod emission;
 mod path_input;
 mod path_value;
 mod retirement;
+mod reuse;
 mod selection;
 mod source;
 mod values;

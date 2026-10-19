@@ -11,6 +11,8 @@ mod output;
 mod path_value;
 mod requirement;
 mod retirement;
+mod reuse;
+pub(in crate::domain_computation::primary_graph) use reuse::CreationDisposition;
 mod selection;
 mod source;
 pub(in crate::domain_computation::primary_graph) mod value;
@@ -51,6 +53,7 @@ pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     values: Option<value::PreparedBodyValues>,
     retirements: PreparedBodyRetirements<Schema>,
     path_writes: PreparedBodyPathWrites<Schema>,
+    creation_disposition: reuse::CreationDisposition,
 }
 
 /// A declared source expectation failed before any candidate effect.

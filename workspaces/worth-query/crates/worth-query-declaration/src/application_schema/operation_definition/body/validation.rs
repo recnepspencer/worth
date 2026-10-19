@@ -45,6 +45,7 @@ pub(crate) fn validate_operation_bodies(
         }
         super::principal_validation::validate_principals(operation, body, members)?;
         super::creation_link_validation::validate_links(operation, body, members)?;
+        super::creation_reuse::validate(operation, body, members)?;
         if !super::signing_lifecycle::validate(body, members) {
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
         }

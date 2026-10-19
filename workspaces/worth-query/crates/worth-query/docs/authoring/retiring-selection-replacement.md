@@ -105,8 +105,9 @@ feed existing signed-subject lifecycle rules.
 This feature changes selection identity and retires a source. It does **not**
 declare two snapshots equivalent because their contents match. Identity-sensitive
 graph certificates may therefore be superseded on an identical reselection.
-A product requiring no-op signature preservation needs an explicit native
-equivalence/reuse rule; do not add a host comparison or restore signatures.
+A product requiring identical-content selection preservation can opt into
+[complete-content reuse](./complete-content-selection-reuse.md); do not add a
+host comparison or restore signatures. Ordinary retirement remains unchanged.
 
 ## Inspection And Debugging
 
