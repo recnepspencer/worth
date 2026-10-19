@@ -149,9 +149,12 @@ the same carrier and requires the installed target producer to rebuild output.
 A closed set of native producer-owned internal relations can retire with its
 output records when both endpoints are independently proven in that same
 publication. Related ordering can survive when its key codec stays unchanged.
-External or rewritten relations, protected or partly classified fields, affected
-invariants, changed ordering keys and join consequences refuse before
-publication; ordinary restore remains exact. Surviving application relations
+Cold complete-publication association preserves independently admitted incoming
+references without adopting their source entities or relation ownership. Internal
+and claimed-owned relations still require complete native publication provenance.
+Destructive retirement remains closed: external or rewritten relations, protected
+or partly classified fields, affected invariants, changed ordering keys and join
+consequences refuse before publication; ordinary restore remains exact. Surviving application relations
 are selected with the same bounded native reads as entities and rejudged through
 `RelationMutationIntent::Revalidate(RevalidateRelationIntent { relation_id })`.
 This native read demand schedules installed rules against the actual preimage;

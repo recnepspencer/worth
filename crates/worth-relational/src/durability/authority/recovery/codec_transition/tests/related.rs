@@ -2,6 +2,7 @@
 mod codec_disposition;
 mod consequences;
 mod fixture;
+mod incoming_reference;
 mod refusals;
 mod settlement;
 use super::fixture::{basis, capture, protected_payload};

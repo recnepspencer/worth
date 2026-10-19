@@ -1,4 +1,4 @@
-//! Real external edges, later equal writes and changed ordering keys stay fenced.
+//! Unowned internal edges, rewritten owned edges and changed ordering keys stay fenced.
 use super::{
     super::fixture::{basis, capture, locator, protected_payload},
     fixture::*,
@@ -8,10 +8,10 @@ use crate::mvcc::{RelationalOperationControl, RelationalTransactionIntent};
 use crate::transactions::data::*;
 
 #[test]
-fn external_endpoint_and_later_equal_relation_write_refuse_without_any_retirement() {
+fn unowned_internal_and_rewritten_owned_relations_refuse_without_any_retirement() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    for external in [true, false] {
+    for variant in 0..3 {
         let world = world(execution);
         complete_association(execution, &world).unwrap();
         let none = crate::history::data::derive_codec_retirement_closure(
@@ -22,17 +22,17 @@ fn external_endpoint_and_later_equal_relation_write_refuse_without_any_retiremen
         )
         .unwrap();
         assert!(none.entities.is_empty());
-        let intent = if external {
+        let intent = if variant == 0 {
             MutationIntent::Create(CreateIntent::Relation(RelationSpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(4),
-                client_key: crate::symbols::data::ClientKey::raw("external-source"),
-                source: EntityReference::Existing(world.authored),
-                target: EntityReference::Existing(world.outputs[1]),
+                client_key: crate::symbols::data::ClientKey::raw("unowned-internal"),
+                source: EntityReference::Existing(world.outputs[1]),
+                target: EntityReference::Existing(world.outputs[2]),
                 fields: AspectFieldPatch::from_locator(
                     locator("edge"),
                     worth_foundational::facade::AspectValue::String(
-                        worth_foundational::facade::InternedString::from("protected external edge"),
+                        worth_foundational::facade::InternedString::from("unowned internal edge"),
                     ),
                 ),
             }))
@@ -41,8 +41,12 @@ fn external_endpoint_and_later_equal_relation_write_refuse_without_any_retiremen
                 UpdateRelationEndpointsIntent {
                     relation_id: world.relations[0],
                     kind_id: KindId(4),
-                    source: EntityReference::Existing(world.outputs[0]),
-                    target: EntityReference::Existing(world.outputs[1]),
+                    source: EntityReference::Existing(
+                        world.outputs[if variant == 1 { 0 } else { 1 }],
+                    ),
+                    target: EntityReference::Existing(
+                        world.outputs[if variant == 1 { 1 } else { 2 }],
+                    ),
                 },
             ))
         };
@@ -96,11 +100,21 @@ fn external_endpoint_and_later_equal_relation_write_refuse_without_any_retiremen
         assert!(recovered.codec_transition_pending());
         assert_eq!(capture(&target), before);
         assert_eq!(protected_payload(&target, world.authored), source);
-        assert_order(&target, &world.outputs, &world.relations);
+        // The rewire has already lawfully changed ordinary ordering. Refusal must
+        // preserve that exact committed graph (including its index), not undo it.
+        if variant != 2 {
+            assert_order(&target, &world.outputs, &world.relations);
+        }
+        assert_eq!(
+            world.relations.map(|id| relation_payload(&target, id)),
+            world
+                .relations
+                .map(|id| relation_payload(&world.runtime, id)),
+        );
     }
 }
 
-fn complete_association(
+pub(super) fn complete_association(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &RelatedWorld,
 ) -> Result<(), crate::history::data::CodecRetirementClosureStop> {

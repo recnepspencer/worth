@@ -1,11 +1,13 @@
-//! Authenticate incident relations after both endpoint entities are proven.
+//! Destructive retirement requires a closed set of authenticated incident relations.
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop, OutputOrigin};
 use crate::branch::RelationalBranchRoot;
 use crate::identity::data::RelationId;
 use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
 
+mod association;
 mod incident_boundary;
+mod incoming_reference;
 
 #[derive(Clone, Copy)]
 pub(super) enum RelationClosurePurpose {
@@ -13,50 +15,7 @@ pub(super) enum RelationClosurePurpose {
     CodecRetirement,
 }
 
-/// Complete cold association uses the same incident-edge court as retirement,
-/// including when no member is selected for retirement.
-pub(super) fn validate_complete_publication(
-    runtime: &RelationalRuntime,
-    root: &RelationalBranchRoot,
-    origin: &std::sync::Arc<
-        crate::history::data::canonical_commit_envelope::CanonicalRequiredOutputOrigin,
-    >,
-    context: &mut MapKernelContext<'_, '_>,
-    lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<(), CodecRetirementClosureStop> {
-    charge(context, origin.members.len())?;
-    let bytes = origin
-        .members
-        .len()
-        .checked_mul(std::mem::size_of::<OutputOrigin>())
-        .ok_or_else(memory_overflow)?;
-    let _memory = reserve(lease, bytes)?;
-    let origins = origin
-        .members
-        .iter()
-        .map(|member| (member.id, member.kind, std::sync::Arc::clone(origin)))
-        .collect::<Vec<_>>();
-    let (relations, _relation_memory) = derive_closed_relations(
-        runtime,
-        root,
-        &origins,
-        RelationClosurePurpose::CompletePublicationAssociation,
-        context,
-        lease,
-    )?;
-    charge(
-        context,
-        relations.len().saturating_add(origin.relations.len()),
-    )?;
-    if !relations
-        .iter()
-        .copied()
-        .eq(origin.relations.iter().map(|relation| relation.id))
-    {
-        return Err("incident relation roster differs from complete producer publication".into());
-    }
-    Ok(())
-}
+pub(super) use association::validate_complete_publication;
 
 pub(super) fn derive_closed_relations(
     runtime: &RelationalRuntime,
