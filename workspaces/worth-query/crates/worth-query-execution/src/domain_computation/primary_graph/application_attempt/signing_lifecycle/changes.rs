@@ -61,7 +61,7 @@ pub(super) fn select(
             }
             | Effect::PatchOptionalEntityFields {
                 entity, entity_id, ..
-            } if entity == &rule.spec().source_entity => *entity_id,
+            } if rule.subjects().iter().any(|field| field.entity() == entity) => *entity_id,
             Effect::DeleteEntity { entity_id } => {
                 let request = execution.execution_request().map_err(resource)?;
                 let kind = lease.handle().with_runtime(&request, |runtime| {
@@ -84,14 +84,27 @@ pub(super) fn select(
                         })?
                         .ok_or_else(unavailable)
                 })?;
-                if Some(kind) == layout.entity_kind(&rule.spec().source_entity) {
-                    changed.insert(*entity_id, rule.subjects().to_vec());
+                let fields: Vec<_> = rule
+                    .subjects()
+                    .iter()
+                    .filter(|field| Some(kind) == layout.entity_kind(field.entity()))
+                    .cloned()
+                    .collect();
+                if !fields.is_empty() {
+                    changed.insert(*entity_id, fields);
                 }
                 continue;
             }
             _ => continue,
         };
         for field in rule.subjects() {
+            if match effect {
+                Effect::UpdateEntity { entity, .. }
+                | Effect::PatchOptionalEntityFields { entity, .. } => entity != field.entity(),
+                _ => false,
+            } {
+                continue;
+            }
             let locator = layout
                 .field_locator(field.entity(), field.aspect(), field.field())
                 .ok_or_else(unavailable)?;

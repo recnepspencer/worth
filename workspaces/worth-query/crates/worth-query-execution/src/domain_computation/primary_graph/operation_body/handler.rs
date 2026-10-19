@@ -310,6 +310,7 @@ where
                     ApplicationOperationBodyCreatedField::ScopeField { .. }
                     | ApplicationOperationBodyCreatedField::PresentScopeField { .. }
                     | ApplicationOperationBodyCreatedField::CapturedScopeField { .. }
+                    | ApplicationOperationBodyCreatedField::CapturedPathField { .. }
                     | ApplicationOperationBodyCreatedField::RelatedField { .. }
                     | ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => {
                         let Some(source) = source_values

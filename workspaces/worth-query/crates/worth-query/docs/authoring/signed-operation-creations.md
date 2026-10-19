@@ -20,6 +20,9 @@ Declare through `worth_query_decl::facade::application_schema`:
 - `ApplicationSigningProvenance` and `ApplicationSigningProvenanceBinding`;
 - `ApplicationSigningSubjectProvenance` and
   `ApplicationSigningSubjectProvenanceBinding` for the v2 certified footprint;
+- `ApplicationSigningGraphSubjectProvenance`, its v3 binding, and
+  [`capture_from_path`](./graph-certified-subjects.md) for related source facts
+  and optional local captures;
 - `creation.initialize_from_present_scope(optional_source, required_snapshot)`;
 - `creation.capture_from_scope(source, snapshot, ApplicationOperationBodyCaptureRole)`
   and `capture_from_present_scope` for explicitly classified v2 captures;
@@ -90,7 +93,7 @@ intent authenticates both effects. A concurrent revision-only change stales that
 candidate; later changes to audit context alone do not supersede settled evidence.
 This does not permit a computed initializer inside the signed artifact: such an
 initializer lacks an explicit subject/audit capture classification and is refused.
-V2 rejects unclassified scope captures. Classified captures require v2 signing;
+V2 and v3 reject unclassified scope captures. Classified captures require certified signing;
 they cannot be silently interpreted by an unsigned creation or the legacy profile.
 
 The footprint alone is not a supersession event or an effectiveness decision.
@@ -426,16 +429,17 @@ capture role and source presence use body record v14; earlier versions cannot
 reinterpret its new opcode. The v2 provenance binding has a distinct codec
 identity; it does not reinterpret v1 records or require a build-counter
 schema revision. Unsupported codecs fail installation rather than falling back.
-The lifecycle declaration uses body record v15 without changing v1–v14, requires
-v2 provenance, and operates on the one admitted source kind and its declared
-captures. Fan-out/capacity exhaustion refuses the whole edit, never truncates.
+The original scope-only lifecycle declaration uses body record v15 without changing
+v1–v14 and uses v2 provenance. The [graph-certified profile](./graph-certified-subjects.md)
+uses v3 provenance and body v29 for path captures or a subject-impact bound.
+Fan-out/capacity exhaustion refuses the whole edit, never truncates.
 Effectful program-adoption migration for a lifecycle schema is explicitly
 unsupported until it has a native consequence join; it cannot bypass this law.
 
 Checkpoint restoration preserves signed data and durable idempotency facts, not
 live event or receipt authority. The current-evidence requirement uses body v16;
 v1–v15 records are unchanged and cannot silently acquire the new operand. It
-requires v2 provenance and the declared native lifecycle, and matches only the
+requires certified v2/v3 provenance and the declared native lifecycle, and matches only the
 same canonical active program revision. Related-subject requirements use body
 v18; earlier opcodes/records keep their existing meaning. This selector supports
 one outgoing hop, not arbitrary paths, input-supplied IDs or first/latest selection.
@@ -447,5 +451,6 @@ signature manifestation and UTC evidence are not supplied by this feature.
 
 - [Executable Scope-Bound Operation Bodies](./scope-field-operation-bodies.md)
 - [Shared Computed Body Values](./computed-body-values.md)
+- [Graph-Certified Signature Subjects](./graph-certified-subjects.md)
 - [Ordinary Application Front Door](../foundations/ordinary-application-front-door.md)
 - [Programs and Adoption](../foundations/programs-and-adoption.md)

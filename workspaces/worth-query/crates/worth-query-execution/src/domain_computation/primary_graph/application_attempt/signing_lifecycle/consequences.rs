@@ -14,6 +14,7 @@ use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 pub(super) struct Batch {
     pub(super) effects: Vec<Effect>,
     pub(super) facts: Vec<Fact>,
+    pub(super) memory: Vec<super::QueryMemoryReservation>,
 }
 impl Batch {
     pub(super) fn admit<Schema, Operation, Input, Scope>(
@@ -34,7 +35,8 @@ impl Batch {
 pub(super) fn collect(
     rule: &Rule,
     subject: EntityId,
-    changed: &[Locus],
+    changed: &BTreeMap<EntityId, Vec<Locus>>,
+    effects: &[Effect],
     actor: EntityId,
     operation: &str,
     logical_request: [u8; 32],
@@ -52,8 +54,8 @@ pub(super) fn collect(
         .layout
         .relation(&rule.spec().consequence_relation)
         .ok_or_else(unavailable)?;
-    lease.handle().with_runtime(request, |runtime| {
-        let edges = observation::adjacency(
+    let edges = lease.handle().with_runtime(request, |runtime| {
+        observation::adjacency(
             runtime,
             request,
             lease.snapshot(),
@@ -61,11 +63,13 @@ pub(super) fn collect(
             current.kind,
             rule.spec().maximum_evidence,
             &mut batch.facts,
-        )?;
-        for edge in edges {
-            context.checkpoint(1).map_err(stopped)?;
-            let evidence = edge.to;
-            let (footprint, _memory) = observation::footprint(
+        )
+    })?;
+    for edge in edges {
+        context.checkpoint(1).map_err(stopped)?;
+        let evidence = edge.to;
+        let (footprint, _memory) = lease.handle().with_runtime(request, |runtime| {
+            observation::footprint(
                 rule,
                 evidence,
                 lease,
@@ -73,26 +77,33 @@ pub(super) fn collect(
                 execution,
                 request,
                 &mut batch.facts,
-            )?;
-            if footprint.authentication().subject != coordinates(subject)
-                || footprint
-                    .dependencies()
-                    .iter()
-                    .any(|dependency| dependency.source != coordinates(subject))
+            )
+        })?;
+        if !footprint.has_valid_subject(coordinates(subject)) {
+            return Err(unavailable());
+        }
+        let mut affected = Vec::new();
+        for (source, field) in footprint.dependencies() {
+            if changed
+                .iter()
+                .any(|(entity, fields)| coordinates(*entity) == source && fields.contains(field))
+                && !affected.contains(field)
             {
-                return Err(unavailable());
+                affected.push(field.clone());
             }
-            let affected = affected_loci(
-                footprint
-                    .dependencies()
-                    .iter()
-                    .map(|dependency| &dependency.source_field),
-                changed,
-            );
-            if affected.is_empty() {
-                continue;
+        }
+        for field in super::graph::changed_selections(
+            rule, subject, &footprint, lease, effects, execution, request, context, batch,
+        )? {
+            if !affected.contains(&field) {
+                affected.push(field);
             }
-            let previous = observation::adjacency(
+        }
+        if affected.is_empty() {
+            continue;
+        }
+        let previous = lease.handle().with_runtime(request, |runtime| {
+            observation::adjacency(
                 runtime,
                 request,
                 lease.snapshot(),
@@ -100,52 +111,40 @@ pub(super) fn collect(
                 consequence.kind,
                 1,
                 &mut batch.facts,
-            )?;
-            if !previous.is_empty() {
-                return Err(unavailable());
-            }
-            let record =
-                ApplicationSigningSupersession::from_parts(ApplicationSigningSupersessionParts {
-                    evidence: coordinates(evidence),
-                    subject: coordinates(subject),
-                    actor: coordinates(actor),
-                    operation: operation.into(),
-                    logical_request,
-                    changed_dependencies: affected,
-                })
-                .map_err(|_| unavailable())?;
-            // Lowering the unlink needs the identity of the edge actually read
-            // above, in addition to the membership revision used for staleness.
-            batch.facts.push(Fact::Relation {
-                relation_kind: current.kind,
-                from: subject,
-                to: evidence,
-                matching_relations: vec![edge.relation_id],
-            });
-            append(
-                rule,
-                subject,
-                evidence,
-                edge.relation_id,
-                record,
-                lease,
-                batch,
-            )?;
+            )
+        })?;
+        if !previous.is_empty() {
+            return Err(unavailable());
         }
-        Ok(())
-    })
-}
-fn affected_loci<'a>(
-    dependencies: impl Iterator<Item = &'a Locus>,
-    changed: &[Locus],
-) -> Vec<Locus> {
-    let mut affected = Vec::new();
-    for field in dependencies {
-        if changed.contains(field) && !affected.contains(field) {
-            affected.push(field.clone());
-        }
+        let record =
+            ApplicationSigningSupersession::from_parts(ApplicationSigningSupersessionParts {
+                evidence: coordinates(evidence),
+                subject: coordinates(subject),
+                actor: coordinates(actor),
+                operation: operation.into(),
+                logical_request,
+                changed_dependencies: affected,
+            })
+            .map_err(|_| unavailable())?;
+        // Lowering the unlink needs the identity of the edge actually read
+        // above, in addition to the membership revision used for staleness.
+        batch.facts.push(Fact::Relation {
+            relation_kind: current.kind,
+            from: subject,
+            to: evidence,
+            matching_relations: vec![edge.relation_id],
+        });
+        append(
+            rule,
+            subject,
+            evidence,
+            edge.relation_id,
+            record,
+            lease,
+            batch,
+        )?;
     }
-    affected
+    Ok(())
 }
 fn append(
     rule: &Rule,
@@ -202,19 +201,4 @@ fn append(
         relation_id: current,
     });
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{affected_loci, Locus};
-    #[test]
-    fn each_rows_own_dependency_footprint_not_the_installed_union_decides_supersession() {
-        let description = Locus::new("Item", "Facts", "Description");
-        let assignment = Locus::new("Item", "Facts", "Assignment");
-        let first = [description.clone(), assignment.clone()];
-        let second = [assignment];
-        let changed = [description];
-        assert_eq!(affected_loci(first.iter(), &changed), changed);
-        assert!(affected_loci(second.iter(), &changed).is_empty());
-    }
 }

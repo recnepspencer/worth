@@ -177,7 +177,14 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 }
                 if let Some(source) = step.source_field() {
                     if step.related_source().is_none()
+                        && step.path_source().is_none()
                         && source.entity() != Binding::scope_field().entity()
+                    {
+                        return Err(denied());
+                    }
+                    if let Some(path) = step.path_source()
+                        && (!path.has_supported_shape()
+                            || path.path.start_entity() != Binding::scope_field().entity())
                     {
                         return Err(denied());
                     }

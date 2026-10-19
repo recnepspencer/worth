@@ -22,6 +22,12 @@ pub(super) fn append(
     }
     basis.text(format!("{prefix}.created.entity"), creation.entity());
     basis.text(format!("{prefix}.created.key"), creation.key());
+    if let Some(bound) = creation.subject_impact_bound() {
+        basis.usize(
+            format!("{prefix}.created.subject-impact-bound"),
+            bound.get(),
+        );
+    }
     if let Some(enrollment) = creation.enrollment() {
         basis.text(
             format!("{prefix}.created.workflow-enrollment"),
@@ -54,6 +60,7 @@ pub(super) fn append(
                 Field::RelatedField { .. } => "related-field",
                 Field::PresentScopeField { .. } => "present-scope-field",
                 Field::CapturedScopeField { .. } => "classified-scope-field",
+                Field::CapturedPathField { .. } => "classified-path-field",
                 Field::SigningProvenance { .. } => "signing-provenance",
                 Field::PrincipalIdentity { .. } => "principal-identity",
             },
@@ -63,6 +70,24 @@ pub(super) fn append(
         basis.text(format!("{field}.field"), step.field().field());
         basis.text(format!("{field}.binding"), step.binding().as_str());
         match step {
+            Field::CapturedPathField {
+                source,
+                scalar_family,
+                role,
+                target_presence,
+                ..
+            } => {
+                basis.text(format!("{field}.path-source"), &source.canonical_record());
+                basis.text(
+                    format!("{field}.source-family"),
+                    scalar_family.canonical_name(),
+                );
+                basis.text(format!("{field}.capture-role"), role.canonical_name());
+                basis.text(
+                    format!("{field}.target-presence"),
+                    target_presence.canonical_name(),
+                );
+            }
             Field::Computed { value, .. } => basis.text(format!("{field}.computed-value"), value),
             Field::Literal { value, .. } => basis.value(
                 format!("{field}.value"),

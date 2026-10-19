@@ -10,6 +10,20 @@ mod related_source;
 mod succession;
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
     let record = related_output::operation_body_record(body);
+    let record = if let Some(bound) = body
+        .creation()
+        .and_then(|creation| creation.subject_impact_bound())
+    {
+        framed_record(
+            "operation-body-subject-impacts-v1",
+            [
+                ("body", record),
+                ("maximum-subjects", bound.get().to_string()),
+            ],
+        )
+    } else {
+        record
+    };
     if body.values().is_empty() {
         return record;
     }

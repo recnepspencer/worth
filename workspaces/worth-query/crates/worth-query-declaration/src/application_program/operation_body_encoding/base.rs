@@ -128,6 +128,27 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
         .any(|step| step.principal_source().is_some());
     let fields = creation.fields().iter().enumerate().map(|(index, step)| {
         let (source_name, source) = match step {
+            ApplicationOperationBodyCreatedField::CapturedPathField {
+                source,
+                scalar_family,
+                role,
+                target_presence,
+                ..
+            } => (
+                "classified-path-field",
+                framed_record(
+                    "classified-path-source-v1",
+                    [
+                        ("path", source.canonical_record()),
+                        ("family", scalar_family.canonical_name().to_owned()),
+                        ("role", role.canonical_name().to_owned()),
+                        (
+                            "target-presence",
+                            target_presence.canonical_name().to_owned(),
+                        ),
+                    ],
+                ),
+            ),
             ApplicationOperationBodyCreatedField::Computed { value, .. } => {
                 ("computed-value", value.clone())
             }

@@ -183,24 +183,45 @@ pub(in crate::domain_computation::primary_graph) fn seal<
     }
     let subject = candidate.read_set.admission.scope_entity_id();
     let signer = candidate.read_set.admission.graph_work().principal();
-    let certified_dependencies = execution
+    let subject_binding = execution
         .decision_stage(|context| {
-            super::subject_binding::capture::<Schema, Binding>(&candidate, context)
+            super::subject_binding::capture::<Schema, Binding>(&candidate, &request, context)
         })
         .map_err(Denial::Execution)??;
     let (coverage, coverage_work) = execution
         .decision_stage(|context| {
             context.checkpoint(1).map_err(stopped)?;
-            if encoding == worth_query_declaration::facade::application_schema::ApplicationSigningProvenanceEncoding::CertifiedSubjectV2 {
-                identity::certified_subject(fields, subject, &certified_dependencies, maximum_bytes, &request, context)
-            } else { identity::subject(
-                fields,
-                subject,
-                &candidate.read_set.facts,
-                maximum_bytes,
-                &request,
-                context,
-            ) }
+            use super::subject_binding::CapturedSubject;
+            match &subject_binding {
+                CapturedSubject::Scope(dependencies) => identity::certified_subject(
+                    fields,
+                    subject,
+                    dependencies,
+                    maximum_bytes,
+                    &request,
+                    context,
+                ),
+                CapturedSubject::Graph {
+                    dependencies,
+                    selections,
+                } => identity::certified_graph_subject(
+                    fields,
+                    subject,
+                    dependencies,
+                    selections,
+                    maximum_bytes,
+                    &request,
+                    context,
+                ),
+                CapturedSubject::Authentication => identity::subject(
+                    fields,
+                    subject,
+                    &candidate.read_set.facts,
+                    maximum_bytes,
+                    &request,
+                    context,
+                ),
+            }
         })
         .map_err(Denial::Execution)??;
     let (effect_identity, candidate_work) = execution
@@ -213,14 +234,29 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .read_set
         .admission
         .installed_operation_identity_bytes();
-    let observation = if encoding == worth_query_declaration::facade::application_schema::ApplicationSigningProvenanceEncoding::CertifiedSubjectV2 {
-        let (digest, work) = execution.decision_stage(|context|
-            super::super::dependency_identity::authentication_observation_identity(
-                operation_meaning, &candidate.read_set.facts, maximum_bytes, &request, context,
-            )).map_err(Denial::Execution)??;
-        candidate.read_set.admission.retain_execution_canonical_work(work);
+    let observation = if !matches!(
+        subject_binding,
+        super::subject_binding::CapturedSubject::Authentication
+    ) {
+        let (digest, work) = execution
+            .decision_stage(|context| {
+                super::super::dependency_identity::authentication_observation_identity(
+                    operation_meaning,
+                    &candidate.read_set.facts,
+                    maximum_bytes,
+                    &request,
+                    context,
+                )
+            })
+            .map_err(Denial::Execution)??;
+        candidate
+            .read_set
+            .admission
+            .retain_execution_canonical_work(work);
         Some(digest)
-    } else { None };
+    } else {
+        None
+    };
     let (signing, signing_work) = execution
         .decision_stage(|context| {
             identity::admit_assembly(context, metadata_bytes)?;
@@ -240,7 +276,12 @@ pub(in crate::domain_computation::primary_graph) fn seal<
             signing.text("external-issuer", principal.issuer());
             signing.text("external-subject", principal.subject());
             signing.derive(
-                if observation.is_some() {
+                if matches!(
+                    subject_binding,
+                    super::subject_binding::CapturedSubject::Graph { .. }
+                ) {
+                    "worth-query-signed-certified-creation-intent-v3"
+                } else if observation.is_some() {
                     "worth-query-signed-certified-creation-intent-v2"
                 } else {
                     "worth-query-signed-creation-intent-v1"
@@ -271,8 +312,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .sealed = Some(SealedSigningContext {
         canonical_byte_capacity: maximum_bytes,
         provenance_bytes,
-        encoding,
-        certified_dependencies,
+        subject_binding,
         _dependencies_memory: dependencies_memory,
         _metadata_memory: metadata_memory,
         owner,

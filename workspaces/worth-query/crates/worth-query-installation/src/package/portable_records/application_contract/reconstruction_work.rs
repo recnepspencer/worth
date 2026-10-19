@@ -164,7 +164,16 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                 }
                 work.observe_text(creation.entity());
                 work.observe_text(creation.key());
+                if creation.subject_impact_bound().is_some() {
+                    work.observe_fixed(8);
+                }
                 for step in creation.fields() {
+                    if let Some(source) = step.path_source() {
+                        work.observe_text(&source.canonical_record());
+                        work.observe_fixed(
+                            u64::try_from(source.path.steps().len()).unwrap_or(u64::MAX),
+                        );
+                    }
                     if let Some(source) = step.related_source() {
                         for text in [&source.relation, &source.from, &source.to] {
                             work.observe_text(text);

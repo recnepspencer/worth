@@ -24,7 +24,32 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             return HandlerResult::Completed(sources);
         };
         for step in creation.fields() {
-            let (source, captured) = if let Some(related) = step.related_source() {
+            let (source, captured) = if let Some(path) = step.path_source() {
+                let selected = self
+                    .execution
+                    .decision_stage(|context| {
+                        self.reader.body_path_selection(
+                            self.scope,
+                            &path.path,
+                            self.execution,
+                            context,
+                        )
+                    })
+                    .map_err(HandlerExecutionDenial::new);
+                let captured = match selected {
+                    Ok(Ok(Some(selected))) => {
+                        self.body_related_value(&path.field, &selected.identity)
+                    }
+                    Ok(Ok(None)) => Err(HandlerExecutionDenial::new(
+                        WorthQueryApplicationAttemptDenial::new(
+                            WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                            path.path.terminal_entity(),
+                        ),
+                    )),
+                    Ok(Err(cause)) | Err(cause) => Err(cause),
+                };
+                (&path.field, captured)
+            } else if let Some(related) = step.related_source() {
                 let Some(selected) =
                     selections.selected(&related.relation, &related.from, &related.to)
                 else {
@@ -49,6 +74,9 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             match captured {
                 Ok(Some(value)) => sources.push(Some(value)),
                 Ok(None) if matches!(step, ApplicationOperationBodyCreatedField::RelatedField { source, .. } if source.presence == ApplicationFieldPresence::Optional) => {
+                    sources.push(None)
+                }
+                Ok(None) if matches!(step, ApplicationOperationBodyCreatedField::CapturedPathField { source, target_presence: ApplicationFieldPresence::Optional, .. } if source.presence == ApplicationFieldPresence::Optional) => {
                     sources.push(None)
                 }
                 Ok(None) => {

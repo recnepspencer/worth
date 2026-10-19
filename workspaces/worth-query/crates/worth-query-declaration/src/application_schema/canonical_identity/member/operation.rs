@@ -15,7 +15,8 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if !body.values().is_empty() || body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. })) { "operation-body-v18" }
+        if body.creation().is_some_and(|c| c.subject_impact_bound().is_some() || c.fields().iter().any(|f| f.path_source().is_some())) { "operation-body-v19" }
+        else if !body.values().is_empty() || body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. })) { "operation-body-v18" }
         else if body.external_emission().is_some_and(|emission| matches!(emission.source, crate::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { "operation-body-v17" }
         else if body.external_emission().is_some() { "operation-body-v16" }
         else if body.succession().is_some_and(|s| s.output_match().is_some()) { "operation-body-v15" }

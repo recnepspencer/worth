@@ -28,6 +28,8 @@ pub struct WorthQueryInstalledSigningLifecycleRule {
     provenance: Locus,
     spec: Spec,
     subjects: Vec<Locus>,
+    paths: Vec<worth_query_declaration::facade::application_schema::ApplicationOperationBodyPathFieldSource>,
+    maximum_subjects: usize,
 }
 impl WorthQueryInstalledSigningLifecycleRule {
     pub fn evidence_entity(&self) -> &str {
@@ -41,6 +43,12 @@ impl WorthQueryInstalledSigningLifecycleRule {
     }
     pub fn subjects(&self) -> &[Locus] {
         &self.subjects
+    }
+    pub fn paths(&self) -> &[worth_query_declaration::facade::application_schema::ApplicationOperationBodyPathFieldSource]{
+        &self.paths
+    }
+    pub fn maximum_subjects(&self) -> usize {
+        self.maximum_subjects
     }
 }
 
@@ -63,7 +71,10 @@ impl SigningLifecycleClosure {
             &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
         >,
     ) -> Result<Self, ()> {
-        let mut groups = BTreeMap::<(&str, &Spec), WorthQueryInstalledSigningLifecycleRule>::new();
+        let mut groups = BTreeMap::<
+            (&str, &Spec),
+            (Option<usize>, WorthQueryInstalledSigningLifecycleRule),
+        >::new();
         for member in members {
             let Member::OperationBody { body, .. } = member else {
                 continue;
@@ -74,35 +85,106 @@ impl SigningLifecycleClosure {
             let Some(spec) = creation.signing_lifecycle() else {
                 continue;
             };
-            let rule = groups.entry((creation.entity(), spec)).or_insert_with(|| {
-                WorthQueryInstalledSigningLifecycleRule {
-                    evidence_entity: creation.entity().into(),
-                    provenance: creation
-                        .signing()
-                        .expect("readmitted lifecycle")
-                        .provenance()
-                        .clone(),
-                    spec: spec.clone(),
-                    subjects: Vec::new(),
-                }
+            let (bound, rule) = groups.entry((creation.entity(), spec)).or_insert_with(|| {
+                (
+                    None,
+                    WorthQueryInstalledSigningLifecycleRule {
+                        evidence_entity: creation.entity().into(),
+                        provenance: creation
+                            .signing()
+                            .expect("readmitted lifecycle")
+                            .provenance()
+                            .clone(),
+                        spec: spec.clone(),
+                        subjects: Vec::new(),
+                        paths: Vec::new(),
+                        maximum_subjects: 1,
+                    },
+                )
             });
+            if let Some(authored) = creation.subject_impact_bound() {
+                *bound = Some(bound.unwrap_or(0).max(authored.get()));
+            }
             for field in creation.fields() {
-                if let Field::CapturedScopeField {
+                if let Field::CapturedPathField {
                     source,
                     role: Role::Subject,
                     ..
                 } = field
-                    && !rule.subjects.contains(source)
                 {
-                    rule.subjects.push(source.clone());
+                    if !rule.paths.contains(source) {
+                        rule.paths.push(source.clone());
+                    }
+                    if !rule.subjects.contains(&source.field) {
+                        rule.subjects.push(source.field.clone());
+                    }
+                }
+                if let Field::CapturedScopeField {
+                    source,
+                    source_presence,
+                    role: Role::Subject,
+                    ..
+                } = field
+                {
+                    if !rule.subjects.contains(source) {
+                        rule.subjects.push(source.clone());
+                    }
+                    use worth_query_declaration::facade::{
+                        application_query::{
+                            ApplicationQueryRootPathMeaning,
+                            WorthQueryPortableApplicationQueryRootPathParts,
+                        },
+                        application_schema::ApplicationOperationBodyPathFieldSource,
+                    };
+                    let path = ApplicationOperationBodyPathFieldSource {
+                        path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                            WorthQueryPortableApplicationQueryRootPathParts {
+                                start_entity: spec.source_entity.clone(),
+                                terminal_entity: spec.source_entity.clone(),
+                                steps: Vec::new(),
+                                guards: Vec::new(),
+                            },
+                        ),
+                        field: source.clone(),
+                        presence: *source_presence,
+                    };
+                    if !rule.paths.contains(&path) {
+                        rule.paths.push(path);
+                    }
                 }
             }
         }
         let rules: Vec<_> = groups
             .into_values()
+            .map(|(bound, mut rule)| {
+                rule.maximum_subjects =
+                    bound.unwrap_or(if body.is_some() { 1 } else { maximum_records });
+                rule
+            })
             .filter(|rule| {
                 touches.scopes().iter().any(|touch| match touch {
-                    Touch::DeleteEntity(scope) => scope.entity() == rule.spec.source_entity,
+                    Touch::DeleteEntity(scope) => {
+                        scope.entity() == rule.spec.source_entity
+                            || rule.paths.iter().any(|path| {
+                                path.path
+                                    .steps()
+                                    .iter()
+                                    .any(|step| step.child_entity() == scope.entity())
+                            })
+                    }
+                    Touch::LinkRelation(scope) => rule.paths.iter().any(|path| {
+                        path.path.steps().iter().any(|step| {
+                            step.relation() == scope.relation()
+                                && body
+                                    .is_none_or(|body| link_can_change_existing_anchor(body, step))
+                        })
+                    }),
+                    Touch::UnlinkRelation(scope) => rule.paths.iter().any(|path| {
+                        path.path
+                            .steps()
+                            .iter()
+                            .any(|step| step.relation() == scope.relation())
+                    }),
                     Touch::WriteField(scope) => rule.subjects.iter().any(|field| {
                         body.is_none_or(|body| {
                             body.scope_fields()
@@ -127,7 +209,7 @@ impl SigningLifecycleClosure {
             let spec = &rule.spec;
             let count = spec
                 .maximum_evidence
-                .checked_mul(if body.is_some() { 1 } else { maximum_records })
+                .checked_mul(rule.maximum_subjects)
                 .ok_or(())?;
             records = records.checked_add(count).ok_or(())?;
             // Native scalar quote plus the actual fixed effect keys/locators. No payload values are copied into the event.
@@ -191,4 +273,26 @@ impl SigningLifecycleClosure {
             ceiling,
         })
     }
+}
+
+/// A scope-to-created link cannot change an old reverse capture anchored at the
+/// fresh target (and symmetrically for created-to-scope forward captures).
+/// Replacement unlinking is checked separately because it removes an old edge.
+fn link_can_change_existing_anchor(
+    body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
+    step: &worth_query_declaration::facade::application_query::ApplicationQueryRootPathStep,
+) -> bool {
+    use worth_query_declaration::facade::{
+        application_query::ApplicationQueryRootPathDirection as Path,
+        application_schema::ApplicationOperationBodyCreationLinkDirection as Link,
+    };
+    body.creation().is_none_or(|creation| {
+        creation.links().iter().any(|link| {
+            link.relation == step.relation()
+                && matches!(
+                    (link.direction, step.direction()),
+                    (Link::FromScope, Path::Forward) | (Link::ToScope, Path::Reverse)
+                )
+        })
+    })
 }

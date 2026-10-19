@@ -17,6 +17,7 @@ mod workflow_history_basis;
 pub(in crate::domain_computation) use workflow_history_basis::WorkflowHistoryRequirement;
 mod workflow_instance_capacity;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency;
+pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency_with_work;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_audit_outgoing_adjacency;
 pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,

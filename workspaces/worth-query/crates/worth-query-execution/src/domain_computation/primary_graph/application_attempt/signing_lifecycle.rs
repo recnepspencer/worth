@@ -15,6 +15,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::{EntityId, KindId};
 mod changes;
 mod consequences;
+mod graph;
 mod guard;
 mod observation;
 mod signing;
@@ -23,7 +24,11 @@ pub(super) use signing::capture_signing;
 
 pub(super) struct PreparedLifecycle {
     pub(super) facts: worth_execution::ExecutionArray<Fact>,
-    pub(super) memory: Option<QueryMemoryReservation>,
+    pub(super) memory: Option<LifecycleMemory>,
+}
+pub(super) struct LifecycleMemory {
+    _base: QueryMemoryReservation,
+    _graph: Vec<QueryMemoryReservation>,
 }
 
 pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
@@ -66,11 +71,15 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
             for rule in rules {
                 context.checkpoint(1).map_err(stopped)?;
                 let changed = changes::select(rule, lease, effects, &facts, execution)?;
-                for (subject, fields) in changed {
+                let subjects = graph::affected_subjects(
+                    rule, lease, effects, &changed, execution, &request, context, &mut batch,
+                )?;
+                for subject in subjects {
                     consequences::collect(
                         rule,
                         subject,
-                        &fields,
+                        &changed,
+                        effects,
                         actor,
                         admission.operation(),
                         logical_request,
@@ -105,7 +114,10 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
     effects.extend(batch.effects);
     Ok(PreparedLifecycle {
         facts,
-        memory: Some(memory),
+        memory: Some(LifecycleMemory {
+            _base: memory,
+            _graph: batch.memory,
+        }),
     })
 }
 

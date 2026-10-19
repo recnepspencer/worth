@@ -7,8 +7,8 @@ use crate::application_schema::{
     ApplicationFieldPresence as Presence, ApplicationOperationBodyProgram as Body,
     ApplicationOperationProgramTarget as Target, ApplicationRelationCrossContextPolicy,
     ApplicationRelationDeletionPolicy, ApplicationScalarValueBinding,
-    ApplicationSchemaMember as Member, ApplicationSigningSubjectProvenanceBinding,
-    ApplicationSigningSupersessionBinding,
+    ApplicationSchemaMember as Member, ApplicationSigningGraphSubjectProvenanceBinding,
+    ApplicationSigningSubjectProvenanceBinding, ApplicationSigningSupersessionBinding,
 };
 #[cfg(test)]
 mod tests;
@@ -17,7 +17,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_creati
     creation: &Creation,
 ) -> bool {
     let Some(spec) = creation.signing_lifecycle() else {
-        return true;
+        return creation.subject_impact_bound().is_none();
     };
     let Some(signing) = creation.signing() else {
         return false;
@@ -25,7 +25,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_creati
     spec.maximum_evidence > 0 && !spec.consequence_relation.is_empty()
         && spec.history_relation != spec.current_relation && spec.current_relation != spec.consequence_relation
         && creation.fields().iter().any(|field| matches!(field, Field::SigningProvenance { field, binding }
-            if field == signing.provenance() && *binding == ApplicationSigningSubjectProvenanceBinding::IDENTITY))
+            if field == signing.provenance() && (*binding == ApplicationSigningSubjectProvenanceBinding::IDENTITY || *binding == ApplicationSigningGraphSubjectProvenanceBinding::IDENTITY)))
         && creation.links().iter().any(|link| link.relation == spec.history_relation
             && link.from == spec.source_entity && link.to == creation.entity() && link.direction == Direction::FromScope)
         && creation.links().iter().any(|link| link.relation == spec.current_relation
@@ -95,7 +95,28 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
 pub(in crate::application_schema::operation_definition::body) fn validate_subject_writes(
     body: &Body,
 ) -> bool {
-    body.creation().is_none_or(|creation| creation.signing_lifecycle().is_none() || creation.fields().iter().all(|field|
-        !matches!(field, Field::CapturedScopeField { source, role: super::super::ApplicationOperationBodyCaptureRole::Subject, .. }
-            if body.scope_fields().iter().any(|step| step.write_target().is_some() && step.field() == source))))
+    body.creation().is_none_or(|creation| {
+        creation.signing_lifecycle().is_none()
+            || creation.fields().iter().all(|field| {
+                let source = match field {
+                    Field::CapturedScopeField {
+                        source,
+                        role: super::super::ApplicationOperationBodyCaptureRole::Subject,
+                        ..
+                    } => Some(source),
+                    Field::CapturedPathField {
+                        source,
+                        role: super::super::ApplicationOperationBodyCaptureRole::Subject,
+                        ..
+                    } if source.path.steps().is_empty() => Some(&source.field),
+                    _ => None,
+                };
+                source.is_none_or(|source| {
+                    !body
+                        .scope_fields()
+                        .iter()
+                        .any(|step| step.write_target().is_some() && step.field() == source)
+                })
+            })
+    })
 }

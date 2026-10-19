@@ -54,12 +54,15 @@ mod schema_member;
 mod signing_provenance;
 mod signing_supersession;
 pub use signing_provenance::{
-    ApplicationSigningEntityCoordinates, ApplicationSigningProvenance,
+    ApplicationSigningEntityCoordinates, ApplicationSigningGraphSubjectDependency,
+    ApplicationSigningGraphSubjectProvenance, ApplicationSigningGraphSubjectProvenanceBinding,
+    ApplicationSigningGraphSubjectProvenanceParts, ApplicationSigningProvenance,
     ApplicationSigningProvenanceBinding, ApplicationSigningProvenanceEncoding,
     ApplicationSigningProvenanceMetadata, ApplicationSigningProvenanceParts,
     ApplicationSigningProvenanceValueBinding, ApplicationSigningSubjectDependency,
-    ApplicationSigningSubjectProvenance, ApplicationSigningSubjectProvenanceBinding,
-    ApplicationSigningSubjectProvenanceParts,
+    ApplicationSigningSubjectObservedFieldVersion, ApplicationSigningSubjectProvenance,
+    ApplicationSigningSubjectProvenanceBinding, ApplicationSigningSubjectProvenanceParts,
+    ApplicationSigningSubjectSelectionDependency,
 };
 pub use signing_supersession::{
     ApplicationSigningSupersession, ApplicationSigningSupersessionBinding,
@@ -174,17 +177,18 @@ pub use operation_definition::{
     ApplicationOperationBodyExpression, ApplicationOperationBodyExternalEffectRecipe,
     ApplicationOperationBodyExternalEmission, ApplicationOperationBodyExternalPayloadSource,
     ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
-    ApplicationOperationBodyProgram, ApplicationOperationBodyRelatedFieldSource,
-    ApplicationOperationBodyRequirement, ApplicationOperationBodyRequirementDenial,
-    ApplicationOperationBodyRequirementDirection, ApplicationOperationBodyRequirementExpression,
-    ApplicationOperationBodyRequirementOperand, ApplicationOperationBodyRequirementOperands,
-    ApplicationOperationBodyRequirementProgram, ApplicationOperationBodyRequirementSource,
-    ApplicationOperationBodyScopeField, ApplicationOperationBodySigningLifecycleSpec,
-    ApplicationOperationBodySigningSpec, ApplicationOperationBodySuccession,
-    ApplicationOperationBodySuccessionOutputMatch, ApplicationOperationBodyValue,
-    ApplicationOperationBodyValueProgram, ApplicationOperationBodyValueSnapshot,
-    ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
-    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
+    ApplicationOperationBodyPathFieldSource, ApplicationOperationBodyProgram,
+    ApplicationOperationBodyRelatedFieldSource, ApplicationOperationBodyRequirement,
+    ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,
+    ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
+    ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
+    ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
+    ApplicationOperationBodySigningLifecycleSpec, ApplicationOperationBodySigningSpec,
+    ApplicationOperationBodySuccession, ApplicationOperationBodySuccessionOutputMatch,
+    ApplicationOperationBodyValue, ApplicationOperationBodyValueProgram,
+    ApplicationOperationBodyValueSnapshot, ApplicationOperationDefinition,
+    ApplicationOperationDefinitionBuilder, ApplicationSigningEvidenceRef,
+    ApplicationSigningEvidenceSource,
 };
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{

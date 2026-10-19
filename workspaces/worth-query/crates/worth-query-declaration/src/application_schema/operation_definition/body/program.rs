@@ -163,6 +163,7 @@ pub struct ApplicationOperationBodyCreation {
     pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
     pub(super) signing: Option<super::ApplicationOperationBodySigningSpec>,
     pub(super) signing_lifecycle: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
+    pub(super) subject_impact_bound: Option<std::num::NonZeroUsize>,
     pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
 }
 
@@ -179,11 +180,22 @@ impl ApplicationOperationBodyCreation {
             links: Vec::new(),
             signing: None,
             signing_lifecycle: None,
+            subject_impact_bound: None,
             enrollment: None,
         }
     }
     pub fn entity(&self) -> &str {
         &self.entity
+    }
+    pub fn subject_impact_bound(&self) -> Option<std::num::NonZeroUsize> {
+        self.subject_impact_bound
+    }
+    pub fn with_untrusted_subject_impact_bound(
+        mut self,
+        bound: Option<std::num::NonZeroUsize>,
+    ) -> Self {
+        self.subject_impact_bound = bound;
+        self
     }
     pub fn enrollment(&self) -> Option<&super::ApplicationOperationBodyEnrollment> {
         self.enrollment.as_ref()

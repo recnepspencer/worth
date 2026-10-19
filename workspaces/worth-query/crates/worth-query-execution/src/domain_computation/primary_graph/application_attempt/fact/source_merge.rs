@@ -1,6 +1,40 @@
 use super::WorthQueryApplicationObservedFact as Fact;
 
 impl Fact {
+    /// Equal adjacency truth may have been read under different work allowances.
+    /// Keep the stronger comparison allowance without weakening the exact native
+    /// edge inventory. This merge allocates nothing and preserves all fact roles.
+    pub(in crate::domain_computation) fn merge_equal_observation(
+        &mut self,
+        duplicate: &Self,
+    ) -> bool {
+        match (self, duplicate) {
+            (
+                Fact::Adjacency {
+                    relation_kind: first_kind,
+                    anchor: first_anchor,
+                    direction: first_direction,
+                    maximum_work_units: first_work,
+                    relations: first_edges,
+                },
+                Fact::Adjacency {
+                    relation_kind: second_kind,
+                    anchor: second_anchor,
+                    direction: second_direction,
+                    maximum_work_units: second_work,
+                    relations: second_edges,
+                },
+            ) if first_kind == second_kind
+                && first_anchor == second_anchor
+                && first_direction == second_direction
+                && first_edges == second_edges =>
+            {
+                *first_work = (*first_work).max(*second_work);
+                true
+            }
+            (existing, duplicate) => existing == duplicate,
+        }
+    }
     /// Combines observations of the same dependency at one native revision.
     /// Adjacency endpoints and comparison limits describe each read boundary;
     /// they may differ even when both reads observed the same structural truth.
@@ -48,7 +82,7 @@ impl Fact {
                 *first_endpoints = union;
                 Ok(true)
             }
-            (existing, duplicate) => Ok(*existing == duplicate),
+            (existing, duplicate) => Ok(existing.merge_equal_observation(&duplicate)),
         }
     }
 }

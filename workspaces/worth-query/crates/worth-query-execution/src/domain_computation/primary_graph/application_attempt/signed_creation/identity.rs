@@ -12,6 +12,8 @@ use worth_relational::facade::{identity::EntityId, transactions::EntityReference
 const DOMAIN: CanonicalBasisDomain = CanonicalBasisDomain::Future("worth-query.signed-creation");
 mod subject;
 pub(super) use subject::certified_subject;
+mod graph_subject;
+pub(super) use graph_subject::certified_graph_subject;
 
 pub(super) struct IdentityEntries(Vec<CanonicalBasisEntry>);
 impl IdentityEntries {

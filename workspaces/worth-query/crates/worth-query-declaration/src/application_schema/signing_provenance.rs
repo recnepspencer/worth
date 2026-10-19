@@ -1,7 +1,13 @@
 //! Immutable descriptive signing provenance. Decoding it never grants signing or approval authority.
 mod binding;
 mod encoding;
+mod graph_subject;
 mod subject;
+pub use graph_subject::{
+    ApplicationSigningGraphSubjectDependency, ApplicationSigningGraphSubjectProvenance,
+    ApplicationSigningGraphSubjectProvenanceBinding, ApplicationSigningGraphSubjectProvenanceParts,
+    ApplicationSigningSubjectObservedFieldVersion, ApplicationSigningSubjectSelectionDependency,
+};
 #[cfg(test)]
 mod tests;
 pub use binding::ApplicationSigningProvenanceBinding;

@@ -23,25 +23,13 @@ impl ApplicationScalarValueBinding for ApplicationSigningSubjectProvenanceBindin
         Some(ApplicationNativeInputDecodeProfile::new(1024, 64, 2048, 8));
     fn validate(value: &Value) -> Result<(), ApplicationValueValidationDenial> {
         super::super::binding::validate_parts(value.authentication())?;
-        let mut captures = std::collections::BTreeSet::new();
-        for dependency in value.dependencies() {
-            if dependency.value_binding.is_empty()
-                || [
-                    dependency.source_field.entity(),
-                    dependency.source_field.aspect(),
-                    dependency.source_field.field(),
-                    dependency.captured_field.entity(),
-                    dependency.captured_field.aspect(),
-                    dependency.captured_field.field(),
-                ]
+        super::validate_dependencies(
+            value
+                .dependencies()
                 .iter()
-                .any(|text| text.is_empty())
-                || !captures.insert(&dependency.captured_field)
-            {
-                return Err(rejected());
-            }
-        }
-        Ok(())
+                .map(|d| (&d.source_field, &d.captured_field, d.value_binding.as_str())),
+        )
+        .map_err(|()| rejected())
     }
     fn encode(value: &Value) -> Result<AspectValue, ApplicationValueEncodeDenial> {
         Self::validate(value)?;

@@ -25,6 +25,9 @@ mod controls;
 mod disclosure;
 mod result_shape;
 mod root_selection;
+pub(in crate::record) use root_selection::{
+    decode_path as decode_root_path, write_path as write_root_path,
+};
 
 pub(super) fn require_nesting_depth(
     definition: &ErasedApplicationQueryDefinition,

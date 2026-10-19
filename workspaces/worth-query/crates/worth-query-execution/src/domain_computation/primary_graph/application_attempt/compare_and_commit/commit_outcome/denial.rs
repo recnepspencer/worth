@@ -104,6 +104,7 @@ pub enum WorthQueryApplicationCommitDenialKind {
     SigningLifecycleForgery,
     SigningLifecycleUnavailable,
     SigningLifecycleEvidenceCapacity { maximum_evidence: usize },
+    SigningLifecycleSubjectCapacity { maximum_subjects: usize },
     SigningLifecycleRepresentationCapacity,
     SigningLifecycleObservation { kind: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind },
     /// A sealed undo or redo handoff belongs to different admitted truth.

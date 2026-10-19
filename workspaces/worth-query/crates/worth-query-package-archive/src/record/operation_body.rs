@@ -10,6 +10,7 @@ mod creation_links;
 mod enrollment;
 mod external_emission;
 mod outputs;
+mod path_capture;
 mod principal;
 mod query_context;
 mod scope_fields;
@@ -43,7 +44,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if !body.values().is_empty() || body.external_emission().is_some_and(|emission| matches!(emission.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. })) { 28 }
+    let version = if body.creation().is_some_and(|c| c.subject_impact_bound().is_some() || c.fields().iter().any(|f| f.path_source().is_some())) { 29 }
+    else if !body.values().is_empty() || body.external_emission().is_some_and(|emission| matches!(emission.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. })) { 28 }
     else if body.external_emission().is_some_and(|emission| matches!(emission.source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::QueryContext { .. })) { 27 }
     else if body.external_emission().is_some() { 26 }
     else if body.requires_query_context() { 25 }
@@ -191,6 +193,16 @@ pub(super) fn write(
     if version >= 28 {
         values::write(output, body.values())?;
     }
+    if version >= 29 {
+        output.u64(
+            u64::try_from(
+                body.creation()
+                    .and_then(|c| c.subject_impact_bound())
+                    .map_or(0, std::num::NonZeroUsize::get),
+            )
+            .map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
+        )?;
+    }
     Ok(())
 }
 
@@ -199,7 +211,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=28) {
+    if !matches!(version, 1..=29) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -288,6 +300,17 @@ pub(super) fn decode(
         values::decode(input, budget)?
     } else {
         Vec::new()
+    };
+    let creation = if version >= 29 {
+        let bound = std::num::NonZeroUsize::new(
+            usize::try_from(input.u64()?).map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
+        );
+        if bound.is_some() && creation.is_none() {
+            return Err(Denial::new(Kind::InvalidRecordShape));
+        }
+        creation.map(|creation| creation.with_untrusted_subject_impact_bound(bound))
+    } else {
+        creation
     };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(

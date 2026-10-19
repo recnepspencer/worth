@@ -13,6 +13,16 @@ use worth_query_declaration::facade::{
         ApplicationSigningSubjectDependency as Dependency,
     },
 };
+mod graph;
+
+pub(super) enum CapturedSubject {
+    Authentication,
+    Scope(Vec<Dependency>),
+    Graph {
+        dependencies: Vec<worth_query_declaration::facade::application_schema::ApplicationSigningGraphSubjectDependency>,
+        selections: Vec<worth_query_declaration::facade::application_schema::ApplicationSigningSubjectSelectionDependency>,
+    },
+}
 
 pub(super) fn creation<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
     candidate: &BodyCandidate<Schema, Binding>,
@@ -48,6 +58,9 @@ pub(super) fn quote(
     if encoding == Encoding::AuthenticationV1 {
         return Ok(0);
     }
+    if encoding == Encoding::CertifiedGraphSubjectV3 {
+        return graph::quote(creation);
+    }
     creation
         .fields()
         .iter()
@@ -62,14 +75,18 @@ pub(super) fn quote(
 
 pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
     candidate: &BodyCandidate<Schema, Binding>,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
-) -> Result<Vec<Dependency>, Denial> {
+) -> Result<CapturedSubject, Denial> {
     // O((captures + retained facts) log captures), with borrowed native keys.
     // The admitted correspondence workspace covers this transient lookup; no
     // other document, persistent reverse index or historical record is scanned.
     let (creation, encoding) = creation::<Schema, Binding>(candidate)?;
     if encoding == Encoding::AuthenticationV1 {
-        return Ok(Vec::new());
+        return Ok(CapturedSubject::Authentication);
+    }
+    if encoding == Encoding::CertifiedGraphSubjectV3 {
+        return graph::capture::<Schema, Binding>(candidate, creation, request, context);
     }
     let subject = candidate.read_set.admission.scope_entity_id();
     identity::admit_assembly(context, quote(creation, encoding)?)?;
@@ -128,7 +145,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
             native_revision: revision.version().0,
         });
     }
-    Ok(dependencies)
+    Ok(CapturedSubject::Scope(dependencies))
 }
 
 fn scope_capture(
@@ -151,7 +168,7 @@ fn scope_capture(
         | Field::OptionalInput { .. }
         | Field::SigningProvenance { .. }
         | Field::PrincipalIdentity { .. } => None,
-        Field::RelatedField { .. } => None,
+        Field::RelatedField { .. } | Field::CapturedPathField { .. } => None,
         Field::ScopeField { .. } | Field::PresentScopeField { .. } | Field::CapturedScopeField { .. } | Field::Computed { .. } => None,
     }
 }

@@ -41,6 +41,18 @@ impl ApplicationOperationBodySigningLifecycleSpec {
 impl<Schema, Operation, Input, Entity>
     ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Entity>
 {
+    /// Bounds the deduplicated union of signable subjects affected by a source
+    /// mutation, not a separately reset allowance for each declared capture path.
+    pub fn bound_subject_impacts(
+        mut self,
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<Self, Denial> {
+        if self.signing_lifecycle.is_none() || self.subject_impact_bound.is_some() {
+            return Err(Denial::InvalidSigningLifecycle);
+        }
+        self.subject_impact_bound = Some(maximum);
+        Ok(self)
+    }
     /// The native owner, not each source mutator, publishes the declared consequences.
     pub fn supersede_on_subject_change<
         History,

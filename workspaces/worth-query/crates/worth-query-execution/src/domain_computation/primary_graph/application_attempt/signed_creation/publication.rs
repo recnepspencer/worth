@@ -8,8 +8,9 @@ use crate::domain_computation::primary_graph::application_contribution::QueryReq
 use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial as AuthenticationDenial;
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, ApplicationSigningEntityCoordinates,
-    ApplicationSigningProvenance, ApplicationSigningProvenanceBinding,
-    ApplicationSigningProvenanceEncoding as Encoding, ApplicationSigningProvenanceParts,
+    ApplicationSigningGraphSubjectProvenance, ApplicationSigningGraphSubjectProvenanceBinding,
+    ApplicationSigningGraphSubjectProvenanceParts, ApplicationSigningProvenance,
+    ApplicationSigningProvenanceBinding, ApplicationSigningProvenanceParts,
     ApplicationSigningSubjectProvenance, ApplicationSigningSubjectProvenanceBinding,
     ApplicationSigningSubjectProvenanceParts,
 };
@@ -116,22 +117,41 @@ fn publish_prepared<Schema>(
         issued_at_nanoseconds: consumed.issued_at_nanoseconds(),
         observed_at_nanoseconds: consumed.observed_at_nanoseconds(),
     };
-    let encoded = match sealed.encoding {
-        Encoding::AuthenticationV1 => ApplicationSigningProvenance::from_parts(parts)
+    let encoded = match sealed.subject_binding {
+        super::subject_binding::CapturedSubject::Authentication => {
+            ApplicationSigningProvenance::from_parts(parts)
+                .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
+                .and_then(|value| {
+                    ApplicationSigningProvenanceBinding::encode(&value)
+                        .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
+                })
+        }
+        super::subject_binding::CapturedSubject::Scope(dependencies) => {
+            ApplicationSigningSubjectProvenance::from_parts(
+                ApplicationSigningSubjectProvenanceParts {
+                    authentication: parts,
+                    dependencies,
+                },
+            )
             .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
             .and_then(|value| {
-                ApplicationSigningProvenanceBinding::encode(&value)
+                ApplicationSigningSubjectProvenanceBinding::encode(&value)
                     .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
-            }),
-        Encoding::CertifiedSubjectV2 => ApplicationSigningSubjectProvenance::from_parts(
-            ApplicationSigningSubjectProvenanceParts {
+            })
+        }
+        super::subject_binding::CapturedSubject::Graph {
+            dependencies,
+            selections,
+        } => ApplicationSigningGraphSubjectProvenance::from_parts(
+            ApplicationSigningGraphSubjectProvenanceParts {
                 authentication: parts,
-                dependencies: sealed.certified_dependencies,
+                dependencies,
+                selections,
             },
         )
         .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
         .and_then(|value| {
-            ApplicationSigningSubjectProvenanceBinding::encode(&value)
+            ApplicationSigningGraphSubjectProvenanceBinding::encode(&value)
                 .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
         }),
     }

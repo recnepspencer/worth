@@ -16,6 +16,8 @@ mod genesis;
 mod optional_input;
 #[path = "tests/outputs.rs"]
 mod outputs;
+#[path = "tests/path_capture.rs"]
+mod path_capture;
 #[path = "tests/principal.rs"]
 mod principal;
 #[path = "tests/related_outputs.rs"]

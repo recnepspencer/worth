@@ -22,6 +22,7 @@ pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Ent
     pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
     pub(super) signing: Option<super::ApplicationOperationBodySigningSpec>,
     pub(super) signing_lifecycle: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
+    pub(super) subject_impact_bound: Option<std::num::NonZeroUsize>,
     pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
     marker: PhantomData<fn() -> Entity>,
 }
@@ -51,6 +52,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             links: Vec::new(),
             signing: None,
             signing_lifecycle: None,
+            subject_impact_bound: None,
             enrollment: None,
             marker: PhantomData,
         })
@@ -216,6 +218,7 @@ impl<Schema, Operation, Input, Entity>
             links: self.links,
             signing: self.signing,
             signing_lifecycle: self.signing_lifecycle,
+            subject_impact_bound: self.subject_impact_bound,
             enrollment: self.enrollment,
         };
         super::classified_capture::validate_creation(&creation)?;
@@ -257,11 +260,15 @@ impl<Schema, Operation, Input, Entity>
             if !fields.insert(step.field()) {
                 return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
             }
-            let foreign_source = match step.related_source() {
-                Some(source) => source.from != scope || source.field.entity() != source.to,
-                None => step
-                    .source_field()
-                    .is_some_and(|source| source.entity() != scope),
+            let foreign_source = if let Some(path) = step.path_source() {
+                !path.has_supported_shape() || path.path.start_entity() != scope
+            } else {
+                match step.related_source() {
+                    Some(source) => source.from != scope || source.field.entity() != source.to,
+                    None => step
+                        .source_field()
+                        .is_some_and(|source| source.entity() != scope),
+                }
             };
             if foreign_source {
                 return Err(ApplicationOperationBodyAuthoringDenial::ForeignSourceEntity);

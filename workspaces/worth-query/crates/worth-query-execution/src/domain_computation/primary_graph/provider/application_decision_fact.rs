@@ -49,11 +49,28 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         source: super::super::application_attempt::WorthQueryApplicationObservedFact,
     ) -> Result<Self, &'static str> {
         match self {
-            Self::Application { read_scope, fact } if fact == source => {
+            Self::Application {
+                read_scope,
+                mut fact,
+            } => {
+                if !fact.merge_equal_observation(&source) {
+                    return Err("decision facts disagree at one structural locator");
+                }
                 Ok(Self::ApplicationObservedSource { read_scope, fact })
             }
-            Self::ObservedSource { fact } if fact == source => Ok(Self::ObservedSource { fact }),
-            Self::ApplicationObservedSource { read_scope, fact } if fact == source => {
+            Self::ObservedSource { mut fact } => {
+                if !fact.merge_equal_observation(&source) {
+                    return Err("decision facts disagree at one structural locator");
+                }
+                Ok(Self::ObservedSource { fact })
+            }
+            Self::ApplicationObservedSource {
+                read_scope,
+                mut fact,
+            } => {
+                if !fact.merge_equal_observation(&source) {
+                    return Err("decision facts disagree at one structural locator");
+                }
                 Ok(Self::ApplicationObservedSource { read_scope, fact })
             }
             _ => Err("decision facts disagree at one structural locator"),

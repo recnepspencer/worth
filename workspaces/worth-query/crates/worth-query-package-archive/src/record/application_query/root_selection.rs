@@ -19,7 +19,7 @@ use crate::record::foundational_aspect;
 use crate::record::foundational_value;
 use crate::record::sequence::{decode_sequence, write_sequence};
 
-pub(super) fn write_path(
+pub(in crate::record) fn write_path(
     output: &mut dyn BinaryEncodingSink,
     path: &ApplicationQueryRootPathMeaning,
 ) -> Result<(), Denial> {
@@ -29,7 +29,7 @@ pub(super) fn write_path(
     write_sequence(output, path.guards(), write_guard)
 }
 
-pub(super) fn decode_path(
+pub(in crate::record) fn decode_path(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationQueryRootPathMeaning, Denial> {

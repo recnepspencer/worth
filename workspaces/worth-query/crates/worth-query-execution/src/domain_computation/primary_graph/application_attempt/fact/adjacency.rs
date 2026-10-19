@@ -138,7 +138,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
     .map(|(relations, _)| relations)
 }
 
-pub(super) fn observe_adjacency_with_work(
+pub(in crate::domain_computation::primary_graph) fn observe_adjacency_with_work(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

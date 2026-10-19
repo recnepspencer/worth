@@ -51,9 +51,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
     outcome_identity: super::super::super::WorthQueryApplicationCommitOutcomeIdentity,
     workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
-    _signing_lifecycle_memory: Option<
-        crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
-    >,
+    _signing_lifecycle_memory: Option<super::super::super::signing_lifecycle::LifecycleMemory>,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
     authorization: WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -114,7 +112,7 @@ impl<Schema, Operation, Input, Scope>
 }
 
 struct WorthQueryProviderAttemptPreparation {
-    signing_lifecycle_memory: Option<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>,
+    signing_lifecycle_memory: Option<super::super::super::signing_lifecycle::LifecycleMemory>,
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
