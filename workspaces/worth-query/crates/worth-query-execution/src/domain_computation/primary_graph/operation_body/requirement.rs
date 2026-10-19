@@ -31,6 +31,9 @@ pub enum WorthQueryOperationBodyRequirementStatus {
 /// The native source the supplier declared as this requirement's guidance target.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationBodyRequirementTarget {
+    QueryContext {
+        query: String,
+    },
     SignedEvidence(
         worth_query_declaration::facade::application_schema::ApplicationSigningEvidenceSource,
     ),
@@ -98,6 +101,11 @@ impl WorthQueryOperationBodyRequirementFinding {
         status: WorthQueryOperationBodyRequirementStatus,
     ) -> Self {
         let target = match requirement.target() {
+            ApplicationOperationBodyRequirementSource::QueryContext { query, .. } => {
+                WorthQueryOperationBodyRequirementTarget::QueryContext {
+                    query: query.name().to_owned(),
+                }
+            }
             ApplicationOperationBodyRequirementSource::RelatedFieldValues {
                 relation,
                 from,

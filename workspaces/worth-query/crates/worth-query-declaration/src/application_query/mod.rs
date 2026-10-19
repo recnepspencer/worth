@@ -77,7 +77,8 @@ pub use result_relation_selector::{
     ManyResults, OptionalOneResult,
 };
 pub use result_shape::{
-    ApplicationQueryResultField, ApplicationQueryResultRelation, ApplicationQueryResultShape,
+    ApplicationQueryExpressionContextDenial, ApplicationQueryResultField,
+    ApplicationQueryResultRelation, ApplicationQueryResultShape,
     ApplicationQueryResultShapeBuilder, TypedApplicationQueryResultShape,
     WorthQueryPortableApplicationQueryResultFieldParts,
     WorthQueryPortableApplicationQueryResultRelationParts,

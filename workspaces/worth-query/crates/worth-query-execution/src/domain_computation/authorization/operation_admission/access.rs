@@ -319,8 +319,14 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation) fn bind_source_facts(
         &mut self,
         facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+        context: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
     ) {
         self.source_facts = facts;
+        self.query_context = context;
+    }
+
+    pub(in crate::domain_computation) fn query_context(&self) -> Option<&crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>{
+        self.query_context.as_ref()
     }
 
     pub(in crate::domain_computation) fn bind_source_partition(&mut self, identity: [u8; 32]) {

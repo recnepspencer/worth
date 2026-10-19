@@ -45,6 +45,7 @@ impl WorthQueryCurrentBodyRequirementAssessment {
 /// A native body assessment preserves phase, projection and observation refusal.
 #[derive(Debug)]
 pub enum WorthQueryOperationBodyAssessmentDenial {
+    Source(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
     Phase(WorthQueryForeignAdvancementPhase),
     Projection(WorthQueryOperationProjectionDenial),
     Observation(HandlerExecutionDenial),
@@ -72,6 +73,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let execution = phase
             .execution_for(&self.product_runtime)
             .map_err(WorthQueryOperationBodyAssessmentDenial::Phase)?;
+        let request = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(WorthQueryOperationBodyAssessmentDenial::Phase)?;
+        self.validate_projected_source_facts(&request, admission)
+            .map_err(WorthQueryOperationBodyAssessmentDenial::Source)?;
         let projected = projection
             .project_admitted_operation(
                 phase,

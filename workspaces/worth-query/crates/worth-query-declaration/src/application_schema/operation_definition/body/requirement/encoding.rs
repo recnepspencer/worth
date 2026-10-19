@@ -18,6 +18,18 @@ impl ApplicationOperationBodyRequirementProgram {
         for operand in self.operands() {
             part(operand.name());
             match operand.source() {
+                Source::QueryContext {
+                    mutation_binding,
+                    query,
+                } => {
+                    part("observed-parameter-free-query-context-v1");
+                    part(mutation_binding);
+                    part(
+                        &worth_foundational::facade::canonical_basis_sequence_material(
+                            query.canonical_basis().basis().payload(),
+                        ),
+                    );
+                }
                 Source::RelatedFieldValues {
                     relation,
                     from,

@@ -22,6 +22,12 @@ pub enum ApplicationOperationBodyRequirementDirection {
 /// A field observation or distinct related-item count, never a caller value.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationOperationBodyRequirementSource {
+    /// Previously admitted values; the exact query declares their recursive
+    /// consumption contract, not an operation-side graph reread permission.
+    QueryContext {
+        mutation_binding: String,
+        query: Box<crate::application_query::ErasedApplicationQueryDefinition>,
+    },
     /// True when at least one current native attestation matches this exact producer.
     SignedEvidence(crate::application_schema::ApplicationSigningEvidenceSource),
     /// Select exactly one outgoing subject, then observe that producer's current evidence.
@@ -86,6 +92,7 @@ impl ApplicationOperationBodyRequirementOperand {
 impl ApplicationOperationBodyRequirementSource {
     pub fn scope_entity(&self) -> &str {
         match self {
+            Self::QueryContext { query, .. } => query.scope_entity(),
             Self::SignedEvidence(source) => &source.lifecycle.source_entity,
             Self::RelatedSignedEvidence { from, .. } => from,
             Self::RelatedFieldValues { from, .. } => from,
@@ -104,6 +111,8 @@ impl ApplicationOperationBodyRequirementSource {
     }
     pub fn decision_reads(&self) -> Vec<ApplicationOperationDecisionReadTarget> {
         match self {
+            // Source-expectation facts, not fresh raw reads, carry these dependencies.
+            Self::QueryContext { .. } => Vec::new(),
             Self::RelatedFieldValues {
                 relation,
                 from,
@@ -173,6 +182,20 @@ impl ApplicationOperationBodyRequirementSource {
         &self,
     ) -> Result<ExpressionType, ApplicationOperationBodyRequirementDenial> {
         let (scalar_family, presence, presence_only) = match self {
+            Self::QueryContext { query, .. } => {
+                if !query.parameters().is_empty()
+                    || query.cardinality()
+                        != crate::application_query::ApplicationQueryCardinality::ExactlyOne
+                {
+                    return Err(ApplicationOperationBodyRequirementDenial::UnsupportedQueryContext);
+                }
+                return Ok(query
+                    .result_shape()
+                    .append_expression_context(
+                        worth_foundational::expression_api::ExpressionSchema::builder(),
+                    )?
+                    .1);
+            }
             Self::RelatedFieldValues {
                 scalar_family,
                 presence,

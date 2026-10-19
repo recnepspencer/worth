@@ -5,7 +5,6 @@ mod canonical_identity;
 mod canonical_work_policy;
 mod continuation_contract;
 mod denial;
-mod expression_context;
 mod graph_access_contract;
 mod installed_binding;
 mod installed_contract;

@@ -34,12 +34,22 @@ impl ApplicationOperationBodyRequirementExpression {
                 ))
             })
             .collect::<Result<Vec<_>, ApplicationOperationBodyRequirementDenial>>()?;
-        let schema = types
-            .iter()
-            .try_fold(ExpressionSchema::builder(), |schema, (name, ty)| {
-                schema.operand(name, ty.clone())
-            })?
-            .build();
+        let mut builder = ExpressionSchema::builder();
+        for operand in operands {
+            let ty = if let super::ApplicationOperationBodyRequirementSource::QueryContext {
+                query,
+                ..
+            } = operand.source()
+            {
+                let (next, ty) = query.result_shape().append_expression_context(builder)?;
+                builder = next;
+                ty
+            } else {
+                operand.source().expression_type()?
+            };
+            builder = builder.operand(operand.name(), ty)?;
+        }
+        let schema = builder.build();
         let draft = expressions().reading_within(Self::PROFILE).decode(bytes)?;
         let catalog = worth_foundational::expression_api::ExpressionFunctionCatalog::builder(
             &schema,

@@ -319,6 +319,18 @@ impl ApplicationOperationBodyProgram {
     pub fn requirements(&self) -> &[super::ApplicationOperationBodyRequirementProgram] {
         &self.requirements
     }
+    /// Whether fresh requirement evaluation consumes the bound native query source.
+    pub fn requires_query_context(&self) -> bool {
+        self.requirements
+            .iter()
+            .flat_map(|requirement| requirement.operands())
+            .any(|operand| {
+                matches!(
+                    operand.source(),
+                    super::ApplicationOperationBodyRequirementSource::QueryContext { .. }
+                )
+            })
+    }
     pub fn has_optional_inputs(&self) -> bool {
         self.scope_fields
             .iter()

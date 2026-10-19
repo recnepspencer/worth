@@ -10,8 +10,8 @@ use crate::denial::{
     WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
 };
 
-use super::super::super::super::super::foundational_value;
-use super::super::super::super::wire_vocabulary::{decode_usize, write_usize};
+use crate::record::application_schema::wire_vocabulary::{decode_usize, write_usize};
+use crate::record::foundational_value;
 
 pub(super) fn write_cardinality(
     output: &mut dyn BinaryEncodingSink,

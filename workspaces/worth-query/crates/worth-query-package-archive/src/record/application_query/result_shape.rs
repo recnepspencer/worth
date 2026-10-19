@@ -12,11 +12,13 @@ use crate::denial::{
     WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
 };
 
-use super::super::super::super::super::decode_budget::RecordDecodeAttempt;
-use super::super::super::super::super::foundational_aspect;
-use super::super::super::super::super::sequence::{decode_sequence, write_sequence};
-use super::super::super::super::wire_vocabulary::{decode_optional, write_optional};
-use super::super::super::super::wire_vocabulary::{decode_type_identity, write_type_identity};
+use crate::record::application_schema::wire_vocabulary::{decode_optional, write_optional};
+use crate::record::application_schema::wire_vocabulary::{
+    decode_type_identity, write_type_identity,
+};
+use crate::record::decode_budget::RecordDecodeAttempt;
+use crate::record::foundational_aspect;
+use crate::record::sequence::{decode_sequence, write_sequence};
 
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
@@ -29,14 +31,7 @@ pub(super) fn write(
     write_sequence(output, shape.relations(), write_relation)
 }
 
-pub(super) fn decode(
-    input: &mut BinaryInput<'_>,
-    budget: &mut RecordDecodeAttempt,
-) -> Result<ApplicationQueryResultShape, Denial> {
-    decode_at_depth(input, budget, 1)
-}
-
-fn decode_at_depth(
+pub(super) fn decode_at_depth(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
     depth: u32,
@@ -72,7 +67,7 @@ fn write_field(
     output.text(field.output_name())?;
     foundational_aspect::write_scalar_type(output, field.scalar_family())?;
     output.text(field.value_type())?;
-    super::super::super::schema::write_presence(output, field.presence())
+    crate::record::application_schema::wire_vocabulary::write_presence(output, field.presence())
 }
 
 fn decode_field(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryResultField, Denial> {
@@ -86,7 +81,7 @@ fn decode_field(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryResultFie
             output_name: input.text()?.to_owned(),
             scalar_family: foundational_aspect::decode_scalar_type(input)?,
             value_type: decode_type_identity(input)?,
-            presence: super::super::super::schema::decode_presence(input)?,
+            presence: crate::record::application_schema::wire_vocabulary::decode_presence(input)?,
         },
     ))
 }
@@ -224,7 +219,7 @@ mod tests {
     use crate::limits::WorthQueryPackageArchiveLimits;
     use crate::record::decode_budget::RecordDecodeAttempt;
 
-    use super::{decode, write};
+    use super::{decode_at_depth, write};
 
     #[test]
     fn relation_predicate_round_trips_exact_owned_meaning() {
@@ -240,7 +235,7 @@ mod tests {
         )
         .unwrap();
 
-        let decoded = decode(&mut input, &mut budget).unwrap();
+        let decoded = decode_at_depth(&mut input, &mut budget, 1).unwrap();
         assert!(input.is_finished());
         assert_eq!(decoded, source);
         assert_eq!(

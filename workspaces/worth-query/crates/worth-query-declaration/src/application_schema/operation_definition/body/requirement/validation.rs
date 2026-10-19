@@ -21,6 +21,12 @@ pub(in crate::application_schema::operation_definition::body) fn validate_requir
                 return Err(Denial::MissingOperationDecisionReadDependency);
             }
             let bound = match operand.source() {
+                Source::QueryContext { mutation_binding, query } => {
+                    if !super::query_context::is_declared(operation, mutation_binding, query, members) {
+                        return Err(Denial::MissingOperationProgramDependency);
+                    }
+                    true
+                },
                 Source::SignedEvidence(source) => source.is_declared(members),
                 Source::RelatedSignedEvidence { relation: name, from: source, to: target, evidence } => {
                     target == &evidence.lifecycle.source_entity

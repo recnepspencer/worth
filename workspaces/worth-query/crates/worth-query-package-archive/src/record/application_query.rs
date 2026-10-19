@@ -14,12 +14,12 @@ use crate::denial::{
     WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
 };
 
-use super::super::super::super::decode_budget::RecordDecodeAttempt;
-use super::super::super::super::foundational_aspect;
-use super::super::super::super::sequence::{decode_sequence, write_sequence};
-use super::super::super::wire_vocabulary::{
+use super::application_schema::wire_vocabulary::{
     decode_optional, decode_type_identity, write_optional, write_type_identity,
 };
+use super::decode_budget::RecordDecodeAttempt;
+use super::foundational_aspect;
+use super::sequence::{decode_sequence, write_sequence};
 
 mod controls;
 mod disclosure;
@@ -68,6 +68,21 @@ pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ErasedApplicationQueryDefinition, Denial> {
+    decode_with_shape_depth(input, budget, 1)
+}
+
+pub(super) fn decode_nested(
+    input: &mut BinaryInput<'_>,
+    budget: &mut RecordDecodeAttempt,
+) -> Result<ErasedApplicationQueryDefinition, Denial> {
+    decode_with_shape_depth(input, budget, 2)
+}
+
+fn decode_with_shape_depth(
+    input: &mut BinaryInput<'_>,
+    budget: &mut RecordDecodeAttempt,
+    depth: u32,
+) -> Result<ErasedApplicationQueryDefinition, Denial> {
     let name = input.text()?.to_owned();
     let query_type = decode_type_identity(input)?;
     let parameter_type = decode_type_identity(input)?;
@@ -76,7 +91,7 @@ pub(super) fn decode(
     let root_entity = input.text()?.to_owned();
     let scope_entity = input.text()?.to_owned();
     let parameters = decode_sequence(input, budget, 10, |input, _| decode_parameter(input))?;
-    let result_shape = result_shape::decode(input, budget)?;
+    let result_shape = result_shape::decode_at_depth(input, budget, depth)?;
     let root_paths = decode_sequence(input, budget, 12, root_selection::decode_path)?;
     let cardinality = controls::decode_cardinality(input)?;
     let predicates = decode_sequence(input, budget, 18, |input, _| decode_predicate(input))?;

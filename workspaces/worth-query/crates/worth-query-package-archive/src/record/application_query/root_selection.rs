@@ -11,13 +11,13 @@ use crate::denial::{
     WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
 };
 
-use super::super::super::super::super::decode_budget::RecordDecodeAttempt;
-use super::super::super::super::super::foundational_aspect;
-use super::super::super::super::super::foundational_value;
-use super::super::super::super::super::sequence::{decode_sequence, write_sequence};
-use super::super::super::super::wire_vocabulary::{
+use crate::record::application_schema::wire_vocabulary::{
     decode_type_identity, decode_usize, write_usize,
 };
+use crate::record::decode_budget::RecordDecodeAttempt;
+use crate::record::foundational_aspect;
+use crate::record::foundational_value;
+use crate::record::sequence::{decode_sequence, write_sequence};
 
 pub(super) fn write_path(
     output: &mut dyn BinaryEncodingSink,

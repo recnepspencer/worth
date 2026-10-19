@@ -26,6 +26,14 @@ pub(super) fn write(
         write_sequence(output, requirement.operands(), |output, operand| {
             output.text(operand.name())?;
             match operand.source() {
+                Source::QueryContext {
+                    mutation_binding,
+                    query,
+                } => {
+                    output.u16(7)?;
+                    output.text(mutation_binding)?;
+                    crate::record::application_query::write(output, query)
+                }
                 Source::RelatedFieldValues {
                     relation,
                     from,
@@ -137,9 +145,15 @@ pub(super) fn decode(
     decode_sequence(input, budget, 16, |input, budget| {
         let identity = input.text()?.to_owned();
         let target = input.text()?.to_owned();
-        let operands = decode_sequence(input, budget, 12, |input, _| {
+        let operands = decode_sequence(input, budget, 12, |input, budget| {
             let name = input.text()?.to_owned();
             let source = match input.u16()? {
+                7 if version >= 25 => Source::QueryContext {
+                    mutation_binding: input.text()?.to_owned(),
+                    query: Box::new(crate::record::application_query::decode_nested(
+                        input, budget,
+                    )?),
+                },
                 6 if version >= 24 => Source::RelatedFieldValues {
                     relation: input.text()?.to_owned(),
                     from: input.text()?.to_owned(),

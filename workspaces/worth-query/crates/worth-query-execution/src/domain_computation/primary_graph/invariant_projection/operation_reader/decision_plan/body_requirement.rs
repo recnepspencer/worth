@@ -27,6 +27,17 @@ impl<Schema: ApplicationSchema, Operation>
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<PreparedRequirementOperand, HandlerExecutionDenial> {
         match source {
+            Source::QueryContext { query, .. } => {
+                let context = self.query_context.filter(|context| context.query_identifier() == query.name()).ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query.name())))?;
+                // Values are already retained by the admission; this is an Arc
+                // clone, not another query, decode or allocation of the tree.
+                Ok(PreparedRequirementOperand {
+                    value: context.value().clone(),
+                    _reservation: execution.reserve(0).map_err(|cause| {
+                        HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause))
+                    })?,
+                })
+            }
             Source::RelatedFieldValues { .. } => {
                 self.collection_field_values(identity, source, execution, context)
             }

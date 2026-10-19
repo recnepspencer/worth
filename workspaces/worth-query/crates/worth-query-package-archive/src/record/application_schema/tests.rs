@@ -2,6 +2,7 @@ mod fixture;
 mod invariant;
 mod mutation_description;
 mod operation_body;
+mod query_context;
 mod resource_path;
 mod retired_fact_budget;
 

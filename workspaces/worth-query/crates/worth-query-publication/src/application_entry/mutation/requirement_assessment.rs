@@ -1,4 +1,5 @@
 //! Authorized read-only assessment of an installed body's own requirements.
+mod source;
 use worth_query_declaration::facade::application_operation::{
     ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,
     ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
@@ -150,7 +151,9 @@ where
                             WorthQueryApplicationRequestMutationDenial::BindingInstallation(denial),
                         )
                     })?;
-                let admission = authorize(&phase, &mut self, &selected)
+                let mut admission = authorize(&phase, &mut self, &selected)
+                    .map_err(WorthQueryCurrentBodyRequirementAssessmentDenial::Request)?;
+                source::bind(&mut self, &mut admission)
                     .map_err(WorthQueryCurrentBodyRequirementAssessmentDenial::Request)?;
                 let findings = application
                     .assess_admitted_operation_body_requirements(

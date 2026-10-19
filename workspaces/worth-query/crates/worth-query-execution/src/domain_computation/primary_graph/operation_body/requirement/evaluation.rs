@@ -86,6 +86,7 @@ fn finding_quote(
     }
     for requirement in body.requirements() {
         let target = match requirement.target() {
+            Source::QueryContext { query, .. } => Some(query.name().len()),
             Source::RelatedFieldValues {
                 relation,
                 from,

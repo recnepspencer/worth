@@ -24,6 +24,7 @@ pub(super) fn project<Schema, Operation, Input, Scope, Output>(
         binding_identity: &authority.binding_identity,
         admission_identity: Some(admission.admission_identity()),
         admitted_principal: Some(admission.graph_work().principal()),
+        query_context: admission.query_context(),
         operation_scope: Some(admission.operation_scope_binding().clone()),
         decision_facts: &mut decision_facts,
         _operation: PhantomData,

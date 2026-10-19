@@ -10,6 +10,8 @@ mod creation_links;
 mod enrollment;
 mod outputs;
 mod principal;
+mod query_context;
+pub(super) use query_context::require_nesting_depth;
 mod related_source;
 mod requirements;
 mod signing;
@@ -38,7 +40,8 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
+    let version = if body.requires_query_context() { 25 }
+    else if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
         matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::RelatedFieldValues { .. })) { 24 }
     else if body.succession().is_some_and(|s| s.output_match().is_some()) { 23 }
     else if body.outputs().iter().any(|output| matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Related { .. })) { 22 }
@@ -223,7 +226,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=24) {
+    if !matches!(version, 1..=25) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {

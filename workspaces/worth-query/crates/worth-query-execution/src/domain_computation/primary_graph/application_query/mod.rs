@@ -32,6 +32,7 @@ mod graph_read_plan_binding;
 mod installed_schema_currentness;
 mod live;
 pub(in crate::domain_computation::primary_graph) mod observed_source;
+pub(in crate::domain_computation) use observed_source::ObservedQueryExpressionContext;
 mod one_shot;
 pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;
 mod projection;

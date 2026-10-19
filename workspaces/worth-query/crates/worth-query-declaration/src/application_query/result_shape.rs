@@ -15,7 +15,9 @@ use super::{
 };
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
 
+mod expression_context;
 mod field;
+pub use expression_context::ApplicationQueryExpressionContextDenial;
 mod relation;
 
 pub use field::{ApplicationQueryResultField, WorthQueryPortableApplicationQueryResultFieldParts};

@@ -1,8 +1,8 @@
 use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldPresence, ApplicationRelationCardinality,
-    ApplicationRelationCrossContextPolicy, ApplicationRelationDeletionPolicy,
-    ApplicationRelationEndpoints, ApplicationRelationIntegrity, ApplicationSchemaMember,
+    ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
+    ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints, ApplicationRelationIntegrity,
+    ApplicationSchemaMember,
 };
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -252,22 +252,4 @@ fn decode_relation_integrity(
     ))
 }
 
-pub(super) fn write_presence(
-    output: &mut dyn BinaryEncodingSink,
-    value: ApplicationFieldPresence,
-) -> Result<(), Denial> {
-    output.u16(match value {
-        ApplicationFieldPresence::Required => 1,
-        ApplicationFieldPresence::Optional => 2,
-    })
-}
-
-pub(super) fn decode_presence(
-    input: &mut BinaryInput<'_>,
-) -> Result<ApplicationFieldPresence, Denial> {
-    match input.u16()? {
-        1 => Ok(ApplicationFieldPresence::Required),
-        2 => Ok(ApplicationFieldPresence::Optional),
-        _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    }
-}
+pub(super) use super::super::wire_vocabulary::{decode_presence, write_presence};

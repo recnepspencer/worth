@@ -3,6 +3,7 @@
 use worth_foundational::facade::{AspectContract, AspectShape};
 
 use super::*;
+mod query_context;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct WorthQueryPortableApplicationContractReconstructionWork {
@@ -127,6 +128,12 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                     use worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource as Source;
                     work.observe_text(operand.name());
                     match operand.source() {
+                        Source::QueryContext {
+                            mutation_binding,
+                            query,
+                        } => {
+                            work.observe_query_context(mutation_binding, query);
+                        }
                         Source::SignedEvidence(source)
                         | Source::RelatedSignedEvidence {
                             evidence: source, ..

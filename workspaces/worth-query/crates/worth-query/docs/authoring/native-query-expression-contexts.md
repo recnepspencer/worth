@@ -20,6 +20,8 @@ records; independent scalar lists do not need to be zipped back together.
 - `admitted_plan.retain_expression_context()` before native one-shot execution
   when the caller already owns a genuine admitted plan, including governed plans.
 - `observed_source.expression_context()` returns borrowed `(schema, value)`.
+- `Operation::reference().requirement_operands().query_context::<Binding, _, _, _, _>(name, query_definition)`
+  consumes an exact query declaration for a native operation requirement.
 - Foundation's `ExpressionType::from_scalar_family` and
   `ExpressionValue::from_aspect_value` provide the lossless scalar correspondence.
 
@@ -81,6 +83,47 @@ still contains each draft's own evidence rows; it is not rebuilt from that DTO.
 The runnable deviation-request supplier example demonstrates this path through
 the public declaration/host entry points.
 
+To make correlated information readiness an operation requirement, author it
+once against the same query definition registered in the schema:
+
+```rust,ignore
+let operands = Check::reference().requirement_operands()
+    .query_context::<CheckBinding, _, _, _, _>("context", readiness_query())?;
+let requirement = ApplicationOperationBodyRequirement::admit(
+    "draft-information", operands, None,
+    expressions().reading_within(ApplicationOperationBodyRequirementExpression::PROFILE)
+        .parse("length(context.drafts) >= 2 && context.drafts.all(d, is_some(d.description) && length(unwrap(d.description)) > 0)")?,
+    "context",
+)?;
+// Attach with body.requirement(requirement), then install the ordinary body.
+```
+
+`CheckBinding::SourceExpectation` must name that query. It must be parameter-free
+and exactly-one at the root; the initial requirement profile does not silently
+accept a Rust callback that chooses different source parameters. Declare the
+query once through a definition factory used by schema registration and operand
+authoring. Do not independently map its fields into a second expression record.
+
+At the host front door, pass the retained source to both operations:
+
+```rust,ignore
+let source = runtime.request(&principal, &scope).query(ReadReadiness(tenant))
+    .execute_with_expression_context()?.observed_sources()[0].clone();
+let findings = runtime.request(&principal, &scope).advanced().mutate(Check(tenant))
+    .expect_source(source.clone())
+    .assess_current_capability_body_requirements(program, projection)?;
+let outcome = runtime.request(&principal, &scope).advanced().mutate(Check(tenant))
+    .expect_source(source).idempotency(&logical_key)
+    .execute_capability_in_program(program, allocation)?;
+```
+
+In the supplier's actual readiness journey, `drafts` additionally contains each
+draft's optional `current_round` record and that round's optional description.
+The authored expression requires information on the selected round when present;
+it does not require that round to be signed. Completing unsigned B permits the
+operation even though A signed earlier. A signature-only change does not stale
+this query, which deliberately excludes signature rows.
+
 ## How It Relates To Other Features
 
 `expect_source(source)` still checks the source's exact installed query, scope,
@@ -89,11 +132,21 @@ membership changes can stale the later mutation. The retained value itself
 remains immutable. A new read is new source intent, not an automatic retry of
 an ambiguous old mutation.
 
-**Current boundary:** retaining a context does not make an expression a native
-operation requirement. Authored context operands and transfer of their values
-into requirement admission are not yet implemented. Do not add a host Boolean
-or validation loop as a substitute. Mutation authority remains independently
-required, and retained data is not a fresh query authorization grant.
+For an authored context requirement, cold admission checks the complete embedded
+query against its schema declaration and the mutation binding. Installation
+checks the actual binding's source-query correspondence. Native source admission
+checks exact installed query, branch, scope and an empty parameter set, transfers
+values and dependencies together, and compares those dependencies at the
+operation's retained observation. The same body evaluator serves guidance and
+execution. Nested consumed-field edits and relation-membership changes remain
+publication obligations, even after successful requirement evaluation.
+
+Exact committed replay resolves before fresh source currentness or requirement
+evaluation, so later edits cannot erase an already-recorded outcome. Keep the
+original source and logical key for that replay; replacing the source changes
+intent. A fresh attempt still needs fresh capability authorization. Findings
+are descriptive, not a mutation permit or approval grant. Do not add a host
+Boolean or validation loop as an alternate admission path.
 
 ## Inspection And Debugging
 
@@ -105,6 +158,11 @@ a defect of the shared source row, and recovery requires fresh admission.
 Neither outcome permits using partial values. Typed resource/interruption
 outcomes remain distinct. Result-buffer observation
 includes the retained context backing, not just its logical scalar payload.
+Using ordinary `execute()` and submitting its source to a context-dependent body
+denies with native `MissingAuthoritativeFact`, not an invented Unmet finding.
+An ordinary stale context is denied as `SourceChanged` before execution; a change
+after preparation stales publication. Guidance targets the query rather than an
+individually failed child field.
 
 ## Anti-Patterns
 
@@ -123,6 +181,16 @@ source custody, not durable serialized mutation authority.
 Types follow the actual native codec, not the Rust DTO: an application structure
 encoded as a native String remains a String; this surface does not decode JSON
 or invent a nested object schema for it.
+
+Authored requirement operands currently support only parameter-free queries and
+one context operand per requirement, with any additional ordinary scalar or
+principal operands. All context operands on an operation must match its actual
+source query and binding. Parameterized contexts need a future authored native
+correspondence; do not supply a new host selector callback. Stable producer-cutoff
+execution refuses a context-dependent body rather than discarding its required
+context. Per-failing-row navigation and durable context recovery are not provided.
+Portable operation-body v25 carries the full query and binding; v1–v24 keep their
+meaning and refuse the new source tag when encountered under an older profile.
 
 ## Related Docs
 

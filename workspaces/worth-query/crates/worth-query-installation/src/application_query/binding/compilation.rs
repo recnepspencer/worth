@@ -97,7 +97,7 @@ impl WorthQueryCompiledApplicationQuery {
                 .combine(obligations.installation_evidence().canonical_work()),
         );
         let expression_context_schema = (definition.cardinality() == worth_query_declaration::facade::application_query::ApplicationQueryCardinality::ExactlyOne)
-            .then(|| crate::application_query::expression_context::derive(&read_graph, schema.installed_declaration()).ok())
+            .then(|| definition.result_shape().expression_context_schema(schema.installed_declaration().members()).ok())
             .flatten();
         let read_family = WorthQueryInstalledApplicationReadFamilyBinding::bind(read_graph);
         let authority_identity = derive_installed_query_authority_seal(

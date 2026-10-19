@@ -17,7 +17,7 @@ use super::sequence::{decode_sequence, write_sequence};
 mod authorization_path;
 mod contribution;
 mod member;
-mod wire_vocabulary;
+pub(in crate::record) mod wire_vocabulary;
 
 const CONTRIBUTION_EXTENSION_MARKER: &[u8; 4] = b"WQAS";
 const CONTRIBUTION_EXTENSION_VERSION: u16 = 1;

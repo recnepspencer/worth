@@ -18,6 +18,8 @@ mod expression_context;
 mod fact_conversion;
 mod footprint_accounting;
 mod prepared_expectation;
+mod query_context_binding;
+pub(in crate::domain_computation) use query_context_binding::ObservedQueryExpressionContext;
 mod result_set;
 pub(crate) mod retained_dependencies;
 mod retained_parameters;

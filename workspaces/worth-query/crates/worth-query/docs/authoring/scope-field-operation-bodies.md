@@ -17,6 +17,9 @@ values; the host does not choose a handler that independently restates them.
 An operation may declare presence requirements or Boolean Foundation expressions
 over typed scope fields, related-item counts and outgoing child-field lists. The same installed requirements
 drive admission and authorized read-only guidance.
+For correlated multi-field or nested-row requirements, use an exact sealed
+[native query expression context](./native-query-expression-contexts.md) as a
+typed operand, not a host-built validation record.
 Fixed typed output roles may preserve the admitted scope, preserve its single
 selected outgoing subject, or identify the body's created row through Query's
 existing commit correspondence. A preservation-only

@@ -258,6 +258,7 @@ where
         graph_work,
         source_partition_identity: None,
         source_facts: Vec::new(),
+        query_context: None,
         required_output_demand: None,
         _marker: PhantomData,
     };

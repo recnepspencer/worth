@@ -12,15 +12,13 @@ use crate::denial::{
     WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
 };
 
-use super::super::super::super::super::decode_budget::RecordDecodeAttempt;
-use super::super::super::super::super::foundational_aspect;
-use super::super::super::super::super::foundational_value;
-use super::super::super::super::super::sequence::{
-    decode_sequence, require_canonical_sequence, write_sequence,
-};
-use super::super::super::super::wire_vocabulary::{
+use crate::record::application_schema::wire_vocabulary::{
     decode_optional, decode_type_identity, write_optional, write_type_identity,
 };
+use crate::record::decode_budget::RecordDecodeAttempt;
+use crate::record::foundational_aspect;
+use crate::record::foundational_value;
+use crate::record::sequence::{decode_sequence, require_canonical_sequence, write_sequence};
 
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
@@ -127,7 +125,7 @@ fn write_selector(
             output.text(output_name)?;
             foundational_aspect::write_scalar_type(output, *scalar_family)?;
             write_type_identity(output, value_type)?;
-            super::super::super::schema::write_presence(output, *presence)?;
+            crate::record::application_schema::wire_vocabulary::write_presence(output, *presence)?;
             write_mask(output, projection_mask)?;
             write_mask(output, diagnostic_mask)
         }
@@ -175,7 +173,7 @@ fn decode_selector(
             output_name: input.text()?.to_owned(),
             scalar_family: foundational_aspect::decode_scalar_type(input)?,
             value_type: decode_type_identity(input)?,
-            presence: super::super::super::schema::decode_presence(input)?,
+            presence: crate::record::application_schema::wire_vocabulary::decode_presence(input)?,
             projection_mask: decode_mask(input, budget)?,
             diagnostic_mask: decode_mask(input, budget)?,
         },
