@@ -117,7 +117,6 @@ where
                 let plan = runtime
                     .finish_prepared_application_query_permission(execution, permission, admission)
                     .map_err(query_admission_denial)?;
-                let before = admission.charged_work();
                 let read = runtime
                     .execute_application_query_one_shot_admitted(execution, plan, admission)
                     .map_err(|stop| {
@@ -129,9 +128,6 @@ where
                             | Stop::WorkAccountingMismatch => work_denial(),
                         }
                     })?;
-                super::caller_pass_observation::observe_read_debit(
-                    read.receipt().work().total_work_units() as u64, admission.charged_work() - before,
-                );
                 crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(
                     retained.source_root(), retained.selected_product_commit().expect("retained Product source").clone(),
                     read_commit.clone());

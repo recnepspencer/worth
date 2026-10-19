@@ -167,15 +167,6 @@ impl InvalidationEditAdmission {
             .map(|maximum| maximum - self.charged_work())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn exhaust_work_for_test(
-        &mut self,
-    ) -> Result<(), CompanionPreflightStop> {
-        self.work(
-            self.remaining_work_amount()
-                .expect("the test selected a finite work limit"),
-        )
-    }
-
     pub(in crate::domain_computation::primary_graph) fn carry_for_publication(
         &mut self,
         owner: &SourceInvalidationOwner,

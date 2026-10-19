@@ -261,15 +261,6 @@ where
             }
             Err(stop) => stop,
         };
-        // The request's exhausted meter is replaced by the next advance.
-        // A producer's declared-work refusal keeps its own terminal posture.
-        let stop = if admission.remaining_work() == Some(0)
-            && stop.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        {
-            stop.with_recovery_posture(super::WorthQueryOutputDemandRecoveryPosture::Retryable)
-        } else {
-            stop
-        };
         let stop = self.caller_custody_stop(demand, stop, &mut admission);
         if stop.has_read_cleanup() {
             let diagnostic = stop.clone();

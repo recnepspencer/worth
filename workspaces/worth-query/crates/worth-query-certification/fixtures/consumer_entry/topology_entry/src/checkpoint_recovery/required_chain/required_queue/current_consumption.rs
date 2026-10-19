@@ -1,8 +1,8 @@
-//! Current roots decide before fresh queued claims enter their handlers.
+//! Current callers retain their accepted result while fresh queued work progresses.
 use super::*;
 
 #[test]
-fn a_current_caller_is_accepted_before_fresh_queue_handler_contact() {
+fn a_current_caller_is_retained_while_fresh_queue_work_progresses() {
     let _guard = checkpoint_recovery_test_guard();
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
@@ -52,12 +52,11 @@ fn a_current_caller_is_accepted_before_fresh_queue_handler_contact() {
     });
     let contacts =
         roots.map(|root| application.producer_contacts_at_root_on_this_thread_for_test(root));
-    application.exhaust_request_at_performed_commit_for_test();
     let done = settled_in_one_advance!(caller, request, "the already accepted caller");
     assert_eq!(
         done.producer_contacts_in_this_demand(),
         1,
-        "the Current caller retains its one initial contact even when queue work stops"
+        "the Current caller retains its one initial contact while fresh queue work progresses"
     );
     assert_eq!(
         application.producer_contacts_at_root_on_this_thread_for_test(roots[0]) - contacts[0],
@@ -67,7 +66,7 @@ fn a_current_caller_is_accepted_before_fresh_queue_handler_contact() {
     assert_eq!(
         application.producer_contacts_at_root_on_this_thread_for_test(roots[1]) - contacts[1],
         1,
-        "the fresh queued handler really ran after caller acceptance"
+        "the fresh queued handler ran exactly once in the same advance"
     );
 }
 

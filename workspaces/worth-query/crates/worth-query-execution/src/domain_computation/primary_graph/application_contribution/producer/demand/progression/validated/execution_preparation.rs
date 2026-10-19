@@ -290,13 +290,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let retained_resources = demand.resources;
         let runtime_identity = self.runtime.authority_identity().as_u64();
         let root = demand.observed_source.source_root();
-        let finish = move |result, request_admission: &mut InvalidationEditAdmission, readiness| {
+        let finish = move |result, readiness| {
             super::execution_completion::finish(
                 result,
                 selected_execution_finish,
                 retained_resources,
-                &self.primary_provider.application_attempt_operation_control,
-                request_admission,
                 performed,
                 readiness,
                 runtime_identity,
@@ -322,7 +320,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 );
                 match finish(
                     result,
-                    request_admission,
                     ordinary_readiness.expect("ordinary effect has publication readiness"),
                 ) {
                     Ok(progress) => Ok(ExecutionPreparation::Reached(OwnStages::Checkpoint(
@@ -365,7 +362,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     Err(stop) => OwnerPlan::immediate(Err(stop)),
                 };
                 Ok(ExecutionPreparation::Planned(plan.map_result(
-                    move |result, admission| finish(result, admission, readiness),
+                    move |result, _admission| finish(result, readiness),
                 )))
             }
         });
