@@ -208,12 +208,7 @@ where
                 execution,
                 admission,
             )
-            .map_err(|stop| {
-                crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
-                    crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
-                    "native retained output selection unavailable",
-                )
-            })?;
+            .map_err(|stop| selected_basis::selection_lookup_denial(stop, Family::IDENTITY))?;
         drop(lineage);
         let mut live_candidates = Vec::new();
         for candidate in candidates {
