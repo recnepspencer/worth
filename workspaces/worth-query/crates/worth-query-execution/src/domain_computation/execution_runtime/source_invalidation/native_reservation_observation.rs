@@ -207,7 +207,7 @@ mod observation_tests {
         let recorder = NativeReservationRecorder::new();
         recorder.install();
         let ledger = Arc::new(super::super::retention::InvalidationRetentionLedger::new(
-            100,
+            Some(100),
         ));
         assert_eq!(recorder.consumed(7), (0, 0));
         let first = Arc::new(ledger.reserve(30).unwrap());
@@ -256,7 +256,7 @@ mod observation_tests {
         let ledger = std::cell::RefCell::new(None);
         assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _guard = WorthQueryExecutionObservation::install_on_this_thread();
-            let captured = super::super::retention::InvalidationRetentionLedger::install(100);
+            let captured = super::super::retention::InvalidationRetentionLedger::install(Some(100));
             captured
                 .native
                 .observe(1, 7, std::panic::Location::caller());
