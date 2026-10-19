@@ -244,7 +244,7 @@ where
                     let mut admission = self.reader.invalidation_owner
                         .edit_admission_with_work_limit(self.reader.work_budget.remaining());
                     let capacity = self.reader.invalidation_owner.retain_consumed_output(
-                        &facts,
+                        facts.facts(),
                         &selected_native_root,
                         ConsumedOutputEvidence::metadata_bytes(),
                         &mut admission,

@@ -2542,6 +2542,14 @@ paths need not originate in these owners. These diagnostics
 neither change kind or recovery posture nor authorize a retry, a capacity
 increase, output completion or cleanup.
 
+Consumed edges and restored marks in their original installed invalidation
+ledger share retention custody of the same original fact allocation. Each holder still funds
+its own native basis and metadata; new output projections and index storage
+remain separately admitted. The full fact reservation ends with its last
+external holder. Small weak-custody metadata remains funded while the original
+payload lives. A different installation receives no credit from that ledger.
+This changes neither currentness checks nor the configured physical capacity.
+
 ### 5.5 Own a complete no-source output tree
 
 Use the ordinary demand builder when a read request needs the complete installed

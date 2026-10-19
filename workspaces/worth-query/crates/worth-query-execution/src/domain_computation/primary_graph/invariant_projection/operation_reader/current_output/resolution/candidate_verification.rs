@@ -156,8 +156,7 @@ where
         let result = admission
             .charge_external_work(bytes + selected.branch_id().0.len() as u64)
             .and_then(|_| {
-                self.reader.invalidation_owner.retain_consumed_output(
-                    &[],
+                self.reader.invalidation_owner.retain_requested_output(
                     selected,
                     bytes,
                     &mut admission,

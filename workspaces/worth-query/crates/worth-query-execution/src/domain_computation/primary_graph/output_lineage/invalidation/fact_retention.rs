@@ -7,41 +7,103 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
 use crate::domain_computation::execution_runtime::WorthQueryInvalidationResources;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 
 use super::admission::IndexAdmission;
 use super::{index_capacity, retention};
 
-/// A historical mark can outlive the application lineage that first owned
-/// these facts. Reserve their retained custody before making its Arc row.
+/// Each holder funds its own native basis. The original payload's installed
+/// ledger shares its external-custody ticket; a foreign installation admits
+/// independent custody without borrowing that ledger's credit.
+#[derive(Clone, Debug)]
+pub(super) struct RetainedFactCapacity {
+    _allocation: Arc<RetainedInvalidationCapacity>,
+    _basis: Arc<RetainedInvalidationCapacity>,
+}
+
 pub(super) fn reserve(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &FactPayload,
+    read_basis: &PositionedRelationalSnapshot,
+    resources: &WorthQueryInvalidationResources,
+    admission: &mut impl IndexAdmission,
+) -> Result<RetainedFactCapacity, CompanionPreflightStop> {
+    let allocation = reserve_payload(facts, resources, admission)?;
+    let basis = reserve_basis(read_basis, resources, admission)?;
+    Ok(RetainedFactCapacity {
+        _allocation: allocation,
+        _basis: basis,
+    })
+}
+
+pub(super) fn reserve_basis(
     read_basis: &PositionedRelationalSnapshot,
     resources: &WorthQueryInvalidationResources,
     admission: &mut impl IndexAdmission,
 ) -> Result<Arc<RetainedInvalidationCapacity>, CompanionPreflightStop> {
+    let bytes = index_capacity::arc_bytes::<PositionedRelationalSnapshot>()
+        .and_then(|bytes| {
+            bytes.checked_add(u64::try_from(read_basis.branch_id().0.capacity()).ok()?)
+        })
+        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+    admission.bytes(bytes)?;
+    retention::reserve(resources, bytes, admission)
+}
+
+pub(super) fn reserve_payload(
+    facts: &FactPayload,
+    resources: &WorthQueryInvalidationResources,
+    admission: &mut impl IndexAdmission,
+) -> Result<Arc<RetainedInvalidationCapacity>, CompanionPreflightStop> {
+    admission.work(1)?;
+    // Serialize admission with the weak lookup. Two first readers must not
+    // reserve the same allocation concurrently. No caller callback runs here.
+    let mut slot = facts.lock_retention();
+    let existing = slot.allocation.upgrade();
+    if let Some(ticket) = existing
+        .as_ref()
+        .filter(|ticket| ticket.belongs_to(resources))
+    {
+        return Ok(Arc::clone(ticket));
+    }
+    let storage = if existing.is_none() {
+        match &slot.storage {
+            Some(ticket) if ticket.belongs_to(resources) => Some(Arc::clone(ticket)),
+            _ => {
+                // reserve adds this storage ticket's own Arc allocation.
+                let bytes = FactPayload::retention_storage_bytes()
+                    .and_then(|bytes| {
+                        bytes.checked_sub(
+                            index_capacity::arc_bytes::<RetainedInvalidationCapacity>()?,
+                        )
+                    })
+                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+                admission.bytes(bytes)?;
+                Some(retention::reserve(resources, bytes, admission)?)
+            }
+        }
+    } else {
+        // A foreign live ledger's ticket is never another installation's credit.
+        // It retains its slot; this independent owner pays its original full quote.
+        None
+    };
     let count =
         u64::try_from(facts.len()).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-    admission.work(
-        count
-            .checked_add(1)
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
-    )?;
-
+    admission.work(count)?;
     let mut bytes = arc_slice_bytes::<WorthQueryApplicationObservedFact>(facts.len())
-        .and_then(|base| {
-            base.checked_add(index_capacity::arc_bytes::<PositionedRelationalSnapshot>()?)
-        })
-        .and_then(|base| base.checked_add(u64::try_from(read_basis.branch_id().0.capacity()).ok()?))
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    for fact in facts {
-        let payload = fact_payload_bytes(fact, admission)?;
+    for fact in facts.iter() {
         bytes = bytes
-            .checked_add(payload)
+            .checked_add(fact_payload_bytes(fact, admission)?)
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     }
     admission.bytes(bytes)?;
-    retention::reserve(resources, bytes, admission)
+    let ticket = retention::reserve(resources, bytes, admission)?;
+    if let Some(storage) = storage {
+        slot.allocation = Arc::downgrade(&ticket);
+        slot.storage = Some(storage);
+    }
+    Ok(ticket)
 }
 
 pub(super) fn fact_payload_bytes(

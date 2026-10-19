@@ -108,7 +108,8 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         let arc_bytes =
             arc_slice_bytes::<Fact>(total).ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
         let peak = vec_bytes
-            .checked_add(arc_bytes)
+            .checked_add(crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::retention_storage_bytes().ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?)
+            .and_then(|bytes| bytes.checked_add(arc_bytes))
             .and_then(|bytes| bytes.checked_add(cloned_payload))
             .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
         admission.admit_read_scratch(peak).map_err(memory_denial)?;
@@ -117,7 +118,8 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             .expect("prepared stable address retains capacity")
             .reserve_additional(
                 arc_bytes
-                    .checked_add(retained_payload)
+                    .checked_add(crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::retention_storage_bytes().ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?)
+                    .and_then(|bytes| bytes.checked_add(retained_payload))
                     .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?,
             )?;
 
@@ -127,7 +129,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         let bound = fresh
             .append_into_stable_facts(operation, &mut combined)
             .map_err(|_| denial(Kind::ForeignSource))?;
-        let facts: Arc<[Fact]> = Arc::from(combined.into_boxed_slice());
+        let facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload = combined.into();
         let performed_origin = origin_cell(candidate);
         let recorded = RecordedOutput {
             native_prior_checkpoint: None,
@@ -153,7 +155,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             idempotency_key_identity: origin.idempotency_key_identity,
             mutable: std::sync::Mutex::new(RecordedOutputMutable::new(
                 None,
-                (Some(Arc::clone(&facts)))
+                (Some(facts.clone()))
                     .map(|facts| selected_row.computation_source.retain_facts(facts)),
                 Some(resources),
                 selected_row

@@ -11,6 +11,7 @@ pub(super) fn rebase(
     admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
     let PreparedSourceFactRebase {
+        retention,
         facts,
         moved_by_own_effect,
         endpoints,
@@ -103,11 +104,12 @@ pub(super) fn rebase(
         }
         rebased.push(action.apply(fact));
     }
+    let facts = FactPayload::from_prepared(rebased, retention);
     if superseded.is_empty() {
-        RebasedSourceFacts::Exact(rebased.into())
+        RebasedSourceFacts::Exact(facts)
     } else {
         RebasedSourceFacts::SupersededByOwnEffect {
-            facts: rebased.into(),
+            facts,
             ordinals: superseded.into(),
         }
     }

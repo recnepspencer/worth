@@ -52,7 +52,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedStableLineagePub
     pub(super) address: PreparedStableLineageAddress<'lane, 'selected>,
     pub(super) recorded: RecordedOutput,
     pub(super) facts:
-        Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
 }
 
 impl PreparedStableLineagePublication<'_, '_> {

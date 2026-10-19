@@ -67,7 +67,7 @@ enum StableInstallation<'lane, 'selected> {
         retired_generation: Option<RecordedGeneration>,
         retired_locator: Option<Arc<OnceLock<usize>>>,
         address: super::PreparedStableLineageAddress<'lane, 'selected>,
-        facts: Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+        facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     },
     Stopped {
         prepared: PreparedStableCutover<'lane, 'selected>,

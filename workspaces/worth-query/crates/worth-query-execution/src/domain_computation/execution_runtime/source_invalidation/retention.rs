@@ -83,6 +83,13 @@ pub(in crate::domain_computation) struct RetainedInvalidationCapacity {
 }
 
 impl RetainedInvalidationCapacity {
+    pub(in crate::domain_computation) fn belongs_to(
+        &self,
+        resources: &super::WorthQueryInvalidationResources,
+    ) -> bool {
+        Arc::ptr_eq(&self.ledger, &resources.retention)
+    }
+
     pub(in crate::domain_computation) fn observe_custody(
         &self,
         site: &'static std::panic::Location<'static>,
