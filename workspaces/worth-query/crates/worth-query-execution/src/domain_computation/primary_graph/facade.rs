@@ -244,7 +244,7 @@ pub use super::invariant_installation::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
 };
 pub use super::invariant_projection::{
-    WorthQueryApplicationInvariantProjectionAuthority,
+    VerificationCapacityStop, WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationInvariantProjectionReader,
     WorthQueryApplicationInvariantProjectionSnapshot,
     WorthQueryApplicationOperationInvariantProjectionReader,

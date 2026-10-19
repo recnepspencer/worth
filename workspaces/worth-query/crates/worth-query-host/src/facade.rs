@@ -207,22 +207,23 @@
 //!         WorthQueryOperationAdvanceDenial,
 //!         WorthQueryRequiredOutputPreparationDenial,
 //!     },
-//!     primary_graph::CompanionPreflightStop,
+//!     primary_graph::{CompanionPreflightStop, VerificationCapacityStop},
 //! };
 //! fn producer_stop_origins(
 //!     denial: &WorthQueryOperationAdvanceDenial,
-//! ) -> (Option<CompanionPreflightStop>, Option<CompanionPreflightStop>) {
+//! ) -> (Option<CompanionPreflightStop>, Option<CompanionPreflightStop>, Option<VerificationCapacityStop>) {
 //!     let WorthQueryOperationAdvanceDenial::Outputs(required) = denial else {
-//!         return (None, None);
+//!         return (None, None, None);
 //!     };
 //!     let native = match required {
 //!         WorthQueryRequiredOutputPreparationDenial::DemandExecution(native) => native,
 //!         WorthQueryRequiredOutputPreparationDenial::Demand(
 //!             WorthQueryApplicationOutputDemandDenial::Demand(native),
 //!         ) => native,
-//!         _ => return (None, None),
+//!         _ => return (None, None, None),
 //!     };
-//!     (native.publication_companion_stop(), native.producer_admission_stop())
+//!     (native.publication_companion_stop(), native.producer_admission_stop(),
+//!      native.output_verification_capacity_stop())
 //! }
 //! ```
 //!

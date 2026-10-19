@@ -42,9 +42,10 @@ pub use aggregate::{
     WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
     WorthQueryInvariantAggregateDenialKind,
 };
+pub use consumed_output::VerificationCapacityStop;
 pub(in crate::domain_computation::primary_graph) use consumed_output::{
     ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    PublicationRecoveryStop, SelectedPendingConsumedOutput, VerificationCapacityStop,
+    PublicationRecoveryStop, SelectedPendingConsumedOutput,
 };
 pub use locked_reader::{
     WorthQueryApplicationInvariantProjectionReader, WorthQueryCompletedInvariantProjection,

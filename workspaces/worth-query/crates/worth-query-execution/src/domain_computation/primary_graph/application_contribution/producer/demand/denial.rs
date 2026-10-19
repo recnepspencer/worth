@@ -155,6 +155,19 @@ impl WorthQueryOutputDemandDenial {
         self.kind.as_ref().clone()
     }
 
+    /// Original capacity evidence from output verification or producer
+    /// preparation/readmission. It may overlap `producer_admission_stop`;
+    /// presence alone does not prove a precommit check ran. The original meter
+    /// quote, scratch-size overflow or allocator refusal remains distinct.
+    /// Diagnostic data grants no admission, currentness, retry or cleanup.
+    pub fn output_verification_capacity_stop(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+        self.evidence
+            .as_ref()
+            .and_then(|evidence| evidence.capacity_stop)
+    }
+
     /// The original publication-companion resource stop from a producer commit.
     /// Its typed amounts are unchanged; an overflow carries no invented quote.
     /// Other denial paths return `None`. This is diagnostic data, not cleanup or

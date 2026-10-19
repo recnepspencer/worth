@@ -2527,8 +2527,18 @@ selected source/position, a foreign cell or a registration change, as well as
 original meter stops. The existing denial kind remains unchanged: those
 structural stops still report `RetentionBudgetExceeded`. Inspect the native stop
 to identify the cause.
-If neither getter supplies a stop, the cause remains unknown: scratch and other
-denial paths need not originate in a native companion stop. These diagnostics
+`output_verification_capacity_stop()` separately retains an original
+`host::primary_graph::VerificationCapacityStop` from output verification,
+including a producer's consumed-edge check before publication. Its `Meter`
+variant holds the original `CompanionPreflightStop`; `ScratchSizeOverflow` and
+`ScratchAllocationRefused { bytes }` identify distinct native scratch failures.
+The commit denial exposes the same getter specifically for its precommit
+consumed-output check. The demand getter also exposes existing capacity evidence
+from preparation/readmission and may overlap `producer_admission_stop()`; its
+presence alone does not prove precommit ran. It is separate from native
+transaction preparation. The existing kind and recovery posture remain unchanged.
+If all three getters return `None`, the cause remains unknown; other denial
+paths need not originate in these owners. These diagnostics
 neither change kind or recovery posture nor authorize a retry, a capacity
 increase, output completion or cleanup.
 

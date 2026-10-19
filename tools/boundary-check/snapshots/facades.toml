@@ -455,6 +455,7 @@ exports = [
     "SignalCheckpointDenialForTest",
     "SignalConditionalEvaluationBudget",
     "SignalRequestWorkObservation",
+    "VerificationCapacityStop",
     "WorthQueryAdmittedApplicationCapabilityAccess",
     "WorthQueryAdmittedApplicationConditionalDefinition",
     "WorthQueryAdmittedApplicationOperation",
