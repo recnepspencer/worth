@@ -37,6 +37,8 @@ pub(crate) mod fixed_artifact_source;
 #[cfg(test)]
 pub(crate) mod fixed_batch;
 mod fixed_delivery;
+#[cfg(test)]
+pub(crate) mod fixed_source_receipts;
 pub(crate) mod fixed_successors;
 #[cfg(test)]
 pub(crate) mod historical;
