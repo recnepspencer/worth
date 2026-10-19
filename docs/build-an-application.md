@@ -2509,18 +2509,28 @@ The following fixture deliberately coordinates native output custody through
 Keep the original operation on a terminal or refused advance and borrow its
 returned `WorthQueryOperationAdvanceDenial::Outputs` denial. A native demand
 cause, under `DemandExecution` or `Demand(Demand(..))`, exposes
-`WorthQueryOutputDemandDenial::publication_companion_stop()` through
-`host::primary_graph`. The [host facade example](../workspaces/worth-query/crates/worth-query-host/src/facade.rs)
+`WorthQueryOutputDemandDenial` through `host::primary_graph`. Inspect
+`publication_companion_stop()` and `producer_admission_stop()` separately; their
+getters identify the original commit or producer-admission boundary. The
+[host facade example](../workspaces/worth-query/crates/worth-query-host/src/facade.rs)
 compiles this borrow-only path without consuming the operation or its cleanup.
 
-The accessor retains the original `CompanionPreflightStop` when a producer
-commit maps a publication-companion resource refusal. Preparation exhaustion
+`publication_companion_stop()` retains the original `CompanionPreflightStop` when a
+producer commit maps a publication-companion resource refusal. Preparation exhaustion
 carries `required` and `maximum` bytes; retained-companion exhaustion carries
 `requested`, `retained` and `maximum` bytes. Work exhaustion preserves
 `required` when supplied and `maximum`. Counter overflow stays an overflow
 without a fabricated quote. Other denial paths return `None`; that absence does
-not identify a budget. The diagnostic neither changes kind or recovery posture
-nor authorizes a retry, a capacity increase, output completion or cleanup.
+not identify a budget. `producer_admission_stop()` instead retains the native
+stop from producer preparation or source/output readmission, including topology,
+selected source/position, a foreign cell or a registration change, as well as
+original meter stops. The existing denial kind remains unchanged: those
+structural stops still report `RetentionBudgetExceeded`. Inspect the native stop
+to identify the cause.
+If neither getter supplies a stop, the cause remains unknown: scratch and other
+denial paths need not originate in a native companion stop. These diagnostics
+neither change kind or recovery posture nor authorize a retry, a capacity
+increase, output completion or cleanup.
 
 ### 5.5 Own a complete no-source output tree
 

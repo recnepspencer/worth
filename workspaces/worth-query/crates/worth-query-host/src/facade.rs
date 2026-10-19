@@ -196,8 +196,8 @@
 //! }
 //! ```
 
-//! Producer publication diagnostics borrow the returned denial while the
-//! application keeps the original terminal operation and its cleanup custody.
+//! Producer publication and admission diagnostics borrow the returned denial;
+//! the application keeps the original terminal operation and its cleanup custody.
 //! Native companion amounts are data, not a new retry or publication authority.
 //!
 //! ```
@@ -209,20 +209,20 @@
 //!     },
 //!     primary_graph::CompanionPreflightStop,
 //! };
-//! fn publication_companion_stop(
+//! fn producer_stop_origins(
 //!     denial: &WorthQueryOperationAdvanceDenial,
-//! ) -> Option<CompanionPreflightStop> {
+//! ) -> (Option<CompanionPreflightStop>, Option<CompanionPreflightStop>) {
 //!     let WorthQueryOperationAdvanceDenial::Outputs(required) = denial else {
-//!         return None;
+//!         return (None, None);
 //!     };
 //!     let native = match required {
 //!         WorthQueryRequiredOutputPreparationDenial::DemandExecution(native) => native,
 //!         WorthQueryRequiredOutputPreparationDenial::Demand(
 //!             WorthQueryApplicationOutputDemandDenial::Demand(native),
 //!         ) => native,
-//!         _ => return None,
+//!         _ => return (None, None),
 //!     };
-//!     native.publication_companion_stop()
+//!     (native.publication_companion_stop(), native.producer_admission_stop())
 //! }
 //! ```
 //!

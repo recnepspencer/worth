@@ -24,6 +24,7 @@ pub struct WorthQueryOutputDemandDenial {
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
     publication_companion_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
+    producer_admission_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     commit_denial_kind:
         Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind>,
     commit_execution: Option<(
@@ -172,6 +173,29 @@ impl WorthQueryOutputDemandDenial {
         stop: worth_relational::facade::mvcc::CompanionPreflightStop,
     ) -> Self {
         self.evidence_mut().publication_companion_stop = Some(stop);
+        self
+    }
+
+    /// The original native stop during producer preparation or readmission.
+    /// Unlike `publication_companion_stop`, this can describe topology, source,
+    /// position or registration rather than resource exhaustion. It grants no
+    /// retry or cleanup authority. `None` does not identify another cause.
+    pub const fn producer_admission_stop(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::CompanionPreflightStop> {
+        match &self.evidence {
+            Some(evidence) => evidence.producer_admission_stop,
+            None => None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_producer_admission_stop(
+        mut self,
+        stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
+    ) -> Self {
+        if let Some(stop) = stop {
+            self.evidence_mut().producer_admission_stop = Some(stop);
+        }
         self
     }
 

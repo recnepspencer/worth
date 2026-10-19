@@ -67,6 +67,7 @@ fn a_commit_a_companion_has_no_room_for_stops_for_that_budget() {
         );
         assert_eq!(observed.subject(), "producer");
         assert_eq!(observed.publication_companion_stop(), Some(stop));
+        assert_eq!(observed.producer_admission_stop(), None);
         let diagnostic = observed.clone();
         assert_eq!(diagnostic.publication_companion_stop(), Some(stop));
         assert_eq!(diagnostic, observed);
