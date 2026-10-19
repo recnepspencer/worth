@@ -45,16 +45,7 @@ where
             configuration,
             limits.with_output_demand_resources(profile),
             |_phase, graph, installed| {
-                let principal = installed
-                    .principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>())
-                    .expect("the principal mapping is installed");
-                graph.bind_principal(
-                    &principal,
-                    primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
-                    1_u64,
-                    external_identity(),
-                    WorthQueryPrincipalMappingStatus::Enabled,
-                )?;
+                bind_model_owner(graph, installed)?;
                 seed(graph);
                 Ok(())
             },

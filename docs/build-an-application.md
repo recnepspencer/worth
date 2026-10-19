@@ -455,6 +455,7 @@ pub(crate) fn source_feature_spec() -> ApplicationFeatureSpec {
 |---|---|
 | `action::<Binding, Delivery>()` | An unfinished ordinary action with explicit delivery |
 | `native_action::<Binding>()` | An unfinished deliberately specialized native action, without delivery |
+| `conditional_native_action::<Binding>()` | A concrete mutation binding owned only by its installed conditional, without ordinary delivery |
 | `operation::<Op>()` | A declared operation on the root-composition builder |
 | `conditional_operation::<Op>()` and `conditional_operation_with_requirement_and_external_input` | A conditional operation |
 | `provides::<Port>()` | An output port this feature provides |
@@ -494,7 +495,8 @@ Resolve external input, admit its captured revision and pass the accepted values
 into the original mutation intent.
 
 The `worth_query_feature_spec!` macro on the decl facade lowers
-`action(Binding, Delivery) { ... };` and `native_action(Binding) { ... };`
+`action(Binding, Delivery) { ... };`, `native_action(Binding) { ... };` and
+`conditional_native_action(Binding) { ... };`
 through that same builder. Clauses are `locality_and_change(Scope, Shape);`,
 `correspondence(Correspondence);`, `evaluated_requirement(Rule);` and
 `external_input(Provider);`. Empty blocks are valid. Clause order preserves
@@ -506,6 +508,25 @@ as staging, authority/phase certification or explicit branch/host control.
 Ordinary product mutations and retries use explicit owning delivery, including
 when a native caller also consumes that occurrence. Native required-output
 membership comes from actual declared roots; there is no native output toggle.
+
+When an installed conditional owns a mutation binding that requires program
+membership, declare that binding with `.conditional_native_action::<Binding>()`
+and `.finish_action()`, or the equivalent capsule clause:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+worth_query_feature_spec!(root(ProductSchema, LoadFeature);
+    conditional_native_action(ResolveLoadBinding) {};
+)
+```
+
+The binding supplies its operation, input, identity and workflow requirements.
+The constructor declares conditional ownership and no ordinary delivery.
+`conditional_operation(Op)` alone declares no mutation binding membership;
+adding a separate `native_action(Binding)` conflicts with conditional ownership.
+Install the real matching conditional, handler and producer in the contribution.
+The exact declared and installed conditional operation sets must still agree.
 
 ### 3.3 Declare the program
 

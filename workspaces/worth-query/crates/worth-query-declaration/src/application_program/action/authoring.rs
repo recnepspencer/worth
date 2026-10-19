@@ -12,7 +12,7 @@ use super::super::{
 };
 use super::{
     ApplicationActionDeclaration, ApplicationActionDelivery, ApplicationActionInstanceRef,
-    ApplicationActionShape,
+    ApplicationActionShape, ApplicationConditionalNativeActionInstanceRef,
 };
 
 /// One unfinished action. Only `finish_action` restores feature authoring.
@@ -199,6 +199,21 @@ where
             .action
             .attach_delivery::<Schema, Binding, Delivery>();
         builder
+    }
+
+    pub(in crate::application_program) fn conditional_native(
+        parent: ApplicationFeatureSpecBuilder<Schema, Instance, Feature>,
+    ) -> Self {
+        Self {
+            parent,
+            action: ApplicationConditionalNativeActionInstanceRef::<
+                Schema,
+                Instance,
+                Feature,
+                Binding,
+            >::declaration(),
+            marker: PhantomData,
+        }
     }
 
     pub(in crate::application_program) fn native(

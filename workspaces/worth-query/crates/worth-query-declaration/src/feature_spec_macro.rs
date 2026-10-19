@@ -22,6 +22,28 @@
 ///     );
 /// }
 /// ```
+/// Conditional native actions require a mutation binding, not an operation marker.
+/// ```compile_fail,E0277
+/// use worth_query_declaration::facade::{application_program::*, application_schema::*};
+/// fn operation_only<S, F, Op>()
+/// where S: ApplicationSchema + 'static, F: ApplicationFeature<S>,
+/// Op: ApplicationOperationMarkerIdentity<S> + 'static {
+///     let _ = worth_query_declaration::worth_query_feature_spec!(
+///         root(S, F); conditional_native_action(Op) {};
+///     );
+/// }
+/// ```
+/// Their installed conditional owns delivery; there is no delivery argument.
+/// ```compile_fail
+/// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema};
+/// fn delivery<S, F, B, D>()
+/// where S: ApplicationSchema + 'static, F: ApplicationFeature<S>,
+/// B: ApplicationMutationBinding<S>, D: ApplicationActionDelivery<S, B> {
+///     let _ = worth_query_declaration::worth_query_feature_spec!(
+///         root(S, F); conditional_native_action(B, D) {};
+///     );
+/// }
+/// ```
 #[macro_export]
 macro_rules! worth_query_feature_spec {
     (root($schema:ty, $feature:ty); $($members:tt)*) => {
@@ -67,6 +89,16 @@ macro_rules! worth_query_feature_spec {
         $crate::worth_query_feature_spec!(@members
             $crate::worth_query_feature_spec!(@action
                 $builder.native_action::<$binding>(); $($clauses)*
+            );
+            $($rest)*
+        )
+    };
+    (@members $builder:expr; conditional_native_action($binding:ty) {
+        $($clauses:tt)*
+    }; $($rest:tt)*) => {
+        $crate::worth_query_feature_spec!(@members
+            $crate::worth_query_feature_spec!(@action
+                $builder.conditional_native_action::<$binding>(); $($clauses)*
             );
             $($rest)*
         )

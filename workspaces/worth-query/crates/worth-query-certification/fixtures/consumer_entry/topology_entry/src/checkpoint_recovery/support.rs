@@ -11,7 +11,6 @@ use std::sync::{
 use worth_query_consumer_values::PositiveLength;
 use worth_query_host::facade::{
     application_contribution::WorthQueryApplicationContributionTuple,
-    declaration::authentication::WorthQueryPrincipalMappingStatus,
     primary_graph::{
         WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
         WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphBootstrap,
@@ -28,6 +27,8 @@ use worth_query_host::facade::{
 
 use super::*;
 mod installation;
+mod principal_bootstrap;
+pub(super) use principal_bootstrap::bind_model_owner;
 
 pub(super) type Application = application_installation::WorthQueryProgramApplicationRuntime<
     CheckpointSchema,

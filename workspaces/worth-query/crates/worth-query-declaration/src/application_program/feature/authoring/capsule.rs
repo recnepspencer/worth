@@ -123,6 +123,18 @@ where
         ApplicationActionSpecBuilder::native(self)
     }
 
+    /// Begin a concrete native binding owned exclusively by its installed conditional.
+    /// Binding membership, operation/input equality and workflow requirements come
+    /// from `Binding`; this declaration supplies no ordinary action delivery.
+    pub fn conditional_native_action<Binding>(
+        self,
+    ) -> ApplicationActionSpecBuilder<Schema, Instance, Feature, Binding>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        ApplicationActionSpecBuilder::conditional_native(self)
+    }
+
     pub(in crate::application_program) fn append_action(
         mut self,
         action: ApplicationActionDeclaration,

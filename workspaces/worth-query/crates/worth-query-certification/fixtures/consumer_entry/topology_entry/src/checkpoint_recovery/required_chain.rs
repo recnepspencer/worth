@@ -7,6 +7,7 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test as query_entries;
 
 mod binding;
+mod conditional_native_action;
 mod contact_readings;
 mod custody_source;
 mod diamond;

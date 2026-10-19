@@ -33,6 +33,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
     }
 
+    const REQUIRES_APPLICATION_PROGRAM: bool = Schema::PLANAR_REQUIRES_APPLICATION_PROGRAM;
+
     type Input = PlanarMutation;
     type InputBinding = PlanarMutationInputBinding;
     type Result = PlanarAdjustmentResult;
