@@ -2504,6 +2504,34 @@ The following fixture deliberately coordinates native output custody through
 
 ---
 
+#### Producer publication diagnostics
+
+Keep the original operation on a terminal or refused advance and borrow its
+returned `WorthQueryOperationAdvanceDenial::Outputs` denial. A native demand
+cause, under `DemandExecution` or `Demand(Demand(..))`, exposes
+`WorthQueryOutputDemandDenial` through `host::primary_graph`. Inspect
+`publication_companion_stop()` and `producer_admission_stop()` separately; their
+getters identify the original commit or producer-admission boundary. The
+[host facade example](../workspaces/worth-query/crates/worth-query-host/src/facade.rs)
+compiles this borrow-only path without consuming the operation or its cleanup.
+
+`publication_companion_stop()` retains the original `CompanionPreflightStop` when a
+producer commit maps a publication-companion resource refusal. Preparation exhaustion
+carries `required` and `maximum` bytes; retained-companion exhaustion carries
+`requested`, `retained` and `maximum` bytes. Work exhaustion preserves
+`required` when supplied and `maximum`. Counter overflow stays an overflow
+without a fabricated quote. Other denial paths return `None`; that absence does
+not identify a budget. `producer_admission_stop()` instead retains the native
+stop from producer preparation or source/output readmission, including topology,
+selected source/position, a foreign cell or a registration change, as well as
+original meter stops. The existing denial kind remains unchanged: those
+structural stops still report `RetentionBudgetExceeded`. Inspect the native stop
+to identify the cause.
+If neither getter supplies a stop, the cause remains unknown: scratch and other
+denial paths need not originate in a native companion stop. These diagnostics
+neither change kind or recovery posture nor authorize a retry, a capacity
+increase, output completion or cleanup.
+
 ### 5.5 Own a complete no-source output tree
 
 Use the ordinary demand builder when a read request needs the complete installed
@@ -2618,8 +2646,12 @@ projection delivers only through its declared read (`read_current`,
 known gap, not permission to pair a unit gate with a replacement selector. The request's scope is checked fresh. A
 foreign runtime, branch or observation is refused before any installed meaning is
 read. Bare `request.at(&observation).require_current_program_output(...)` checks
-lineage only. It neither revalidates the selected action or root nor replaces
-this gate. Success returns `()` because the caller already holds the
+lineage only: its output witness, comparable source facts and original consumed
+outputs at that same native observation. Changed upstream facts refuse current
+delivery even before regeneration; an unresolved upstream remains pending,
+never current. Missing or empty comparable facts still require the original
+own-publication decision. This check neither revalidates the selected action or
+root nor replaces this gate. Success returns `()` because the caller already holds the
 observation. Read every displayed fact at that same observation.
 
 <!-- illustrative -->

@@ -6,7 +6,7 @@ use worth_relational::facade::mvcc::{
     CompanionPreflightStop as Stop, RelationalPublicationDeferred,
 };
 
-fn stopped(stop: Stop) -> WorthQueryOutputDemandDenialKind {
+fn stopped(stop: Stop) -> WorthQueryOutputDemandDenial {
     let deferred = WorthQueryProviderSessionCommitDeferred::new(
         WorthQueryProviderSessionCommitDeferredKind::RelationalDeferred(
             RelationalPublicationDeferred::CompanionPreflight(stop),
@@ -20,30 +20,62 @@ fn stopped(stop: Stop) -> WorthQueryOutputDemandDenialKind {
         ),
     )
     .unwrap_err()
-    .kind()
 }
 
 #[test]
 fn a_commit_a_companion_has_no_room_for_stops_for_that_budget() {
+    use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
     use WorthQueryOutputDemandDenialKind as Kind;
-    let retained = Stop::RetainedCompanionCapacityExhausted {
-        requested: 2,
-        retained: 1,
-        maximum: 2,
-    };
-    assert_eq!(stopped(retained), Kind::RetentionBudgetExceeded);
-    let prepared = Stop::PreparationMemoryExhausted {
-        required: 2,
-        maximum: 1,
-    };
-    assert_eq!(stopped(prepared), Kind::RetentionBudgetExceeded);
-    let work = Stop::WorkExhausted {
-        required: 2,
-        maximum: 1,
-    };
-    assert_eq!(stopped(work), Kind::WorkBudgetExceeded);
+    for (stop, expected_kind) in [
+        (
+            Stop::RetainedCompanionCapacityExhausted {
+                requested: 2,
+                retained: 1,
+                maximum: 2,
+            },
+            Kind::RetentionBudgetExceeded,
+        ),
+        (
+            Stop::PreparationMemoryExhausted {
+                required: 2,
+                maximum: 1,
+            },
+            Kind::RetentionBudgetExceeded,
+        ),
+        (
+            Stop::PreparationMemoryCounterOverflow,
+            Kind::RetentionBudgetExceeded,
+        ),
+        (
+            Stop::WorkExhausted {
+                required: 2,
+                maximum: 1,
+            },
+            Kind::WorkBudgetExceeded,
+        ),
+        (
+            Stop::WorkExhaustedWithoutRequirement { maximum: 1 },
+            Kind::WorkBudgetExceeded,
+        ),
+        (Stop::WorkCounterOverflow, Kind::WorkBudgetExceeded),
+    ] {
+        let observed = stopped(stop);
+        assert_eq!(observed.kind(), expected_kind);
+        assert_eq!(
+            observed.recovery_posture(),
+            WorthQueryOutputDemandRecoveryPosture::Terminal
+        );
+        assert_eq!(observed.subject(), "producer");
+        assert_eq!(observed.publication_companion_stop(), Some(stop));
+        assert_eq!(observed.producer_admission_stop(), None);
+        let diagnostic = observed.clone();
+        assert_eq!(diagnostic.publication_companion_stop(), Some(stop));
+        assert_eq!(diagnostic, observed);
+    }
     // A companion that is not ready is no budget of the advance.
-    assert_eq!(stopped(Stop::TopologyPending), Kind::ProducerUnavailable);
+    let pending = stopped(Stop::TopologyPending);
+    assert_eq!(pending.kind(), Kind::ProducerUnavailable);
+    assert_eq!(pending.publication_companion_stop(), None);
 }
 
 #[test]

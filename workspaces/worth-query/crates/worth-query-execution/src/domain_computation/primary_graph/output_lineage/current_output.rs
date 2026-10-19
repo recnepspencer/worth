@@ -4,6 +4,7 @@ mod receipt_stops;
 mod retained_candidates;
 
 use super::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::{Arc, OnceLock};
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -17,10 +18,11 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 pub(in crate::domain_computation::primary_graph) struct RetainedOutputCurrentnessRead {
-    pub(in crate::domain_computation::primary_graph) _computation: super::CurrentComputation,
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
-    pub(in crate::domain_computation::primary_graph) facts: super::ComparableSourceFacts,
+    pub(in crate::domain_computation::primary_graph) facts: Option<super::ComparableSourceFacts>,
+    pub(in crate::domain_computation::primary_graph) consumed_outputs:
+        Arc<[ConsumedOutputEvidence]>,
     pub(in crate::domain_computation::primary_graph) native_output_witness:
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// The facts and the witness are everything this output depends on.
@@ -238,7 +240,10 @@ impl WorthQueryApplicationOutputLineage {
             execution,
             admission,
         )
-        .map(|facts| facts.is_some())
+        .map(|read| {
+            read.and_then(|read| read.facts)
+                .is_some_and(|facts| !facts.is_empty())
+        })
     }
 
     /// A stable authority names one immutable alias row. Selection must still
@@ -312,17 +317,20 @@ fn retained_currentness_read(
         .observed_source_facts()
         .and_then(|facts| facts.for_comparison())
         .filter(|facts| !facts.is_empty());
-    let Some(facts) = facts else { return Ok(None) };
-    let computation = facts.computation();
+    // Missing comparable facts must not hide the original consumed lineage.
+    // With neither, preserve the own-publication fallback at the caller.
+    if facts.is_none() && recorded.consumed_outputs.is_empty() {
+        return Ok(None);
+    }
     let origin = recorded
         .performed_origin
         .as_ref()
         .and_then(|cell| cell.get())
         .unwrap_or(recorded);
     Ok(Some(RetainedOutputCurrentnessRead {
-        _computation: computation,
         identity: Arc::clone(&recorded.settlement_identity),
         facts,
+        consumed_outputs: Arc::clone(&recorded.consumed_outputs),
         native_output_witness: origin.native_output_witness_cell().map(Arc::clone),
         consumed_nothing: recorded.consumed_outputs.is_empty()
             && recorded.performed_origin.is_none(),

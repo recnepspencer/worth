@@ -379,7 +379,8 @@ where
                     "settled output lineage read unavailable",
                 )
             })?
-            .map(|read| read.facts)
+            .and_then(|read| read.facts)
+            .filter(|facts| !facts.is_empty())
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::Superseded,
