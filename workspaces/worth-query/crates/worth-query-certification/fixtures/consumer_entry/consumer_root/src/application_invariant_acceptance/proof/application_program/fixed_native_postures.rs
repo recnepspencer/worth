@@ -88,7 +88,7 @@ fn terminal_court(interference: Interference) {
         .pause_after_application_candidate_preparation_for_test(NonZeroUsize::MIN);
     let terminal = std::thread::scope(|threads| {
         let (release, released) = std::sync::mpsc::sync_channel::<()>(0);
-        let application = &world.application;
+        let application = world.application.runtime();
         let adapter = &adapter;
         let input = &input;
         let pause = &pause;

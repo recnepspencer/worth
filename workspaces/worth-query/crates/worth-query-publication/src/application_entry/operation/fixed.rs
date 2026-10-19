@@ -54,6 +54,20 @@ where
     pub fn branch(&self) -> worth_query_execution::facade::product::WorthQueryProductBranch {
         self.description.branch
     }
+
+    /// Borrows the original source receipt while this owner holds output preparation.
+    /// Capture descriptive fields before advancing the outputs. `None` means the
+    /// receipt is unavailable in this phase, not that no publication occurred.
+    /// This borrow grants no currentness, retry, or publication authority.
+    pub fn prepared_source_receipt(
+        &self,
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt>
+    {
+        match &self.state {
+            FixedState::Preparation(preparation) => Some(preparation.receipt()),
+            _ => None,
+        }
+    }
 }
 
 pub(super) enum FixedState<Schema, Intent, Program, Root>

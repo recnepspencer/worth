@@ -165,6 +165,17 @@ Recovery promotes the original native carrier; registered replay rejoins its
 original outputs without running the source handler. Recovered evidence does not
 manufacture the original handler result.
 
+At the Fixed source-preparation boundary, `prepared_source_receipt()` borrows the
+actual original action receipt. Capture any needed descriptive runtime/scope,
+installed binding, product incarnation and publication generation before the next
+`advance` starts outputs; the borrow must end before moving that same owner.
+`None` means the receipt is unavailable in the current phase, not that no
+publication occurred. Descriptions grant no currentness, selection, retry or
+publication authority. A settled output's `root_receipt()` belongs to its producer
+and cannot identify the original source action. Observe semantic membership as a
+multiset, preserving multiplicity and rejecting ambiguous projected identities;
+no raw settlement slot is needed. Continue and close the original native owners.
+
 A fixed settled owner borrows its complete settlement for `read_current` or a
 finite `read_current_with_policy`; the currentness check and declared query share
 one observation and one native phase. Read refusal retains the owner. Stale
