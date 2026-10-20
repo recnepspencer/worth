@@ -4,19 +4,25 @@ use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, SignalConditionalRetentionDenial,
     SignalConditionalRetentionReservation,
 };
-use crate::runtime_policy::{SignalConditionalTemporalBudget, SignalRuntimePolicy};
+use crate::runtime_policy::{
+    SignalConditionalEvaluationBudget, SignalConditionalTemporalBudget, SignalRuntimePolicy,
+};
 
 use super::retention::partition_charge;
 use super::tests::claimed_service_with_policy;
 use super::SignalConditionalTemporalPartitionDenial as Denial;
 
 pub(super) fn policy(partitions: usize, wakes: usize) -> SignalRuntimePolicy {
-    SignalRuntimePolicy::development().with_conditional_temporal_budget(
-        SignalConditionalTemporalBudget {
-            maximum_live_partitions: partitions,
-            maximum_reserved_active_wakes: wakes,
-        },
-    )
+    SignalRuntimePolicy::development()
+        .with_conditional_evaluation_budget(SignalConditionalEvaluationBudget {
+            maximum_retained_slots: Some(128),
+            maximum_retained_bytes: Some(512 * 1024 * 1024),
+            maximum_attempt_visits: None,
+        })
+        .with_conditional_temporal_budget(SignalConditionalTemporalBudget {
+            maximum_live_partitions: Some(partitions),
+            maximum_reserved_active_wakes: Some(wakes),
+        })
 }
 
 #[test]
@@ -30,7 +36,8 @@ fn temporal_quotas_are_aggregate_and_distinct_from_evaluation_slots() {
             .reserve(
                 requested
                     .conditional_evaluation_budget
-                    .maximum_retained_slots,
+                    .maximum_retained_slots
+                    .unwrap(),
                 Charge::ZERO,
             )
             .unwrap();
@@ -74,6 +81,7 @@ fn temporal_byte_denial_preserves_registry_and_identity() {
                 requested
                     .conditional_evaluation_budget
                     .maximum_retained_bytes
+                    .unwrap()
                     - baseline.1
                     - (partition_bytes - 1)
                     - handle,

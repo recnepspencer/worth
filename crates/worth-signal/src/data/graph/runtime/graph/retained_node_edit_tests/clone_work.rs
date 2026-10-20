@@ -34,7 +34,7 @@ fn retained_draft_admits_warm_and_cold_byte_copies_before_the_edit_callback() {
         let denied = arena.prepare_retained_node_edits(
             &test_ledger(),
             &[0],
-            maximum,
+            Some(maximum),
             &mut Work::new(Some(maximum_visits)),
             |_| panic!("copy work must be admitted before the edit"),
         );
@@ -47,15 +47,21 @@ fn retained_draft_admits_warm_and_cold_byte_copies_before_the_edit_callback() {
 
         let mut work = Work::new(Some(200_000));
         let RetainedNodeEditPreparation::Ready(prepared) = arena
-            .prepare_retained_node_edits(&test_ledger(), &[0], maximum, &mut work, |payloads| {
-                let payload = &mut payloads[0];
-                NodeEvaluationMutation::draft(
-                    &mut payload.hot,
-                    &mut payload.warm,
-                    &mut payload.cold,
-                )
-                .set_state(NodeState::Clean);
-            })
+            .prepare_retained_node_edits(
+                &test_ledger(),
+                &[0],
+                Some(maximum),
+                &mut work,
+                |payloads| {
+                    let payload = &mut payloads[0];
+                    NodeEvaluationMutation::draft(
+                        &mut payload.hot,
+                        &mut payload.warm,
+                        &mut payload.cold,
+                    )
+                    .set_state(NodeState::Clean);
+                },
+            )
             .unwrap()
         else {
             panic!("admitted payload copy must prepare");

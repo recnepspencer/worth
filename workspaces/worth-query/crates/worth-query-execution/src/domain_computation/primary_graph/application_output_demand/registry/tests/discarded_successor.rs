@@ -9,10 +9,12 @@ fn refuse_custody(registry: &WorthQueryOutputDemandRegistry) {
     let mut state = registry.state.lock().unwrap();
     // All existing storage remains funded. This admission has no room for
     // one more frame's actual, positive interest storage.
-    state.required_budget_bytes = state.required_reserved_bytes
-        + state
-            .required_custody_retained_bytes
-            .load(std::sync::atomic::Ordering::Acquire);
+    state.required_budget_bytes = Some(
+        state.required_reserved_bytes
+            + state
+                .required_custody_retained_bytes
+                .load(std::sync::atomic::Ordering::Acquire),
+    );
     drop(state);
     let stop = registry.reserve_held_successor_capacity(1).err().unwrap();
     assert_eq!(

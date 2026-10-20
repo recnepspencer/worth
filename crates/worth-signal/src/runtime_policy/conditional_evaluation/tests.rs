@@ -2,10 +2,10 @@ use super::*;
 use crate::runtime_policy::{compile_signal_runtime_policy, SignalRuntimePolicyRequest};
 
 #[test]
-fn conditional_evaluation_physical_bounds_are_required_and_work_is_optional() {
+fn conditional_evaluation_policy_is_required_positive_when_present_and_exact() {
     let budget = SignalConditionalEvaluationBudget {
-        maximum_retained_slots: 3,
-        maximum_retained_bytes: 8192,
+        maximum_retained_slots: Some(3),
+        maximum_retained_bytes: Some(8192),
         maximum_attempt_visits: Some(97),
     };
     let request = SignalRuntimePolicy::development().with_conditional_evaluation_budget(budget);
@@ -42,11 +42,11 @@ fn conditional_evaluation_physical_bounds_are_required_and_work_is_optional() {
     }
     for invalid in [
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 0,
+            maximum_retained_slots: Some(0),
             ..budget
         },
         SignalConditionalEvaluationBudget {
-            maximum_retained_bytes: 0,
+            maximum_retained_bytes: Some(0),
             ..budget
         },
         SignalConditionalEvaluationBudget {
@@ -64,9 +64,11 @@ fn conditional_evaluation_physical_bounds_are_required_and_work_is_optional() {
 }
 
 #[test]
-fn development_attempt_work_is_absent_and_round_trips_without_a_numeric_sentinel() {
+fn development_host_quotas_are_absent_and_round_trip_without_numeric_sentinels() {
     let budget = SignalConditionalEvaluationBudget::development();
     assert_eq!(budget.maximum_attempt_visits, None);
+    assert_eq!(budget.maximum_retained_slots, None);
+    assert_eq!(budget.maximum_retained_bytes, None);
     let installed = compile_signal_runtime_policy(SignalRuntimePolicyRequest::new(
         SignalRuntimePolicy::development().with_conditional_evaluation_budget(budget),
     ))

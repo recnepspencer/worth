@@ -14,7 +14,8 @@ fn one_binding_with_both_postures_keeps_a_distinct_preserve_row() {
         .unwrap();
     let first = (0..64)
         .find_map(|_| match initial.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the dual-posture binding initially settles");
@@ -62,7 +63,8 @@ fn one_binding_with_both_postures_keeps_a_distinct_preserve_row() {
     drop(source);
     let second = (0..64)
         .find_map(|_| match initial.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the same binding advances its Preserve row");
@@ -89,7 +91,8 @@ fn held_required_initial_refreshes_through_preserve_and_reopens_current() {
         .unwrap();
     let first = (0..64)
         .find_map(|_| match initial.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the real Initial output settles");
@@ -123,7 +126,8 @@ fn held_required_initial_refreshes_through_preserve_and_reopens_current() {
     drop(source);
     let second = (0..64)
         .find_map(|_| match initial.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the held Initial demand follows the actual Preserve successor");
@@ -159,7 +163,8 @@ fn held_required_initial_refreshes_through_preserve_and_reopens_current() {
         .unwrap();
     let restored = (0..64)
         .find_map(|_| match demand.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the current checkpoint reopens");

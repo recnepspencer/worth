@@ -66,8 +66,8 @@ impl crate::facade::BridgeConditionalComputeProvider for CountingCompute {
 #[test]
 fn clock_budget_denial_preserves_installation_and_close_returns_its_capacity() {
     let (owner, lowering) = owner(BridgeConditionalRetentionBudget {
-        maximum_managed_clocks: 1,
-        maximum_reserved_temporal_intents: 2,
+        maximum_managed_clocks: Some(1),
+        maximum_reserved_temporal_intents: Some(2),
         ..BridgeConditionalRetentionBudget::development()
     });
     let install = |name: &str, wakes| {
@@ -118,7 +118,7 @@ fn clock_budget_denial_preserves_installation_and_close_returns_its_capacity() {
 #[test]
 fn insufficient_bridge_bytes_deny_before_clock_membership() {
     let (owner, lowering) = owner(BridgeConditionalRetentionBudget {
-        maximum_retained_bytes: 1,
+        maximum_retained_bytes: Some(1),
         ..BridgeConditionalRetentionBudget::development()
     });
     let result = owner.install_managed_clock(BridgeManagedClockInstallationParts {

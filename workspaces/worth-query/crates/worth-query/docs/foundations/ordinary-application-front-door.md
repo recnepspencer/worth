@@ -553,7 +553,7 @@ ambiguous bindings before it publishes the application.
 
 `request.demand(demand).controls(controls).start()` selects the exact source and
 one applicable installed producer under finite work and retained-byte limits.
-`advance(&fresh_request)` returns `Pending` or `Settled`. A settlement carries the
+`advance(&fresh_request)` returns `Progressed`, `Pending` or `Settled`. `Progressed` permits the same original owner to continue; `Pending` yields rather than spinning. Convenience `settle` follows progress under the same request until settlement, waiting, interruption or an explicit finite step boundary. A settlement carries the
 committed receipt, observed source, exact retained observation, and actual
 readiness delivery. The handle exposes owner notifications and `close()` releases
 the interest. Source drift returns `Superseded`; output readiness follows the

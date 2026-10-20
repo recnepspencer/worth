@@ -30,14 +30,16 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         .unwrap();
     let initial_a = (0..256)
         .find_map(|_| match a.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(v) => Some(v),
         })
         .unwrap();
     assert_eq!(initial_a.producer_contacts_in_this_demand(), 1);
     let old_b = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(v) => Some(v),
         })
         .unwrap();
@@ -74,7 +76,8 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
     };
     let settled = (0..256)
         .find_map(|_| match outputs.advance(&application, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(v) => Some(v),
         })
         .expect("the real program wave must settle after selected-program production");
@@ -89,7 +92,8 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         .unwrap();
     let reused = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(v) => Some(v),
         })
         .unwrap();

@@ -243,7 +243,11 @@ pub(super) fn invalidation(
             retained_invalidation_bytes,
             retained_positions,
         ),
-        None => Installation::new(None, Some(retained_invalidation_bytes), retained_positions),
+        None => Installation::new(
+            None,
+            Some(retained_invalidation_bytes),
+            Some(retained_positions),
+        ),
     };
     WorthQueryInvalidationResources::install(installation)
         .expect("the Query invalidation installation is valid")

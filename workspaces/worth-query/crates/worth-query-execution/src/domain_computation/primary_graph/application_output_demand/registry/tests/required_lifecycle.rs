@@ -140,7 +140,7 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
         )
         .expect("the exact output source is bound");
     registry.state.lock().unwrap().obligation_budget_bytes =
-        std::mem::size_of::<super::super::PerformedOutputObligation>() - 1;
+        Some(std::mem::size_of::<super::super::PerformedOutputObligation>() - 1);
     let denial = match registry.admit_performed(
         output.clone(),
         &commit,
@@ -201,8 +201,11 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
 
 #[test]
 fn required_index_capacity_denies_before_an_interest_is_installed() {
-    let registry =
-        WorthQueryOutputDemandRegistry::with_budgets(4 * 1_024 * 1_024, 64 * 1_024 * 1_024, 1);
+    let registry = WorthQueryOutputDemandRegistry::with_budgets(
+        Some(4 * 1_024 * 1_024),
+        Some(64 * 1_024 * 1_024),
+        Some(1),
+    );
     let output = key("required-capacity", 1, 1);
     let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
     let denial = match registry.admit(

@@ -309,7 +309,8 @@ fn settle_for<'application, 'principal, 'scope>(
                 .advance(application, request)
                 .expect("the program output advances")
             {
-                WorthQueryApplicationProgramOutputProgress::Pending => None,
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => None,
                 WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
             }
         })

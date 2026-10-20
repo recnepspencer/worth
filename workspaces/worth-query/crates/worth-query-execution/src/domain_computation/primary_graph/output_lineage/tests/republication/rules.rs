@@ -223,7 +223,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         );
 
         // The recomposed sequence is admitted and reserved before it exists.
-        stage.lineage.retention = LineageRetentionLedger::new(0);
+        stage.lineage.retention = LineageRetentionLedger::new(Some(0));
         assert!(stage
             .republish(
                 suspended_generation,

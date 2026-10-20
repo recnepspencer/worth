@@ -12,7 +12,7 @@ pub(super) struct LineageRetentionLedger {
 }
 
 struct LineageRetentionState {
-    maximum_bytes: u64,
+    maximum_bytes: Option<u64>,
     retained_bytes: u64,
 }
 
@@ -22,7 +22,7 @@ pub(super) struct RetainedLineageCapacity {
 }
 
 impl LineageRetentionLedger {
-    pub(super) fn new(maximum_bytes: u64) -> Self {
+    pub(super) fn new(maximum_bytes: Option<u64>) -> Self {
         Self {
             state: Arc::new(Mutex::new(LineageRetentionState {
                 maximum_bytes,
@@ -34,7 +34,7 @@ impl LineageRetentionLedger {
 
     pub(super) fn install(
         &mut self,
-        maximum_bytes: u64,
+        maximum_bytes: Option<u64>,
         history_positions: Option<std::num::NonZeroUsize>,
     ) {
         self.history_positions = history_positions;
@@ -42,7 +42,7 @@ impl LineageRetentionLedger {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        assert!(state.retained_bytes <= maximum_bytes);
+        assert!(maximum_bytes.is_none_or(|maximum| state.retained_bytes <= maximum));
         state.maximum_bytes = maximum_bytes;
     }
 
@@ -59,7 +59,10 @@ impl LineageRetentionLedger {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let required = state.retained_bytes.checked_add(bytes).ok_or_else(denial)?;
-        if required > state.maximum_bytes {
+        if state
+            .maximum_bytes
+            .is_some_and(|maximum| required > maximum)
+        {
             return Err(denial());
         }
         state.retained_bytes = required;
@@ -83,7 +86,7 @@ impl LineageRetentionLedger {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let bytes = state
             .maximum_bytes
-            .checked_sub(state.retained_bytes)
+            .and_then(|maximum| maximum.checked_sub(state.retained_bytes))
             .and_then(|free| free.checked_sub(remaining))
             .ok_or_else(denial)?;
         state.retained_bytes += bytes;
@@ -107,7 +110,7 @@ impl Default for LineageRetentionLedger {
     fn default() -> Self {
         let maximum = super::super::super::execution_runtime::WorthQueryOutputDemandResourceProfile::standard()
             .lineage_retained_bytes();
-        Self::new(maximum as u64)
+        Self::new(maximum.map(|bytes| bytes as u64))
     }
 }
 
@@ -124,7 +127,10 @@ impl RetainedLineageCapacity {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let required = state.retained_bytes.checked_add(bytes).ok_or_else(denial)?;
         let owned = self.bytes.checked_add(bytes).ok_or_else(denial)?;
-        if required > state.maximum_bytes {
+        if state
+            .maximum_bytes
+            .is_some_and(|maximum| required > maximum)
+        {
             return Err(denial());
         }
         state.retained_bytes = required;
@@ -174,3 +180,7 @@ fn denial() -> WorthQueryOutputDemandDenial {
         "retained output lineage capacity is exhausted",
     )
 }
+
+#[cfg(test)]
+#[path = "retained_capacity_tests.rs"]
+mod tests;

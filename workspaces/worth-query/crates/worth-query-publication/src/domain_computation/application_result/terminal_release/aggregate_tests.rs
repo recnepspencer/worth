@@ -10,7 +10,7 @@ fn aggregate_requires_every_terminal_release_axis() {
         application_basis: Basis::Released,
         graph_read_basis: Basis::Released,
         result_buffer: Buffer::Released {
-            limit_bytes: 64,
+            limit_bytes: Some(64),
             peak_bytes: 32,
         },
         released_graph_capacity_reservation_count: 1,
@@ -34,7 +34,7 @@ fn aggregate_requires_every_terminal_release_axis() {
     .resources_released());
     assert!(!Release {
         result_buffer: Buffer::ReleaseFailed {
-            limit_bytes: 64,
+            limit_bytes: Some(64),
             peak_bytes: 32,
         },
         ..released

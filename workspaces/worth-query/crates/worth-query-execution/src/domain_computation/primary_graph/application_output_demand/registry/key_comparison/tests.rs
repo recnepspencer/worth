@@ -17,7 +17,7 @@ fn empty_predecessor_selection_compares_no_predecessor_keys() {
     assert_eq!((work.maximum, work.total), (0, 0));
     assert_eq!(work.sort_bound(3), Some(0));
     assert_eq!(
-        super::super::prerequisite_work::prior_release_work(12, 0, work.maximum).unwrap(),
+        super::super::prerequisite_work::prior_release_work(Some(12), 0, work.maximum).unwrap(),
         0
     );
 }

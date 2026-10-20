@@ -14,7 +14,7 @@ impl NodeArena {
         &self,
         ledger: &Arc<SignalConditionalRetentionLedger>,
         indices: &[usize],
-        maximum: RetainedStorageCharge,
+        maximum: Option<RetainedStorageCharge>,
         work: &mut RetainedStoragePreparation,
         edit: impl FnOnce(&mut [RetainedNodePayload]) -> R,
     ) -> Result<RetainedNodeEditPreparation<R>, RetainedNodeEditDenial> {

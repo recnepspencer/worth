@@ -102,7 +102,7 @@ fn large_carrier_denial_allocates_only_projection_metadata_before_decoder() {
     // Serial focused lane measures this real call, excluding fixture/label seed.
     // Any eager scalar clone or String binding decode would allocate >=128KiB.
     let payload = "q".repeat(128 * 1024);
-    let world = installed_authorization_world_with_label(&payload);
+    let world = installed_authorization_world_with_label(&payload, Default::default());
     let request = live_scope();
     let principal = world
         .application
@@ -191,10 +191,10 @@ fn isolated_ordinary_field_decode() {
         if std::env::var_os("WORTH_QUERY_BORROWED_FIELD_DECODE_PROBE").is_none() {
             return;
         }
-        let small = installed_authorization_world_with_label("small");
+        let small = installed_authorization_world_with_label("small", Default::default());
         let (_, fixed_allocation) = ordinary_field_allocation(&small);
         let payload = "q".repeat(128 * 1024);
-        let large = installed_authorization_world_with_label(&payload);
+        let large = installed_authorization_world_with_label(&payload, Default::default());
         let (actual, allocated) = ordinary_field_allocation(&large);
         assert_eq!(actual, payload);
         assert!(

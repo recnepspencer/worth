@@ -40,11 +40,13 @@ impl PreparedBatchRead {
             }
         }
         let rows = batch.claim_memory(
-            batch.inline_result_bytes(
-                plan.graph_read_plan()
-                    .budget_check()
-                    .max_inline_result_bytes(),
-            ),
+            batch
+                .inline_result_bytes(
+                    plan.graph_read_plan()
+                        .budget_check()
+                        .max_inline_result_bytes(),
+                )
+                .unwrap_or(0),
         )?;
         let reservation = batch.reserve_read(
             plan.controls
@@ -65,14 +67,16 @@ impl PreparedBatchRead {
     /// failure both settle the native root/tree work. The row claim accompanies
     /// a successful raw result until the owner's projection completes.
     pub(super) fn settle(
-        self,
+        mut self,
         actual: Option<usize>,
+        result_bytes: usize,
     ) -> Result<Option<WorthQueryApplicationQueryBatchMemory>, Resource> {
         if let Some(actual) = actual {
             self.reservation.settle(actual)?;
             if let Some(denial) = self.meter.memory_denial() {
                 return Err(denial);
             }
+            self.rows.grow_to(result_bytes)?;
             Ok(Some(self.rows))
         } else {
             Ok(None)

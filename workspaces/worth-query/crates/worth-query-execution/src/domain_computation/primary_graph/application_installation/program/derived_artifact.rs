@@ -93,7 +93,7 @@ where
         );
         let denied = if limits.producer_work() == Some(0) {
             Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
-        } else if limits.producer_retained_bytes() == 0 {
+        } else if limits.producer_retained_bytes() == Some(0) {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         } else {
             None

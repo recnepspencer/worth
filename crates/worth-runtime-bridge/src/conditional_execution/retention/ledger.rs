@@ -52,7 +52,7 @@ impl BridgeRetentionLedger {
         }))
     }
 
-    pub(in crate::conditional_execution) fn maximum_preparation_visits(&self) -> usize {
+    pub(in crate::conditional_execution) fn maximum_preparation_visits(&self) -> Option<usize> {
         self.budget.maximum_preparation_visits
     }
 
@@ -72,17 +72,29 @@ impl BridgeRetentionLedger {
         let clocks_total = state
             .clocks
             .checked_add(clocks)
-            .filter(|n| *n <= self.budget.maximum_managed_clocks)
+            .filter(|n| {
+                self.budget
+                    .maximum_managed_clocks
+                    .is_none_or(|maximum| *n <= maximum)
+            })
             .ok_or(D::ClocksExhausted)?;
         let intents_total = state
             .intents
             .checked_add(intents)
-            .filter(|n| *n <= self.budget.maximum_reserved_temporal_intents)
+            .filter(|n| {
+                self.budget
+                    .maximum_reserved_temporal_intents
+                    .is_none_or(|maximum| *n <= maximum)
+            })
             .ok_or(D::IntentsExhausted)?;
         let bytes_total = state
             .bytes
             .checked_add(bytes)
-            .filter(|n| *n <= self.budget.maximum_retained_bytes)
+            .filter(|n| {
+                self.budget
+                    .maximum_retained_bytes
+                    .is_none_or(|maximum| *n <= maximum)
+            })
             .ok_or(D::BytesExhausted)?;
         state.clocks = clocks_total;
         state.intents = intents_total;
@@ -108,12 +120,20 @@ impl BridgeRetentionLedger {
         let definitions_total = state
             .definition_candidates
             .checked_add(1)
-            .filter(|n| *n <= self.budget.maximum_retained_definition_candidates)
+            .filter(|n| {
+                self.budget
+                    .maximum_retained_definition_candidates
+                    .is_none_or(|maximum| *n <= maximum)
+            })
             .ok_or(D::DefinitionCandidatesExhausted)?;
         let bytes_total = state
             .bytes
             .checked_add(bytes)
-            .filter(|n| *n <= self.budget.maximum_retained_bytes)
+            .filter(|n| {
+                self.budget
+                    .maximum_retained_bytes
+                    .is_none_or(|maximum| *n <= maximum)
+            })
             .ok_or(D::BytesExhausted)?;
         state.definition_candidates = definitions_total;
         state.bytes = bytes_total;

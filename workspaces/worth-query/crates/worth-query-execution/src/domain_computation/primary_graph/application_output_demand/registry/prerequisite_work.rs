@@ -12,8 +12,11 @@ pub(super) fn predecessor_lookup_work(
     predecessors: &[Arc<WorthQueryOutputDemandKey>],
     maximum_key_work: usize,
 ) -> Result<usize, WorthQueryOutputDemandDenial> {
-    let prospective_members = state.required_budget_bytes.max(1);
-    let tree_levels = usize::BITS as usize - prospective_members.leading_zeros() as usize;
+    let tree_levels = state
+        .required_budget_bytes
+        .map_or(usize::BITS as usize, |bytes| {
+            usize::BITS as usize - bytes.max(1).leading_zeros() as usize
+        });
     // records.get, required_keys.contains, prepare, then install. A B-tree
     // node may compare every resident key on each prospective level.
     let per_key = tree_levels
@@ -30,11 +33,13 @@ pub(super) fn predecessor_lookup_work(
 /// The prior edge set is released after the product effect, so charge its
 /// selected required-index lookups and removals while preparation can stop.
 pub(super) fn prior_release_work(
-    required_members: usize,
+    required_members: Option<usize>,
     prior_count: usize,
     maximum_key_work: usize,
 ) -> Result<usize, WorthQueryOutputDemandDenial> {
-    let levels = usize::BITS as usize - required_members.max(1).leading_zeros() as usize;
+    let levels = required_members.map_or(usize::BITS as usize, |members| {
+        usize::BITS as usize - members.max(1).leading_zeros() as usize
+    });
     prior_count
         .checked_mul(
             levels

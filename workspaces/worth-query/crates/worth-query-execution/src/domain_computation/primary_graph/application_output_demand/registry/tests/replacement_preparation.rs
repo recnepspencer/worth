@@ -273,7 +273,7 @@ fn replacement_aggregate_peak_denial_preserves_old_obligations() {
     let (registry, old, next, _) = fixture();
     {
         let mut state = registry.state.lock().unwrap();
-        state.obligation_budget_bytes = state.obligation_reserved_bytes;
+        state.obligation_budget_bytes = Some(state.obligation_reserved_bytes);
     }
     let denial = registry
         .finish_replaced_interest(&old, &next, "replacement", &mut record_admission())

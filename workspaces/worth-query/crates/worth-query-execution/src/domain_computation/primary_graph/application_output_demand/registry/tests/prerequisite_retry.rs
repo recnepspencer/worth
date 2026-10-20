@@ -162,10 +162,12 @@ fn a_refused_posting_retry_reuses_the_exact_settlement_vector_capacity() {
         let slot = std::mem::size_of::<(Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>, usize)>();
         assert!(state.required_reserved_bytes >= slot);
         original_budget = state.required_budget_bytes;
-        state.required_budget_bytes = state.required_reserved_bytes
-            + state
-                .required_custody_retained_bytes
-                .load(std::sync::atomic::Ordering::Acquire);
+        state.required_budget_bytes = Some(
+            state.required_reserved_bytes
+                + state
+                    .required_custody_retained_bytes
+                    .load(std::sync::atomic::Ordering::Acquire),
+        );
     }
     let (_lineage, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
     let denied = claims

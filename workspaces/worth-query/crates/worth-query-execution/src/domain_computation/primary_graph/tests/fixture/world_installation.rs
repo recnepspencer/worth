@@ -154,10 +154,12 @@ pub(in crate::domain_computation) fn installed_authorization_world(
 
 pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_label(
     label: &str,
+    resources: WorthQueryApplicationQueryResourceProfile,
 ) -> AuthorizationWorld {
     install_authorization_world(AuthorizationWorldSpec {
         owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
         primary_label: label,
+        resources,
         ..standard_spec()
     })
 }

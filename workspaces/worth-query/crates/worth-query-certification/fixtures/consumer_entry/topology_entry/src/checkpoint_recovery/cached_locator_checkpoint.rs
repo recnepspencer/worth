@@ -57,7 +57,8 @@ fn settle_final<'application>(
 > {
     (0..64)
         .find_map(|_| match demand.advance(request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
         })
         .expect("the ordinary final-output demand settles")
@@ -78,7 +79,8 @@ fn settle<'application>(
 > {
     (0..64)
         .find_map(|_| match demand.advance(request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
         })
         .expect("the ordinary native demand settles")

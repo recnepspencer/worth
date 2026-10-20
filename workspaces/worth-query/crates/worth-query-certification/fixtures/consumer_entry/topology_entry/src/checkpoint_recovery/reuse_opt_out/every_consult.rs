@@ -15,7 +15,8 @@ fn whole_selection_preserves_cancellation_at_every_consult() {
         .unwrap();
     let first = (0..64)
         .find_map(|_| match initial.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the real producer publishes the retained candidate");

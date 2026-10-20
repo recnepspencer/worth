@@ -50,7 +50,11 @@ pub(super) fn prepare<'a>(
     if state
         .obligation_reserved_bytes
         .checked_add(bytes)
-        .is_none_or(|peak| peak > state.obligation_budget_bytes)
+        .is_none_or(|peak| {
+            state
+                .obligation_budget_bytes
+                .is_some_and(|maximum| peak > maximum)
+        })
     {
         return Err(admission::performed_obligation_capacity_denial());
     }

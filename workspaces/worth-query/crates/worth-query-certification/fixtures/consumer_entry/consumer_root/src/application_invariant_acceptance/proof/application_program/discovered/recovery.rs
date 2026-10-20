@@ -81,7 +81,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
             .advance(&world.application, &request)
             .expect("discovered roots advance")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });
@@ -172,7 +173,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn n
             .advance(&world.application, &request)
             .expect("the sibling advances")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });
@@ -372,7 +374,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
             .advance(&world.application, &request)
             .expect("both roots recover")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });

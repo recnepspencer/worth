@@ -103,7 +103,8 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         .expect("fresh caller authority recovers the installed obligation");
     let settled = settle(
         || match recovered.advance(&world.application, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         },
     );

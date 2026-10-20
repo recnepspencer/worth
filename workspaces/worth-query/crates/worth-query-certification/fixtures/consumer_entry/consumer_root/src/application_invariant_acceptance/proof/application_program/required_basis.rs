@@ -64,7 +64,8 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
             .advance(&world.application, &request)
             .expect("first program advances")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });
@@ -113,7 +114,8 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
             .advance(&world.application, &request)
             .expect("later program advances")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });
@@ -185,7 +187,8 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
             .advance(&world.application, &request)
             .expect("recovered program advances")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });

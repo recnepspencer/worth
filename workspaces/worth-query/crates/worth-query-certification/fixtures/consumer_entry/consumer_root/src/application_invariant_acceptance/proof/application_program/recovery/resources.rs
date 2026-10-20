@@ -91,7 +91,8 @@ pub(in super::super) fn resource_denial_preserves_source_and_delivery(
             .advance(&world.application, &request)
             .unwrap()
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });

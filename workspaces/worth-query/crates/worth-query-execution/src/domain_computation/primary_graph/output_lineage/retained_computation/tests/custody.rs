@@ -154,9 +154,10 @@ fn a_refused_incoming_state_does_not_evict_an_existing_holder() {
     let (mut lineage, prior) = prior_record();
     let state = held(&prior);
     let baseline = lineage.retention.retained_bytes();
-    lineage
-        .retention
-        .install(baseline, Some(std::num::NonZeroUsize::new(1).unwrap()));
+    lineage.retention.install(
+        Some(baseline),
+        Some(std::num::NonZeroUsize::new(1).unwrap()),
+    );
     let mut successor = sealed_run_for_lineage_test();
     successor.cloned_from = Some(Arc::clone(&state));
     let published = lineage.retain_computation(
@@ -182,7 +183,7 @@ fn refusing_exclusive_ticket_growth_preserves_the_displaced_state() {
     let bytes = lineage.retention.retained_bytes();
     lineage
         .retention
-        .install(bytes, Some(std::num::NonZeroUsize::new(1).unwrap()));
+        .install(Some(bytes), Some(std::num::NonZeroUsize::new(1).unwrap()));
     let identity = Arc::clone(&prior.cell.get().unwrap().settlement_identity);
     assert!(prior
         .take_capacity(

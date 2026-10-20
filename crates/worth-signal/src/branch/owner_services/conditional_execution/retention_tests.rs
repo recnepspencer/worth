@@ -10,9 +10,10 @@ use crate::runtime_policy::{SignalConditionalEvaluationBudget, SignalRuntimePoli
 
 fn budget() -> SignalConditionalEvaluationBudget {
     SignalConditionalEvaluationBudget {
-        maximum_retained_slots: 2,
-        maximum_retained_bytes: 100
-            + 2 * std::mem::size_of::<SignalConditionalRetentionReservation>() as u64,
+        maximum_retained_slots: Some(2),
+        maximum_retained_bytes: Some(
+            100 + 2 * std::mem::size_of::<SignalConditionalRetentionReservation>() as u64,
+        ),
         maximum_attempt_visits: Some(97),
     }
 }
@@ -94,7 +95,7 @@ fn conditional_retention_growth_and_prepaid_split_preserve_exact_custody() {
     let maximum = 100 + 3 * handle;
     let ledger = SignalConditionalRetentionLedger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_bytes: maximum as u64,
+            maximum_retained_bytes: Some(maximum as u64),
             ..budget()
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
@@ -158,9 +159,9 @@ fn conditional_retention_ceiling_mismatch_denies_sealing_before_state_moves() {
         runtime.switch_branch(b.clone()).unwrap();
         let mut changed = common;
         if slots_mismatch {
-            changed.maximum_retained_slots += 1;
+            changed.maximum_retained_slots = changed.maximum_retained_slots.map(|slots| slots + 1);
         } else {
-            changed.maximum_retained_bytes += 1;
+            changed.maximum_retained_bytes = changed.maximum_retained_bytes.map(|bytes| bytes + 1);
         }
         runtime.set_runtime_policy(
             SignalRuntimePolicy::development().with_conditional_evaluation_budget(changed),
@@ -201,9 +202,9 @@ fn temporal_quota_mismatch_denies_sealing_before_state_moves() {
         runtime.switch_branch(b.clone()).unwrap();
         let mut changed = common.conditional_temporal_budget;
         if partitions_mismatch {
-            changed.maximum_live_partitions += 1;
+            changed.maximum_live_partitions = Some(1);
         } else {
-            changed.maximum_reserved_active_wakes += 1;
+            changed.maximum_reserved_active_wakes = Some(1);
         }
         runtime.set_runtime_policy(common.with_conditional_temporal_budget(changed));
         assert!(matches!(

@@ -299,7 +299,10 @@ fn a_restored_consumer_never_settles_over_a_stale_upstream() {
     let mut early = consumer!(court, rings[0].key("b"), at);
     let stop = (0..8)
         .find_map(|_| match early.demand.advance(court.request) {
-            Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
+            Ok(
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed,
+            ) => None,
             Ok(WorthQueryApplicationOutputDemandProgress::Settled(_)) => {
                 panic!("{at}: the consumer settles while its upstream is stale")
             }

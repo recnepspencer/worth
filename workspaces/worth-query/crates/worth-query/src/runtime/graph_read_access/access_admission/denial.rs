@@ -31,16 +31,16 @@ impl WorthQueryGraphReadAccessDenialKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphReadBudgetExceededDenial {
-    max_inline_index_bytes: usize,
+    max_inline_index_bytes: Option<usize>,
     estimated_index_bytes: usize,
-    max_inline_result_bytes: usize,
+    max_inline_result_bytes: Option<usize>,
     estimated_result_bytes: usize,
-    max_inline_intermediate_set_size: usize,
+    max_inline_intermediate_set_size: Option<usize>,
     estimated_intermediate_set_size: usize,
 }
 
 impl WorthQueryGraphReadBudgetExceededDenial {
-    pub fn max_inline_index_bytes(&self) -> usize {
+    pub fn max_inline_index_bytes(&self) -> Option<usize> {
         self.max_inline_index_bytes
     }
 
@@ -48,7 +48,7 @@ impl WorthQueryGraphReadBudgetExceededDenial {
         self.estimated_index_bytes
     }
 
-    pub fn max_inline_result_bytes(&self) -> usize {
+    pub fn max_inline_result_bytes(&self) -> Option<usize> {
         self.max_inline_result_bytes
     }
 
@@ -56,7 +56,7 @@ impl WorthQueryGraphReadBudgetExceededDenial {
         self.estimated_result_bytes
     }
 
-    pub fn max_inline_intermediate_set_size(&self) -> usize {
+    pub fn max_inline_intermediate_set_size(&self) -> Option<usize> {
         self.max_inline_intermediate_set_size
     }
 
@@ -65,11 +65,11 @@ impl WorthQueryGraphReadBudgetExceededDenial {
     }
 
     pub(crate) fn new(
-        max_inline_index_bytes: usize,
+        max_inline_index_bytes: Option<usize>,
         estimated_index_bytes: usize,
-        max_inline_result_bytes: usize,
+        max_inline_result_bytes: Option<usize>,
         estimated_result_bytes: usize,
-        max_inline_intermediate_set_size: usize,
+        max_inline_intermediate_set_size: Option<usize>,
         estimated_intermediate_set_size: usize,
     ) -> Self {
         Self {
@@ -84,7 +84,7 @@ impl WorthQueryGraphReadBudgetExceededDenial {
 
     pub(crate) fn digest_part(&self) -> String {
         format!(
-            "budget_exceeded:max_index:{}:estimated_index:{}:max_result:{}:estimated_result:{}:max_intermediate:{}:estimated_intermediate:{}",
+            "budget_exceeded_v2:max_index:{:?}:estimated_index:{}:max_result:{:?}:estimated_result:{}:max_intermediate:{:?}:estimated_intermediate:{}",
             self.max_inline_index_bytes,
             self.estimated_index_bytes,
             self.max_inline_result_bytes,

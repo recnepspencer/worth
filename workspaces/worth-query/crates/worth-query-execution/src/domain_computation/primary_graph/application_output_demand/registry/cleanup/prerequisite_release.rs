@@ -26,7 +26,7 @@ impl DemandRegistryState {
             .map(|key| key_work(key))
             .try_fold(0u64, |maximum, bytes| bytes.map(|bytes| maximum.max(bytes)))?;
         let navigation = super::super::prerequisite_work::prior_release_work(
-            self.records.len().max(self.required_keys.len()),
+            Some(self.records.len().max(self.required_keys.len())),
             edges,
             usize::try_from(maximum_key_work).map_err(|_| work_denial())?,
         )?;

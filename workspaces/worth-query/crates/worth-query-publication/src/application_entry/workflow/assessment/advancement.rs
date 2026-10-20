@@ -33,10 +33,14 @@ where
     let _execution = phase
         .checked_execution_request_for(runtime.product_runtime())
         .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?;
-    for _ in 0..controls
+    let mut remaining = controls
         .resolve(runtime.output_demand_resource_profile())
-        .settlement_attempts()
-    {
+        .settlement_attempts();
+    loop {
+        if remaining == Some(0) {
+            break;
+        }
+        remaining = remaining.map(|steps| steps - 1);
         let disclosure = request
             .query(demand.source_intent())
             .execute_in_advancement(phase)
@@ -55,7 +59,19 @@ where
                 disclosure,
             )
             .map_err(map_progress_denial)?;
-        if let WorthQueryOutputDemandAdvance::Settled(retained) = progress {
+        let retained = match progress {
+            WorthQueryOutputDemandAdvance::Pending => {
+                return Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending)
+            }
+            WorthQueryOutputDemandAdvance::Progressed => {
+                if remaining == Some(0) {
+                    return Ok(WorthQueryWorkflowAssessmentDemandProgress::Progressed);
+                }
+                continue;
+            }
+            WorthQueryOutputDemandAdvance::Settled(retained) => retained,
+        };
+        {
             let admitted = &*admitted;
             let settlement = WorthQueryApplicationOutputDemandSettlement::new(
                 retained,

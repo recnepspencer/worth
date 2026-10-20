@@ -261,7 +261,9 @@ fn intermediate_set_pressure_marks_broad_even_when_index_bytes_fit() {
 
     assert!(
         estimate.supported().index_bytes()
-            <= WorthQueryGraphReadBudget::inline_ephemeral_default().max_inline_index_bytes()
+            <= WorthQueryGraphReadBudget::inline_ephemeral_default()
+                .max_inline_index_bytes()
+                .expect("this case selects the explicit finite ephemeral strategy")
     );
     assert_eq!(
         estimate.complexity_contract().kind(),

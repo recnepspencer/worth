@@ -10,6 +10,8 @@ use worth_query_execution::facade::primary_graph::{
 /// Whether an output demand has settled yet.
 pub enum WorthQueryApplicationOutputDemandProgress<Query> {
     Pending,
+    /// The same owner made native progress and remains runnable.
+    Progressed,
     Settled(WorthQueryApplicationOutputDemandSettlement<Query>),
 }
 

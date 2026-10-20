@@ -204,8 +204,11 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
     pub(in crate::domain_computation::primary_graph) fn limit_inline_result_bytes(
         mut self,
-        maximum: NonZeroUsize,
+        maximum: Option<NonZeroUsize>,
     ) -> Self {
+        let Some(maximum) = maximum else {
+            return self;
+        };
         self.maximum_inline_result_bytes = Some(
             self.maximum_inline_result_bytes
                 .map_or(maximum, |prior| prior.min(maximum)),

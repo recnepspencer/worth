@@ -31,8 +31,8 @@ fn successor_retention_denial_publishes_neither_patch_nor_basis() {
     runtime.set_runtime_policy(
         SignalRuntimePolicy::development().with_conditional_evaluation_budget(
             SignalConditionalEvaluationBudget {
-                maximum_retained_slots: 1,
-                maximum_retained_bytes: exact_initial_bytes,
+                maximum_retained_slots: Some(1),
+                maximum_retained_bytes: Some(exact_initial_bytes),
                 maximum_attempt_visits: Some(100_000),
             },
         ),

@@ -216,8 +216,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     let count = state.required_keys.len();
     let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
     let comparisons = count.min(11).checked_mul(levels).ok_or_else(work_denial)?;
-    let maximum_levels =
-        usize::BITS as usize - state.required_budget_bytes.max(1).leading_zeros() as usize;
+    let maximum_levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
     let work = 11usize
         .checked_mul(maximum_levels)
         .and_then(|comparisons| comparisons.checked_mul(key.comparison_work()?))

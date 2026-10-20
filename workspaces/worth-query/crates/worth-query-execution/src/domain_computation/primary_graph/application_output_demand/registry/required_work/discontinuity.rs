@@ -57,7 +57,8 @@ struct DiscontinuityCursor {
 }
 
 /// Minted only after the creation request pays for this row's later no-fail
-/// Product retirement. The installed required-byte cap bounds future height.
+/// Product retirement. Addressable native storage bounds future height; an
+/// explicit required-byte policy may narrow that bound.
 struct PrepaidCursorRetirement;
 
 impl DemandRegistryState {
@@ -293,9 +294,8 @@ impl DemandRegistryState {
     ) -> Option<RetiredDiscontinuityCursors> {
         // This is the Query Product-retirement cleanup lane. An occurrence
         // without a cursor can be presented again by pending_cleanup; its
-        // negative search costs O(log(maximum cursor rows)), where that finite
-        // maximum follows from installed required-ledger bytes divided by the
-        // mandatory minimum outer-row claim. It is cleanup-lane work, not a
+        // negative search has a finite addressable-tree-height bound, optionally
+        // narrowed by installed required-ledger bytes and minimum row backing. It is cleanup-lane work, not a
         // request charge or cursor-creation prepayment. Present-row removal and each
         // inner-row teardown use the row's retained prepaid custody.
         self.discontinuity_cursors
@@ -313,3 +313,6 @@ fn pinned_key_bytes(
         .and_then(|bytes| bytes.checked_add(key.producer.len()))
         .ok_or_else(capacity_denial)
 }
+
+#[cfg(test)]
+mod retirement_tests;

@@ -40,13 +40,13 @@ pub struct WorthQueryApplicationResultBufferObservation {
     peak_rejected_bytes: usize,
 }
 
-/// Result buffer use for one query read: its byte limit, the most bytes it
+/// Result buffer use for one query read: its optional host byte limit, the most bytes it
 /// held, and whether it was released.
 ///
 /// Read it from an access receipt's `result_buffer()`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationResultBufferEvidence {
-    limit_bytes: usize,
+    limit_bytes: Option<usize>,
     peak_bytes: usize,
     released: bool,
 }
@@ -54,7 +54,7 @@ pub struct WorthQueryApplicationResultBufferEvidence {
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationResultBufferReservation
 {
     registry: WorthQueryApplicationResultBufferRegistry,
-    limit_bytes: usize,
+    limit_bytes: Option<usize>,
     retained_bytes: usize,
     peak_bytes: usize,
     released: bool,
@@ -81,7 +81,7 @@ impl WorthQueryApplicationResultBufferRegistry {
 
     pub(in crate::domain_computation::primary_graph) fn reserve(
         &self,
-        limit_bytes: usize,
+        limit_bytes: Option<usize>,
     ) -> WorthQueryApplicationResultBufferReservation {
         acquire(&self.state.active_buffers, 1)
             .expect("live application-query result-buffer count cannot overflow");
@@ -98,7 +98,7 @@ impl WorthQueryApplicationResultBufferRegistry {
 
     pub(in crate::domain_computation::primary_graph::application_query) fn reserve_in_batch(
         &self,
-        limit_bytes: usize,
+        limit_bytes: Option<usize>,
         batch: &WorthQueryApplicationQueryBatchAdmission,
     ) -> WorthQueryApplicationResultBufferReservation {
         let mut reservation = self.reserve(limit_bytes);
@@ -142,7 +142,8 @@ impl WorthQueryApplicationResultBufferObservation {
 }
 
 impl WorthQueryApplicationResultBufferEvidence {
-    pub const fn limit_bytes(self) -> usize {
+    /// None omits the host quota; every actual byte claim remains checked and counted.
+    pub const fn limit_bytes(self) -> Option<usize> {
         self.limit_bytes
     }
 
@@ -156,6 +157,12 @@ impl WorthQueryApplicationResultBufferEvidence {
 }
 
 impl WorthQueryApplicationResultBufferReservation {
+    pub(in crate::domain_computation::primary_graph::application_query) fn retained_bytes(
+        &self,
+    ) -> usize {
+        self.retained_bytes
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn claim(
         &mut self,
         bytes: usize,
@@ -164,7 +171,7 @@ impl WorthQueryApplicationResultBufferReservation {
             self.record_rejected(usize::MAX);
             return Err(());
         };
-        if claimed > self.limit_bytes {
+        if self.limit_bytes.is_some_and(|maximum| claimed > maximum) {
             self.record_rejected(claimed);
             return Err(());
         }
@@ -308,7 +315,7 @@ mod tests {
             .state
             .retained_bytes
             .store(usize::MAX, Ordering::Release);
-        let mut reservation = registry.reserve(8);
+        let mut reservation = registry.reserve(Some(8));
 
         assert_eq!(reservation.claim(1), Err(()));
         assert_eq!(reservation.retained_bytes, 0);
@@ -324,7 +331,7 @@ mod tests {
     #[test]
     fn disclosed_source_outlives_result_buffer_without_losing_its_charge() {
         let registry = WorthQueryApplicationResultBufferRegistry::default();
-        let mut reservation = registry.reserve(64);
+        let mut reservation = registry.reserve(Some(64));
         reservation.claim(13).unwrap();
         let charge = reservation.claim_retained_source(19).unwrap();
         assert_eq!(registry.observer().observe().retained_bytes(), 32);
@@ -343,7 +350,7 @@ mod tests {
     #[test]
     fn disclosed_custody_never_consumes_the_inline_result_limit() {
         let registry = WorthQueryApplicationResultBufferRegistry::default();
-        let mut reservation = registry.reserve(128);
+        let mut reservation = registry.reserve(Some(128));
         reservation.claim(128).unwrap();
         let scope = reservation.claim_retained_source(400).unwrap();
         let parameters = reservation.claim_retained_source(500).unwrap();
@@ -364,7 +371,7 @@ mod tests {
             .state
             .retained_bytes
             .store(usize::MAX, Ordering::Release);
-        let reservation = registry.reserve(8);
+        let reservation = registry.reserve(Some(8));
         assert!(reservation.claim_retained_source(1).is_err());
         assert_eq!(registry.observer().observe().retained_bytes(), usize::MAX);
     }

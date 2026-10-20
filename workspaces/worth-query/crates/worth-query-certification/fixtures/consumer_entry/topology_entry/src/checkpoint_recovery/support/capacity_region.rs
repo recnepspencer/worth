@@ -94,7 +94,7 @@ macro_rules! settle {
         let mut settled = None;
         for _ in 0..256 {
             match $demand.advance(&$request) {
-                Ok(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress::Pending) => (),
+                Ok(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress::Pending | WorthQueryApplicationOutputDemandProgress::Progressed) => (),
                 Ok(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress::Settled(value)) => { settled = Some(value); break; },
                 Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
                     if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded =>

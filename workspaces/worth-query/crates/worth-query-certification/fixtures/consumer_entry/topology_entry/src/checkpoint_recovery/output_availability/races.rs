@@ -40,7 +40,10 @@ fn settle_geometry(app: &installation::App, request: &journey::Request<'_, '_, '
     let mut completed = None;
     for _ in 0..256 {
         match owner.advance(request) {
-            Ok(WorthQueryApplicationOutputDemandProgress::Pending) => {}
+            Ok(
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed,
+            ) => {}
             Ok(WorthQueryApplicationOutputDemandProgress::Settled(value)) => {
                 completed = Some(value);
                 break;

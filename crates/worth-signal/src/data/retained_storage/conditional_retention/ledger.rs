@@ -15,10 +15,10 @@ pub(crate) enum SignalConditionalRetentionDenial {
 /// The mutex covers only checked count updates, never graph work or callbacks.
 #[derive(Debug)]
 pub(crate) struct SignalConditionalRetentionLedger {
-    maximum_slots: usize,
-    maximum_bytes: u64,
-    maximum_partitions: usize,
-    maximum_reserved_wakes: usize,
+    maximum_slots: Option<usize>,
+    maximum_bytes: Option<u64>,
+    maximum_partitions: Option<usize>,
+    maximum_reserved_wakes: Option<usize>,
     state: Mutex<RetainedConditionalUsage>,
 }
 
@@ -112,22 +112,28 @@ impl SignalConditionalRetentionLedger {
         let next_slots = state
             .slots
             .checked_add(slots)
-            .filter(|total| *total <= self.maximum_slots)
+            .filter(|total| self.maximum_slots.is_none_or(|maximum| *total <= maximum))
             .ok_or(SignalConditionalRetentionDenial::CapacityExhausted)?;
         let next_bytes = state
             .bytes
             .checked_add(bytes)
-            .filter(|total| *total <= self.maximum_bytes)
+            .filter(|total| self.maximum_bytes.is_none_or(|maximum| *total <= maximum))
             .ok_or(SignalConditionalRetentionDenial::CapacityExhausted)?;
         let next_partitions = state
             .partitions
             .checked_add(partitions)
-            .filter(|total| *total <= self.maximum_partitions)
+            .filter(|total| {
+                self.maximum_partitions
+                    .is_none_or(|maximum| *total <= maximum)
+            })
             .ok_or(SignalConditionalRetentionDenial::CapacityExhausted)?;
         let next_wakes = state
             .reserved_wakes
             .checked_add(reserved_wakes)
-            .filter(|total| *total <= self.maximum_reserved_wakes)
+            .filter(|total| {
+                self.maximum_reserved_wakes
+                    .is_none_or(|maximum| *total <= maximum)
+            })
             .ok_or(SignalConditionalRetentionDenial::CapacityExhausted)?;
         state.slots = next_slots;
         state.bytes = next_bytes;
@@ -218,7 +224,11 @@ impl SignalConditionalRetentionReservation {
         let next_bytes = state
             .bytes
             .checked_add(charge.bytes())
-            .filter(|total| *total <= self.ledger.maximum_bytes)
+            .filter(|total| {
+                self.ledger
+                    .maximum_bytes
+                    .is_none_or(|maximum| *total <= maximum)
+            })
             .ok_or(SignalConditionalRetentionDenial::CapacityExhausted)?;
         let reservation_bytes = self
             .bytes

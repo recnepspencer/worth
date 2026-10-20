@@ -36,13 +36,13 @@ fn fixture(population: usize, payload: usize) -> DiagnosticsState {
 fn ledger(bytes: u64) -> std::sync::Arc<Ledger> {
     Ledger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 1,
-            maximum_retained_bytes: bytes,
+            maximum_retained_slots: Some(1),
+            maximum_retained_bytes: Some(bytes),
             maximum_attempt_visits: Some(1_000_000),
         },
         crate::runtime_policy::SignalConditionalTemporalBudget {
-            maximum_live_partitions: 1,
-            maximum_reserved_active_wakes: 1,
+            maximum_live_partitions: Some(1),
+            maximum_reserved_active_wakes: Some(1),
         },
     )
 }

@@ -25,7 +25,8 @@ pub(crate) fn ready_read_capacity_preserves_completion(
     let first = (0..32)
         .find_map(
             |_| match demand.advance(&request).expect("the output completes") {
-                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
             },
         )
@@ -75,7 +76,8 @@ pub(crate) fn ready_read_capacity_preserves_completion(
         .expect("released capacity admits the same ready output")
     {
         WorthQueryApplicationOutputDemandProgress::Settled(value) => value,
-        WorthQueryApplicationOutputDemandProgress::Pending => {
+        WorthQueryApplicationOutputDemandProgress::Pending
+        | WorthQueryApplicationOutputDemandProgress::Progressed => {
             panic!("ready output cannot restart delivery or validation")
         }
     };

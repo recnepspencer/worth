@@ -101,7 +101,10 @@ fn observed_chain_journey(invalidation_bytes: u64, observe: bool) -> Result<Jour
                     application,
                     roots
                 ) {
-                    Some(WorthQueryApplicationOutputDemandProgress::Pending) => {
+                    Some(
+                        WorthQueryApplicationOutputDemandProgress::Pending
+                        | WorthQueryApplicationOutputDemandProgress::Progressed,
+                    ) => {
                         bounded!();
                     }
                     _ => {

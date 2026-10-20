@@ -43,7 +43,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         )
         .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
     }
-    if resources.retained_bytes() > limits.producer_retained_bytes() {
+    if limits
+        .producer_retained_bytes()
+        .is_some_and(|maximum| resources.retained_bytes() > maximum)
+    {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
             producer_identity.to_owned(),

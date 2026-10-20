@@ -17,7 +17,7 @@ fn weak_entry_and_live_lane_share_one_refundable_retained_claim() {
     let observation = selected.product().observation();
     let occurrence = observation.lifecycle_incarnation();
 
-    let measured = Coordinator::new(usize::MAX);
+    let measured = Coordinator::new(None);
     let lane = measured.lane_for(observation).unwrap();
     let exact = measured.retained_bytes();
     assert!(exact > 0);
@@ -26,7 +26,7 @@ fn weak_entry_and_live_lane_share_one_refundable_retained_claim() {
     measured.retire(occurrence);
     assert_eq!(measured.retained_bytes(), 0);
 
-    let denied = Coordinator::new(exact - 1);
+    let denied = Coordinator::new(Some(exact - 1));
     assert!(matches!(
         denied.lane_for(observation),
         Err(Denial::RetainedCapacityExhausted { .. })
@@ -34,7 +34,7 @@ fn weak_entry_and_live_lane_share_one_refundable_retained_claim() {
     assert_eq!(denied.entry_count(), 0);
     assert_eq!(denied.retained_bytes(), 0);
 
-    let exact_owner = Coordinator::new(exact);
+    let exact_owner = Coordinator::new(Some(exact));
     let lane = exact_owner.lane_for(observation).unwrap();
     exact_owner.retire(occurrence);
     assert_eq!(exact_owner.entry_count(), 0);
@@ -51,7 +51,7 @@ fn admitted_lane_denies_before_creating_a_weak_entry() {
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let observation = selected.product().observation();
-    let owner = Coordinator::new(usize::MAX);
+    let owner = Coordinator::new(None);
     let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(100),
         maximum_preparation_bytes: Some(0),
@@ -85,7 +85,7 @@ fn expired_weak_replacement_keeps_the_entry_claim_until_retirement() {
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let observation = selected.product().observation();
-    let owner = Coordinator::new(usize::MAX);
+    let owner = Coordinator::new(None);
     let first = owner.lane_for(observation).unwrap();
     let retained = owner.retained_bytes();
     drop(first);

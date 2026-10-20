@@ -192,7 +192,7 @@ mod tests {
 
     #[test]
     fn readmission_and_index_share_one_limit_and_final_owner_refunds_capacity() {
-        let registry = WorthQueryOutputDemandRegistry::with_budgets(64, 64, 64);
+        let registry = WorthQueryOutputDemandRegistry::with_budgets(Some(64), Some(64), Some(64));
         registry.state.lock().unwrap().required_reserved_bytes = 40;
         let first = Arc::new(registry.reserve_required_custody_capacity(16).unwrap());
         let observer = Arc::clone(&first);

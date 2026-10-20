@@ -161,7 +161,9 @@ impl RequiredOutputDemandContext {
             .ok_or_else(work_denial)?;
         // Other interests may enter after preparation. The named registry cap
         // bounds every later ordered-tree height until this ticket publishes.
-        let required_member_ceiling = state.required_budget_bytes / minimum_member_bytes;
+        let required_member_ceiling = state
+            .required_budget_bytes
+            .map(|bytes| bytes / minimum_member_bytes);
         let release_work = super::prerequisite_work::prior_release_work(
             required_member_ceiling,
             prior_keys.len(),

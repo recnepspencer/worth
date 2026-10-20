@@ -5013,3 +5013,59 @@ actual allocation and checked counters remain live without a quota. Candidate
 lifetime, exact owner/generation, stale/foreign-runtime refusals and native
 release obligations are unchanged. Do not invent zero/MAX sentinels,
 fit policy numbers to the workload, or discard original owners to admit work.
+
+### Ordinary Query resource policies
+
+Output-demand, performed-output, discovered-output and workflow assessment settlement
+helpers continue owner-issued `Progressed` under the same request when the step
+policy is absent. `Pending` parks for a later call rather than retrying a waiting
+owner. Explicit finite step controls return `Progressed` at their boundary;
+`advance` remains a step. Both unfinished outcomes retain the original owner;
+only `Settled` carries settlement authority.
+
+Ordinary `WorthQueryOutputDemandResourceProfile::standard()` (also `Default`)
+installs no work, producer-retention, settlement-step, registry-obligation,
+registry-record, required-custody or lineage-byte policy. `new` and `bounded`
+retain explicit finite producer and settlement controls; the named registry and
+lineage setters install only the requested finite policy. Counts, byte ledgers,
+preparation, backing grants, sharing and final-drop accounting remain active.
+
+`WorthQueryApplicationCandidateResourceProfile::default()` has no item, byte,
+operation-width or producer-dependency policy. A finite prepared candidate must
+still quote actual requirements, reserve the original runtime request and meet
+installed semantic/required-output contracts. The finite `with_maximum_*`
+setters narrow host policy; they do not issue candidate or source authority.
+
+`WorthQueryApplicationQueryResourceProfile::default()` omits index, result and
+intermediate policies. Native result owners claim concrete vector/value storage before copying; cost
+estimates are not substituted for absent policy ceilings. Bounded parallel kernels
+still require an explicitly admitted finite result bound before dispatch. Use the
+existing `WorthQueryDerivedPairReadPlans::in_batch` with a caller-derived finite
+`WorthQueryApplicationQueryBatchLimits` for those kernels; no-policy estimates do
+not manufacture that contract. Explicit finite
+`bounded` profiles and request restrictions still intersect. Query batch loans
+keep real checked live-byte claims; no-policy schedules admit the concrete read
+quote at its owner instead of inventing a per-root quota. Native graph-work
+concurrency remains a physical scheduling contract.
+
+`SignalConditionalEvaluationBudget::development()` omits slot, byte and attempt
+quotas; the default temporal budget omits owner-wide partition and wake quotas.
+`BridgeConditionalRetentionBudget::development()` omits clock, intent, definition,
+byte and preparation-work quotas. Explicit `Some` values remain finite policies.
+All branches must agree on sealed Signal owner policy, including absence; native
+reservations still account shared backing and retain charges through final drop.
+Concrete prepared node/root footprints remain required before copying or publication.
+
+With no settlement-step policy, convenience settlement drives the native
+advancement and parks on its `Pending` answer. It does not spin retrying blocked
+work. A subsequent advancement uses a fresh authorized request; explicit finite
+step controls preserve their limit. Branch commit coordination also defaults to
+no byte quota while retaining its shared weak/strong backing grants. Unpublished
+idempotency has no additional fixed population quota; World recovery admission,
+exact identity, allocation and cleanup remain mandatory.
+
+Applications adopting this path should remove manual policy numbers from their
+ordinary candidate/query/output resource installation, retaining real semantic
+cardinality, concrete prepared footprints, request interruption and scheduling
+contracts. Policy absence grants no source, authorization, snapshot or settlement
+currentness, and does not widen an explicit finite ancestor request limit.

@@ -92,7 +92,8 @@ fn settle_open<'application>(
 > {
     for _ in 0..256 {
         match interest.advance(request).expect("the open demand advances") {
-            WorthQueryApplicationOutputDemandProgress::Pending => std::thread::yield_now(),
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => std::thread::yield_now(),
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => return settled,
         }
     }

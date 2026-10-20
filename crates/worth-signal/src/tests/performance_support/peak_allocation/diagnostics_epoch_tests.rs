@@ -100,8 +100,8 @@ fn assert_epoch_fits_forecast(
         .unwrap();
     let ledger = SignalConditionalRetentionLedger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 2,
-            maximum_retained_bytes: 512 * 1024 * 1024,
+            maximum_retained_slots: Some(2),
+            maximum_retained_bytes: Some(512 * 1024 * 1024),
             maximum_attempt_visits: None,
         },
         SignalRuntimePolicy::development().conditional_temporal_budget,

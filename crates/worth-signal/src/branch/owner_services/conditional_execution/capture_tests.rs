@@ -32,8 +32,8 @@ fn graph(claimant: &SignalAspectLoweringOwner) -> SignalGraph {
 
 fn budget(bytes: u64, visits: usize) -> SignalConditionalEvaluationBudget {
     SignalConditionalEvaluationBudget {
-        maximum_retained_slots: 2,
-        maximum_retained_bytes: bytes,
+        maximum_retained_slots: Some(2),
+        maximum_retained_bytes: Some(bytes),
         maximum_attempt_visits: Some(visits),
     }
 }

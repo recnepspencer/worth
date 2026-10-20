@@ -198,14 +198,22 @@ where
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     > {
         application.runtime().with_application_advancement(request.scope, |phase| {
-        for _ in 0..self.controls.resolve(application.runtime().output_demand_resource_profile()).settlement_attempts() {
-            let progress = self.advance_in_advancement(&phase, application, request)?;
-            if matches!(progress, WorthQueryApplicationProgramOutputProgress::Settled(_)) {
-                return Ok(progress);
+            let mut remaining = self.controls
+                .resolve(application.runtime().output_demand_resource_profile())
+                .settlement_attempts();
+            loop {
+                if remaining == Some(0) { break; }
+                remaining = remaining.map(|steps| steps - 1);
+                let progress = self.advance_in_advancement(&phase, application, request)?;
+                match progress {
+                    WorthQueryApplicationProgramOutputProgress::Settled(_)
+                    | WorthQueryApplicationProgramOutputProgress::Pending => return Ok(progress),
+                    WorthQueryApplicationProgramOutputProgress::Progressed => {
+                        if remaining == Some(0) { return Ok(progress); }
+                    }
+                }
             }
-        }
-        Ok(WorthQueryApplicationProgramOutputProgress::Pending)
-
+            Ok(WorthQueryApplicationProgramOutputProgress::Pending)
         }).map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::advancement)?
     }
 
@@ -268,6 +276,9 @@ where
                 .advance(phase, application, request)
                 .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?
             {
+                WorthQueryApplicationProgramDemandProgress::Progressed => {
+                    return Ok(WorthQueryApplicationProgramOutputProgress::Progressed);
+                }
                 WorthQueryApplicationProgramDemandProgress::Pending => {
                     return Ok(WorthQueryApplicationProgramOutputProgress::Pending);
                 }
@@ -306,6 +317,9 @@ where
             .as_mut()
             .expect("a settled root installs its typed output continuation");
         match continuation.advance(phase, application, request)? {
+            ProgramOutputContinuationProgress::Progressed => {
+                Ok(WorthQueryApplicationProgramOutputProgress::Progressed)
+            }
             ProgramOutputContinuationProgress::Pending => {
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending)
             }

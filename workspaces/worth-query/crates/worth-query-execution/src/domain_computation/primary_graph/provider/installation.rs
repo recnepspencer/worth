@@ -33,7 +33,7 @@ impl WorthQueryPrimaryGraphProvider {
             ),
             unpublished_idempotency: std::sync::Arc::new(std::sync::Mutex::new(
                 super::unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore::new(
-                    super::resource_support::UNPUBLISHED_IDEMPOTENCY_CAPACITY,
+                    None,
                 ),
             )),
             receipt_basis_retention: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),

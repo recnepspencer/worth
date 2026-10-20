@@ -20,8 +20,8 @@ fn fixture() -> (
     graph.create_node();
     let ledger = SignalConditionalRetentionLedger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 1,
-            maximum_retained_bytes: 64 * 1024 * 1024,
+            maximum_retained_slots: Some(1),
+            maximum_retained_bytes: Some(64 * 1024 * 1024),
             maximum_attempt_visits: Some(100_000),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,

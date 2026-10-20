@@ -62,14 +62,19 @@ impl SignalGraph {
             .installed_runtime_policy()
             .conditional_evaluation_budget()
             .maximum_retained_bytes;
-        let maximum = usize::try_from(maximum)
+        let maximum = maximum
+            .map(usize::try_from)
+            .transpose()
             .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
         let prepared = self
             .arena
             .prepare_retained_node_edits(
                 ledger,
                 &[node.index() as usize],
-                Charge::capacity::<u8>(maximum).map_err(map_accounting)?,
+                maximum
+                    .map(Charge::capacity::<u8>)
+                    .transpose()
+                    .map_err(map_accounting)?,
                 work,
                 |payloads| {
                     let payload = &mut payloads[0];

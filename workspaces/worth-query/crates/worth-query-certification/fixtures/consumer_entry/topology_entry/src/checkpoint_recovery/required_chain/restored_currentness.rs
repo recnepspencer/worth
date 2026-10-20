@@ -17,7 +17,8 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         .unwrap();
     let initial = (0..256)
         .find_map(|_| match demand.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("A initially settles through the actual producer");
@@ -115,7 +116,8 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         .unwrap();
     let settlement = (0..256)
         .find_map(|_| match demand.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the reopened demand settles after checking its old output");
@@ -148,7 +150,8 @@ fn restored_dependent_refresh_keeps_selected_ready_custody() {
                     match $owner.advance(&$request).unwrap_or_else(|stop| {
                         panic!("{} native advance: {stop:?}", stringify!($owner))
                     }) {
-                        WorthQueryApplicationOutputDemandProgress::Pending => None,
+                        WorthQueryApplicationOutputDemandProgress::Pending
+                        | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                         WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
                     }
                 })

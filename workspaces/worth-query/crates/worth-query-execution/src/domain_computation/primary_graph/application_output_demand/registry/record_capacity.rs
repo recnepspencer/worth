@@ -58,10 +58,10 @@ impl DemandRegistryState {
         bytes: usize,
     ) -> Result<RecordCapacity, WorthQueryOutputDemandDenial> {
         let retained = self.record_retained_bytes.load(Ordering::Acquire);
-        if retained
-            .checked_add(bytes)
-            .is_none_or(|total| total > self.record_budget_bytes)
-        {
+        if retained.checked_add(bytes).is_none_or(|total| {
+            self.record_budget_bytes
+                .is_some_and(|maximum| total > maximum)
+        }) {
             return Err(capacity_denial());
         }
         self.record_retained_bytes
@@ -372,9 +372,9 @@ pub(super) fn capacity_denial() -> WorthQueryOutputDemandDenial {
 
 impl super::WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn with_budgets(
-        obligation_bytes: usize,
-        record_bytes: usize,
-        required_bytes: usize,
+        obligation_bytes: Option<usize>,
+        record_bytes: Option<usize>,
+        required_bytes: Option<usize>,
     ) -> Self {
         let state = DemandRegistryState {
             obligation_budget_bytes: obligation_bytes,

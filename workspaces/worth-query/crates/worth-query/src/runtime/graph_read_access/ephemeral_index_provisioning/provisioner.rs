@@ -66,12 +66,15 @@ pub(crate) fn provision_ephemeral_graph_indexes_for_read_execution(
         &WorthQueryEphemeralGraphIndexScopeKind::ReadExecution
     );
     let mut lifecycle_registry = WorthQueryEphemeralGraphIndexLifecycleRegistry::open_scope();
-    if ephemeral_plan.estimated_index_bytes() > scope.byte_budget() {
+    if let Some(maximum) = scope
+        .byte_budget()
+        .filter(|maximum| ephemeral_plan.estimated_index_bytes() > *maximum)
+    {
         lifecycle_registry.reject_before_allocation();
         return Err(
             WorthQueryEphemeralGraphIndexProvisioningError::EstimatedBytesExceedScopeBudget {
                 estimated_index_bytes: ephemeral_plan.estimated_index_bytes(),
-                admitted_byte_budget: scope.byte_budget(),
+                admitted_byte_budget: maximum,
                 counters: lifecycle_registry.close_scope_counters(),
             },
         );

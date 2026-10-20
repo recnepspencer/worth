@@ -1,18 +1,23 @@
 //! eviction evidence for inherited retained state.
 use super::*;
+use worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile;
 #[test]
 fn a_child_eviction_is_local_and_does_not_release_its_parents_state() {
     let _guard = checkpoint_recovery_test_guard();
     let mut rng = Lcg(0x611_e71c_5eed);
     let model = Model::eviction(&mut rng, TOTALS_WORK);
-    let kept =
-        installation::install_variant::<false, TOTALS_WORK, 1, 0>(None, Default::default(), |g| {
-            model.seed(g)
-        });
-    let fresh =
-        installation::install_variant::<false, TOTALS_WORK, 1, 3>(None, Default::default(), |g| {
-            model.seed(g)
-        });
+    let kept = installation::install_variant::<false, TOTALS_WORK, 1, 0>(
+        None,
+        WorthQueryOutputDemandResourceProfile::default()
+            .with_lineage_retained_bytes(std::num::NonZeroUsize::new(64 * 1024 * 1024).unwrap()),
+        |g| model.seed(g),
+    );
+    let fresh = installation::install_variant::<false, TOTALS_WORK, 1, 3>(
+        None,
+        WorthQueryOutputDemandResourceProfile::default()
+            .with_lineage_retained_bytes(std::num::NonZeroUsize::new(64 * 1024 * 1024).unwrap()),
+        |g| model.seed(g),
+    );
     let parent = kept.current_world();
     let full_parent = fresh.current_world();
     let retained = run(&kept, parent);

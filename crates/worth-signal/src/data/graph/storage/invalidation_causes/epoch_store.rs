@@ -39,13 +39,16 @@ impl SignalGraph {
             budget.claim(self.epoch_cause_store_fork_growth_bound()?)?;
         }
         if let Some(ledger) = self.arena.retained_node_ledger.clone() {
-            let maximum = usize::try_from(
-                self.installed_runtime_policy()
-                    .conditional_evaluation_budget()
-                    .maximum_retained_bytes,
-            )
-            .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
-            let maximum = Charge::capacity::<u8>(maximum)
+            let maximum = (self
+                .installed_runtime_policy()
+                .conditional_evaluation_budget()
+                .maximum_retained_bytes)
+                .map(usize::try_from)
+                .transpose()
+                .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
+            let maximum = maximum
+                .map(Charge::capacity::<u8>)
+                .transpose()
                 .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
             let mut draft = self.begin_retained_cause_store_publication(&ledger, maximum)?;
             for edit in edits {

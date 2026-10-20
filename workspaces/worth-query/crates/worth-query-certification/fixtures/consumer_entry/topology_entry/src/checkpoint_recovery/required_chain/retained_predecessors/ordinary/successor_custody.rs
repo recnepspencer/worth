@@ -9,7 +9,8 @@ macro_rules! settle {
     ($demand:expr, $request:expr) => {
         (0..256)
             .find_map(|_| match $demand.advance($request).unwrap() {
-                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
             })
             .expect("the installed native demand settles")

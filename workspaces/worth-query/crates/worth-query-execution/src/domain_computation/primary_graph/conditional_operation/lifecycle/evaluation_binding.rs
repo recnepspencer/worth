@@ -224,6 +224,29 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         })?;
         let clock = self.definition.binding.clocked_node();
         let bounds = self.definition.binding.bounds();
+        let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
+            runtime,
+            &self.definition.binding,
+            &self.definition.reconstruction,
+            self.definition.execution.identity_field,
+            truth.product(),
+        )?;
+        let mut intents = reconstruction.intents;
+        let maximum_watch_records = bridge
+            .conditional_evaluation_budget()
+            .maximum_retained_slots
+            .map(|slots| slots.checked_mul(bounds.maximum_reconstruction_rows()).ok_or_else(|| {
+                super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
+                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted,
+                    "conditional commit watch capacity overflowed")
+            })).transpose()?;
+        let commit_watch = super::commit_watch::WorthQueryConditionalCommitWatchSet::successor(
+            execution,
+            predecessor.map(|state| &state.commit_watch),
+            &intents,
+            lowering,
+            maximum_watch_records,
+        )?;
         let managed_clock = bridge
             .install_managed_clock(worth_runtime_bridge::facade::BridgeManagedClockInstallationParts {
                 lowering,
@@ -239,41 +262,11 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     denial.detail(),
                 )
             })?;
-        let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
-            runtime,
-            &self.definition.binding,
-            &self.definition.reconstruction,
-            self.definition.execution.identity_field,
-            truth.product(),
-        )?;
-        let mut intents = reconstruction.intents;
         super::super::temporal_reconstruction::reconcile_temporal_intents(
             bridge,
             &managed_clock,
             &mut intents,
         )?;
-        let maximum_watch_records = bridge
-            .conditional_evaluation_budget()
-            .maximum_retained_slots
-            .checked_mul(bounds.maximum_reconstruction_rows())
-            .ok_or_else(|| {
-                super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted,
-                    "conditional commit watch capacity overflowed",
-                )
-            })?;
-        let commit_watch = super::commit_watch::WorthQueryConditionalCommitWatchSet::successor(
-            predecessor.map(|state| &state.commit_watch),
-            &intents,
-            lowering,
-            maximum_watch_records,
-        )
-        .map_err(|detail| {
-            super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted,
-                detail,
-            )
-        })?;
         Ok(WorthQueryInactiveTemporalEvaluationBinding {
             affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity::new(
                 truth.product(),

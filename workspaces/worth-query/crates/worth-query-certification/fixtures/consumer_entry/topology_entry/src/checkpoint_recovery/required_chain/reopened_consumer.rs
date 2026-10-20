@@ -26,7 +26,8 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         .unwrap();
     let original_root = (0..64)
         .find_map(|_| match root.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
         })
         .expect("the original native root settles");
@@ -37,7 +38,8 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         .unwrap();
     let original = (0..64)
         .find_map(|_| match consumer.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
         })
         .expect("the original native consumer settles");
@@ -97,7 +99,8 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         .unwrap();
     let renewed = (0..64)
         .find_map(|_| match consumer.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
         })
         .expect("the reopened downstream discharges its own native prerequisite");
@@ -119,7 +122,8 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
     assert_eq!(after.rows()[0].value, length(16));
     let warm = (0..64)
         .find_map(|_| match consumer.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
         })
         .expect("warm reopened demand settles");

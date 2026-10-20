@@ -128,14 +128,14 @@ fn admit_growth(
     new_source: bool,
     reserved: usize,
     shared_custody: usize,
-    budget: usize,
+    budget: Option<usize>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<AdmittedGrowth, WorthQueryOutputDemandDenial> {
     let retained = retained_growth(source_count, address_count, new_source)?;
     let required = reserved.checked_add(retained).ok_or_else(capacity_denial)?;
     if required
         .checked_add(shared_custody)
-        .is_none_or(|total| total > budget)
+        .is_none_or(|total| budget.is_some_and(|maximum| total > maximum))
     {
         return Err(capacity_denial());
     }

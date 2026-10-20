@@ -64,7 +64,10 @@ where
                 .advance_in_advancement(&phase, &self.core.runtime, request).map_err(Denial::Outputs)
         }).map_err(Denial::Execution).and_then(|result| result);
         match result {
-            Ok(WorthQueryApplicationProgramOutputProgress::Pending) => Advance::Pending(self),
+            Ok(
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed,
+            ) => Advance::Pending(self),
             Ok(WorthQueryApplicationProgramOutputProgress::Settled(settlement)) => {
                 Advance::Settled(WorthQuerySettledProgramOutputOperation {
                     custody: self.core.custody,

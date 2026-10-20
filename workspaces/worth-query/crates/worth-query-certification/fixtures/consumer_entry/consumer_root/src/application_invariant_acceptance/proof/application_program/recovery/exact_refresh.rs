@@ -32,7 +32,10 @@ fn recovery_ready_with_changed_output_refuses_refresh_of_its_exact_publication()
                 .advance(&world.application, &request)
             {
                 Err(stop) => Some(stop),
-                Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+                Ok(
+                    WorthQueryApplicationProgramOutputProgress::Pending
+                    | WorthQueryApplicationProgramOutputProgress::Progressed,
+                ) => None,
                 Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
                     panic!("Ready read pressure must preserve source custody")
                 }
@@ -85,7 +88,10 @@ fn recovery_ready_with_changed_output_refuses_refresh_of_its_exact_publication()
     let stop = (0..64)
         .find_map(|_| match recovered.advance(&world.application, &request) {
             Err(stop) => Some(stop),
-            Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+            Ok(
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed,
+            ) => None,
             Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
                 panic!("Recovery cannot move to a refreshed publication")
             }

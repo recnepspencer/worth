@@ -41,7 +41,8 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
             (0..32)
                 .find_map(
                     |_| match demand.advance(&request).expect("the live demand advances") {
-                        WorthQueryApplicationOutputDemandProgress::Pending => None,
+                        WorthQueryApplicationOutputDemandProgress::Pending
+                        | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                         WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
                     },
                 )

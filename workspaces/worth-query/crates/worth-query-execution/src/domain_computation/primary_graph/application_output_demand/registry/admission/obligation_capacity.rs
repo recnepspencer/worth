@@ -23,7 +23,11 @@ pub(super) fn prepare_performed_obligation_slots(
     if state
         .obligation_reserved_bytes
         .checked_add(bytes)
-        .is_none_or(|peak| peak > state.obligation_budget_bytes)
+        .is_none_or(|peak| {
+            state
+                .obligation_budget_bytes
+                .is_some_and(|maximum| peak > maximum)
+        })
     {
         return Err(performed_obligation_capacity_denial());
     }

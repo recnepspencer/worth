@@ -119,9 +119,14 @@ impl SignalGraph {
             .installed_runtime_policy()
             .conditional_evaluation_budget()
             .maximum_retained_bytes;
-        let maximum = usize::try_from(maximum)
+        let maximum = maximum
+            .map(usize::try_from)
+            .transpose()
             .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
-        let maximum_charge = Charge::capacity::<u8>(maximum).map_err(map_accounting)?;
+        let maximum_charge = maximum
+            .map(Charge::capacity::<u8>)
+            .transpose()
+            .map_err(map_accounting)?;
         let roots = self
             .arena
             .prepare_retained_node_edits(&ledger, &indices, maximum_charge, work, |payloads| {
@@ -170,7 +175,7 @@ impl SignalGraph {
         &mut self,
         roots: PreparedRetainedNodeEdit<RawNodeResult>,
         ledger: &std::sync::Arc<crate::data::retained_storage::SignalConditionalRetentionLedger>,
-        maximum: Charge,
+        maximum: Option<Charge>,
         work: &mut Work,
     ) -> Result<
         (

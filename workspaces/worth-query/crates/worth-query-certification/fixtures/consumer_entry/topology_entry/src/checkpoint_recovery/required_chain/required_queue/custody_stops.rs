@@ -51,7 +51,7 @@ macro_rules! settled_within_eight_advances {
         (0..8)
             .find_map(|_| match $demand.advance(&$request) {
                 Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => Some(settled),
-                Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
+                Ok(WorthQueryApplicationOutputDemandProgress::Pending | WorthQueryApplicationOutputDemandProgress::Progressed) => None,
                 Err(stop) => {
                     assert!(
                         matches!(

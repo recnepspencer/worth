@@ -45,7 +45,13 @@ where
             bytes.checked_add(
                 plan.graph_read_plan()
                     .budget_check()
-                    .max_inline_index_bytes(),
+                    .max_inline_index_bytes()
+                    .unwrap_or_else(|| {
+                        plan.graph_read_plan()
+                            .cost_estimate()
+                            .supported()
+                            .index_bytes()
+                    }),
             )
         })
         .and_then(|bytes| {

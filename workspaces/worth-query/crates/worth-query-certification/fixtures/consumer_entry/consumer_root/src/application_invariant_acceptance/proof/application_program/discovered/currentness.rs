@@ -84,7 +84,8 @@ macro_rules! settled {
                 .advance(&$world.application, &$request)
                 .unwrap()
             {
-                WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+                WorthQueryDiscoveredProgramOutputProgress::Pending
+                | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
                 WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
             }
         })
@@ -179,7 +180,8 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
         );
         println!("clean discovery body={body} roots={count}: {clean:?}");
         let window = crate::application_invariant_acceptance::resources::INVALIDATION_INSTALLATION
-            .maximum_retained_positions;
+            .maximum_retained_positions
+            .expect("this continuity fixture explicitly installs a finite window");
         unrelated::assert_initial(&request);
         let mut repeat_work = None;
         for step in 0..=window {

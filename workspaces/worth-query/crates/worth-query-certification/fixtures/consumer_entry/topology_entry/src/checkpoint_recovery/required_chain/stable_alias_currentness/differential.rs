@@ -150,7 +150,8 @@ fn settle_anchor<'application>(
             match demand.advance(request).unwrap_or_else(|denial| {
                 panic!("seed {seed:x}, progression {progression}: {denial:?}")
             }) {
-                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
             }
         })

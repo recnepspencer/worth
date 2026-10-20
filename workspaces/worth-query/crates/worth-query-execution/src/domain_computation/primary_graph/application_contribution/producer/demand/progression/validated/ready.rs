@@ -126,9 +126,7 @@ where
                             CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
                         }
                     }
-                    CheckpointProgress::Advanced => {
-                        CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
-                    }
+                    CheckpointProgress::Advanced => CallerPass::Progressed,
                 },
                 ReadyVerdict::Unavailable(ReadyUnavailable::WorkExhausted) => {
                     CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)

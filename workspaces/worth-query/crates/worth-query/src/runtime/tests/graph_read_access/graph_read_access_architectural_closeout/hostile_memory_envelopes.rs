@@ -34,7 +34,12 @@ fn closeout_dense_broad_read_denies_before_executor_work() {
         .and_then(|denial| denial.budget_exceeded())
         .expect("dense denial should carry budget envelope");
 
-    assert!(budget_denial.estimated_index_bytes() > budget_denial.max_inline_index_bytes());
+    assert!(
+        budget_denial.estimated_index_bytes()
+            > budget_denial
+                .max_inline_index_bytes()
+                .expect("this refusal selects a finite index policy")
+    );
     assert_eq!(
         admission.denial().map(|denial| denial.suggested_posture()),
         Some(&WorthQueryGraphReadAccessAdmissionPosture::AsyncMaterializationRequired)

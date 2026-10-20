@@ -69,7 +69,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .application_query_resource_profile();
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: profile.maximum_work().map(|work| work.get() as u64),
-            maximum_preparation_bytes: Some(profile.maximum_inline_index_bytes().get() as u64),
+            maximum_preparation_bytes: profile
+                .maximum_inline_index_bytes()
+                .map(|bytes| bytes.get() as u64),
         });
         let Some((target, access)) = original_intent::lookup(
             self,

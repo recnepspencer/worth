@@ -263,18 +263,18 @@ fn installer_profile_changes_admission_without_changing_query_identity() {
         plan.graph_read_plan()
             .budget_check()
             .max_inline_index_bytes(),
-        32_768
+        Some(32_768)
     );
     assert_eq!(
         plan.graph_read_plan()
             .budget_check()
             .max_inline_result_bytes(),
-        40_960
+        Some(40_960)
     );
     assert_eq!(
         plan.graph_read_plan()
             .budget_check()
             .max_inline_intermediate_set_size(),
-        20_000
+        Some(20_000)
     );
 }

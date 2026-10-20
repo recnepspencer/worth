@@ -11,7 +11,8 @@ fn restored_closed_predecessors_keep_original_successor_refresh_custody() {
                     match $owner.advance(&$request).unwrap_or_else(|stop| {
                         panic!("{} native advance: {stop:?}", stringify!($owner))
                     }) {
-                        WorthQueryApplicationOutputDemandProgress::Pending => None,
+                        WorthQueryApplicationOutputDemandProgress::Pending
+                        | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                         WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
                     }
                 })
@@ -203,7 +204,8 @@ fn restored_closed_predecessor_runs_original_dependent_after_source_edit() {
                     match $owner.advance(&$request).unwrap_or_else(|stop| {
                         panic!("{} native advance: {stop:?}", stringify!($owner))
                     }) {
-                        WorthQueryApplicationOutputDemandProgress::Pending => None,
+                        WorthQueryApplicationOutputDemandProgress::Pending
+                        | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                         WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
                     }
                 })

@@ -183,7 +183,7 @@ fn fixture(
             state.install_required_member(member);
         }
         if !joined {
-            state.required_budget_bytes = 0;
+            state.required_budget_bytes = Some(0);
         }
     }
     let interest = interest(&registry, dependent, wake);

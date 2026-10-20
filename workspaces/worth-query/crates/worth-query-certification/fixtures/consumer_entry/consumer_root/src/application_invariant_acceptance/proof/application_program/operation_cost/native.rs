@@ -55,7 +55,8 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
             .advance(&runtime, &request)
             .unwrap()
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settlement) => Some(settlement),
         }
     });

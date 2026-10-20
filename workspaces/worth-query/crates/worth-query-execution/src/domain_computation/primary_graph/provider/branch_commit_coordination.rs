@@ -30,7 +30,7 @@ struct LaneEntry {
 }
 
 struct CoordinationCapacity {
-    maximum: usize,
+    maximum: Option<usize>,
     retained: usize,
 }
 
@@ -87,7 +87,7 @@ pub(crate) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
 }
 
 impl WorthQueryApplicationBranchCommitCoordinator {
-    pub(super) fn new(maximum_retained_bytes: usize) -> Self {
+    pub(super) fn new(maximum_retained_bytes: Option<usize>) -> Self {
         Self {
             contention: Arc::new(contention::ContentionControl::default()),
             lanes: Mutex::new(BTreeMap::new()),
@@ -204,12 +204,12 @@ impl WorthQueryApplicationBranchCommitCoordinator {
             .retained
             .checked_add(bytes)
             .ok_or(WorthQueryBranchCommitLaneDenial::CapacityCounterOverflow)?;
-        if requested > capacity.maximum {
+        if let Some(maximum) = capacity.maximum.filter(|maximum| requested > *maximum) {
             return Err(
                 WorthQueryBranchCommitLaneDenial::RetainedCapacityExhausted {
                     requested,
                     retained: capacity.retained,
-                    maximum: capacity.maximum,
+                    maximum,
                 },
             );
         }

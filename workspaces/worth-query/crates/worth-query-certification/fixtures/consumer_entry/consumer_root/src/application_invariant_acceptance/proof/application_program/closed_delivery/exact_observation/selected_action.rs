@@ -233,17 +233,15 @@ fn closed_leaf_clean_currentness_uses_native_marks_before_projection() {
         .unwrap();
         let request = world.application.request(&principal, &scope);
         let observation = request.retain_current_read().unwrap();
-        let policy = WorthQueryOperationDeliveryPolicy::currentness(
-            NonZeroUsize::new(
-                world
-                    .application
-                    .runtime()
-                    .output_demand_resource_profile()
-                    .limits()
-                    .source_currentness_work(),
-            )
-            .unwrap(),
-        );
+        let policy = world
+            .application
+            .runtime()
+            .output_demand_resource_profile()
+            .limits()
+            .source_currentness_work()
+            .and_then(NonZeroUsize::new)
+            .map(WorthQueryOperationDeliveryPolicy::currentness)
+            .unwrap_or_default();
         let _ =
             worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
         closed
@@ -257,7 +255,8 @@ fn closed_leaf_clean_currentness_uses_native_marks_before_projection() {
         );
         println!("closed original leaf gate: {gate:?}");
         let window = crate::application_invariant_acceptance::resources::INVALIDATION_INSTALLATION
-            .maximum_retained_positions;
+            .maximum_retained_positions
+            .expect("this continuity fixture explicitly installs a finite window");
         source::assert_y(&request, "remote-a", length(41));
         let mut repeated_work = None;
         for step in 0..=window {

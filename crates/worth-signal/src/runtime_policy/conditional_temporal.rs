@@ -8,20 +8,23 @@ use super::{InstalledSignalRuntimePolicy, ResolvedSignalRuntimePolicy, SignalRun
 pub struct SignalConditionalTemporalBudget {
     /// Capacity remains reserved while a retired partition's capability or an
     /// in-flight cell still retains its backing allocation.
-    pub maximum_live_partitions: usize,
+    #[serde(deserialize_with = "Option::deserialize")]
+    pub maximum_live_partitions: Option<usize>,
     /// Sum of the W bounds reserved by those partitions, independent of how
     /// many scheduled or ready wakes currently occupy them.
-    pub maximum_reserved_active_wakes: usize,
+    #[serde(deserialize_with = "Option::deserialize")]
+    pub maximum_reserved_active_wakes: Option<usize>,
 }
 
 impl SignalConditionalTemporalBudget {
     pub(super) const PRESET: Self = Self {
-        maximum_live_partitions: 128,
-        maximum_reserved_active_wakes: 16_384,
+        maximum_live_partitions: None,
+        maximum_reserved_active_wakes: None,
     };
 
     pub(super) const fn is_valid(self) -> bool {
-        self.maximum_live_partitions != 0 && self.maximum_reserved_active_wakes != 0
+        !matches!(self.maximum_live_partitions, Some(0))
+            && !matches!(self.maximum_reserved_active_wakes, Some(0))
     }
 }
 

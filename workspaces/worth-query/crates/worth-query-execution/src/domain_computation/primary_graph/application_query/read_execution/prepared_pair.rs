@@ -238,7 +238,11 @@ impl PreparedRead<'_> {
             } else {
                 None
             };
-            batch.settle(actual).map_err(|denial| {
+            let result_bytes = match &read {
+                Ok((Ok(raw), _)) => raw.result_buffer.retained_bytes(),
+                _ => 0,
+            };
+            batch.settle(actual, result_bytes).map_err(|denial| {
                 MapKernelFailure::Domain(Denial::BatchResource { root, denial })
             })?
         } else {

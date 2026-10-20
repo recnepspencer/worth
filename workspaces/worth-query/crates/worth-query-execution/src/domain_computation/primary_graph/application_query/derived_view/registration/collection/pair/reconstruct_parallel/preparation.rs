@@ -232,7 +232,12 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
             ),
         ] {
             bytes = bytes
-                .checked_add(review.budget_check().max_inline_index_bytes())
+                .checked_add(
+                    review
+                        .budget_check()
+                        .max_inline_index_bytes()
+                        .unwrap_or_else(|| review.cost_estimate().supported().index_bytes()),
+                )
                 .and_then(|bytes| {
                     bytes.checked_add(review.cost_estimate().supported().proof_bytes())
                 })
@@ -283,7 +288,8 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
             )
         });
         first
-            .checked_add(second)
+            .ok_or(Denial::MissingPreparedResultCapacity)?
+            .checked_add(second.ok_or(Denial::MissingPreparedResultCapacity)?)
             .and_then(|bytes| u64::try_from(bytes).ok())
             .ok_or(Denial::CapacityOverflow)
     }

@@ -139,13 +139,18 @@ impl BatchPolicy {
             }
         }
     }
-    fn maximum_bytes(&self) -> usize {
+    fn maximum_bytes(&self) -> Option<usize> {
         match self {
-            Self::Bounded(limits) => limits.maximum_retained_bytes(),
+            Self::Bounded(limits) => Some(limits.maximum_retained_bytes()),
             Self::Installed(plan) => {
-                plan.lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .bytes
+                let plan = plan
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                if plan.profile.maximum_result_bytes_per_root().is_some() {
+                    Some(plan.bytes)
+                } else {
+                    plan.byte_ceiling
+                }
             }
         }
     }
@@ -158,9 +163,9 @@ impl WorthQueryApplicationQueryBatchAdmission {
             totals: Arc::new(Mutex::new(BatchTotals::default())),
         }
     }
-    pub fn maximum_result_bytes_per_item(&self) -> NonZeroUsize {
+    pub fn maximum_result_bytes_per_item(&self) -> Option<NonZeroUsize> {
         match &self.policy {
-            BatchPolicy::Bounded(limits) => limits.maximum_result_bytes_per_item(),
+            BatchPolicy::Bounded(limits) => Some(limits.maximum_result_bytes_per_item()),
             BatchPolicy::Installed(plan) => {
                 plan.lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -172,9 +177,12 @@ impl WorthQueryApplicationQueryBatchAdmission {
     /// Narrows an ordinary plan's allowance without rewriting its authority.
     pub(in crate::domain_computation::primary_graph::application_query) fn inline_result_bytes(
         &self,
-        plan_allowance: usize,
-    ) -> usize {
-        plan_allowance.min(self.maximum_result_bytes_per_item().get())
+        plan_allowance: Option<usize>,
+    ) -> Option<usize> {
+        plan_allowance
+            .into_iter()
+            .chain(self.maximum_result_bytes_per_item().map(NonZeroUsize::get))
+            .min()
     }
 
     /// Collection-length preflight. Individual admissions consume their own

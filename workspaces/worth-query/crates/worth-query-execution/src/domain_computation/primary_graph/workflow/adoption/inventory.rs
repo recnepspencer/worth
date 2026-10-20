@@ -33,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionInventor
     pub(in crate::domain_computation::primary_graph) source: &'a ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph) target: &'a ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph) maximum_work_units: usize,
-    pub(in crate::domain_computation::primary_graph) maximum_preparation_bytes: u64,
+    pub(in crate::domain_computation::primary_graph) maximum_preparation_bytes: Option<u64>,
 }
 
 struct ReadDefinition {

@@ -15,8 +15,6 @@ use worth_query_installation::facade::{
     APPLICATION_EXECUTION_PROVIDER_FAMILY, APPLICATION_EXECUTION_SAFE_POINT_FAMILY,
 };
 
-pub(super) const UNPUBLISHED_IDEMPOTENCY_CAPACITY: usize = 64;
-
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphResourceSupport {
     graph: WorthQueryExecutionResourceSupport,
     snapshot:
@@ -82,15 +80,14 @@ fn component_support(
         )
         .expect("static primary provider capacity is valid"),
     );
-    let mut scale = WorthQuerySemanticScaleRequest::selective().with(
-        WorthQuerySemanticScaleAxis::BatchWidth,
-        candidate_resources.maximum_operation_width(),
-    );
+    let mut scale = WorthQuerySemanticScaleRequest::selective();
+    if let Some(width) = candidate_resources.maximum_operation_width() {
+        scale = scale.with(WorthQuerySemanticScaleAxis::BatchWidth, width);
+    }
     if let Some(items) = candidate_resources.maximum_items() {
         scale = scale.with(WorthQuerySemanticScaleAxis::CandidateItems, items);
     }
-    let mut resources = WorthQueryResourceLimitRequest::selective()
-        .with(WorthQueryResourceDimension::RetainedBytes, 262_144);
+    let mut resources = WorthQueryResourceLimitRequest::selective();
     if let Some(bytes) = candidate_resources.maximum_retained_representation_bytes() {
         resources = resources.with(
             WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,

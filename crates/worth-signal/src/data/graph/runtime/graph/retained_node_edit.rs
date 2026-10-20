@@ -172,7 +172,7 @@ impl NodeArena {
         &self,
         ledger: &Arc<SignalConditionalRetentionLedger>,
         indices: &[usize],
-        maximum: Charge,
+        maximum: Option<Charge>,
         work: &mut Preparation,
         edit: impl FnOnce(&mut [RetainedNodePayload], &mut Preparation) -> R,
     ) -> Result<RetainedNodeEditPreparation<R>, RetainedNodeEditDenial> {
@@ -242,7 +242,7 @@ impl NodeArena {
                     ],
                 )
                 .map_err(RetainedNodeEditDenial::Accounting)?;
-                if required > maximum {
+                if let Some(maximum) = maximum.filter(|maximum| required > *maximum) {
                     return Err(RetainedNodeEditDenial::CapacityExhausted { maximum, required });
                 }
                 let custody = reservation_admission::reserve_staged_roots(ledger, required)?;
@@ -250,13 +250,13 @@ impl NodeArena {
                 // No selected lane allocates replacement storage before this
                 // ceiling for every publication prefix has been checked.
                 let hot_charge = hot
-                    .publish(maximum)
+                    .publish(required)
                     .map_err(|(_, d)| map_capacity_denial(d))?;
                 let warm_charge = warm
-                    .publish(maximum)
+                    .publish(required)
                     .map_err(|(_, d)| map_capacity_denial(d))?;
                 let cold_charge = cold
-                    .publish(maximum)
+                    .publish(required)
                     .map_err(|(_, d)| map_capacity_denial(d))?;
                 staged.custody = Some(custody);
                 charge = hot_charge

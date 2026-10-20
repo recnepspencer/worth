@@ -56,21 +56,25 @@ pub(super) fn charge_split(
 
 pub(super) fn charge_outer_retirement(
     admission: &mut InvalidationEditAdmission,
-    installed_required_bytes: usize,
+    installed_required_bytes: Option<usize>,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     let minimum_outer = node_bytes::<ProductBranchIncarnation, BranchCursors>()?;
+    // Every row occupies addressable backing. Even without a host quota,
+    // a B-tree over usize-addressable storage has fewer than usize::BITS
+    // levels (each non-root level adds at least two resident keys).
     let maximum_rows = installed_required_bytes
-        .checked_div(minimum_outer)
-        .ok_or_else(work_denial)?
-        .max(1);
-    let maximum_levels = levels(maximum_rows)?;
-    let comparisons = maximum_rows.min(
-        11usize
-            .checked_mul(maximum_levels)
-            .ok_or_else(work_denial)?,
-    );
-    // One exact lookup, removal search and up to one eleven-key rebalance
-    // per possible level. The installed aggregate bounds future cardinality.
+        .map(|bytes| bytes.checked_div(minimum_outer).ok_or_else(work_denial))
+        .transpose()?;
+    let maximum_levels = maximum_rows
+        .map(levels)
+        .transpose()?
+        .unwrap_or(usize::BITS as usize);
+    let per_level = 11usize
+        .checked_mul(maximum_levels)
+        .ok_or_else(work_denial)?;
+    let comparisons = maximum_rows.map_or(per_level, |rows| rows.min(per_level));
+    // Exact lookup, removal search and rebalance remain prepaid even if
+    // other owners grow the tree between this issue and final retirement.
     let visits = comparisons
         .checked_mul(6)
         .and_then(|n| n.checked_add(11usize.checked_mul(maximum_levels.checked_add(1)?)?))

@@ -13,11 +13,11 @@ pub enum WorthQueryPublishedApplicationQueryReleasePosture {
 pub enum WorthQueryPublishedApplicationQueryResultBufferRelease {
     Missing,
     Released {
-        limit_bytes: usize,
+        limit_bytes: Option<usize>,
         peak_bytes: usize,
     },
     ReleaseFailed {
-        limit_bytes: usize,
+        limit_bytes: Option<usize>,
         peak_bytes: usize,
     },
 }

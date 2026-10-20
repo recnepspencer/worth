@@ -186,7 +186,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         match join.advance(&request) {
             Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
             Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded)
-            | Ok(WorthQueryApplicationOutputDemandProgress::Pending) => {
+            | Ok(WorthQueryApplicationOutputDemandProgress::Pending | WorthQueryApplicationOutputDemandProgress::Progressed) => {
                 settled_in_one_advance!(join, request, "the held child retry")
             }
             Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))

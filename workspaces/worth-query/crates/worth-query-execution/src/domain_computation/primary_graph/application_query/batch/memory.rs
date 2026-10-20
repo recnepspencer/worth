@@ -66,11 +66,13 @@ impl WorthQueryApplicationQueryBatchAdmission {
             .bytes
             .checked_add(bytes)
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
-        if required > self.policy.maximum_bytes() {
-            let denial = WorthQueryApplicationQueryBatchResourceDenial::MemoryLimit {
-                required,
-                maximum: self.policy.maximum_bytes(),
-            };
+        if let Some(maximum) = self
+            .policy
+            .maximum_bytes()
+            .filter(|maximum| required > *maximum)
+        {
+            let denial =
+                WorthQueryApplicationQueryBatchResourceDenial::MemoryLimit { required, maximum };
             totals.memory_denial = Some(denial);
             return Err(denial);
         }
@@ -94,6 +96,16 @@ impl WorthQueryApplicationQueryBatchAdmission {
 }
 
 impl WorthQueryApplicationQueryBatchMemory {
+    pub(in crate::domain_computation::primary_graph::application_query) fn grow_to(
+        &mut self,
+        bytes: usize,
+    ) -> Result<(), WorthQueryApplicationQueryBatchResourceDenial> {
+        if let Some(extra) = bytes.checked_sub(self.bytes) {
+            self.grow(extra)?;
+        }
+        Ok(())
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn belongs_to(
         &self,
         batch: &WorthQueryApplicationQueryBatchAdmission,
@@ -117,11 +129,13 @@ impl WorthQueryApplicationQueryBatchMemory {
             .bytes
             .checked_add(bytes)
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
-        if required > self.policy.maximum_bytes() {
-            let denial = WorthQueryApplicationQueryBatchResourceDenial::MemoryLimit {
-                required,
-                maximum: self.policy.maximum_bytes(),
-            };
+        if let Some(maximum) = self
+            .policy
+            .maximum_bytes()
+            .filter(|maximum| required > *maximum)
+        {
+            let denial =
+                WorthQueryApplicationQueryBatchResourceDenial::MemoryLimit { required, maximum };
             totals.memory_denial = Some(denial);
             return Err(denial);
         }

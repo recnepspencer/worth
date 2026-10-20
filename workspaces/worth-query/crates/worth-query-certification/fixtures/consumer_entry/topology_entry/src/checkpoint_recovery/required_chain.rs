@@ -115,7 +115,8 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         .unwrap();
     let initial_a = (0..256)
         .find_map(|_| match a.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual upstream initially settles");
@@ -125,7 +126,8 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
     );
     let initial_b = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual middle consumer initially settles");
@@ -135,7 +137,8 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
     );
     let original = (0..256)
         .find_map(|_| match c.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual A to B to C chain initially settles");
@@ -200,7 +203,8 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         .expect("one caller pumps the actual prerequisite chain")
     {
         WorthQueryApplicationOutputDemandProgress::Settled(settled) => settled,
-        WorthQueryApplicationOutputDemandProgress::Pending => {
+        WorthQueryApplicationOutputDemandProgress::Pending
+        | WorthQueryApplicationOutputDemandProgress::Progressed => {
             panic!("the finite required chain needs another caller advance")
         }
     };

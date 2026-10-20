@@ -12,7 +12,7 @@ pub struct WorthQueryEphemeralGraphIndexReceipt {
     index_digest: String,
     scope_kind: WorthQueryEphemeralGraphIndexScopeKind,
     actual_allocated_bytes: usize,
-    admitted_byte_budget: usize,
+    admitted_byte_budget: Option<usize>,
     active_resource_count_after_scope: usize,
     counters: WorthQueryEphemeralGraphIndexCounters,
 }
@@ -42,7 +42,7 @@ impl WorthQueryEphemeralGraphIndexReceipt {
         self.actual_allocated_bytes
     }
 
-    pub fn admitted_byte_budget(&self) -> usize {
+    pub fn admitted_byte_budget(&self) -> Option<usize> {
         self.admitted_byte_budget
     }
 
@@ -61,7 +61,7 @@ impl WorthQueryEphemeralGraphIndexReceipt {
     pub(in crate::runtime::graph_read_access::ephemeral_index_provisioning) fn finalized(
         index: &WorthQueryEphemeralGraphIndex,
         scope: &WorthQueryEphemeralGraphIndexScope,
-        admitted_byte_budget: usize,
+        admitted_byte_budget: Option<usize>,
         active_resource_count_after_scope: usize,
         counters: WorthQueryEphemeralGraphIndexCounters,
     ) -> Self {
@@ -71,13 +71,13 @@ impl WorthQueryEphemeralGraphIndexReceipt {
         let scope_kind = scope.kind().clone();
         let actual_allocated_bytes = index.allocated_bytes();
         let digest = hash_parts(&[
-            "worth_query_ephemeral_graph_index_receipt_v1".to_string(),
+            "worth_query_ephemeral_graph_index_receipt_v2".to_string(),
             format!("plan:{plan_digest}"),
             format!("scope:{scope_digest}"),
             format!("index:{index_digest}"),
             format!("scope_kind:{}", scope_kind.as_str()),
             format!("allocated:{actual_allocated_bytes}"),
-            format!("budget:{admitted_byte_budget}"),
+            format!("budget:{admitted_byte_budget:?}"),
             format!("active_after_scope:{active_resource_count_after_scope}"),
             counters.digest_part(),
         ]);

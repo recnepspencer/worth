@@ -68,7 +68,8 @@ fn discovered_currentness_all_native_retired_keeps_original_discovery() {
         .unwrap();
     let aggregate = settle(
         || match recovered.advance(&world.application, &request).unwrap() {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(aggregate) => Some(aggregate),
         },
     );

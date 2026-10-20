@@ -86,7 +86,8 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
                 .unwrap_or_else(|denial| {
                     panic!("revision {replacement_y} output graph advances: {denial:?}")
                 }) {
-                WorthQueryApplicationProgramOutputProgress::Pending => None,
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => None,
                 WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
             }
         });

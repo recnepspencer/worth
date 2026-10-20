@@ -123,7 +123,8 @@ pub(super) fn performed_source_settles_required_output(
             .advance(&request)
             .expect("the required output advances through the production entry")
         {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         }
     });

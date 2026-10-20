@@ -117,7 +117,7 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     assert!(result.receipt().total_work_units() <= 10_000);
     assert_eq!(result.receipt().fallback_count(), 0);
     let buffer = result.receipt().result_buffer().unwrap();
-    assert_eq!(buffer.limit_bytes(), RESULT_BYTES);
+    assert_eq!(buffer.limit_bytes(), Some(RESULT_BYTES));
     assert!(buffer.peak_bytes() <= RESULT_BYTES);
 }
 
@@ -213,7 +213,7 @@ fn invented_selector_contract_denies_domain_projection() {
 
 #[test]
 fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
-    let world = installed_authorization_world_with_label(&"x".repeat(50_000));
+    let world = installed_authorization_world_with_label(&"x".repeat(50_000), crate::domain_computation::execution_runtime::WorthQueryApplicationQueryResourceProfile::bounded(5120, 4096, 10_000, 64).unwrap());
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
@@ -280,7 +280,8 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
     let result_buffer_limit = plan
         .graph_read_plan()
         .budget_check()
-        .max_inline_result_bytes();
+        .max_inline_result_bytes()
+        .expect("this pressure fixture installs an explicit finite result policy");
     let buffer_observer = world.application.result_buffer_observer();
 
     let denial = world

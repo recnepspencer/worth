@@ -57,7 +57,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
     let mut admission = record_admission();
     {
         let mut state = registry.state.lock().unwrap();
-        state.required_budget_bytes = 1 << 20;
+        state.required_budget_bytes = Some(1 << 20);
         let (posting, _cleanup) = state
             .reserve_settlement_vacancy(&identity, &mut admission)
             .unwrap();

@@ -185,7 +185,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             .advance(&world.application, &fresh_request)
             .unwrap()
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });

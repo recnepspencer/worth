@@ -2,26 +2,29 @@ use serde::{Deserialize, Serialize};
 
 use super::{InstalledSignalRuntimePolicy, ResolvedSignalRuntimePolicy, SignalRuntimePolicy};
 
-/// Requested bounds for owner-managed derived evaluation. These limits do not
+/// Optional host quotas for owner-managed derived evaluation. These limits do not
 /// authorize execution; the owner must reserve actual storage and work first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignalConditionalEvaluationBudget {
-    /// Fixed owner-wide ceiling at sealing. All live branches must agree.
-    pub maximum_retained_slots: usize,
+    /// Optional owner-wide slot ceiling. All live branches must agree at sealing.
+    #[serde(deserialize_with = "Option::deserialize")]
+    pub maximum_retained_slots: Option<usize>,
     /// Shared Signal conditional-service representation bytes, including live
     /// old/draft/evidence custody and managed temporal partitions and results.
     /// Other owners must account their own storage under their own ceilings.
     /// This is not an allocator or process-RSS limit.
-    /// All live branches must agree on this owner-wide ceiling at sealing.
-    pub maximum_retained_bytes: u64,
+    /// None omits this host quota; actual backing remains reserved and counted.
+    /// All live branches must agree on this policy at sealing.
+    #[serde(deserialize_with = "Option::deserialize")]
+    pub maximum_retained_bytes: Option<u64>,
     /// Optional caller bound per selected-definition attempt; never replenished by a writer.
     pub maximum_attempt_visits: Option<usize>,
 }
 
 impl SignalConditionalEvaluationBudget {
     pub(super) const PRESET: Self = Self {
-        maximum_retained_slots: 128,
-        maximum_retained_bytes: 512 * 1024 * 1024,
+        maximum_retained_slots: None,
+        maximum_retained_bytes: None,
         maximum_attempt_visits: None,
     };
 
@@ -30,8 +33,8 @@ impl SignalConditionalEvaluationBudget {
     }
 
     pub(super) const fn is_valid(self) -> bool {
-        self.maximum_retained_slots != 0
-            && self.maximum_retained_bytes != 0
+        !matches!(self.maximum_retained_slots, Some(0))
+            && !matches!(self.maximum_retained_bytes, Some(0))
             && match self.maximum_attempt_visits {
                 None => true,
                 Some(maximum) => maximum != 0,

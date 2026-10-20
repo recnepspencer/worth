@@ -21,7 +21,7 @@ pub struct WorthQueryEphemeralGraphIndexScope {
     kind: WorthQueryEphemeralGraphIndexScopeKind,
     admitted_plan_digest: String,
     snapshot_identity_digest: String,
-    byte_budget: usize,
+    byte_budget: Option<usize>,
 }
 
 impl WorthQueryEphemeralGraphIndexScope {
@@ -41,14 +41,14 @@ impl WorthQueryEphemeralGraphIndexScope {
         &self.snapshot_identity_digest
     }
 
-    pub fn byte_budget(&self) -> usize {
+    pub fn byte_budget(&self) -> Option<usize> {
         self.byte_budget
     }
 
     pub(in crate::runtime::graph_read_access::ephemeral_index_provisioning) fn read_execution(
         admitted_plan_digest: impl Into<String>,
         snapshot_identity_digest: impl Into<String>,
-        byte_budget: usize,
+        byte_budget: Option<usize>,
     ) -> Self {
         Self::new(
             WorthQueryEphemeralGraphIndexScopeKind::ReadExecution,
@@ -62,14 +62,14 @@ impl WorthQueryEphemeralGraphIndexScope {
         kind: WorthQueryEphemeralGraphIndexScopeKind,
         admitted_plan_digest: String,
         snapshot_identity_digest: String,
-        byte_budget: usize,
+        byte_budget: Option<usize>,
     ) -> Self {
         let digest = hash_parts(&[
-            "worth_query_ephemeral_graph_index_scope_v1".to_string(),
+            "worth_query_ephemeral_graph_index_scope_v2".to_string(),
             format!("kind:{}", kind.as_str()),
             format!("admitted_plan:{admitted_plan_digest}"),
             format!("snapshot:{snapshot_identity_digest}"),
-            format!("byte_budget:{byte_budget}"),
+            format!("byte_budget:{byte_budget:?}"),
         ]);
         Self {
             digest,

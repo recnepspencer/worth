@@ -168,7 +168,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
                 .runtime
                 .application_query_resource_profile()
                 .maximum_inline_index_bytes()
-                .get() as u64,
+                .map(|bytes| bytes.get() as u64),
         };
         let inventory = inventory_workflows(execution, runtime, basis, view, &workflow_request)
             .map_err(|cause| workflow_read_denial(cause, maximum_selection_work))?;

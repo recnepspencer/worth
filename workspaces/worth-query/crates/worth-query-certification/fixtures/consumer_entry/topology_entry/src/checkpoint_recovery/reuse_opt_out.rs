@@ -123,7 +123,8 @@ fn check_live_output(
         .unwrap();
     let first = (0..64)
         .find_map(|_| match initial.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the Initial producer creates the final ring");
@@ -164,7 +165,8 @@ fn check_live_output(
         .unwrap();
     let second = (0..64)
         .find_map(|_| match preserving.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the Preserve producer advances without Initial executing over live output");

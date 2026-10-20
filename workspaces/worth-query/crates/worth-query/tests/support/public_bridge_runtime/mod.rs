@@ -74,8 +74,8 @@ fn public_product_resources() -> WorthQueryConditionalExecutionResources {
         WorthQueryConditionalEvaluationCacheBudget::bounded(128, 8 * 1024 * 1024)
             .expect("public bridge tests require a nonempty Query conditional budget"),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 128,
-            maximum_retained_bytes: 512 * 1024 * 1024,
+            maximum_retained_slots: Some(128),
+            maximum_retained_bytes: Some(512 * 1024 * 1024),
             maximum_attempt_visits: None,
         },
     )

@@ -262,7 +262,8 @@ fn direct_demand_with_controls<'application, 'principal, 'scope>(
             .advance(request)
             .unwrap_or_else(|denial| panic!("{stage} demand failed to advance: {denial:?}"))
         {
-            WorthQueryApplicationOutputDemandProgress::Pending => std::thread::yield_now(),
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => std::thread::yield_now(),
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => return settled,
         }
     }

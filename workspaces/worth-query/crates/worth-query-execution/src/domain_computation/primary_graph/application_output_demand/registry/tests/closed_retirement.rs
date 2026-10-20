@@ -81,7 +81,7 @@ fn a_reclaim_keeps_a_superseded_row_whose_claim_did_not_move() {
         let mut state = registry.state.lock().unwrap();
         // The newest row is no required member: the claim has no key to move to.
         state.required_keys.clear();
-        state.required_budget_bytes = 0;
+        state.required_budget_bytes = Some(0);
     }
     registry
         .reclaim_cached_rows(1, &mut record_admission())

@@ -5,8 +5,11 @@ use super::*;
 
 #[test]
 fn ordered_record_capacity_denies_before_insertion() {
-    let registry =
-        WorthQueryOutputDemandRegistry::with_budgets(4 * 1_024 * 1_024, 1, 4 * 1_024 * 1_024);
+    let registry = WorthQueryOutputDemandRegistry::with_budgets(
+        Some(4 * 1_024 * 1_024),
+        Some(1),
+        Some(4 * 1_024 * 1_024),
+    );
     let demand = key("capacity-short", 1, 1);
     let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
     let denial = match registry.admit(

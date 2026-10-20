@@ -111,7 +111,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
     let original_body = body(&original);
     let (first, _) = FactContent::build(original_body.clone(), control()).unwrap();
     assert_eq!(
-        first.identity([9; 32], usize::MAX).unwrap().0,
+        first.identity([9; 32], Some(usize::MAX)).unwrap().0,
         cold(&original, [9; 32])
     );
     assert!(first.same_body(&original_body));
@@ -124,7 +124,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
             .refresh(body(&values), [ordinal], control())
             .unwrap();
         assert_eq!(
-            next.identity([9; 32], usize::MAX).unwrap().0,
+            next.identity([9; 32], Some(usize::MAX)).unwrap().0,
             cold(&values, [9; 32])
         );
         assert!(
@@ -134,7 +134,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
         current = next;
     }
     assert_eq!(
-        current.identity([9; 32], usize::MAX).unwrap().0,
+        current.identity([9; 32], Some(usize::MAX)).unwrap().0,
         cold(&original, [9; 32])
     );
     for values in [
@@ -145,7 +145,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
     ] {
         let (content, _) = FactContent::build(body(&values), control()).unwrap();
         assert_eq!(
-            content.identity([9; 32], usize::MAX).unwrap().0,
+            content.identity([9; 32], Some(usize::MAX)).unwrap().0,
             cold(&values, [9; 32])
         );
     }
@@ -157,7 +157,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
     let (short, _) = current.refresh(body(&values[..33]), [], control()).unwrap();
     let (regrown, _) = short.refresh(body(&values), 33..65, control()).unwrap();
     assert_eq!(
-        regrown.identity([9; 32], usize::MAX).unwrap().0,
+        regrown.identity([9; 32], Some(usize::MAX)).unwrap().0,
         cold(&original, [9; 32])
     );
 }
@@ -166,12 +166,12 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
 fn whole_content_capacity_is_not_replaced_by_the_small_root_encoding() {
     let values: Vec<_> = (0..33).map(|ordinal| fact(ordinal, 1)).collect();
     let (content, _) = FactContent::build(body(&values), control()).unwrap();
-    let (_, root) = content.identity([1; 32], usize::MAX).unwrap();
+    let (_, root) = content.identity([1; 32], Some(usize::MAX)).unwrap();
     let maximum = content.0.tree.result().content_bytes.unwrap() + root.canonical_encoded_bytes();
-    assert!(content.identity([1; 32], maximum).is_ok());
-    assert!(content.identity([1; 32], maximum - 1).is_err());
+    assert!(content.identity([1; 32], Some(maximum)).is_ok());
+    assert!(content.identity([1; 32], Some(maximum - 1)).is_err());
     assert!(content
-        .identity([1; 32], root.canonical_encoded_bytes())
+        .identity([1; 32], Some(root.canonical_encoded_bytes()))
         .is_err());
 }
 
@@ -198,7 +198,7 @@ fn native_content_refusal_preserves_prior_and_funding_survives_clones() {
         let values: Vec<_> = (0..33).map(|ordinal| fact(ordinal, 1)).collect();
         let original_body = body(&values);
         let (original, _) = FactContent::build(original_body.clone(), control).unwrap();
-        let identity = original.identity([9; 32], usize::MAX).unwrap().0;
+        let identity = original.identity([9; 32], Some(usize::MAX)).unwrap().0;
         let before = lease.charged_memory_bytes();
         assert!(before > baseline);
         let mut changed = values.clone();
@@ -212,7 +212,10 @@ fn native_content_refusal_preserves_prior_and_funding_survives_clones() {
             )
             .unwrap();
         assert!(original.refresh(body(&changed), [17], control).is_err());
-        assert_eq!(original.identity([9; 32], usize::MAX).unwrap().0, identity);
+        assert_eq!(
+            original.identity([9; 32], Some(usize::MAX)).unwrap().0,
+            identity
+        );
         assert!(original.same_body(&original_body));
         drop(blocked);
         assert_eq!(lease.charged_memory_bytes(), before);
@@ -231,7 +234,7 @@ fn native_content_refusal_preserves_prior_and_funding_survives_clones() {
             .is_err());
         let (next, _) = original.refresh(body(&changed), [17], control).unwrap();
         assert_eq!(
-            next.identity([9; 32], usize::MAX).unwrap().0,
+            next.identity([9; 32], Some(usize::MAX)).unwrap().0,
             cold(&changed, [9; 32])
         );
         let clone = next.clone();

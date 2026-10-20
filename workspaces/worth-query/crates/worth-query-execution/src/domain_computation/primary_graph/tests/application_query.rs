@@ -225,7 +225,7 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
         plan.graph_read_plan()
             .budget_check()
             .max_inline_intermediate_set_size(),
-        10_000
+        Some(10_000)
     );
 
     let result = world

@@ -121,7 +121,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             .advance(&world.application, &request)
             .expect("older roots advance")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });
@@ -145,7 +146,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             .advance(&world.application, &request)
             .expect("newer roots advance")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });
@@ -258,7 +260,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn u
                 .advance(&world.application, &request)
                 .expect("shared roots advance")
             {
-                WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+                WorthQueryDiscoveredProgramOutputProgress::Pending
+                | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
                 WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
             }
         });

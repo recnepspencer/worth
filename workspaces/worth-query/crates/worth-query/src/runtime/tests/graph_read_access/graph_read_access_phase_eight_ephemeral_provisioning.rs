@@ -77,7 +77,10 @@ fn bounded_ephemeral_index_plan_is_visible_before_execution() {
     );
     assert_eq!(ephemeral_plan.required_allocations().len(), 1);
     assert!(
-        ephemeral_plan.estimated_index_bytes() <= ephemeral_plan.admitted_byte_budget(),
+        ephemeral_plan.estimated_index_bytes()
+            <= ephemeral_plan
+                .admitted_byte_budget()
+                .expect("the selected ephemeral strategy is explicitly finite"),
         "ephemeral provisioning must be budget-admitted before execution"
     );
 }
@@ -117,7 +120,12 @@ fn bounded_ephemeral_index_receipt_proves_cleanup_after_execution() {
         receipt.counters().successful_allocation_count()
     );
     assert_eq!(receipt.counters().rejected_before_allocation_count(), 0);
-    assert!(receipt.actual_allocated_bytes() <= receipt.admitted_byte_budget());
+    assert!(
+        receipt.actual_allocated_bytes()
+            <= receipt
+                .admitted_byte_budget()
+                .expect("the selected ephemeral strategy is explicitly finite")
+    );
 }
 
 #[test]

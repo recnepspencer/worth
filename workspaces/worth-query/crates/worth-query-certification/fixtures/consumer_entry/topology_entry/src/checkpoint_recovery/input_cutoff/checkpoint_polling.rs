@@ -66,7 +66,10 @@ fn interrupted(deadline: bool, later_cancel: bool) {
         .expect("the real request is live at admission");
     let refusal = (0..256)
         .find_map(|_| match demand.advance(&stopped_request) {
-            Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
+            Ok(
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed,
+            ) => None,
             Ok(WorthQueryApplicationOutputDemandProgress::Settled(_)) => {
                 panic!("an interrupted decision published")
             }

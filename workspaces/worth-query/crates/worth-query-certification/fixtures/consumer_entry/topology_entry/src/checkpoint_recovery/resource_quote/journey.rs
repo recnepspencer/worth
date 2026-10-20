@@ -108,7 +108,8 @@ fn exercise(
     .expect("finite original source quote is admitted");
     let settled = (0..64)
         .find_map(|_| match ordinary.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(s) => Some(s),
         })
         .expect("Fresh producer settles after source correction");
@@ -157,7 +158,8 @@ fn exercise(
     .unwrap();
     let settled = (0..64)
         .find_map(|_| match selected.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(s) => Some(s),
         })
         .expect("Fresh regeneration keeps the same fallible quote boundary");

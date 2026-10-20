@@ -151,7 +151,11 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         .expect("live projection must carry bounded result-buffer evidence");
     assert!(buffer.released());
     assert!(buffer.peak_bytes() > 0);
-    assert!(buffer.peak_bytes() <= buffer.limit_bytes());
+    assert_eq!(
+        buffer.limit_bytes(),
+        None,
+        "ordinary result policy is absent while native storage stays counted"
+    );
     assert_eq!(observer.observe().active_buffers(), 0);
     assert_eq!(observer.observe().retained_bytes(), 0);
     let WorthQueryApplicationLiveCloseOutcome::Completed(completion) = lease.close() else {

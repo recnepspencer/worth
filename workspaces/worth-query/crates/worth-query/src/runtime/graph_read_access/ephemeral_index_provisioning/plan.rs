@@ -53,7 +53,7 @@ pub struct WorthQueryEphemeralGraphIndexPlan {
     admission_digest: String,
     requirement_set_digest: String,
     estimated_index_bytes: usize,
-    admitted_byte_budget: usize,
+    admitted_byte_budget: Option<usize>,
     estimated_touched_nodes: usize,
     estimated_touched_edges: usize,
     required_scope_kind: WorthQueryEphemeralGraphIndexScopeKind,
@@ -77,7 +77,7 @@ impl WorthQueryEphemeralGraphIndexPlan {
         self.estimated_index_bytes
     }
 
-    pub fn admitted_byte_budget(&self) -> usize {
+    pub fn admitted_byte_budget(&self) -> Option<usize> {
         self.admitted_byte_budget
     }
 
@@ -141,7 +141,7 @@ impl WorthQueryEphemeralGraphIndexPlan {
         admission_digest: impl Into<String>,
         requirement_set_digest: String,
         estimated_index_bytes: usize,
-        admitted_byte_budget: usize,
+        admitted_byte_budget: Option<usize>,
         estimated_touched_nodes: usize,
         estimated_touched_edges: usize,
         allocation_rows: Vec<WorthQueryEphemeralGraphIndexAllocationRow>,
@@ -150,11 +150,11 @@ impl WorthQueryEphemeralGraphIndexPlan {
         let required_scope_kind = WorthQueryEphemeralGraphIndexScopeKind::ReadExecution;
         let digest = hash_parts(
             &[
-                "worth_query_ephemeral_graph_index_plan_v1".to_string(),
+                "worth_query_ephemeral_graph_index_plan_v2".to_string(),
                 format!("admission:{admission_digest}"),
                 format!("requirements:{requirement_set_digest}"),
                 format!("estimated_index_bytes:{estimated_index_bytes}"),
-                format!("admitted_byte_budget:{admitted_byte_budget}"),
+                format!("admitted_byte_budget:{admitted_byte_budget:?}"),
                 format!("estimated_touched_nodes:{estimated_touched_nodes}"),
                 format!("estimated_touched_edges:{estimated_touched_edges}"),
                 format!("scope:{}", required_scope_kind.as_str()),

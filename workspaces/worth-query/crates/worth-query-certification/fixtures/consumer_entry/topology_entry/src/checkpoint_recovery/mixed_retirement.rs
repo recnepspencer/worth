@@ -72,7 +72,8 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
                 .advance(&application, &request)
                 .unwrap()
             {
-                WorthQueryApplicationProgramOutputProgress::Pending => None,
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => None,
                 WorthQueryApplicationProgramOutputProgress::Settled(value) => Some(value),
             }
         })
@@ -185,7 +186,10 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
         .unwrap();
     let denial = (0..64)
         .find_map(|_| match demand.advance(&request) {
-            Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
+            Ok(
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed,
+            ) => None,
             Ok(WorthQueryApplicationOutputDemandProgress::Settled(_)) => {
                 panic!("untrusted retired descriptions must not issue restored readiness")
             }

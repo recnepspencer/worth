@@ -53,12 +53,12 @@ fn a_late_shared_buffer_refusal_keeps_prior_source_custody_until_drop() {
     use super::super::resource_lifecycle::WorthQueryApplicationResultBufferRegistry;
     let registry = WorthQueryApplicationResultBufferRegistry::default();
     let batch = WorthQueryApplicationQueryBatchAdmission::new(limits(10, 31));
-    let mut first = registry.reserve_in_batch(32, &batch);
+    let mut first = registry.reserve_in_batch(Some(32), &batch);
     first.claim(12).unwrap();
     let source = first.claim_retained_source(11).unwrap();
     first.release();
     assert_eq!(batch.observe().retained_bytes(), 11);
-    let mut second = registry.reserve_in_batch(32, &batch);
+    let mut second = registry.reserve_in_batch(Some(32), &batch);
     second.claim(20).unwrap();
     assert!(second.claim_retained_source(1).is_err());
     assert_eq!(batch.observe().retained_bytes(), 31);

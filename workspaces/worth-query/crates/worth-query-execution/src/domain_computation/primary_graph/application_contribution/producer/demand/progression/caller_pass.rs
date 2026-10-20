@@ -6,6 +6,8 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 /// What one pass of a caller over its own row answered.
 pub(super) enum CallerPass<Query, Value> {
     Answer(WorthQueryOutputDemandAdvance),
+    /// The same owner successfully moved its checkpoint, without a new decision input.
+    Progressed,
     /// The pass replaced a Ready that no longer proves its output with a row
     /// admitted under the disclosed source. Nothing outside this call has to
     /// happen before that row runs: its stages need the next disclosure.
@@ -49,7 +51,7 @@ where
     /// `disclosure` answers `None` once the caller has no further source to
     /// disclose in this call. A caller that reads its retained source again
     /// retries after source replacement or upstream completion; one that handed over its
-    /// only disclosure answers `Pending` and discloses on its next advance.
+    /// only disclosure reports `Progressed` after a native move and discloses on its next advance.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn advance_output_demand_with_prepared_source<
         Family,
     >(
@@ -250,10 +252,13 @@ where
                     )?;
                     match answer {
                         CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Progressed => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
+                        }
                         CallerPass::Refreshed(_) | CallerPass::PublishedStale(_)
                             if final_disclosure =>
                         {
-                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
                         }
                         CallerPass::Refreshed(disclosed) => {
                             AdvancePassProgress::Continue(AdvancePass::Refreshed(disclosed))
@@ -279,11 +284,14 @@ where
                     )?;
                     match answer {
                         CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Progressed => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
+                        }
                         CallerPass::PublishedStale(receipt) => {
                             AdvancePassProgress::Continue(AdvancePass::OwnPublication(receipt))
                         }
                         CallerPass::Refreshed(_) => {
-                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
                         }
                     }
                 }
@@ -293,7 +301,7 @@ where
                         #[cfg(test)]
                         own_effect_observation::record(Stage::DisclosureExhausted);
                         return Ok(AdvancePassProgress::Answer(
-                            WorthQueryOutputDemandAdvance::Pending,
+                            WorthQueryOutputDemandAdvance::Progressed,
                         ));
                     };
                     let disclosed = validate_disclosure(
@@ -325,11 +333,14 @@ where
                     )?;
                     match answer {
                         CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Progressed => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
+                        }
                         CallerPass::Refreshed(disclosed) => {
                             AdvancePassProgress::Continue(AdvancePass::Final(disclosed, receipt))
                         }
                         CallerPass::PublishedStale(_) => {
-                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
                         }
                     }
                 }
@@ -349,8 +360,11 @@ where
                     )?;
                     match answer {
                         CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Progressed => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
+                        }
                         CallerPass::Refreshed(_) | CallerPass::PublishedStale(_) => {
-                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
                         }
                     }
                 }
@@ -374,7 +388,7 @@ where
                     Ok(AdvancePassProgress::Continue(AdvancePass::RetryDisclosure))
                 }
                 Some(WorthQueryOutputDemandAdvance::Settled(_)) => Ok(AdvancePassProgress::Answer(
-                    WorthQueryOutputDemandAdvance::Pending,
+                    WorthQueryOutputDemandAdvance::Progressed,
                 )),
                 Some(answer) => Ok(AdvancePassProgress::Answer(answer)),
                 None => Err(stop),

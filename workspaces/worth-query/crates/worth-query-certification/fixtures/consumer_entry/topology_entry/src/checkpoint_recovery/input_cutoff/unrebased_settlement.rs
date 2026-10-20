@@ -188,7 +188,8 @@ fn demand_outcome<'application, 'principal, 'scope>(
         .map_err(Box::new)?;
     for _ in 0..256 {
         match demand.advance(request).map_err(Box::new)? {
-            WorthQueryApplicationOutputDemandProgress::Pending => std::thread::yield_now(),
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => std::thread::yield_now(),
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => return Ok(settled),
         }
     }

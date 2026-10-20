@@ -32,7 +32,7 @@ fn a_consumer_handoff_ends_at_real_row_reclamation() {
         let mut state = registry.state.lock().unwrap();
         assert_eq!(state.records[consumer.as_ref()].interests, 1);
         assert_eq!(state.records[consumer.as_ref()].framework_required_count, 0);
-        state.required_budget_bytes = 0;
+        state.required_budget_bytes = Some(0);
     }
     // The wave interest protects the posted row under real custody pressure.
     registry

@@ -48,7 +48,8 @@ fn settled<RootQuery>(
     progress: WorthQueryApplicationProgramOutputProgress<RootQuery>,
 ) -> Option<WorthQueryApplicationProgramOutputSettlement<RootQuery>> {
     match progress {
-        WorthQueryApplicationProgramOutputProgress::Pending => None,
+        WorthQueryApplicationProgramOutputProgress::Pending
+        | WorthQueryApplicationProgramOutputProgress::Progressed => None,
         WorthQueryApplicationProgramOutputProgress::Settled(settlement) => Some(settlement),
     }
 }

@@ -132,9 +132,15 @@ fn prepare_waiter_update(
         return Ok(PreparedTopologyWaiterUpdate::Direct(update));
     };
     let maximum_visits = maximum.maximum_attempt_visits;
-    let maximum = usize::try_from(maximum.maximum_retained_bytes)
+    let maximum = maximum
+        .maximum_retained_bytes
+        .map(usize::try_from)
+        .transpose()
         .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
-    let maximum = Charge::capacity::<u8>(maximum).map_err(map_node_edit_accounting)?;
+    let maximum = maximum
+        .map(Charge::capacity::<u8>)
+        .transpose()
+        .map_err(map_node_edit_accounting)?;
     let prepare = |graph: &mut SignalGraph, work: &mut Work| {
         update
             .prepare_retained(graph, &ledger, maximum, work)
@@ -161,9 +167,15 @@ fn prepare_node_update(
     let Some(ledger) = &arena.retained_node_ledger else {
         return Ok(PreparedTopologyNodeUpdate::Direct(update));
     };
-    let bytes = usize::try_from(maximum.maximum_retained_bytes)
+    let bytes = maximum
+        .maximum_retained_bytes
+        .map(usize::try_from)
+        .transpose()
         .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
-    let ceiling = Charge::capacity::<u8>(bytes).map_err(map_node_edit_accounting)?;
+    let ceiling = bytes
+        .map(Charge::capacity::<u8>)
+        .transpose()
+        .map_err(map_node_edit_accounting)?;
     let prepare = |work: &mut Work| {
         arena
             .prepare_retained_node_edits(

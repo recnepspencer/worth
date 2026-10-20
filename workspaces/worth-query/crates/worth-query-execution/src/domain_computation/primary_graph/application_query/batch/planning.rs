@@ -30,18 +30,18 @@ pub struct WorthQueryApplicationQueryBatchReadPlan {
     count: usize,
     work: Option<usize>,
     roots: usize,
-    result: usize,
+    result: Option<usize>,
 }
 
 pub(super) struct InstalledBatchPlan {
     runtime: u64,
     schema: ApplicationSchemaBindingIdentity,
-    profile: WorthQueryApplicationQueryResourceProfile,
+    pub(super) profile: WorthQueryApplicationQueryResourceProfile,
     slots: BTreeMap<WorthQueryInstalledApplicationQueryIdentity, PlannedSlots>,
     pub(super) items: usize,
     pub(super) work: Option<usize>,
     pub(super) bytes: usize,
-    pub(super) result: NonZeroUsize,
+    pub(super) result: Option<NonZeroUsize>,
     pub(super) frozen: bool,
     pub(super) started: bool,
     pub(super) byte_ceiling: Option<usize>,
@@ -93,9 +93,13 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
         let limits = self.resolve_application_query_limits(binding.limits());
         let result = profile
             .maximum_result_bytes_per_root()
-            .get()
-            .checked_mul(limits.maximum_results().get())
-            .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
+            .map(|bytes| {
+                bytes
+                    .get()
+                    .checked_mul(limits.maximum_results().get())
+                    .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)
+            })
+            .transpose()?;
         Ok(WorthQueryApplicationQueryBatchReadPlan {
             runtime: self.runtime.authority_identity().as_u64(),
             schema: self.installed_schema.binding_identity().clone(),
@@ -201,16 +205,18 @@ impl InstalledBatchPlan {
             }
             // Result staging and the live kernel buffer may coexist. Source and
             // basis metadata are quoted by their real owners before each copy.
-            bytes = bytes
-                .checked_add(
-                    read.result
-                        .checked_mul(read.count)
-                        .and_then(|n| n.checked_mul(2))
-                        .ok_or(CounterOverflow)?,
-                )
-                .ok_or(CounterOverflow)?;
-            if read.count != 0 {
-                result = result.max(NonZeroUsize::new(read.result).ok_or(CounterOverflow)?);
+            if let Some(quote) = read.result {
+                bytes = bytes
+                    .checked_add(
+                        quote
+                            .checked_mul(read.count)
+                            .and_then(|n| n.checked_mul(2))
+                            .ok_or(CounterOverflow)?,
+                    )
+                    .ok_or(CounterOverflow)?;
+                if read.count != 0 {
+                    result = result.max(Some(NonZeroUsize::new(quote).ok_or(CounterOverflow)?));
+                }
             }
         }
         let mut slots = self.slots.clone();

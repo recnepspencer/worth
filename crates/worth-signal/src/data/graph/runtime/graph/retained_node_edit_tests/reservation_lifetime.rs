@@ -13,7 +13,7 @@ fn staged_root_capacity_denial_preserves_performed_output_without_installing() {
         .prepare_retained_node_edits(
             &probe,
             &[0],
-            maximum,
+            Some(maximum),
             &mut Work::new(Some(PREPARATION_WORK)),
             |_| 7,
         )
@@ -24,8 +24,8 @@ fn staged_root_capacity_denial_preserves_performed_output_without_installing() {
     assert_eq!(probe.usage(), (0, 0));
     let ledger = SignalConditionalRetentionLedger::new(
         crate::runtime_policy::SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 1,
-            maximum_retained_bytes: peak - 1,
+            maximum_retained_slots: Some(1),
+            maximum_retained_bytes: Some(peak - 1),
             maximum_attempt_visits: Some(PREPARATION_WORK),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
@@ -34,7 +34,7 @@ fn staged_root_capacity_denial_preserves_performed_output_without_installing() {
         .prepare_retained_node_edits(
             &ledger,
             &[0],
-            maximum,
+            Some(maximum),
             &mut Work::new(Some(PREPARATION_WORK)),
             |_| 7,
         )
@@ -60,8 +60,8 @@ fn owner_capacity_denial_precedes_payload_edit_and_preserves_roots() {
     let original = arena.clone();
     let ledger = SignalConditionalRetentionLedger::new(
         crate::runtime_policy::SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 1,
-            maximum_retained_bytes: 1,
+            maximum_retained_slots: Some(1),
+            maximum_retained_bytes: Some(1),
             maximum_attempt_visits: Some(PREPARATION_WORK),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
@@ -69,7 +69,7 @@ fn owner_capacity_denial_precedes_payload_edit_and_preserves_roots() {
     let result = arena.prepare_retained_node_edits(
         &ledger,
         &[0],
-        representation_charge(&arena),
+        Some(representation_charge(&arena)),
         &mut Work::new(Some(PREPARATION_WORK)),
         |_| panic!("owner capacity denial must precede cloning and the callback"),
     );
@@ -94,7 +94,7 @@ fn installed_custody_follows_shared_roots_but_not_operational_materialization() 
         .prepare_retained_node_edits(
             &ledger,
             &[0],
-            maximum,
+            Some(maximum),
             &mut Work::new(Some(PREPARATION_WORK)),
             |payloads| {
                 payloads[0].hot.state = NodeState::Clean;
@@ -145,7 +145,7 @@ fn rejected_staged_growth_and_closed_owner_release_preparation_custody() {
         .prepare_retained_node_edits(
             &ledger,
             &[0],
-            Charge::ZERO,
+            Some(Charge::ZERO),
             &mut Work::new(Some(PREPARATION_WORK)),
             |_| 7,
         )
@@ -162,7 +162,7 @@ fn rejected_staged_growth_and_closed_owner_release_preparation_custody() {
     let result = arena.prepare_retained_node_edits(
         &ledger,
         &[0],
-        representation_charge(&arena),
+        Some(representation_charge(&arena)),
         &mut Work::new(Some(PREPARATION_WORK)),
         |_| panic!("closed owner must deny before the edit"),
     );

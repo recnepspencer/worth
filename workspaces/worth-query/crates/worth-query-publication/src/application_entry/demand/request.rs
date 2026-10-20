@@ -67,10 +67,8 @@ impl WorthQueryOutputDemandControls {
         host.restricted(
             self.maximum_source_currentness_work.map(NonZeroUsize::get),
             self.maximum_work.map(NonZeroUsize::get),
-            self.maximum_retained_bytes
-                .map_or(host.producer_retained_bytes(), NonZeroUsize::get),
-            self.maximum_settlement_attempts
-                .map_or(host.settlement_attempts(), NonZeroUsize::get),
+            self.maximum_retained_bytes.map(NonZeroUsize::get),
+            self.maximum_settlement_attempts.map(NonZeroUsize::get),
         )
     }
 
@@ -84,8 +82,8 @@ impl WorthQueryOutputDemandControls {
             maximum_source_currentness_work: limits
                 .source_currentness_work()
                 .map(|work| NonZeroUsize::new(work).expect("positive selected currentness limit")),
-            maximum_retained_bytes: NonZeroUsize::new(limits.producer_retained_bytes()),
-            maximum_settlement_attempts: NonZeroUsize::new(limits.settlement_attempts()),
+            maximum_retained_bytes: limits.producer_retained_bytes().and_then(NonZeroUsize::new),
+            maximum_settlement_attempts: limits.settlement_attempts().and_then(NonZeroUsize::new),
         }
     }
 
@@ -229,15 +227,15 @@ mod tests {
         let limits = controls.resolve(profile);
         assert_eq!(limits.source_currentness_work(), Some(7));
         assert_eq!(limits.producer_work(), Some(7));
-        assert_eq!(limits.producer_retained_bytes(), 11);
-        assert_eq!(limits.settlement_attempts(), 64);
+        assert_eq!(limits.producer_retained_bytes(), Some(11));
+        assert_eq!(limits.settlement_attempts(), None);
         let separated = controls
             .source_currentness_work(NonZeroUsize::new(19).unwrap())
             .settlement_attempts(NonZeroUsize::new(2).unwrap())
             .resolve(profile);
         assert_eq!(separated.source_currentness_work(), Some(19));
         assert_eq!(separated.producer_work(), Some(7));
-        assert_eq!(separated.settlement_attempts(), 2);
+        assert_eq!(separated.settlement_attempts(), Some(2));
     }
     #[test]
     fn producer_only_restriction_preserves_absent_or_finite_host_currentness() {
@@ -253,8 +251,8 @@ mod tests {
         let selected = bytes_only.resolve(WorthQueryOutputDemandResourceProfile::standard());
         assert_eq!(selected.source_currentness_work(), None);
         assert_eq!(selected.producer_work(), None);
-        assert_eq!(selected.producer_retained_bytes(), 1);
+        assert_eq!(selected.producer_retained_bytes(), Some(1));
         let wider = bytes_only.producer_retained_bytes(NonZeroUsize::new(100).unwrap());
-        assert_eq!(wider.resolve(bounded).producer_retained_bytes(), 1);
+        assert_eq!(wider.resolve(bounded).producer_retained_bytes(), Some(1));
     }
 }

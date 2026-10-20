@@ -50,7 +50,12 @@ fn broad_read_is_denied_by_access_admission_before_execution() {
         admission.budget_check().class().kind(),
         &WorthQueryGraphReadBudgetClassKind::ExceedsInlineEphemeralBudget
     );
-    assert!(exceeded.estimated_index_bytes() > exceeded.max_inline_index_bytes());
+    assert!(
+        exceeded.estimated_index_bytes()
+            > exceeded
+                .max_inline_index_bytes()
+                .expect("this refusal selects a finite index policy")
+    );
     assert_read_denial_carries_admission(
         review
             .graph_read_access_plan()

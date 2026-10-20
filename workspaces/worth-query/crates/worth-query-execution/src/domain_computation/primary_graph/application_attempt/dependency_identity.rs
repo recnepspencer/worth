@@ -68,12 +68,12 @@ impl<Schema, Operation, Input, Scope>
                 control,
             )
             .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
-        let maximum_dependency_bytes = usize::try_from(
-            runtime
-                .runtime
-                .application_candidate_resource_profile()
-                .maximum_producer_dependency_bytes(),
-        )
+        let maximum_dependency_bytes = (runtime
+            .runtime
+            .application_candidate_resource_profile()
+            .maximum_producer_dependency_bytes())
+        .map(usize::try_from)
+        .transpose()
         .map_err(|_| WorthQueryProducerIdentityDenial::DependencyByteCapacityUnsupported)?;
         let root_funding = control.policy().reserve_memory(8_192);
         control

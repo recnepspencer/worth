@@ -67,7 +67,7 @@ mod tests {
     fn cancelled_checkpoint_custody_refunds_its_exact_backing() {
         let mut state = DemandRegistryState::default();
         let bytes = 2 * std::mem::size_of::<Arc<RecordedSettlementIdentity>>();
-        state.required_budget_bytes = bytes;
+        state.required_budget_bytes = Some(bytes);
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
                 maximum_work_visits: Some(1_000_000),

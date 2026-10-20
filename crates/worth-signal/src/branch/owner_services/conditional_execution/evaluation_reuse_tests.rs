@@ -236,8 +236,8 @@ fn readmission_slot_shortage_denies_before_disturbing_the_predecessor() {
     let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let budget = SignalConditionalEvaluationBudget {
-        maximum_retained_slots: 1,
-        maximum_retained_bytes: 512 * 1024 * 1024,
+        maximum_retained_slots: Some(1),
+        maximum_retained_bytes: Some(512 * 1024 * 1024),
         maximum_attempt_visits: Some(8_000_000),
     };
     let (_runtime, service, contract, source_owner) = fixture(Some(budget));

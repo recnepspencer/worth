@@ -224,10 +224,12 @@ fn query_runtime_mechanism_deletion_denies_plan_review() {
 
 fn application_budget() -> WorthQueryGraphReadBudget {
     let runtime_default = WorthQueryGraphReadBudget::inline_ephemeral_default();
-    WorthQueryGraphReadBudget::bounded(
+    WorthQueryGraphReadBudget::policy(
         runtime_default.max_inline_index_bytes(),
-        runtime_default.max_inline_result_bytes().saturating_mul(10),
-        10_000,
+        runtime_default
+            .max_inline_result_bytes()
+            .map(|bytes| bytes.saturating_mul(10)),
+        Some(10_000),
     )
 }
 

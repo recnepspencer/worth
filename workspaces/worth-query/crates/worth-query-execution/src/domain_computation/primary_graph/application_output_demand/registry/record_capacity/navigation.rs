@@ -20,7 +20,10 @@ impl DemandRegistryState {
         key: &WorthQueryOutputDemandKey,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        self.charge_record_lookup_count(key, self.record_budget_bytes.max(1), admission)
+        let levels = self
+            .record_budget_bytes
+            .map_or(Ok(usize::BITS as usize), ordered_levels)?;
+        self.charge_record_lookup_levels(key, levels, 11, admission)
     }
 
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn charge_record_lookup_after_insert(
@@ -38,19 +41,23 @@ impl DemandRegistryState {
         count: usize,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let levels = ordered_levels(count)?;
-        let comparisons = super::super::key_comparison::ordered_comparisons(levels, count)
-            .ok_or_else(work_denial)?;
-        // The installed ledger bounds payload comparisons independently of occupancy.
+        self.charge_record_lookup_levels(key, ordered_levels(count)?, count.min(11), admission)
+    }
+
+    fn charge_record_lookup_levels(
+        &self,
+        key: &WorthQueryOutputDemandKey,
+        levels: usize,
+        keys_per_level: usize,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        // A B-tree compares at most eleven resident keys per level. Across an
+        // effect, pointer-width bounds every addressable tree without a quota.
+        let comparisons = levels.checked_mul(keys_per_level).ok_or_else(work_denial)?;
         let comparison_work = super::super::key_comparison::comparison_work([key])
             .ok_or_else(work_denial)?
             .maximum;
-        let payload_comparisons = super::super::key_comparison::ordered_comparisons(
-            ordered_levels(self.record_budget_bytes.max(1))?,
-            usize::MAX,
-        )
-        .ok_or_else(work_denial)?;
-        let work = payload_comparisons
+        let work = comparisons
             .checked_mul(comparison_work.saturating_sub(1))
             .ok_or_else(work_denial)?;
         admission

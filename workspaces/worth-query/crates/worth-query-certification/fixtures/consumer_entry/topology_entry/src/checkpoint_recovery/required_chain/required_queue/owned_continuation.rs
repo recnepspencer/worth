@@ -7,7 +7,8 @@ macro_rules! finish {
         (0..256)
             .find_map(
                 |_| match $owner.advance($app.runtime(), &$request).unwrap() {
-                    WorthQueryApplicationOutputDemandProgress::Pending => None,
+                    WorthQueryApplicationOutputDemandProgress::Pending
+                    | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                     WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
                 },
             )

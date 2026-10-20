@@ -67,7 +67,8 @@ fn settle_and_close(
                 .advance(application, request)
                 .expect("the program output demand settles")
             {
-                WorthQueryApplicationProgramOutputProgress::Pending => None,
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => None,
                 WorthQueryApplicationProgramOutputProgress::Settled(value) => Some(value),
             }
         })
@@ -108,7 +109,8 @@ fn settle_ready(
                 .advance(request)
                 .expect("the ready output is readable")
             {
-                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
             }
         })

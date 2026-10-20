@@ -244,7 +244,8 @@ fn check(entry: u8) {
                     }
                     // The own reclamation ceiling is deliberately zero in the
                     // fixture; the next request has retention as well as work.
-                    noted.registry.state.lock().unwrap().required_budget_bytes = 8 * 1024 * 1024;
+                    noted.registry.state.lock().unwrap().required_budget_bytes =
+                        Some(8 * 1024 * 1024);
                     let _reader = noted
                         .registry
                         .admit(

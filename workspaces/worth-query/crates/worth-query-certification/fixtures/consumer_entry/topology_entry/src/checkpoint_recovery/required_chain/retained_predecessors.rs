@@ -81,7 +81,8 @@ fn fixed_tree_retains_exact_predecessors_through_cancel_reclaim_and_fresh_resume
             let fresh = application.request(&principal, &fresh_scope);
             let settled = match tree.settle(&application, &fresh).unwrap() {
                 WorthQueryApplicationProgramOutputProgress::Settled(value) => value,
-                WorthQueryApplicationProgramOutputProgress::Pending => {
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => {
                     panic!("released room permits settlement")
                 }
             };

@@ -116,7 +116,9 @@ impl DemandRegistryState {
         let mut still_claimed = None;
         let mut selection = ReclaimSelection {
             next_rows: None,
-            must_scan_again: bytes > self.required_budget_bytes,
+            must_scan_again: self
+                .required_budget_bytes
+                .is_some_and(|maximum| bytes > maximum),
         };
         loop {
             let retained = self
@@ -127,7 +129,10 @@ impl DemandRegistryState {
                 .required_reserved_bytes
                 .checked_add(retained)
                 .and_then(|total| total.checked_add(bytes))
-                .is_some_and(|total| total <= self.required_budget_bytes);
+                .is_some_and(|total| {
+                    self.required_budget_bytes
+                        .is_none_or(|maximum| total <= maximum)
+                });
             if fits
                 || !self.retire_next_cached_row(
                     &mut still_claimed,

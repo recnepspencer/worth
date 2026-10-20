@@ -16,8 +16,8 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
     let resources = runtime::WorthQueryConditionalExecutionResources::new(
         runtime::WorthQueryConditionalEvaluationCacheBudget::bounded(2, 1024 * 1024).unwrap(),
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 2,
-            maximum_retained_bytes: 512 * 1024 * 1024,
+            maximum_retained_slots: Some(2),
+            maximum_retained_bytes: Some(512 * 1024 * 1024),
             maximum_attempt_visits: None,
         },
     );

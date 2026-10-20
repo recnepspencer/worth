@@ -6,8 +6,8 @@ use std::num::NonZeroU64;
 pub struct WorthQueryApplicationCandidateResourceProfile {
     maximum_items: Option<NonZeroU64>,
     maximum_retained_representation_bytes: Option<NonZeroU64>,
-    maximum_operation_width: NonZeroU64,
-    maximum_producer_dependency_bytes: NonZeroU64,
+    maximum_operation_width: Option<NonZeroU64>,
+    maximum_producer_dependency_bytes: Option<NonZeroU64>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -31,10 +31,8 @@ impl WorthQueryApplicationCandidateResourceProfile {
             maximum_retained_representation_bytes: maximum_retained_representation_bytes
                 .map(|value| NonZeroU64::new(value).ok_or(Denial::ZeroRetainedRepresentationBytes))
                 .transpose()?,
-            maximum_operation_width: NonZeroU64::new(4_096)
-                .expect("the default operation width ceiling is nonzero"),
-            maximum_producer_dependency_bytes: NonZeroU64::new(4 * 1_024 * 1_024)
-                .expect("the default producer dependency ceiling is nonzero"),
+            maximum_operation_width: None,
+            maximum_producer_dependency_bytes: None,
         })
     }
 
@@ -42,10 +40,10 @@ impl WorthQueryApplicationCandidateResourceProfile {
         mut self,
         maximum_producer_dependency_bytes: u64,
     ) -> Result<Self, WorthQueryApplicationCandidateResourceProfileDenial> {
-        self.maximum_producer_dependency_bytes = NonZeroU64::new(maximum_producer_dependency_bytes)
-            .ok_or(
+        self.maximum_producer_dependency_bytes =
+            Some(NonZeroU64::new(maximum_producer_dependency_bytes).ok_or(
                 WorthQueryApplicationCandidateResourceProfileDenial::ZeroProducerDependencyBytes,
-            )?;
+            )?);
         Ok(self)
     }
 
@@ -53,8 +51,10 @@ impl WorthQueryApplicationCandidateResourceProfile {
         mut self,
         maximum_operation_width: u64,
     ) -> Result<Self, WorthQueryApplicationCandidateResourceProfileDenial> {
-        self.maximum_operation_width = NonZeroU64::new(maximum_operation_width)
-            .ok_or(WorthQueryApplicationCandidateResourceProfileDenial::ZeroOperationWidth)?;
+        self.maximum_operation_width = Some(
+            NonZeroU64::new(maximum_operation_width)
+                .ok_or(WorthQueryApplicationCandidateResourceProfileDenial::ZeroOperationWidth)?,
+        );
         Ok(self)
     }
 
@@ -67,12 +67,12 @@ impl WorthQueryApplicationCandidateResourceProfile {
             .map(NonZeroU64::get)
     }
 
-    pub const fn maximum_operation_width(self) -> u64 {
-        self.maximum_operation_width.get()
+    pub fn maximum_operation_width(self) -> Option<u64> {
+        self.maximum_operation_width.map(NonZeroU64::get)
     }
 
-    pub const fn maximum_producer_dependency_bytes(self) -> u64 {
-        self.maximum_producer_dependency_bytes.get()
+    pub fn maximum_producer_dependency_bytes(self) -> Option<u64> {
+        self.maximum_producer_dependency_bytes.map(NonZeroU64::get)
     }
 }
 
@@ -110,7 +110,7 @@ mod tests {
             .unwrap()
             .with_maximum_operation_width(32_768)
             .unwrap();
-        assert_eq!(profile.maximum_operation_width(), 32_768);
+        assert_eq!(profile.maximum_operation_width(), Some(32_768));
         assert_eq!(
             WorthQueryApplicationCandidateResourceProfile::policy(Some(8), Some(16))
                 .unwrap()
@@ -127,7 +127,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             profile.maximum_producer_dependency_bytes(),
-            16 * 1_024 * 1_024
+            Some(16 * 1_024 * 1_024)
         );
         assert_eq!(
             WorthQueryApplicationCandidateResourceProfile::policy(Some(8), Some(16))

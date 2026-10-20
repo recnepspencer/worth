@@ -91,7 +91,7 @@ enum Case {
 }
 
 fn journey(case: Case) {
-    let world = installed_authorization_world_with_label("unrelated");
+    let world = installed_authorization_world_with_label("unrelated", Default::default());
     let scope = live_scope();
     let foreign_scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);

@@ -223,7 +223,8 @@ pub(super) fn demand(
                 .advance(request)
                 .expect("the region output demand advances")
             {
-                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
             }
         })

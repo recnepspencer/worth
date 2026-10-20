@@ -24,6 +24,8 @@ type Query<Schema, Connection> =
 /// Whether a mutation's discovered program outputs have settled yet.
 pub enum WorthQueryDiscoveredProgramOutputProgress<RootQuery, RootDemand> {
     Pending,
+    /// The same owner made native progress and remains runnable.
+    Progressed,
     Settled(WorthQueryDiscoveredProgramOutputSettlement<RootQuery, RootDemand>),
 }
 

@@ -68,8 +68,8 @@ fn with_retained_fixture<R>(
     let (mut graph, apply, expected) = fixture(replacement, &"scope".repeat(64));
     let ledger = SignalConditionalRetentionLedger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 8,
-            maximum_retained_bytes: maximum_bytes,
+            maximum_retained_slots: Some(8),
+            maximum_retained_bytes: Some(maximum_bytes),
             maximum_attempt_visits: Some(50_000_000),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,

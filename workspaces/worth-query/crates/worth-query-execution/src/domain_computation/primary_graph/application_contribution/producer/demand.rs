@@ -191,8 +191,10 @@ where
 
 /// Where an output demand stands after one `advance_output_demand` step.
 pub enum WorthQueryOutputDemandAdvance {
-    /// The demand progressed or is waiting; advance it again.
+    /// No runnable continuation is established by this call; yield to its dependency or caller.
     Pending,
+    /// Native checkpoint, refresh or required-output progress permits the same owner to advance.
+    Progressed,
     /// The demand's output is settled; the settlement is shared.
     Settled(
         std::sync::Arc<

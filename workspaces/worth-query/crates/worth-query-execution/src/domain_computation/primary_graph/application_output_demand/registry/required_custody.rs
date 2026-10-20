@@ -37,7 +37,10 @@ impl DemandRegistryState {
     pub(super) fn has_required_capacity(&self, indexed_bytes: usize) -> bool {
         indexed_bytes
             .checked_add(self.required_custody_retained_bytes.load(Ordering::Acquire))
-            .is_some_and(|total| total <= self.required_budget_bytes)
+            .is_some_and(|total| {
+                self.required_budget_bytes
+                    .is_none_or(|maximum| total <= maximum)
+            })
     }
 
     pub(super) fn reserve_required_custody_capacity(
@@ -49,7 +52,10 @@ impl DemandRegistryState {
         if self
             .required_reserved_bytes
             .checked_add(required)
-            .is_none_or(|total| total > self.required_budget_bytes)
+            .is_none_or(|total| {
+                self.required_budget_bytes
+                    .is_some_and(|maximum| total > maximum)
+            })
         {
             return Err(full_custody_denial(bytes, self.required_budget_bytes));
         }
@@ -155,9 +161,12 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
 /// Custody frees as other required rows release, so a reservation that fits
 /// the budget on its own may succeed on a later advance. The caller's advance,
 /// or its start, decides whether one can: see `caller_chain`.
-pub(super) fn full_custody_denial(bytes: usize, budget: usize) -> WorthQueryOutputDemandDenial {
+pub(super) fn full_custody_denial(
+    bytes: usize,
+    budget: Option<usize>,
+) -> WorthQueryOutputDemandDenial {
     let denial = capacity_denial();
-    if bytes > budget {
+    if budget.is_none_or(|maximum| bytes > maximum) {
         return denial;
     }
     denial.with_recovery_posture(

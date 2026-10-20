@@ -187,17 +187,12 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         )?;
         prepared.reconstructed_intent_count = reconstruction.intents.len();
         prepared.commit_watch = commit_watch::WorthQueryConditionalCommitWatchSet::successor(
+            execution,
             None,
             &reconstruction.intents,
             prepared.lowering.as_ref(),
-            reconstruction.intents.len(),
-        )
-        .map_err(|detail| {
-            super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted,
-                detail,
-            )
-        })?;
+            Some(reconstruction.intents.len()),
+        )?;
         prepared.authoritative_reconstruction = Box::new(reconstruction);
         Ok(prepared)
     }

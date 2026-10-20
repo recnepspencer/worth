@@ -1,18 +1,18 @@
 use std::num::NonZeroUsize;
 
-/// Host-owned allowances for output resolution. Producer limits are per demand;
+/// Optional host quotas for output resolution. Producer limits are per demand;
 /// registry obligation custody, demand records, and required-key indexing have
 /// separate aggregate retained-byte limits.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandResourceProfile {
     source_currentness_work: Option<NonZeroUsize>,
     producer_work: Option<NonZeroUsize>,
-    producer_retained_bytes: NonZeroUsize,
-    settlement_attempts: NonZeroUsize,
-    registry_obligation_retained_bytes: NonZeroUsize,
-    registry_record_retained_bytes: NonZeroUsize,
-    registry_required_retained_bytes: NonZeroUsize,
-    lineage_retained_bytes: NonZeroUsize,
+    producer_retained_bytes: Option<NonZeroUsize>,
+    settlement_attempts: Option<NonZeroUsize>,
+    registry_obligation_retained_bytes: Option<NonZeroUsize>,
+    registry_record_retained_bytes: Option<NonZeroUsize>,
+    registry_required_retained_bytes: Option<NonZeroUsize>,
+    lineage_retained_bytes: Option<NonZeroUsize>,
 }
 
 /// Limits carried through source selection, production, and recovery. Admission
@@ -21,31 +21,34 @@ pub struct WorthQueryOutputDemandResourceProfile {
 pub struct WorthQueryOutputDemandLimits {
     source_currentness_work: Option<usize>,
     producer_work: Option<usize>,
-    producer_retained_bytes: usize,
-    settlement_attempts: usize,
+    producer_retained_bytes: Option<usize>,
+    settlement_attempts: Option<usize>,
 }
 
 impl WorthQueryOutputDemandResourceProfile {
     pub const fn standard() -> Self {
-        let retained_bytes = NonZeroUsize::new(4 * 1_024 * 1_024).unwrap();
-        Self::new(retained_bytes, NonZeroUsize::new(64).unwrap())
+        Self {
+            source_currentness_work: None,
+            producer_work: None,
+            producer_retained_bytes: None,
+            settlement_attempts: None,
+            registry_obligation_retained_bytes: None,
+            registry_record_retained_bytes: None,
+            registry_required_retained_bytes: None,
+            lineage_retained_bytes: None,
+        }
     }
 
-    /// Install physical retention and a convenience settlement-attempt policy.
+    /// Install explicit producer-retention and convenience settlement-attempt policies.
     /// Ordinary source/currentness and producer work has no intrinsic ceiling.
     pub const fn new(
         producer_retained_bytes: NonZeroUsize,
         settlement_attempts: NonZeroUsize,
     ) -> Self {
         Self {
-            source_currentness_work: None,
-            producer_work: None,
-            producer_retained_bytes,
-            settlement_attempts,
-            registry_obligation_retained_bytes: NonZeroUsize::new(4 * 1_024 * 1_024).unwrap(),
-            registry_record_retained_bytes: NonZeroUsize::new(64 * 1_024 * 1_024).unwrap(),
-            registry_required_retained_bytes: NonZeroUsize::new(4 * 1_024 * 1_024).unwrap(),
-            lineage_retained_bytes: NonZeroUsize::new(64 * 1_024 * 1_024).unwrap(),
+            producer_retained_bytes: Some(producer_retained_bytes),
+            settlement_attempts: Some(settlement_attempts),
+            ..Self::standard()
         }
     }
 
@@ -64,47 +67,48 @@ impl WorthQueryOutputDemandResourceProfile {
     }
 
     pub const fn with_registry_obligation_retained_bytes(mut self, maximum: NonZeroUsize) -> Self {
-        self.registry_obligation_retained_bytes = maximum;
+        self.registry_obligation_retained_bytes = Some(maximum);
         self
     }
 
-    pub const fn registry_obligation_retained_bytes(self) -> usize {
-        self.registry_obligation_retained_bytes.get()
+    pub fn registry_obligation_retained_bytes(self) -> Option<usize> {
+        self.registry_obligation_retained_bytes
+            .map(NonZeroUsize::get)
     }
 
     pub const fn with_registry_record_retained_bytes(mut self, maximum: NonZeroUsize) -> Self {
-        self.registry_record_retained_bytes = maximum;
+        self.registry_record_retained_bytes = Some(maximum);
         self
     }
 
-    pub const fn registry_record_retained_bytes(self) -> usize {
-        self.registry_record_retained_bytes.get()
+    pub fn registry_record_retained_bytes(self) -> Option<usize> {
+        self.registry_record_retained_bytes.map(NonZeroUsize::get)
     }
 
     pub const fn with_registry_required_retained_bytes(mut self, maximum: NonZeroUsize) -> Self {
-        self.registry_required_retained_bytes = maximum;
+        self.registry_required_retained_bytes = Some(maximum);
         self
     }
 
-    pub const fn registry_required_retained_bytes(self) -> usize {
-        self.registry_required_retained_bytes.get()
+    pub fn registry_required_retained_bytes(self) -> Option<usize> {
+        self.registry_required_retained_bytes.map(NonZeroUsize::get)
     }
 
     pub const fn with_lineage_retained_bytes(mut self, maximum: NonZeroUsize) -> Self {
-        self.lineage_retained_bytes = maximum;
+        self.lineage_retained_bytes = Some(maximum);
         self
     }
 
-    pub const fn lineage_retained_bytes(self) -> usize {
-        self.lineage_retained_bytes.get()
+    pub fn lineage_retained_bytes(self) -> Option<usize> {
+        self.lineage_retained_bytes.map(NonZeroUsize::get)
     }
 
     pub fn limits(self) -> WorthQueryOutputDemandLimits {
         WorthQueryOutputDemandLimits {
             source_currentness_work: self.source_currentness_work.map(NonZeroUsize::get),
             producer_work: self.producer_work.map(NonZeroUsize::get),
-            producer_retained_bytes: self.producer_retained_bytes.get(),
-            settlement_attempts: self.settlement_attempts.get(),
+            producer_retained_bytes: self.producer_retained_bytes.map(NonZeroUsize::get),
+            settlement_attempts: self.settlement_attempts.map(NonZeroUsize::get),
         }
     }
 
@@ -132,8 +136,8 @@ impl WorthQueryOutputDemandLimits {
         self,
         source_currentness_work: Option<usize>,
         producer_work: Option<usize>,
-        producer_retained_bytes: usize,
-        settlement_attempts: usize,
+        producer_retained_bytes: Option<usize>,
+        settlement_attempts: Option<usize>,
     ) -> Self {
         Self {
             source_currentness_work: self
@@ -142,8 +146,16 @@ impl WorthQueryOutputDemandLimits {
                 .chain(source_currentness_work)
                 .min(),
             producer_work: self.producer_work.into_iter().chain(producer_work).min(),
-            producer_retained_bytes: self.producer_retained_bytes.min(producer_retained_bytes),
-            settlement_attempts: self.settlement_attempts.min(settlement_attempts),
+            producer_retained_bytes: self
+                .producer_retained_bytes
+                .into_iter()
+                .chain(producer_retained_bytes)
+                .min(),
+            settlement_attempts: self
+                .settlement_attempts
+                .into_iter()
+                .chain(settlement_attempts)
+                .min(),
         }
     }
 
@@ -155,10 +167,11 @@ impl WorthQueryOutputDemandLimits {
     ) -> Self {
         Self {
             producer_work: self.producer_work.into_iter().chain(producer_work).min(),
-            producer_retained_bytes: match producer_retained_bytes {
-                Some(maximum) => self.producer_retained_bytes.min(maximum),
-                None => self.producer_retained_bytes,
-            },
+            producer_retained_bytes: self
+                .producer_retained_bytes
+                .into_iter()
+                .chain(producer_retained_bytes)
+                .min(),
             ..self
         }
     }
@@ -169,10 +182,10 @@ impl WorthQueryOutputDemandLimits {
     pub const fn producer_work(self) -> Option<usize> {
         self.producer_work
     }
-    pub const fn producer_retained_bytes(self) -> usize {
+    pub const fn producer_retained_bytes(self) -> Option<usize> {
         self.producer_retained_bytes
     }
-    pub const fn settlement_attempts(self) -> usize {
+    pub const fn settlement_attempts(self) -> Option<usize> {
         self.settlement_attempts
     }
 }
@@ -187,14 +200,16 @@ mod tests {
         let child = host.limits().for_artifact(Some(17), Some(31));
         assert_eq!(child.source_currentness_work(), None);
         assert_eq!(child.producer_work(), Some(17));
-        assert_eq!(child.producer_retained_bytes(), 31);
-        assert_eq!(child.settlement_attempts(), 64);
+        assert_eq!(child.producer_retained_bytes(), Some(31));
+        assert_eq!(child.settlement_attempts(), None);
     }
 
     #[test]
     fn explicit_restrictions_and_foreign_host_limits_cannot_widen_capacity() {
         let standard = WorthQueryOutputDemandResourceProfile::default();
-        let narrow = standard.limits().restricted(Some(9), Some(7), 5, 3);
+        let narrow = standard
+            .limits()
+            .restricted(Some(9), Some(7), Some(5), Some(3));
         assert_eq!(standard.constrain(narrow), narrow);
         let small = WorthQueryOutputDemandResourceProfile::bounded(
             NonZeroUsize::new(2).unwrap(),
@@ -211,7 +226,10 @@ mod tests {
         let host = WorthQueryOutputDemandResourceProfile::standard();
         let registry_limited =
             host.with_registry_obligation_retained_bytes(NonZeroUsize::new(128).unwrap());
-        assert_eq!(registry_limited.registry_obligation_retained_bytes(), 128);
+        assert_eq!(
+            registry_limited.registry_obligation_retained_bytes(),
+            Some(128)
+        );
         assert_eq!(registry_limited.limits(), host.limits());
     }
 
@@ -226,11 +244,11 @@ mod tests {
         assert_eq!(host.for_artifact(None, Some(100)), host);
         assert_eq!(
             host.for_artifact(None, Some(7)).producer_retained_bytes(),
-            7
+            Some(7)
         );
         assert_eq!(
             host.for_artifact(None, Some(0)).producer_retained_bytes(),
-            0
+            Some(0)
         );
     }
 }

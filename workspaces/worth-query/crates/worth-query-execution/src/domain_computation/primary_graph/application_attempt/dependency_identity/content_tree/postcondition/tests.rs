@@ -86,7 +86,7 @@ fn growing_own_effect_preserves_original_and_publishes_a_distinct_funded_body() 
             "pre-effect facts stay original"
         );
         assert_eq!(
-            content.identity([3; 32], usize::MAX).unwrap().0,
+            content.identity([3; 32], Some(usize::MAX)).unwrap().0,
             super::super::oracle::cold(&expected, [3; 32])
         );
         let clone = content.clone();

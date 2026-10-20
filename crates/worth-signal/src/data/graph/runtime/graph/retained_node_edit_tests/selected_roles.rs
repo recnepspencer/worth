@@ -40,7 +40,7 @@ fn consumer_epoch_preserves_cold_payload_and_warm_companion_across_denial_and_in
         .prepare_selected_epoch_nodes(
             &test_ledger(),
             &roles,
-            Charge::ZERO,
+            Some(Charge::ZERO),
             &mut Work::new(Some(PREPARATION_WORK)),
             edit_roles,
         )
@@ -60,7 +60,7 @@ fn consumer_epoch_preserves_cold_payload_and_warm_companion_across_denial_and_in
         .prepare_selected_epoch_nodes(
             &test_ledger(),
             &roles,
-            Charge::capacity::<u8>(512 * 1024 * 1024).unwrap(),
+            Some(Charge::capacity::<u8>(512 * 1024 * 1024).unwrap()),
             &mut Work::new(Some(PREPARATION_WORK)),
             edit_roles,
         )

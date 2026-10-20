@@ -122,7 +122,11 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
         .expect("the fixture read owns its installed host call");
     assert!(buffer.released());
     assert!(buffer.peak_bytes() > 0);
-    assert!(buffer.peak_bytes() <= buffer.limit_bytes());
+    assert_eq!(
+        buffer.limit_bytes(),
+        None,
+        "ordinary result policy is absent while native storage stays counted"
+    );
     assert!(result
         .receipt()
         .graph_read_plan()

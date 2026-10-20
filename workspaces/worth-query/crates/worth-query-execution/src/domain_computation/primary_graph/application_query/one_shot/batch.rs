@@ -150,13 +150,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .map_err(Resource)?;
             }
         }
-        let rows = batch
+        let mut rows = batch
             .claim_memory(
-                batch.inline_result_bytes(
-                    plan.graph_read_plan()
-                        .budget_check()
-                        .max_inline_result_bytes(),
-                ),
+                batch
+                    .inline_result_bytes(
+                        plan.graph_read_plan()
+                            .budget_check()
+                            .max_inline_result_bytes(),
+                    )
+                    .unwrap_or(0),
             )
             .map_err(Resource)?;
         let reservation = batch
@@ -201,7 +203,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         reservation.settle(actual).map_err(Resource)?;
         match result {
-            Ok(result) => Ok(WorthQueryApplicationBatchResult::issued(result, rows)),
+            Ok(result) => {
+                let measured = result
+                    .receipt()
+                    .result_buffer()
+                    .expect("a completed native read records its buffer")
+                    .peak_bytes();
+                rows.grow_to(measured).map_err(Resource)?;
+                Ok(WorthQueryApplicationBatchResult::issued(result, rows))
+            }
             Err(error) => {
                 if let Some(denial) = batch.memory_denial() {
                     return Err(Resource(denial));

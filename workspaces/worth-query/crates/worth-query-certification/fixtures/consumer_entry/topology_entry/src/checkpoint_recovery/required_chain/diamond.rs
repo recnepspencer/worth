@@ -61,7 +61,8 @@ macro_rules! settle {
     ($demand:expr, $request:expr) => {
         (0..256)
             .find_map(|_| match $demand.advance(&$request).unwrap() {
-                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
             })
             .expect("the diamond demand initially settles")
@@ -72,7 +73,8 @@ macro_rules! settled_in_one_advance {
     ($demand:expr, $request:expr, $what:literal) => {
         match $demand.advance(&$request).unwrap() {
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => settled,
-            WorthQueryApplicationOutputDemandProgress::Pending => {
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => {
                 panic!(concat!($what, " needs another advance"))
             }
         }
