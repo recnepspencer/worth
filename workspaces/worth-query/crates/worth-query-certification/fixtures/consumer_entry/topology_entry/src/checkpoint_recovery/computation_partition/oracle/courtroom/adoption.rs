@@ -67,18 +67,12 @@ pub(super) fn install_rostered(model: &Model) -> Application {
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
         producer_domain_denial: Arc::new(std::sync::atomic::AtomicBool::new(false)),
     };
-    let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            8192,
-            1024 * 1024,
-        )
-        .unwrap();
+
     let limits = support::limits_with_room(
         32,
         16,
         64,
-        support::invalidation(128 * 1024 * 1024, 1_000_000, 4),
-        candidates,
+        support::invalidation(128 * 1024 * 1024, Some(1_000_000), 4),
     );
     application_installation::in_memory_rostered_program(initial, roster, CheckpointSchema::declaration().unwrap(), (configuration,), limits, |_bootstrap_phase, graph, installed| {
         let binding = installed.principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>()).unwrap();

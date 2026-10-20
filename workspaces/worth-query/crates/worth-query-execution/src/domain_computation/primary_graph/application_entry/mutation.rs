@@ -1,6 +1,4 @@
-use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
-};
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub use super::super::handler::{CandidateWriter, DecisionReader, HandlerInterruption};
@@ -86,12 +84,6 @@ where
     ) -> WorthQueryDecisionPlan<Binding::Decision, Binding::Denial> {
         WorthQueryDecisionPlan::immediate(self.decide(input, reader))
     }
-
-    fn candidate_requirements(
-        &self,
-        input: &Binding::Input,
-        decision: &Binding::Decision,
-    ) -> ApplicationCandidateRequirements;
 
     fn build_candidate(
         &self,

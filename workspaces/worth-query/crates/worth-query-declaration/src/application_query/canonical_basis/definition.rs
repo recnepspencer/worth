@@ -264,20 +264,7 @@ fn append_controls(
     entries: &mut Vec<CanonicalBasisEntry>,
     definition: &WorthQueryPortableApplicationQueryParts,
 ) {
-    let ceiling = definition.dependency_ceiling();
     entries.extend([
-        unsigned_usize(
-            "controls.maximum-traversal-depth",
-            ceiling.maximum_traversal_depth(),
-        ),
-        unsigned_usize(
-            "controls.maximum-relation-count",
-            ceiling.maximum_relation_count(),
-        ),
-        unsigned_usize(
-            "controls.maximum-projected-field-count",
-            ceiling.maximum_projected_field_count(),
-        ),
         text(
             "controls.disclosure-posture",
             disclosure_name(definition.disclosure().posture()),

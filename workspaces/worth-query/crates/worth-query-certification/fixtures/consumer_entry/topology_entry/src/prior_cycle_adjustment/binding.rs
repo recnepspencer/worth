@@ -1,6 +1,7 @@
 use super::*;
 use crate::{ConsumerPrincipalBinding, ExternalPrincipalMapping, PlanarMutationScope, Principal};
 use std::marker::PhantomData;
+
 use worth_query_decl::facade::{application_operation::*, application_schema::*};
 
 pub struct PriorCycleAdjustmentBinding<Schema>(PhantomData<fn() -> Schema>);
@@ -37,7 +38,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.prior-cycle-adjustment-handler.v2";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.prior-cycle-adjustment-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(16);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -74,11 +74,4 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for PriorC
     fn scope_binding(&self) -> PlanarMutationScope<Schema> {
         PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
     }
-}
-
-pub(super) const fn requirements(writes: usize) -> ApplicationCandidateRequirements {
-    ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, writes, 0),
-        ApplicationCandidateResourceCeiling::representation_bytes(4096),
-    )
 }

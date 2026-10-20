@@ -229,7 +229,7 @@ fn selection(
                     .graph
                     .source_owner
                     .invalidation_owner
-                    .edit_admission_within(std::num::NonZeroUsize::new(32).unwrap()),
+                    .edit_admission_with_work_limit(Some(32)),
             )
             .unwrap()
         })

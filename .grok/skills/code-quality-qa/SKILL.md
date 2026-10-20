@@ -30,6 +30,31 @@ Apply the 400-line limit as required by repository rules. Functions over 60
 lines or with five or more explicit arguments require judgment but are not
 defects by size alone.
 
+## Remove resource bookkeeping from ordinary domain APIs
+
+Treat mandatory work counters, candidate budgets, retained-byte estimates,
+mutation quotes, reservation ledgers, and per-publisher field/link/copy byte
+accounting as unnecessary API and maintenance burden unless an explicit product
+requirement or measured resource failure establishes their need. In the affected
+path, prefer deleting that burden over improving its precision or packaging.
+A typed quote, shared calculator, or framework-owned ledger still needs the same
+justification; moving accounting does not make it necessary.
+
+Ordinary domain callers should express intent and publish valid changes without
+predicting resource bills. Preserve authority, validity, currentness, atomicity,
+checked sizes, cancellation, and ordinary allocation failure handling directly.
+Do not infer that these correctness guarantees require resource pre-admission.
+Distinguish semantic counts, revisions, and termination logic from bookkeeping
+that exists only to enforce a budget.
+
+Prioritize coherent authoring boundaries, local invalidation/reuse, partitioning,
+and useful parallelism over speculative resource infrastructure. Do not promote
+accounting to a foundational prerequisite merely because existing code or tests
+already use it. When removal is requested, simplify the affected API and update
+its consumers and tests coherently, preserving unrelated work and accepted
+functional evidence. Avoid compatibility shims, renamed counters, replacement
+accounting frameworks, and an unrelated repository-wide cleanup campaign.
+
 ## Independent review
 
 Use the structural reviewer selected by the user or repository. Do not hard-code

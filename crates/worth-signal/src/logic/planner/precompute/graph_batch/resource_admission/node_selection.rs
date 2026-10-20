@@ -83,8 +83,8 @@ mod tests {
             admission.policy.determinism(),
             ExecutionBudget::new(
                 admission.policy.budget().max_workers(),
-                128 * 1024 * 1024,
-                20_000_000,
+                Some(128 * 1024 * 1024),
+                Some(20_000_000),
             ),
         );
         admission
@@ -118,7 +118,7 @@ mod tests {
             1024 * 1024,
             1024 * 1024,
             |_, _, request_work| {
-                let mut budget = SignalPreparationBudget::new(capacity);
+                let mut budget = SignalPreparationBudget::new(Some(capacity));
                 graph
                     .prepare_epoch_topology_storage_readiness(
                         Some(&mut *request_work),
@@ -203,7 +203,7 @@ mod tests {
             .unwrap();
         drop(setup);
         assert_eq!(graph.subscribers_of(source).unwrap(), &[consumer]);
-        let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+        let mut measurement = RetainedStoragePreparation::new(None);
         let full = graph
             .epoch_node_clone_charge(consumer, &mut measurement)
             .unwrap()

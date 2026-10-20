@@ -1,10 +1,10 @@
 use worth_query_decl::facade::{
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-        ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-        ApplicationQueryDisclosureContract, ApplicationQueryInfluenceContract,
-        ApplicationQueryLaneEligibility, ApplicationQueryLiveResourceContract,
-        ApplicationQueryObservableInfluence, ApplicationQueryOrderingDirection,
+        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+        ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
+        ApplicationQueryLiveResourceContract, ApplicationQueryObservableInfluence,
+        ApplicationQueryOrderingDirection,
     },
     worth_query_application_query,
 };
@@ -228,7 +228,6 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
         .scope(EstateCase::reference())
         .result_shape(emergency_access_activity_shape())
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(3, 2, 8))
         .disclosure(disclosure)
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned().with_preview())
         .lanes(

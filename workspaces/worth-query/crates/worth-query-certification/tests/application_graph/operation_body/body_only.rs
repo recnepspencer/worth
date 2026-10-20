@@ -57,7 +57,6 @@ impl ApplicationSchemaContribution<BodyOnlySchema> for BodyOnlyContribution {
                     .with_body(body)
                     .unwrap(),
             )
-            .operation_projection_work_budget(SetRetention::reference(), 8)
     }
 }
 impl WorthQueryApplicationContribution<BodyOnlySchema> for BodyOnlyContribution {

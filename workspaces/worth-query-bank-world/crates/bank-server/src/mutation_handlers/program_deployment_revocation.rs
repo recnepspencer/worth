@@ -1,13 +1,8 @@
 //! Authenticated issuer revocation through the ordinary production candidate owner.
 use bank_domain::schema::*;
-use worth_query_host::facade::{
-    declaration::application_operation::{
-        ApplicationCandidateRequirements, ApplicationMutationBinding,
-    },
-    primary_graph::{
-        CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-        WorthQueryInvariantMutationTarget,
-    },
+use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
+    WorthQueryInvariantMutationTarget,
 };
 pub struct ProgramDeploymentRevocationHandler;
 
@@ -40,14 +35,6 @@ impl OperationHandler<BankSchema, ProgramDeploymentRevocationBinding>
             Ok(target) => HandlerResult::Completed(target),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &ProgramDeploymentRevocationInput,
-        _: &WorthQueryInvariantMutationTarget<BankSchema, ProgramDeploymentGrant>,
-    ) -> ApplicationCandidateRequirements {
-        ProgramDeploymentRevocationBinding::CANDIDATES
     }
 
     fn build_candidate(

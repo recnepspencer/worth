@@ -30,9 +30,9 @@ fn full_bytes(n: usize) -> u64 {
 }
 fn budget() -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 1_000_000_000,
-        maximum_cold_record_slots: 1_000_000,
-        maximum_derived_rows: 1_000_000,
+        maximum_work_units: Some(1_000_000_000),
+        maximum_cold_record_slots: Some(1_000_000),
+        maximum_derived_rows: Some(1_000_000),
     }
 }
 fn edits(n: usize, insert: bool) -> BTreeMap<u64, Vec<PendingEdit<u64>>> {
@@ -60,7 +60,11 @@ fn cold_reconstruction_meets_the_derived_serial_memory_edge() {
         full_bytes(rows + 1)
     );
     for n in [rows, rows + 1] {
-        let host = crate::test_execution_policy::serial_request();
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(Some(MEMORY)),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
         let execution = ExecutionRequest::serial(&host);
         let mut offered = edits(n, true);
         let result = request_payment::run(&execution, budget(), |work| {

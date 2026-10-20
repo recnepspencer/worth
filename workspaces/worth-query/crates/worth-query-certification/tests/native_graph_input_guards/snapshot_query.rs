@@ -36,7 +36,7 @@ fn field() -> ApplicationQueryResultFieldRef<
 pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Snapshot> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference()).root(Snapshot::reference()).scope(Snapshot::reference())
         .result_shape(ApplicationQueryResultShapeBuilder::<Schema,Query,Snapshot,Value,ResultBinding>::new(Snapshot::reference()).field(field()).build())
-        .cardinality(ApplicationQueryCardinality::ExactlyOne).dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0,0,3))
+        .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(ApplicationQueryDisclosureContract::public()).basis_support(ApplicationQueryBasisSupport::current_and_pinned()).lanes(ApplicationQueryLaneEligibility::one_shot()).public().build().unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Value {

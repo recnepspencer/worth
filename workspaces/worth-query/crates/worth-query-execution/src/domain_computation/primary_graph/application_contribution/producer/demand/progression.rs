@@ -29,7 +29,6 @@ mod retained_read;
 pub(in crate::domain_computation::primary_graph) use required_wave::{
     MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
 };
-pub(super) mod resources;
 mod selected_program;
 mod source_recovery;
 mod unavailable;
@@ -165,7 +164,6 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let limits = demand.limits;
         self.advance_output_demand_with_prepared_source(
             execution,
             phase,
@@ -181,7 +179,6 @@ where
                     principal,
                     request_scope,
                     delivery_branch,
-                    limits,
                     admission,
                 )
                 .map(Some)
@@ -260,15 +257,6 @@ where
                 return Ok(progress);
             }
             Err(stop) => stop,
-        };
-        // The request's exhausted meter is replaced by the next advance.
-        // A producer's declared-work refusal keeps its own terminal posture.
-        let stop = if admission.remaining_work() == 0
-            && stop.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        {
-            stop.with_recovery_posture(super::WorthQueryOutputDemandRecoveryPosture::Retryable)
-        } else {
-            stop
         };
         let stop = self.caller_custody_stop(demand, stop, &mut admission);
         if stop.has_read_cleanup() {

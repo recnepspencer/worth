@@ -62,19 +62,19 @@ fn retire_row(value: &RetireSnapshot) -> String {
     value.row.clone()
 }
 worth_query_mutation_binding!(pub KeepBinding for KeepSnapshot,schema Schema,
-    identity "worth.query.retiring.keep-binding.v1", input KeepInput,operation Keep,result ResultBinding,
-    idempotency u64,identity "worth.query.retiring.keep-request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
-    handler identity "worth.query.retiring.keep-body.v1",program required,outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value keep_row,
-    candidates creates 1,deletes 0,links 1,unlinks 1,writes 3,emits 0,resources retained_representation_bytes 4096);
+identity "worth.query.retiring.keep-binding.v1", input KeepInput,operation Keep,result ResultBinding,
+idempotency u64,identity "worth.query.retiring.keep-request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
+handler identity "worth.query.retiring.keep-body.v1",program required,outputs NoApplicationMutationOutputs,
+principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
+scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value keep_row,
+);
 worth_query_mutation_binding!(pub RetireBinding for RetireSnapshot,schema Schema,
-    identity "worth.query.retiring.retire-binding.v1", input RetireInput,operation Retire,result ResultBinding,
-    idempotency u64,identity "worth.query.retiring.retire-request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
-    handler identity "worth.query.retiring.retire-body.v1",program required,outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value retire_row,
-    candidates creates 1,deletes 1,links 1,unlinks 1,writes 3,emits 0,resources retained_representation_bytes 4096);
+identity "worth.query.retiring.retire-binding.v1", input RetireInput,operation Retire,result ResultBinding,
+idempotency u64,identity "worth.query.retiring.retire-request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
+handler identity "worth.query.retiring.retire-body.v1",program required,outputs NoApplicationMutationOutputs,
+principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
+scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value retire_row,
+);
 pub fn keep_body() -> ApplicationOperationBody<Schema, Keep, KeepSnapshot> {
     Keep::reference()
         .body()

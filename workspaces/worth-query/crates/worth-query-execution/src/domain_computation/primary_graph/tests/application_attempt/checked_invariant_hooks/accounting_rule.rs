@@ -23,7 +23,7 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<HookSchema, HookAcc
     ApplicationInvariantDefinition::new(
         HookAccounting::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(std::num::NonZeroU64::new(1024).unwrap()),
+        RelationalInvariantWorkBudget::new(Some(std::num::NonZeroU64::new(1024).unwrap())),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::SchemaCompliance],

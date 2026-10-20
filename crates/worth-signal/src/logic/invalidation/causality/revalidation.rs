@@ -52,7 +52,7 @@ impl SignalGraph {
                     RetainedStorageCharge as Charge, RetainedStorageMeasurement,
                     RetainedStoragePreparation,
                 };
-                let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+                let mut measurement = RetainedStoragePreparation::new(None);
                 let bytes = (|| {
                     let mut bytes = Charge::capacity::<ResolvedDependencyCause>(causes.len())?;
                     for cause in causes {

@@ -23,28 +23,31 @@ use super::packet_selection::eligible_registrations;
 
 pub(crate) fn plan_invariant_execution<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     lease: Option<&ExecutionResourceLease>,
 ) -> PreparedInvariantExecution<'state> {
-    plan_invariant_execution_inner(runtime, request, lease, None)
+    plan_invariant_execution_inner(runtime, execution, request, lease, None)
 }
 
 pub(crate) fn plan_invariant_execution_checked<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     lease: &ExecutionResourceLease,
     budget: &crate::validation::custom_rule::CustomPreparationBudget,
 ) -> PreparedInvariantExecution<'state> {
-    plan_invariant_execution_inner(runtime, request, Some(lease), Some(budget))
+    plan_invariant_execution_inner(runtime, execution, request, Some(lease), Some(budget))
 }
 
 fn plan_invariant_execution_inner<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     lease: Option<&ExecutionResourceLease>,
     budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
 ) -> PreparedInvariantExecution<'state> {
-    let registrations = eligible_registrations(runtime, request, budget);
+    let registrations = eligible_registrations(runtime, execution, request, budget);
     let context = Arc::new(planning_context(runtime, request));
     if budget.is_some_and(|budget| budget.stop().is_some()) {
         return PreparedInvariantExecution {

@@ -9,7 +9,7 @@ use crate::data::retained_storage::{
 fn assert_charge(bits: &DenseBitset) {
     assert_eq!(
         bits.prepared_retained_charge().unwrap(),
-        bits.retained_heap_charge(&mut Preparation::new(100_000))
+        bits.retained_heap_charge(&mut Preparation::new(Some(100_000)))
             .unwrap()
     );
 }
@@ -59,7 +59,7 @@ fn prepared_word_mutation_stays_ready_and_unprepared_mutation_never_scans_to_rep
         let pinned = bits.fork_persistent();
         bits.mark(0);
         bits.clear(0);
-        bits.prepare_retained_charge(&mut Preparation::new(0))
+        bits.prepare_retained_charge(&mut Preparation::new(Some(0)))
             .unwrap();
         assert_charge(&bits);
         assert_charge(&pinned);
@@ -71,10 +71,10 @@ fn prepared_word_mutation_stays_ready_and_unprepared_mutation_never_scans_to_rep
             Err(RetainedVectorMutationDenial::PreparationRequired)
         );
         assert!(unprepared
-            .prepare_retained_charge(&mut Preparation::new(0))
+            .prepare_retained_charge(&mut Preparation::new(Some(0)))
             .is_err());
         unprepared
-            .prepare_retained_charge(&mut Preparation::new(1000))
+            .prepare_retained_charge(&mut Preparation::new(Some(1000)))
             .unwrap();
         assert_charge(&unprepared);
     }

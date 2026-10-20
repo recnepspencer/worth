@@ -60,7 +60,7 @@ pub fn world_no_effect_retains_conditional_provenance(
                 request.clone(),
                 4,
                 16,
-                2_048,
+                Some(2_048),
             )
             .unwrap(),
         )
@@ -169,7 +169,7 @@ pub fn live_query_receives_conditional_world_publication(
                 request.clone(),
                 4,
                 16,
-                2_048,
+                Some(2_048),
             )
             .unwrap(),
         )

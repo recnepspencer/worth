@@ -86,7 +86,12 @@ fn run(
                 assert_eq!(
                     {
                         let context = context.expect("the caller's admitted scope");
-                        context.checkpoint(context.remaining_work() + 1)
+                        context.checkpoint(
+                            context
+                                .remaining_work()
+                                .expect("this adversarial scope selected a finite ceiling")
+                                + 1,
+                        )
                     },
                     Err(worth_execution::MapKernelStop::WorkCeiling)
                 );
@@ -113,7 +118,11 @@ fn run(
                     execution
                         .run(
                             worth_execution::ExecutionWorkCeiling::new(
-                                execution.work_ceiling().min(u64::MAX - 1),
+                                execution
+                                    .work_ceiling()
+                                    .into_iter()
+                                    .chain([u64::MAX - 1])
+                                    .min(),
                             ),
                             |_| read(),
                         )

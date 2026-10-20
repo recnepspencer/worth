@@ -105,10 +105,7 @@ impl<Schema: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<
     pub(in crate::domain_computation::primary_graph) fn mutation_body_for_approval<Binding>(
         &self,
     ) -> Result<
-        (
-            std::sync::Arc<dyn OperationHandler<Schema, Binding>>,
-            super::ApplicationCandidateRequirements,
-        ),
+        std::sync::Arc<dyn OperationHandler<Schema, Binding>>,
         super::MutationHandlerExecutionDenial,
     >
     where

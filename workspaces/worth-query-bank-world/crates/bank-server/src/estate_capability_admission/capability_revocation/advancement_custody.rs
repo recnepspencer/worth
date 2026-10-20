@@ -61,8 +61,8 @@ fn revocation_refuses_before_its_admitted_principal_reader() {
             if let Some(memory) = refusal {
                 bound(Some(worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
-                    if memory { 0 } else { 64 * 1024 * 1024 },
-                    if memory { 8_000_000 } else { 0 },
+                    Some(if memory { 0 } else { 64 * 1024 * 1024 }),
+                    Some(if memory { 8_000_000 } else { 0 }),
                 )));
             }
             reports();

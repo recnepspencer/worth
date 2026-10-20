@@ -31,7 +31,7 @@ fn decoder_is_not_called_when_its_declared_work_or_memory_is_refused() {
         let policy = ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, memory, work),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), Some(work)),
         );
         let execution =
             QueryRequestExecution::open(RuntimeWorldExecutionPlacement::Serial(policy), &scope);

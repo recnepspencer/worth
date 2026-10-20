@@ -144,7 +144,7 @@ fn restored_role(
         }],
         |_| Some(TypeId::of::<Account>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         )),
@@ -159,7 +159,7 @@ fn sealed_rebase(
     facts: Vec<Fact>,
     correspondence: &WorthQueryApplicationOutputCorrespondence,
     changed: &[RecordRef],
-) -> std::sync::Arc<[Fact]> {
+) -> crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
@@ -184,7 +184,7 @@ fn sealed_rebase(
                 correspondence,
                 changed,
                 true,
-                64,
+                Some(64),
                 &mut admission(),
             ))
         })

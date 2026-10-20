@@ -12,7 +12,7 @@ impl DiagnosticsState {
         {
             return;
         }
-        let mut work = Work::new(usize::MAX);
+        let mut work = Work::new(None);
         if self.explanation_facts.prepared_retained_charge().is_err() {
             self.explanation_facts
                 .prepare_retained_charge(&mut work)
@@ -28,7 +28,7 @@ impl DiagnosticsState {
         if self.installed_retention_budget.provenance_retention != ArtifactRetentionPolicy::Retain {
             return;
         }
-        let mut work = Work::new(usize::MAX);
+        let mut work = Work::new(None);
         if self.provenance_facts.prepared_retained_charge().is_err() {
             self.provenance_facts
                 .prepare_retained_charge(&mut work)

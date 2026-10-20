@@ -34,7 +34,7 @@ where
         let policy = graph.runtime_policy();
         graph.set_runtime_policy(policy.with_conditional_evaluation_budget(
             crate::runtime_policy::SignalConditionalEvaluationBudget {
-                maximum_attempt_visits: maximum_visits,
+                maximum_attempt_visits: Some(maximum_visits),
                 ..policy.conditional_evaluation_budget
             },
         ));

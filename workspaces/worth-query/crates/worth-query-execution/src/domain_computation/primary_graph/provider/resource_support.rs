@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
-use crate::domain_computation::execution_runtime::WorthQueryApplicationCandidateResourceProfile;
 use worth_query_admission::facade::resource_admission::{
     WorthQueryExecutionResourceSupport, WorthQueryFixedExecutionCapacity,
 };
 use worth_query_declaration::facade::domain_computation::{
-    WorthQueryCancellationSafePointFamily, WorthQueryResourceDimension,
-    WorthQueryResourceLimitRequest, WorthQuerySemanticScaleAxis, WorthQuerySemanticScaleRequest,
+    WorthQueryCancellationSafePointFamily, WorthQueryResourceLimitRequest,
+    WorthQuerySemanticScaleRequest,
 };
 use worth_query_installation::facade::{
     WorthQueryExecutionAccessProductFamily, WorthQueryExecutionAllocatorFamily,
@@ -26,17 +25,10 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphRe
 impl WorthQueryPrimaryGraphResourceSupport {
     pub(in crate::domain_computation::primary_graph) fn install(
         maximum_concurrent_graph_work: std::num::NonZeroUsize,
-        candidate_resources: WorthQueryApplicationCandidateResourceProfile,
     ) -> Self {
-        let (executor, _) = component_support(
-            "executor",
-            maximum_concurrent_graph_work,
-            candidate_resources,
-        );
-        let (graph, _) =
-            component_support("graph", maximum_concurrent_graph_work, candidate_resources);
-        let (commit, _) =
-            component_support("commit", maximum_concurrent_graph_work, candidate_resources);
+        let (executor, _) = component_support("executor", maximum_concurrent_graph_work);
+        let (graph, _) = component_support("graph", maximum_concurrent_graph_work);
+        let (commit, _) = component_support("commit", maximum_concurrent_graph_work);
         let snapshot =
             worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot::new(
                 executor,
@@ -70,7 +62,6 @@ impl WorthQueryPrimaryGraphResourceSupport {
 fn component_support(
     component: &str,
     maximum_concurrent_graph_work: std::num::NonZeroUsize,
-    candidate_resources: WorthQueryApplicationCandidateResourceProfile,
 ) -> (
     WorthQueryExecutionResourceSupport,
     Arc<WorthQueryFixedExecutionCapacity>,
@@ -82,16 +73,8 @@ fn component_support(
         )
         .expect("static primary provider capacity is valid"),
     );
-    let scale = WorthQuerySemanticScaleRequest::selective()
-        .with(
-            WorthQuerySemanticScaleAxis::CandidateItems,
-            candidate_resources.maximum_items(),
-        )
-        .with(
-            WorthQuerySemanticScaleAxis::BatchWidth,
-            candidate_resources.maximum_operation_width(),
-        );
-
+    let scale = WorthQuerySemanticScaleRequest::selective();
+    let resources = WorthQueryResourceLimitRequest::selective();
     let support = WorthQueryExecutionResourceSupport::new(
         WorthQueryExecutionProviderFamily::new(APPLICATION_EXECUTION_PROVIDER_FAMILY)
             .expect("static provider family is canonical"),
@@ -101,12 +84,7 @@ fn component_support(
             .expect("static allocator family is canonical"),
         WorthQueryExecutionResourceEnvelope::atomic(
             scale,
-            WorthQueryResourceLimitRequest::selective()
-                .with(
-                    WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
-                    candidate_resources.maximum_retained_representation_bytes(),
-                )
-                .with(WorthQueryResourceDimension::RetainedBytes, 262_144),
+            resources,
             WorthQueryCancellationSafePointFamily::new(APPLICATION_EXECUTION_SAFE_POINT_FAMILY)
                 .expect("static safe-point family is canonical"),
         ),
@@ -114,6 +92,3 @@ fn component_support(
     );
     (support, capacity)
 }
-
-#[cfg(test)]
-mod atomic_tests;

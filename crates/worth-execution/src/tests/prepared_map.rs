@@ -13,7 +13,7 @@ fn prepared_map_reserves_live_memory_before_dispatch_and_reports_it_once() {
     let held = occupied.try_reserve(0, 1_999).unwrap();
     assert!(matches!(
         map(&[7], 0).prepare_run::<u64, ()>(child),
-        Err(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+        Err(LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
             admitted: 1,
             ..
         }))
@@ -26,7 +26,7 @@ fn prepared_map_reserves_live_memory_before_dispatch_and_reports_it_once() {
     assert!(matches!(
         occupied.try_reserve(0, 1_999),
         Err(SlotRefusal::Denied(LeaseDenial::MemoryExhausted(
-            MemoryLimitDenial {
+            MemoryLimitDenial::Capacity {
                 requested: 1_999,
                 ..
             }

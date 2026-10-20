@@ -4,9 +4,6 @@ use super::super::super::{
     WorthQueryApplicationRealizedEffect,
 };
 use super::{mismatch, WorkflowSuccessionAuthority, WorthQueryApplicationAttemptDenial};
-use crate::domain_computation::primary_graph::application_attempt::effect_program::{
-    admit_workflow_settlement_effects, PlatformEffectDemand,
-};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCommitDenial,
 };
@@ -116,12 +113,16 @@ impl<Schema, Operation, Input, Scope>
                 authority.predecessor,
             ),
         });
-        let mut demand = PlatformEffectDemand::default();
-        for effect in &effects {
-            demand.observe(effect)?;
-        }
-        admit_workflow_settlement_effects(&self.read_set.admission, demand)?
-            .materialize(&effects)?;
+        self.read_set
+            .admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
+        self.effects.try_reserve(effects.len()).map_err(|_| {
+            WorthQueryApplicationAttemptDenial::new(
+                super::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
+                "succession effect storage allocation refused",
+            )
+        })?;
         self.effects.extend(effects);
         self.effect_posture = crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
         self.read_set.workflow_deadline = authority.carry.deadline;

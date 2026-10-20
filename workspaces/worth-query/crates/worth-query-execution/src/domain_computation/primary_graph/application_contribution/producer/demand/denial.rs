@@ -23,6 +23,8 @@ pub struct WorthQueryOutputDemandDenial {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
+    publication_companion_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
+    producer_admission_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     commit_denial_kind:
         Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind>,
     commit_execution: Option<(
@@ -151,6 +153,63 @@ impl WorthQueryOutputDemandDenial {
 
     pub fn kind(&self) -> WorthQueryOutputDemandDenialKind {
         self.kind.as_ref().clone()
+    }
+
+    /// Original capacity evidence from output verification or producer
+    /// preparation/readmission. It may overlap `producer_admission_stop`;
+    /// presence alone does not prove a precommit check ran. The original meter
+    /// quote, scratch-size overflow or allocator refusal remains distinct.
+    /// Diagnostic data grants no admission, currentness, retry or cleanup.
+    pub fn output_verification_capacity_stop(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+        self.evidence
+            .as_ref()
+            .and_then(|evidence| evidence.capacity_stop)
+    }
+
+    /// The original publication-companion resource stop from a producer commit.
+    /// Its typed amounts are unchanged; an overflow carries no invented quote.
+    /// Other denial paths return `None`. This is diagnostic data, not cleanup or
+    /// permission to retry, and it does not change the denial kind or posture.
+    pub const fn publication_companion_stop(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::CompanionPreflightStop> {
+        match &self.evidence {
+            Some(evidence) => evidence.publication_companion_stop,
+            None => None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_publication_companion_stop(
+        mut self,
+        stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+    ) -> Self {
+        self.evidence_mut().publication_companion_stop = Some(stop);
+        self
+    }
+
+    /// The original native stop during producer preparation or readmission.
+    /// Unlike `publication_companion_stop`, this can describe topology, source,
+    /// position or registration rather than resource exhaustion. It grants no
+    /// retry or cleanup authority. `None` does not identify another cause.
+    pub const fn producer_admission_stop(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::CompanionPreflightStop> {
+        match &self.evidence {
+            Some(evidence) => evidence.producer_admission_stop,
+            None => None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_producer_admission_stop(
+        mut self,
+        stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
+    ) -> Self {
+        if let Some(stop) = stop {
+            self.evidence_mut().producer_admission_stop = Some(stop);
+        }
+        self
     }
 
     /// The original pre-effect commit refusal, when this demand ran a producer.

@@ -1,10 +1,10 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryOrderingDirection, ApplicationQueryParameterRef, ApplicationQueryReference,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
+    ApplicationQueryParameterRef, ApplicationQueryReference, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
+    ManyResults,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationEntityRef, U64ApplicationValueBinding,
@@ -259,7 +259,6 @@ where
         .scope(scope)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::Many)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 2))
         .disclosure(ApplicationQueryDisclosureContract::installed_policy(
             "account-holder",
         ))

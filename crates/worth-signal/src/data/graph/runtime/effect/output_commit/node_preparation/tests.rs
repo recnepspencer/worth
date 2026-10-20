@@ -23,7 +23,8 @@ fn capture(
             .installed_runtime_policy()
             .conditional_temporal_budget(),
     );
-    let prepared = SignalExecutionBasis::prepare_capture(graph, &mut Work::new(100_000)).unwrap();
+    let prepared =
+        SignalExecutionBasis::prepare_capture(graph, &mut Work::new(Some(100_000))).unwrap();
     let charges = prepared.charges();
     let mut custody = ledger
         .reserve(
@@ -73,17 +74,17 @@ fn assert_carried_charges(graph: &SignalGraph) {
         graph
             .arena
             .hot
-            .retained_heap_charge(&mut Work::new(100_000))
+            .retained_heap_charge(&mut Work::new(Some(100_000)))
             .unwrap(),
         graph
             .arena
             .warm
-            .retained_heap_charge(&mut Work::new(100_000))
+            .retained_heap_charge(&mut Work::new(Some(100_000)))
             .unwrap(),
         graph
             .arena
             .cold
-            .retained_heap_charge(&mut Work::new(100_000))
+            .retained_heap_charge(&mut Work::new(Some(100_000)))
             .unwrap(),
     ];
     assert_eq!(carried, measured.map(Ok));
@@ -154,7 +155,7 @@ fn retained_lineage_stamp_consumes_the_callers_remaining_work() {
         let artifact = selected
             .diagnostics_state_mut()
             .allocate_lineage_artifact_id();
-        let mut exhausted = Work::new(0);
+        let mut exhausted = Work::new(Some(0));
         let result = selected.stamp_runtime_artifact_lineage_and_execution(
             producer,
             artifact,

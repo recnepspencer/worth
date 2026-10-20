@@ -84,7 +84,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 producer.producer_dependency_identity,
                 producer.idempotency_key_identity,
                 producer.observed_source_facts,
-                producer.resources,
                 None,
             );
             return;
@@ -101,7 +100,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             producer.producer_dependency_identity,
             producer.idempotency_key_identity,
             producer.observed_source_facts,
-            producer.resources,
             republished,
         ) else {
             return;

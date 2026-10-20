@@ -30,8 +30,8 @@ pub(crate) fn test_execution_lease() -> ExecutionResourceLease<'static> {
                 DeterminismContract::CanonicalBitwise,
                 ExecutionBudget::new(
                     NonZeroUsize::new(4).expect("positive test worker count"),
-                    32 * 1024 * 1024,
-                    1_000_000,
+                    None,
+                    Some(1_000_000),
                 ),
             ),
             deadline: None,

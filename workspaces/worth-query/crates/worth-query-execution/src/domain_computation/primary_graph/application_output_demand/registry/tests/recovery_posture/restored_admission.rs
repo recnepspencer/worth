@@ -21,8 +21,8 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let restored = restored_output(observation, scope);
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 1_000_000,
-        maximum_preparation_bytes: 8 * 1024 * 1024,
+        maximum_work_visits: Some(1_000_000),
+        maximum_preparation_bytes: None,
     });
 
     let (_lineage, settlement) =
@@ -76,7 +76,6 @@ fn restored_output(
             source_partition: [0x66; 32],
             producer_dependency: None,
             idempotency_key: [0x77; 32],
-            resources: None,
             roles: (Vec::new()).into(),
             producer_facts: None,
             producer_fact_wire_version: 0,

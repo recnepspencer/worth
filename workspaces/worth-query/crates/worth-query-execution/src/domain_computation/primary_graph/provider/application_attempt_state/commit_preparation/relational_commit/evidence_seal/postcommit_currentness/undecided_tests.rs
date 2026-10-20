@@ -142,7 +142,7 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
                     64
                 ),
                 RebasedSourceFacts::SupersededByOwnEffect {
-                    facts: Arc::from([gone_read]),
+                    facts: vec![gone_read].into(),
                     ordinals: Arc::from([0]),
                 },
                 "a field read whose entity is gone answers moved once its liveness check is paid"
@@ -258,8 +258,8 @@ fn rebase_within_width(
 ) -> RebasedSourceFacts {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 64,
-        maximum_preparation_bytes: 1024 * 1024,
+        maximum_work_visits: Some(64),
+        maximum_preparation_bytes: None,
     });
     world
         .application
@@ -280,7 +280,7 @@ fn rebase_within_width(
                 .unwrap(),
                 &BTreeSet::new(),
                 producer_output,
-                indexed_width,
+                Some(indexed_width),
                 &mut admission,
             )
         })

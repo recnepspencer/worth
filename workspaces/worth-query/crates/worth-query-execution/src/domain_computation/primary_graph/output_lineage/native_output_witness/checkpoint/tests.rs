@@ -69,7 +69,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         }],
         |_| Some(TypeId::of::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         )),
@@ -88,7 +88,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         }),
         |_| Some(TypeId::of::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         )),
@@ -192,13 +192,13 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             planned_status.clone(), AspectValue::String("open".into()), 100_001,
         ).expect("the actual installed sparse selection supplies the checkpoint fact");
         let witness = restored.get().unwrap();
-        let mut witness_only = owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
+        let mut witness_only = owner.edit_admission_with_work_limit(Some(4_096));
         assert!(witness.unchanged_in( runtime, &before, &mut witness_only).unwrap());
         let witness_work = usize::try_from(witness_only.charged_work()).unwrap();
-        let mut sparse = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 6).unwrap());
+        let mut sparse = owner.edit_admission_with_work_limit(Some(witness_work + 6));
         assert!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
             &[indexed.clone(), indexed.clone()], &mut sparse).unwrap());
-        assert_eq!(sparse.remaining_work(), 0, "two one-row selections spend six units beyond the witness");
+        assert_eq!(sparse.remaining_work(), Some(0), "two one-row selections spend six units beyond the witness");
         let mut duplicate_facts = facts.clone();
         duplicate_facts.extend([indexed.clone(), indexed.clone()]);
         let duplicate_bound = SealedNativeOutputWitness::checkpoint_comparison_work_bound(
@@ -216,7 +216,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let duplicate_work = recovery_admission.charged_work() - duplicate_start;
         assert!(duplicate_work <= duplicate_bound);
         assert!(duplicate_work < 100_001, "the declared worst case is not prepaid");
-        let mut exhausted = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 2).unwrap());
+        let mut exhausted = owner.edit_admission_with_work_limit(Some(witness_work + 2));
         // A cut-short indexed probe knows the spent allowance, not the work
         // a completed read would require: preserve the incoming refusal law.
         assert!(matches!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
@@ -225,11 +225,11 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 if maximum == u64::try_from(witness_work + 2).unwrap()));
         // One visit cannot fund the index lookup and a candidate visit.
         // The refused probe refunds that reservation without reading a row.
-        assert_eq!(exhausted.remaining_work(), 1);
+        assert_eq!(exhausted.remaining_work(), Some(1));
         assert_eq!(exhausted.charged_work(), u64::try_from(witness_work + 1).unwrap());
         // Producer selection reads both halves of the retained fact set.
         let mut selection_work =
-            owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
+            owner.edit_admission_with_work_limit(Some(4_096));
         assert!(matches!(
             compare_retained_output_witness(
                 runtime,
@@ -340,7 +340,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         // The source facts alone would reuse this output. Its performed
         // output moved, so selection may not: a producer has to run again.
         let mut selection_work =
-            owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
+            owner.edit_admission_with_work_limit(Some(4_096));
         assert!(matches!(
             compare_retained_output_dependencies(&host_custody.borrowed_request_for_test(),
                 runtime,
@@ -365,9 +365,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             compare_retained_output_witness( runtime, &after, None, &mut selection_work),
             Ok(OutputDependencySelection::Reuse)
         ));
-        let mut no_work = owner.edit_admission();
+        let mut no_work = owner.edit_admission_with_work_limit(Some(1));
         no_work
-            .charge_external_work(no_work.remaining_work_amount())
+            .charge_external_work(1)
             .unwrap();
         let exhausted = compare_retained_output_witness(
             runtime,

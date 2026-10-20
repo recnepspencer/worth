@@ -352,7 +352,7 @@ fn dependency_output_cannot_overwrite_an_active_direct_dirty_obligation() {
             &mut crate::logic::evaluation::EvaluationWork::Ordinary,
         )
         .unwrap();
-    let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(10_000);
+    let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(Some(10_000));
     let projection = crate::data::graph::PendingRevalidationNodeProjection::capture(
         &graph,
         delta.producer,

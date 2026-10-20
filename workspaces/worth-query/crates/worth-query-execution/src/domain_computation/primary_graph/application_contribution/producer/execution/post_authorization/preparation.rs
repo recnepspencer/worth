@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input,
         MutationScope<Schema, Binding>,
     >,
-    mut required_output: RequiredOutputDemandContext,
+    required_output: RequiredOutputDemandContext,
     provider: std::sync::Arc<Binding::Provider>,
     source: SourceValue<Schema, Binding>,
     observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
@@ -32,7 +32,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     >,
     input: <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input,
     matched_predecessors: Option<super::super::super::demand::MatchedRequiredPredecessors<'_>>,
-    resources: super::super::super::WorthQueryProducerDemandResources,
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
     edition: super::super::super::InstalledProducerEdition,
@@ -134,23 +133,12 @@ where
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .map_err(|error| input_cutoff::source_preparation_denial(Binding::IDENTITY, error))?;
-    required_output.retain_actual_resources(resources);
-    // Only re-verifying marked facts and the full-verification fallback spend
-    // the source-currentness allowance; exhausting it selects Fresh. Demand
-    // admission refuses a zero allowance, so an admitted demand has one.
-    let currentness_work = std::num::NonZeroUsize::new(limits.source_currentness_work())
-        .ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                Binding::IDENTITY,
-            )
-        })?;
     let mut currentness = runtime
         .primary_provider
         .graph
         .source_owner
         .invalidation_owner
-        .edit_admission_within(currentness_work);
+        .edit_admission_with_work_limit(limits.source_currentness_work());
     let (mut required_output, prepared_source, prepared_key, prepared_context) =
         match input_cutoff::advance_input_cutoff::<Schema, Binding, _, _, _>(
             phase,
@@ -162,7 +150,6 @@ where
             prepared_key,
             prepared_context,
             matched_predecessors,
-            resources,
             edition,
             request_admission,
             &mut currentness,
@@ -265,11 +252,15 @@ where
             let (key_identity, dependency_identity) = program
         .producer_idempotency_identities::<Operation<Schema, Binding>>(
             runtime,
+            &phase.checked_execution_request_for(&runtime.product_runtime).map_err(|stop| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(stop), Binding::IDENTITY))?,
             *identities.key_identity(),
             successor_of,
             request_admission,
         )
         .map_err(|identity_denial| {
+            if let crate::domain_computation::primary_graph::application_attempt::WorthQueryProducerIdentityDenial::Execution(cause) = identity_denial {
+                return crate::domain_computation::primary_graph::output_reuse::read_denial(cause);
+            }
             if identity_denial
                 == crate::domain_computation::primary_graph::application_attempt::WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded
             {

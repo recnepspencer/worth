@@ -98,13 +98,16 @@ fn chain_application() -> application_installation::WorthQueryProgramApplication
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
     chain_application_with_marking_work(
         None,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
     )
 }
 
 fn chain_application_with_marking_work(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
-    maximum_marking_work: u64,
+    maximum_marking_work: Option<u64>,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<
     CheckpointSchema,
     program::ChainProgram,
@@ -177,7 +180,7 @@ fn restored_required_demands_reenter_source_query_under_small_marking_work() {
     // Retained source re-entry must use Query's own admitted preparation
     // allowance, not this independent marking ceiling.
     run_unrelated_required_advance(
-        chain_application_with_marking_work(Some(checkpoint), 65_536),
+        chain_application_with_marking_work(Some(checkpoint), Some(65_536)),
         [0, 1, 1],
     );
 }
@@ -347,5 +350,6 @@ mod steady_retention;
 mod performed_head_movement;
 
 mod current_consumption;
+mod retained_currentness;
 
 mod checkpoint_failures;

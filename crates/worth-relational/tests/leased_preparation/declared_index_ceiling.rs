@@ -67,7 +67,7 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
     request_lease.policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, 1_000_000),
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(64 * 1024), Some(1_000_000)),
     );
     let lease = authority()
         .request_lease(request_lease)

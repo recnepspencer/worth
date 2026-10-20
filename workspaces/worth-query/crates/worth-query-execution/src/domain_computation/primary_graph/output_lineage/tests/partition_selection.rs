@@ -15,7 +15,18 @@ fn partition(number: u64) -> [u8; 32] {
     partition
 }
 
+fn admission(work: u64) -> super::super::invalidation::InvalidationEditAdmission {
+    super::super::invalidation::InvalidationEditAdmission::new(
+        worth_relational::facade::mvcc::CompanionPreflightBudget {
+            maximum_work_visits: Some(work),
+            maximum_preparation_bytes: None,
+        },
+    )
+}
+
 fn unrelated_partition_selection(population: u64) {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
@@ -62,7 +73,6 @@ fn unrelated_partition_selection(population: u64) {
         partition(0),
         None,
         [0x41; 32],
-        None,
     );
     for number in 1..=population {
         lineage.record_recovered_prior_output(
@@ -77,7 +87,6 @@ fn unrelated_partition_selection(population: u64) {
             partition(number),
             None,
             [0x41; 32],
-            None,
         );
     }
     let coordinate = ProductCoordinate {
@@ -85,10 +94,10 @@ fn unrelated_partition_selection(population: u64) {
         generation: population + 1,
     };
     assert!(lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, partition(0), 0)
+        .latest_output_in_partition_budgeted(&source, coordinate, partition(0), Some(0))
         .is_err());
     let (selected, work) = lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, partition(0), 1)
+        .latest_output_in_partition_budgeted(&source, coordinate, partition(0), Some(1))
         .expect("one indexed coordinate fits the fixed budget");
     assert_eq!(work, 1);
     assert!(Arc::ptr_eq(&selected.unwrap().correspondence, &target));
@@ -108,7 +117,7 @@ fn unrelated_partition_selection(population: u64) {
     assert_eq!(candidates.len(), 1);
     assert!(Arc::ptr_eq(&candidates[0].correspondence, &target));
     let (missing, work) = lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, [0xff; 32], 1)
+        .latest_output_in_partition_budgeted(&source, coordinate, [0xff; 32], Some(1))
         .expect("a missing partition also costs one lookup");
     assert!(missing.is_none());
     assert_eq!(work, 1);
@@ -134,7 +143,7 @@ fn unrelated_partition_selection(population: u64) {
         completed_decision_reuse: None,
         prepared_input_reuse_key: None,
         native_output_witness: OnceLock::new(),
-        mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable::new(None, None, None, super::super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
+        mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable::new(None, None, super::super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
         settlement_identity: super::super::RecordedSettlementIdentity::retain(
             &source,
             ProductCoordinate {
@@ -168,7 +177,8 @@ fn unrelated_partition_selection(population: u64) {
             &source,
             revised_coordinate,
             partition(0),
-            1,
+            execution,
+            &mut admission(1),
             |recorded| Arc::ptr_eq(&recorded.correspondence, &target),
         )
         .is_err());
@@ -177,7 +187,8 @@ fn unrelated_partition_selection(population: u64) {
             &source,
             revised_coordinate,
             partition(0),
-            2,
+            execution,
+            &mut admission(2),
             |recorded| Arc::ptr_eq(&recorded.correspondence, &target),
         )
         .expect("same-partition predecessors, not siblings, consume the budget");
@@ -187,7 +198,7 @@ fn unrelated_partition_selection(population: u64) {
     // An unavailable derived locator must never guess from a sibling record.
     lineage.partition_index = Default::default();
     let (unavailable, work) = lineage
-        .latest_output_in_partition_budgeted(&source, revised_coordinate, partition(0), 1)
+        .latest_output_in_partition_budgeted(&source, revised_coordinate, partition(0), Some(1))
         .expect("missing index data is a bounded miss");
     assert!(unavailable.is_none());
     assert_eq!(work, 1);
@@ -209,7 +220,8 @@ fn unrelated_partition_selection(population: u64) {
         .matching_legacy_output_budgeted(
             &source,
             revised_coordinate,
-            population as usize + 1,
+            execution,
+            &mut admission(population + 1),
             |recorded| Arc::ptr_eq(&recorded.correspondence, &target),
         )
         .is_err());
@@ -217,7 +229,8 @@ fn unrelated_partition_selection(population: u64) {
         .matching_legacy_output_budgeted(
             &source,
             revised_coordinate,
-            population as usize + 2,
+            execution,
+            &mut admission(population + 2),
             |recorded| Arc::ptr_eq(&recorded.correspondence, &target),
         )
         .expect("legacy unpartitioned correspondence remains discoverable within its budget");
@@ -311,7 +324,6 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
-        None,
         );
     lineage.register_fork(parent, &child);
     let (candidates, work) = lineage
@@ -340,7 +352,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
                     generation: parent.reference_generation().get(),
                 },
                 partition(0),
-                usize::MAX,
+                None,
             )
             .expect("bounded partition lookup")
             .0
@@ -358,7 +370,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
                     generation: parent.reference_generation().get(),
                 },
                 partition(0),
-                usize::MAX,
+                None,
             )
             .expect("bounded partition lookup")
             .0

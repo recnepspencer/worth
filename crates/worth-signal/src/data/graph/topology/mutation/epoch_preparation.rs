@@ -298,7 +298,7 @@ pub(super) fn with_segment_work<R>(
     request: Option<&mut MapKernelContext<'_, '_>>,
     operation: impl FnOnce(&mut Work<'_>) -> Result<R, SignalError>,
 ) -> Result<R, SignalError> {
-    let mut work = Work::new(usize::MAX);
+    let mut work = Work::new(None);
     let Some(request) = request else {
         return operation(&mut work);
     };

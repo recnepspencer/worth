@@ -35,7 +35,6 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     const HANDLER_IDENTITY: &'static str = "worth.query.body-court.native-body.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.related-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = <BodyBinding<MODE> as ApplicationMutationBinding<DocumentRetentionSchema<MODE>>>::CANDIDATES;
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }

@@ -79,7 +79,7 @@ impl DeliveryEpoch {
 #[derive(Clone, Debug)]
 pub(super) struct SettlementMarks {
     pub(super) work_membership: Option<Arc<RequiredWorkMembership>>,
-    pub(super) _fact_capacity: Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>,
+    pub(super) _fact_capacity: super::fact_retention::RetainedFactCapacity,
     pub(super) posting_payload_bytes: u64,
     pub(super) posting_ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
     pub(super) consumed_upstream: OrdSet<Arc<RecordedSettlementIdentity>>,

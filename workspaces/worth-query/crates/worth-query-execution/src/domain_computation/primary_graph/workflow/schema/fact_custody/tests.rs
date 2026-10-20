@@ -41,6 +41,12 @@ fn only_a_new_approval_or_successor_may_link_to_an_existing_fact() {
             (KindId(20), KindId(14)),
         ],
     };
+    assert_eq!(
+        worth_relational::facade::runtime::CustomInvariantRule::descriptor(&rule)
+            .operational
+            .maximum_work_units,
+        None
+    );
     let created = |kind_id| {
         EntityReference::Created(CreatedEntityRef {
             partition_id: PartitionId::main(),

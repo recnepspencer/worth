@@ -3,10 +3,18 @@ use std::collections::BTreeMap;
 use crate::identity::data::PartitionId;
 
 use super::PartitionState;
+mod memory;
+pub(crate) use memory::{
+    collect_partition_ids, partition_id_bytes, PartitionIdMemory, PartitionIdsDenial,
+};
 
 pub(crate) trait PartitionAccess: Sync {
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState>;
     fn partition_ids(&self) -> Vec<PartitionId>;
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, PartitionIdsDenial>;
 
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(self.partition_ids().into_iter())
@@ -56,6 +64,13 @@ impl PartitionAccess for BTreeMap<PartitionId, PartitionState> {
         self.keys().copied().collect()
     }
 
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, PartitionIdsDenial> {
+        collect_partition_ids(self.len(), self.keys().copied(), memory)
+    }
+
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(self.keys().copied())
     }
@@ -85,6 +100,22 @@ impl<S: PartitionAccess> PartitionAccess for OverlayStateView<'_, S> {
         self.staged
             .get_partition(partition_id)
             .or_else(|| self.base_partitions.get_partition(partition_id))
+    }
+
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, PartitionIdsDenial> {
+        let base = self.base_partitions.partition_ids_with_memory(memory)?;
+        let staged = match self.staged.partition_ids_with_memory(memory) {
+            Ok(ids) => ids,
+            Err(error) => {
+                memory::release_ids(base, memory);
+                return Err(error);
+            }
+        };
+        debug_assert!(partition_ids_are_canonical(staged.iter().copied()));
+        memory::merge_partition_ids(base, staged, memory)
     }
 
     fn partition_ids(&self) -> Vec<PartitionId> {
@@ -200,36 +231,4 @@ fn partition_ids_are_canonical(partition_ids: impl IntoIterator<Item = Partition
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    struct Ids(Vec<PartitionId>);
-
-    impl PartitionAccess for Ids {
-        fn get_partition(&self, _: PartitionId) -> Option<&PartitionState> {
-            None
-        }
-        fn partition_ids(&self) -> Vec<PartitionId> {
-            self.0.clone()
-        }
-        fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
-            Box::new(self.0.iter().copied())
-        }
-    }
-
-    #[test]
-    fn overlay_lazy_partition_merge_is_canonical_and_deduplicated() {
-        let base = Ids(vec![PartitionId(1), PartitionId(3), PartitionId(7)]);
-        let staged = Ids(vec![PartitionId(2), PartitionId(3), PartitionId(8)]);
-        let overlay = OverlayStateView::new(&base, &staged);
-        let expected = vec![
-            PartitionId(1),
-            PartitionId(2),
-            PartitionId(3),
-            PartitionId(7),
-            PartitionId(8),
-        ];
-        assert_eq!(overlay.partition_ids_iter().collect::<Vec<_>>(), expected);
-        assert_eq!(overlay.partition_ids(), expected);
-    }
-}
+mod tests;

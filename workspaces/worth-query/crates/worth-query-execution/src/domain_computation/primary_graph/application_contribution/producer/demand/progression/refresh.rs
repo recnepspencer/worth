@@ -37,7 +37,6 @@ where
         let profile_kind = Family::profile_kind(source);
         let mut refreshed = self.admit_output_demand_with_source_admitted::<Family>(
             execution,
-            source,
             observed_source,
             None,
             profile_kind,

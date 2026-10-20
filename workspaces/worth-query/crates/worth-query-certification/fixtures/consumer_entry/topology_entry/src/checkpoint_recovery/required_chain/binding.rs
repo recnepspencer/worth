@@ -1,6 +1,7 @@
 use super::*;
 use std::marker::PhantomData;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
+
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_reads, worth_query_operation_writes,
@@ -119,7 +120,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema> for Chain
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.consumed-chain-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.consumed-chain-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 8_192);
+
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,
@@ -205,9 +206,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
             .push((input.scope_key.clone(), consumed));
         HandlerResult::Completed(())
     }
-    fn candidate_requirements(&self, _: &ChainInput, _: &()) -> ApplicationCandidateRequirements {
-        ChainBinding::<Schema>::CANDIDATES
-    }
+
     fn build_candidate(
         &self,
         input: &ChainInput,

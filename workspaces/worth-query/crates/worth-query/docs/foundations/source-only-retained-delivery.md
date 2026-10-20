@@ -14,7 +14,7 @@ Declare `.action::<Binding, Delivery>()`, attach its applicable metadata, and
 call `.finish_action()` before finishing the feature. The real delivery declares
 `Delivery::Mode = ApplicationRetainedCommit`. Retain the original description with `idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`.
 
-Retained mode requires `advance(&fresh_request, maximum_history_work)`, where the bound is `NonZeroUsize`. Source-completion mode uses `advance(&fresh_request)` and carries no historical-read argument. There is one advance entrance for each declared mode.
+Retained mode requires `advance(&fresh_request, maximum_history_work)`, where the optional bound is `Option<NonZeroUsize>`; `None` imposes no work ceiling. Source-completion mode uses `advance(&fresh_request)` and carries no historical-read argument. There is one advance entrance for each declared mode.
 
 ## Core Mental Model
 
@@ -56,7 +56,7 @@ let owner = request.mutate(intent)
 let next = owner.advance(&fresh_request, maximum_history_work);
 ```
 
-The history bound is supplied for this attempt. It is neither part of operation meaning nor inferred from query limits.
+An optional history bound is supplied for this attempt; absence remains absent through the original World ancestry walk. The same original request is checked for cancellation and deadline while visiting commits and issuing native history protection. It is neither part of operation meaning nor inferred from query limits.
 
 ## Historical observation
 
@@ -86,7 +86,7 @@ After a real append failure returns `ProductUnpublished`, retain the operation r
 
 If that admission refuses, `Refused` returns the original operation with its partial custody intact. Retain it and retry with a freshly authenticated principal whose current capability authorizes the original action. Recovery adopts the original native owner effects and resolves their keyed outcome without invoking the source handler again. Recovered completion supplies native evidence rather than a recreated handler result.
 
-For example, a retention action can land its change to 18 days before publication completes. A fresh request from a revoke-only principal refuses recovery; the original retention principal can then recover the same operation and independently query 18 days. Retain completed custody when `close` refuses, and retry cleanup with a fresh lawful request. This applies to both source-completion and retained-commit delivery; retained mode still requires its explicit per-attempt history bound.
+For example, a retention action can land its change to 18 days before publication completes. A fresh request from a revoke-only principal refuses recovery; the original retention principal can then recover the same operation and independently query 18 days. Retain completed custody when `close` refuses, and retry cleanup with a fresh lawful request. This applies to both source-completion and retained-commit delivery; retained mode permits `None` or an explicit finite per-attempt history bound.
 
 ## Inspection And Debugging
 

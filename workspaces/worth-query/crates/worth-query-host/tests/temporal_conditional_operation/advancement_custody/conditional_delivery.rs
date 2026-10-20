@@ -22,8 +22,8 @@ fn conditional_delivery_refuses_before_its_retained_truth_reader() {
         for memory in [false, true] {
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
-                if memory { 0 } else { 64 * 1024 * 1024 },
-                if memory { 8_000_000 } else { 0 },
+                if memory { Some(0) } else { None },
+                Some(if memory { 8_000_000 } else { 0 }),
             )));
             let before = reads();
             let denied = world

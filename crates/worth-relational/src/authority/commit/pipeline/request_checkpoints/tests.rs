@@ -38,11 +38,8 @@ fn cancellation_between_validation_and_publication_stops_without_publishing() {
     let identity = runtime.main_branch_identity();
     let before = runtime.observe_branch(&identity).unwrap().0;
     let cancellation = Arc::new(CancellationSource::new());
-    let backing = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
-        cancellation.token(),
-        None,
-    );
+    let backing =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let execution = ExecutionRequest::serial(&backing);
     let visits = Arc::new(AtomicUsize::new(0));
     let seen = Arc::clone(&visits);
@@ -105,13 +102,13 @@ fn cancellation_between_validation_and_publication_stops_without_publishing() {
 fn a_completed_empty_commit_keeps_its_zero_data_work_charge() {
     let runtime = runtime_with_test_schema();
     let backing = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
+        SerialMemoryBudget::new(None),
         CancellationSource::new().token(),
         None,
     );
     let execution = ExecutionRequest::serial(&backing);
     let (result, report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime.commit_branch_transaction(&execution, transaction(&runtime, 1))
         })
         .unwrap();

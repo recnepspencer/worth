@@ -41,6 +41,7 @@ pub use crate::domain_computation::primary_graph::query_test_execution_authority
 pub use worth_relational::facade::{
     indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
     lineage::{LineageEventKind, LineageEventRecord},
+    mvcc::CompanionPreflightStop,
     publication::RecordStructuralChange,
     transactions::RelationalExecutionDenialCause,
 };
@@ -75,7 +76,7 @@ pub use crate::domain_computation::primary_graph::output_lineage::{
 };
 pub use crate::domain_computation::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    MutationHandlerExecutionDenial, OperationHandler,
+    MutationHandlerExecutionDenial, OperationHandler, VerificationCapacityStop,
     WorthQueryAdmittedApplicationCapabilityAccess,
     WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedApplicationOperation,
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,

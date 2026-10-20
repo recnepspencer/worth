@@ -20,7 +20,7 @@ fn assert_carried_matches_representation<T: Clone + RetainedStorageMeasurement>(
     // Explicit representation traversal is independent of the local delta
     // update; it includes hidden bases, all overlays and nested payloads.
     let measured = values
-        .retained_heap_charge(&mut Work::new(100_000))
+        .retained_heap_charge(&mut Work::new(Some(100_000)))
         .unwrap();
     assert_eq!(carried, measured);
 }
@@ -31,12 +31,14 @@ fn charge_follows_capacity_fork_payload_edit_append_and_logical_removal() {
         [String::with_capacity(4096), String::from("second")]
             .into_iter()
             .collect();
-    values.prepare_retained_charge(&mut Work::new(100)).unwrap();
+    values
+        .prepare_retained_charge(&mut Work::new(Some(100)))
+        .unwrap();
     values.reserve_exclusive(16);
     assert_carried_matches_representation(&values);
     accounted(
         values
-            .edit_with_retained_charge(0, &mut Work::new(100), |value| {
+            .edit_with_retained_charge(0, &mut Work::new(Some(100)), |value| {
                 value.push_str("original");
             })
             .unwrap(),
@@ -47,7 +49,7 @@ fn charge_follows_capacity_fork_payload_edit_append_and_logical_removal() {
     assert_carried_matches_representation(&child);
     accounted(
         child
-            .edit_with_retained_charge(0, &mut Work::new(100), |value| {
+            .edit_with_retained_charge(0, &mut Work::new(Some(100)), |value| {
                 *value = String::from("replacement");
             })
             .unwrap(),
@@ -57,19 +59,23 @@ fn charge_follows_capacity_fork_payload_edit_append_and_logical_removal() {
     let retained = child.clone();
     accounted(
         child
-            .edit_with_retained_charge(1, &mut Work::new(100), |value| value.reserve(8192))
+            .edit_with_retained_charge(1, &mut Work::new(Some(100)), |value| value.reserve(8192))
             .unwrap(),
     );
     assert_carried_matches_representation(&retained);
     assert_carried_matches_representation(&child);
     accounted(
         child
-            .push_with_retained_charge(String::with_capacity(16384), &mut Work::new(100))
+            .push_with_retained_charge(String::with_capacity(16384), &mut Work::new(Some(100)))
             .unwrap(),
     );
     assert_carried_matches_representation(&child);
     while !child.is_empty() {
-        accounted(child.pop_with_retained_charge(&mut Work::new(100)).unwrap());
+        accounted(
+            child
+                .pop_with_retained_charge(&mut Work::new(Some(100)))
+                .unwrap(),
+        );
         assert_carried_matches_representation(&child);
     }
     assert!(
@@ -83,7 +89,9 @@ fn charge_follows_capacity_fork_payload_edit_append_and_logical_removal() {
 #[test]
 fn untracked_mutation_closes_accounting_instead_of_serving_a_stale_charge() {
     let mut values: PersistentVector<String> = [String::from("initial")].into_iter().collect();
-    values.prepare_retained_charge(&mut Work::new(10)).unwrap();
+    values
+        .prepare_retained_charge(&mut Work::new(Some(10)))
+        .unwrap();
     values[0].reserve(8192);
     assert_eq!(
         values.prepared_retained_charge(),
@@ -91,16 +99,20 @@ fn untracked_mutation_closes_accounting_instead_of_serving_a_stale_charge() {
     );
     let mut contacted = false;
     assert!(matches!(
-        values.edit_with_retained_charge(0, &mut Work::new(10), |_| contacted = true),
+        values.edit_with_retained_charge(0, &mut Work::new(Some(10)), |_| contacted = true),
         Err(RetainedVectorMutationDenial::PreparationRequired)
     ));
     assert!(!contacted);
-    assert!(values.prepare_retained_charge(&mut Work::new(0)).is_err());
+    assert!(values
+        .prepare_retained_charge(&mut Work::new(Some(0)))
+        .is_err());
     assert_eq!(
         values.prepared_retained_charge(),
         Err(RetainedVectorMutationDenial::PreparationRequired)
     );
-    values.prepare_retained_charge(&mut Work::new(10)).unwrap();
+    values
+        .prepare_retained_charge(&mut Work::new(Some(10)))
+        .unwrap();
     assert_carried_matches_representation(&values);
     values.iter_mut().next().unwrap().push_str(" changed");
     assert!(values.prepared_retained_charge().is_err());
@@ -109,9 +121,12 @@ fn untracked_mutation_closes_accounting_instead_of_serving_a_stale_charge() {
 #[test]
 fn pre_edit_denial_and_post_edit_accounting_failure_preserve_distinct_progress() {
     let mut values: PersistentVector<String> = [String::from("initial")].into_iter().collect();
-    values.prepare_retained_charge(&mut Work::new(10)).unwrap();
+    values
+        .prepare_retained_charge(&mut Work::new(Some(10)))
+        .unwrap();
     let before = values.prepared_retained_charge().unwrap();
-    let denied = values.edit_with_retained_charge(0, &mut Work::new(0), |value| value.clear());
+    let denied =
+        values.edit_with_retained_charge(0, &mut Work::new(Some(0)), |value| value.clear());
     assert!(matches!(
         denied,
         Err(RetainedVectorMutationDenial::Accounting(
@@ -121,7 +136,7 @@ fn pre_edit_denial_and_post_edit_accounting_failure_preserve_distinct_progress()
     assert_eq!(values[0], "initial");
     assert_eq!(values.prepared_retained_charge().unwrap(), before);
     let completion = values
-        .edit_with_retained_charge(0, &mut Work::new(2), |value| {
+        .edit_with_retained_charge(0, &mut Work::new(Some(2)), |value| {
             value.push_str(" performed");
             Box::new("retained operation output")
         })
@@ -138,9 +153,11 @@ fn pre_edit_denial_and_post_edit_accounting_failure_preserve_distinct_progress()
     }
     assert_eq!(values[0], "initial performed");
     assert!(values.prepared_retained_charge().is_err());
-    values.prepare_retained_charge(&mut Work::new(10)).unwrap();
+    values
+        .prepare_retained_charge(&mut Work::new(Some(10)))
+        .unwrap();
     let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let _ = values.edit_with_retained_charge(0, &mut Work::new(10), |value| {
+        let _ = values.edit_with_retained_charge(0, &mut Work::new(Some(10)), |value| {
             value.reserve(32768);
             panic!("payload edit unwinds");
         });
@@ -157,17 +174,17 @@ fn changed_payload_accounting_and_ready_reads_do_not_scan_untouched_population()
             .map(|_| vec![String::from("fixed payload")])
             .collect();
         values
-            .prepare_retained_charge(&mut Work::new(10_000))
+            .prepare_retained_charge(&mut Work::new(Some(10_000)))
             .unwrap();
         let mut child = values.fork_persistent();
-        let mut work = Work::new(100);
+        let mut work = Work::new(Some(100));
         accounted(
             child
                 .edit_with_retained_charge(0, &mut work, |value| value[0].push('!'))
                 .unwrap(),
         );
         visits.push(work.visits());
-        let mut no_traversal = Work::new(0);
+        let mut no_traversal = Work::new(Some(0));
         let ready = child.prepared_retained_charge().unwrap();
         for _ in 0..64 {
             assert_eq!(

@@ -44,12 +44,12 @@ fn scope(input: &Select) -> String {
     input.row.clone()
 }
 worth_query_mutation_binding!(pub Binding for Select,schema Schema,
-    identity "worth.query.reuse.binding.v1",input Input,operation Reuse,result ResultBinding,
-    idempotency u64,identity "worth.query.reuse.request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
-    handler identity "worth.query.reuse.body.v1",program required,outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value scope,
-    candidates creates 3,deletes 1,links 3,unlinks 1,writes 11,emits 0,resources retained_representation_bytes 8192);
+identity "worth.query.reuse.binding.v1",input Input,operation Reuse,result ResultBinding,
+idempotency u64,identity "worth.query.reuse.request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
+handler identity "worth.query.reuse.body.v1",program required,outputs NoApplicationMutationOutputs,
+principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
+scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value scope,
+);
 pub fn body() -> ApplicationOperationBody<Schema, Reuse, Select> {
     let op = Reuse::reference();
     let next = ApplicationOperationBodyValue::<Schema, Reuse, U64ApplicationValueBinding>::admit(
@@ -129,12 +129,12 @@ fn note_scope(input: &EditNote) -> String {
     input.identity.clone()
 }
 worth_query_mutation_binding!(pub NoteBinding for EditNote,schema Schema,
-    identity "worth.query.reuse.note-binding.v1",input NoteInput,operation ChangeNote,result ResultBinding,
-    idempotency u64,identity "worth.query.reuse.note-request.v1",decision WorthQueryOperationBodyDecision<Schema,Snapshot>,denial DenialBinding,
-    handler identity "worth.query.reuse.note-body.v1",program required,outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Snapshot,SnapshotFacts,SnapshotIdentity,String,ReadOnly,NoApplicationUnit,field SnapshotIdentity::reference(),value note_scope,
-    candidates creates 0,deletes 0,links 0,unlinks 0,writes 1,emits 0,resources retained_representation_bytes 4096);
+identity "worth.query.reuse.note-binding.v1",input NoteInput,operation ChangeNote,result ResultBinding,
+idempotency u64,identity "worth.query.reuse.note-request.v1",decision WorthQueryOperationBodyDecision<Schema,Snapshot>,denial DenialBinding,
+handler identity "worth.query.reuse.note-body.v1",program required,outputs NoApplicationMutationOutputs,
+principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
+scope Snapshot,SnapshotFacts,SnapshotIdentity,String,ReadOnly,NoApplicationUnit,field SnapshotIdentity::reference(),value note_scope,
+);
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {

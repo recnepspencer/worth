@@ -7,6 +7,8 @@ use super::{
 };
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
+    /// Optionally limits decision-read work. Omit this declaration for no operation work ceiling.
+    /// Scope, authorization, source facts, cancellation and allocation admission still apply.
     pub fn operation_projection_work_budget<Operation, Input>(
         self,
         operation: ApplicationOperationRef<Schema, Operation, Input>,

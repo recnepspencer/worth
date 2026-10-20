@@ -14,10 +14,15 @@ pub(in crate::domain_computation::primary_graph::application_query) fn lease(
         LeaseDenial::WorkerLimitExceedsParent => Denial::WorkerLimitExceedsParent,
         LeaseDenial::MemoryLimitExceedsParent => Denial::MemoryLimitExceedsParent,
         LeaseDenial::WorkLimitExceedsParent => Denial::WorkLimitExceedsParent,
-        LeaseDenial::MemoryExhausted(memory) => match memory.level {
-            MemoryLimitLevel::Policy { ancestor: _ } => Denial::PolicyMemoryExhausted(memory),
-            MemoryLimitLevel::Process => Denial::ProcessMemoryExhausted(memory),
-            MemoryLimitLevel::Declared => Denial::DeclaredMemoryExhausted(memory),
+        LeaseDenial::MemoryExhausted(memory) => match memory {
+            worth_execution::MemoryLimitDenial::CounterOverflow { .. } => {
+                Denial::ChargedBytesOverflow
+            }
+            worth_execution::MemoryLimitDenial::Capacity { level, .. } => match level {
+                MemoryLimitLevel::Policy { .. } => Denial::PolicyMemoryExhausted(memory),
+                MemoryLimitLevel::Process => Denial::ProcessMemoryExhausted(memory),
+                MemoryLimitLevel::Declared => Denial::DeclaredMemoryExhausted(memory),
+            },
         },
         LeaseDenial::ChargedBytesOverflow => Denial::ChargedBytesOverflow,
         LeaseDenial::UnrelatedNestedLease => Denial::UnrelatedNestedLease,
@@ -100,21 +105,9 @@ impl ChargedBytes for Denial {
                 root: _root,
                 denial,
             } => denial.additional_charged_bytes(),
-            Self::PolicyMemoryExhausted(worth_execution::MemoryLimitDenial {
-                requested: _requested,
-                admitted: _admitted,
-                level: _level,
-            })
-            | Self::ProcessMemoryExhausted(worth_execution::MemoryLimitDenial {
-                requested: _requested,
-                admitted: _admitted,
-                level: _level,
-            })
-            | Self::DeclaredMemoryExhausted(worth_execution::MemoryLimitDenial {
-                requested: _requested,
-                admitted: _admitted,
-                level: _level,
-            }) => 0,
+            Self::PolicyMemoryExhausted(_)
+            | Self::ProcessMemoryExhausted(_)
+            | Self::DeclaredMemoryExhausted(_) => 0,
             Self::WorkExhausted { root: _root } => 0,
             Self::DuplicateRoot { root: _root }
             | Self::KernelPanic { root: _root }

@@ -70,15 +70,18 @@ fn with_retained_fixture<R>(
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 8,
             maximum_retained_bytes: maximum_bytes,
-            maximum_attempt_visits: 50_000_000,
+            maximum_attempt_visits: Some(50_000_000),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
     );
-    let basis =
-        SignalRetainedExecutionBasis::capture(&mut graph, &ledger, &mut Work::new(50_000_000))
-            .unwrap();
+    let basis = SignalRetainedExecutionBasis::capture(
+        &mut graph,
+        &ledger,
+        &mut Work::new(Some(50_000_000)),
+    )
+    .unwrap();
     let mut slot = basis
-        .new_evaluation_partition(&mut Work::new(50_000_000))
+        .new_evaluation_partition(&mut Work::new(Some(50_000_000)))
         .unwrap();
     let output = run(&mut graph, &apply, &expected, &mut slot, &ledger);
     drop(slot);
@@ -106,7 +109,7 @@ fn materialized_snapshot_admission_is_shared_and_precedes_graph_movement() {
         let node = apply.effect.operational.node;
         let before = graph.get_dep_snapshot(node).unwrap().clone();
         let before_id = graph.node_dependency_ids(node).unwrap();
-        let mut measured = Work::new(usize::MAX);
+        let mut measured = Work::new(None);
         graph
             .materialize_effect_snapshot(&apply, &mut EvaluationWork::Conditional(&mut measured))
             .unwrap()
@@ -114,7 +117,7 @@ fn materialized_snapshot_admission_is_shared_and_precedes_graph_movement() {
         let cost = measured.visits();
         assert!(cost >= 5 * 1024);
         for available in [cost - 1, cost] {
-            let mut work = Work::new(cost + 13);
+            let mut work = Work::new(Some(cost + 13));
             work.reserve_visits(cost + 13 - available).unwrap();
             let result = graph
                 .materialize_effect_snapshot(&apply, &mut EvaluationWork::Conditional(&mut work));
@@ -151,7 +154,7 @@ fn materialized_snapshot_admission_is_shared_and_precedes_graph_movement() {
 fn snapshot_materialization_charges_scope_payload_and_skips_deferred_commit() {
     for replacement in [false, true] {
         let (mut short_graph, short, _) = fixture(replacement, "x");
-        let mut measured = Work::new(10_000_000);
+        let mut measured = Work::new(Some(10_000_000));
         short_graph
             .materialize_effect_snapshot(&short, &mut EvaluationWork::Conditional(&mut measured))
             .unwrap();
@@ -159,13 +162,16 @@ fn snapshot_materialization_charges_scope_payload_and_skips_deferred_commit() {
         assert!(matches!(
             graph.materialize_effect_snapshot(
                 &long,
-                &mut EvaluationWork::Conditional(&mut Work::new(measured.visits()))
+                &mut EvaluationWork::Conditional(&mut Work::new(Some(measured.visits())))
             ),
             Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
         ));
         long.defer_snapshot_commit = true;
         assert!(graph
-            .materialize_effect_snapshot(&long, &mut EvaluationWork::Conditional(&mut Work::new(0)))
+            .materialize_effect_snapshot(
+                &long,
+                &mut EvaluationWork::Conditional(&mut Work::new(Some(0)))
+            )
             .unwrap()
             .is_none());
     }
@@ -189,7 +195,7 @@ fn retained_snapshot_publication_has_atomic_capacity_and_exact_custody() {
                             .unwrap();
                         let result = selected.materialize_effect_snapshot(
                             apply,
-                            &mut EvaluationWork::Conditional(&mut Work::new(usize::MAX)),
+                            &mut EvaluationWork::Conditional(&mut Work::new(None)),
                         );
                         let admitted = result.is_ok();
                         drop(result);
@@ -226,7 +232,7 @@ fn retained_snapshot_publication_has_atomic_capacity_and_exact_custody() {
                         selected
                             .materialize_effect_snapshot(
                                 apply,
-                                &mut EvaluationWork::Conditional(&mut Work::new(usize::MAX)),
+                                &mut EvaluationWork::Conditional(&mut Work::new(None)),
                             )
                             .unwrap_err(),
                         SignalError::EvaluationStorageCapacityExhausted
@@ -251,7 +257,7 @@ fn retained_snapshot_publication_has_atomic_capacity_and_exact_custody() {
                     let publication = selected
                         .materialize_effect_snapshot(
                             apply,
-                            &mut EvaluationWork::Conditional(&mut Work::new(usize::MAX)),
+                            &mut EvaluationWork::Conditional(&mut Work::new(None)),
                         )
                         .unwrap()
                         .unwrap();
@@ -271,7 +277,7 @@ fn retained_snapshot_publication_has_atomic_capacity_and_exact_custody() {
                     let repeated = selected
                         .materialize_effect_snapshot(
                             apply,
-                            &mut EvaluationWork::Conditional(&mut Work::new(usize::MAX)),
+                            &mut EvaluationWork::Conditional(&mut Work::new(None)),
                         )
                         .unwrap()
                         .unwrap();
@@ -291,18 +297,19 @@ fn retained_snapshot_publication_has_atomic_capacity_and_exact_custody() {
 #[test]
 fn rejected_draft_keeps_retained_snapshot_custody_until_release() {
     with_retained_fixture(true, u64::MAX, |graph, apply, _, slot, ledger| {
-        ConditionalEvaluationDraft::begin(slot, &mut Work::new(50_000_000))
+        ConditionalEvaluationDraft::begin(slot, &mut Work::new(Some(50_000_000)))
             .unwrap()
             .install();
         let baseline = ledger.usage();
-        let draft = ConditionalEvaluationDraft::begin(slot, &mut Work::new(50_000_000)).unwrap();
+        let draft =
+            ConditionalEvaluationDraft::begin(slot, &mut Work::new(Some(50_000_000))).unwrap();
         draft
             .partition
             .execute(graph, |selected| {
                 let publication = selected
                     .materialize_effect_snapshot(
                         apply,
-                        &mut EvaluationWork::Conditional(&mut Work::new(usize::MAX)),
+                        &mut EvaluationWork::Conditional(&mut Work::new(None)),
                     )
                     .unwrap()
                     .unwrap();

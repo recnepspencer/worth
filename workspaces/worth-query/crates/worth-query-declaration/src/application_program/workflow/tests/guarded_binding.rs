@@ -48,6 +48,4 @@ crate::worth_query_mutation_binding!(@binding
     >,
     scope_field_type Principal, PrincipalFacts, PrincipalId, u64, ReadOnly, NoApplicationUnit,
     scope_field PrincipalId::reference(),
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 0, emits 0,
-    resources retained_representation_bytes 128
 );

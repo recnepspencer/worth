@@ -22,11 +22,7 @@ fn index_currency_stop(cancelled: bool) {
             .observe_branch(&runtime.main_branch_identity())
             .unwrap();
         let source = CancellationSource::new();
-        let host = SerialRequest::from_memory(
-            SerialMemoryBudget::new(64 * 1024 * 1024),
-            source.token(),
-            None,
-        );
+        let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
         let execution = ExecutionRequest::serial(&host);
         if cancelled {
             source.cancel();
@@ -49,7 +45,7 @@ fn index_currency_stop(cancelled: bool) {
                 .unwrap();
         }
         let (enough, report) = setup
-            .run(ExecutionWorkCeiling::new(100_000), |_| {
+            .run(ExecutionWorkCeiling::new(Some(100_000)), |_| {
                 handle.ensure_primary_indexes_for_basis(&setup, runtime, &basis)
             })
             .unwrap();
@@ -66,9 +62,10 @@ fn index_currency_stop(cancelled: bool) {
         }
         assert!(report.charged_work() > 0);
         let (short, _) = setup
-            .run(ExecutionWorkCeiling::new(report.charged_work() - 1), |_| {
-                handle.ensure_primary_indexes_for_basis(&setup, runtime, &basis)
-            })
+            .run(
+                ExecutionWorkCeiling::new(Some(report.charged_work() - 1)),
+                |_| handle.ensure_primary_indexes_for_basis(&setup, runtime, &basis),
+            )
             .unwrap();
         assert_eq!(
             currency_stop(short.unwrap_err()),
@@ -86,11 +83,7 @@ fn mutation_index_refresh_stop(cancelled: bool) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let source = CancellationSource::new();
-    let host = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
-        source.token(),
-        None,
-    );
+    let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&host);
     if cancelled {
         let denied = handle
@@ -106,7 +99,7 @@ fn mutation_index_refresh_stop(cancelled: bool) {
     let setup_host = crate::test_request_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
     let (enough, report) = setup
-        .run(ExecutionWorkCeiling::new(100_000), |_| {
+        .run(ExecutionWorkCeiling::new(Some(100_000)), |_| {
             handle.execute_mutation_with_index_refresh(&setup, |runtime| {
                 commit_empty(&setup, runtime, "main");
                 Ok::<_, ()>(())
@@ -116,12 +109,15 @@ fn mutation_index_refresh_stop(cancelled: bool) {
     enough.unwrap().unwrap();
     assert!(report.charged_work() > 0);
     let (short, _) = setup
-        .run(ExecutionWorkCeiling::new(report.charged_work() - 1), |_| {
-            handle.execute_mutation_with_index_refresh(&setup, |runtime| {
-                commit_empty(&setup, runtime, "main");
-                Ok::<_, ()>(())
-            })
-        })
+        .run(
+            ExecutionWorkCeiling::new(Some(report.charged_work() - 1)),
+            |_| {
+                handle.execute_mutation_with_index_refresh(&setup, |runtime| {
+                    commit_empty(&setup, runtime, "main");
+                    Ok::<_, ()>(())
+                })
+            },
+        )
         .unwrap();
     assert_eq!(
         refresh_stop(&short.unwrap_err()),

@@ -7,8 +7,10 @@ fn packet(identity: u64, scratch: u64, result: u64) -> ReadOnlyPacket<()> {
         identity: PartitionIdentity::new(identity),
         value: (),
         input_bytes: 0,
-        kernel_scratch_bytes: scratch,
-        max_result_bytes: result,
+        memory: crate::execution::PacketMemory::Declared {
+            scratch: scratch,
+            result: result,
+        },
     }
 }
 
@@ -20,7 +22,11 @@ fn noncanonical_identities_remain_typed_with_and_without_a_lease() {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1024, 10),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    None,
+                    Some(10),
+                ),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),
@@ -54,7 +60,11 @@ fn declared_map_bytes_overflow_before_execution_admission() {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1024, 10),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    None,
+                    Some(10),
+                ),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),

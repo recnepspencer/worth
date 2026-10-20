@@ -16,7 +16,7 @@ pub fn query_test_execution_authority_for_test() -> &'static ExecutionAuthority 
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: test_execution_workers_for_test(),
-            charged_memory_bytes: Some(1 << 40),
+            charged_memory_bytes: None,
         })
         .expect("a test process constructs one authority, here")
     })

@@ -4,6 +4,7 @@ use crate::{
     Principal,
 };
 use std::marker::PhantomData;
+
 use worth_query_decl::facade::{application_operation::*, application_schema::*};
 
 pub struct VertexReplacementBinding<Schema>(PhantomData<fn() -> Schema>);
@@ -40,7 +41,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.vertex-replacement-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.vertex-replacement-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = replacement_requirements();
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -75,13 +75,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Vertex
     fn scope_binding(&self) -> PlanarMutationScope<Schema> {
         PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
     }
-}
-
-pub(super) const fn replacement_requirements() -> ApplicationCandidateRequirements {
-    ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(1, 1, 2, 2, 4, 0),
-        ApplicationCandidateResourceCeiling::representation_bytes(8192),
-    )
 }
 
 pub struct VertexReplacementOutputs;

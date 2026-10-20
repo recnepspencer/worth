@@ -29,7 +29,7 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
             source_partition: partition,
             producer_dependency: None,
             idempotency_key: source,
-            resources: None,
+
             roles: (Vec::new()).into(),
             producer_facts: None,
             producer_fact_wire_version: 0,
@@ -227,42 +227,7 @@ fn accepted_prefix(producer: &[u8], dependency_posture: u8, dependency: [u8; 32]
     accepted.push(dependency_posture);
     accepted.extend_from_slice(&dependency);
     accepted.extend_from_slice(&[3; 32]);
-    accepted.extend_from_slice(&[0; 17]);
     accepted
-}
-
-#[test]
-fn producer_resource_profile_roundtrips() {
-    let mut accepted = accepted_prefix(b"producer", 0, [0; 32]);
-    accepted.truncate(accepted.len() - 17);
-    accepted.extend_from_slice(&super::resources::encode_profile(
-        Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(4_096, 8_192)),
-    ));
-    accepted.extend_from_slice(&0_u64.to_be_bytes());
-    accepted.extend_from_slice(&0_u16.to_be_bytes());
-    accepted.extend_from_slice(&0_u64.to_be_bytes());
-    let decoded = checkpoint_from_body(checkpoint_body(1, accepted))
-        .decode()
-        .expect("current resource evidence decodes");
-    let profile = decoded.accepted_outputs[0].resources.unwrap();
-    assert_eq!((profile.work(), profile.retained_bytes()), (4_096, 8_192));
-}
-
-#[test]
-fn producer_resource_profile_rejects_invalid_posture_and_padding() {
-    let mut malformed = accepted_without_roles(b"producer", 0);
-    let position = malformed.len() - 8 - 2 - 8 - 17;
-    malformed[position] = 7;
-    assert_denied(
-        checkpoint_body(1, malformed.clone()),
-        "producer resource profile is invalid",
-    );
-    malformed[position] = 0;
-    malformed[position + 8] = 1;
-    assert_denied(
-        checkpoint_body(1, malformed),
-        "producer resource profile is invalid",
-    );
 }
 
 fn accepted_without_roles(producer: &[u8], role_count: u64) -> Vec<u8> {

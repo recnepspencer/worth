@@ -32,9 +32,11 @@ fn snapshot_pressure_follows_installed_rejected_and_unwound_evaluation_roots() {
     let producer = graph.create_node();
     let consumer = graph.create_node();
     graph.arena.compaction.debt = 7;
-    let basis =
-        SignalExecutionBasis::capture(&mut graph, &mut RetainedStoragePreparation::new(100_000))
-            .unwrap();
+    let basis = SignalExecutionBasis::capture(
+        &mut graph,
+        &mut RetainedStoragePreparation::new(Some(100_000)),
+    )
+    .unwrap();
     // Ambient progress after capture must also survive every activation exit.
     graph.arena.compaction.debt = 11;
     for outcome in 0..3 {
@@ -43,7 +45,9 @@ fn snapshot_pressure_follows_installed_rejected_and_unwound_evaluation_roots() {
             let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let draft = ConditionalEvaluationDraft::begin(
                     &mut partition,
-                    &mut crate::data::retained_storage::RetainedStoragePreparation::new(1_000_000),
+                    &mut crate::data::retained_storage::RetainedStoragePreparation::new(Some(
+                        1_000_000,
+                    )),
                 )
                 .unwrap();
                 draft
@@ -58,7 +62,9 @@ fn snapshot_pressure_follows_installed_rejected_and_unwound_evaluation_roots() {
         } else {
             let draft = ConditionalEvaluationDraft::begin(
                 &mut partition,
-                &mut crate::data::retained_storage::RetainedStoragePreparation::new(1_000_000),
+                &mut crate::data::retained_storage::RetainedStoragePreparation::new(Some(
+                    1_000_000,
+                )),
             )
             .unwrap();
             draft

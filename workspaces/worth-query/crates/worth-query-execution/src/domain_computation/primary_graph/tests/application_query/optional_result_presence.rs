@@ -346,7 +346,7 @@ fn execute_with_note_fact(
             ApplicationQueryParameterSet::<OptionalAccountFieldQuery>::new(),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
-                NonZeroUsize::new(256).unwrap(),
+                Some(NonZeroUsize::new(256).unwrap()),
                 &request,
             ),
         )

@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         Option<crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    indexed_rebase_work_budget: usize,
+    indexed_rebase_work_budget: Option<usize>,
     live_delivery_reservation: Option<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
     >,
@@ -161,7 +161,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) const fn indexed_rebase_work_budget(
         &self,
-    ) -> usize {
+    ) -> Option<usize> {
         self.indexed_rebase_work_budget
     }
 
@@ -218,7 +218,6 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         )?;
         let reservation = provider.reserve_application_commit_causality(
             self.affinity.product_publication().observation(),
-            self.effects.emissions().retained_bytes(),
         )?;
         let live = reservation.requires_successor_observation();
         let demand = self.retain_output_demand_observation;

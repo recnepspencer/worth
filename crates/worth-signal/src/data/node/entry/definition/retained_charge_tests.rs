@@ -18,11 +18,11 @@ fn retained_definition_charge_preserves_hidden_condition_capacity_and_bounds_pre
     selected[0].eval_config.condition = EvaluationCondition::Always;
     drop(definitions);
 
-    let mut work = RetainedStoragePreparation::new(1_000);
+    let mut work = RetainedStoragePreparation::new(Some(1_000));
     let charge = selected.retained_heap_charge(&mut work).unwrap();
     assert!(charge.bytes() >= retained_capacity);
     let required_visits = work.visits();
-    let mut insufficient = RetainedStoragePreparation::new(required_visits - 1);
+    let mut insufficient = RetainedStoragePreparation::new(Some(required_visits - 1));
     assert_eq!(
         selected.retained_heap_charge(&mut insufficient),
         Err(RetainedStoragePreparationDenial::WorkExhausted {
@@ -30,7 +30,7 @@ fn retained_definition_charge_preserves_hidden_condition_capacity_and_bounds_pre
         }),
     );
     assert_eq!(insufficient.visits(), required_visits - 1);
-    let mut exact = RetainedStoragePreparation::new(required_visits);
+    let mut exact = RetainedStoragePreparation::new(Some(required_visits));
     assert_eq!(selected.retained_heap_charge(&mut exact).unwrap(), charge);
 
     // Removing the selected node does not release the immutable base's
@@ -39,7 +39,7 @@ fn retained_definition_charge_preserves_hidden_condition_capacity_and_bounds_pre
     assert!(selected.is_empty());
     assert!(
         selected
-            .retained_heap_charge(&mut RetainedStoragePreparation::new(1_000))
+            .retained_heap_charge(&mut RetainedStoragePreparation::new(Some(1_000)))
             .unwrap()
             .bytes()
             >= retained_capacity
@@ -47,7 +47,7 @@ fn retained_definition_charge_preserves_hidden_condition_capacity_and_bounds_pre
     selected.clear();
     assert_eq!(
         selected
-            .retained_heap_charge(&mut RetainedStoragePreparation::new(2))
+            .retained_heap_charge(&mut RetainedStoragePreparation::new(Some(2)))
             .unwrap()
             .bytes(),
         0,

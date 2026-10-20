@@ -194,16 +194,6 @@ pub(super) fn install_variant_with_observations<
     additional_observations: u64,
     seed: impl FnOnce(&mut Graph),
 ) -> Application<REUSE, WORK, RUNS, MODE> {
-    let width = u64::try_from(DECISION_FACT_BUDGET + WIDTH_BESIDE_DECISION).unwrap();
-    let host = support::candidates();
-    let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            host.maximum_items().max(width),
-            host.maximum_retained_representation_bytes()
-                .max((1024 * LARGEST_SET + 320 * 256) as u64),
-        )
-        .and_then(|candidates| candidates.with_maximum_operation_width(width))
-        .unwrap();
     const RETAINED_COMMITS: u64 = 32;
     let positions = RETAINED_POSITIONS;
     // The scale host gives all retention owners the same ample ceiling;
@@ -228,7 +218,6 @@ pub(super) fn install_variant_with_observations<
         16 + additional_observations,
         64 + 3 * additional_observations,
         invalidation,
-        candidates,
         524_288 + 4_096 * additional_observations,
     );
     support::install_program_with_limits::<OracleProgram<REUSE, WORK, RUNS, MODE>>(

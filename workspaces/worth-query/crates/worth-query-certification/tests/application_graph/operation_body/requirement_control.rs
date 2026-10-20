@@ -3,6 +3,7 @@ use super::{
     draft::{DraftBinding, DraftInput, DraftInputBinding},
     schema::*,
 };
+
 use worth_query_host::facade::{
     declaration::{application_operation::*, application_schema::*},
     primary_graph::{
@@ -47,11 +48,7 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     const HANDLER_IDENTITY: &'static str = "worth.query.body-court.unlink-member-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.unlink-member-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 1, 0, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(4096),
-        );
+
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema<MODE>,
         Document,
@@ -112,13 +109,7 @@ impl<const MODE: u64> OperationHandler<DocumentRetentionSchema<MODE>, UnlinkBind
         };
         HandlerResult::Completed(Targets { document, member })
     }
-    fn candidate_requirements(
-        &self,
-        _: &DraftInput,
-        _: &Targets<MODE>,
-    ) -> ApplicationCandidateRequirements {
-        UnlinkBinding::<MODE>::CANDIDATES
-    }
+
     fn build_candidate(
         &self,
         _: &DraftInput,

@@ -10,7 +10,7 @@ fn real_explanation_retention_charges_vector_capacity_and_cold_artifact_labels()
     let mut explanation = materialized_explanation();
     let original = explanation.clone();
     let before = explanation
-        .retained_heap_charge(&mut Work::new(10000))
+        .retained_heap_charge(&mut Work::new(Some(10000)))
         .unwrap();
     let mut delta = grow_vec(&mut explanation.upstream)
         + grow_vec(&mut explanation.causal_links)
@@ -29,7 +29,7 @@ fn real_explanation_retention_charges_vector_capacity_and_cold_artifact_labels()
     }
     assert_eq!(
         explanation
-            .retained_heap_charge(&mut Work::new(10000))
+            .retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap()
             .bytes()
             - before.bytes(),
@@ -61,7 +61,7 @@ fn upstream_conditions_comparators_and_both_scope_copies_have_independent_cost()
     };
     assert_eq!(
         cause
-            .retained_heap_charge(&mut Work::new(100))
+            .retained_heap_charge(&mut Work::new(Some(100)))
             .unwrap()
             .bytes(),
         (key_bytes + scope_bytes) as u64
@@ -82,7 +82,7 @@ fn upstream_conditions_comparators_and_both_scope_copies_have_independent_cost()
     };
     assert_eq!(
         cause
-            .retained_heap_charge(&mut Work::new(100))
+            .retained_heap_charge(&mut Work::new(Some(100)))
             .unwrap()
             .bytes(),
         expected as u64
@@ -100,7 +100,9 @@ fn upstream_conditions_comparators_and_both_scope_copies_have_independent_cost()
         note: Some("note".into()),
     };
     let original = scope.clone();
-    let before = scope.retained_heap_charge(&mut Work::new(100)).unwrap();
+    let before = scope
+        .retained_heap_charge(&mut Work::new(Some(100)))
+        .unwrap();
     let mut delta = grow_string(scope.note.as_mut().unwrap());
     for subscription in [&mut scope.source_scope, &mut scope.validation_scope]
         .into_iter()
@@ -117,7 +119,7 @@ fn upstream_conditions_comparators_and_both_scope_copies_have_independent_cost()
     }
     assert_eq!(
         scope
-            .retained_heap_charge(&mut Work::new(100))
+            .retained_heap_charge(&mut Work::new(Some(100)))
             .unwrap()
             .bytes()
             - before.bytes(),

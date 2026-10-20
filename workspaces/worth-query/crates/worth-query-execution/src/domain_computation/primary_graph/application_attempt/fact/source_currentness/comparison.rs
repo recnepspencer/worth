@@ -8,9 +8,9 @@ impl WorthQueryApplicationObservedFact {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
     ) -> Result<(bool, usize), WorthQuerySourceCurrentnessFailure> {
-        if maximum_work == 0 {
+        if maximum_work == Some(0) {
             return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
         }
         match self {
@@ -75,7 +75,7 @@ impl WorthQueryApplicationObservedFact {
                     .as_str()
                     .len()
                     .checked_add(1)
-                    .filter(|work| *work <= maximum_work)
+                    .filter(|work| maximum_work.is_none_or(|maximum| *work <= maximum))
                     .ok_or(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
                 let Some(current) = runtime
                     .read_truth()
@@ -150,27 +150,8 @@ impl WorthQueryApplicationObservedFact {
                     == Some(*kind),
                 1,
             )),
-            Self::Relation {
-                relation_kind,
-                from,
-                to,
-                matching_relations,
-            } => {
-                let (relations, work) = super::super::adjacency::observe_adjacency_with_work(
-                    runtime,
-                    execution,
-                    snapshot,
-                    *relation_kind,
-                    *from,
-                    super::super::WorthQueryApplicationAdjacencyDirection::Outgoing,
-                    maximum_work.saturating_sub(1),
-                )
-                .map_err(map_adjacency_denial)?;
-                let matching = relations
-                    .iter()
-                    .filter(|relation| relation.to == *to)
-                    .map(|relation| relation.relation_id);
-                Ok((matching.eq(matching_relations.iter().copied()), work))
+            Self::Relation { .. } => {
+                unreachable!("relation comparison charges the original admission while scanning")
             }
             Self::Adjacency {
                 relation_kind,
@@ -186,7 +167,9 @@ impl WorthQueryApplicationObservedFact {
                     *relation_kind,
                     *anchor,
                     *direction,
-                    (*maximum_work_units).min(maximum_work.saturating_sub(1)),
+                    Some(maximum_work.map_or(*maximum_work_units, |maximum| {
+                        (*maximum_work_units).min(maximum.saturating_sub(1))
+                    })),
                 )
                 .map_err(map_adjacency_denial)?;
                 Ok((current == *relations, work))
@@ -210,7 +193,9 @@ impl WorthQueryApplicationObservedFact {
                     *relation_kind,
                     *lineage,
                     super::super::WorthQueryApplicationAdjacencyDirection::Outgoing,
-                    (*maximum_work_units).min(maximum_work.saturating_sub(1)),
+                    Some(maximum_work.map_or(*maximum_work_units, |maximum| {
+                        (*maximum_work_units).min(maximum.saturating_sub(1))
+                    })),
                 )
                 .map_err(map_adjacency_denial)?;
                 let equal = match expected_definition {
@@ -234,7 +219,9 @@ impl WorthQueryApplicationObservedFact {
                     *relation_kind,
                     *lineage,
                     super::super::WorthQueryApplicationAdjacencyDirection::Outgoing,
-                    (*maximum_work_units).min(maximum_work.saturating_sub(1)),
+                    Some(maximum_work.map_or(*maximum_work_units, |maximum| {
+                        (*maximum_work_units).min(maximum.saturating_sub(1))
+                    })),
                 )
                 .map_err(map_adjacency_denial)?;
                 Ok((
@@ -259,7 +246,9 @@ impl WorthQueryApplicationObservedFact {
                     *relation_kind,
                     *lineage,
                     super::super::WorthQueryApplicationAdjacencyDirection::Incoming,
-                    bound.min(maximum_work.saturating_sub(1)),
+                    Some(
+                        maximum_work.map_or(bound, |maximum| bound.min(maximum.saturating_sub(1))),
+                    ),
                 )
                 .map_err(map_adjacency_denial)?;
                 Ok((
@@ -299,11 +288,11 @@ fn unanswered_probe(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: worth_relational::facade::identity::EntityId,
     probe_work: usize,
-    maximum_work: usize,
+    maximum_work: Option<usize>,
 ) -> Result<(bool, usize), WorthQuerySourceCurrentnessFailure> {
     let work = probe_work
         .checked_add(1)
-        .filter(|work| *work <= maximum_work)
+        .filter(|work| maximum_work.is_none_or(|maximum| *work <= maximum))
         .ok_or(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
     match runtime
         .read_truth()

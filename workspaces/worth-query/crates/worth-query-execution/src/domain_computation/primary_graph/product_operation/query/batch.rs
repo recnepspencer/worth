@@ -81,14 +81,14 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         }
         let security = application
             .product_runtime
-            .security_observation_for(self.product())
-            .map_err(|_| Admission(unavailable()))?;
+            .security_observation_for(execution, self.product())
+            .map_err(|stop| Admission(super::selection_denial(stop, query.name())))?;
         let planned_item = batch
             .take_planned_read(
                 application.runtime.authority_identity().as_u64(),
                 &application.installed_schema.binding_identity(),
                 query.identity(),
-                controls.maximum_work.get(),
+                controls.maximum_work.map(std::num::NonZeroUsize::get),
                 controls.maximum_results.get(),
             )
             .map_err(Resource)?;

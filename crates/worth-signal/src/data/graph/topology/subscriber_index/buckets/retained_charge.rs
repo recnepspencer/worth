@@ -100,16 +100,16 @@ mod tests {
                 .unwrap()
                 .candidates
                 .is_empty());
-            let mut work = Preparation::new(1_000);
+            let mut work = Preparation::new(Some(1_000));
             let charge = retained.retained_heap_charge(&mut work).unwrap();
             assert_eq!(
                 retained
-                    .retained_heap_charge(&mut Preparation::new(work.visits()))
+                    .retained_heap_charge(&mut Preparation::new(Some(work.visits())))
                     .unwrap(),
                 charge
             );
             assert!(matches!(
-                retained.retained_heap_charge(&mut Preparation::new(work.visits() - 1)),
+                retained.retained_heap_charge(&mut Preparation::new(Some(work.visits() - 1))),
                 Err(Denial::WorkExhausted { .. })
             ));
             samples.push((capacity_bytes as u64, charge.bytes()));

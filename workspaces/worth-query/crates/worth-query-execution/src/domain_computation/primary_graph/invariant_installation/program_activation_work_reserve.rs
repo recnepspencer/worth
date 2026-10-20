@@ -28,15 +28,19 @@ pub(super) const PROGRAM_ACTIVATION_READ_RESERVE: u64 = 1;
 /// large to carry it is a typed installation denial rather than a silently
 /// saturated meter.
 pub(super) fn lowered_work_budget(
-    declared: NonZeroU64,
+    declared: Option<NonZeroU64>,
     subject: &str,
     reads_program_activation: bool,
-) -> Result<NonZeroU64, WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<Option<NonZeroU64>, WorthQueryPrimaryGraphInstallationDenial> {
+    let Some(declared) = declared else {
+        return Ok(None);
+    };
     if !reads_program_activation {
-        return Ok(declared);
+        return Ok(Some(declared));
     }
     declared
         .checked_add(PROGRAM_ACTIVATION_READ_RESERVE)
+        .map(Some)
         .ok_or_else(|| {
             WorthQueryPrimaryGraphInstallationDenial::new(
                 WorthQueryPrimaryGraphInstallationDenialKind::ProgramActivationWorkReserveOverflow,
@@ -51,8 +55,18 @@ mod tests {
     use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
     use std::num::NonZeroU64;
 
-    fn declared(units: u64) -> NonZeroU64 {
-        NonZeroU64::new(units).expect("a declared work budget is non-zero")
+    fn declared(units: u64) -> Option<NonZeroU64> {
+        Some(NonZeroU64::new(units).expect("a declared work budget is non-zero"))
+    }
+
+    #[test]
+    fn absence_remains_unlimited_with_or_without_program_activation() {
+        for program in [false, true] {
+            assert_eq!(
+                lowered_work_budget(None, "unlimited-rule", program).unwrap(),
+                None
+            );
+        }
     }
 
     #[test]

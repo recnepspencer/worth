@@ -1,5 +1,6 @@
 //! Root publication keeps its Native output while its successor input changes.
 use super::*;
+
 use worth_query_decl::facade::application_operation::*;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::{
@@ -46,7 +47,7 @@ impl ApplicationMutationBinding<Schema> for Binding {
     const IDENTITY: &'static str = "courtroom-equal-root-publication";
     const HANDLER_IDENTITY: &'static str = "courtroom-equal-root-handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "courtroom-equal-root-command";
-    const CANDIDATES: ApplicationCandidateRequirements = RegionOutputBinding::<Schema>::CANDIDATES;
+
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,
@@ -103,13 +104,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &Input,
-        _: &PositiveLength,
-    ) -> ApplicationCandidateRequirements {
-        Binding::CANDIDATES
-    }
+
     fn build_candidate(
         &self,
         input: &Input,

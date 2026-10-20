@@ -74,7 +74,6 @@ fn recorded_settlements(
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::from([crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity {
             entity_id: entity,
         }])),
-        None,
             None,
         );
     }
@@ -92,7 +91,7 @@ fn recorded_settlements(
         .iter()
         .map(|partition| {
             let (recorded, _) = lineage
-                .latest_output_in_partition_budgeted(&source, coordinate, *partition, 1)
+                .latest_output_in_partition_budgeted(&source, coordinate, *partition, Some(1))
                 .expect("recorded output is selectable");
             Arc::clone(
                 &recorded

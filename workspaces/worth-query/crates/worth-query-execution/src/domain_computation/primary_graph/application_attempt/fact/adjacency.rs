@@ -68,7 +68,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_audit_outgoing_adjac
             relation_kind,
             anchor,
             WorthQueryApplicationAdjacencyDirection::Outgoing,
-            maximum_work_units,
+            Some(maximum_work_units),
             RelationPosture::IncludingAudit,
         )
         .map(|(relations, _)| relations),
@@ -133,7 +133,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
         relation_kind,
         anchor,
         direction,
-        maximum_work_units,
+        Some(maximum_work_units),
     )
     .map(|(relations, _)| relations)
 }
@@ -145,7 +145,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_with_work(
     relation_kind: KindId,
     anchor: EntityId,
     direction: WorthQueryApplicationAdjacencyDirection,
-    maximum_work_units: usize,
+    maximum_work_units: Option<usize>,
 ) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
     observe_with_posture(
         runtime,
@@ -171,7 +171,7 @@ fn observe_with_posture(
     relation_kind: KindId,
     anchor: EntityId,
     direction: WorthQueryApplicationAdjacencyDirection,
-    maximum_work_units: usize,
+    maximum_work_units: Option<usize>,
     posture: RelationPosture,
 ) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
     if let Err(stop) = execution.check_live() {
@@ -193,8 +193,12 @@ fn observe_with_posture(
         })?;
     let frontier = std::collections::BTreeSet::from([anchor]);
     let work = maximum_work_units
-        .checked_add(1)
-        .ok_or(AdjacencyObservationDenial::WorkBudgetExceeded)?;
+        .map(|maximum| {
+            maximum
+                .checked_add(1)
+                .ok_or(AdjacencyObservationDenial::WorkBudgetExceeded)
+        })
+        .transpose()?;
     let read = match (direction, posture) {
         (WorthQueryApplicationAdjacencyDirection::Outgoing, RelationPosture::IncludingAudit) => pin
             .bounded_outgoing_relations_including_audit_for_frontier(

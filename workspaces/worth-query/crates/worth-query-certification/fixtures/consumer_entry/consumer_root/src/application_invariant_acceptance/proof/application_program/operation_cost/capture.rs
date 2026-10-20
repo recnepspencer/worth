@@ -52,8 +52,13 @@ fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh
         place_managed_computations_on_this_thread_for_test(
             WorthQueryExecutionPlacementForTest::Serial,
         );
-        let installed = resources::EXECUTION_POLICY.budget();
-        bound_advancement_requests_on_this_thread_for_test(None);
+        let inherited = resources::EXECUTION_POLICY.budget();
+        let installed = worth_foundational::ExecutionBudget::new(
+            inherited.max_workers(),
+            Some(64 << 20),
+            inherited.work_ceiling(),
+        );
+        bound_advancement_requests_on_this_thread_for_test(Some(installed));
         let (opening, available, declared) = runtime
             .runtime()
             .with_application_advancement(&scope, |phase| {
@@ -66,14 +71,20 @@ fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh
                 };
                 (
                     parent.charged_memory_bytes(),
-                    parent.available_memory_bytes(),
-                    parent.policy().budget().charged_memory_bytes(),
+                    parent
+                        .available_memory_bytes()
+                        .expect("the proof declares finite memory"),
+                    parent
+                        .policy()
+                        .budget()
+                        .charged_memory_bytes()
+                        .expect("the proof declares finite memory"),
                 )
             })
             .unwrap();
         assert!(opening > 0, "opening holds actual framework resources");
         assert_eq!(opening.checked_add(available).unwrap(), declared);
-        assert_eq!(declared, installed.charged_memory_bytes());
+        assert_eq!(Some(declared), installed.charged_memory_bytes());
         let ceiling = opening
             .checked_add(u64::try_from(payload).unwrap())
             .unwrap()
@@ -83,7 +94,7 @@ fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh
         bound_advancement_requests_on_this_thread_for_test(Some(
             worth_foundational::ExecutionBudget::new(
                 installed.max_workers(),
-                ceiling,
+                Some(ceiling),
                 installed.work_ceiling(),
             ),
         ));
@@ -104,9 +115,14 @@ fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh
     else {
         panic!("actual typed payload must meet its native lease refusal: {allocation:?}")
     };
-    assert_eq!(limit.requested, u64::try_from(payload).unwrap());
-    assert_eq!(limit.admitted, u64::try_from(payload - 1).unwrap());
-    assert_eq!(limit.level, MemoryLimitLevel::Policy { ancestor: 1 });
+    assert_eq!(
+        limit,
+        worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+            requested: u64::try_from(payload).unwrap(),
+            admitted: u64::try_from(payload - 1).unwrap(),
+            level: MemoryLimitLevel::Policy { ancestor: 1 },
+        }
+    );
     assert_eq!(returned_key, key);
     assert_eq!(planar_source_adjustment_contacts(&input("focus-a")), (0, 0));
     assert_eq!(

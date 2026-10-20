@@ -16,7 +16,6 @@ pub struct ApplicationOperationBodyExternalEffectRecipe {
     operation_type: TypeId,
     effect_type: TypeId,
     meaning: ApplicationOperationBodyExternalEmission,
-    quote: fn(&dyn Any) -> Result<u64, ApplicationValueValidationDenial>,
     project: fn(&dyn Any, &'static str) -> Result<Projection, ApplicationValueEncodeDenial>,
     effect: &'static str,
 }
@@ -58,7 +57,6 @@ impl ApplicationOperationBodyExternalEffectRecipe {
             effect_type: TypeId::of::<Effect>(),
             effect: Effect::IDENTIFIER,
             meaning,
-            quote: quote::<Effect::PayloadBinding>,
             project: project::<Effect::PayloadBinding>,
         }
     }
@@ -80,25 +78,10 @@ impl ApplicationOperationBodyExternalEffectRecipe {
     pub fn meaning(&self) -> &ApplicationOperationBodyExternalEmission {
         &self.meaning
     }
-    pub fn quote(&self, input: &dyn Any) -> Result<u64, ApplicationValueValidationDenial> {
-        (self.quote)(input)
-    }
-    /// Caller must have funded the quote and selected the installed native emission.
+    /// Caller must have selected the installed native emission.
     pub fn project(&self, input: &dyn Any) -> Result<Projection, ApplicationValueEncodeDenial> {
         (self.project)(input, self.effect)
     }
-}
-fn quote<Binding: ApplicationExternalEffectBinding>(
-    input: &dyn Any,
-) -> Result<u64, ApplicationValueValidationDenial> {
-    let input = input.downcast_ref::<Binding::Value>().ok_or_else(|| {
-        ApplicationValueValidationDenial::rejected(
-            Binding::IDENTITY,
-            "wrong native effect payload type",
-        )
-    })?;
-    Binding::validate(input)?;
-    Ok(Binding::retained_bytes(input))
 }
 fn project<Binding: ApplicationExternalEffectBinding>(
     input: &dyn Any,

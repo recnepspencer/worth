@@ -89,7 +89,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
         let Advance::Refused {
             operation,
             denial: Denial::Execution(WorthQueryAdvancementDenial::Interrupted(interruption)),
-        } = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        } = operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
         else {
             panic!("exact request interruption")
         };
@@ -116,7 +116,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
     let Advance::Refused {
         operation,
         denial: Denial::Mutation(denial),
-    } = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    } = operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("native permission refusal")
     };
@@ -133,7 +133,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
         .retain_operation()
         .unwrap_or_else(|cause| panic!("construction: {cause:?}"));
     let Advance::Completed(completed) =
-        operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("fresh send")
     };
@@ -154,7 +154,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
         .retain_operation()
         .unwrap_or_else(|cause| panic!("construction: {cause:?}"));
     let Advance::Terminal(terminal) =
-        operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("intent drift terminal")
     };

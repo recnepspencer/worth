@@ -52,8 +52,6 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DuplicateEffectKey,
     ConflictingEffectStep,
     CandidateCapacityExceeded,
-    CandidateReservationExceeded,
-    RetainedEffectBytesExceeded,
     ExternalEffectPayloadProjectionRejected,
     ForeignConditionalDefinitionChange,
     DuplicateConditionalDefinitionChange,
@@ -175,8 +173,8 @@ pub struct WorthQueryApplicationAttemptDenial {
     cause: AttemptDenialCause,
 }
 
-/// Every carrying variant owns one box for its native cause. Inspection
-/// borrows that same cause.
+/// Rich causes own their original box; native memory refusals stay inline.
+/// Inspection preserves the original owner cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
     None,

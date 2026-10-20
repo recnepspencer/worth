@@ -21,7 +21,7 @@ impl CustomInvariantRule for AlwaysViolatesCustomRule {
             },
             display_name: Arc::from("Test Custom Violation"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
                 access: crate::validation::data::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
@@ -88,7 +88,7 @@ impl CustomInvariantRule for TinyBudgetUnrelatedRule {
     fn descriptor(&self) -> CustomInvariantDescriptor {
         let mut descriptor = AlwaysViolatesCustomRule.descriptor();
         descriptor.identity.rule_id = CustomInvariantRuleId::new("test.custom.tiny-unrelated");
-        descriptor.operational.maximum_work_units = std::num::NonZeroU64::new(1).unwrap();
+        descriptor.operational.maximum_work_units = Some(std::num::NonZeroU64::new(1).unwrap());
         descriptor.operational.access.affected_entity_kinds = vec![KindId(999)];
         descriptor
     }
@@ -115,7 +115,7 @@ impl CustomInvariantRule for BoundedBudgetUnrelatedRule {
     fn descriptor(&self) -> CustomInvariantDescriptor {
         let mut descriptor = TinyBudgetUnrelatedRule.descriptor();
         descriptor.identity.rule_id = CustomInvariantRuleId::new("test.custom.bounded-unrelated");
-        descriptor.operational.maximum_work_units = std::num::NonZeroU64::new(64).unwrap();
+        descriptor.operational.maximum_work_units = Some(std::num::NonZeroU64::new(64).unwrap());
         descriptor
     }
 
@@ -146,7 +146,7 @@ impl CustomInvariantRule for GraphCompositionViolatesCustomRule {
             },
             display_name: Arc::from("Test Graph Composition Custom Rule"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
                 access: crate::validation::data::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
@@ -196,7 +196,7 @@ impl CustomInvariantRule for StructuralSurfaceRule {
             },
             display_name: Arc::from("Structural Surface Rule"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
                 access: crate::validation::data::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
@@ -254,7 +254,7 @@ impl CustomInvariantRule for PanicDuringPrepareRule {
             },
             display_name: Arc::from("Panic During Prepare"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
                 access: crate::validation::data::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
@@ -297,7 +297,7 @@ impl CustomInvariantRule for PanicDuringEvaluateRule {
             },
             display_name: Arc::from("Panic During Evaluate"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
                 access: crate::validation::data::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],

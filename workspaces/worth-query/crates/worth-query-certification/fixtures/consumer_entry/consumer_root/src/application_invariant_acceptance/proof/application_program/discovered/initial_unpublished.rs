@@ -94,10 +94,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
             .unwrap(),
         WorthQueryDiscoveredRecoveryProgress::Performed
     );
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let (mut outputs, initial_cause, performed, prior_cleanup) = fresh_request
         .advanced()
         .mutate(intent.clone())

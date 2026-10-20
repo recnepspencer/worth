@@ -3,6 +3,8 @@ use crate::history::{CompositeHistoryCatalog, CompositeHistoryReclamationRequest
 use std::num::NonZeroUsize;
 #[test]
 fn bounded_traversal_protects_chain_and_reuses_exact_history_leases() {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&request);
     let (fixture, commits) = linear_history(3);
     let owner = commits[0].identity().owner_identity();
     let catalog = CompositeHistoryCatalog::new(owner, history_contract(3, u64::MAX));
@@ -11,6 +13,60 @@ fn bounded_traversal_protects_chain_and_reuses_exact_history_leases() {
             .append(commit.clone(), fixture.history_pins(commit))
             .unwrap();
     }
+    // Absence traverses the genuine retained chain, without a numeric sentinel.
+    let full = catalog
+        .trace_ancestry_within(
+            crate::history::HistoryTraversalControl::Request {
+                execution,
+                maximum: None,
+            },
+            commits[2].identity().clone(),
+            None,
+        )
+        .unwrap();
+    assert_eq!(full.visited_count(), 3);
+    assert!(full.is_complete());
+    assert_eq!(
+        full.commits().last().unwrap().identity(),
+        commits[0].identity()
+    );
+    drop(full);
+    let cancellation = worth_execution::CancellationSource::new();
+    cancellation.cancel();
+    let stopped = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        cancellation.token(),
+        None,
+    );
+    let held = fixture.retention.active_component_obligation_count();
+    assert!(matches!(
+        catalog.trace_ancestry_within(
+            crate::history::HistoryTraversalControl::Request {
+                execution: worth_execution::ExecutionRequest::serial(&stopped),
+                maximum: None
+            },
+            commits[2].identity().clone(),
+            None
+        ),
+        Err(crate::history::CompositeHistoryCatalogDenial::Cancelled)
+    ));
+    assert_eq!(fixture.retention.active_component_obligation_count(), held);
+    let full = catalog
+        .trace_ancestry_within(
+            crate::history::HistoryTraversalControl::Request {
+                execution,
+                maximum: None,
+            },
+            commits[2].identity().clone(),
+            None,
+        )
+        .unwrap();
+    assert_eq!(
+        full.visited_count(),
+        3,
+        "fresh original request retains the same native history"
+    );
+    drop(full);
     let before = fixture.retention.cost_snapshot();
     let traversal = catalog
         .trace_ancestry(commits[2].identity().clone(), NonZeroUsize::new(1).unwrap())

@@ -66,7 +66,6 @@ impl<Schema: MembershipSchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.planar-discovery-link-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.planar-discovery-link-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 1, 0, 0, 1024);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -129,13 +128,7 @@ impl<Schema: MembershipSchemaBinding> OperationHandler<Schema, PlanarDiscoveryLi
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &PlanarDiscoveryLink,
-        _: &[WorthQueryInvariantMutationTarget<Schema, Body>; 2],
-    ) -> ApplicationCandidateRequirements {
-        requirements(0, 1, 0, 0, 1024)
-    }
+
     fn build_candidate(
         &self,
         input: &PlanarDiscoveryLink,

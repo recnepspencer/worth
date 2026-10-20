@@ -11,17 +11,11 @@ use crate::{
 };
 use std::collections::BTreeMap;
 use worth_foundational::facade::{CanonicalFieldPath, FieldKey};
-use worth_query_declaration::facade::{
-    application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling,
-    },
-    application_schema::{
-        ApplicationFieldBindingLocus as Locus, ApplicationOperationBodyCaptureRole as Role,
-        ApplicationOperationBodyCreatedField as Field,
-        ApplicationOperationBodySigningLifecycleSpec as Spec, ApplicationSchemaBindingIdentity,
-        ApplicationSchemaMember as Member, ApplicationSigningSupersessionParts,
-    },
+use worth_query_declaration::facade::application_schema::{
+    ApplicationFieldBindingLocus as Locus, ApplicationOperationBodyCaptureRole as Role,
+    ApplicationOperationBodyCreatedField as Field,
+    ApplicationOperationBodySigningLifecycleSpec as Spec, ApplicationSchemaBindingIdentity,
+    ApplicationSchemaMember as Member,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -31,7 +25,7 @@ pub struct WorthQueryInstalledSigningLifecycleRule {
     spec: Spec,
     subjects: Vec<Locus>,
     paths: Vec<worth_query_declaration::facade::application_schema::ApplicationOperationBodyPathFieldSource>,
-    maximum_subjects: usize,
+    maximum_subjects: Option<usize>,
 }
 impl WorthQueryInstalledSigningLifecycleRule {
     pub fn evidence_entity(&self) -> &str {
@@ -49,7 +43,7 @@ impl WorthQueryInstalledSigningLifecycleRule {
     pub fn paths(&self) -> &[worth_query_declaration::facade::application_schema::ApplicationOperationBodyPathFieldSource]{
         &self.paths
     }
-    pub fn maximum_subjects(&self) -> usize {
+    pub fn maximum_subjects(&self) -> Option<usize> {
         self.maximum_subjects
     }
 }
@@ -58,7 +52,6 @@ impl WorthQueryInstalledSigningLifecycleRule {
 pub(in crate::application_operation) struct SigningLifecycleClosure {
     pub(in crate::application_operation) rules: Vec<WorthQueryInstalledSigningLifecycleRule>,
     pub(in crate::application_operation) publication_touches: Contract,
-    pub(in crate::application_operation) ceiling: Option<ApplicationCandidateRequirements>,
 }
 
 impl SigningLifecycleClosure {
@@ -66,9 +59,7 @@ impl SigningLifecycleClosure {
         binding: &ApplicationSchemaBindingIdentity,
         catalog: &Catalog,
         members: &[Member],
-        operation: &str,
         touches: &Contract,
-        maximum_records: usize,
         body: Option<
             &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
         >,
@@ -100,7 +91,7 @@ impl SigningLifecycleClosure {
                         spec: spec.clone(),
                         subjects: Vec::new(),
                         paths: Vec::new(),
-                        maximum_subjects: 1,
+                        maximum_subjects: None,
                     },
                 )
             });
@@ -159,8 +150,7 @@ impl SigningLifecycleClosure {
         let rules: Vec<_> = groups
             .into_values()
             .map(|(bound, mut rule)| {
-                rule.maximum_subjects =
-                    bound.unwrap_or(if body.is_some() { 1 } else { maximum_records });
+                rule.maximum_subjects = bound;
                 rule
             })
             .filter(|rule| {
@@ -209,23 +199,8 @@ impl SigningLifecycleClosure {
             })
             .collect();
         let mut publication = touches.scopes().to_vec();
-        let mut records = 0usize;
-        let mut retained = 0usize;
         for rule in &rules {
             let spec = &rule.spec;
-            let count = spec
-                .maximum_evidence
-                .checked_mul(rule.maximum_subjects)
-                .ok_or(())?;
-            records = records.checked_add(count).ok_or(())?;
-            // Native scalar quote plus the actual fixed effect keys/locators. No payload values are copied into the event.
-            let bytes = ApplicationSigningSupersessionParts::quote(operation, &rule.subjects)
-                .ok_or(())?
-                .checked_add(1024)
-                .ok_or(())?;
-            retained = retained
-                .checked_add(count.checked_mul(bytes).ok_or(())?)
-                .ok_or(())?;
             let field = &spec.consequence_field;
             let aspect = catalog.aspect(field.entity(), field.aspect()).ok_or(())?;
             for touch in [
@@ -257,14 +232,6 @@ impl SigningLifecycleClosure {
                 }
             }
         }
-        let ceiling = (!rules.is_empty()).then(|| {
-            ApplicationCandidateRequirements::fixed_shape(
-                ApplicationCandidateCardinalityCeiling::fixed(
-                    records, 0, records, records, records, 0,
-                ),
-                ApplicationCandidateResourceCeiling::representation_bytes(retained),
-            )
-        });
         let publication_touches = if publication.is_empty() {
             Contract::NotRequired
         } else {
@@ -276,7 +243,6 @@ impl SigningLifecycleClosure {
         Ok(Self {
             rules,
             publication_touches,
-            ceiling,
         })
     }
 }

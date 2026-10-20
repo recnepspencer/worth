@@ -86,6 +86,8 @@ impl CanonicalDigestValue {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CanonicalDigestDerivationDenial {
     UnsupportedAlgorithm,
+    AllocationUnavailable,
+    LengthOverflow,
     RuleVersionMismatch,
     InputDomainMismatch,
     InputShapeMismatch,

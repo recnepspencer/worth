@@ -56,8 +56,8 @@ fn completion_closes_before_successor_custody_on_every_exit() {
             }
         });
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: 0,
-            maximum_preparation_bytes: 0,
+            maximum_work_visits: Some(0),
+            maximum_preparation_bytes: None,
         });
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             if exit == 0 {

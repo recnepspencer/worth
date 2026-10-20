@@ -65,9 +65,6 @@ pub(super) fn operation(
         .retain_operation::<RetainedProgram, Action>(host)
         .unwrap_or_else(|(_, denial)| panic!("retained declaration: {denial:?}"))
 }
-pub(super) fn bound() -> NonZeroUsize {
-    NonZeroUsize::new(32).unwrap()
-}
 fn observation(
     evidence: &WorthQuerySourceCompletion<DocumentRetentionWritten>,
 ) -> &WorthQueryApplicationReadObservation {
@@ -90,7 +87,7 @@ fn lost_reply_bounded_retry_reads_original_commit_despite_new_current_truth() {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let (original_commit, replay) = {
         let request = host.runtime().request(&principal, &scope);
-        let first = match operation(&host, &request, 18, 5018).advance(&request, bound()) {
+        let first = match operation(&host, &request, 18, 5018).advance(&request, None) {
             WorthQuerySourceOnlyAdvance::Completed(done) => done,
             _ => panic!("fresh retained commit"),
         };
@@ -98,7 +95,7 @@ fn lost_reply_bounded_retry_reads_original_commit_despite_new_current_truth() {
         first
             .close(&request)
             .unwrap_or_else(|(_, cause)| panic!("first close: {cause:?}"));
-        let later = match operation(&host, &request, 25, 5025).advance(&request, bound()) {
+        let later = match operation(&host, &request, 25, 5025).advance(&request, None) {
             WorthQuerySourceOnlyAdvance::Completed(done) => done,
             _ => panic!("later source commit"),
         };
@@ -106,7 +103,7 @@ fn lost_reply_bounded_retry_reads_original_commit_despite_new_current_truth() {
             .close(&request)
             .unwrap_or_else(|(_, cause)| panic!("later close: {cause:?}"));
         assert_eq!(read_retention(host.runtime(), host.current_world()), 25);
-        let replay = match operation(&host, &request, 18, 5018).advance(&request, bound()) {
+        let replay = match operation(&host, &request, 18, 5018).advance(&request, None) {
             WorthQuerySourceOnlyAdvance::Progress(owner) => owner,
             _ => panic!("replay owns actual recovered evidence"),
         };
@@ -114,7 +111,7 @@ fn lost_reply_bounded_retry_reads_original_commit_despite_new_current_truth() {
             replay.posture(),
             WorthQuerySourceOnlyPosture::RetainedDeliveryPending
         );
-        let replay = match replay.advance(&request, NonZeroUsize::new(1).unwrap()) {
+        let replay = match replay.advance(&request, Some(NonZeroUsize::new(1).unwrap())) {
             WorthQuerySourceOnlyAdvance::Refused {
                 operation,
                 denial:
@@ -131,7 +128,7 @@ fn lost_reply_bounded_retry_reads_original_commit_despite_new_current_truth() {
     let fresh_scope = request_scope();
     let fresh_principal = authenticate_operator(host.installed_schema(), &fresh_scope);
     let fresh = host.runtime().request(&fresh_principal, &fresh_scope);
-    let completed = match replay.advance(&fresh, bound()) {
+    let completed = match replay.advance(&fresh, None) {
         WorthQuerySourceOnlyAdvance::Completed(done) => done,
         _ => panic!("funded fresh retained replay"),
     };
@@ -172,22 +169,22 @@ fn unpublished_retained_recovery_preserves_evidence_and_cleanup_through_refusals
         let policy = crate::test_request_policy::serial_request();
         host.runtime()
             .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
-        let owner = match operation(&host, &request, 18, 6018).advance(&request, bound()) {
+        let owner = match operation(&host, &request, 18, 6018).advance(&request, None) {
             WorthQuerySourceOnlyAdvance::Progress(owner) => owner,
             _ => panic!("real unpublished append"),
         };
-        let owner = match owner.advance(&request, bound()) {
+        let owner = match owner.advance(&request, None) {
             WorthQuerySourceOnlyAdvance::Progress(owner) => owner,
             _ => panic!("native performed recovery"),
         };
-        let owner = match owner.advance(&request, bound()) {
+        let owner = match owner.advance(&request, None) {
             WorthQuerySourceOnlyAdvance::Progress(owner) => owner,
             _ => panic!("original keyed receipt"),
         };
         let original_commit = observe_head(host.runtime(), host.current_world())
             .selected_commit()
             .clone();
-        let later = match operation(&host, &request, 27, 6027).advance(&request, bound()) {
+        let later = match operation(&host, &request, 27, 6027).advance(&request, None) {
             WorthQuerySourceOnlyAdvance::Completed(done) => done,
             _ => panic!("later source commit"),
         };
@@ -201,7 +198,7 @@ fn unpublished_retained_recovery_preserves_evidence_and_cleanup_through_refusals
             &foreign
                 .runtime()
                 .request(&foreign_principal, &foreign_scope),
-            bound(),
+            None,
         ) {
             WorthQuerySourceOnlyAdvance::Refused { operation, .. } => operation,
             _ => panic!("foreign request preserves recovered custody"),
@@ -209,21 +206,19 @@ fn unpublished_retained_recovery_preserves_evidence_and_cleanup_through_refusals
         let stop = WorthQueryCancellationSource::new();
         stop.cancel();
         let cancelled_scope = WorthQueryRequestScope::new(None, stop.token());
-        let owner = match owner.advance(
-            &host.runtime().request(&principal, &cancelled_scope),
-            bound(),
-        ) {
+        let owner = match owner.advance(&host.runtime().request(&principal, &cancelled_scope), None)
+        {
             WorthQuerySourceOnlyAdvance::Refused { operation, .. } => operation,
             _ => panic!("cancelled delivery preserves evidence"),
         };
-        let owner = match owner.advance(&request, NonZeroUsize::new(1).unwrap()) {
+        let owner = match owner.advance(&request, Some(NonZeroUsize::new(1).unwrap())) {
             WorthQuerySourceOnlyAdvance::Refused {
                 operation,
                 denial: WorthQuerySourceOnlyDenial::History(_),
             } => operation,
             _ => panic!("bounded recovery delivery refusal"),
         };
-        let completed = match owner.advance(&request, bound()) {
+        let completed = match owner.advance(&request, None) {
             WorthQuerySourceOnlyAdvance::Completed(done) => done,
             _ => panic!("original retained recovery delivery"),
         };
@@ -254,7 +249,7 @@ fn unpublished_retained_recovery_preserves_evidence_and_cleanup_through_refusals
         assert_eq!(host.contacts.counts(), (2, 2));
         let catalog = host
             .runtime()
-            .product_publication_recovery_page(None, bound())
+            .product_publication_recovery_page(None, NonZeroUsize::MIN)
             .unwrap();
         let inspector = host
             .runtime()
@@ -282,7 +277,7 @@ fn unpublished_retained_recovery_preserves_evidence_and_cleanup_through_refusals
         .unwrap_or_else(|(_, cause)| panic!("fresh cleanup retry: {cause:?}"));
     assert!(host
         .runtime()
-        .product_publication_recovery_page(None, bound())
+        .product_publication_recovery_page(None, NonZeroUsize::MIN)
         .unwrap()
         .rows()
         .is_empty());

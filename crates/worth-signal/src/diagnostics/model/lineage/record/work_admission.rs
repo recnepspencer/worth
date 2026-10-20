@@ -39,16 +39,18 @@ mod tests {
             "child".repeat(4096),
             "parent".repeat(4096),
         );
-        let mut measured = Work::new(1_000_000);
+        let mut measured = Work::new(Some(1_000_000));
         record.admit_copy_work(&mut measured).unwrap();
         let exact = measured.visits();
-        assert!(record.admit_copy_work(&mut Work::new(exact - 1)).is_err());
-        record.admit_copy_work(&mut Work::new(exact)).unwrap();
         assert!(record
-            .admit_comparison_work(&record, &mut Work::new(exact))
+            .admit_copy_work(&mut Work::new(Some(exact - 1)))
+            .is_err());
+        record.admit_copy_work(&mut Work::new(Some(exact))).unwrap();
+        assert!(record
+            .admit_comparison_work(&record, &mut Work::new(Some(exact)))
             .is_err());
         record
-            .admit_comparison_work(&record, &mut Work::new(exact * 2))
+            .admit_comparison_work(&record, &mut Work::new(Some(exact * 2)))
             .unwrap();
     }
 }

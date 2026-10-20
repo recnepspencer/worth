@@ -9,6 +9,8 @@ use worth_runtime_world::facade::{
 
 #[test]
 fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world =
@@ -76,7 +78,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
             lineage.record_restoration(lineage.binding_type(&source.output_binding), source.runtime_authority, source.schema.clone(), source.scope, observation,
             Arc::new(super::super::super::WorthQueryApplicationOutputCorrespondence::default()),
             super::super::super::RecordedSourceIdentity::Checkpoint(crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x72; 32])),
-            partition, None, [0x73; 32], super::super::super::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])), None, None);
+            partition, None, [0x73; 32], super::super::super::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])), None);
         };
     restored(&mut lineage, product.observation());
     let captured =
@@ -103,10 +105,11 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
                         generation: observation.reference_generation().get(),
                     },
                     partition,
+                    execution,
                     &mut InvalidationEditAdmission::new(
                         worth_relational::facade::mvcc::CompanionPreflightBudget {
-                            maximum_work_visits: 4096,
-                            maximum_preparation_bytes: 4096,
+                            maximum_work_visits: Some(4096),
+                            maximum_preparation_bytes: None,
                         },
                     ),
                 )
@@ -170,8 +173,8 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     assert_eq!(lineage.retention.retained_bytes(), bytes);
     let mut denied =
         InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-            maximum_work_visits: 0,
-            maximum_preparation_bytes: 4096,
+            maximum_work_visits: Some(0),
+            maximum_preparation_bytes: None,
         });
     assert!(
         lineage.prepay_computation_fork_scan(&mut denied).is_err(),

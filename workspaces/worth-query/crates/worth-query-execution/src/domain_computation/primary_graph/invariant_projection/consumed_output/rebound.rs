@@ -20,7 +20,7 @@ impl ConsumedOutputEvidence {
             )
             .map_err(map_admission_stop)?;
         let capacity = owner
-            .retain_consumed_output(facts, selected, Self::metadata_bytes(), admission)
+            .retain_consumed_output(facts.facts(), selected, Self::metadata_bytes(), admission)
             .map_err(map_admission_stop)?;
         Ok(Self::new(
             facts.computation(),

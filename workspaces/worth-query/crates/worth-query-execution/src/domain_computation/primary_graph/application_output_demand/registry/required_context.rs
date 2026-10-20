@@ -32,7 +32,6 @@ pub(in crate::domain_computation) struct RequiredOutputDemandContext {
     >,
     prepared_input_reuse_key:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>,
-    actual_resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
     reuses_live_output_only: bool,
     /// What the selected record retained for a partitioned computation the
     /// handler runs, and that record.
@@ -94,19 +93,6 @@ impl RequiredOutputDemandContext {
     }
 
     /// Fills the slot whose bytes the context reserved when it was issued.
-    pub(in crate::domain_computation::primary_graph) fn retain_actual_resources(
-        &mut self,
-        resources: crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources,
-    ) {
-        assert!(self.actual_resources.replace(resources).is_none());
-    }
-
-    pub(super) fn take_actual_resources(
-        &mut self,
-    ) -> Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>{
-        self.actual_resources.take()
-    }
-
     pub(in crate::domain_computation::primary_graph) fn work_membership(
         &self,
     ) -> Option<Arc<super::required_work::RequiredWorkMembership>> {
@@ -322,7 +308,7 @@ impl WorthQueryOutputDemandInterest {
             prepared_decision_reuse: None,
             completed_decision_reuse: None,
             prepared_input_reuse_key: None,
-            actual_resources: None,
+
             reuses_live_output_only: false,
             computation_prior: None,
             sealed_computation: HandlerComputationCustody::AwaitingHandler,
@@ -355,5 +341,4 @@ fn context_bytes(key: &WorthQueryOutputDemandKey) -> Result<usize, WorthQueryOut
 
 pub(super) const fn minimum_context_bytes() -> usize {
     std::mem::size_of::<WorthQueryOutputDemandKey>() + 2 * std::mem::size_of::<usize>()
-        + std::mem::size_of::<Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>>()
 }

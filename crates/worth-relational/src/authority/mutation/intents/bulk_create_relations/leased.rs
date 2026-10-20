@@ -19,11 +19,17 @@ pub(super) fn stage_leased_relation_rows(
         1,
         strategy_for_parallel_packets(Some(lease), packet_count),
     );
-    let packet_ceiling =
-        lease.policy().budget().charged_memory_bytes() / (packet_count as u64).saturating_mul(8);
+    let packet_ceiling = lease
+        .policy()
+        .budget()
+        .charged_memory_bytes()
+        .map(|limit| limit / (packet_count as u64).saturating_mul(8));
     let (inputs, _preparation_report) = crate::execution::prepare_borrowed_packets(
         lease,
         workspace.commit_work_budget(),
+        crate::execution::packet_preparation_bytes::<(usize, &[(EntityReference, EntityReference)])>(
+            packet_count,
+        )?,
         |budget| {
             let mut inputs = Vec::new();
             for (packet_index, endpoints) in intent
@@ -35,6 +41,15 @@ pub(super) fn stage_leased_relation_rows(
                 inputs
                     .try_reserve_exact(1)
                     .map_err(|_| worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
+                let row_floor = packet_index * TARGET_PREPARATION_ITEMS_PER_PACKET;
+                let packet_ceiling = packet_ceiling.map_or_else(
+                    || crate::authority::commit::preparation::packets::import::import_result_capacity_bytes(
+                        endpoints.iter().enumerate().map(|(offset, (source, target))| {
+                            relation_row_bytes(intent, row_floor + offset, source, target)
+                        }),
+                    ).ok_or(worth_execution::MapKernelFailure::ResultCapacityExceeded),
+                    Ok,
+                )?;
                 inputs.push(crate::execution::ReadOnlyPacket {
                     identity: PartitionIdentity::new(
                         (packet_index * TARGET_PREPARATION_ITEMS_PER_PACKET) as u64,
@@ -44,8 +59,10 @@ pub(super) fn stage_leased_relation_rows(
                         endpoints,
                     ),
                     input_bytes: 0,
-                    kernel_scratch_bytes: packet_ceiling,
-                    max_result_bytes: packet_ceiling,
+                    memory: crate::execution::PacketMemory::Declared {
+                        scratch: packet_ceiling,
+                        result: packet_ceiling,
+                    },
                 });
             }
             Ok(inputs)
@@ -60,24 +77,7 @@ pub(super) fn stage_leased_relation_rows(
             for (offset, (source, target)) in endpoints.iter().enumerate() {
                 context.checkpoint(1)?;
                 let row_index = packet_index_floor + offset;
-                let reference_bytes = |reference: &EntityReference| match reference {
-                    EntityReference::Existing(_) => 0,
-                    EntityReference::Created(created) => {
-                        created.client_key.owned_allocation_capacity_bytes()
-                    }
-                };
-                let owned_bytes = intent
-                    .client_keys
-                    .get(row_index)
-                    .map_or(0, |key| key.owned_allocation_capacity_bytes())
-                    .saturating_add(reference_bytes(source))
-                    .saturating_add(reference_bytes(target))
-                    .saturating_add(
-                        intent
-                            .field_patches
-                            .get(row_index)
-                            .map_or(0, AspectFieldPatch::owned_allocation_capacity_bytes),
-                    );
+                let owned_bytes = relation_row_bytes(intent, row_index, source, target);
                 context.claim_result(
                     (std::mem::size_of::<(ImportReductionKey, ImportStagedRow)>() as u64)
                         .saturating_add(owned_bytes),
@@ -117,4 +117,28 @@ pub(super) fn stage_leased_relation_rows(
         .map(|(_, row)| row)
         .collect(),
     )
+}
+
+fn relation_row_bytes(
+    intent: &BulkRelationCreateIntent,
+    row_index: usize,
+    source: &EntityReference,
+    target: &EntityReference,
+) -> u64 {
+    let reference_bytes = |reference: &EntityReference| match reference {
+        EntityReference::Existing(_) => 0,
+        EntityReference::Created(created) => created.client_key.owned_allocation_capacity_bytes(),
+    };
+    intent
+        .client_keys
+        .get(row_index)
+        .map_or(0, |key| key.owned_allocation_capacity_bytes())
+        .saturating_add(reference_bytes(source))
+        .saturating_add(reference_bytes(target))
+        .saturating_add(
+            intent
+                .field_patches
+                .get(row_index)
+                .map_or(0, AspectFieldPatch::owned_allocation_capacity_bytes),
+        )
 }

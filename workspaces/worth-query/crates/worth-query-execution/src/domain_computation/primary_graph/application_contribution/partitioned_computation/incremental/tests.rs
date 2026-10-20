@@ -294,7 +294,7 @@ where
         request,
         RuntimeWorldExecutionPlacement::Serial(
         crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-            std::num::NonZeroUsize::MIN, 1 << 30,
+            std::num::NonZeroUsize::MIN, None,
         ),
     ),
     )

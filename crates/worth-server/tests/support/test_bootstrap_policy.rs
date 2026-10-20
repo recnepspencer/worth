@@ -6,11 +6,7 @@ pub(crate) fn with_bootstrap<R>(
         worth_foundational::ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,
             worth_foundational::DeterminismContract::CanonicalBitwise,
-            worth_foundational::ExecutionBudget::new(
-                std::num::NonZeroUsize::MIN,
-                64 * 1024 * 1024,
-                u64::MAX,
-            ),
+            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
         ),
         |phase| body(&phase.execution_request()),
     )

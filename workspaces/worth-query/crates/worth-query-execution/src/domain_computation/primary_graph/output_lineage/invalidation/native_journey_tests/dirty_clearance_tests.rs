@@ -161,8 +161,8 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                 release_test_commit_snapshot(runtime, &deleted);
                 let (restored_handle, restored) = snapshot(runtime);
                 let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                    maximum_work_visits: 0,
-                    maximum_preparation_bytes: 64 * 1024,
+                    maximum_work_visits: Some(0),
+                    maximum_preparation_bytes: None,
                 });
                 assert!(matches!(
                     owner.reverify_dirty(

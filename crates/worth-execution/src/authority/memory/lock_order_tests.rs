@@ -2,8 +2,8 @@ use super::*;
 
 #[test]
 fn serial_lock_order_follows_issue_order_when_addresses_reverse_it() {
-    let mut a = SerialMemoryBudget::new(10);
-    let mut b = SerialMemoryBudget::new(10);
+    let mut a = SerialMemoryBudget::new(Some(10));
+    let mut b = SerialMemoryBudget::new(Some(10));
     let first = LedgerIssueOrder::issue();
     let second = LedgerIssueOrder::issue();
     // Allocation and issue can interleave on different threads. Assign fresh

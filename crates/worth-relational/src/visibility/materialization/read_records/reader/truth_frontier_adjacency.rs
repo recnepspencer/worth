@@ -85,7 +85,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             kind_id,
             version_id,
             direction,
-            maximum_work_units,
+            Some(maximum_work_units),
             false,
         )
         .map_err(|stop| match stop {
@@ -152,16 +152,17 @@ impl FrontierAdjacencyTruthReadLimitExceeded {
 }
 
 fn charge_frontier_work(
-    maximum_work_units: usize,
+    maximum_work_units: Option<usize>,
     adjacency_lists_read: usize,
     relation_records_examined: usize,
     endpoint_records_reserved: usize,
 ) -> Result<(), FrontierAdjacencyTruthReadLimitExceeded> {
-    if adjacency_lists_read
-        .saturating_add(relation_records_examined)
-        .saturating_add(endpoint_records_reserved)
-        >= maximum_work_units
-    {
+    if maximum_work_units.is_some_and(|maximum| {
+        adjacency_lists_read
+            .saturating_add(relation_records_examined)
+            .saturating_add(endpoint_records_reserved)
+            >= maximum
+    }) {
         Err(FrontierAdjacencyTruthReadLimitExceeded::new(
             adjacency_lists_read,
             relation_records_examined,
@@ -182,7 +183,7 @@ impl ProjectionRecordReader<'_> {
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         direction: AdjacencyDirection,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
         include_audit: bool,
     ) -> Result<
         BoundedFrontierAdjacencyTruthRead,

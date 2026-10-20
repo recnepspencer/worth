@@ -293,5 +293,8 @@ const fn internal_denied() -> BankHttpDenial {
 #[cfg(test)]
 mod entity_stop_tests;
 #[cfg(test)]
+#[path = "query_denial/producer_quote_tests.rs"]
+mod producer_quote_tests;
+#[cfg(test)]
 #[path = "query_denial/request_stop_tests.rs"]
 mod request_stop_tests;

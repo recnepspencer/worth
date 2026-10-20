@@ -239,7 +239,9 @@ impl CustomInvariantRule for SelectionRule {
             },
             display_name: Arc::from(self.rule_id),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(self.maximum_work_units).unwrap(),
+                maximum_work_units: Some(
+                    std::num::NonZeroU64::new(self.maximum_work_units).unwrap(),
+                ),
                 access: self.affected_entity_kind.map_or_else(
                     crate::validation::data::CustomInvariantAccessContract::default,
                     |kind| crate::validation::data::CustomInvariantAccessContract {

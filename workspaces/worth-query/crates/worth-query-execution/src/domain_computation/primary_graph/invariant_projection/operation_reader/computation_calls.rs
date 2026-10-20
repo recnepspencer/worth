@@ -88,12 +88,11 @@ impl<Schema, Operation>
         call: impl FnOnce(&mut Self) -> Output,
     ) -> (Output, Option<ComputationCallCharge>) {
         let work = self.reader.work;
-        let remaining = self.reader.work_budget.remaining();
         self.reader.work_budget.begin_call();
         self.reader.realized_scope.begin_call();
         let output = self.attributed(read, call);
         let reached = self.reader.realized_scope.end_call();
-        let budget = self.reader.work_budget.end_call(remaining);
+        let budget = self.reader.work_budget.end_call();
         let charge = budget
             .zip(self.reader.work.since(work))
             .map(|((demand, consumed), work)| ComputationCallCharge {

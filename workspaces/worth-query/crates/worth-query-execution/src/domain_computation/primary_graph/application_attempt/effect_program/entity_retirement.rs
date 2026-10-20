@@ -20,7 +20,7 @@ impl<S, O, I, Scope> WorthQueryApplicationEffectProgramBuilder<S, O, I, Scope> {
                 entity,
             ));
         };
-        self.charge_candidate_item(CandidateItemKind::Delete)?;
+        self.reserve_effects(1)?;
         self.effects
             .push(WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id });
         Ok(())

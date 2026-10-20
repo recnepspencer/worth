@@ -11,7 +11,7 @@ fn lease(bytes: u64) -> ExecutionResourceLease<'static> {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, bytes, 1_000_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(bytes), Some(1_000_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

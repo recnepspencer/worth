@@ -32,14 +32,6 @@ impl OperationHandler<DocumentRetentionSchema, SetRetentionBinding> for SetReten
         }
     }
 
-    fn candidate_requirements(
-        &self,
-        _: &SetRetentionInput,
-        _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
-    ) -> ApplicationCandidateRequirements {
-        SetRetentionBinding::CANDIDATES
-    }
-
     fn build_candidate(
         &self,
         input: &SetRetentionInput,

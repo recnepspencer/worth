@@ -11,7 +11,7 @@ mod creation_initializers;
 mod scope_expectations;
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding, ApplicationMutationScopeBinding,
+    ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
@@ -184,14 +184,6 @@ where
             }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &Binding::Input,
-        _: &Binding::Decision,
-    ) -> ApplicationCandidateRequirements {
-        Binding::CANDIDATES
     }
 
     fn build_candidate(

@@ -49,8 +49,10 @@ fn direct_serial_patch_preparation_matches_packet_merge_order() {
                     .iter()
                     .map(|record| record.owned_allocation_capacity_bytes())
                     .sum::<u64>(),
-            kernel_scratch_bytes: 0,
-            max_result_bytes: 8 * 1024,
+            memory: crate::execution::PacketMemory::Declared {
+                scratch: 0,
+                result: 8 * 1024,
+            },
             value: packet,
         })
         .collect();
@@ -103,7 +105,7 @@ fn publication_lease(work: u64) -> worth_execution::ExecutionResourceLease<'stat
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 8 * 1024 * 1024, work),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), None, Some(work)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

@@ -144,18 +144,9 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             )
             .operation_read_relation(UnlinkMember::reference(), DocumentMembers::reference())
             .operation_unlink(UnlinkMember::reference(), DocumentMembers::reference())
-            .operation_projection_work_budget(
-                SetRetention::reference(),
-                if matches!(DESTINATION, 120..=125) {
-                    128
-                } else {
-                    8
-                },
-            )
             .operation_projection_work_budget(SetAuditSource::reference(), 8)
             .operation_projection_work_budget(SetDraftNote::reference(), 8)
             .operation_projection_work_budget(ClearDraftNote::reference(), 8)
-            .operation_projection_work_budget(RequireDraftNote::reference(), 32)
             .operation_read_field(
                 SetRetention::reference(),
                 DocumentIdentityField::reference(),

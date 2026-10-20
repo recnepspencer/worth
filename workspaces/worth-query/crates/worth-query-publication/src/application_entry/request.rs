@@ -203,7 +203,7 @@ where
             '_,
         >,
         commit: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
-        maximum_history_work: std::num::NonZeroUsize,
+        maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Result<
         WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>,
         WorthQueryApplicationHistorySelectionDenial,
@@ -222,7 +222,7 @@ where
             '_,
         >,
         approved: &worth_query_execution::facade::primary_graph::WorthQueryApprovedElevation,
-        maximum_history_work: std::num::NonZeroUsize,
+        maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Result<
         WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>,
         WorthQueryApplicationHistorySelectionDenial,
@@ -240,7 +240,7 @@ where
             '_,
         >,
         selected_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-        maximum_history_work: std::num::NonZeroUsize,
+        maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Result<
         WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>,
         WorthQueryApplicationHistorySelectionDenial,
@@ -248,7 +248,7 @@ where
         let history = self
             .application
             .branches()
-            .history(self.branch, maximum_history_work)
+            .history(phase, self.branch, maximum_history_work)
             .map_err(WorthQueryApplicationHistorySelectionDenial::ProductSelection)?;
         let entry = history
             .entries()

@@ -29,7 +29,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         lease: &WorthQueryApplicationSnapshotLease,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
@@ -37,7 +37,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
     ) -> Result<CompletedSnapshotRead<Output>, WorthQueryInvariantProjectionDenial> {
         self.read_snapshot(
             execution,
-            WorthQueryInvariantProjectionWorkBudget::bounded(maximum_work),
+            maximum_work.map_or_else(
+                WorthQueryInvariantProjectionWorkBudget::unbounded,
+                WorthQueryInvariantProjectionWorkBudget::bounded,
+            ),
             lease.product().relational_basis(),
             lease.snapshot(),
             projection,
@@ -56,7 +59,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         ) -> Output,
         retention_control: StorageControl<'_, '_>,
     ) -> Result<CompletedSnapshotRead<Output>, WorthQueryInvariantProjectionDenial> {
-        let (output, work, realized_scope, consumed_outputs, source_facts, exceeded, exhausted, stopped) =
+        let (output, work, realized_scope, consumed_outputs, source_facts, (exceeded, overflowed), exhausted, stopped) =
             match self.graph.with_runtime_mut(execution, |runtime| catch_unwind(AssertUnwindSafe(|| {
                 let mut reader = WorthQueryApplicationInvariantProjectionReader {
                     execution,
@@ -92,7 +95,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     reader.realized_scope,
                     reader.consumed_outputs,
                     reader.dependent_source_facts.finish(retention_control),
-                    reader.work_budget.exceeded(),
+                    (reader.work_budget.exceeded(), reader.work_budget.overflowed()),
                     reader.retention_exhausted,
                     reader.native_read_stop,
                 )
@@ -104,6 +107,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             };
         let denial = if let Some(cause) = stopped {
             Some(WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, Some(work)))
+        } else if overflowed {
+            Some(WorthQueryInvariantProjectionDenial::execution_request_stopped(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow,
+                Some(work),
+            ))
         } else if exceeded {
             Some(WorthQueryInvariantProjectionDenial::work_budget_exceeded(
                 work,

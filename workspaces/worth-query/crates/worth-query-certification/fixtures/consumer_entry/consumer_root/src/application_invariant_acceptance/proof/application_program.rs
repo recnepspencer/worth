@@ -136,10 +136,7 @@ fn secondary_root_settles_independently(
         .start_required_outputs(
             &world.application,
             &request,
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::new(4_096).unwrap(),
-                NonZeroUsize::new(8_192).unwrap(),
-            ),
+            WorthQueryOutputDemandControls::default(),
         )
         .unwrap_or_else(|failure| panic!("primary root starts: {:?}", failure.denial()));
 
@@ -169,10 +166,7 @@ fn secondary_root_settles_independently(
     else {
         panic!("the secondary root must retain performed delivery")
     };
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut secondary_started = secondary_performed
         .start_required_outputs(&world.application, &secondary_request, controls)
         .unwrap_or_else(|failure| panic!("secondary root starts: {:?}", failure.denial()));
@@ -238,14 +232,6 @@ pub(super) fn caller_disposal_before_progress_recovers(
     recovery::superseded_completion_is_terminal(foreign);
     recovery::changed_root_cannot_adopt_stale_prepared_source(foreign);
     dependent_recovery::caller_disposal_after_root_recovers_dependent(foreign);
-}
-
-pub(super) fn resource_denial_preserves_source_and_delivery(
-    foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
-        ConsumerSchema,
-    >,
-) {
-    recovery::resource_denial_preserves_source_and_delivery(foreign);
 }
 
 pub(super) fn lifecycle_proofs(

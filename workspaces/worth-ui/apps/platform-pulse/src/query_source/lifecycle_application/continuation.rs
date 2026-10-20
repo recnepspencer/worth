@@ -42,7 +42,7 @@ impl PlatformPulseQueryMutation {
     pub(super) fn advance(
         self,
         scope: &WorthQueryRequestScope,
-        history: NonZeroUsize,
+        history: Option<NonZeroUsize>,
     ) -> Result<
         (
             PlatformPulseQueryMutationPurpose,
@@ -112,7 +112,7 @@ impl PlatformPulseQueryLifecycle {
     /// this same product stage; no source command, key or presentation purpose is rebuilt.
     pub(crate) fn continue_mutation(
         &mut self,
-        history: NonZeroUsize,
+        history: Option<NonZeroUsize>,
     ) -> Result<PlatformPulseQueryContinuation, PlatformPulseQueryLifecycleDenial> {
         let state = std::mem::replace(&mut self.state, PlatformPulseQueryOwnerState::Indeterminate);
         let PlatformPulseQueryOwnerState::Mutation(mutation) = state else {

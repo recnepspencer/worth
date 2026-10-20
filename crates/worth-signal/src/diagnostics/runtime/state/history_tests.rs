@@ -59,15 +59,17 @@ fn exhausted_position_denies_before_changing_retained_roots() {
 fn retained_append_admits_exact_bytes_and_denies_short_bytes_or_work_without_installation() {
     let original: DiagnosticHistory<_> = ["old".to_string()].into_iter().collect();
     original
-        .prepare_retained_charge(&mut Work::new(100))
+        .prepare_retained_charge(&mut Work::new(Some(100)))
         .unwrap();
     let mut expected = original.clone();
     expected
         .push_back("new retained frame".to_string())
         .unwrap();
-    let exact = expected.retained_heap_charge(&mut Work::new(100)).unwrap();
+    let exact = expected
+        .retained_heap_charge(&mut Work::new(Some(100)))
+        .unwrap();
     let mut admitted = original.clone();
-    let mut work = Work::new(100);
+    let mut work = Work::new(Some(100));
     admitted
         .append_with_retained_capacity("new retained frame".into(), exact, &mut work)
         .unwrap();
@@ -76,7 +78,11 @@ fn retained_append_admits_exact_bytes_and_denies_short_bytes_or_work_without_ins
     let visits = work.visits();
     let mut exact_work = original.clone();
     exact_work
-        .append_with_retained_capacity("new retained frame".into(), exact, &mut Work::new(visits))
+        .append_with_retained_capacity(
+            "new retained frame".into(),
+            exact,
+            &mut Work::new(Some(visits)),
+        )
         .unwrap();
     assert_eq!(exact_work, expected);
     for (maximum, limit) in [
@@ -93,7 +99,7 @@ fn retained_append_admits_exact_bytes_and_denies_short_bytes_or_work_without_ins
             .append_with_retained_capacity(
                 "new retained frame".into(),
                 maximum,
-                &mut Work::new(limit),
+                &mut Work::new(Some(limit)),
             )
             .unwrap_err();
         assert_eq!(value, "new retained frame");
@@ -125,17 +131,19 @@ fn retained_eviction_updates_only_this_root_and_raw_edits_require_readmission() 
         .into_iter()
         .collect();
     history
-        .prepare_retained_charge(&mut Work::new(100))
+        .prepare_retained_charge(&mut Work::new(Some(100)))
         .unwrap();
     let original = history.clone();
     let removed = history
-        .evict_front_with_retained_charge(&mut Work::new(100))
+        .evict_front_with_retained_charge(&mut Work::new(Some(100)))
         .unwrap()
         .unwrap();
     assert!(Arc::ptr_eq(&removed, original.entries.get(&0).unwrap()));
     assert_eq!(
         history.prepared_retained_charge().unwrap(),
-        history.retained_heap_charge(&mut Work::new(100)).unwrap()
+        history
+            .retained_heap_charge(&mut Work::new(Some(100)))
+            .unwrap()
     );
     assert_eq!(original.len(), 2);
     assert_eq!(history.len(), 1);
@@ -145,7 +153,11 @@ fn retained_eviction_updates_only_this_root_and_raw_edits_require_readmission() 
         Err(DiagnosticHistoryEditDenial::PreparationRequired)
     );
     assert!(matches!(
-        history.append_with_retained_capacity("denied".into(), Charge::ZERO, &mut Work::new(0)),
+        history.append_with_retained_capacity(
+            "denied".into(),
+            Charge::ZERO,
+            &mut Work::new(Some(0))
+        ),
         Err((_, DiagnosticHistoryEditDenial::PreparationRequired))
     ));
 }

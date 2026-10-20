@@ -3,8 +3,8 @@
 use worth_query_host::facade::{
     declaration::{
         application_operation::{
-            ApplicationCandidateRequirements, ApplicationMutationBinding,
-            ApplicationMutationIntent, NoApplicationMutationOutputs, NoApplicationMutationSource,
+            ApplicationMutationBinding, ApplicationMutationIntent, NoApplicationMutationOutputs,
+            NoApplicationMutationSource,
         },
         application_schema::{
             ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate,
@@ -22,10 +22,7 @@ use super::super::schema::{
     DocumentRetentionField, DocumentRetentionSchema, ExternalMapping, Principal, SetRetention,
     SetRetentionInputBinding,
 };
-use super::{
-    DocumentRetentionWritten, SetRetentionBinding, SetRetentionDenial, SetRetentionInput,
-    SetRetentionScope,
-};
+use super::{DocumentRetentionWritten, SetRetentionDenial, SetRetentionInput, SetRetentionScope};
 
 #[derive(Clone, Debug)]
 pub struct ReviewedSetRetentionIntent {
@@ -65,8 +62,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewedSetRetentio
     {
         worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<super::super::workflow::WorkflowApprovalCapability>()
     }
-
-    const CANDIDATES: ApplicationCandidateRequirements = SetRetentionBinding::CANDIDATES;
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -146,14 +141,6 @@ where
             Ok(target) => HandlerResult::Completed(target),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &SetRetentionInput,
-        _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
-    ) -> ApplicationCandidateRequirements {
-        Binding::CANDIDATES
     }
 
     fn build_candidate(

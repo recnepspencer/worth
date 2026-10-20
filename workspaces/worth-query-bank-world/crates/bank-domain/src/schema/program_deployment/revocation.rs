@@ -2,6 +2,7 @@
 use super::*;
 use crate::model::BankPrincipalId;
 use crate::schema::{BankPrincipalBinding, BankPrincipalIdBinding, ExternalPrincipalMapping};
+
 use worth_query_decl::facade::{
     application_operation::*, worth_query_ability, worth_query_operation,
     worth_query_operation_reads, worth_query_operation_writes, worth_query_policy,
@@ -86,11 +87,6 @@ impl ApplicationMutationBinding<BankSchema> for ProgramDeploymentRevocationBindi
     const HANDLER_IDENTITY: &'static str = "worth.bank.program-deployment-revocation-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.bank.program-deployment-revocation-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1_024),
-        );
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,

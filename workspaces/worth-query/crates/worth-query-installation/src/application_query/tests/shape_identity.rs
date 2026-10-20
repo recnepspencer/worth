@@ -1,9 +1,9 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility, ApplicationQueryReference,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryReference, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
+    ManyResults,
 };
 use worth_query_declaration::{
     worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
@@ -89,6 +89,8 @@ fn installed_identity_preserves_which_nested_branch_owns_each_field() {
         .certification_query(GroupedTwoQuery::reference())
         .unwrap();
 
+    assert_eq!(one_then_two.read_graph().maximum_traversal_depth(), 1);
+    assert_eq!(two_then_one.read_graph().maximum_traversal_depth(), 1);
     assert_ne!(
         one_then_two.read_graph().digest(),
         two_then_one.read_graph().digest()
@@ -244,7 +246,6 @@ where
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::Many)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 2, 4))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

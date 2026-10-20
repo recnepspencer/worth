@@ -14,7 +14,6 @@ use super::super::{
 use super::{reserve_buffer, sizing::ValidatedCheckpointSize};
 use crate::domain_computation::primary_graph::{
     application_attempt::{WorthQueryApplicationObservedFact, WorthQueryCheckpointOutputRole},
-    application_contribution::WorthQueryProducerDemandResources,
     application_output_demand::{
         WorthQueryAcceptedOutputCheckpointIdentity, WorthQueryAcceptedOutputCheckpointPosture,
     },
@@ -23,7 +22,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[test]
-fn checkpoint_one_buffer_matches_independent_v10_grammar_and_sections() {
+fn checkpoint_one_buffer_matches_independent_v11_grammar_and_sections() {
     let (world, receipt) = recoverable_application_world(141, "checkpoint-wire-proof");
     let scope = receipt.principal_scope().scope();
     let facts = super::super::facts::encode(&[WorthQueryApplicationObservedFact::SourceEntity {
@@ -39,7 +38,7 @@ fn checkpoint_one_buffer_matches_independent_v10_grammar_and_sections() {
             source_partition: [2; 32],
             producer_dependency: Some([3; 32]),
             idempotency_key: [4; 32],
-            resources: Some(WorthQueryProducerDemandResources::new(4096, 8192)),
+
             roles: (vec![
                 role(
                     "a",
@@ -63,7 +62,7 @@ fn checkpoint_one_buffer_matches_independent_v10_grammar_and_sections() {
             source_partition: [12; 32],
             producer_dependency: None,
             idempotency_key: [14; 32],
-            resources: None,
+
             roles: (Vec::new()).into(),
             producer_facts: None,
             producer_fact_wire_version: 0,
@@ -75,7 +74,7 @@ fn checkpoint_one_buffer_matches_independent_v10_grammar_and_sections() {
     scope_wire.extend_from_slice(&scope.partition_id().to_be_bytes());
     scope_wire.extend_from_slice(&scope.local_slot().to_be_bytes());
     scope_wire.extend_from_slice(&scope.generation().to_be_bytes());
-    let expected = independent_v10(
+    let expected = independent_v11(
         world.application.publication().bootstrap_commit_id().0,
         &scope_wire,
         native,
@@ -92,9 +91,10 @@ fn checkpoint_one_buffer_matches_independent_v10_grammar_and_sections() {
     assert_eq!(sections.framing_bytes(), 70);
     assert_eq!(sections.native_bytes(), native.len());
     assert_eq!(sections.accepted_output_count(), 2);
-    // Two 189-byte fixed rows, literal text widths, three 33-byte role frames,
+    // Two fixed rows, literal text widths, three 33-byte role frames,
     // and the independently encoded fact payload. No production size helper.
-    let expected_rows = 2 * 189 + 20 + 3 * 33 + 3 + 14 + facts.len();
+    let fixed_row_bytes = 8 + 1 + 32 + 16 + 32 + 1 + 32 + 32 + 8 + 2 + 8;
+    let expected_rows = 2 * fixed_row_bytes + 20 + 3 * 33 + 3 + 14 + facts.len();
     assert_eq!(sections.accepted_output_bytes(), expected_rows);
     assert_eq!(sections.total_bytes(), 70 + native.len() + expected_rows);
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
@@ -119,7 +119,7 @@ fn checkpoint_one_buffer_matches_independent_v10_grammar_and_sections() {
     assert_eq!(buffer.len(), expected.len());
     assert_eq!(buffer.capacity(), capacity);
 
-    // A stale size witness cannot permit even one byte beyond its quoted
+    // A stale size witness cannot permit even one byte beyond its prepared
     // frame. Exercise the real writer guard rather than allocator injection.
     let short_size = ValidatedCheckpointSize::new(3, &[], CapturePolicy::SystemAllocation).unwrap();
     let mut short_buffer =
@@ -208,11 +208,11 @@ fn role(
     }
 }
 
-/// Independent current v10 grammar with literal fixture branch choices.
-/// It does not call the production body writer, resource codec, or size helper.
-fn independent_v10(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> Vec<u8> {
+/// Independent current v11 grammar with literal fixture branch choices.
+/// It does not call the production body writer, or size helper.
+fn independent_v11(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> Vec<u8> {
     let mut body = Vec::new();
-    body.extend_from_slice(&10_u16.to_be_bytes());
+    body.extend_from_slice(&11_u16.to_be_bytes());
     body.extend_from_slice(&2_u16.to_be_bytes());
     body.extend_from_slice(&4_u16.to_be_bytes());
     body.extend_from_slice(&bootstrap.to_be_bytes());
@@ -227,9 +227,6 @@ fn independent_v10(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) ->
     body.push(1);
     body.extend_from_slice(&[3; 32]);
     body.extend_from_slice(&[4; 32]);
-    body.push(1);
-    body.extend_from_slice(&4096_u64.to_be_bytes());
-    body.extend_from_slice(&8192_u64.to_be_bytes());
     body.extend_from_slice(&3_u64.to_be_bytes());
     for (name, posture, entity_name, slot) in [
         (b"a".as_slice(), 0, b"alpha".as_slice(), 5_u64),
@@ -254,7 +251,6 @@ fn independent_v10(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) ->
     body.push(0);
     body.extend_from_slice(&[0; 32]);
     body.extend_from_slice(&[14; 32]);
-    body.extend_from_slice(&[0; 17]);
     body.extend_from_slice(&0_u64.to_be_bytes());
     body.extend_from_slice(&0_u16.to_be_bytes());
     body.extend_from_slice(&0_u64.to_be_bytes());

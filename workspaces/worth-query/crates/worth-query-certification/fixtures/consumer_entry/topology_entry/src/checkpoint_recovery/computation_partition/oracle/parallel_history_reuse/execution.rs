@@ -164,20 +164,13 @@ fn install_configured(
     issuances: usize,
     configuration: HistoryConfiguration,
 ) -> Application {
-    let width = u64::try_from(DECISION_FACT_BUDGET + WIDTH_BESIDE_DECISION).unwrap();
-    let host = support::candidates();
-    let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            host.maximum_items().max(width),
-            host.maximum_retained_representation_bytes()
-                .max((1024 * LARGEST_SET + 320 * 256) as u64),
-        )
-        .and_then(|candidates| candidates.with_maximum_operation_width(width))
-        .unwrap();
     const RETAINED_COMMITS: u64 = 32;
-    let invalidation =
-        support::invalidation(128 * 1_024 * 1_024, 1_000_000, RETAINED_COMMITS as usize);
-    let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation, candidates);
+    let invalidation = support::invalidation(
+        128 * 1_024 * 1_024,
+        Some(1_000_000),
+        RETAINED_COMMITS as usize,
+    );
+    let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation);
     let program = ApplicationProgramAuthoring::<CheckpointSchema, HistoryProgram>::begin()
         .validated_program()
         .unwrap();

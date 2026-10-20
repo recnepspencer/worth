@@ -21,7 +21,7 @@ fn checked_result_storage_checkpoint_preserves_cancellation() {
     let scan = ExecutionScan::try_from_ordered(vec![key], vec![(key, ())]).unwrap();
     let mut observed = None;
     let _outcome = scan.run(Some(&lease), (), 0, 0, 0, 0, |_, _, work| {
-        let context = CheckedEvaluationContext::new(&graph, node, &(), work, 0, 8192)
+        let context = CheckedEvaluationContext::new(&graph, node, &(), work, Some(0), Some(8192))
             .map_err(MapKernelFailure::Domain)?;
         cancellation.cancel();
         observed = Some(
@@ -56,8 +56,9 @@ fn checked_read_checkpoint_preserves_cancellation() {
     let scan = ExecutionScan::try_from_ordered(vec![key], vec![(key, ())]).unwrap();
     let mut observed = None;
     let _outcome = scan.run(Some(&lease), (), 0, 0, 0, 0, |_, _, work| {
-        let mut context = CheckedEvaluationContext::new(&graph, node, &(), work, 0, 8192)
-            .map_err(MapKernelFailure::Domain)?;
+        let mut context =
+            CheckedEvaluationContext::new(&graph, node, &(), work, Some(0), Some(8192))
+                .map_err(MapKernelFailure::Domain)?;
         cancellation.cancel();
         observed = Some(context.read(source, Aspect::new(0)).unwrap_err());
         Ok::<_, MapKernelFailure<SignalError>>(((), ()))

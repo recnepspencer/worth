@@ -11,9 +11,8 @@ use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::EntityReference;
 
 use super::{
-    CandidateItemKind, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOptionalFieldWrite,
-    WorthQueryApplicationRealizedEffect,
+    WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
+    WorthQueryApplicationOptionalFieldWrite, WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -87,48 +86,7 @@ impl<Schema, Operation, Input, Scope>
         let position = self
             .field_write_positions
             .position(field.entity(), entity_id);
-        let matching_effect = position.map(|position| &self.effects[position]);
-        let replaced_representation_bytes = matching_effect.and_then(|effect| match effect {
-            WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. } => fields
-                .get(&locator)
-                .map(super::retained_representation::value),
-            WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields { fields, .. } => fields
-                .get(&locator)
-                .and_then(|write| write.value.as_ref())
-                .map(super::retained_representation::value),
-            _ => None,
-        });
-        let promotion_contract_bytes = ordinary_write_contract_representation_bytes(
-            &self.layout,
-            matching_effect,
-            field.entity(),
-        )?;
-        let retains_locator_and_contract = replaced_representation_bytes.is_none();
-        let retained_representation_bytes = super::retained_representation::optional_field_entry(
-            &locator,
-            &contract,
-            value.as_ref(),
-            retains_locator_and_contract,
-        )
-        .and_then(|bytes| bytes.checked_add(promotion_contract_bytes))
-        .and_then(|bytes| {
-            bytes.checked_add(if matching_effect.is_none() {
-                field.entity().len()
-            } else {
-                0
-            })
-        })
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                field.field(),
-            )
-        })?;
-        self.charge_candidate_representation(
-            CandidateItemKind::Write,
-            retained_representation_bytes,
-            replaced_representation_bytes.unwrap_or(0),
-        )?;
+        self.reserve_effects(usize::from(position.is_none()))?;
         let write = WorthQueryApplicationOptionalFieldWrite { contract, value };
         if let Some(position) = position {
             promote_ordinary_writes(&self.layout, &mut self.effects[position], field.entity())?;
@@ -148,35 +106,6 @@ impl<Schema, Operation, Input, Scope>
         }
         Ok(())
     }
-}
-
-fn ordinary_write_contract_representation_bytes(
-    layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
-    effect: Option<&WorthQueryApplicationRealizedEffect>,
-    entity: &str,
-) -> Result<usize, WorthQueryApplicationAttemptDenial> {
-    let Some(WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. }) = effect else {
-        return Ok(0);
-    };
-    fields.keys().try_fold(0_usize, |total, locator| {
-        let contract = layout
-            .aspect_contract(entity, locator.aspect().aspect_key())
-            .map(PortableAspectContractBasis::from_contract)
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                    format!("{:?}", locator.field_path()),
-                )
-            })?;
-        total
-            .checked_add(super::retained_representation::contract_width(&contract))
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                    entity,
-                )
-            })
-    })
 }
 
 fn promote_ordinary_writes(

@@ -50,7 +50,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 )
             })?;
         let waiting = || OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending);
-        let disclosed_value = disclosure.value();
         let disclosed_source = disclosure.source();
         if let SourceGuard::Replaced = self.prepare_progression_entry(
             demand,
@@ -70,17 +69,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     request_admission,
                 )
                 .map(ExecutionPreparation::Reached);
-        }
-        if schedule_progression.is_selected() {
-            // Validate the immutable selected input before changing registry state.
-            entry::validate_progression_resources(
-                &mut demand.resources,
-                &mut demand.resources_validated,
-                disclosed_value,
-                entry,
-                &demand.selected.identity,
-                demand.limits,
-            )?;
         }
         let interest = demand
             .interest
@@ -259,18 +247,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 return Err(denial);
             }
         };
-        if !schedule_progression.is_selected() {
-            entry::validate_resources_after_begin(
-                &self.output_demands,
-                interest,
-                &mut demand.resources,
-                &mut demand.resources_validated,
-                disclosed_value,
-                entry,
-                &demand.selected.identity,
-                demand.limits,
-            )?;
-        }
         let published_mode = if let Some(mode) = selected_published_mode.take() {
             mode
         } else {
@@ -287,16 +263,12 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             required_output.reuse_live_output_only();
         }
         let required_execution = required_output.prepare_execution(published_mode);
-        let retained_resources = demand.resources;
         let runtime_identity = self.runtime.authority_identity().as_u64();
         let root = demand.observed_source.source_root();
-        let finish = move |result, request_admission: &mut InvalidationEditAdmission, readiness| {
+        let finish = move |result, readiness| {
             super::execution_completion::finish(
                 result,
                 selected_execution_finish,
-                retained_resources,
-                &self.primary_provider.application_attempt_operation_control,
-                request_admission,
                 performed,
                 readiness,
                 runtime_identity,
@@ -322,7 +294,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 );
                 match finish(
                     result,
-                    request_admission,
                     ordinary_readiness.expect("ordinary effect has publication readiness"),
                 ) {
                     Ok(progress) => Ok(ExecutionPreparation::Reached(OwnStages::Checkpoint(
@@ -365,7 +336,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     Err(stop) => OwnerPlan::immediate(Err(stop)),
                 };
                 Ok(ExecutionPreparation::Planned(plan.map_result(
-                    move |result, admission| finish(result, admission, readiness),
+                    move |result, _admission| finish(result, readiness),
                 )))
             }
         });

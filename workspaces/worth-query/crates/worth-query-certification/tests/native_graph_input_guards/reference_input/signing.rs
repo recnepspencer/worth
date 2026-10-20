@@ -37,12 +37,12 @@ fn row(input: &Sign) -> String {
     input.0.clone()
 }
 worth_query_mutation_binding!(pub SignBinding for Sign,schema Schema,
-    identity "worth.query.reference.sign-binding.v1",input Input,operation SignReference,result ResultBinding,
-    idempotency u64,identity "worth.query.reference.sign-request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
-    handler identity "worth.query.reference.sign-body.v1",program required,outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value row,
-    candidates creates 1,deletes 0,links 2,unlinks 0,writes 3,emits 0,resources retained_representation_bytes 65536);
+identity "worth.query.reference.sign-binding.v1",input Input,operation SignReference,result ResultBinding,
+idempotency u64,identity "worth.query.reference.sign-request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
+handler identity "worth.query.reference.sign-body.v1",program required,outputs NoApplicationMutationOutputs,
+principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
+scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value row,
+);
 pub fn declare(
     builder: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {

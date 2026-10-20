@@ -7,9 +7,8 @@ use serde::Serialize;
 use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_program::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationComputationExecution,
-    ApplicationComputationInput, ApplicationComputationPartition,
+    ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
+    ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,
     ApplicationComputationResourceCeiling, ApplicationComputationReuse,
     ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationFeature,
     ApplicationFeatureInputLeaf, ApplicationLocalityGranule, ApplicationLocalityScope,
@@ -77,8 +76,7 @@ impl ApplicationDerivedArtifact<Schema, Feature> for Artifact {
     const PRODUCER_FAMILY: &'static str = "worth.query.tests.attribution-producer.v1";
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] = &[];
     const REUSE_RULE: &'static str = "worth.query.tests.attribution-reuse.v1";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(4, 64);
+
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.attribution-stopped.v1";
 }
 pub(super) struct Input;

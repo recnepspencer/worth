@@ -53,19 +53,10 @@ where
         if sealed.is_none() && !restored {
             return Ok(None);
         }
-        // The verification's meter is the reader's remaining work.
-        let Some(maximum_work) = std::num::NonZeroUsize::new(self.reader.work_budget.remaining())
-        else {
-            self.reader.work_budget.mark_exceeded();
-            return Err(WorthQueryCurrentOutputDenial::new(
-                WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
-                subject,
-            ));
-        };
         let mut admission = self
             .reader
             .invalidation_owner
-            .edit_admission_within(maximum_work);
+            .edit_admission_with_work_limit(self.reader.work_budget.remaining());
         let verification = match sealed {
             Some(witness) => ConsumedOutputEvidence::verify_at_observation(
                 execution,
@@ -109,9 +100,28 @@ where
                 Some(VerifiedCandidate::Current { facts, witness })
             }),
         };
-        let charged = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
-        self.reader.work_budget.consume(charged);
-        self.reader.work.record_output_lineage_selection(charged);
+        let accounting = usize::try_from(admission.charged_work())
+            .map_err(|_| {
+                self.reader.work_budget.mark_overflowed();
+                self.current_output_work_exhausted(subject)
+            })
+            .and_then(|charged| {
+                self.charge_current_output_work(charged, subject)?;
+                Ok(charged)
+            });
+        match accounting {
+            Ok(charged) => self.reader.work.record_output_lineage_selection(charged),
+            Err(denial) => {
+                if let Err(
+                    stop @ (ConsumedOutputVerificationStop::Execution(_)
+                    | ConsumedOutputVerificationStop::Interrupted(_)),
+                ) = verification
+                {
+                    return Err(super::verification_denial::from_stop(stop, subject));
+                }
+                return Err(denial);
+            }
+        }
         verification.map_err(|stop| {
             if stop == ConsumedOutputVerificationStop::WorkExhausted {
                 self.reader.work_budget.mark_exceeded();
@@ -138,31 +148,25 @@ where
         WorthQueryCurrentOutputDenial,
     > {
         use crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead;
-        let before = self.reader.work_budget.remaining();
-        let maximum = std::num::NonZeroUsize::new(before).ok_or_else(|| {
-            self.reader.work_budget.mark_exceeded();
-            WorthQueryCurrentOutputDenial::new(
-                WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
-                subject,
-            )
-        })?;
         let mut admission = self
             .reader
             .invalidation_owner
-            .edit_admission_within(maximum);
+            .edit_admission_with_work_limit(self.reader.work_budget.remaining());
         let bytes = std::mem::size_of::<RequestedOutputRead>() as u64;
         let result = admission
             .charge_external_work(bytes + selected.branch_id().0.len() as u64)
             .and_then(|_| {
-                self.reader.invalidation_owner.retain_consumed_output(
-                    &[],
+                self.reader.invalidation_owner.retain_requested_output(
                     selected,
                     bytes,
                     &mut admission,
                 )
             });
-        let charged = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
-        self.reader.work_budget.consume(charged);
+        let charged = usize::try_from(admission.charged_work()).map_err(|_| {
+            self.reader.work_budget.mark_overflowed();
+            self.current_output_work_exhausted(subject)
+        })?;
+        self.charge_current_output_work(charged, subject)?;
         self.reader.work.record_output_lineage_selection(charged);
         let capacity = result.map_err(|stop| {
             let stop = crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop);

@@ -3,10 +3,8 @@
 use worth_query_host::facade::{
     declaration::{
         application_operation::{
-            ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-            ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
-            ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
-            NoApplicationMutationSource,
+            ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
+            NoApplicationMutationOutputs, NoApplicationMutationSource,
         },
         application_schema::{
             ApplicationFieldRef, ApplicationPrincipalBindingRef,
@@ -108,11 +106,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowGrantStatus
         "worth.query.certification.workflow-grant-status-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.workflow-grant-status-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1_024),
-        );
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -194,14 +187,6 @@ impl OperationHandler<DocumentRetentionSchema, WorkflowGrantStatusBinding>
             Ok(target) => HandlerResult::Completed(target),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &WorkflowGrantStatusInput,
-        _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, WorkflowAuthoringGrant>,
-    ) -> ApplicationCandidateRequirements {
-        WorkflowGrantStatusBinding::CANDIDATES
     }
 
     fn build_candidate(

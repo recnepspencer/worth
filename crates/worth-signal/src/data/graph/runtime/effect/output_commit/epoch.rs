@@ -42,10 +42,9 @@ fn with_epoch_retained_work<R>(
     request: &mut MapKernelContext<'_, '_>,
     operation: impl FnOnce(&mut Work<'_>) -> Result<R, SignalError>,
 ) -> Result<R, SignalError> {
-    let maximum_visits = work.maximum_visits();
     let mut checkpoint = |units: usize| {
-        let units = u64::try_from(units)
-            .map_err(|_| RetainedStoragePreparationDenial::WorkExhausted { maximum_visits })?;
+        let units =
+            u64::try_from(units).map_err(|_| RetainedStoragePreparationDenial::ChargeOverflow)?;
         request
             .checkpoint(units)
             .map_err(|stop| RetainedStoragePreparationDenial::ExecutionStopped(stop.into()))
@@ -183,7 +182,7 @@ impl SignalGraph {
         // A graph epoch is not a selected-definition conditional attempt.
         // Its observed preparation shares the actual request work ceiling.
         // Ordinary execution retains its existing per-node serial contract.
-        let mut retained_work = Work::new(usize::MAX);
+        let mut retained_work = Work::new(None);
         let direct = with_epoch_retained_work(&mut retained_work, &mut *request_work, |work| {
             self.prepare_epoch_direct_cause_publication(
                 admission,

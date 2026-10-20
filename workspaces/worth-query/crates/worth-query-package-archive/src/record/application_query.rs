@@ -60,7 +60,6 @@ pub(super) fn write(
     write_sequence(output, parts.ordering(), write_ordering)?;
     write_optional(output, parts.continuation(), write_continuation)?;
     write_optional(output, parts.live_cause(), write_live_cause)?;
-    controls::write_dependency_ceiling(output, parts.dependency_ceiling())?;
     disclosure::write(output, parts.disclosure())?;
     controls::write_authorization(output, parts.authorization())?;
     controls::write_basis_support(output, parts.basis_support())?;
@@ -101,7 +100,6 @@ fn decode_with_shape_depth(
     let ordering = decode_sequence(input, budget, 28, |input, _| decode_ordering(input))?;
     let continuation = decode_optional(input, decode_continuation)?;
     let live_cause = decode_optional(input, decode_live_cause)?;
-    let dependency_ceiling = controls::decode_dependency_ceiling(input)?;
     let disclosure = disclosure::decode(input, budget)?;
     let authorization = controls::decode_authorization(input)?;
     let basis_support = controls::decode_basis_support(input)?;
@@ -123,7 +121,6 @@ fn decode_with_shape_depth(
             ordering,
             continuation,
             live_cause,
-            dependency_ceiling,
             disclosure,
             authorization,
             basis_support,

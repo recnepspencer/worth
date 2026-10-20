@@ -140,7 +140,7 @@ mod tests {
         let second_runtime = RelationalRuntime::new(config);
         let cancellation = worth_execution::CancellationSource::new();
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(1024),
+            worth_execution::SerialMemoryBudget::new(None),
             cancellation.token(),
             None,
         );

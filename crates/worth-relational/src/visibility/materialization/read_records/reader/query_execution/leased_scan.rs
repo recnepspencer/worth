@@ -4,7 +4,7 @@ use worth_execution::{MapKernelContext, MapKernelFailure};
 
 use super::super::query_packetization::PacketizedQueryWork;
 use super::super::RelationalPinnedRead;
-use super::leased_map::{QueryPacketBudget, QueryReadPacketDenial};
+use super::leased_map::{QueryPacketBudget, QueryPacketMemory, QueryReadPacketDenial};
 use crate::identity::data::{KindId, PartitionId};
 use crate::query::data::{PlannedQueryPacket, QueryFragmentCounters, QueryWorkerFragment};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
@@ -22,7 +22,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
     packet: &PlannedQueryPacket,
     work: &PacketizedQueryWork,
     ordinal: u64,
-    ceiling: u64,
+    ceiling: &QueryPacketMemory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<QueryWorkerFragment, PacketFailure> {
     let projection = reader;
@@ -37,10 +37,10 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
                 execution,
                 partition_id,
                 kind_id,
-                |bytes| {
+                |units, bytes| {
                     let mut budget = meter.borrow_mut();
-                    budget.checkpoint(1)?;
-                    budget.check_temporary_record(bytes)?;
+                    budget.checkpoint(units)?;
+                    budget.settle_temporary_record(bytes)?;
                     candidate_bytes.set(bytes);
                     Ok::<(), PacketFailure>(())
                 },
@@ -66,10 +66,10 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
                 execution,
                 partition_id,
                 kind_id,
-                |bytes| {
+                |units, bytes| {
                     let mut budget = meter.borrow_mut();
-                    budget.checkpoint(1)?;
-                    budget.check_temporary_record(bytes)?;
+                    budget.checkpoint(units)?;
+                    budget.settle_temporary_record(bytes)?;
                     candidate_bytes.set(bytes);
                     Ok::<(), PacketFailure>(())
                 },

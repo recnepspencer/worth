@@ -92,29 +92,34 @@ mod tests {
 
     #[test]
     fn generated_invariants_keep_algorithm_contract_without_aggregate_proxy() {
-        let descriptor = custom_invariant(7);
-        let contract =
-            application_invariant_execution_contract(std::slice::from_ref(&descriptor)).unwrap();
-        for requirement in contract.requirements() {
-            assert_eq!(requirement.max_state_facts(), None);
-            assert_eq!(requirement.max_work_units(), None);
+        for work in [None, NonZeroU64::new(7)] {
+            let descriptor = custom_invariant(work);
+            let contract =
+                application_invariant_execution_contract(std::slice::from_ref(&descriptor))
+                    .unwrap();
+            for requirement in contract.requirements() {
+                assert_eq!(requirement.max_state_facts(), None);
+                assert_eq!(requirement.max_work_units(), None);
+            }
+            let custom = contract
+                .requirements()
+                .iter()
+                .find_map(|r| r.application_invariant())
+                .unwrap();
+            assert_eq!(custom.maximum_work_units(), work);
+            assert_eq!(custom, &descriptor);
         }
-        let custom = contract
-            .requirements()
-            .iter()
-            .find_map(|r| r.application_invariant())
-            .unwrap();
-        assert_eq!(custom.maximum_work_units().get(), 7);
-        assert_eq!(custom, &descriptor);
     }
 
-    fn custom_invariant(work: u64) -> WorthQueryInstalledApplicationInvariantDescriptor {
+    fn custom_invariant(
+        work: Option<NonZeroU64>,
+    ) -> WorthQueryInstalledApplicationInvariantDescriptor {
         WorthQueryInstalledApplicationInvariantDescriptor::from_installed_parts(
             "budget-regression".to_owned(),
             1,
             0,
             ApplicationInvariantExecutionPoint::CommitBoundary,
-            NonZeroU64::new(work).unwrap(),
+            work,
             ApplicationInvariantEnforcement::BlockCommit,
             vec![ApplicationInvariantGroup::SchemaCompliance],
             vec![ApplicationInvariantScopeTarget::Entity("item".to_owned())],

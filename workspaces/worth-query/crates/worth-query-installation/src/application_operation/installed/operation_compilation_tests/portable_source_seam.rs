@@ -23,22 +23,6 @@ fn retained_portable_reads_are_the_aftermath_coverage_source() {
 }
 
 #[test]
-fn retained_portable_program_width_is_the_resource_source() {
-    let portable_members = members("freeze", "freeze", 64);
-    let mut wider_summaries = portable_members.clone();
-    wider_summaries.push(ApplicationSchemaMember::OperationProgram {
-        operation: "freeze".to_owned(),
-        target: ApplicationOperationProgramTarget::Delete {
-            entity: "Audit".to_owned(),
-        },
-    });
-
-    let baseline = compile_with_portable_members(&portable_members, &portable_members).unwrap();
-    let divergent = compile_with_portable_members(&wider_summaries, &portable_members).unwrap();
-    assert_eq!(baseline.resources(), divergent.resources());
-}
-
-#[test]
 fn retained_portable_reconciliation_is_the_installed_source() {
     let portable_members = external_owner_members("portable-confirmation");
     let divergent_summaries = external_owner_members("member-summary-confirmation");

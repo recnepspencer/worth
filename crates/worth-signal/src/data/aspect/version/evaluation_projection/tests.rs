@@ -41,7 +41,7 @@ fn projection_matches_actual_scoped_writes() {
         let mut applied = basis.clone();
         applied.apply_evaluation(next, &regions);
         for query in &queries {
-            let mut measured = Work::new(usize::MAX);
+            let mut measured = Work::new(None);
             let projected = basis
                 .version_after_evaluation(
                     aspect,
@@ -55,7 +55,7 @@ fn projection_matches_actual_scoped_writes() {
                 projected,
                 applied.version_for_scope(aspect, query.as_ref(), next)
             );
-            let mut short = Work::new(measured.visits() - 1);
+            let mut short = Work::new(Some(measured.visits() - 1));
             assert!(basis
                 .version_after_evaluation(
                     aspect,

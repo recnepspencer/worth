@@ -45,3 +45,5 @@ pub(crate) mod read_stop;
 pub(crate) use projection::ProjectionRecordSource;
 
 pub use reader::BoundedFrontierReadStop;
+
+pub(crate) use reader::KindScanVisibility;

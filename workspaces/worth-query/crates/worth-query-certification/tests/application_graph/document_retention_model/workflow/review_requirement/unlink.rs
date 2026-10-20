@@ -47,11 +47,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for UnlinkReviewRequire
         "worth.query.certification.review-requirement-unlink-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.review-requirement-unlink-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 1, 0, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1024),
-        );
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -138,13 +133,7 @@ impl OperationHandler<DocumentRetentionSchema, UnlinkReviewRequirementBinding>
         };
         HandlerResult::Completed(ReviewRequirementTargets { resource, related })
     }
-    fn candidate_requirements(
-        &self,
-        _: &ReviewRequirementInput,
-        _: &ReviewRequirementTargets,
-    ) -> ApplicationCandidateRequirements {
-        UnlinkReviewRequirementBinding::CANDIDATES
-    }
+
     fn build_candidate(
         &self,
         _: &ReviewRequirementInput,

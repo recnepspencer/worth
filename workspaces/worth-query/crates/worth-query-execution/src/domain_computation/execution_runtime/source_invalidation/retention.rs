@@ -7,14 +7,14 @@ use super::WorthQueryInvalidationResourceDenial;
 pub(in crate::domain_computation) struct InvalidationRetentionLedger {
     pub(in crate::domain_computation) oracle_guards: std::sync::atomic::AtomicUsize,
     pub(in crate::domain_computation) oracle_checks: AtomicU64,
-    maximum_bytes: u64,
+    maximum_bytes: Option<u64>,
     retained_bytes: AtomicU64,
     pub(super) exhaust_delivery: std::sync::atomic::AtomicBool,
     pub(super) native: super::native_reservation_observation::NativeReservationRecorder,
 }
 
 impl InvalidationRetentionLedger {
-    pub(super) const fn new(maximum_bytes: u64) -> Self {
+    pub(super) const fn new(maximum_bytes: Option<u64>) -> Self {
         Self {
             maximum_bytes,
             oracle_guards: std::sync::atomic::AtomicUsize::new(0),
@@ -25,7 +25,7 @@ impl InvalidationRetentionLedger {
         }
     }
 
-    pub(super) fn install(maximum_bytes: u64) -> Arc<Self> {
+    pub(super) fn install(maximum_bytes: Option<u64>) -> Arc<Self> {
         let ledger = Arc::new(Self::new(maximum_bytes));
         ledger.attach_native_observation();
         // Law 2: construction may finish on a worker after resource installation.
@@ -58,13 +58,23 @@ impl InvalidationRetentionLedger {
         let maximum = self.maximum_bytes;
         self.retained_bytes
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |retained| {
-                retained.checked_add(bytes).filter(|next| *next <= maximum)
+                retained
+                    .checked_add(bytes)
+                    .filter(|next| maximum.is_none_or(|maximum| *next <= maximum))
             })
             .map_err(|retained| {
-                WorthQueryInvalidationResourceDenial::RetentionCapacityExhausted {
-                    requested: bytes,
-                    retained,
-                    maximum: self.maximum_bytes,
+                if retained.checked_add(bytes).is_none() {
+                    WorthQueryInvalidationResourceDenial::RetentionCounterOverflow {
+                        requested: bytes,
+                        retained,
+                    }
+                } else {
+                    WorthQueryInvalidationResourceDenial::RetentionCapacityExhausted {
+                        requested: bytes,
+                        retained,
+                        maximum: maximum
+                            .expect("only a supplied ceiling rejects a representable sum"),
+                    }
                 }
             })?;
         Ok(RetainedInvalidationCapacity {
@@ -83,6 +93,13 @@ pub(in crate::domain_computation) struct RetainedInvalidationCapacity {
 }
 
 impl RetainedInvalidationCapacity {
+    pub(in crate::domain_computation) fn belongs_to(
+        &self,
+        resources: &super::WorthQueryInvalidationResources,
+    ) -> bool {
+        Arc::ptr_eq(&self.ledger, &resources.retention)
+    }
+
     pub(in crate::domain_computation) fn observe_custody(
         &self,
         site: &'static std::panic::Location<'static>,
@@ -123,37 +140,42 @@ mod tests {
 
     #[test]
     fn source_bindings_share_capacity_and_rejection_preserves_custody() {
-        let resources =
-            WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation {
-                maximum_marking_work: 1,
-                maximum_preparation_bytes: 1,
-                maximum_retained_bytes: 17,
-                maximum_retained_positions: 1,
-            })
-            .unwrap();
-        let other_source = resources.clone();
-        let first = resources.reserve_retained_capacity(11).unwrap();
-        let second = other_source.reserve_retained_capacity(6).unwrap();
-        assert!(matches!(
-            resources.reserve_retained_capacity(1),
-            Err(
-                WorthQueryInvalidationResourceDenial::RetentionCapacityExhausted {
-                    requested: 1,
-                    retained: 17,
-                    maximum: 17,
-                }
+        for ceiling in [Some(17), None] {
+            let resources = WorthQueryInvalidationResources::install(
+                WorthQueryInvalidationResourceInstallation::new(Some(1), ceiling, 1),
             )
-        ));
-        assert_eq!(other_source.retained_capacity_bytes(), 17);
-        drop(first);
-        assert_eq!(resources.retained_capacity_bytes(), 6);
-        drop(second);
-        assert_eq!(resources.retained_capacity_bytes(), 0);
+            .unwrap();
+            let other_source = resources.clone();
+            let first = resources.reserve_retained_capacity(11).unwrap();
+            let second = other_source.reserve_retained_capacity(6).unwrap();
+            match ceiling {
+                Some(_) => assert!(matches!(
+                    resources.reserve_retained_capacity(1),
+                    Err(
+                        WorthQueryInvalidationResourceDenial::RetentionCapacityExhausted {
+                            requested: 1,
+                            retained: 17,
+                            maximum: 17,
+                        }
+                    )
+                )),
+                None => {
+                    let third = resources.reserve_retained_capacity(1).unwrap();
+                    assert_eq!(other_source.retained_capacity_bytes(), 18);
+                    drop(third);
+                }
+            }
+            assert_eq!(other_source.retained_capacity_bytes(), 17);
+            drop(first);
+            assert_eq!(resources.retained_capacity_bytes(), 6);
+            drop(second);
+            assert_eq!(resources.retained_capacity_bytes(), 0);
+        }
     }
 
     #[test]
     fn a_pinned_predecessor_is_not_release_credit() {
-        let ledger = Arc::new(InvalidationRetentionLedger::new(10));
+        let ledger = Arc::new(InvalidationRetentionLedger::new(Some(10)));
         let predecessor = ledger.reserve(10).unwrap();
         assert!(ledger.reserve(10).is_err());
         assert_eq!(ledger.retained_bytes(), 10);
@@ -166,11 +188,23 @@ mod tests {
 
     #[test]
     fn representable_maximum_does_not_accept_retention_counter_overflow() {
-        let ledger = Arc::new(InvalidationRetentionLedger::new(u64::MAX));
-        let maximum = ledger.reserve(u64::MAX).unwrap();
-        assert!(ledger.reserve(1).is_err());
-        assert_eq!(ledger.retained_bytes(), u64::MAX);
-        drop(maximum);
-        assert_eq!(ledger.retained_bytes(), 0);
+        // Counter representability is independent of a supplied byte ceiling.
+        // These tickets account sizes; they do not allocate payloads of this size.
+        for ceiling in [None, Some(u64::MAX)] {
+            let ledger = Arc::new(InvalidationRetentionLedger::new(ceiling));
+            let maximum = ledger.reserve(u64::MAX).unwrap();
+            assert!(matches!(
+                ledger.reserve(1),
+                Err(
+                    WorthQueryInvalidationResourceDenial::RetentionCounterOverflow {
+                        requested: 1,
+                        retained: u64::MAX,
+                    }
+                )
+            ));
+            assert_eq!(ledger.retained_bytes(), u64::MAX);
+            drop(maximum);
+            assert_eq!(ledger.retained_bytes(), 0);
+        }
     }
 }

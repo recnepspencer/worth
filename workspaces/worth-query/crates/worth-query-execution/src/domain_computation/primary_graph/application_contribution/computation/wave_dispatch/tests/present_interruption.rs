@@ -11,7 +11,7 @@ fn a_present_interruption_dispatches_no_member_at_any_matrix_width() {
             }
             let scope =
                 WorthQueryRequestScope::new(deadline.then(Instant::now), cancellation.token());
-            let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), 1 << 24);
+            let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), None);
             let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
                 RuntimeWorldExecutionPlacement::Leased {
                     authority: test_authority(),
@@ -36,7 +36,7 @@ fn a_present_interruption_dispatches_no_member_at_any_matrix_width() {
                 })
                 .collect();
             let request = root.execution_request().unwrap();
-            let outcome = request.run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+            let outcome = request.run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                 dispatch(&root, members)
             });
             let expected = worth_execution::WorkCeilingDenial::Stopped(if deadline {

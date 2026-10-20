@@ -36,32 +36,12 @@ impl<Schema, Operation, Input, Scope>
             })?;
             let emission = WorthQueryApplicationEmission::from_external_projection(
                 payload,
-                selection.funding(),
                 selection.backing(),
                 selection.values(),
             );
-            let retained = self
-                .emission_retained_bytes
-                .checked_add(emission.retained_bytes())
-                .filter(|retained| *retained <= self.emission_retained_bytes_ceiling)
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::RetainedEffectBytesExceeded,
-                        &selection.meaning().effect,
-                    )
-                })?;
-            let bytes = emission
-                .candidate_retained_representation_bytes()
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        &selection.meaning().effect,
-                    )
-                })?;
-            self.charge_candidate_representation(CandidateItemKind::Emit, bytes, 0)?;
+            self.reserve_effects(1)?;
             self.effects
                 .push(WorthQueryApplicationRealizedEffect::Emit(emission));
-            self.emission_retained_bytes = retained;
         }
         self.read_set.body_external_emission = Some(selection);
         Ok(())

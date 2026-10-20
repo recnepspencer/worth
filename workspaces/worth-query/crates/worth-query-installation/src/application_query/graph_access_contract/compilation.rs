@@ -82,6 +82,17 @@ impl WorthQueryInstalledGraphReadContract {
             ApplicationQueryCardinality::OptionalOne | ApplicationQueryCardinality::ExactlyOne => 1,
             ApplicationQueryCardinality::Many => usize::MAX,
         };
+        let maximum_traversal_depth = relations
+            .iter()
+            .map(|relation| relation.depth)
+            .chain(
+                definition
+                    .root_paths()
+                    .iter()
+                    .map(|path| path.steps().len()),
+            )
+            .max()
+            .unwrap_or(0);
         let meaning = WorthQueryInstalledGraphReadMeaning {
             schema_basis_digest: *schema_basis_digest,
             root_entity: definition.root_entity().to_string(),
@@ -91,7 +102,7 @@ impl WorthQueryInstalledGraphReadContract {
             root_paths,
             predicates,
             ordering,
-            maximum_traversal_depth: definition.dependency_ceiling().maximum_traversal_depth(),
+            maximum_traversal_depth,
             maximum_result_count,
         };
         let canonical = prepare_graph_basis(&meaning, budget)?;

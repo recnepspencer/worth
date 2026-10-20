@@ -14,15 +14,15 @@ fn retained_merge_replay_admits_exact_budget_and_preserves_denied_evidence() {
     ));
     let original: DiagnosticHistory<_> = [event.clone()].into_iter().collect();
     let old_charge = original
-        .prepare_retained_charge(&mut Work::new(10000))
+        .prepare_retained_charge(&mut Work::new(Some(10000)))
         .unwrap();
     let candidate = event.clone();
     let exact = appended_charge(old_charge, &candidate);
     let surviving_heap = candidate
-        .retained_heap_charge(&mut Work::new(10000))
+        .retained_heap_charge(&mut Work::new(Some(10000)))
         .unwrap();
     let mut admitted = original.clone();
-    let mut work = Work::new(10000);
+    let mut work = Work::new(Some(10000));
     admitted
         .append_with_retained_capacity(candidate, exact, &mut work)
         .unwrap();
@@ -45,7 +45,8 @@ fn retained_merge_replay_admits_exact_budget_and_preserves_denied_evidence() {
             required
         };
         let mut draft = original.clone();
-        let result = draft.append_with_retained_capacity(candidate, maximum, &mut Work::new(limit));
+        let result =
+            draft.append_with_retained_capacity(candidate, maximum, &mut Work::new(Some(limit)));
         if !byte_short && limit == visits {
             result.unwrap();
             assert_eq!(draft, admitted);
@@ -80,7 +81,7 @@ fn retained_merge_replay_admits_exact_budget_and_preserves_denied_evidence() {
         assert_eq!(denial, expected);
     }
     let retained = admitted
-        .evict_front_with_retained_charge(&mut Work::new(10000))
+        .evict_front_with_retained_charge(&mut Work::new(Some(10000)))
         .unwrap()
         .unwrap();
     assert!(std::ptr::eq(
@@ -105,7 +106,9 @@ fn retained_merge_replay_admits_exact_budget_and_preserves_denied_evidence() {
 fn replay_message_capacity_is_additional_to_complete_merge_witness_payloads() {
     let mut event = emitted_merge_replay_event();
     let original = event.clone();
-    let before = event.retained_heap_charge(&mut Work::new(10000)).unwrap();
+    let before = event
+        .retained_heap_charge(&mut Work::new(Some(10000)))
+        .unwrap();
     let Some(ReplayEventDetail::BranchMergeSummary { message, .. }) = &mut event.detail else {
         panic!("merge fixture")
     };
@@ -114,7 +117,7 @@ fn replay_message_capacity_is_additional_to_complete_merge_witness_payloads() {
     let delta = message.capacity() - old_capacity;
     assert_eq!(
         event
-            .retained_heap_charge(&mut Work::new(10000))
+            .retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap()
             .bytes()
             - before.bytes(),
@@ -126,14 +129,14 @@ fn replay_message_capacity_is_additional_to_complete_merge_witness_payloads() {
     let expected = message.capacity();
     assert_eq!(
         ReplayEventDetail::Message(message)
-            .retained_heap_charge(&mut Work::new(2))
+            .retained_heap_charge(&mut Work::new(Some(2)))
             .unwrap()
             .bytes(),
         expected as u64
     );
     assert_eq!(
         ReplayEventDetail::TaskOutcome(crate::logic::planner::TaskExecutionOutcome::Recomputed)
-            .retained_heap_charge(&mut Work::new(1))
+            .retained_heap_charge(&mut Work::new(Some(1)))
             .unwrap(),
         Charge::ZERO
     );
@@ -147,7 +150,7 @@ fn appended_charge(old: Charge, candidate: &ReplayEvent) -> Charge {
         .unwrap()
         .checked_add(
             candidate
-                .retained_heap_charge(&mut Work::new(10000))
+                .retained_heap_charge(&mut Work::new(Some(10000)))
                 .unwrap(),
         )
         .unwrap()

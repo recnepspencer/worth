@@ -104,7 +104,10 @@ fn assert_refused_registration_remains_performed(
         performed.publication(permission, publication, |member| member.performed());
         // Optional registration draws from this actual shared index ledger.
         // Exhaust it after selection, then return its exact capacity refusal.
-        let maximum = resources.installation().maximum_retained_bytes;
+        let maximum = resources
+            .installation()
+            .maximum_retained_bytes
+            .expect("with_committed_own_write installs an explicit finite retained ceiling");
         let held = resources
             .reserve_retained_capacity(maximum - resources.retained_capacity_bytes())
             .unwrap();
@@ -213,7 +216,6 @@ fn a_ready_and_its_successor_share_one_performed_member() {
             let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
                 authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
                 readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-                resources: None,
             });
             let publication = commit_receipt(
                 "published successor",

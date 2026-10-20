@@ -68,7 +68,7 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_field_subject() {
                 &plan,
                 buffer,
                 None,
-                10000,
+                Some(10000),
             ) {
                 Err(denial) => denial,
                 Ok(_) => panic!("foreign snapshot unexpectedly read"),
@@ -145,7 +145,7 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
                 &plan,
                 buffer,
                 None,
-                10000,
+                Some(10000),
             ) {
                 Err(denial) => denial,
                 Ok(_) => panic!("foreign snapshot unexpectedly read"),

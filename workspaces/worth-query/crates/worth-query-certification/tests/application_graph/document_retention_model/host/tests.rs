@@ -50,14 +50,6 @@ impl primary_graph::OperationHandler<DocumentRetentionSchema, WorkflowAdvanceBin
         primary_graph::HandlerResult::Cancelled
     }
 
-    fn candidate_requirements(
-        &self,
-        _: &WorkflowAdvanceInput,
-        _: &primary_graph::WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
-    ) -> declaration::application_operation::ApplicationCandidateRequirements {
-        WorkflowAdvanceBinding::CANDIDATES
-    }
-
     fn build_candidate(
         &self,
         _: &WorkflowAdvanceInput,

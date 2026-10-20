@@ -114,7 +114,6 @@ impl InstalledProducerEdition {
             applicability,
             supported,
             invariants,
-            declaration.resource_policy.as_str(),
             declaration.reuse_policy.as_str(),
         );
         let base_digest = application_value_identity(

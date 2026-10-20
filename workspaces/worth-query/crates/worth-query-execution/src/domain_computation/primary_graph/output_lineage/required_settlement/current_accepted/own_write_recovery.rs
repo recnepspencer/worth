@@ -34,7 +34,10 @@ fn check_own_write_recovery(index_loss: bool) {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap()
     }) }).expect("the fixture read owns its installed host call");
-    let maximum = resources.installation().maximum_retained_bytes;
+    let maximum = resources
+        .installation()
+        .maximum_retained_bytes
+        .expect("with_committed_own_write installs an explicit finite retained ceiling");
     let completed = world.application.primary_provider.observe_completed_application(receipt.commit_reference()).unwrap();
     let recorded = cell.get().unwrap();
     if index_loss {
@@ -71,7 +74,7 @@ fn check_own_write_recovery(index_loss: bool) {
     let ready = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
         readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-        resources: None,
+
     });
     let candidate = AcceptedCurrentCandidate { selected, ready };
     let (_, product, _) = retained_product.into_parts();

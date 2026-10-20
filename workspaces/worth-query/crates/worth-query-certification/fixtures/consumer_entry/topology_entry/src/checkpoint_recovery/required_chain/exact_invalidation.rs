@@ -67,7 +67,10 @@ fn install_observing(
 ) -> Runtime {
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let work = u64::try_from(profile.limits().source_currentness_work()).unwrap();
+    let work = profile
+        .limits()
+        .source_currentness_work()
+        .map(|work| u64::try_from(work).unwrap());
     support::install_program_with_limits::<program::ChainProgram>(
         checkpoint,
         profile,
@@ -76,7 +79,6 @@ fn install_observing(
             observations,
             512,
             support::invalidation(retained.bytes, work, retained.commit_positions),
-            support::candidates(),
         ),
         seed,
     )

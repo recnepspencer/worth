@@ -24,12 +24,12 @@ fn seed_admission_denies_snapshot_reconstruction_before_creating_an_execution_sl
         )
         .unwrap();
     let admitted =
-        SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(100_000)).unwrap();
+        SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(Some(100_000))).unwrap();
     assert!(admitted.retained_storage_charge().bytes() > 0);
     let encoded = serde_json::to_string(&graph.topology.dependency_snapshots).unwrap();
     graph.topology.dependency_snapshots = serde_json::from_str(&encoded).unwrap();
     assert!(matches!(
-        SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(100_000)),
+        SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(Some(100_000))),
         Err(SignalExecutionBasisChargeDenial::TopologyIndexes(
             RetainedTopologyIndexDenial::Snapshots(
                 DependencySnapshotIndexDenial::SnapshotInternerRequiresReconstruction
@@ -57,7 +57,8 @@ fn seed_admission_rejects_unready_edge_indexes_without_repairing_them() {
     ] {
         let (mut graph, producer, consumer, aspect) = graph_with_edge();
         let admitted =
-            SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(100_000)).unwrap();
+            SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(Some(100_000)))
+                .unwrap();
         match expected {
             RetainedTopologyIndexDenial::DependencyEdgesRequireReconstruction => {
                 let wire = serde_json::to_string(&graph.topology.dependency_edges).unwrap();
@@ -74,7 +75,7 @@ fn seed_admission_rejects_unready_edge_indexes_without_repairing_them() {
         }
         assert_eq!(graph.topology.require_retained_indexes(), Err(expected));
         assert!(matches!(
-            SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(100_000)),
+            SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(Some(100_000))),
             Err(SignalExecutionBasisChargeDenial::TopologyIndexes(actual)) if actual == expected
         ));
         assert_eq!(graph.topology.require_retained_indexes(), Err(expected));
@@ -93,13 +94,14 @@ fn seed_admission_rejects_unready_edge_indexes_without_repairing_them() {
 fn empty_topology_seed_does_not_require_reconstruction() {
     let mut graph = crate::data::graph::SignalGraph::new();
     assert_eq!(graph.topology.require_retained_indexes(), Ok(()));
-    SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(100_000)).unwrap();
+    SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(Some(100_000))).unwrap();
 }
 
 #[test]
 fn captured_seed_carries_prepared_node_and_version_charges_into_each_slot() {
     let (mut graph, _, _, _) = graph_with_edge();
-    let basis = SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(100_000)).unwrap();
+    let basis =
+        SignalExecutionBasis::capture(&mut graph, &mut Preparation::new(Some(100_000))).unwrap();
     for _ in 0..2 {
         let mut slot = basis.new_evaluation_partition();
         slot.execute(&mut graph, |selected| {
@@ -123,7 +125,7 @@ fn captured_seed_carries_prepared_node_and_version_charges_into_each_slot() {
 #[test]
 fn immutable_seed_charge_is_prepared_once_and_denies_incomplete_preparation() {
     let (mut graph, producer, _consumer, aspect) = graph_with_edge();
-    let mut work = Preparation::new(100_000);
+    let mut work = Preparation::new(Some(100_000));
     let backing = SignalExecutionBasis::capture(&mut graph, &mut work).unwrap();
     let charge = backing.retained_storage_charge();
     assert!(charge.bytes() > std::mem::size_of::<SignalExecutionBasis>() as u64);
@@ -131,12 +133,15 @@ fn immutable_seed_charge_is_prepared_once_and_denies_incomplete_preparation() {
     // Reusing graph here would let its warmed charge facts hide missing work.
     let (mut exact_graph, _, _, _) = graph_with_edge();
     let exact =
-        SignalExecutionBasis::capture(&mut exact_graph, &mut Preparation::new(work.visits()))
+        SignalExecutionBasis::capture(&mut exact_graph, &mut Preparation::new(Some(work.visits())))
             .unwrap();
     assert_eq!(exact.retained_storage_charge(), charge);
     let (mut short_graph, _, _, _) = graph_with_edge();
     assert!(matches!(
-        SignalExecutionBasis::capture(&mut short_graph, &mut Preparation::new(work.visits() - 1)),
+        SignalExecutionBasis::capture(
+            &mut short_graph,
+            &mut Preparation::new(Some(work.visits() - 1))
+        ),
         Err(SignalExecutionBasisChargeDenial::Storage(
             RetainedStoragePreparationDenial::WorkExhausted { .. }
         )) | Err(SignalExecutionBasisChargeDenial::Diagnostics(
@@ -161,7 +166,7 @@ fn frozen_basis_seeds_isolated_slots_after_current_graph_and_first_slot_change()
     let (mut graph, producer, consumer, aspect) = graph_with_edge();
     let backing = SignalExecutionBasis::capture(
         &mut graph,
-        &mut crate::data::retained_storage::RetainedStoragePreparation::new(100_000),
+        &mut crate::data::retained_storage::RetainedStoragePreparation::new(Some(100_000)),
     )
     .unwrap();
     let captured_pages = graph.arena.definitions.page_identities();

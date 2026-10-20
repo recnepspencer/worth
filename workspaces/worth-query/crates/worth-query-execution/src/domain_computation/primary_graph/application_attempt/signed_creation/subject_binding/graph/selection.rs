@@ -40,7 +40,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
         let mut selected = None;
         let mut observed = None;
         for fact in candidate.read_set.facts.iter() {
-            identity::admit_assembly(context, 0)?;
+            identity::check_interruption(context)?;
             if let Fact::Adjacency {
                 relation_kind,
                 anchor,
@@ -54,7 +54,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
             {
                 observed = Some(relations);
                 for edge in relations {
-                    identity::admit_assembly(context, 0)?;
+                    identity::check_interruption(context)?;
                     let endpoint = match direction {
                         Direction::Outgoing => edge.to,
                         Direction::Incoming => edge.from,
@@ -83,10 +83,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
                 })?
                 .revision().ok_or(Denial::CandidateMismatch)
         })?;
-        identity::admit_assembly(
-            context,
-            Selection::quote(spec.target, hop.relation()).ok_or(Denial::RepresentationCapacity)?,
-        )?;
+        identity::check_interruption(context)?;
         selections.push(Selection {
             captured_field: spec.target.clone(),
             anchor: coordinates(current),

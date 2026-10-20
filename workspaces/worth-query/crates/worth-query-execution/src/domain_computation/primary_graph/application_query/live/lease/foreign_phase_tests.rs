@@ -73,7 +73,7 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
             .provider_session_resource_count_for_test();
         cancellation.cancel();
         issuer.application.with_application_advancement(&live_scope(), |phase| {
-            let controls = WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap();
+            let controls = WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048)).unwrap();
             let denial = if governed {
                 let query = receiver.application.installed_schema().certification_query(GovernedLiveAccountActivityQuery::reference()).unwrap();
                 selected.open_governed_application_query_live::<

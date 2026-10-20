@@ -1,8 +1,8 @@
 use worth_query_host::facade::declaration::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultShapeBuilder,
 };
 use worth_query_host::facade::{declaration, primary_graph};
 use worth_query_host::facade::{
@@ -201,13 +201,6 @@ pub struct TemporalExecutionNotice {
 worth_query_portable_type!(TemporalExecutionNotice => "worth.query.test.host.temporal.execution_notice.v1");
 
 worth_query_structured_value_binding!(pub TemporalExecutionNoticeBinding for TemporalExecutionNotice { identity: "worth.query.test.host.temporal.execution_notice.v1" });
-impl declaration::application_schema::ApplicationRetainedEffectBinding
-    for TemporalExecutionNoticeBinding
-{
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(value.identity.len()).unwrap_or(u64::MAX)
-    }
-}
 
 worth_query_effect!(pub TemporalExecutionEffect for TemporalHostSchema, payload TemporalExecutionNoticeBinding);
 worth_query_operation_emits!(ExecuteTemporal => [TemporalExecutionEffect]);
@@ -225,13 +218,6 @@ pub struct TemporalAmendmentNotice(pub String);
 worth_query_portable_type!(TemporalAmendmentNotice => "worth.query.test.host.temporal.amendment_notice.v1");
 
 worth_query_structured_value_binding!(pub TemporalAmendmentNoticeBinding for TemporalAmendmentNotice { identity: "worth.query.test.host.temporal.amendment_notice.v1" });
-impl declaration::application_schema::ApplicationRetainedEffectBinding
-    for TemporalAmendmentNoticeBinding
-{
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(value.0.len()).unwrap_or(u64::MAX)
-    }
-}
 
 impl declaration::application_schema::ApplicationExternalEffectBinding
     for TemporalAmendmentNoticeBinding
@@ -316,7 +302,6 @@ pub fn temporal_intent_query_definition() -> ApplicationQueryDefinition<
         .scope(TemporalIntent::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 5))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

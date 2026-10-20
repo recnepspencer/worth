@@ -34,7 +34,6 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         (
             BTreeMap<String, ExpectedOutputBinding>,
             Vec<ExpectedOutputFamily>,
-            usize,
         ),
         WorthQueryApplicationAttemptDenial,
     >
@@ -44,7 +43,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     {
         let mut prepared = BTreeMap::new();
         let mut families = Vec::new();
-        let mut retained_representation_bytes = 0_usize;
+
         for descriptor in Contract::ROLES {
             super::validate_role_name(descriptor.name())?;
             if self.expected_roles.contains_key(descriptor.name())
@@ -64,25 +63,10 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                     descriptor.name(),
                 ));
             }
-            retained_representation_bytes = retained_representation_bytes
-                .checked_add(descriptor.name().len())
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        descriptor.name(),
-                    )
-                })?;
         }
         for family in Contract::ROLE_FAMILIES {
             validate_family(family, prepared.keys(), &families)?;
-            retained_representation_bytes = retained_representation_bytes
-                .checked_add(family.prefix().len())
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        family.prefix(),
-                    )
-                })?;
+
             families.push(ExpectedOutputFamily {
                 prefix: family.prefix().to_owned(),
                 postures: family.postures(),
@@ -90,7 +74,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                 minimum: family.minimum(),
             });
         }
-        Ok((prepared, families, retained_representation_bytes))
+        Ok((prepared, families))
     }
 }
 

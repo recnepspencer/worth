@@ -38,18 +38,18 @@ type LiveLease<'application, Schema, Intent> = WorthQueryApplicationLiveLease<
 >;
 
 /// Bounds for a live query subscription: its buffer capacity, maximum results and maximum
-/// work. Build them with `bounded`.
+/// optional work. `None` imposes no work ceiling. Build with `bounded`.
 pub struct WorthQueryApplicationLiveLimits {
     pub(super) buffer_capacity: usize,
     pub(super) maximum_results: usize,
-    pub(super) maximum_work: usize,
+    pub(super) maximum_work: Option<usize>,
 }
 
 impl WorthQueryApplicationLiveLimits {
     pub const fn bounded(
         buffer_capacity: usize,
         maximum_results: usize,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
     ) -> Self {
         Self {
             buffer_capacity,

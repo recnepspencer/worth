@@ -8,7 +8,6 @@ fn discovered_ordinary_unrelated_progress_is_current_and_consumed_fact_keeps_his
         .unwrap();
     let world = installation::install_selected_program_with_isolated_cycle(
         &crate::installed_schema(),
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),

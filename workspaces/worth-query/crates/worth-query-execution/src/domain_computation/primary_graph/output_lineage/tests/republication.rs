@@ -235,7 +235,7 @@ impl Stage<'_> {
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
             computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
-            mutable: Mutex::new(RecordedOutputMutable::new(None, (Some(Arc::clone(facts))).map(|facts| super::super::ComputationSourceEvidence::for_test(false).retain_facts(facts)), None, super::super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
+            mutable: Mutex::new(RecordedOutputMutable::new(None, (Some(Arc::clone(facts))).map(|facts| super::super::ComputationSourceEvidence::for_test(false).retain_facts(facts)), super::super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
             settlement_identity: RecordedSettlementIdentity::retain(
                 &self.source,
                 ProductCoordinate {
@@ -300,7 +300,6 @@ impl Stage<'_> {
                 false,
                 Arc::clone(facts),
             ),
-            None,
             republished,
         );
         Some(record.map(|record| Continued {
@@ -337,7 +336,7 @@ fn selects(fact: &Fact, slot: u64) -> bool {
 
 fn admission(work: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: work,
-        maximum_preparation_bytes: 1024 * 1024,
+        maximum_work_visits: Some(work),
+        maximum_preparation_bytes: None,
     })
 }

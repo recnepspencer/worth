@@ -259,7 +259,10 @@ where
                 occurrence,
                 generation,
                 partition,
-                self.reader.work_budget.remaining().saturating_sub(1),
+                self.reader
+                    .work_budget
+                    .remaining()
+                    .map(|remaining| remaining.saturating_sub(1)),
             )
             .map_err(|_| {
                 self.reader.work_budget.mark_exceeded();
@@ -268,7 +271,8 @@ where
                     subject,
                 )
             })?;
-        self.reader.work_budget.consume(selection.source_lookups);
+        self.require_role_budget(selection.source_lookups, subject)?;
+        assert!(self.reader.work_budget.consume(selection.source_lookups));
         self.reader
             .work
             .record_output_lineage_selection(selection.source_lookups);
@@ -305,7 +309,7 @@ where
     }
 
     fn consume_admitted_role_work(&mut self) {
-        self.reader.work_budget.consume(1);
+        assert!(self.reader.work_budget.consume(1), "role work was admitted");
         self.reader.work.record_output_lineage_role_lookup();
     }
 

@@ -46,7 +46,7 @@ where
         if !self.identity_is_local(identity, field.entity()) || !self.work_budget.can_afford(1) {
             return Ok(Ok(None));
         }
-        self.work_budget.consume(1);
+        assert!(self.work_budget.consume(1), "projection work was admitted");
         self.realized_scope.record(identity.entity_id);
         let Some(locator) = self
             .layout

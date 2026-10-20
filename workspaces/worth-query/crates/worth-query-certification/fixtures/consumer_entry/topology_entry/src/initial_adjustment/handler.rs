@@ -52,14 +52,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarInitialAdjust
             Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
         }
     }
-
-    fn candidate_requirements(
-        &self,
-        _: &PlanarInitialAdjustment,
-        _: &WorthQueryInvariantMutationTarget<Schema, Body>,
-    ) -> ApplicationCandidateRequirements {
-        PlanarInitialAdjustmentBinding::<Schema>::CANDIDATES
-    }
 }
 
 fn observed_input(input: &PlanarInitialAdjustment) -> PlanarSourceAdjustment {

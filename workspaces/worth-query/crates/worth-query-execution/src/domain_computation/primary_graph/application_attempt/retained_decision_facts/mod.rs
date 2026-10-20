@@ -90,3 +90,22 @@ impl StoreDenial {
         Denial::retained_source_denied(kind, subject, self)
     }
 }
+
+impl worth_execution::ChargedBytes for StoreDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        // Every current variant contains only inline denial/control data.
+        match self {
+            Self::Allocation(denial) => {
+                worth_execution::ChargedBytes::additional_charged_bytes(denial)
+            }
+            Self::RequestInterruption(interruption) => {
+                fn inline<T: Copy>(_: &T) {}
+                inline(interruption);
+                0
+            }
+            Self::Representability | Self::ConflictingBody => 0,
+            #[cfg(test)]
+            Self::InvalidOrdinal => 0,
+        }
+    }
+}

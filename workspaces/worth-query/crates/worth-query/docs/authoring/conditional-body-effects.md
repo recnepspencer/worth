@@ -31,8 +31,8 @@ Declare through `worth_query_decl::facade::application_schema`:
   for pure schema/value inspection inside a query-backed payload codec;
 - `ApplicationOperationBodyRequirement::admit(...)` for the optional condition;
 - `operation.definition().external_effect(effect, correlation_family)`;
-- `ApplicationExternalEffectBinding` and `ApplicationRetainedEffectBinding` for
-  the payload's pure protocol encoding, validation and retained size.
+- `ApplicationExternalEffectBinding` for the payload's pure protocol encoding,
+  validation and external byte bound.
 
 Attach the finished body with `with_body`, bind the program with `with_schema`,
 and install through the existing `setup.operation_body::<Binding>()?` funnel.
@@ -71,11 +71,11 @@ requirements, then evaluates the optional effect condition at that same decision
 observation. Met emits; Unmet or NotApplicable suppresses. Observation,
 expression and resource failures remain denials, never false conditions.
 
-For an emission, Query validates and funds the declared retained payload and
-maximum encoded bytes before cloning/encoding the selected native payload.
+For an emission, Query validates the selected native payload before encoding and
+checks the actual encoded length against the declared external byte bound.
 Encoding happens once in the native decision. The candidate consumes that
 prepared projection without rereading the source or encoding again. Query
-retains the original context backing and funding through emission clones.
+retains the original query-context and computed-value backing through emission clones.
 The native candidate carries the selected effect and all source/guard dependencies into ordinary
 publication. Changed dependencies stale both emitting and suppressed candidates.
 Business changes and the outbox share the existing atomic commit path.
@@ -104,7 +104,7 @@ let definition = RequestReview::reference().definition()
     .with_body(body)?;
 ```
 
-The binding admits one Emit and sufficient retained candidate resources. An
+The operation declares Emit authority for the effect. An
 emission-only body still names its actual admitted scope. Correlation families
 are atomic names, not dotted protocol identities.
 
@@ -160,9 +160,9 @@ ApplicationQueryExpressionSnapshot`. Its pure `validate` and
 `snapshot.field("description").and_then(|v| v.as_option()).flatten()` and format
 the disclosed value. `field` is a root-record lookup in the retained schema/value,
 not a graph read. `schema()` and `value()` expose the full recursive expression
-data for more complex pure formatting. Declare the actual wire size bound and
-retained representation size on the binding as usual; the native emission
-separately keeps the already funded original query context alive.
+data for more complex pure formatting. Declare the external wire size bound;
+the native emission separately keeps the original query context alive. No
+supplier-authored candidate forecast or retained-payload quote is required.
 
 The source query can return a public DTO containing only the subject identity.
 Neither that DTO nor the command needs to duplicate the description. The

@@ -1,15 +1,14 @@
 use super::*;
 use crate::application_program::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationCollectionContributor,
-    ApplicationCollectionGrouping, ApplicationCollectionIncompletePosture,
-    ApplicationCollectionLineage, ApplicationCollectionMeasures, ApplicationComputationExecution,
-    ApplicationComputationInput, ApplicationComputationPartition,
-    ApplicationComputationResourceCeiling, ApplicationComputationReuse,
-    ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationDerivedCollection,
-    ApplicationLocalityGranule, ApplicationLocalityScope, ApplicationManagedComputation,
-    ApplicationProgramValidationDenialKind, ApplicationSingleComputationPartition,
-    DeterminismContract,
+    ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
+    ApplicationCollectionContributor, ApplicationCollectionGrouping,
+    ApplicationCollectionIncompletePosture, ApplicationCollectionLineage,
+    ApplicationCollectionMeasures, ApplicationComputationExecution, ApplicationComputationInput,
+    ApplicationComputationPartition, ApplicationComputationResourceCeiling,
+    ApplicationComputationReuse, ApplicationComputationStopped, ApplicationDerivedArtifact,
+    ApplicationDerivedCollection, ApplicationLocalityGranule, ApplicationLocalityScope,
+    ApplicationManagedComputation, ApplicationProgramValidationDenialKind,
+    ApplicationSingleComputationPartition, DeterminismContract,
 };
 
 struct Locality;
@@ -30,8 +29,7 @@ impl ApplicationDerivedArtifact<TestSchema, FlatFeature> for Artifact {
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] =
         &[ApplicationArtifactDependency::new(FlatFeature::IDENTITY)];
     const REUSE_RULE: &'static str = "worth.query.tests.computation-reuse.v1";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(8, 4_096);
+
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.computation-artifact-stopped.v1";
 }
 

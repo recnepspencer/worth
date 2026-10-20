@@ -40,7 +40,7 @@ fn downstream_warm_copy_and_waiter_retirement_are_admitted_before_publication() 
             .as_ref()
             .unwrap(),
     ));
-    let mut preparation = Work::new(usize::MAX);
+    let mut preparation = Work::new(None);
     let projection =
         PendingRevalidationNodeProjection::capture(&graph, producer, &mut preparation).unwrap();
     let prepared = graph
@@ -52,7 +52,7 @@ fn downstream_warm_copy_and_waiter_retirement_are_admitted_before_publication() 
         .unwrap();
     assert!(prepared.nodes.contains_key(&consumer));
     assert!(prepared.buckets.get(&producer).unwrap().is_empty());
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     graph
         .admit_pending_resolution_publication_work(
             &prepared,
@@ -61,14 +61,14 @@ fn downstream_warm_copy_and_waiter_retirement_are_admitted_before_publication() 
         )
         .unwrap();
     let cost = measured.visits();
-    let mut node_writes = Work::new(usize::MAX);
+    let mut node_writes = Work::new(None);
     graph
         .admit_downstream_node_mutation_work(&mut EvaluationWork::Conditional(&mut node_writes))
         .unwrap();
     assert!(node_writes.visits() > 6);
     assert!(cost >= node_writes.visits());
     for available in [cost - 1, cost] {
-        let mut work = Work::new(cost + 7);
+        let mut work = Work::new(Some(cost + 7));
         work.reserve_visits(cost + 7 - available).unwrap();
         let result = graph.admit_pending_resolution_publication_work(
             &prepared,

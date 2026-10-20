@@ -1,6 +1,5 @@
 //! Native earned selection and once-prepared payload of one installed external effect.
 mod installation;
-use crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation;
 use crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext;
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as DenialKind;
 pub(super) use installation::install;
@@ -15,7 +14,6 @@ use worth_query_declaration::facade::application_schema::{
 pub(in crate::domain_computation::primary_graph) struct BodyExternalEffectSelection {
     recipe: Arc<Recipe>,
     emit: bool,
-    funding: Option<Arc<QueryMemoryReservation>>,
     payload: Option<worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection>,
     backing: Option<ObservedQueryExpressionContext>,
     values: Option<super::value::PreparedBodyValues>,
@@ -78,11 +76,6 @@ impl BodyExternalEffectSelection {
     pub(in crate::domain_computation::primary_graph) fn recipe(&self) -> &Recipe {
         &self.recipe
     }
-    pub(in crate::domain_computation::primary_graph) fn funding(
-        &self,
-    ) -> Option<Arc<QueryMemoryReservation>> {
-        self.funding.as_ref().map(Arc::clone)
-    }
 }
 
 pub(in crate::domain_computation::primary_graph) fn prepare<
@@ -103,10 +96,6 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
     BodyExternalEffectSelection,
     crate::domain_computation::primary_graph::HandlerExecutionDenial,
 > {
-    use crate::domain_computation::primary_graph::{
-        HandlerExecutionDenial, WorthQueryAdvancementDenial,
-        WorthQueryManagedComputationResourceDenial,
-    };
     let emit = recipe
         .meaning()
         .condition
@@ -132,34 +121,19 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
     } else {
         backing.as_ref().map_or(input, |context| context.snapshot())
     };
-    let (funding, payload) = if emit {
-        let retained = recipe
-            .quote(source)
-            .map_err(|_| invalid_payload(&recipe, DenialKind::InvalidEffectValue))?;
-        let bytes = retained
-            .checked_add(recipe.meaning().maximum_payload_bytes)
-            .and_then(|bytes| bytes.checked_add(size_of::<BodyExternalEffectSelection>() as u64))
-            .ok_or_else(|| {
-                HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(
-                    WorthQueryManagedComputationResourceDenial::CapacityOverflow,
-                ))
-            })?;
-        let funding = execution.reserve(bytes).map_err(|cause| {
-            HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause))
-        })?;
-        // The exact native decision owns both source and funding. Candidate
-        // construction consumes this projection without rereading or encoding.
+    let payload = if emit {
+        // The exact native decision owns the source. Candidate construction
+        // consumes this projection without rereading or encoding.
         let payload = recipe.project(source).map_err(|_| {
             invalid_payload(&recipe, DenialKind::ExternalEffectPayloadProjectionRejected)
         })?;
-        (Some(Arc::new(funding)), Some(payload))
+        Some(payload)
     } else {
-        (None, None)
+        None
     };
     Ok(BodyExternalEffectSelection {
         recipe,
         emit,
-        funding,
         payload,
         backing,
         values,

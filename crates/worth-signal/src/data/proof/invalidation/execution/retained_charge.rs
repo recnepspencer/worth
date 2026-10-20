@@ -137,7 +137,9 @@ mod tests {
             Default::default(),
         );
         let original = summary.clone();
-        let before = summary.retained_heap_charge(&mut Work::new(1000)).unwrap();
+        let before = summary
+            .retained_heap_charge(&mut Work::new(Some(1000)))
+            .unwrap();
         let mut delta = 0;
         delta += grow(&mut summary.direct_waves);
         delta += grow(&mut summary.transitive_waves);
@@ -145,7 +147,7 @@ mod tests {
         delta += grow(&mut summary.transitive_waves[0].entries);
         assert_eq!(
             summary
-                .retained_heap_charge(&mut Work::new(1000))
+                .retained_heap_charge(&mut Work::new(Some(1000)))
                 .unwrap()
                 .bytes()
                 - before.bytes(),

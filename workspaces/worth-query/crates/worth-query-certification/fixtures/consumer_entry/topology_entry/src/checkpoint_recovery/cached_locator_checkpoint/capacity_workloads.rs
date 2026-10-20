@@ -10,7 +10,10 @@ pub(super) fn run_root(budget: usize) -> Attempt {
         profile,
         32,
         128 * 1_024 * 1_024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         support::seed_cycle,
     );
     let (scope, principal) = authenticate(&application);
@@ -57,7 +60,10 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
         profile,
         32,
         128 * 1_024 * 1_024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         support::seed_cycle,
     );
     let (scope, principal) = authenticate(&application);

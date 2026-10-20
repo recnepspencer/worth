@@ -26,6 +26,7 @@ pub enum ApplicationProgramValidationDenialKind {
     InvalidManagedComputationResources,
     DuplicateDerivedCollection,
     CanonicalRevisionBudgetExceeded,
+    CanonicalRevisionUnavailable,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

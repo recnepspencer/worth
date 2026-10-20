@@ -74,13 +74,11 @@ where
                 identity: entry.declaration.identity.clone(),
                 applicability: key.applicability(),
                 exact_retained_output: false,
-                retained_resources: None,
+
                 retained_idempotency_key: None,
                 retained_output_binding: None,
                 reuses_live_output_only: false,
             };
-            demand.resources = None;
-            demand.resources_validated = false;
         } else {
             // One executor serving both postures keeps its admitted resource
             // and exact-output proof; only the actual row's posture changes.

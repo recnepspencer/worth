@@ -129,9 +129,10 @@ exact typed mutation binding. Native capture retains the actual observed target,
 not a scalar identity for later lookup. The admitted principal's identity field
 and entity are tracked reads, not arbitrary directory-read permission.
 
-The binding's candidate ceiling must fund every creation instance, initializer,
-scope/path write and link, including each peer's children. Repeated entity kinds
-are not one creation instance. This mechanism alone is not a complete lot-provider,
+The operation declares authority for every creation instance, initializer,
+scope/path write and link, including each peer's children; it does not forecast
+candidate counts or bytes. Repeated entity kinds are not one creation instance.
+This mechanism alone is not a complete lot-provider,
 timestamp, business-audit or workflow-signature contract.
 
 ## How It Relates To Other Features

@@ -40,7 +40,10 @@ fn a_dropped_prerequisite_is_inspected_after_the_earlier_requested_output_resolv
         profile,
         4096,
         128 * 1024 * 1024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         tail_seed,
     );
     let (scope, principal) = authenticate(&application);

@@ -25,7 +25,7 @@ fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, 1),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1)),
         ),
         deadline: None,
         cancellation,
@@ -120,7 +120,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     assert_eq!(
         denied.kind(),
         AllocationKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial {
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
                 requested: denied.requested_payload_bytes().unwrap(),
                 admitted: 0,
                 level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
@@ -149,7 +149,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     assert_eq!(
         denied.kind(),
         AllocationKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial {
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
                 requested: denied.requested_payload_bytes().unwrap(),
                 admitted: 0,
                 level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }

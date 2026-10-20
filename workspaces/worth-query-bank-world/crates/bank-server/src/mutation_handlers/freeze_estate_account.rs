@@ -5,13 +5,8 @@ use bank_domain::{
         FreezeEstateAccountMutationBinding, Status,
     },
 };
-use worth_query_host::facade::{
-    declaration::application_operation::{
-        ApplicationCandidateRequirements, ApplicationMutationBinding,
-    },
-    primary_graph::{
-        CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    },
+use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
 
 pub(crate) struct FreezeEstateAccountHandler;
@@ -38,14 +33,6 @@ impl OperationHandler<BankSchema, FreezeEstateAccountMutationBinding>
             Ok(()) => HandlerResult::Completed(*input),
             Err(denial) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial)),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &EstateAction,
-        _: &EstateAction,
-    ) -> ApplicationCandidateRequirements {
-        FreezeEstateAccountMutationBinding::CANDIDATES
     }
 
     fn build_candidate(

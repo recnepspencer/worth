@@ -38,9 +38,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_work::scan(
+        crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
-            |context| {
+            |context, memory| {
                 let state = self.runtime.storage_access().current_edition();
                 ProjectionRecordReader::new(
                     self.runtime.current_version_id(),
@@ -53,6 +53,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     KindScanVisibility::for_version(self.runtime, version_id),
                     maximum_work_units,
                     &mut |units| context.checkpoint(units),
+                    memory,
                 )
             },
             |result| super::super::read_footprint::relations(&result.records),
@@ -60,7 +61,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     }
 }
 
-pub(super) struct RelationKindScan<'charge> {
+pub(super) struct RelationKindScan<'charge, 'memory> {
+    memory: Option<&'charge mut worth_execution::ExecutionResultMemory<'memory>>,
     charge: Option<&'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
     records: Vec<RelationReadRecord>,
     relation_slots_examined: usize,
@@ -70,11 +72,12 @@ pub(super) struct RelationKindScan<'charge> {
     require_materialization: bool,
 }
 
-impl<'charge> RelationKindScan<'charge> {
+impl<'charge, 'memory> RelationKindScan<'charge, 'memory> {
     #[cfg(test)]
     pub(super) const fn new(maximum_work_units: usize, require_materialization: bool) -> Self {
         Self {
             charge: None,
+            memory: None,
             records: Vec::new(),
             relation_slots_examined: 0,
             relation_records_reserved: 0,
@@ -88,9 +91,11 @@ impl<'charge> RelationKindScan<'charge> {
         maximum_work_units: usize,
         require_materialization: bool,
         charge: &'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        memory: Option<&'charge mut worth_execution::ExecutionResultMemory<'memory>>,
     ) -> Self {
         Self {
             charge: Some(charge),
+            memory,
             records: Vec::new(),
             relation_slots_examined: 0,
             relation_records_reserved: 0,
@@ -128,11 +133,28 @@ impl<'charge> RelationKindScan<'charge> {
         &mut self,
         partition_id: crate::identity::data::PartitionId,
         slot: usize,
+        clone_bytes: u64,
         materialize: impl FnOnce() -> Option<RelationReadRecord>,
     ) -> Result<(), NativeScanStop<RelationKindTruthReadDenial>> {
         self.spend(super::super::read_prices::RESERVE_RECORD)?;
         self.relation_records_reserved += 1;
+        if let Some(memory) = self.memory.as_mut() {
+            super::super::read_work::record_memory::prepare_push(
+                memory,
+                &mut self.records,
+                clone_bytes,
+            )
+            .map_err(NativeScanStop::Request)?;
+        }
         if let Some(record) = materialize() {
+            if let Some(memory) = self.memory.as_mut() {
+                super::super::read_work::record_memory::settle_clone(
+                    memory,
+                    clone_bytes,
+                    super::super::read_footprint::relation(&record),
+                )
+                .map_err(NativeScanStop::Request)?;
+            }
             self.records.push(record);
         } else if self.require_materialization {
             return Err(NativeScanStop::Limit(
@@ -208,7 +230,7 @@ mod tests {
         let mut bounded = RelationKindScan::new(2, true);
         bounded.examine_slot().unwrap();
         assert_eq!(
-            bounded.reserve_with(partition_id, 7, || None),
+            bounded.reserve_with(partition_id, 7, 0, || None),
             Err(NativeScanStop::Limit(
                 RelationKindTruthReadDenial::UnreadableRelationSlot {
                     partition_id,
@@ -219,33 +241,13 @@ mod tests {
 
         let mut legacy = RelationKindScan::new(usize::MAX, false);
         legacy.examine_slot().unwrap();
-        legacy.reserve_with(partition_id, 7, || None).unwrap();
+        legacy.reserve_with(partition_id, 7, 0, || None).unwrap();
         assert!(legacy.into_records().is_empty());
     }
 }
 
 #[cfg(test)]
-mod paid_stop_tests {
-    use super::*;
-    #[test]
-    fn relation_scan_keeps_the_request_charge_failure() {
-        for stop in [
-            worth_execution::MapKernelStop::Cancelled,
-            worth_execution::MapKernelStop::DeadlineElapsed,
-            worth_execution::MapKernelStop::WorkCeiling,
-        ] {
-            let mut charge = |_| Err(stop);
-            let mut scan = RelationKindScan::funded(8, true, &mut charge);
-            assert_eq!(
-                scan.examine_slot(),
-                Err(NativeScanStop::Request(
-                    crate::execution::denial::kernel_stop(stop)
-                ))
-            );
-            assert_eq!(scan.finish().relation_records_reserved(), 0);
-        }
-    }
-}
+mod paid_stop_tests;
 
 impl ProjectionRecordReader<'_> {
     pub(in crate::visibility::materialization::read_records) fn bounded_relations_of_kind_in_state(
@@ -256,9 +258,17 @@ impl ProjectionRecordReader<'_> {
         visibility: KindScanVisibility,
         maximum_work_units: usize,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
     ) -> Result<BoundedRelationKindTruthRead, NativeScanStop<RelationKindTruthReadDenial>> {
-        let mut scan = RelationKindScan::funded(maximum_work_units, true, charge);
-        for partition_id in state.partition_ids() {
+        let mut scan = RelationKindScan::funded(maximum_work_units, true, charge, Some(memory));
+        let (partitions, partition_bytes) = super::super::read_work::record_memory::partition_ids(
+            state,
+            scan.memory
+                .as_mut()
+                .expect("native scan keeps its original loan"),
+        )
+        .map_err(NativeScanStop::Request)?;
+        for partition_id in partitions {
             self.scan_relation_kind_in_partition(
                 state,
                 registry,
@@ -268,6 +278,13 @@ impl ProjectionRecordReader<'_> {
                 &mut scan,
             )?;
         }
+        super::super::read_work::record_memory::release(
+            scan.memory
+                .as_mut()
+                .expect("native scan keeps its original loan"),
+            partition_bytes,
+        )
+        .map_err(NativeScanStop::Request)?;
         Ok(scan.finish())
     }
 
@@ -278,7 +295,7 @@ impl ProjectionRecordReader<'_> {
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
         visibility: KindScanVisibility,
-        scan: &mut RelationKindScan<'_>,
+        scan: &mut RelationKindScan<'_, '_>,
     ) -> Result<(), NativeScanStop<RelationKindTruthReadDenial>> {
         let current_version = self.current_version;
         let Some(partition) = state.get_partition(partition_id) else {
@@ -286,23 +303,52 @@ impl ProjectionRecordReader<'_> {
         };
         match visibility {
             KindScanVisibility::Live => {
-                for slot in partition.relation_arena.live_bitset.iter_set_slots() {
+                let (slots, held) = super::super::read_work::record_memory::slots(
+                    &partition.relation_arena.live_bitset,
+                    scan.memory
+                        .as_mut()
+                        .expect("native bounded scans carry the initiating result loan"),
+                )
+                .map_err(NativeScanStop::Request)?;
+                for slot in slots {
                     scan.examine_slot()?;
                     if !slot_kind_matches_current(&partition.relation_arena, slot, kind_id) {
                         continue;
                     }
-                    scan.reserve_with(partition_id, slot, || {
-                        materialize_current_authoritative_relation_record(
-                            registry,
-                            partition,
-                            partition_id,
-                            slot,
+                    scan.reserve_with(
+                        partition_id,
+                        slot,
+                        super::super::read_work::record_quote::relation(
+                            registry, partition, slot, visibility,
                         )
-                    })?;
+                        .map_err(NativeScanStop::Request)?,
+                        || {
+                            materialize_current_authoritative_relation_record(
+                                registry,
+                                partition,
+                                partition_id,
+                                slot,
+                            )
+                        },
+                    )?;
                 }
+                super::super::read_work::record_memory::release(
+                    scan.memory
+                        .as_mut()
+                        .expect("the original loan remains present"),
+                    held,
+                )
+                .map_err(NativeScanStop::Request)?;
             }
             KindScanVisibility::AtVersion(version_id) => {
-                for slot in partition.relation_arena.occupied_slots() {
+                let (slots, held) = super::super::read_work::record_memory::occupied_slots(
+                    &partition.relation_arena,
+                    scan.memory
+                        .as_mut()
+                        .expect("native bounded scans carry the initiating result loan"),
+                )
+                .map_err(NativeScanStop::Request)?;
+                for slot in slots {
                     scan.examine_slot()?;
                     self.instrumentation.count(|counters| {
                         counters.visibility_relation_slot_scans += 1;
@@ -316,16 +362,31 @@ impl ProjectionRecordReader<'_> {
                     ) {
                         continue;
                     }
-                    scan.reserve_with(partition_id, slot, || {
-                        materialize_authoritative_relation_record_at_version(
-                            registry,
-                            partition,
-                            partition_id,
-                            slot,
-                            version_id,
+                    scan.reserve_with(
+                        partition_id,
+                        slot,
+                        super::super::read_work::record_quote::relation(
+                            registry, partition, slot, visibility,
                         )
-                    })?;
+                        .map_err(NativeScanStop::Request)?,
+                        || {
+                            materialize_authoritative_relation_record_at_version(
+                                registry,
+                                partition,
+                                partition_id,
+                                slot,
+                                version_id,
+                            )
+                        },
+                    )?;
                 }
+                super::super::read_work::record_memory::release(
+                    scan.memory
+                        .as_mut()
+                        .expect("the original loan remains present"),
+                    held,
+                )
+                .map_err(NativeScanStop::Request)?;
             }
         }
         Ok(())

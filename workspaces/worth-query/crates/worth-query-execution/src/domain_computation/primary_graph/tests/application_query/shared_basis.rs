@@ -8,8 +8,8 @@ use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPrefligh
 
 fn admission(work: u64, bytes: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: work,
-        maximum_preparation_bytes: bytes,
+        maximum_work_visits: Some(work),
+        maximum_preparation_bytes: Some(bytes),
     })
 }
 
@@ -294,7 +294,7 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
                         product,
                         basis,
                         NonZeroUsize::new(32).unwrap(),
-                        NonZeroUsize::new(4096).unwrap(),
+                        Some(NonZeroUsize::new(4096).unwrap()),
                         &request,
                         &mut meter,
                     )

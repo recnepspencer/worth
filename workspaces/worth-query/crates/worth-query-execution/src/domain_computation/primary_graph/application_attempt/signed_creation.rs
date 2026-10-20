@@ -28,7 +28,6 @@ pub(super) struct DeferredSigningSlot {
     pub(super) effect: usize,
     pub(super) field: AspectFieldLocator,
     pub(super) spec: ApplicationOperationBodySigningSpec,
-    pub(super) representation_capacity: usize,
 }
 
 pub(super) struct SignedCreationState<Schema> {
@@ -42,12 +41,8 @@ pub(super) struct SignedCreationState<Schema> {
 }
 
 pub(super) struct SealedSigningContext<Schema> {
-    canonical_byte_capacity: usize,
-    provenance_bytes: usize,
     subject_binding: subject_binding::CapturedSubject,
     _dependencies_memory:
-        crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
-    _metadata_memory:
         crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
     owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
     principal: Arc<WorthQueryExternalPrincipalIdentity>,

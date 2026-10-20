@@ -14,13 +14,11 @@ use crate::ConsumerSchema;
 mod controls;
 #[cfg(test)]
 mod exact_refresh;
-mod resources;
 mod settlement;
 mod snapshot_pressure;
 mod supersession;
 use crate::application_invariant_acceptance::proof::settle;
 use controls::output_controls;
-pub(super) use resources::resource_denial_preserves_source_and_delivery;
 pub(super) use settlement::settle_recovered;
 pub(super) use snapshot_pressure::snapshot_pressure_preserves_recoverable_source;
 pub(super) use supersession::superseded_completion_is_terminal;

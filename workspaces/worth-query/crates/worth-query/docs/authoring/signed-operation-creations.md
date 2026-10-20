@@ -205,8 +205,8 @@ for authentication-only v1, or `ApplicationSigningSubjectProvenanceBinding` for
 the certified-subject v2 record. The example above uses the v1 initializer;
 with v2, use explicit capture roles as below. Both use the same `signed_by` call. Ordinary
 supplier codecs cannot implement its sealed native provenance-binding contract.
-The binding requires an application program and admits the creation plus every
-initializer, including actor and provenance, in its normal candidate ceilings.
+The binding requires an application program and declared authority for the
+creation and every initializer, including actor and provenance.
 
 ## Real Example
 
@@ -278,7 +278,7 @@ let completion = operation.body()
 ```
 
 The operation still declares its own ordinary permission, capability policy,
-candidate ceilings and any occurrence requirement. The supplier example's
+effect authority and any occurrence requirement. The supplier example's
 information-gathering EnterReview remains unsigned; a distinct later
 CompleteReview requires current verification and an exact operation need.
 A genuine acknowledgement can share the evidence kind and lifecycle but have a
@@ -314,8 +314,10 @@ entity contains exactly one required, unitless, read-only field bound to
 or delete that record or mutate protected associations; only the signed body's
 own history/current links and native consequence owner can do so. A signed body
 cannot simultaneously write the `Subject` values whose preimages it certifies.
-The ordinary handler's candidate ceiling stays unchanged; installation derives
-a separate bounded native consequence reservation and publication touch closure.
+Installation derives the native consequence publication touch closure. Execution
+checks original request authority, observes dependency changes and grows actual
+effect storage fallibly. Only explicit authored subject-impact limits restrict
+the number of affected subjects; no candidate-cardinality forecast supplies a fallback.
 
 ## How It Relates To Other Features
 
@@ -372,10 +374,10 @@ accordingly (for example, "reviewed", not an unconditional "approved").
 This join supports the existing bounded scalar signed-creation body, not
 partitioned-computation-producing profiles, enrolled birth, succession, external
 effects, or arbitrary additional native output/emission profiles. Unsupported
-composition is refused rather than dropping carried state. Resource budgets
-must fund canonicalization of the full combined effects and admission readset,
-including publication's candidate recheck; body-only signing costs are not a
-sufficient estimate. This does not add Store/process durability guarantees.
+composition is refused rather than dropping carried state. Original request
+interruption, canonicalization failures, admission and publication's exact
+candidate recheck remain enforced without supplier resource forecasts.
+This does not add Store/process durability guarantees.
 
 Workflow operation authority and workflow approval remain separate native
 capabilities. A signature does not advance a workflow or satisfy an approval

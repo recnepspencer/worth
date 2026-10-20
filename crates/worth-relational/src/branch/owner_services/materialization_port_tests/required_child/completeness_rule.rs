@@ -24,7 +24,7 @@ impl CustomInvariantRule for RequiredChild {
             },
             display_name: Arc::from("Required child completeness"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
                 access: CustomInvariantAccessContract {
                     read_entity_kinds: vec![KindId(1), KindId(3)],
                     read_relation_kinds: vec![KindId(2)],

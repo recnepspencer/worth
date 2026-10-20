@@ -1,10 +1,10 @@
 use super::super::*;
 use worth_query_decl::facade::application_operation::ApplicationMutationBinding;
 use worth_query_decl::facade::application_program::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationChangePosture,
-    ApplicationChangeShape, ApplicationDemandOutputGraph, ApplicationDerivedArtifact,
-    ApplicationLocalityGranule, ApplicationLocalityScope, ApplicationOutputGraphShape,
+    ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
+    ApplicationChangePosture, ApplicationChangeShape, ApplicationDemandOutputGraph,
+    ApplicationDerivedArtifact, ApplicationLocalityGranule, ApplicationLocalityScope,
+    ApplicationOutputGraphShape,
 };
 use worth_query_host::facade::application_contribution::WorthQueryProducerOutputFamily;
 
@@ -40,8 +40,7 @@ impl ApplicationDerivedArtifact<CheckpointSchema, PlanarOutputFeature> for Optio
             >>::IDENTITY,
         )];
     const REUSE_RULE: &'static str = "exact-source";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(4096, 8192);
+
     const STOPPED_OUTCOME: &'static str = "optional-planar-result-stopped";
 }
 impl ApplicationProgramDefinition<CheckpointSchema> for DemandProgram {

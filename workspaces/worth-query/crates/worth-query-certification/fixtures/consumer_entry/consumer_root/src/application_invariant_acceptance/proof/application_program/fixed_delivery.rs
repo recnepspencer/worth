@@ -80,17 +80,7 @@ fn fixed_delivery_finite_retry_unrelated_progress_and_consumed_fact_history() {
         .selected_commit()
         .clone();
     let one = NonZeroUsize::new(1).unwrap();
-    let policy = WorthQueryOperationDeliveryPolicy::currentness(
-        NonZeroUsize::new(
-            world
-                .application
-                .runtime()
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
-        .unwrap(),
-    );
+    let policy = WorthQueryOperationDeliveryPolicy::default();
     assert!(matches!(
         settled.read_current_with_policy(
             &request,
@@ -183,7 +173,6 @@ fn fixed_delivery_no_projection_settles_real_required_outputs() {
     ];
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
@@ -221,20 +210,7 @@ fn fixed_delivery_no_projection_settles_real_required_outputs() {
         worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test(
         );
     let observation = settled
-        .deliver_current(
-            &request,
-            WorthQueryOperationDeliveryPolicy::currentness(
-                NonZeroUsize::new(
-                    world
-                        .application
-                        .runtime()
-                        .output_demand_resource_profile()
-                        .limits()
-                        .source_currentness_work(),
-                )
-                .unwrap(),
-            ),
-        )
+        .deliver_current(&request, WorthQueryOperationDeliveryPolicy::default())
         .unwrap();
     assert_eq!(
         worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test(

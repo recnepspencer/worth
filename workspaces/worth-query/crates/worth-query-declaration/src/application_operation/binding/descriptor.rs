@@ -9,8 +9,8 @@ use super::{
 
 use crate::{
     application_operation::{
-        ApplicationCandidateRequirements, ApplicationMutationOutputContract,
-        ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputRoleFamilyDescriptor,
     },
     application_schema::ApplicationStructuredValueBinding,
     portable_identity::WorthQueryPortableTypeIdentity,
@@ -90,7 +90,6 @@ pub struct ApplicationMutationBindingDescriptor {
     scope_entity: String,
     scope: ApplicationMutationScopeContract,
     principal: ApplicationMutationPrincipalBindingContract,
-    candidates: ApplicationCandidateRequirements,
     source_query_identifier: Option<String>,
     requires_application_program: bool,
     requires_workflow_authority: bool,
@@ -119,7 +118,6 @@ impl ApplicationMutationBindingDescriptor {
         scope_entity: &'static str,
         scope: ApplicationMutationScopeContract,
         principal: ApplicationMutationPrincipalBindingContract,
-        candidates: ApplicationCandidateRequirements,
         requires_application_program: bool,
         requires_workflow_authority: bool,
         workflow_control: bool,
@@ -196,7 +194,6 @@ impl ApplicationMutationBindingDescriptor {
             scope_entity: scope_entity.to_owned(),
             scope,
             principal,
-            candidates,
             source_query_identifier: SourceExpectation::QUERY_IDENTIFIER.map(str::to_owned),
             requires_application_program,
             requires_workflow_authority,
@@ -279,10 +276,6 @@ impl ApplicationMutationBindingDescriptor {
 
     pub fn principal(&self) -> &ApplicationMutationPrincipalBindingContract {
         &self.principal
-    }
-
-    pub const fn candidates(&self) -> ApplicationCandidateRequirements {
-        self.candidates
     }
 
     pub fn source_query_identifier(&self) -> Option<&str> {

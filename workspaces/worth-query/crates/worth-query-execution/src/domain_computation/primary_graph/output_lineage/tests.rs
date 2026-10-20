@@ -17,6 +17,8 @@ struct RestoredOutputBinding;
 
 #[test]
 fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
@@ -59,7 +61,6 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
-        None,
         );
     lineage.record_restoration(
         TypeId::of::<RestoredOutputBinding>(),
@@ -74,7 +75,6 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         [0x42; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
-        None,
         );
     lineage.record_restoration(
         TypeId::of::<RestoredOutputBinding>(),
@@ -88,7 +88,6 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         None,
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
-        None,
         None,
         );
 
@@ -105,10 +104,10 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         generation: maximum_generation,
     };
     let (selected_first, _) = lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, first_partition, 1)
+        .latest_output_in_partition_budgeted(&source, coordinate, first_partition, Some(1))
         .unwrap();
     let (selected_sibling, _) = lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, sibling_partition, 1)
+        .latest_output_in_partition_budgeted(&source, coordinate, sibling_partition, Some(1))
         .unwrap();
     let selected_first = selected_first.unwrap();
     let selected_sibling = selected_sibling.unwrap();
@@ -128,13 +127,14 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     )]));
     let resolve = |budget| {
         lineage.resolve_current_family(
+            execution,
             runtime_authority,
             &source.schema,
             scope,
             "partitioned-family",
             observation.lifecycle_incarnation(),
             maximum_generation,
-            budget,
+            Some(budget),
         )
     };
     let family = resolve(27).expect("binding, partition heads, and bounded publication selection");
@@ -219,7 +219,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
             |_| None,
             &worth_execution::ExecutionRequest::serial(
                 &worth_execution::SerialRequest::from_memory(
-                    worth_execution::SerialMemoryBudget::new(64 << 20),
+                    worth_execution::SerialMemoryBudget::new(None),
                     worth_execution::CancellationToken::new(),
                     None,
                 ),
@@ -245,7 +245,6 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-        None,
     );
     lineage.record_recovered_prior_output(
         TypeId::of::<RestoredOutputBinding>(),
@@ -259,7 +258,6 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-        None,
     );
     let semantic_source = SemanticSource {
         runtime_authority,
@@ -298,7 +296,6 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])),
         None,
-        None,
         );
 
     assert!(
@@ -328,7 +325,6 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         None,
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
-        None,
         None,
         );
 

@@ -83,7 +83,7 @@ where
         let transition_identity = self.admitted.identity().to_owned();
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let node_path = self.admitted.node_path().to_owned();
-        let (demand, retained_bytes) = evidence_budget::admit(
+        let retained_bytes = evidence_budget::admit(
             &self.layout,
             self.evidence_allowance,
             self.required.node_path(),
@@ -93,13 +93,13 @@ where
             },
         )?;
         meaning.retained_bytes = retained_bytes;
-        let reservation = super::admit_platform_effects(self.admitted.read_set(), demand)?;
+
         let mut effects = Vec::new();
         visit_workflow_assessment_facts(&self.layout, &self.admitted, &meaning, |effect| {
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;
-        reservation.materialize(&effects)?;
+
         let progress_update = if self.admitted.is_assessment_collection() {
             self.admitted.prepare_assessment_collection_update()?
         } else {
@@ -114,8 +114,6 @@ where
         let program = WorthQueryApplicationEffectProgram {
             read_set,
             effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),

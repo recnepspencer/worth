@@ -105,11 +105,11 @@ pub use super::application_contribution::{
     WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
     WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
-    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQueryReductionInputDenial, WorthQuerySelectedApplicationProducer,
-    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily, WorthQueryReductionInputDenial,
+    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryWorkflowAssessmentPosture,
 };
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
@@ -244,7 +244,7 @@ pub use super::invariant_installation::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
 };
 pub use super::invariant_projection::{
-    WorthQueryApplicationInvariantProjectionAuthority,
+    VerificationCapacityStop, WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationInvariantProjectionReader,
     WorthQueryApplicationInvariantProjectionSnapshot,
     WorthQueryApplicationOperationInvariantProjectionReader,
@@ -357,15 +357,6 @@ pub use crate::basis::{
     WorthQueryProductBranchLease, WorthQueryProductBranchReadIdentity,
     WorthQueryProductObservationLease,
 };
-pub use crate::domain_computation::authorization::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
-    WorthQueryApplicationAuthorizationExplanationCause,
-    WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationCloseAuthorizationDenial,
-    WorthQueryMandatoryReviewAuthorizationDenial, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryOperationAuthorizationRefusalKind, WorthQueryOperationScopeBinding,
-    WorthQueryOperationScopeEntityBinding,
-};
 pub use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
 };
@@ -389,8 +380,10 @@ pub use crate::domain_computation::primary_graph::application_query::{
 };
 pub use worth_execution::ExecutionRequest;
 
+mod authorization;
 mod operation_body;
 pub use super::output_lineage::invalidation::carried_read_basis_custody_for_test;
+pub use authorization::*;
 pub use operation_body::*;
 
 pub use super::provider::{

@@ -21,7 +21,8 @@ fn async_upstream_work_denial_precedes_resource_admission_with_exact_twin() {
         let mut runtime = AsyncNodeTestRuntime::builder(graph)
             .with_kernel_defaults()
             .runtime_policy(
-                SignalRuntimePolicy::development().with_maximum_upstream_dependency_visits(maximum),
+                SignalRuntimePolicy::development()
+                    .with_maximum_upstream_dependency_visits(Some(maximum)),
             )
             .build();
         runtime

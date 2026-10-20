@@ -1,5 +1,6 @@
 //! Distinct guarded/control contracts over existing retention and revocation request contexts.
 use super::super::{grants::*, schema::*};
+
 use worth_query_host::facade::{
     declaration::application_operation::*, declaration::application_schema::*, primary_graph,
 };
@@ -37,11 +38,7 @@ impl ApplicationMutationBinding<CapabilitySchema> for GuardedBinding {
     const IDENTITY: &'static str = "capability-workflow.GuardedBinding.v1";
     const HANDLER_IDENTITY: &'static str = "capability-workflow.handler.GuardedBinding";
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-workflow.key.GuardedBinding";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1024),
-        );
+
     fn scope_field() -> ApplicationFieldRef<
         CapabilitySchema,
         Document,
@@ -107,10 +104,6 @@ impl ApplicationMutationBinding<CapabilitySchema> for ControlBinding {
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-workflow.key.ControlBinding";
     // Closed propose/effect/done graph: eight native creates and fifteen links.
     // Reuse the finite small kernel profile; domain writer limits remain separate.
-    const CANDIDATES: ApplicationCandidateRequirements =
-        <crate::document_retention_model::workflow::WorkflowInstanceStartBinding as ApplicationMutationBinding<
-            crate::document_retention_model::schema::DocumentRetentionSchema,
-        >>::CANDIDATES;
 
     fn scope_field() -> ApplicationFieldRef<
         CapabilitySchema,

@@ -137,7 +137,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
             account,
             capability,
             governed_live_account_parameters("account-1"),
-            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048)).unwrap(),
         )
         .unwrap()
         })
@@ -282,7 +282,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
             account,
             capability,
             governed_live_account_parameters("account-1"),
-            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048)).unwrap(),
         )
         .unwrap()
         })

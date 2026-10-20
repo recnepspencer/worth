@@ -73,7 +73,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.region-totals-demand-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.region-totals-demand-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -190,14 +189,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         };
         let decided = self.decide(input, reader);
         plan.and_then(move |()| decided)
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &RegionTotalsDemand,
-        _: &WorthQueryInvariantMutationTarget<Schema, Body>,
-    ) -> ApplicationCandidateRequirements {
-        RegionTotalsDemandBinding::<Schema>::CANDIDATES
     }
 
     fn build_candidate(

@@ -7,6 +7,30 @@ type Limits = WorthQueryResourceLimitRequest;
 type Axis = WorthQuerySemanticScaleAxis;
 type Dimension = WorthQueryResourceDimension;
 type Kind = WorthQueryExecutionResourceAdmissionDenialKind;
+
+#[test]
+fn absent_candidate_support_policy_admits_actual_demand_and_finite_policy_still_refuses() {
+    let required = atomic(
+        Scale::selective().with(Axis::CandidateItems, 7),
+        Limits::selective().with(Dimension::CandidateRetainedRepresentationBytes, 19),
+    );
+    assert!(admit(&required, atomic(Scale::selective(), Limits::selective())).is_ok());
+    for supported in [
+        atomic(
+            Scale::selective().with(Axis::CandidateItems, 6),
+            Limits::selective(),
+        ),
+        atomic(
+            Scale::selective(),
+            Limits::selective().with(Dimension::CandidateRetainedRepresentationBytes, 18),
+        ),
+    ] {
+        assert_eq!(
+            admit(&required, supported).unwrap_err().kind(),
+            &Kind::Backpressured
+        );
+    }
+}
 fn atomic(scale: Scale, limits: Limits) -> Envelope {
     Envelope::atomic(scale, limits, safe_point())
 }
@@ -44,7 +68,7 @@ fn admit(
 #[test]
 fn atomic_present_demands_require_present_support_without_dense_getters() {
     let required = atomic(
-        Scale::selective().with(Axis::CandidateItems, 0),
+        Scale::selective().with(Axis::BatchWidth, 0),
         Limits::selective().with(Dimension::RetainedBytes, 0),
     );
     assert!(admit(&required, required.clone()).is_ok());
@@ -64,7 +88,7 @@ fn atomic_present_demands_require_present_support_without_dense_getters() {
     );
     assert!(
         admit(&work, required.clone()).is_ok(),
-        "only WorkItems omission keeps its existing no-policy meaning"
+        "WorkItems omission retains its no-policy meaning"
     );
     let denial = admit(
         &work,

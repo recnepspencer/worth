@@ -1,11 +1,11 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryLiveCauseBinding, ApplicationQueryLiveResourceContract,
-    ApplicationQueryOrderingDirection, ApplicationQueryParameterRef, ApplicationQueryParameterSet,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseBinding,
+    ApplicationQueryLiveResourceContract, ApplicationQueryOrderingDirection,
+    ApplicationQueryParameterRef, ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
+    ManyResults,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, StringApplicationValueBinding,
@@ -50,16 +50,6 @@ impl LiveActivityEvent {
 }
 
 worth_query_declaration::worth_query_structured_value_binding!(pub LiveActivityEventBinding for LiveActivityEvent { identity: "worth.query.test.live-activity-event.v1" });
-impl worth_query_declaration::facade::application_schema::ApplicationRetainedEffectBinding
-    for LiveActivityEventBinding
-{
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<Self::Value>())
-            .unwrap_or(u64::MAX)
-            .saturating_add(u64::try_from(value.account.capacity()).unwrap_or(u64::MAX))
-            .saturating_add(u64::try_from(value.activity.capacity()).unwrap_or(u64::MAX))
-    }
-}
 
 worth_query_effect!(
     pub LiveActivityEffect for IdentityExecutionSchema, payload LiveActivityEventBinding
@@ -151,7 +141,6 @@ pub(super) fn live_account_activity_definition() -> ApplicationQueryDefinition<
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 3))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())

@@ -9,8 +9,7 @@ use crate::domain_computation::primary_graph::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerResult, OperationHandler,
 };
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateRequirements, ApplicationCapabilityMutationBinding,
-    ApplicationMutationBinding, NoApplicationMutationOutputs,
+    ApplicationCapabilityMutationBinding, NoApplicationMutationOutputs,
 };
 use worth_query_declaration::facade::application_schema::{
     NoApplicationUnit, ReadWrite, U64ApplicationValueBinding,
@@ -36,8 +35,6 @@ worth_query_declaration::worth_query_mutation_binding!(
     scope Account, AccountPolicy, AccountStatus, String, ReadWrite, NoApplicationUnit,
     field AccountStatus::reference(),
     value touch_scope,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 0,
-    resources retained_representation_bytes 64
 );
 
 fn touch_scope(input: &CapabilityTouchInput) -> String {
@@ -62,14 +59,6 @@ impl OperationHandler<IdentityExecutionSchema, CapabilityTouchMutationBinding>
         _: &mut DecisionReader<'_, '_, '_, IdentityExecutionSchema, CapabilityTouchMutationBinding>,
     ) -> HandlerResult<CapabilityTouchInput, CapabilityTouchInput> {
         HandlerResult::Completed(input.clone())
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &CapabilityTouchInput,
-        _: &CapabilityTouchInput,
-    ) -> ApplicationCandidateRequirements {
-        <CapabilityTouchMutationBinding as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES
     }
 
     fn build_candidate(

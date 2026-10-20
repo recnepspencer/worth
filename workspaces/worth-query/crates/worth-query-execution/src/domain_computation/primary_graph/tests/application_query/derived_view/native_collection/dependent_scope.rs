@@ -78,7 +78,7 @@ fn dependent_second_scope_reconstructs_atomically_with_live_batch_claims() {
         let nz = |n| std::num::NonZeroUsize::new(n).unwrap();
         let batch = crate::domain_computation::primary_graph::WorthQueryApplicationQueryBatchAdmission::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationQueryBatchLimits::new(
-                nz(4), nz(100_000), nz(262_144), nz(4_096),
+                nz(4), Some(nz(100_000)), nz(262_144), nz(4_096),
             ),
         );
         let claims = RefCell::new(Vec::new());

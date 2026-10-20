@@ -33,8 +33,8 @@ fn framework_preparation_denial_precedes_evaluator_and_publication() {
         admission.policy.determinism(),
         ExecutionBudget::new(
             admission.policy.budget().max_workers(),
-            16 * 1024,
-            1_000_000,
+            Some(16 * 1024),
+            Some(1_000_000),
         ),
     );
     let lease = authority().request_lease(admission).unwrap();
@@ -56,7 +56,7 @@ fn framework_preparation_denial_precedes_evaluator_and_publication() {
     };
     assert!(
         matches!(stop.reason(), crate::data::error::SignalExecutionStopReason::PreparationMemoryExhausted {
-        required: Some(required), reserved, ..
+        required: Some(required), reserved: Some(reserved), ..
     } if required > reserved)
     );
     assert_eq!(

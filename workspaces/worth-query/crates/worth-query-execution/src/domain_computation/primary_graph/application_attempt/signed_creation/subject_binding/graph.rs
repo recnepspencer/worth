@@ -9,29 +9,9 @@ use worth_query_declaration::facade::{
         ApplicationOperationBodyCaptureRole as Role, ApplicationOperationBodyCreatedField as Field,
         ApplicationOperationBodyCreation as Creation, ApplicationSchema,
         ApplicationSigningGraphSubjectDependency as Dependency,
-        ApplicationSigningSubjectDependency as ScopeDependency,
         ApplicationSigningSubjectSelectionDependency as Selection,
     },
 };
-
-pub(super) fn quote(creation: &Creation) -> Result<usize, Denial> {
-    creation
-        .fields()
-        .iter()
-        .filter_map(capture_spec)
-        .try_fold(128usize, |total, spec| {
-            let fields = ScopeDependency::quote(spec.source, spec.target, spec.binding)?
-                .checked_add(128 + size_of::<Dependency>())?;
-            spec.path.into_iter().flat_map(|p| p.steps()).try_fold(
-                total.checked_add(fields)?,
-                |sum, hop| {
-                    sum.checked_add(Selection::quote(spec.target, hop.relation())?)?
-                        .checked_add(size_of::<Selection>())
-                },
-            )
-        })
-        .ok_or(Denial::RepresentationCapacity)
-}
 
 pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
     candidate: &BodyCandidate<Schema, Binding>,
@@ -39,7 +19,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<CapturedSubject, Denial> {
-    identity::admit_assembly(context, quote(creation)?)?;
+    identity::check_interruption(context)?;
     let root = candidate.read_set.admission.scope_entity_id();
     let mut dependencies = Vec::new();
     let mut selections = Vec::new();

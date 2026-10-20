@@ -44,7 +44,7 @@ use worker_context::ACTIVE_WORKER;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExecutionAuthorityConfig {
     pub max_workers: NonZeroUsize,
-    /// Optional process-wide payload-backing ceiling; request/ancestor bounds remain finite.
+    /// Optional process-wide payload-backing ceiling; finite request and ancestor ceilings also apply.
     pub charged_memory_bytes: Option<u64>,
 }
 
@@ -129,7 +129,7 @@ struct LeaseNode {
     parent: Option<Arc<LeaseNode>>,
     max_workers: usize,
     posture: ExecutionPosture,
-    charged_memory_bytes: u64,
+    charged_memory_bytes: Option<u64>,
     deadline: Option<Instant>,
     cancellation: CancellationToken,
 }

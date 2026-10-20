@@ -16,7 +16,7 @@ pub(super) fn require_unchanged<S: ApplicationSchema, B: ApplicationMutationBind
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<(), Denial> {
     for effect in &candidate.effects {
-        identity::admit_assembly(context, 0)?;
+        identity::check_interruption(context)?;
         let same_field = |candidate: &AspectFieldLocator| {
             candidate.aspect().aspect_key() == field.aspect().aspect_key()
                 && candidate.field_path() == field.field_path()

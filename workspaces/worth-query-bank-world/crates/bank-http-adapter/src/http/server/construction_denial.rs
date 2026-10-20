@@ -41,7 +41,7 @@ fn capture(cause: &Capture) -> BankHttpDenial {
                     ));
                 }
                 Allocation::Request(Request::Admission(LeaseDenial::MemoryExhausted(limit))) => {
-                    match limit.level {
+                    match limit.level() {
                         MemoryLimitLevel::Process => (Kind::Unavailable, Next::Retry),
                         MemoryLimitLevel::Policy { .. } | MemoryLimitLevel::Declared => {
                             (Kind::ResourceExhausted, Next::NarrowRequest)

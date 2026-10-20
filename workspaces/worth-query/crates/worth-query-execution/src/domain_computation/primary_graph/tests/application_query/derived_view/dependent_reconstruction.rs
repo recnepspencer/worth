@@ -137,10 +137,10 @@ fn journey(case: Case) {
         let run = |failure: bool| {
             let batch = WorthQueryApplicationQueryBatchAdmission::new(
                 WorthQueryApplicationQueryBatchLimits::new(nz(if failure && case == Case::Exhausted {1} else {2}),
-                    nz(100_000), nz(262_144), nz(4096)),
+                    Some(nz(100_000)), nz(262_144), nz(4096)),
             );
             let foreign_batch = WorthQueryApplicationQueryBatchAdmission::new(
-                WorthQueryApplicationQueryBatchLimits::new(nz(2), nz(100_000), nz(262_144), nz(4096)));
+                WorthQueryApplicationQueryBatchLimits::new(nz(2), Some(nz(100_000)), nz(262_144), nz(4096)));
             let narrowed = (failure || case == Case::LeasedSuccess).then(|| {
                 issued.in_scope(|parent| {
                     let parent = parent.expect("the installed host phase carries native custody");
@@ -148,8 +148,8 @@ fn journey(case: Case) {
                         policy: worth_foundational::ExecutionRequestPolicy::new(
                             parent.policy().posture(), parent.policy().determinism(),
                             worth_foundational::ExecutionBudget::new(nz(1),
-                                if case == Case::Memory { 0 } else { 16 << 20 },
-                                if case == Case::Work { 1 } else { parent.policy().budget().work_ceiling() }),
+                                if case == Case::Memory { Some(0) } else { None },
+                                if case == Case::Work { Some(1) } else { parent.policy().budget().work_ceiling() }),
                         ), cancellation: cancellation.token(),
                         deadline: (case == Case::Deadline).then(std::time::Instant::now),
                     }).unwrap()

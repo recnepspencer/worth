@@ -67,8 +67,8 @@ let body = AssignValidator::reference()
 
 Declare source/target/identity/relation read capabilities and relation Link/Unlink
 capabilities for the operation. The completed definition derives its exact read
-and program contracts. Reserve one link and one unlink per declaration in the
-mutation binding's candidate ceiling, even if a particular invocation is a no-op.
+and program contracts. Native publication grows the actual effect buffer
+fallibly; suppliers do not forecast candidate link/unlink counts.
 
 ## Real Example
 

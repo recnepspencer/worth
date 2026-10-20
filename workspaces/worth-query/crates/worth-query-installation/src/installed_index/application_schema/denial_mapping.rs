@@ -51,7 +51,9 @@ pub(super) fn map_compilation_denial(
             schema.to_string(),
         ),
         ApplicationSchemaCompilationDenial::Canonical(
-            worth_foundational::facade::CanonicalDigestDerivationDenial::UnsupportedAlgorithm
+            worth_foundational::facade::CanonicalDigestDerivationDenial::AllocationUnavailable
+            | worth_foundational::facade::CanonicalDigestDerivationDenial::LengthOverflow
+            | worth_foundational::facade::CanonicalDigestDerivationDenial::UnsupportedAlgorithm
             | worth_foundational::facade::CanonicalDigestDerivationDenial::RuleVersionMismatch
             | worth_foundational::facade::CanonicalDigestDerivationDenial::InputDomainMismatch
             | worth_foundational::facade::CanonicalDigestDerivationDenial::InputShapeMismatch,
@@ -198,7 +200,9 @@ pub(in crate::installed_index) fn map_schema_digest_denial_to_index_denial(
         worth_foundational::facade::CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
             ..
         } => WorthQueryInstalledPackageIndexDenialKind::CanonicalEncodedByteBudgetExceeded,
-        worth_foundational::facade::CanonicalDigestDerivationDenial::UnsupportedAlgorithm
+        worth_foundational::facade::CanonicalDigestDerivationDenial::AllocationUnavailable
+        | worth_foundational::facade::CanonicalDigestDerivationDenial::LengthOverflow
+        | worth_foundational::facade::CanonicalDigestDerivationDenial::UnsupportedAlgorithm
         | worth_foundational::facade::CanonicalDigestDerivationDenial::RuleVersionMismatch
         | worth_foundational::facade::CanonicalDigestDerivationDenial::InputDomainMismatch
         | worth_foundational::facade::CanonicalDigestDerivationDenial::InputShapeMismatch => {

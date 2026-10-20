@@ -50,21 +50,21 @@ fn alias_row(input: &AliasRow) -> String {
     input.row.clone()
 }
 worth_query_mutation_binding!(pub CopyBinding for CopyRow, schema Schema,
-    identity "worth.query.path-value.copy-binding.v1", input CopyInput, operation Copy, result ResultBinding,
-    idempotency u64, identity "worth.query.path-value.copy-request.v1",
-    decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
-    handler identity "worth.query.path-value.copy-body.v1", program required, outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value copy_row,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 0, resources retained_representation_bytes 4096);
+identity "worth.query.path-value.copy-binding.v1", input CopyInput, operation Copy, result ResultBinding,
+idempotency u64, identity "worth.query.path-value.copy-request.v1",
+decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
+handler identity "worth.query.path-value.copy-body.v1", program required, outputs NoApplicationMutationOutputs,
+principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
+scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value copy_row,
+);
 worth_query_mutation_binding!(pub AliasBinding for AliasRow, schema Schema,
-    identity "worth.query.path-value.alias-binding.v1", input AliasInput, operation Alias, result ResultBinding,
-    idempotency u64, identity "worth.query.path-value.alias-request.v1",
-    decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
-    handler identity "worth.query.path-value.alias-body.v1", program required, outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value alias_row,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 2, emits 0, resources retained_representation_bytes 4096);
+identity "worth.query.path-value.alias-binding.v1", input AliasInput, operation Alias, result ResultBinding,
+idempotency u64, identity "worth.query.path-value.alias-request.v1",
+decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
+handler identity "worth.query.path-value.alias-body.v1", program required, outputs NoApplicationMutationOutputs,
+principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
+scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value alias_row,
+);
 fn value<O, I>(
     operation: ApplicationOperationRef<Schema, O, I>,
 ) -> ApplicationOperationBodyValue<Schema, O, U64ApplicationValueBinding>

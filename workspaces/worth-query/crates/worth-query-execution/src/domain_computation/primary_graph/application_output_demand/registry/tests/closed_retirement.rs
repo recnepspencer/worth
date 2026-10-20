@@ -7,7 +7,6 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt),
         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-        resources: None,
     };
     DemandState::Output(super::super::WorthQueryOutputProgress::new(
         WorthQueryOutputCheckpoint::Ready(super::super::ReadyCompletion::for_test(completion)),
@@ -179,8 +178,8 @@ fn a_closing_dependent_moves_its_claim_once_the_newest_row_is_ready() {
     // Joining an already funded reader needs no preparation storage. The
     // foreign transfer does: its refused quote must not refuse this admission.
     let mut small = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 1_000_000,
-        maximum_preparation_bytes: 0,
+        maximum_work_visits: Some(1_000_000),
+        maximum_preparation_bytes: Some(0),
     });
     let _reader = registry
         .admit(

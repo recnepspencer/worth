@@ -201,14 +201,19 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
                 19 => truth
                     .relation_aspects_at_version(request, relation, version)
                     .map(|rows| rows.unwrap().len()),
-                20..=23 => super::super::read_work::metered(
+                20..=23 => super::super::read_work::metered_with_memory(
                     request,
-                    |context| {
+                    |context, memory| {
                         let state = runtime.storage_access().current_edition();
                         let mut charge = |units| context.checkpoint(units);
                         match seam {
                             20 => truth
-                                .visible_entity_slots_from_state(&state, version, &mut charge)
+                                .visible_entity_slots_from_state(
+                                    &state,
+                                    version,
+                                    &mut charge,
+                                    memory,
+                                )
                                 .map(|rows| {
                                     rows.into_iter().map(|(_, slots)| slots.count_ones()).sum()
                                 }),
@@ -218,10 +223,16 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
                                     source.partition_id,
                                     version,
                                     &mut charge,
+                                    memory,
                                 )
                                 .map(|rows| rows.map_or(0, |slots| slots.count_ones())),
                             22 => truth
-                                .visible_relation_slots_from_state(&state, version, &mut charge)
+                                .visible_relation_slots_from_state(
+                                    &state,
+                                    version,
+                                    &mut charge,
+                                    memory,
+                                )
                                 .map(|rows| {
                                     rows.into_iter().map(|(_, slots)| slots.count_ones()).sum()
                                 }),
@@ -231,14 +242,14 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
                                     source.partition_id,
                                     version,
                                     &mut charge,
+                                    memory,
                                 )
                                 .map(|rows| rows.map_or(0, |slots| slots.count_ones())),
                             _ => unreachable!(),
                         }
                     },
                     |_| 0,
-                )?
-                .map_err(crate::execution::denial::kernel_stop),
+                )?,
                 24 => truth.read_snapshot(&edge.snapshot, request).map(|view| {
                     view.map_or(0, |view| view.entities().len() + view.relations().len())
                 }),
@@ -259,7 +270,9 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
         let request = ExecutionRequest::serial(&short);
         assert_eq!(
             request
-                .run(ExecutionWorkCeiling::new(units - 1), |_| read(&request))
+                .run(ExecutionWorkCeiling::new(Some(units - 1)), |_| read(
+                    &request
+                ))
                 .unwrap()
                 .0,
             Err(Cause::WorkExhausted),
@@ -268,16 +281,13 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
         let live = crate::test_execution_policy::serial_request();
         let request = ExecutionRequest::serial(&live);
         let (answer, report) = request
-            .run(ExecutionWorkCeiling::new(units), |_| read(&request))
+            .run(ExecutionWorkCeiling::new(Some(units)), |_| read(&request))
             .unwrap();
         assert_eq!(answer, Ok(rows), "seam {seam} exact budget");
         assert_eq!(report.charged_work(), units, "seam {seam} payer");
         let cancellation = CancellationSource::new();
-        let host = SerialRequest::from_memory(
-            SerialMemoryBudget::new(1 << 26),
-            cancellation.token(),
-            None,
-        );
+        let host =
+            SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
         let request = ExecutionRequest::serial(&host);
         cancellation.cancel();
         assert_eq!(

@@ -1,4 +1,4 @@
-//! Installed body effects use native target, footprint and reservation checks.
+//! Installed body effects use native target, footprint and authority checks.
 use super::{
     denial, ApplicationOperationProgramTarget, EntityReference, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectEntity,
@@ -44,22 +44,11 @@ impl<Schema, Operation, Input, Scope>
                 field.field(),
             ));
         }
-        let representation_capacity = self
-            .candidate_reservation
-            .as_mut()
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                    field.field(),
-                )
-            })?
-            .reserve_deferred_initializer()?;
         self.read_set.signed_creation = Some(SignedCreationState {
             slot: DeferredSigningSlot {
                 effect,
                 field: locator,
                 spec: spec.clone(),
-                representation_capacity,
             },
             authentication: None,
             sealed: None,

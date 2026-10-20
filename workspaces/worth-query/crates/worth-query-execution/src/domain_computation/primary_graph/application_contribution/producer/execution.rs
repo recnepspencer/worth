@@ -1,6 +1,6 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 mod contact_observation;
-use std::{any::Any, sync::Arc};
+use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -87,8 +87,6 @@ pub(super) trait InstalledProducerExecutor<Schema>:
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop>;
 
-    fn resources(&self, source: &dyn Any) -> Option<super::WorthQueryProducerDemandResources>;
-
     fn readiness_record(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
@@ -159,12 +157,6 @@ where
                 entity.generation.0,
             ),
         )
-    }
-
-    fn resources(&self, source: &dyn Any) -> Option<super::WorthQueryProducerDemandResources> {
-        source
-            .downcast_ref::<SourceValue<Schema, Binding>>()
-            .map(|source| self.provider.demand_resources(source))
     }
 
     fn execute(
@@ -244,7 +236,6 @@ where
                     request_scope,
                     branch,
                     proof.source(),
-                    limits,
                     request_admission,
                     edition,
                 )?;

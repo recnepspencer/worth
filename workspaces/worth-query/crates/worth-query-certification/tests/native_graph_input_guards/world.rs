@@ -19,11 +19,6 @@ pub fn install() -> App {
         // Composite signing seals additional ordinary effects and observations.
         // Keep finite metering without fitting this authority proof to the old work count.
         crate::world_resources::world_resources_with_work(256, 4 * 1024 * 1024, 256, 16_000_000),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            200_000,
-            128 * 1024 * 1024,
-        )
-        .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5120, 2048, usize::MAX, 128)
             .unwrap(),
         SignalConditionalEvaluationBudget::development(),

@@ -4,7 +4,7 @@ use worth_query_installation::facade::{
 };
 
 use super::{
-    canonical_key, denial, CandidateItemKind, WorthQueryApplicationAttemptDenial,
+    canonical_key, denial, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectEntity,
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationRealizedEffect,
 };
@@ -138,19 +138,7 @@ impl<Schema, Operation, Input, Scope>
                 relation,
             ));
         }
-        let retained_representation_bytes =
-            super::retained_representation::relation(&key, &from.reference, &to.reference)
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        relation,
-                    )
-                })?;
-        self.charge_candidate_representation(
-            CandidateItemKind::Link,
-            retained_representation_bytes,
-            0,
-        )?;
+        self.reserve_effects(1)?;
         self.keys.insert((kind, key.clone()));
         self.effects
             .push(WorthQueryApplicationRealizedEffect::CreateRelation {
@@ -185,7 +173,7 @@ impl<Schema, Operation, Input, Scope>
         observed: WorthQueryObservedApplicationRelation<Schema, Relation, From, To>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.admit_program_target(target)?;
-        self.charge_candidate_items(CandidateItemKind::Unlink, observed.matching_relations.len())?;
+        self.reserve_effects(observed.matching_relations.len())?;
         self.effects
             .extend(observed.matching_relations.into_iter().map(|relation_id| {
                 WorthQueryApplicationRealizedEffect::DeleteRelation { relation_id }

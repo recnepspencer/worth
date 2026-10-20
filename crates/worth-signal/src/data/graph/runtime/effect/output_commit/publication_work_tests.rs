@@ -102,7 +102,7 @@ fn final_packet_admits_comparison_and_both_publication_copies_before_movement() 
         .cause_sets
         .published_output_commit(delta.output_commit_ordinal)
         .is_none());
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     graph
         .prevalidate_output_commit_packet(&packet, &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
@@ -111,7 +111,7 @@ fn final_packet_admits_comparison_and_both_publication_copies_before_movement() 
     // creates two owned copies. Payload bytes alone require this much work.
     assert!(cost >= 8 * scope.len());
     for available in [8 * scope.len() - 1, cost - 1, cost] {
-        let mut work = Work::new(cost + 7);
+        let mut work = Work::new(Some(cost + 7));
         work.reserve_visits(cost + 7 - available).unwrap();
         let result = graph
             .prevalidate_output_commit_packet(&packet, &mut EvaluationWork::Conditional(&mut work));
@@ -149,7 +149,7 @@ fn final_packet_admits_comparison_and_both_publication_copies_before_movement() 
 #[test]
 fn final_packet_work_depends_on_scope_bytes_and_rejects_mismatched_delta() {
     let (short_graph, short_packet) = prepared("x");
-    let mut short_work = Work::new(1_000_000);
+    let mut short_work = Work::new(Some(1_000_000));
     short_graph
         .prevalidate_output_commit_packet(
             &short_packet,
@@ -160,7 +160,7 @@ fn final_packet_work_depends_on_scope_bytes_and_rejects_mismatched_delta() {
     assert!(matches!(
         graph.prevalidate_output_commit_packet(
             &packet,
-            &mut EvaluationWork::Conditional(&mut Work::new(short_work.visits())),
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(short_work.visits()))),
         ),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));
@@ -194,14 +194,14 @@ fn cause_store_gather_admits_retained_handle_lookups() {
             .unwrap();
     }
     let causes = packet.storage.direct_causes.as_ref().unwrap();
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     causes
         .admit_cause_store_work(&graph, &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
     let cost = measured.visits();
     assert!(cost >= 2 * (graph.arena.nodes.lookup_steps() + graph.arena.hot.lookup_steps()));
     for available in [0, cost - 1, cost] {
-        let mut work = Work::new(cost + 13);
+        let mut work = Work::new(Some(cost + 13));
         work.reserve_visits(cost + 13 - available).unwrap();
         let result =
             causes.admit_cause_store_work(&graph, &mut EvaluationWork::Conditional(&mut work));
@@ -278,14 +278,14 @@ fn scoped_cause_validation_admits_both_checks_before_publication() {
             &mut EvaluationWork::Ordinary,
         )
         .unwrap();
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     graph
         .prevalidate_output_commit_packet(&packet, &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
     let cost = measured.visits();
     assert!(cost > text.len() * 8);
     for available in [cost - 1, cost] {
-        let mut work = Work::new(cost + 23);
+        let mut work = Work::new(Some(cost + 23));
         work.reserve_visits(cost + 23 - available).unwrap();
         let result = graph
             .prevalidate_output_commit_packet(&packet, &mut EvaluationWork::Conditional(&mut work));
@@ -324,13 +324,13 @@ fn retained_packet_reserves_node_containers_before_selected_reads_or_writes() {
     let _retained = crate::data::graph::storage::evaluation_partition::SignalEvaluationPartition::retain_basis_storage(&mut graph);
     let sibling_hot = graph.arena.hot.fork_persistent();
     let before = graph.node_aspect_version(producer).unwrap();
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     graph
         .admit_effect_node_mutation_work(&mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
     let container_cost = measured.visits();
     assert!(container_cost > 20);
-    let mut short = Work::new(container_cost + 11);
+    let mut short = Work::new(Some(container_cost + 11));
     short.reserve_visits(12).unwrap();
     assert_eq!(
         graph.prevalidate_output_commit_packet(
@@ -346,7 +346,7 @@ fn retained_packet_reserves_node_containers_before_selected_reads_or_writes() {
     assert_eq!(short.visits(), 12);
     assert!(graph.arena.hot.shares_storage_with(&sibling_hot));
     assert_eq!(graph.node_aspect_version(producer).unwrap(), before);
-    let mut admitted = Work::new(usize::MAX);
+    let mut admitted = Work::new(None);
     graph
         .prevalidate_output_commit_packet(&packet, &mut EvaluationWork::Conditional(&mut admitted))
         .unwrap();

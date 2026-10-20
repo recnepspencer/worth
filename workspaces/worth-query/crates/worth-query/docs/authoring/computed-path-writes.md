@@ -40,7 +40,7 @@ two paths resolving to the same entity/field are refused, not applied last-wins.
 ## How It Executes
 
 Native declaration derives the exact path reads and terminal-field write.
-Installation checks the destination codec and candidate write ceiling. At the
+Installation checks the destination codec and declared write authority. At the
 decision observation Query evaluates the shared value, validates all its sinks,
 selects each path target and retains its dependencies and memory custody.
 
@@ -171,7 +171,7 @@ Guard-free identity/forward/reverse paths only; every hop is a single selection.
 Required unitless UInt64 computed writes only. No optional replacement, dynamic
 collection mutation or general cross-entity effect language. Signed snapshots
 capture observed preimages, not computed postimages or caller-built authority.
-All normal candidate, expression, decision and signature-impact bounds remain.
+Expression profiles and explicit request, decision and signature-impact limits remain.
 This proves native atomic graph writes, not distributed provider transactions,
 Store restart durability or a complete application endpoint.
 

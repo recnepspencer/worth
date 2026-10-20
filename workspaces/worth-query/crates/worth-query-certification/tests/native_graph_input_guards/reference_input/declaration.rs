@@ -61,12 +61,12 @@ fn row(input: &Assign) -> String {
     input.row.clone()
 }
 worth_query_mutation_binding!(pub Binding for Assign,schema Schema,
-    identity "worth.query.reference.binding.v1",input Input,operation ReplaceReference,result ResultBinding,
-    idempotency u64,identity "worth.query.reference.request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
-    handler identity "worth.query.reference.body.v1",program required,outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value row,
-    candidates creates 0,deletes 0,links 1,unlinks 1,writes 0,emits 0,resources retained_representation_bytes 4096);
+identity "worth.query.reference.binding.v1",input Input,operation ReplaceReference,result ResultBinding,
+idempotency u64,identity "worth.query.reference.request.v1",decision WorthQueryOperationBodyDecision<Schema,Row>,denial DenialBinding,
+handler identity "worth.query.reference.body.v1",program required,outputs NoApplicationMutationOutputs,
+principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
+scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value row,
+);
 pub fn body() -> ApplicationOperationBody<Schema, ReplaceReference, Assign> {
     ReplaceReference::reference()
         .body()

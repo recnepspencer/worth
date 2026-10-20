@@ -73,8 +73,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             "model-owner",
         ),
     ];
-    let mut world =
-        installation::install_with_roster(foreign, 8192, 4096, roster, &grants).unwrap();
+    let mut world = installation::install_with_roster(foreign, 4096, roster, &grants).unwrap();
     let request_runtime = world.application.clone();
     let constructing = std::mem::replace(&mut world.application, request_runtime);
     let adapter = authentication::admit(world.application.installed_schema());
@@ -238,19 +237,10 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         Err(WorthQueryOperationDeliveryDenial::Currentness(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial)))
         if matches!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
     );
-    let comparison_work = NonZeroUsize::new(
-        world
-            .application
-            .runtime()
-            .output_demand_resource_profile()
-            .limits()
-            .source_currentness_work(),
-    )
-    .expect("the installed profile admits positive source currentness work");
     let stopped_query = settled
         .read_current_with_policy(
             &request,
-            WorthQueryOperationDeliveryPolicy::currentness(comparison_work).query(one, one),
+            WorthQueryOperationDeliveryPolicy::default().query(one, one),
         )
         .map(|_| ());
     assert!(

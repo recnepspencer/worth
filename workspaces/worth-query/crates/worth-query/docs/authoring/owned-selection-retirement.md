@@ -73,9 +73,9 @@ the original commit before evaluating today's source or selections.
 The nonzero holder bound limits prepared retirement plans and effects. Outer
 traversal also obeys the existing request/projection work and memory budgets;
 this is not an independently optimized paginated discovery API. Exceeding the
-bound refuses before applying a prefix. Installation requires candidate Delete
-and Unlink ceilings for the sum of all rule bounds, plus any other replacement
-unlinks. Normal creation/write/link ceilings still apply.
+bound refuses before applying a prefix. Installation requires declared Delete
+and Unlink authority; the native owner grows actual effect storage fallibly,
+without supplier-authored candidate cardinality forecasts.
 
 ## Small Example
 

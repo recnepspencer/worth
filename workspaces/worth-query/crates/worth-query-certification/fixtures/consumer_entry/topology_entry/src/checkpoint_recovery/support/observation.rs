@@ -7,7 +7,6 @@ pub(in crate::checkpoint_recovery) fn limits_with_history_room(
     active_observations: u64,
     unique_exact_component_pins: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-    candidates: WorthQueryApplicationCandidateResourceProfile,
     history_metadata_bytes: u64,
 ) -> WorthQueryInMemoryApplicationLimits {
     super::limits_with_history_and_policy(
@@ -15,7 +14,6 @@ pub(in crate::checkpoint_recovery) fn limits_with_history_room(
         active_observations,
         unique_exact_component_pins,
         invalidation,
-        candidates,
         history_metadata_bytes,
         super::execution_policy::CHECKPOINT_EXECUTION_POLICY,
     )

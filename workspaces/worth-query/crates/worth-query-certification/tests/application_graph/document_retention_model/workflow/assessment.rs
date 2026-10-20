@@ -1,6 +1,6 @@
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
-    WorthQueryWorkflowAssessmentDemandProgress, WorthQueryWorkflowAssessmentDemandSettlement,
+    WorthQueryApplicationRequestExt, WorthQueryWorkflowAssessmentDemandProgress,
+    WorthQueryWorkflowAssessmentDemandSettlement,
 };
 
 use super::super::{
@@ -107,10 +107,6 @@ pub fn settle_early_assessment_for(
         .expect("declared early assessment must be ready")
         .into_assessment_demand(RetentionAssessmentDemand::new(subject_identity))
         .expect("the typed demand must match the installed assessment contract")
-        .controls(WorthQueryOutputDemandControls::new(
-            std::num::NonZeroUsize::new(512).unwrap(),
-            std::num::NonZeroUsize::new(1024).unwrap(),
-        ))
         .advanced()
         .start()
         .expect("the installed early assessment demand must start");
@@ -202,10 +198,6 @@ pub fn settle_assessment_for(
         .expect("assessment-head workflow admission must succeed")
         .into_assessment_demand(RetentionAssessmentDemand::new(subject_identity))
         .expect("the typed demand must match the installed assessment contract")
-        .controls(WorthQueryOutputDemandControls::new(
-            std::num::NonZeroUsize::new(512).unwrap(),
-            std::num::NonZeroUsize::new(1024).unwrap(),
-        ))
         .retain_operation(application.program_runtime())
         .expect("the installed assessment output demand must start");
     drop(principal);

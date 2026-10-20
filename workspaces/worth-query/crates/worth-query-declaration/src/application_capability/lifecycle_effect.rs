@@ -3,8 +3,7 @@ use std::cmp::Ordering;
 use std::sync::Arc;
 
 use crate::application_schema::{
-    ApplicationEffectRef, ApplicationRetainedEffectBinding, ApplicationStructuredValueBinding,
-    OperationEmits,
+    ApplicationEffectRef, ApplicationStructuredValueBinding, OperationEmits,
 };
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -15,7 +14,7 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 /// independently authored emission to the framework-owned lifecycle program.
 pub trait ApplicationCapabilityLifecycleEffect<Schema, Operation>: 'static {
     type Effect: OperationEmits<Operation>;
-    type PayloadBinding: ApplicationRetainedEffectBinding;
+    type PayloadBinding: ApplicationStructuredValueBinding;
 
     fn effect() -> ApplicationEffectRef<
         Schema,
@@ -141,8 +140,6 @@ pub struct DerivedApplicationCapabilityLifecycleEffect {
     payload_type: WorthQueryPortableTypeIdentity,
     payload_type_id: TypeId,
     payload: Arc<dyn Any + Send + Sync>,
-    retained_bytes: u64,
-    measure_retained_bytes: fn(&(dyn Any + Send + Sync)) -> Option<u64>,
 }
 
 impl DerivedApplicationCapabilityLifecycleEffect {
@@ -166,14 +163,6 @@ impl DerivedApplicationCapabilityLifecycleEffect {
         Arc::clone(&self.payload)
     }
 
-    pub const fn retained_bytes(&self) -> u64 {
-        self.retained_bytes
-    }
-
-    pub fn measure_retained_bytes(&self) -> fn(&(dyn Any + Send + Sync)) -> Option<u64> {
-        self.measure_retained_bytes
-    }
-
     pub fn payload_is(&self, payload: &Arc<dyn Any + Send + Sync>) -> bool {
         Arc::ptr_eq(&self.payload, payload)
     }
@@ -185,7 +174,6 @@ impl std::fmt::Debug for DerivedApplicationCapabilityLifecycleEffect {
             .debug_struct("DerivedApplicationCapabilityLifecycleEffect")
             .field("effect", &self.effect)
             .field("payload_type", &self.payload_type)
-            .field("retained_bytes", &self.retained_bytes)
             .finish_non_exhaustive()
     }
 }
@@ -199,7 +187,7 @@ where
 {
     let input = input.downcast_ref::<Input>()?;
     let payload = input.lifecycle_effect()?;
-    let retained_bytes = Input::PayloadBinding::retained_bytes(&payload);
+    Input::PayloadBinding::validate(&payload).ok()?;
     Some(DerivedApplicationCapabilityLifecycleEffect {
         effect: Input::effect().name(),
         payload_type: Input::PayloadBinding::IDENTITY,
@@ -207,17 +195,5 @@ where
             <Input::PayloadBinding as ApplicationStructuredValueBinding>::Value,
         >(),
         payload: Arc::new(payload),
-        retained_bytes,
-        measure_retained_bytes: measure_retained_bytes::<Input::PayloadBinding>,
     })
-}
-
-fn measure_retained_bytes<Binding>(payload: &(dyn Any + Send + Sync)) -> Option<u64>
-where
-    Binding: ApplicationRetainedEffectBinding,
-    Binding::Value: Send + Sync,
-{
-    payload
-        .downcast_ref::<Binding::Value>()
-        .map(Binding::retained_bytes)
 }

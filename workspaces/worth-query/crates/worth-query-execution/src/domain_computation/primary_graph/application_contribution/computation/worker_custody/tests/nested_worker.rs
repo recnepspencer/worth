@@ -25,7 +25,7 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
     let root = QueryRequestExecution::open(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
             authority: test_authority(),
-            policy: test_policy(NonZeroUsize::new(4).unwrap(), 1 << 24),
+            policy: test_policy(NonZeroUsize::new(4).unwrap(), None),
         },
         &scope,
     );
@@ -100,7 +100,7 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
     let (settled, _) = root
         .execution_request()
         .unwrap()
-        .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
             wave_dispatch::dispatch(&root, vec![member])
         })
         .unwrap();

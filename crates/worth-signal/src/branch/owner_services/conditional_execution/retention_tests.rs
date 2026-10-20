@@ -13,7 +13,7 @@ fn budget() -> SignalConditionalEvaluationBudget {
         maximum_retained_slots: 2,
         maximum_retained_bytes: 100
             + 2 * std::mem::size_of::<SignalConditionalRetentionReservation>() as u64,
-        maximum_attempt_visits: 97,
+        maximum_attempt_visits: Some(97),
     }
 }
 
@@ -175,7 +175,7 @@ fn conditional_retention_ceiling_mismatch_denies_sealing_before_state_moves() {
         runtime.switch_branch(a).unwrap();
         runtime.switch_branch(b).unwrap();
         let work_only = SignalConditionalEvaluationBudget {
-            maximum_attempt_visits: 13,
+            maximum_attempt_visits: Some(13),
             ..common
         };
         runtime.set_runtime_policy(

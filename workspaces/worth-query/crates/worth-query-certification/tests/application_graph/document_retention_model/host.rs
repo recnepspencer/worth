@@ -36,10 +36,9 @@ use super::assessment_output::{
 use super::assessment_readiness::RetentionAssessmentReadiness;
 use super::programs::{
     validated_changed_feature_program, validated_changed_operation_program,
-    validated_first_program, validated_first_resource_program, validated_foreign_rule_program,
+    validated_first_program, validated_foreign_rule_program,
     validated_removed_assessment_supplier_program, validated_removed_operation_program,
-    validated_second_program, validated_second_resource_program, ResourceRetentionProgramP0,
-    RetentionProgramP0, RetentionProgramP1,
+    validated_second_program, RetentionProgramP0, RetentionProgramP1,
 };
 use super::retention_entry::{
     ExplicitReviewedSetRetentionBinding, OccurrenceSetRetentionBinding,
@@ -143,21 +142,13 @@ pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0
     publish_on_first_program_with_limits(host_limits())
 }
 
-/// Scale publication lane: 200k candidate items and operation width, 128 MiB
-/// candidate bytes, and WorkflowScale's finite Relational publication and
-/// integrity ceilings. Ordinary handlers retain their narrower requirements.
+/// Scale publication lane with WorkflowScale's Relational publication and
+/// integrity settings.
 pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime<RetentionProgramP0>
 {
     publish_on_first_program_with_limits(
         WorthQueryInMemoryApplicationLimits::new(
             world_resources::workflow_scale_resources(),
-            runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-                world_resources::WORKFLOW_SCALE_WIDTH,
-                128 * 1024 * 1024,
-            )
-            .expect("finite workflow-scale candidate resources")
-            .with_maximum_operation_width(world_resources::WORKFLOW_SCALE_WIDTH)
-            .expect("finite workflow-scale publication width"),
             runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, 200_000, 128)
                 .expect("finite workflow-scale query resources"),
             primary_graph::SignalConditionalEvaluationBudget::development(),
@@ -197,16 +188,6 @@ pub fn publish_on_second_program() -> DocumentRetentionRuntime<RetentionProgramP
             .support(validated_removed_operation_program()),
     )
     .expect("the P1-initial document-retention host must install")
-}
-
-pub fn publish_on_first_resource_program() -> DocumentRetentionRuntime<ResourceRetentionProgramP0> {
-    publish(
-        validated_first_resource_program(),
-        WorthQueryApplicationProgramRoster::new()
-            .support(validated_second_resource_program())
-            .support(validated_second_program()),
-    )
-    .expect("the resource-custody host must install")
 }
 
 /// Attempts a host without a V2 program against the two-rule catalog.

@@ -31,7 +31,7 @@ pub(super) fn validate_work_limit<Schema>(
 
 pub(super) fn validate_resolved_work_limit(
     plan: &worth_query_admission::facade::graph_read_access::WorthQueryGraphReadPlanReview,
-    maximum_work: std::num::NonZeroUsize,
+    maximum_work: Option<std::num::NonZeroUsize>,
     subject: &str,
 ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
     let intrinsic = plan.cost_estimate().intrinsic();
@@ -39,7 +39,7 @@ pub(super) fn validate_resolved_work_limit(
         .candidate_roots()
         .saturating_add(intrinsic.edge_touches())
         .saturating_add(intrinsic.intermediate_set_size());
-    if estimated_work > maximum_work.get() {
+    if maximum_work.is_some_and(|maximum| estimated_work > maximum.get()) {
         return Err(WorthQueryApplicationQueryAdmissionDenial::new(
             WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
             subject,

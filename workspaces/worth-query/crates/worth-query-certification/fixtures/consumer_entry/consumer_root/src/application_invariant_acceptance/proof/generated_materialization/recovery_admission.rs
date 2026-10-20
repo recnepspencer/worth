@@ -96,8 +96,9 @@ fn refusals<Recovery, Output>(
         assert_eq!(denial, WorthQueryAdvancementDenial::Interrupted(expected));
         recovery = retained;
     }
-    for (memory, work) in [(1 << 20, 0), (0, 1_000)] {
-        let budget = worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, memory, work);
+    for (memory, work) in [(None, 0), (Some(0), 1_000)] {
+        let budget =
+            worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(work));
         let (denial, retained) = with_recovery_request_budget(budget, || {
             continue_recovery(recovery, scope)
                 .err()
@@ -113,7 +114,7 @@ fn refusals<Recovery, Output>(
                     admitted: 0,
                     level: WorthQueryMemoryLimitLevel::Policy,
                 },
-            ) if memory == 0 => assert!(requested > 0, "native request custody needs memory"),
+            ) if memory == Some(0) => assert!(requested > 0, "native request custody needs memory"),
             denial => panic!("the supplied resource limit must explain refusal: {denial:?}"),
         }
         recovery = retained;

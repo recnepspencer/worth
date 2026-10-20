@@ -21,8 +21,8 @@ impl BridgeExecutionPolicyBaseline {
                 worth_foundational::DeterminismContract::CanonicalBitwise,
                 worth_foundational::ExecutionBudget::new(
                     std::num::NonZeroUsize::MIN,
-                    64 << 20,
-                    8_000_000,
+                    None,
+                    Some(8_000_000),
                 ),
             ),
         }

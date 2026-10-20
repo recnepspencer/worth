@@ -6,7 +6,7 @@ fn main() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 4096, 100),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(4096), Some(100)),
     );
     let memory = SerialMemoryBudget::from_policy(&policy);
     let cancellation = CancellationToken::new();

@@ -47,7 +47,7 @@ idempotency u64,identity "worth.query.peer-append.request.v1",decision WorthQuer
 handler identity "worth.query.peer-append.body.v1",program required,outputs NoApplicationMutationOutputs,
 principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
 scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value scope,
-candidates creates 2,deletes 0,links 1,unlinks 0,writes 6,emits 0,resources retained_representation_bytes 16384);
+);
 pub fn declare(
     builder: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {

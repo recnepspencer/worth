@@ -6,13 +6,8 @@ use bank_domain::{
         ReleaseEstateMutationBinding,
     },
 };
-use worth_query_host::facade::{
-    declaration::application_operation::{
-        ApplicationCandidateRequirements, ApplicationMutationBinding,
-    },
-    primary_graph::{
-        CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    },
+use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
 
 pub(crate) struct ReleaseEstateHandler;
@@ -59,14 +54,6 @@ impl OperationHandler<BankSchema, ReleaseEstateMutationBinding> for ReleaseEstat
             ));
         }
         HandlerResult::Completed(*input)
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &EstateAction,
-        _: &EstateAction,
-    ) -> ApplicationCandidateRequirements {
-        ReleaseEstateMutationBinding::CANDIDATES
     }
 
     fn build_candidate(

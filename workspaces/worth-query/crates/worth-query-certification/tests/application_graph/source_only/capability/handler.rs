@@ -60,13 +60,7 @@ where
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &SetRetentionInput,
-        _: &WorthQueryInvariantMutationTarget<CapabilitySchema, Document>,
-    ) -> ApplicationCandidateRequirements {
-        B::CANDIDATES
-    }
+
     fn build_candidate(
         &self,
         input: &SetRetentionInput,

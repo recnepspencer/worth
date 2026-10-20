@@ -103,7 +103,7 @@ let body = SelectLot::reference().body()
 ```
 
 This is an illustrative supplier declaration, not completion of the NCR product
-integration. Declare all snapshot initializers, ordinary candidate ceilings,
+integration. Declare all snapshot initializers, effect authority,
 domain requirements and authorization. A captured snapshot company is provider
 data, not a second mutable authority for the parent's company. Declare exclusive
 NCR ownership separately in relation integrity; a runtime single-selection guard

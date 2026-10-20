@@ -2,10 +2,11 @@ mod errors;
 mod touched_scope;
 
 pub use crate::validation::custom_rule::{
-    CustomInvariantExecutionContext, CustomInvariantLeaseBudget, CustomInvariantProvenance,
-    CustomInvariantRegistration, CustomInvariantRegistrationError, CustomInvariantRule,
-    CustomInvariantScopePlanner, CustomInvariantTraversalSummary, StructuralAspectStateView,
-    StructuralReadError, StructuralRelationRecord, StructuralRelationView,
+    CustomInvariantExecutionContext, CustomInvariantInterruption, CustomInvariantLeaseBudget,
+    CustomInvariantProvenance, CustomInvariantRegistration, CustomInvariantRegistrationError,
+    CustomInvariantRule, CustomInvariantScopePlanner, CustomInvariantTraversalSummary,
+    StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
+    StructuralRelationView,
 };
 pub use errors::{
     CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,

@@ -216,7 +216,7 @@ fn installed_narrowing_freezes_slots_and_refuses_after_real_custody() {
             .unwrap()
     };
     let batch = make();
-    let cap = limits(1, 32);
+    let cap = limits(Some(NonZeroUsize::new(1).unwrap()), 32);
     let overflow = make();
     let initial = overflow.observe();
     assert!(matches!(

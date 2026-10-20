@@ -15,7 +15,6 @@ use super::{
     WorthQueryApplicationProducerBinding, WorthQueryOutputDemandDenialKind,
 };
 use crate::basis::WorthQueryProductBranch;
-use crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits;
 use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::{InvalidationEditAdmission, SettlementRegistrationStop},
     AcceptedCurrentCandidate, CurrentAcceptedResult, CurrentAcceptedStop,
@@ -176,7 +175,6 @@ pub(super) fn readmit_source<Schema, Binding>(
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
-    limits: WorthQueryOutputDemandLimits,
     admission: &mut InvalidationEditAdmission,
     edition: super::super::InstalledProducerEdition,
 ) -> Result<
@@ -208,7 +206,6 @@ where
         request,
         branch,
         retained,
-        limits,
         admission,
         edition,
         authorized,
@@ -225,7 +222,6 @@ pub(super) fn readmit_authorized_source<'runtime, Schema, Binding>(
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
-    limits: WorthQueryOutputDemandLimits,
     admission: &mut InvalidationEditAdmission,
     edition: super::super::InstalledProducerEdition,
     authorized: AuthorizedRetainedSource<'runtime, Schema, Binding>,
@@ -254,15 +250,20 @@ where
     let maximum_results = installed_limits.maximum_results();
     let query_ceiling = installed_limits
         .maximum_work()
-        .get()
-        .min(limits.producer_work())
-        .min(admission.remaining_work());
-    let maximum_work = NonZeroUsize::new(query_ceiling).ok_or_else(|| {
-        denial(
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            Binding::IDENTITY,
-        )
-    })?;
+        .map(NonZeroUsize::get)
+        .into_iter()
+        .chain(admission.remaining_work())
+        .min();
+    let maximum_work = query_ceiling
+        .map(|work| {
+            NonZeroUsize::new(work).ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                    Binding::IDENTITY,
+                )
+            })
+        })
+        .transpose()?;
     let (_, product, application_basis) = selected.into_parts();
     let controls = WorthQueryApplicationQueryControls::product_one_shot(
         product,

@@ -32,7 +32,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         &[],
         |_| None,
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         )),
@@ -46,7 +46,6 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         source_partition: [2; 32],
         producer_dependency: None,
         idempotency_key: [3; 32],
-        resources: None,
         roles: (Vec::new()).into(),
         producer_facts: None,
         producer_fact_wire_version: 0,
@@ -65,7 +64,6 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             },
         ),
         readiness: WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
-        resources: None,
     };
     let wake = Arc::new(DemandWake {
         _record_capacity: test_record_capacity(),
@@ -105,8 +103,8 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         .expect("the equivalent ordinary demand reopens")
         .0;
     let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 0,
-        maximum_preparation_bytes: 8 * 1024 * 1024,
+        maximum_work_visits: Some(0),
+        maximum_preparation_bytes: None,
     });
     assert!(matches!(
         registry.peek_ready(&reopened, &mut short),

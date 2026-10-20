@@ -88,7 +88,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 &principal,
                 account,
                 live_account_parameters("account-1"),
-                WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048)
+                WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048))
                     .unwrap(),
             )
             .unwrap();
@@ -195,13 +195,6 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
             .application
             .primary_provider
             .active_application_commit_causality_partitions(),
-        0
-    );
-    assert_eq!(
-        world
-            .application
-            .primary_provider
-            .retained_application_emission_bytes(),
         0
     );
     // Compare before preparing the live attempt and after it finishes, with

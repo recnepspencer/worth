@@ -52,7 +52,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedStableLineagePub
     pub(super) address: PreparedStableLineageAddress<'lane, 'selected>,
     pub(super) recorded: RecordedOutput,
     pub(super) facts:
-        Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
 }
 
 impl PreparedStableLineagePublication<'_, '_> {
@@ -91,6 +91,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
     scope: &WorthQueryOperationScopeBinding,
     observation: &ProductBranchObservation,
     coordination: &'lane WorthQueryApplicationBranchCommitCoordination<'lane>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<PreparedStableLineageAddress<'lane, 'selected>, WorthQueryOutputDemandDenial> {
     admission
@@ -126,13 +127,18 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
     // History no retained reader selects is freed before this address extends it.
     lineage.retire_unselected_generations(&source, coordinate.occurrence, admission)?;
     let actual = lineage
-        .prior_input_cutoff_candidate::<Binding>(scope, observation, partition, admission)
-        .map_err(|stop| match stop {
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-            | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                denial(Kind::WorkBudgetExceeded)
-            }
-            _ => denial(Kind::RetainedBasisUnavailable),
+        .prior_input_cutoff_candidate::<Binding>(
+            scope,
+            observation,
+            partition,
+            execution,
+            admission,
+        )
+        .map_err(|stop| {
+            crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+                crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+                "stable lineage basis unavailable",
+            )
         })?;
     if !actual
         .as_ref()

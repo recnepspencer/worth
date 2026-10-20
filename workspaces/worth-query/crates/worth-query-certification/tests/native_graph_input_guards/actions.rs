@@ -105,29 +105,29 @@ fn introduce_row(input: &IntroduceParent) -> String {
     input.row.clone()
 }
 worth_query_mutation_binding!(pub SaveBinding for SaveRow, schema Schema,
-    identity "worth.query.path-input.save-binding.v1", input SaveInput, operation Save, result ResultBinding,
-    idempotency u64, identity "worth.query.path-input.save-request.v1",
-    decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
-    handler identity "worth.query.path-input.save-body.v1", program required, outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value row,
-    candidates creates 1, deletes 0, links 0, unlinks 0, writes 3, emits 0, resources retained_representation_bytes 4096);
+identity "worth.query.path-input.save-binding.v1", input SaveInput, operation Save, result ResultBinding,
+idempotency u64, identity "worth.query.path-input.save-request.v1",
+decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
+handler identity "worth.query.path-input.save-body.v1", program required, outputs NoApplicationMutationOutputs,
+principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
+scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value row,
+);
 worth_query_mutation_binding!(pub ChangeBinding for ChangeParent, schema Schema,
-    identity "worth.query.path-input.change-binding.v1", input ChangeInput, operation Change, result ResultBinding,
-    idempotency u64, identity "worth.query.path-input.change-request.v1",
-    decision WorthQueryOperationBodyDecision<Schema, Parent>, denial DenialBinding,
-    handler identity "worth.query.path-input.change-body.v1", program required, outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Parent, ParentFacts, ParentIdentity, String, ReadOnly, NoApplicationUnit, field ParentIdentity::reference(), value parent,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 0, resources retained_representation_bytes 4096);
+identity "worth.query.path-input.change-binding.v1", input ChangeInput, operation Change, result ResultBinding,
+idempotency u64, identity "worth.query.path-input.change-request.v1",
+decision WorthQueryOperationBodyDecision<Schema, Parent>, denial DenialBinding,
+handler identity "worth.query.path-input.change-body.v1", program required, outputs NoApplicationMutationOutputs,
+principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
+scope Parent, ParentFacts, ParentIdentity, String, ReadOnly, NoApplicationUnit, field ParentIdentity::reference(), value parent,
+);
 worth_query_mutation_binding!(pub IntroduceBinding for IntroduceParent, schema Schema,
-    identity "worth.query.path-input.introduce-binding.v1", input IntroduceInput, operation Introduce, result ResultBinding,
-    idempotency u64, identity "worth.query.path-input.introduce-request.v1",
-    decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
-    handler identity "worth.query.path-input.introduce-body.v1", program required, outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value introduce_row,
-    candidates creates 1, deletes 0, links 1, unlinks 0, writes 3, emits 0, resources retained_representation_bytes 4096);
+identity "worth.query.path-input.introduce-binding.v1", input IntroduceInput, operation Introduce, result ResultBinding,
+idempotency u64, identity "worth.query.path-input.introduce-request.v1",
+decision WorthQueryOperationBodyDecision<Schema, Row>, denial DenialBinding,
+handler identity "worth.query.path-input.introduce-body.v1", program required, outputs NoApplicationMutationOutputs,
+principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
+scope Row, RowFacts, RowIdentity, String, ReadOnly, NoApplicationUnit, field RowIdentity::reference(), value introduce_row,
+);
 
 pub fn save_body() -> ApplicationOperationBody<Schema, Save, SaveRow> {
     Save::reference()

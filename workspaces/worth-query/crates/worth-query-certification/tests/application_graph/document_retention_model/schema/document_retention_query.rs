@@ -7,9 +7,9 @@
 use worth_query_host::facade::declaration;
 use worth_query_host::facade::declaration::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultShapeBuilder,
 };
 use worth_query_host::facade::{
     worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
@@ -83,7 +83,6 @@ pub fn document_retention_query_definition() -> ApplicationQueryDefinition<
         .scope(Document::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 5))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -113,7 +112,6 @@ pub fn document_retention_condition_query_definition() -> ApplicationQueryDefini
         .scope(Document::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 3))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

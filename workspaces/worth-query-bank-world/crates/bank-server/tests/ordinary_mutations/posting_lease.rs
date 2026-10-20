@@ -65,13 +65,17 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
         Placement::Serial
     });
     bound(ceiling.map(|work| {
-        worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work)
+        worth_foundational::ExecutionBudget::new(
+            NonZeroUsize::MIN,
+            Some(64 * 1024 * 1024),
+            Some(work),
+        )
     }));
     if cancel {
         source.cancel();
     }
     let request = fixture.world.runtime.request(&owner, &scope);
-    let outcome = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap());
+    let outcome = outcome.advance(&request, Some(NonZeroUsize::new(20_000).unwrap()));
     let work = reports()
         .into_iter()
         .filter_map(|report| report.ok().map(|report| report.charged_work()))

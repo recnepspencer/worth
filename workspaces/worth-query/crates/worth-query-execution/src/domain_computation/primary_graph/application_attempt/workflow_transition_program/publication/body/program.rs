@@ -23,7 +23,7 @@ where
         Decision = WorthQueryOperationBodyDecision<Schema, BodyScope<Schema, Binding>>,
     >,
 {
-    let (handler, ceiling) = runtime
+    let handler = runtime
         .mutation_body_for_approval::<Binding>()
         .map_err(WorkflowApprovalBodyDenial::Handler)?;
     let execution = phase
@@ -43,8 +43,6 @@ where
     let WorthQueryApplicationEffectProgram {
         mut read_set,
         effects,
-        emission_retained_bytes,
-        emission_retained_bytes_ceiling,
         conditional_definition,
         effect_posture,
         output_correspondence,
@@ -55,8 +53,7 @@ where
     } = program;
     // Native approval has no application outputs/emissions/conditional definition.
     // Refuse an unimplemented future profile rather than erase its carried state.
-    if emission_retained_bytes != 0 || emission_retained_bytes_ceiling != 0
-        || conditional_definition.is_some() || !output_correspondence.is_empty()
+    if conditional_definition.is_some() || !output_correspondence.is_empty()
         || !producer_required_invariants.is_empty()
         || effect_posture != crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform {
         return Err(WorkflowApprovalBodyDenial::UnsupportedProfile);
@@ -112,7 +109,6 @@ where
             handler.as_ref(),
             identities,
             decision,
-            ceiling,
             &request,
             ExecutionAllocationPolicy::SystemAllocation,
         )

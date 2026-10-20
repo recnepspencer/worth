@@ -121,6 +121,7 @@ fn requested_read_denial(
         | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
+        | Stop::RetainedCompanionCounterOverflow { .. }
         | Stop::RetainedCompanionCapacityExhausted { .. } => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }

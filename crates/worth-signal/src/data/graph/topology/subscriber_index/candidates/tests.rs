@@ -13,7 +13,7 @@ fn candidate_normalization_matches_ordered_set_and_denies_before_mutation() {
             .collect::<std::collections::BTreeSet<_>>()
             .into_iter()
             .collect();
-        let mut work = Preparation::new(1_000_000);
+        let mut work = Preparation::new(Some(1_000_000));
         let mut actual = input.clone();
         normalize(&mut actual, &mut EvaluationWork::Conditional(&mut work)).unwrap();
         assert_eq!(actual, expected);
@@ -21,7 +21,7 @@ fn candidate_normalization_matches_ordered_set_and_denies_before_mutation() {
         let mut exact = input.clone();
         normalize(
             &mut exact,
-            &mut EvaluationWork::Conditional(&mut Preparation::new(cost)),
+            &mut EvaluationWork::Conditional(&mut Preparation::new(Some(cost))),
         )
         .unwrap();
         assert_eq!(exact, expected);
@@ -30,7 +30,7 @@ fn candidate_normalization_matches_ordered_set_and_denies_before_mutation() {
             assert!(matches!(
                 normalize(
                     &mut denied,
-                    &mut EvaluationWork::Conditional(&mut Preparation::new(cost - 1))
+                    &mut EvaluationWork::Conditional(&mut Preparation::new(Some(cost - 1)))
                 ),
                 Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
             ));
@@ -44,7 +44,7 @@ fn candidate_growth_denies_overflow_and_exhaustion_before_reserving_storage() {
     let mut candidates = vec![NodeId::new(3, 2)];
     let capacity = candidates.capacity();
     for count in [10, usize::MAX] {
-        let mut work = Preparation::new(0);
+        let mut work = Preparation::new(Some(0));
         assert!(matches!(
             reserve_additional(
                 &mut candidates,

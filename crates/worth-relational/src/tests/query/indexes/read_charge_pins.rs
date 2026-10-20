@@ -40,7 +40,7 @@ fn admitted_field_revision_keeps_its_parent_charge_pin() {
         .is_some());
     assert_eq!(admitted, parent);
     let (answer, report) = request
-        .run(ExecutionWorkCeiling::new(parent), |_| {
+        .run(ExecutionWorkCeiling::new(Some(parent)), |_| {
             view.entity_field_revision(&request, entity, &locator)
         })
         .unwrap();
@@ -72,7 +72,7 @@ fn related_ordering_keeps_its_keyed_read_charge_pin() {
     let parent_work = 0;
     let expected = parent_work + EXAMINE_SLOT + RESERVE_RECORD + KEYED_RECORD;
     let (built, report) = request
-        .run(ExecutionWorkCeiling::new(expected), |_| {
+        .run(ExecutionWorkCeiling::new(Some(expected)), |_| {
             runtime.index_authority().build_for_commit(
                 &request,
                 DerivedIndexBuildRequest {
@@ -102,7 +102,7 @@ fn connectivity_keeps_its_record_read_charge_pin() {
     let parent_work = 0;
     let expected = parent_work + 2 * EXAMINE_SLOT + 2 * EXAMINE_SLOT + KEYED_RECORD + 1 + 2;
     let (answer, report) = request
-        .run(ExecutionWorkCeiling::new(expected), |_| {
+        .run(ExecutionWorkCeiling::new(Some(expected)), |_| {
             runtime.inspect_what_happened().connectivity_summary(
                 &request,
                 &connectivity_request(

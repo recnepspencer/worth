@@ -36,11 +36,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for OrdinaryRetentionAs
         "worth.query.certification.ordinary-retention-assessment.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.ordinary-retention-assessment.command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(512),
-        );
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -114,14 +109,6 @@ impl OperationHandler<DocumentRetentionSchema, OrdinaryRetentionAssessmentBindin
             Ok(target) => HandlerResult::Completed(target),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &RetentionAssessmentInput,
-        _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
-    ) -> ApplicationCandidateRequirements {
-        OrdinaryRetentionAssessmentBinding::CANDIDATES
     }
 
     fn build_candidate(

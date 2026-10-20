@@ -10,7 +10,7 @@ fn case(cancel: bool, check_entry: bool) {
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard(),
         4096,
         128 * 1024 * 1024,
-        1_000_000,
+        Some(1_000_000),
         |graph| {
             diamond::seed(graph);
             source_world::seed(graph);

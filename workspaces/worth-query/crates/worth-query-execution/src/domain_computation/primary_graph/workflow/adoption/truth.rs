@@ -119,7 +119,7 @@ impl WorkflowAdoptionTruth {
                 execution,
                 &BTreeSet::from([entity]),
                 kind,
-                self.remaining(),
+                Some(self.remaining()),
             )
             .map_err(WorkflowAdoptionReadDenial::ReadExecution)?
             .map_err(|limit| self.exhausted(limit.consumed_work_units()))?;

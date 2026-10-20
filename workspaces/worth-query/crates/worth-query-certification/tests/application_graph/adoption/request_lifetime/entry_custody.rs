@@ -67,8 +67,8 @@ fn program_entries_refuse_before_the_reader_used_by_their_admitted_control() {
                 };
                 bound(Some(worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
-                    if zero_memory { 0 } else { 64 * 1024 * 1024 },
-                    if zero_memory { 8_000_000 } else { 0 },
+                    if zero_memory { Some(0) } else { None },
+                    Some(if zero_memory { 8_000_000 } else { 0 }),
                 )));
                 let before = reads();
                 let cause = match entry {

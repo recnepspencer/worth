@@ -44,7 +44,7 @@ impl IndexAccess<'_> {
     }
 
     /// Validate the installed owner before lending the already-pinned lookup.
-    pub fn execute_prepared_entity_field_lookup<E>(
+    pub fn execute_prepared_entity_field_lookup<E: worth_execution::ChargedBytes>(
         &self,
         prepared: &PreparedEntityFieldLookup,
         value: &AspectValue,

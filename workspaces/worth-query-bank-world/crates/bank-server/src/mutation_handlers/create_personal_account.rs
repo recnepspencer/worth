@@ -7,9 +7,7 @@ use bank_domain::schema::{
     CreatedPersonalAccountOutput, InstitutionAccount, InstitutionIdentityField, Kind,
     PersonalOwner, PrincipalIdentityField, Status,
 };
-use worth_query_host::facade::declaration::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
-};
+
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     OperationHandler, WorthQueryApplicationEntityKey,
@@ -50,14 +48,6 @@ impl OperationHandler<BankSchema, CreatePersonalAccountMutationBinding>
             reader.input_identity(),
             input,
         ))
-    }
-
-    fn candidate_requirements(
-        &self,
-        _input: &CreatePersonalAccount,
-        _decision: &CreatePersonalAccountDecision,
-    ) -> ApplicationCandidateRequirements {
-        CreatePersonalAccountMutationBinding::CANDIDATES
     }
 
     fn build_candidate(

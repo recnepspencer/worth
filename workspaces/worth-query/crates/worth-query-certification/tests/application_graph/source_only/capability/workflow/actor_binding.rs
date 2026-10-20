@@ -31,7 +31,6 @@ impl ApplicationMutationBinding<CapabilitySchema> for ActorBinding {
     const IDENTITY: &'static str = "capability-workflow.ActorBinding.v1";
     const HANDLER_IDENTITY: &'static str = "capability-workflow.handler.ActorBinding";
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-workflow.key.ActorBinding";
-    const CANDIDATES: ApplicationCandidateRequirements = GuardedBinding::CANDIDATES;
     fn scope_field() -> ApplicationFieldRef<
         CapabilitySchema,
         Document,

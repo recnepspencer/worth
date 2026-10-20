@@ -123,8 +123,6 @@ pub(super) fn prepare_provider_attempt(
         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     >,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
-    expected_emission_retained_bytes: u64,
-    emission_retained_bytes_ceiling: u64,
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition: Option<
         crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
@@ -146,11 +144,7 @@ pub(super) fn prepare_provider_attempt(
     for effect in effects {
         accumulator.add_effect(effect)?;
     }
-    let completed = accumulator.finish(
-        expected_emission_retained_bytes,
-        emission_retained_bytes_ceiling,
-        output_correspondence,
-    )?;
+    let completed = accumulator.finish(output_correspondence)?;
     Ok(WorthQueryPreparedApplicationProviderAttempt {
         local_action_settlement: None,
         required_output_demand: None,
@@ -190,8 +184,6 @@ pub(super) fn prepare_program_migration_batch(
     }
     accumulator
         .finish(
-            0,
-            0,
             super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::default(),
         )?
         .into_migration_batch()
@@ -205,9 +197,9 @@ pub(super) fn progression_denial() -> WorthQueryApplicationAttemptDenial {
     )
 }
 
-pub(super) fn retained_bytes_denial() -> WorthQueryApplicationAttemptDenial {
+pub(super) fn invalid_emission_denial() -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(
-        WorthQueryApplicationAttemptDenialKind::RetainedEffectBytesExceeded,
+        WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
         "application emission batch",
     )
 }

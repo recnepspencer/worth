@@ -1,6 +1,6 @@
 use crate::domain_computation::execution_runtime::{
-    product_world::WorthQueryProductWorldResources, WorthQueryApplicationCandidateResourceProfile,
-    WorthQueryApplicationQueryResourceProfile, WorthQueryOutputDemandResourceProfile,
+    product_world::WorthQueryProductWorldResources, WorthQueryApplicationQueryResourceProfile,
+    WorthQueryOutputDemandResourceProfile,
 };
 use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 
@@ -10,7 +10,6 @@ use super::WorthQueryInMemoryApplicationProfile;
 #[derive(Clone)]
 pub struct WorthQueryInMemoryApplicationLimits {
     pub(super) world: WorthQueryProductWorldResources,
-    pub(super) candidates: WorthQueryApplicationCandidateResourceProfile,
     pub(super) output_demands: WorthQueryOutputDemandResourceProfile,
     pub(super) queries: WorthQueryApplicationQueryResourceProfile,
     pub(super) conditionals: SignalConditionalEvaluationBudget,
@@ -31,13 +30,11 @@ impl WorthQueryInMemoryApplicationLimits {
 
     pub const fn new(
         world: WorthQueryProductWorldResources,
-        candidates: WorthQueryApplicationCandidateResourceProfile,
         queries: WorthQueryApplicationQueryResourceProfile,
         conditionals: SignalConditionalEvaluationBudget,
     ) -> Self {
         Self {
             world,
-            candidates,
             queries,
             output_demands: WorthQueryOutputDemandResourceProfile::standard(),
             conditionals,

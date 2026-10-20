@@ -20,7 +20,7 @@ pub(super) fn payer() -> ExecutionResourceLease<'static> {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, 1_000_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1_000_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

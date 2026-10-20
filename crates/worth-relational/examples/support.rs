@@ -307,7 +307,7 @@ fn stable_contract_identity(aspect_key: &AspectKey) -> u64 {
 
 pub(crate) fn serial_request() -> worth_execution::SerialRequest {
     worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::SerialMemoryBudget::new(None),
         worth_execution::CancellationSource::new().token(),
         None,
     )

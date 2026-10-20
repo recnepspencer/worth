@@ -140,29 +140,6 @@ pub struct WorthQueryProducerInvariantRequirement {
     execution_point: ApplicationInvariantExecutionPoint,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryProducerDemandResources {
-    work: usize,
-    retained_bytes: usize,
-}
-
-impl WorthQueryProducerDemandResources {
-    pub const fn new(work: usize, retained_bytes: usize) -> Self {
-        Self {
-            work,
-            retained_bytes,
-        }
-    }
-
-    pub const fn work(self) -> usize {
-        self.work
-    }
-
-    pub const fn retained_bytes(self) -> usize {
-        self.retained_bytes
-    }
-}
-
 impl WorthQueryProducerInvariantRequirement {
     pub const fn new(
         identifier: &'static str,
@@ -222,11 +199,6 @@ where
     ) -> Option<&'static str> {
         None
     }
-
-    fn demand_resources(
-        &self,
-        source: &<<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
-    ) -> WorthQueryProducerDemandResources;
 }
 
 pub trait WorthQueryApplicationProducerBinding<Schema>: Sized + 'static
@@ -263,7 +235,6 @@ where
     const IDENTITY: &'static str;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
-    const RESOURCE_POLICY: &'static str;
     const REUSE_POLICY: &'static str;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 }

@@ -2,12 +2,12 @@ use super::{ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQuery
 use crate::application_query::{
     validate_portable_application_query_freshly, ApplicationQueryBasisSupport,
     ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
-    ApplicationQueryDefinitionDenial, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryDisclosurePosture,
-    ApplicationQueryDisclosureRule, ApplicationQueryDisclosureSelector,
-    ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryParameterDefinition, ApplicationQueryResultShape,
-    ApplicationQueryResultShapeBuilder, WorthQueryPortableApplicationQueryDisclosureParts,
+    ApplicationQueryDefinitionDenial, ApplicationQueryDisclosureContract,
+    ApplicationQueryDisclosurePosture, ApplicationQueryDisclosureRule,
+    ApplicationQueryDisclosureSelector, ApplicationQueryInfluenceContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryParameterDefinition,
+    ApplicationQueryResultShape, ApplicationQueryResultShapeBuilder,
+    WorthQueryPortableApplicationQueryDisclosureParts,
     WorthQueryPortableApplicationQueryResultShapeParts,
 };
 use crate::application_schema::{
@@ -183,7 +183,6 @@ fn typed_definition() -> ErasedApplicationQueryDefinition {
         .scope(entity)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 0))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

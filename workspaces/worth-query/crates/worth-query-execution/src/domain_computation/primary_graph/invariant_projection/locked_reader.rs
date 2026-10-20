@@ -143,10 +143,10 @@ where
         )
     }
 
-    pub(super) fn project_bounded<Output>(
+    pub(super) fn project_with_work_limit<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
         basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
@@ -161,7 +161,10 @@ where
     > {
         self.project_with_work_budget(
             execution,
-            WorthQueryInvariantProjectionWorkBudget::bounded(maximum_work),
+            maximum_work.map_or_else(
+                WorthQueryInvariantProjectionWorkBudget::unbounded,
+                WorthQueryInvariantProjectionWorkBudget::bounded,
+            ),
             basis,
             projection,
             super::super::application_attempt::retained_decision_facts::StorageControl::new(

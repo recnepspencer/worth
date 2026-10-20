@@ -7,13 +7,8 @@ use bank_domain::{
         BankSchema, DisburseEstateMutationBinding, EstateMutationDenial, EstateMutationResult,
     },
 };
-use worth_query_host::facade::{
-    declaration::application_operation::{
-        ApplicationCandidateRequirements, ApplicationMutationBinding,
-    },
-    primary_graph::{
-        CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    },
+use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
 
 use super::journal::author_journal;
@@ -53,14 +48,6 @@ impl OperationHandler<BankSchema, DisburseEstateMutationBinding> for DisburseEst
             Ok(proposal) => HandlerResult::Completed(proposal),
             Err(denial) => HandlerResult::DomainDenied(EstateMutationDenial::Proposal(denial)),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &EstateAction,
-        _: &BankInvariantApprovedProposal,
-    ) -> ApplicationCandidateRequirements {
-        DisburseEstateMutationBinding::CANDIDATES
     }
 
     fn build_candidate(

@@ -30,7 +30,7 @@ const CEILING: u64 = 1_024;
 
 fn ceiling_world() -> AuthorizationWorld {
     world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
-        maximum_marking_work: CEILING,
+        maximum_marking_work: Some(CEILING),
         ..defaults
     })
 }

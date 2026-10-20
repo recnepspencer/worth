@@ -1,4 +1,5 @@
 //! declared root paths retain per row native witnesses.
+mod join_interruption;
 use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenialKind, WorthQuerySourceExpectationDenialKind,
@@ -59,6 +60,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         .installed_schema()
         .certification_query(CrossRootQuery::reference())
         .unwrap();
+    assert_eq!(query.read_graph().maximum_traversal_depth(), 1);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
         .application
@@ -159,21 +161,55 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                 .expect("the complete sealed pairing is retained")
         })
         .unwrap();
-    world.application.with_host_advancement(|phase| {
-        let selected = world.selected_product(&phase.test_host_request());
-        selected.assert_cumulative_currentness_for_test(&phase, &request, &dependencies);
-        dependencies.assert_storage_custody_for_test(phase.checked_execution_request_for(&world.application.product_runtime).unwrap());
-        selected.require_current_required_set(&phase, &crate::publication_boundary::program_publication_access(), &request,
-            std::iter::empty(), &dependencies, std::num::NonZeroUsize::new(8192).unwrap()).unwrap();
-        // A caller cannot force an unbounded descriptor allocation: metadata
-        // traversal is admitted before exact backing. Refusal borrows all parts.
-        let refused = selected.combine_query_dependencies(&phase, &crate::publication_boundary::program_publication_access(),
-            std::iter::repeat_n(&dependencies, usize::MAX));
-        assert!(matches!(refused, Err(crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(ref cause))
-            if cause.kind() == WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded));
-        selected.require_current_required_set(&phase, &crate::publication_boundary::program_publication_access(), &request,
-            std::iter::empty(), &dependencies, std::num::NonZeroUsize::new(8192).unwrap()).unwrap();
-    }).unwrap();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let selected = world.selected_product(&phase.test_host_request());
+            selected.assert_cumulative_currentness_for_test(&phase, &request, &dependencies);
+            let serial_retained = dependencies.assert_storage_custody_for_test(
+                phase
+                    .checked_execution_request_for(&world.application.product_runtime)
+                    .unwrap(),
+            );
+            selected
+                .require_current_required_set(
+                    &phase,
+                    &crate::publication_boundary::program_publication_access(),
+                    &request,
+                    std::iter::empty(),
+                    &serial_retained,
+                    None,
+                )
+                .expect(
+                    "the same original proof retained by fresh serial request is actually current",
+                );
+            selected
+                .require_current_required_set(
+                    &phase,
+                    &crate::publication_boundary::program_publication_access(),
+                    &request,
+                    std::iter::empty(),
+                    &dependencies,
+                    Some(8192),
+                )
+                .unwrap();
+            selected
+                .require_current_required_set(
+                    &phase,
+                    &crate::publication_boundary::program_publication_access(),
+                    &request,
+                    std::iter::empty(),
+                    &dependencies,
+                    Some(8192),
+                )
+                .unwrap();
+        })
+        .unwrap();
+    join_interruption::assert_original_join_cancellation(
+        &world,
+        &dependencies,
+        &crate::publication_boundary::program_publication_access(),
+    );
     let graph = world.application.runtime.primary_graph().unwrap();
     let observed_source = &result.observed_sources()[0];
     let crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity::Product(product) = &observed_source.selection else {
@@ -306,7 +342,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         assert!(matches!(capture, crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(ref cause)
             if cause.kind() == WorthQuerySourceExpectationDenialKind::ForeignOperation));
         let denial = current.require_current_required_set(&phase, &crate::publication_boundary::program_publication_access(), &request,
-            std::iter::empty(), &dependencies, std::num::NonZeroUsize::new(8192).unwrap()).unwrap_err();
+            std::iter::empty(), &dependencies, Some(8192)).unwrap_err();
         assert!(matches!(denial, crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Output(ref cause)
             if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded), "real native adjacency ABA refuses the complete original pairing: {denial:?}");
     }).unwrap();

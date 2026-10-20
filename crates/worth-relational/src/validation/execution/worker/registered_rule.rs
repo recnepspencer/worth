@@ -22,6 +22,7 @@ pub(super) struct RegisteredInvariantEvaluation {
 
 pub(super) fn evaluate_registered_rule<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     packet: &InvariantWorkPacket<'state>,
     budget: Option<&dyn InvariantBudget>,
 ) -> RegisteredInvariantEvaluation {
@@ -36,6 +37,7 @@ pub(super) fn evaluate_registered_rule<'state>(
             retained_touched,
         } => evaluate_custom_registration(
             runtime,
+            execution,
             packet,
             registration,
             prepared_execution,
@@ -51,6 +53,7 @@ pub(super) fn evaluate_registered_rule<'state>(
         } => {
             let provenance = CustomInvariantExecutionContext::not_applicable_provenance(
                 runtime,
+                execution,
                 packet.observation,
                 packet.version_id,
                 packet.current_version_id,
@@ -117,6 +120,7 @@ fn evaluate_native_registration<'state>(
 
 fn evaluate_custom_registration<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     packet: &InvariantWorkPacket<'state>,
     registration: &crate::validation::data::CustomInvariantRegistration,
     prepared_execution: &std::sync::Arc<
@@ -126,7 +130,7 @@ fn evaluate_custom_registration<'state>(
     retained_touched: &std::sync::Arc<crate::validation::data::TouchedStructuralSet>,
     budget: Option<&dyn InvariantBudget>,
 ) -> RegisteredInvariantEvaluation {
-    let structural_budget = budget.map(InvariantBudget::custom_structural_budget);
+    let structural_budget = budget.and_then(InvariantBudget::custom_structural_budget);
     let work = prepared_execution.work_meter();
     let work = structural_budget
         .as_ref()
@@ -142,6 +146,7 @@ fn evaluate_custom_registration<'state>(
     let ready = budget.is_none_or(|budget| budget.checkpoint(1));
     let context = CustomInvariantExecutionContext::new(
         runtime,
+        execution,
         packet.observation,
         packet.version_id,
         packet.current_version_id,

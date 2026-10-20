@@ -75,7 +75,6 @@ pub(super) fn advance_input_cutoff<'owner, Schema, Binding, OperationType, Input
     key: Option<PreparedInputReuseKey>,
     context: Option<PreparedDecisionReuseContext>,
     matched_predecessors: Option<super::super::demand::MatchedRequiredPredecessors<'_>>,
-    resources: super::super::WorthQueryProducerDemandResources,
     edition: InstalledProducerEdition,
     admission: &mut InvalidationEditAdmission,
     currentness: &mut InvalidationEditAdmission,
@@ -116,6 +115,7 @@ where
                 observation,
                 source.partition_identity(),
                 edition,
+                &execution,
                 admission,
             )
             .map_err(cutoff_admission_denial)?;
@@ -148,6 +148,7 @@ where
             scope,
             observation,
             source.partition_identity(),
+            &execution,
             admission,
         )
         .map_err(cutoff_admission_denial)?;
@@ -273,13 +274,13 @@ where
                 .map_err(cutoff_denial)?;
             verified.with_verified(|verified| {
                 stable_apply::publish::<Schema, Binding, _, _, _>(
+                    &execution,
                     runtime,
                     current.product().observation(),
                     operation,
                     fresh,
                     verified,
                     required_output,
-                    resources,
                     admission,
                 )
             })
@@ -327,6 +328,9 @@ fn cutoff_admission_denial(
             Stop::WorkExhausted { .. }
             | Stop::WorkExhaustedWithoutRequirement { .. }
             | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+            Stop::Execution(cause) => {
+                return crate::domain_computation::primary_graph::output_reuse::read_denial(cause)
+            }
             Stop::Interrupted(event) => {
                 WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
             }

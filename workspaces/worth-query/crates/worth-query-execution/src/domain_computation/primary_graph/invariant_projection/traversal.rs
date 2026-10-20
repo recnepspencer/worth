@@ -48,7 +48,9 @@ where
                 )
             })?;
         let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
-        self.work_budget.consume(read.work_units());
+        if !self.work_budget.consume(read.work_units()) {
+            return Err(work_budget_exceeded(relation.name()));
+        }
         self.work.record_adjacency(
             read.relation_records_examined(),
             read.endpoint_records_reserved(),
@@ -102,7 +104,9 @@ where
                 )
             })?;
         let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
-        self.work_budget.consume(read.work_units());
+        if !self.work_budget.consume(read.work_units()) {
+            return Err(work_budget_exceeded(relation.name()));
+        }
         self.work.record_adjacency(
             read.relation_records_examined(),
             read.endpoint_records_reserved(),
@@ -149,7 +153,7 @@ where
         if !self.work_budget.can_afford(1) {
             return Err(work_budget_exceeded(relation));
         }
-        self.work_budget.consume(1);
+        assert!(self.work_budget.consume(1), "projection work was admitted");
         Ok(())
     }
 
@@ -158,11 +162,12 @@ where
         limit: worth_relational::facade::runtime::AdjacencyTruthReadLimitExceeded,
         relation: &str,
     ) -> WorthQueryInvariantProjectionTraversalDenial {
-        self.work_budget.consume(limit.consumed_work_units());
-        self.work.record_adjacency(
-            limit.relation_records_examined(),
-            limit.endpoint_records_reserved(),
-        );
+        if self.work_budget.consume(limit.consumed_work_units()) {
+            self.work.record_adjacency(
+                limit.relation_records_examined(),
+                limit.endpoint_records_reserved(),
+            );
+        }
         self.work_budget.mark_exceeded();
         work_budget_exceeded(relation)
     }

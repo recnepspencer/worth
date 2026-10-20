@@ -133,7 +133,6 @@ fn consumer_root_recovery_preserves_exact_custody_and_readiness() {
     snapshot_pressure_preserves_recoverable_source(&installed);
     superseded_completion_is_terminal(&installed);
     changed_root_cannot_adopt_stale_prepared_source(&installed);
-    resource_denial_preserves_source_and_delivery(&installed);
     super::super::dependent_recovery::caller_disposal_after_root_recovers_dependent(&installed);
     use super::super::readiness_recovery as ready;
     ready::readiness_failure_recovers_exact_pending_output(&installed);

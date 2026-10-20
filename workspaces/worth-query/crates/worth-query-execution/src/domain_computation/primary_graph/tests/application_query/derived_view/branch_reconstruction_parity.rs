@@ -133,7 +133,7 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
             let mut first = Some(first);
             let request = execution;
             let (answer, work) = request
-                .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+                .run(ExecutionWorkCeiling::new(None), |_| {
                     world
                         .application
                         .reconstruct_managed_derived_collection_pair(

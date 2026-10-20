@@ -23,7 +23,7 @@ macro_rules! query {
         pub fn $definition()->ApplicationQueryDefinition<Schema,$query,(),Value,Row> {
             ApplicationQueryDefinitionBuilder::declare($query::reference()).root(Evidence::reference()).scope(Row::reference())
                 .result_shape(ApplicationQueryResultShapeBuilder::<Schema,$query,Evidence,Value,ResultBinding>::new(Evidence::reference()).field($field()).build())
-                .cardinality(ApplicationQueryCardinality::Many).dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1,1,128))
+                .cardinality(ApplicationQueryCardinality::Many)
                 .disclosure(ApplicationQueryDisclosureContract::public()).basis_support(ApplicationQueryBasisSupport::current_and_pinned()).lanes(ApplicationQueryLaneEligibility::one_shot()).public()
                 .root_path(ApplicationQueryRootPath::from(Row::reference()).forward(<$relation>::reference())).build().unwrap()
         }

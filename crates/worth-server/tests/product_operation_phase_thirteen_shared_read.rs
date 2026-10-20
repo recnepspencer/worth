@@ -62,7 +62,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, 30),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), None, Some(30)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -74,6 +74,30 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
         .expect("host-backed leased batch");
     assert_eq!(actual.canonical_digest(), expected.canonical_digest());
     assert!(actual.execution_report().unwrap().charged_work() > 3);
+    assert_eq!(
+        lease.charged_memory_bytes(),
+        0,
+        "completed owner releases its tickets"
+    );
+    let finite_lease = server
+        .execution_authority()
+        .unwrap()
+        .request_lease(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Automatic,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), Some(1 << 27), Some(30)),
+            ),
+            deadline: None,
+            cancellation: CancellationToken::new(),
+        })
+        .unwrap();
+    let finite = session
+        .product_operations()
+        .execute_shared_read_batch_with_lease(inputs.clone(), &finite_lease)
+        .expect("explicit finite policy admits the same batch");
+    assert_eq!(finite.canonical_digest(), actual.canonical_digest());
+    assert_eq!(finite_lease.charged_memory_bytes(), 0);
 
     let cancelled = CancellationSource::new();
     cancelled.cancel();
@@ -84,7 +108,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, 10),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), Some(1 << 27), Some(10)),
             ),
             deadline: None,
             cancellation: cancelled.token(),
@@ -106,7 +130,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1 << 27, 4),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), Some(1 << 27), Some(4)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -131,7 +155,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), 1024, 10),
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), Some(1024), Some(10)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -144,9 +168,14 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
         matches!(
             stopped,
             Err(
-                worth_server::WorthServerProductReadBatchStop::PacketAdmission(
-                    worth_execution::MapDenial::MemoryOverflow
-                )
+                worth_server::WorthServerProductReadBatchStop::PacketStopped {
+                    reason: worth_execution::MapStop::Admission(
+                        worth_execution::LeaseDenial::MemoryExhausted(
+                            worth_execution::MemoryLimitDenial::Capacity { .. }
+                        )
+                    ),
+                    ..
+                }
             )
         ),
         "{stopped:?}"

@@ -3,7 +3,6 @@ use crate::application_invariant_acceptance::membership::{
     Fanout, FanoutRoot, MembershipProgram, MembershipSchema as Schema,
 };
 use crate::application_invariant_acceptance::{authentication, resources, seed::length};
-use std::num::NonZeroUsize;
 use worth_query_decl::facade::{
     application_operation::*, application_program::*, application_schema::*,
 };

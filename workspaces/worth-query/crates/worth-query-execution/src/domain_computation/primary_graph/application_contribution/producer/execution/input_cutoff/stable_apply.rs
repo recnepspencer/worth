@@ -2,13 +2,13 @@
 use super::*;
 
 pub(super) fn publish<Schema, Binding, OperationType, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     observation: &worth_runtime_world::facade::ProductBranchObservation,
     operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
     fresh: crate::domain_computation::primary_graph::application_query::BoundStableObservedSourceFacts,
     verified: crate::domain_computation::primary_graph::output_lineage::VerifiedInputCutoff<'_>,
     required_output: RequiredOutputDemandContext,
-    resources: super::super::super::WorthQueryProducerDemandResources,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<PublishedStableLineage, ProducerExecutionStop>
 where
@@ -38,9 +38,10 @@ where
         scope,
         observation,
         &coordination,
+        execution,
         admission,
     )?;
-    let publication = address.prepare_record(fresh, operation, resources, admission)?;
+    let publication = address.prepare_record(fresh, operation, admission)?;
     // Registry preparation is outside both lineage and Product guards.
     let mut prerequisites = required_output.prepare_prerequisites(
         publication.consumed_outputs().iter(),
@@ -63,7 +64,7 @@ where
         observation,
         &runtime.product_runtime.owner.observation_port(),
         registration,
-        admission,
+        execution, admission,
     ).map_err(|stop| match stop {
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),

@@ -104,7 +104,7 @@ fn admission_refusal_has_a_zero_report_and_a_panic_closes_observer_custody() {
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     observation::advancement_observations_on_this_thread_for_test();
     let mut root = request();
-    root.declared_work = 0;
+    root.declared_work = Some(0);
     assert!(root
         .run_advancement(None, None, |_| panic!("refused before body"))
         .is_err());
@@ -167,7 +167,7 @@ fn member_host_refusals_do_not_add_thread_dependent_observations() {
                             with_bootstrap_advancement(
                                 super::super::super::test_placement::test_policy(
                                     NonZeroUsize::MIN,
-                                    1 << 20,
+                                    None,
                                 ),
                                 |_| (),
                             )

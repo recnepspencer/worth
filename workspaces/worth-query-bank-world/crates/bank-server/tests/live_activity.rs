@@ -232,7 +232,7 @@ fn caller_cannot_enlarge_the_installed_live_work_ceiling() {
     let fixture = ordinary_read_world("live-work-ceiling", 0);
     let owner = fixture.authenticate(OWNER);
     let controls =
-        WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8, 2_049).unwrap();
+        WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8, Some(2_049)).unwrap();
     let denial = match fixture
         .world
         .runtime

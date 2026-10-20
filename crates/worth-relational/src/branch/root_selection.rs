@@ -60,6 +60,14 @@ impl PartitionAccess for SelectedRelationalBranchState {
         self.state().partition_ids()
     }
 
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<crate::identity::data::PartitionId>, crate::storage::overlay::PartitionIdsDenial>
+    {
+        self.state().partition_ids_with_memory(memory)
+    }
+
     fn partition_ids_iter(
         &self,
     ) -> Box<dyn Iterator<Item = crate::identity::data::PartitionId> + '_> {

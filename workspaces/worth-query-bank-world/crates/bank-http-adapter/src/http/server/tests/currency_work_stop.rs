@@ -36,9 +36,12 @@ async fn one_unit_short_at_currency_has_the_execution_http_status() {
     let old_place = place_managed_computations_on_this_thread_for_test(
         WorthQueryExecutionPlacementForTest::Serial,
     );
-    let old_budget = bound_advancement_requests_on_this_thread_for_test(Some(
-        ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, (indexes - 1) as u64),
-    ));
+    let old_budget =
+        bound_advancement_requests_on_this_thread_for_test(Some(ExecutionBudget::new(
+            NonZeroUsize::MIN,
+            Some(64 * 1024 * 1024),
+            Some((indexes - 1) as u64),
+        )));
     let _restore = Restore(old_place, old_budget);
     let denied = application
         .runtime

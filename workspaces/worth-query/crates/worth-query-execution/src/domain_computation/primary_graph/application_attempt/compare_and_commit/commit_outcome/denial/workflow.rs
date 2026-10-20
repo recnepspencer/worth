@@ -21,8 +21,6 @@ impl WorthQueryApplicationCommitDenial {
     ) -> Self {
         let stage = match denial.kind() {
             WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded
-            | WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded
-            | WorthQueryApplicationAttemptDenialKind::RetainedEffectBytesExceeded
             | WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
             | WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable => {
                 WorthQueryApplicationCommitDenialStage::ResourceAdmission

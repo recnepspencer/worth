@@ -31,7 +31,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
     let mut value = None;
     let mut revision = None;
     for fact in candidate.read_set.facts.iter() {
-        identity::admit_assembly(context, 0)?;
+        identity::check_interruption(context)?;
         match fact {
             Fact::Field {
                 entity_id,
@@ -93,15 +93,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
     let captured = fields.get(target);
     match (value, captured) {
         (Some(value), Some(captured)) => {
-            let bytes = Comparison::required_encoded_capacity_bytes(value)
-                .and_then(|bytes| {
-                    bytes.checked_add(Comparison::required_encoded_capacity_bytes(captured)?)
-                })
-                .ok_or(Denial::RepresentationCapacity)?;
-            identity::admit_assembly(
-                context,
-                usize::try_from(bytes).map_err(|_| Denial::RepresentationCapacity)?,
-            )?;
+            identity::check_interruption(context)?;
             if Comparison::from_aspect_value(value) != Comparison::from_aspect_value(captured) {
                 return Err(Denial::CandidateMismatch);
             }

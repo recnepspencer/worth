@@ -59,8 +59,6 @@ pub(crate) fn example_limits(
     };
     application_installation::WorthQueryInMemoryApplicationLimits::new(
         world,
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(5_120, 2_048)
-            .expect("valid candidate limits"),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
             .expect("valid query limits"),
         primary_graph::SignalConditionalEvaluationBudget::development(),
@@ -137,8 +135,8 @@ pub(crate) fn product_world_resources() -> runtime::WorthQueryProductWorldResour
         worth_foundational::DeterminismContract::CanonicalBitwise,
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
-            64 * 1024 * 1024,
-            8_000_000,
+            None,
+            Some(8_000_000),
         ),
     );
     runtime::WorthQueryProductWorldResources::install(

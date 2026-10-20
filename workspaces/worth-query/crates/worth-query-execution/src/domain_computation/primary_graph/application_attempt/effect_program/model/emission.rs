@@ -5,7 +5,7 @@ use std::any::Any;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::{
-    ApplicationExternalEffectBinding, ApplicationRetainedEffectBinding,
+    ApplicationExternalEffectBinding, ApplicationStructuredValueBinding,
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -15,12 +15,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationEmi
     payload_type: WorthQueryPortableTypeIdentity,
     payload_type_id: TypeId,
     payload: Arc<dyn Any + Send + Sync>,
-    retained_bytes: u64,
-    measure_retained_bytes: fn(&(dyn Any + Send + Sync)) -> Option<u64>,
     external_payload: Option<WorthQueryExternalPayloadProjection>,
-    _native_body_funding: Option<Arc<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>>,
-    _native_query_backing: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
-    _native_values_backing: Option<crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues>,
+    _native_query_backing: Option<
+        crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext,
+    >,
+    _native_values_backing:
+        Option<crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues>,
 }
 
 #[derive(Clone)]
@@ -35,19 +35,15 @@ impl WorthQueryApplicationEmission {
         payload: Binding::Value,
     ) -> Self
     where
-        Binding: ApplicationRetainedEffectBinding,
+        Binding: ApplicationStructuredValueBinding,
         Binding::Value: Send + Sync,
     {
-        let retained_bytes = Binding::retained_bytes(&payload);
         Self {
             effect,
             payload_type: Binding::IDENTITY,
             payload_type_id: TypeId::of::<Binding::Value>(),
             payload: Arc::new(payload),
-            retained_bytes,
-            measure_retained_bytes: measure_retained_bytes::<Binding>,
             external_payload: None,
-            _native_body_funding: None,
             _native_query_backing: None,
             _native_values_backing: None,
         }
@@ -62,7 +58,7 @@ impl WorthQueryApplicationEmission {
         Binding::Value: Send + Sync,
     {
         let projection = worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection::encode::<Binding>(effect, payload).map_err(|_| ())?;
-        Ok(Self::from_external_projection(projection, None, None, None))
+        Ok(Self::from_external_projection(projection, None, None))
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt) fn from_lifecycle(
@@ -73,10 +69,7 @@ impl WorthQueryApplicationEmission {
             payload_type: derived.payload_identity(),
             payload_type_id: TypeId::from(derived.payload_type_id()),
             payload: derived.payload(),
-            retained_bytes: derived.retained_bytes(),
-            measure_retained_bytes: derived.measure_retained_bytes(),
             external_payload: None,
-            _native_body_funding: None,
             _native_query_backing: None,
             _native_values_backing: None,
         }
@@ -89,7 +82,6 @@ impl WorthQueryApplicationEmission {
         self.effect == derived.effect()
             && self.payload_type == derived.payload_identity()
             && self.payload_type_id == TypeId::from(derived.payload_type_id())
-            && self.retained_bytes == derived.retained_bytes()
             && derived.payload_is(&self.payload)
             && self.is_well_formed()
     }
@@ -98,11 +90,6 @@ impl WorthQueryApplicationEmission {
         !self.effect.is_empty()
             && self.payload_type.is_valid()
             && self.payload_type_id == TypeId::from(self.payload.as_ref().type_id())
-            && (self.measure_retained_bytes)(self.payload.as_ref()) == Some(self.retained_bytes)
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn retained_bytes(&self) -> u64 {
-        self.retained_bytes
     }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn effect_name(
         &self,
@@ -111,7 +98,6 @@ impl WorthQueryApplicationEmission {
     }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn from_external_projection(
         projection: worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection,
-        funding: Option<Arc<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>>,
         backing: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
         values: Option<
             crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues,
@@ -122,26 +108,13 @@ impl WorthQueryApplicationEmission {
             payload_type: projection.identity().clone(),
             payload_type_id: TypeId::from(projection.value_type()),
             payload: projection.value(),
-            retained_bytes: projection.retained_bytes(),
-            measure_retained_bytes: projection.measure(),
             external_payload: Some(WorthQueryExternalPayloadProjection {
                 bytes: projection.bytes(),
                 maximum_bytes: projection.maximum_bytes(),
             }),
-            _native_body_funding: funding,
             _native_query_backing: backing,
             _native_values_backing: values,
         }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn candidate_retained_representation_bytes(
-        &self,
-    ) -> Option<usize> {
-        usize::try_from(self.retained_bytes).ok()?.checked_add(
-            self.external_payload
-                .as_ref()
-                .map_or(0, |payload| payload.bytes.len()),
-        )
     }
 
     fn external_payload(&self) -> Option<&WorthQueryExternalPayloadProjection> {
@@ -175,54 +148,28 @@ impl WorthQueryApplicationEmission {
     }
 }
 
-fn measure_retained_bytes<Binding>(payload: &(dyn Any + Send + Sync)) -> Option<u64>
-where
-    Binding: ApplicationRetainedEffectBinding,
-{
-    payload
-        .downcast_ref::<Binding::Value>()
-        .map(Binding::retained_bytes)
-}
-
 pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedApplicationEmissionBatch {
     emissions: Vec<WorthQueryApplicationEmission>,
-    retained_bytes: u64,
 }
 
 impl WorthQueryAdmittedApplicationEmissionBatch {
     pub(in crate::domain_computation::primary_graph) fn admit(
         emissions: Vec<WorthQueryApplicationEmission>,
-        retained_bytes_ceiling: u64,
     ) -> Result<Self, &'static str> {
-        let retained_bytes = emissions.iter().try_fold(0_u64, |total, emission| {
-            if !emission.is_well_formed() {
-                return Err("application commit carried an invalid typed emission");
-            }
-            total
-                .checked_add(emission.retained_bytes())
-                .ok_or("application emission retained-byte count overflowed")
-        })?;
-        if retained_bytes > retained_bytes_ceiling {
-            return Err("application emission exceeded installed retained-byte ceiling");
+        if emissions.iter().any(|emission| !emission.is_well_formed()) {
+            return Err("application commit carried an invalid typed emission");
         }
-        Ok(Self {
-            emissions,
-            retained_bytes,
-        })
+        Ok(Self { emissions })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_parts(
+    pub(in crate::domain_computation::primary_graph) fn into_emissions(
         self,
-    ) -> (Vec<WorthQueryApplicationEmission>, u64) {
-        (self.emissions, self.retained_bytes)
+    ) -> Vec<WorthQueryApplicationEmission> {
+        self.emissions
     }
 
     pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         self.emissions.len()
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn retained_bytes(&self) -> u64 {
-        self.retained_bytes
     }
 
     pub(in crate::domain_computation::primary_graph) fn external_payload(

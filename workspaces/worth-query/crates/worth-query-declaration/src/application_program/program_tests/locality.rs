@@ -1,9 +1,8 @@
 use super::*;
 use crate::application_program::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
-    ApplicationDerivedArtifactGovernance, ApplicationLocalityGranule, ApplicationLocalityScope,
-    ApplicationProgramValidationDenialKind,
+    ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
+    ApplicationDerivedArtifact, ApplicationDerivedArtifactGovernance, ApplicationLocalityGranule,
+    ApplicationLocalityScope, ApplicationProgramValidationDenialKind,
 };
 
 struct TestLocality;
@@ -26,8 +25,7 @@ impl ApplicationDerivedArtifact<TestSchema, FlatFeature> for TestArtifact {
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] =
         &[ApplicationArtifactDependency::new(FlatFeature::IDENTITY)];
     const REUSE_RULE: &'static str = "worth.query.tests.same-basis.v1";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(8, 4096);
+
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.artifact-stopped.v1";
 }
 
@@ -47,8 +45,7 @@ impl ApplicationDerivedArtifact<TestSchema, FlatFeature> for DuplicateProducerAr
     const PRODUCER_FAMILY: &'static str = TestArtifact::PRODUCER_FAMILY;
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] = TestArtifact::DEPENDENCIES;
     const REUSE_RULE: &'static str = "worth.query.tests.no-reuse.v1";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(8, 4096);
+
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.duplicate-stopped.v1";
 }
 
@@ -84,7 +81,6 @@ fn derived_artifact_retains_complete_installed_meaning() {
         ApplicationLocalityGranule::Partition
     );
     assert_eq!(artifact.dependencies(), TestArtifact::DEPENDENCIES);
-    assert_eq!(artifact.resource_ceiling(), TestArtifact::RESOURCE_CEILING);
     assert_eq!(artifact.reuse_rule(), TestArtifact::REUSE_RULE);
     assert_eq!(artifact.stopped_outcome(), TestArtifact::STOPPED_OUTCOME);
 }

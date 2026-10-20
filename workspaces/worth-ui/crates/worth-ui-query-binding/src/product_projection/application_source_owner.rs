@@ -148,7 +148,7 @@ impl WorthUiStatusSourceOwner {
     pub fn publish_source(
         &self,
         record: WorthUiScalarProjectionSourceRecord,
-        maximum_history_work: NonZeroUsize,
+        maximum_history_work: Option<NonZeroUsize>,
     ) -> Result<WorthUiStatusPublication, WorthUiStatusMutation> {
         let scope = request_scope();
         let operation = self.prepare_source(record, &scope)?;

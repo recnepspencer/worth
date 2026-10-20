@@ -26,7 +26,7 @@ fn conditional_upstream_budget_denies_before_predicate_or_compute_with_exact_twi
     );
     let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    for maximum in [1, 2] {
+    for maximum in [Some(1), Some(2), None] {
         let (mut graph, contract) = installed_with(
             SignalConditionalCondition::RuntimePredicate,
             SignalConditionalArtifactReuse::NotReusable,
@@ -66,7 +66,7 @@ fn conditional_upstream_budget_denies_before_predicate_or_compute_with_exact_twi
             )
             .unwrap()
             .into_parts();
-        if maximum == 1 {
+        if maximum == Some(1) {
             let Err(failure) = decision else {
                 panic!("short traversal must deny")
             };

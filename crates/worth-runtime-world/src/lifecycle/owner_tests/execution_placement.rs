@@ -25,7 +25,11 @@ fn policy_of(
     ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         determinism,
-        ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, 1_000),
+        ExecutionBudget::new(
+            NonZeroUsize::new(workers).unwrap(),
+            Some(memory),
+            Some(1_000),
+        ),
     )
 }
 

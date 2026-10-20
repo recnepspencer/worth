@@ -43,11 +43,6 @@ impl ApplicationMutationBinding<Schema> for BumpBinding {
     const HANDLER_IDENTITY: &'static str = "worth.query.path-value.body.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.path-value.request.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 0, 0, 4, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(4096),
-        );
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Row,

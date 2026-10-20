@@ -21,8 +21,7 @@ where
     where
         Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
-        self.require_current_output_budget(1, Producer::IDENTIFIER)?;
-        self.reader.work_budget.consume(1);
+        self.charge_current_output_work(1, Producer::IDENTIFIER)?;
         let state = match self
             .reader
             .runtime

@@ -119,14 +119,16 @@ pub(crate) trait RuntimeWorldObservationService:
 
     fn trace_product_branch_ancestry(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         occurrence: crate::identity::ProductBranchIncarnation,
-        maximum: std::num::NonZeroUsize,
+        maximum: Option<std::num::NonZeroUsize>,
     ) -> Result<crate::branch::ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial>;
 
     fn continue_product_branch_ancestry(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         previous: &crate::branch::ProductBranchHistoryTraversal,
-        maximum: std::num::NonZeroUsize,
+        maximum: Option<std::num::NonZeroUsize>,
     ) -> Result<crate::branch::ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial>;
 
     fn observe_product_branch_history_entry(

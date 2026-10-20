@@ -51,7 +51,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
-        let (handler, installed_ceiling) = match self.mutation_handler_for_attempt::<Binding>() {
+        let handler = match self.mutation_handler_for_attempt::<Binding>() {
             Ok(installed) => installed,
             Err(denial) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(
@@ -170,7 +170,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         handler.as_ref(),
                         identities,
                         decision,
-                        installed_ceiling,
                         &phase_request,
                         allocation_control.policy(),
                     )

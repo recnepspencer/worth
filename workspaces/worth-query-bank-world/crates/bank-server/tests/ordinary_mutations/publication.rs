@@ -27,7 +27,7 @@ fn unrelated_graph_population_does_not_widen_commit_publication() {
     let request = baseline.world.runtime.request(&baseline_owner, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         baseline_outcome,
-    ) = baseline_outcome.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    ) = baseline_outcome.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("fresh retained send completion")
     };
@@ -47,7 +47,7 @@ fn unrelated_graph_population_does_not_widen_commit_publication() {
     let request = expanded.world.runtime.request(&expanded_owner, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         expanded_outcome,
-    ) = expanded_outcome.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    ) = expanded_outcome.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("fresh retained send completion")
     };

@@ -12,8 +12,8 @@ use crate::domain_computation::primary_graph::{
 
 fn currentness(work: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: work,
-        maximum_preparation_bytes: 1024 * 1024,
+        maximum_work_visits: Some(work),
+        maximum_preparation_bytes: None,
     })
 }
 
@@ -76,14 +76,14 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
                     // An ample allowance proves the marked fact current, so any `false`
                     // below comes from exhaustion alone, never from a changed source.
                     let mut ample = currentness(1 << 20);
-                    let full = ample.remaining_work_amount();
+                    let full = ample.charged_work();
                     assert!(matches!(
                         marked_facts_permit_reuse(
                             &execution, &facts, runtime, &snapshot, &mut ample
                         ),
                         Ok(true)
                     ));
-                    let required = full - ample.remaining_work_amount();
+                    let required = ample.charged_work() - full;
                     assert!(required > 1, "re-verification costs a visit plus its probe");
 
                     // Every smaller allowance runs out inside re-verification. Each one
@@ -323,7 +323,6 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                     mutable: Mutex::new(RecordedOutputMutable::new(
                         None,
                         Some(evidence.retain_facts(facts)),
-                        None,
                         RecordedComputation::Absent(PriorAbsence::FirstRun),
                     )),
                 };
@@ -351,7 +350,7 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                 );
                 assert_eq!(
                     allowance.remaining_work(),
-                    1,
+                    Some(1),
                     "Clean reuse must spend zero currentness units"
                 );
                 runtime.snapshots().release_snapshot(&snapshot).unwrap();

@@ -139,7 +139,6 @@ pub use declaration_denial::ApplicationSchemaDeclarationDenial;
 pub use effect_authoring::{TypedEffectIntent, TypedEffectIntentBuilder};
 pub use effect_binding::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectPayloadProjection,
-    ApplicationRetainedEffectBinding,
 };
 pub use effect_marker_identity::ApplicationEffectMarkerIdentity;
 pub use external_effect_correlation_family::WorthQueryExternalEffectCorrelationFamily;

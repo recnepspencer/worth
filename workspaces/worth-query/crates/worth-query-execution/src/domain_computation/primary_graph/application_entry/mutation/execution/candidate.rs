@@ -5,7 +5,6 @@ use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryProjectedApplicationMutation,
     WorthQueryCompleteApplicationReadSet,
 };
-use worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements;
 
 pub(in crate::domain_computation::primary_graph) fn build_handler_candidate<Schema, Binding>(
     reads: WorthQueryCompleteApplicationReadSet<
@@ -18,7 +17,6 @@ pub(in crate::domain_computation::primary_graph) fn build_handler_candidate<Sche
     handler: &dyn OperationHandler<Schema, Binding>,
     identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     decision: Binding::Decision,
-    installed_ceiling: ApplicationCandidateRequirements,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
@@ -29,10 +27,7 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    let requirements = handler.candidate_requirements(identities.mutation_input(), &decision);
-    let mut candidate = reads
-        .begin_reserved_effect_program(requirements, installed_ceiling)
-        .map_err(MutationHandlerExecutionDenial::Attempt)?;
+    let mut candidate = reads.begin_effect_program();
     candidate
         .prepare_output_contract::<Binding>()
         .map_err(MutationHandlerExecutionDenial::Attempt)?;

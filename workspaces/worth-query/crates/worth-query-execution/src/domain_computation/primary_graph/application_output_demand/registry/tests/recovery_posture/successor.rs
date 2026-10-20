@@ -30,7 +30,6 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
                     WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
                         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
                         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-                        resources: None,
                     })),
                 )),
                 1,
@@ -110,7 +109,6 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
         ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
             readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-            resources: None,
         }),
     ));
     output.stop(WorthQueryOutputDemandDenial::new(
@@ -172,7 +170,6 @@ fn failed_successor_admission_preserves_ready_custody() {
                     WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
                         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
                         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-                        resources: None,
                     })),
                 )),
                 1,

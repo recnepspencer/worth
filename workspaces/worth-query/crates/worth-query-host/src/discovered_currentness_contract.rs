@@ -9,7 +9,7 @@
 //!     request: &WorthQueryApplicationRetainedRequest<'_, '_, '_, S>,
 //!     original: &WorthQueryDiscoveredProgramOutputSettlement<Q, D>, work: NonZeroUsize,
 //! ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
-//!     request.require_current_discovered_program_outputs(original, work)
+//!     request.require_current_discovered_program_outputs(original, Some((work).get()))
 //! }
 //! ```
 //!
@@ -21,7 +21,7 @@
 //!     request: &WorthQueryApplicationRetainedRequest<'_, '_, '_, S>,
 //!     original: &WorthQueryDiscoveredProgramOutputSettlement<Q, D>, work: NonZeroUsize,
 //! ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
-//!     request.require_current_discovered_program_outputs(original.root_outputs(), work)
+//!     request.require_current_discovered_program_outputs(original.root_outputs(), Some((work).get()))
 //! }
 //! ```
 //!
@@ -33,6 +33,6 @@
 //!     request: &WorthQueryApplicationRetainedRequest<'_, '_, '_, S>,
 //!     original: &WorthQueryDiscoveredProgramOutputSettlement<Q, D>, work: NonZeroUsize,
 //! ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
-//!     request.require_current_discovered_program_outputs(original.observation(), work)
+//!     request.require_current_discovered_program_outputs(original.observation(), Some((work).get()))
 //! }
 //! ```

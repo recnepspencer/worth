@@ -15,7 +15,6 @@ pub(in crate::domain_computation::primary_graph) use facts::FactDecodeDenial;
 pub(in crate::domain_computation::primary_graph) use producer_computation::{
     decode as decode_checkpoint_computation, CheckpointProducerFacts,
 };
-mod resources;
 mod section_bytes;
 #[cfg(test)]
 mod tests;
@@ -34,14 +33,14 @@ pub use section_bytes::{
 pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCapturePolicy;
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 10;
+const FORMAT_VERSION: u16 = 11;
 const WORKFLOW_FACTS: u16 = 2;
 const WORKFLOW_INSTANCES: u16 = 4;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 2 + 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
 // Version 9 preserves the row layout and certifies the exporter exclusion.
-const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8 + 17 + 8 + 1 + 2;
+const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8 + 8 + 1 + 2;
 const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
@@ -124,7 +123,7 @@ impl WorthQueryApplicationCheckpoint {
     #[cfg(test)]
     pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         );

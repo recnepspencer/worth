@@ -137,7 +137,7 @@ pub(super) fn commit(
     #[cfg(test)]
     let ordinary_index_budget = if provider.take_tight_index_maintenance_budget() {
         worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
-            maximum_work_units: 1,
+            maximum_work_units: Some(1),
             ..ordinary_index_budget
         }
     } else {
@@ -300,7 +300,7 @@ impl WorthQueryCommittedApplicationSession {
         &mut self,
     ) -> (
         &worth_relational::facade::transactions::CommitResult,
-        usize,
+        Option<usize>,
         &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ){
         (

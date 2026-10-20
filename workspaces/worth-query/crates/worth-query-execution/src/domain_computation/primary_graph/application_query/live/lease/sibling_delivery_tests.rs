@@ -100,7 +100,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
             &principal,
             source_account,
             live_account_parameters("account-1"),
-            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048)).unwrap(),
         )
         .unwrap()
         })
@@ -151,7 +151,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
             &principal,
             sibling_account,
             live_account_parameters("account-1"),
-            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048)).unwrap(),
         )
         .unwrap()
         })

@@ -3,7 +3,6 @@
 
 use super::WorthQueryProviderAttemptPreparation;
 use crate::domain_computation::primary_graph::application_attempt::{
-    effect_program::{admit_workflow_settlement_effects, PlatformEffectDemand},
     workflow_transition_program::{receipt_identity_from_outcome, transition_entity_in_receipt},
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationCommitOutcomeIdentity,
     WorthQueryApplicationRealizedEffect,
@@ -100,11 +99,15 @@ impl WorthQueryProviderAttemptPreparation {
                 self.output_correspondence.workflow_outputs(), &mut settlement_effects,
             );
         }
-        let mut demand = PlatformEffectDemand::default();
-        for effect in &settlement_effects {
-            demand.observe(effect)?;
-        }
-        admit_workflow_settlement_effects(admission, demand)?.materialize(&settlement_effects)?;
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
+        self.effects.try_reserve(settlement_effects.len()).map_err(|_| {
+            WorthQueryApplicationAttemptDenial::new(
+                super::super::super::super::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
+                "workflow settlement effect allocation failed",
+            )
+        })?;
         self.effects.extend(settlement_effects);
         self.effect_posture =
             crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;

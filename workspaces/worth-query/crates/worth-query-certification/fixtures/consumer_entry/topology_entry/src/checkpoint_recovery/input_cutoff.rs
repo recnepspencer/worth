@@ -225,15 +225,7 @@ pub(super) fn direct_demand<'application, 'principal, 'scope>(
 }
 
 pub(super) fn controls() -> WorthQueryOutputDemandControls {
-    let source_work =
-        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard()
-            .limits()
-            .source_currentness_work();
-    WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    )
-    .source_currentness_work(NonZeroUsize::new(source_work).unwrap())
+    WorthQueryOutputDemandControls::default()
 }
 
 fn direct_demand_with_controls<'application, 'principal, 'scope>(

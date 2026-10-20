@@ -19,8 +19,8 @@ impl RelationalPublicationCompanion for UnindexedCompanion {
 
 fn budget() -> CompanionPreflightBudget {
     CompanionPreflightBudget {
-        maximum_work_visits: 32,
-        maximum_preparation_bytes: 8192,
+        maximum_work_visits: Some(32),
+        maximum_preparation_bytes: None,
     }
 }
 

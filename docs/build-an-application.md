@@ -1182,14 +1182,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         plan.and_then(move |()| decided)
     }
 
-    fn candidate_requirements(
-        &self,
-        _: &RegionTotalsDemand,
-        _: &WorthQueryInvariantMutationTarget<Schema, Body>,
-    ) -> ApplicationCandidateRequirements {
-        RegionTotalsDemandBinding::<Schema>::CANDIDATES
-    }
-
     fn build_candidate(
         &self,
         input: &RegionTotalsDemand,
@@ -1249,8 +1241,6 @@ let runtime = application_installation::in_memory_program(
 // Same file: limits.
 application_installation::WorthQueryInMemoryApplicationLimits::new(
     product_world_resources(),
-    runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(5_120, 2_048)
-        .expect("valid candidate limits"),
     runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
         .expect("valid query limits"),
     primary_graph::SignalConditionalEvaluationBudget::development(),
@@ -1469,7 +1459,7 @@ A mutation has three parts:
 | Part | Trait | Written by | Role |
 |---|---|---|---|
 | Intent | `ApplicationMutationIntent<Schema>` | Your request code | The value you pass to `mutate(..)`: its input and the entity it targets |
-| Binding | `ApplicationMutationBinding<Schema>` | Declared once | Ties the operation to its input, result, denial, decision type, idempotency key, principal binding, scope field, and candidate ceilings |
+| Binding | `ApplicationMutationBinding<Schema>` | Declared once | Ties the operation to its input, result, denial, decision type, idempotency key, principal binding, scope field |
 | Handler | `OperationHandler<Schema, Binding>` | Registered in the contribution's `configure` | Decides, then builds the candidate |
 
 <!-- illustrative -->
@@ -1490,7 +1480,6 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     const IDENTITY: &'static str = "worth.query.example.temporal-amend.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.example.temporal-amend-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.example.temporal-amend-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = /* fixed ceilings */;
     // fn scope_field, principal_binding
 }
 
@@ -1506,11 +1495,27 @@ impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTempora
     fn decide(&self, input: &AmendTemporalInput, reader: &mut DecisionReader<'_, '_, '_, _, _>)
         -> HandlerResult<Decision, AmendTemporalDenial> { /* read, then decide */ }
     // `Decision` here is the binding's Decision type (see above).
-    fn candidate_requirements(&self, ..) -> ApplicationCandidateRequirements { .. }
     fn build_candidate(&self, input: &AmendTemporalInput, target: Decision, writer: &mut CandidateWriter<'_, _, _>)
         -> HandlerResult<AmendTemporalResult, AmendTemporalDenial> { /* write fields */ }
 }
 ```
+
+#### Prepared decisions and typed effects
+
+Use `DecisionReader` for the actual declared reads during `decide` or
+`prepare_decision`. Carry the resulting typed targets, owned keys and prepared
+values in the binding's `Decision`, then consume them in `build_candidate` through
+`CandidateWriter`. The framework opens the effect program directly after the
+admitted decision. A handler supplies domain intent and valid effects, without
+predicting field, link, output or emission storage.
+
+The writer enforces the operation's declared create, write, relation and emission
+authority. Existing-entity targets must come from tracked decision reads. Bind the
+declared output roles or family members to the actual created or preserved
+entities; required roles and cardinalities remain checked before publication. Typed payload
+validation, checked sizes, request cancellation and fallible effect-buffer growth
+remain with their original owners. Invariant validation and atomic commit still
+precede successful publication.
 
 The full, compiling version of all three is
 `.../examples/product_workflow_support/application_entry.rs` (about 320
@@ -2281,8 +2286,37 @@ observation, requires every settled output's native lineage at that observation,
 and executes the declared read there. Refusal retains settlement and original
 meaning for a later read; it does not perform the source or outputs again.
 `read_current_with_policy` accepts `WorthQueryOperationDeliveryPolicy` for one
-attempt: currentness work is capped by installed native policy, and query result
-and work ceilings must narrow the declared native query limits. Retry uses fresh
+attempt. Ordinary currentness and query work have no intrinsic operation-count
+ceiling. Explicit currentness, query or attempt restrictions still intersect the
+receiving policy. Omit `.operation_projection_work_budget(..)` to declare no
+decision-read work ceiling. Ordinary output demands can omit controls; use
+`WorthQueryOutputDemandControls::default().source_currentness_work(work)` or
+`.settlement_attempts(attempts)` only for a deliberate restriction of the existing
+currentness or settlement policy.
+Signal runtime presets also leave waiter-resolution and upstream-dependency work
+absent. `with_maximum_waiter_resolution_visits(Some(n))` and
+`with_maximum_upstream_dependency_visits(Some(n))` are explicit finite choices;
+`None` keeps the original request and physical admission without a local work cap.
+The installed workflow fact-custody rule likewise checks every candidate on the
+original request without imposing a fixed candidate count.
+### Producer source and publication
+
+A `WorthQueryApplicationProducerProvider` supplies its semantic identity,
+`operation_input` and `idempotency_key` from the authentic source. Its optional
+`domain_denial_reason` supplies diagnostic text. The installed operation's handler
+prepares and writes the actual effects through the same typed mutation path.
+Source admission, output contracts, currentness and atomic publication remain
+enforced without a producer resource forecast.
+
+Declare an artifact's output, locality, retention, succession, required posture,
+producer family, dependencies, reuse rule and stopped outcome through
+`ApplicationDerivedArtifact`. Current and restored output reuse checks original
+source and installed meaning without contacting a producer for work that will
+not run.
+
+Operation-body requirement expressions retain their separately admitted Foundation
+expression profile; an absent request ceiling adds no further work restriction.
+Retry uses fresh
 request authority on the same settled owner. Native consumed-fact movement
 returns `Stale`; unrelated progress does not itself make settlement stale.
 `read_historical` reads the original declared projection at the retained settlement
@@ -2290,7 +2324,9 @@ basis with fresh query authorization. Neither history nor close advances outputs
 For `ApplicationNoProjection`, `deliver_current` checks every settlement at one
 authentic observation and returns that observation without issuing a query.
 
-Start with a small finite attempt. This shape uses application-specific names;
+Use `WorthQueryOperationDeliveryPolicy::default()` for an attempt without an
+additional work ceiling. A caller may explicitly choose a finite attempt as below.
+This shape uses application-specific names;
 the real compiled consumer counterpart is
 [`fixed_delivery.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_delivery.rs).
 
@@ -2350,8 +2386,9 @@ fn read_inputs(input: &SourceAdjustment) -> [OutputRead; 2] {
 
 `settled.read_batch_current::<N>(&fresh_request)` checks every actual settlement
 and executes all items at that same authentic observation in one admitted phase.
-The installed binding and native host profile supply finite aggregate work and
-custody allowances. Each item still receives independent ordinary scope and
+The installed binding and native host profile supply physical custody allowances
+and any explicitly chosen aggregate work ceiling. Absent work remains absent
+through child reads and currentness checks. Each item still receives independent ordinary scope and
 disclosure authorization. The aggregate allowance covers read work and retained
 result/source custody; it does not claim to meter all authorization or
 application-authored selector work.
@@ -2501,6 +2538,84 @@ The following fixture deliberately coordinates native output custody through
 
 ---
 
+#### Invalidation byte ceilings
+
+Pass `None` for preparation and retained bytes to
+`host::runtime::WorthQueryInvalidationResourceInstallation::new(None, None, positions)`
+when the host imposes no logical byte ceiling. `Some(bytes)` supplies a deliberate
+finite ceiling at either boundary; `Some(0)` remains an invalid installation.
+The existing `bounded(work, preparation, retained, positions)` constructor chooses
+finite work and byte ceilings. Ordinary Memory Workspace and Consumer Kit
+installations select no marking-work, preparation-byte or retained-byte ceiling.
+Other application hosts supply their own policies; this does not claim that every
+platform or application profile is uncapped. The retained-position window remains
+independent.
+
+Absence does not disable admission accounting or authorize memory allocation.
+Preparation still checked-adds every original byte quote; retained tickets share
+one ledger and stay charged while current, historical, prepared or consumed-output
+owners hold them. Carried admissions retain the same original counters and
+optional ceilings. Only the final holder's drop refunds its ticket. Request
+cancellation and precommit atomicity are unchanged; real allocator refusals remain
+owned by their allocating operation. This installation does not bound aggregate
+process RSS or guarantee available RAM.
+
+`RetentionCounterOverflow` and `RetainedCompanionCounterOverflow` report an
+unrepresentable retained total with its original requested/retained operands.
+They are distinct from finite `RetentionCapacityExhausted` and
+`RetainedCompanionCapacityExhausted`, and do not trigger finite-capacity eviction.
+Preparation counter overflow likewise remains distinct from a supplied ceiling.
+Never replace `None` with a maximum integer, infer released predecessor credit,
+or replay a refused publication to manufacture admission.
+
+#### Producer publication diagnostics
+
+Keep the original operation on a terminal or refused advance and borrow its
+returned `WorthQueryOperationAdvanceDenial::Outputs` denial. A native demand
+cause, under `DemandExecution` or `Demand(Demand(..))`, exposes
+`WorthQueryOutputDemandDenial` through `host::primary_graph`. Inspect
+`publication_companion_stop()` and `producer_admission_stop()` separately; their
+getters identify the original commit or producer-admission boundary. The
+[host facade example](../workspaces/worth-query/crates/worth-query-host/src/facade.rs)
+compiles this borrow-only path without consuming the operation or its cleanup.
+
+`publication_companion_stop()` retains the original `CompanionPreflightStop` when a
+producer commit maps a publication-companion resource refusal. Preparation exhaustion
+carries `required` and `maximum` bytes; retained-companion exhaustion carries
+`requested`, `retained` and `maximum` bytes. Work exhaustion preserves
+`required` when supplied and `maximum`. Counter overflow stays an overflow
+without a fabricated quote. Other denial paths return `None`; that absence does
+not identify a budget. `producer_admission_stop()` instead retains the native
+stop from producer preparation or source/output readmission, including topology,
+selected source/position, a foreign cell or a registration change, as well as
+original meter stops. The existing denial kind remains unchanged: those
+structural stops still report `RetentionBudgetExceeded`. Inspect the native stop
+to identify the cause.
+`output_verification_capacity_stop()` separately retains an original
+`host::primary_graph::VerificationCapacityStop` from output verification,
+including a producer's consumed-edge check before publication. Its `Meter`
+variant holds the original `CompanionPreflightStop`; `ScratchSizeOverflow` and
+`ScratchAllocationRefused { bytes }` identify distinct native scratch failures.
+The commit denial exposes the same getter specifically for its precommit
+consumed-output check. The demand getter also exposes existing capacity evidence
+from preparation/readmission and may overlap `producer_admission_stop()`; its
+presence alone does not prove precommit ran. It is separate from native
+transaction preparation. The existing kind and recovery posture remain unchanged.
+If all three getters return `None`, the cause remains unknown; other denial
+paths need not originate in these owners. These diagnostics
+neither change kind or recovery posture nor authorize a retry, a capacity
+increase, output completion or cleanup.
+
+Consumed edges and restored marks in their original installed invalidation
+ledger share retention custody of the same original fact allocation. Each holder still funds
+its own native basis and metadata; new output projections and index storage
+remain separately admitted. The full fact reservation and its weak-cache
+funding end with their last external holder, even when historical commit
+evidence still owns the original payload. Its empty lookup remains under the
+payload's original native or codec ownership. A different installation receives
+no credit from that ledger.
+This changes neither currentness checks nor the configured physical capacity.
+
 ### 5.5 Own a complete no-source output tree
 
 Use the ordinary demand builder when a read request needs the complete installed
@@ -2615,8 +2730,12 @@ projection delivers only through its declared read (`read_current`,
 known gap, not permission to pair a unit gate with a replacement selector. The request's scope is checked fresh. A
 foreign runtime, branch or observation is refused before any installed meaning is
 read. Bare `request.at(&observation).require_current_program_output(...)` checks
-lineage only. It neither revalidates the selected action or root nor replaces
-this gate. Success returns `()` because the caller already holds the
+lineage only: its output witness, comparable source facts and original consumed
+outputs at that same native observation. Changed upstream facts refuse current
+delivery even before regeneration; an unresolved upstream remains pending,
+never current. Missing or empty comparable facts still require the original
+own-publication decision. This check neither revalidates the selected action or
+root nor replaces this gate. Success returns `()` because the caller already holds the
 observation. Read every displayed fact at that same observation.
 
 <!-- illustrative -->
@@ -2687,6 +2806,66 @@ selecting a new source. On refusal, retain the returned owner and its original
 application context; retry lawful explicit discard on that owner. Dropping either
 phase is abandonment, and does not post a successful discard record. Preview
 liveness observation is not proof of cleanup or promotion.
+
+### Optional request-memory policy
+
+Use `ExecutionBudget::new(workers, None, work_ceiling)` for no request-memory
+ceiling, or pass `Some(bytes)` for an explicitly finite caller policy.
+`SerialMemoryBudget::new(None)` has the same meaning for a serial owner. Absence
+is not a memory grant: actual backing, operation declarations and allocation
+failures keep their original owners. Worker counts remain concrete.
+
+Every reservation still charges the same serial or lease ledger, including its
+ancestors and process. An absent child ceiling does not escape a finite ancestor.
+`available_memory_bytes()` returns the minimum remaining supplied ceiling, or
+`None` when that lineage has no ceiling. Actual held-byte getters remain concrete
+counters. A finite refusal is `MemoryLimitDenial::Capacity`; an unrepresentable
+live charge is `MemoryLimitDenial::CounterOverflow`. Refusal preserves the old
+reservation, and final-holder release refunds only its original charge.
+Cancellation and deadlines retain the original request and lineage.
+
+A result without a genuine prior heap maximum uses the original
+`request.run_measured_result(ceiling, known_bytes, &mut reservation, kernel)`.
+The callback borrows its `ExecutionResultMemory` view to reserve source-owned
+clone/growth backing on that same ticket before allocation. The view protects
+known input/framework bytes. For an opaque callback, the framework measures and
+admits the actual returned value or domain error before retention or publication;
+that does not claim pre-allocation admission. The result/error remains charged on
+the caller's original reservation until released or transferred. The returned
+`ScopeOutcome` keeps the genuine admission/callback stop and original report.
+Known finite Scan/Map result declarations retain their existing checks.
+
+### Optional invariant work and original interruption
+
+The original execution policy also carries genuine absence:
+`ExecutionBudget::new(workers, charged_memory_bytes, None)`. Serial and leased
+requests retain that same optional ceiling through child scopes; a child cannot
+widen a finite parent. Charged counters and typed overflow remain. Signal's
+`SignalConditionalEvaluationBudget::development()` has no attempt-visit ceiling;
+its retained-slot and byte limits still apply. Explicit `Some` limits remain
+caller choices.
+
+Retained source-only delivery uses `owner.advance(&fresh_request, None)` for
+no additional history work ceiling. `Some(NonZeroUsize)` explicitly bounds an
+attempt. Both use the same original World history owner, physical protection and
+request interruption; refusal returns the same operation for a lawful fresh retry.
+
+`RelationalInvariantWorkBudget::new(None)` declares no local operation-count
+ceiling; `Some(NonZeroU64)` retains an explicit caller-selected ceiling. Installation,
+canonical identity and package archives preserve that distinction. Absence never
+removes receipt authority, physical allocation admission or graph validity.
+
+An application invariant's `Context::check_live()` and `ScopePlanner::check_live()`
+are pure observers of the original serial or leased request. They return the
+original native `CustomInvariantInterruption::{Cancelled, DeadlineElapsed}` through
+`worth_query_host::facade::application_invariants`. A numerical callback may borrow
+`|| context.check_live().is_err()` without charging work or creating a request. The
+engine checks the same original interruption before accepting an invariant result.
+
+Ordinary Fixed/discovered advancement returns genuine native progress or the same
+owned Pending state. The advanced `settle` convenience's per-call advancement
+quantum limits batching only: it returns the original Pending owner, never treats
+quantum exhaustion as a failed output, and does not limit total work or depth.
 
 ## 6. Author, publish, and run workflows
 
@@ -2852,7 +3031,7 @@ impl ApplicationMutationBinding<BankSchema> for $binding {
     // ... the same associated types as any mutation binding (§5.2) ...
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
-    // ... identities, CANDIDATES, scope_field, and principal_binding ...
+    // ... identities, scope_field, and principal_binding ...
 }
 
 impl ApplicationCapabilityMutationBinding<BankSchema> for $binding {
@@ -3165,7 +3344,7 @@ worth_query_decl::facade::worth_query_mutation_binding!(
     // ... identity, input, operation, result, idempotency, decision, handler ...
     workflow_authority required,
     workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only(),
-    // ... outputs, principal, scope, candidates, resources ...
+    // ... outputs, principal, scope ...
 );
 ```
 

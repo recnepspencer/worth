@@ -60,12 +60,12 @@ fn scope(input: &CreateTree) -> String {
     input.parent.clone()
 }
 worth_query_mutation_binding!(pub Binding for CreateTree,schema Schema,
-    identity "worth.query.child.binding.v1",input Input,operation Create,result ResultBinding,
-    idempotency u64,identity "worth.query.child.request.v1",decision WorthQueryOperationBodyDecision<Schema,Parent>,denial DenialBinding,
-    handler identity "worth.query.child.body.v1",program required,outputs NoApplicationMutationOutputs,
-    principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Parent,ParentFacts,ParentIdentity,String,ReadOnly,NoApplicationUnit,field ParentIdentity::reference(),value scope,
-    candidates creates 4,deletes 0,links 6,unlinks 0,writes 10,emits 0,resources retained_representation_bytes 16384);
+identity "worth.query.child.binding.v1",input Input,operation Create,result ResultBinding,
+idempotency u64,identity "worth.query.child.request.v1",decision WorthQueryOperationBodyDecision<Schema,Parent>,denial DenialBinding,
+handler identity "worth.query.child.body.v1",program required,outputs NoApplicationMutationOutputs,
+principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
+scope Parent,ParentFacts,ParentIdentity,String,ReadOnly,NoApplicationUnit,field ParentIdentity::reference(),value scope,
+);
 pub fn body() -> ApplicationOperationBody<Schema, Create, CreateTree> {
     let op = Create::reference();
     let next = ApplicationOperationBodyValue::<Schema, Create, U64ApplicationValueBinding>::admit(

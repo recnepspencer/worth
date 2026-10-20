@@ -53,7 +53,7 @@ macro_rules! custody {
                 history: NonZeroUsize,
             ) -> (Self, Option<BankHttpDenial>) {
                 match self {
-                    Self::Active(operation) => match operation.advance(request, history) {
+                    Self::Active(operation) => match operation.advance(request, Some(history)) {
                         WorthQuerySourceOnlyAdvance::Progress(operation) => {
                             (Self::Active(operation), None)
                         }

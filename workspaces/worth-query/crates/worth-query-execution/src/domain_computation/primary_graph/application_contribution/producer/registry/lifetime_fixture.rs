@@ -22,7 +22,7 @@ impl InstalledProducerProvider<Schema> {
             applicability: Vec::new(),
             supported: Vec::new(),
             required_invariants: Vec::new(),
-            resource_policy: "bounded".into(),
+
             reuse_policy: "exact".into(),
             input_reuse: None,
             binding_type: TypeId::of::<RetainedFamily>(),

@@ -15,7 +15,7 @@ use worth_execution::{
 };
 
 fn serial(token: CancellationToken) -> SerialRequest {
-    SerialRequest::from_memory(SerialMemoryBudget::new(64 * 1024 * 1024), token, None)
+    SerialRequest::from_memory(SerialMemoryBudget::new(None), token, None)
 }
 
 #[test]

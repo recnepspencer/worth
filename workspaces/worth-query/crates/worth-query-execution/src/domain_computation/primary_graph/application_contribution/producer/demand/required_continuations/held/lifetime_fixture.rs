@@ -38,11 +38,11 @@ impl WorthQueryOutputDemandInterest {
             schema_binding: observed_source.schema_binding.clone(),
             selected: WorthQuerySelectedApplicationProducer {
                 identity: "lifetime".into(), applicability: WorthQueryProducerApplicability::new("retained", WorthQueryProducerLifecyclePosture::Preserve),
-                exact_retained_output: false, retained_resources: None, retained_idempotency_key: None,
+                exact_retained_output: false, retained_idempotency_key: None,
                 retained_output_binding: None, reuses_live_output_only: false,
             },
             installed_entry: InstalledProducerProvider::lifetime_fixture(),
-            observed_source, limits, resources: None, resources_validated: true,
+            observed_source, limits,
             producer_contacts_in_this_demand: 0, checkpoint_readmission_work_units: 0,
             checkpoint_readmission_work_bound: 0, checkpoint_readmission_charged_preparation_bytes: 0,
             settled: false, admission_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
@@ -74,8 +74,8 @@ impl WorthQueryOutputDemandInterest {
 }
 fn admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-        maximum_work_visits: 1_000_000,
-        maximum_preparation_bytes: 8 * 1024 * 1024,
+        maximum_work_visits: Some(1_000_000),
+        maximum_preparation_bytes: None,
     })
 }
 fn observed_account_source() -> crate::domain_computation::primary_graph::WorthQueryObservedSource<
@@ -126,7 +126,7 @@ fn observed_account_source() -> crate::domain_computation::primary_graph::WorthQ
                         .unwrap(),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         std::num::NonZeroUsize::new(10).unwrap(),
-                        std::num::NonZeroUsize::new(10_000).unwrap(),
+                        Some(std::num::NonZeroUsize::new(10_000).unwrap()),
                         &request,
                     ),
                 )

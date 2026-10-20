@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension;
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
@@ -46,24 +45,14 @@ impl<Schema, Operation, Input, Scope>
             .ok_or_else(|| transition_required(self.admission.operation()))?;
         validate_installed_program(binding, self.admission.allowed_graph_contract())?;
         let mut effects = request_effects(binding)?;
-        let emission_retained_bytes_ceiling = self
-            .admission
-            .allowed_graph_contract()
-            .execution_strategy()
-            .expect("installed application operation has exactly one execution strategy")
-            .envelope()
-            .resource_ceiling(WorthQueryResourceDimension::RetainedBytes);
-        let emission_retained_bytes = append_lifecycle_emission(
+        append_lifecycle_emission(
             &mut effects,
             binding.lifecycle_effect(),
-            emission_retained_bytes_ceiling,
             self.admission.operation(),
         )?;
         let program = WorthQueryApplicationEffectProgram {
             read_set: self,
             effects,
-            emission_retained_bytes,
-            emission_retained_bytes_ceiling,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: Default::default(),
@@ -113,12 +102,7 @@ pub(in crate::domain_computation::primary_graph) fn validate_elevation_request_p
             .effects
             .get(..base_count)
             .is_some_and(|actual| same_effects(actual, &expected))
-        && lifecycle_emission_is_exact(
-            &program.effects,
-            base_count,
-            binding.lifecycle_effect(),
-            program.emission_retained_bytes,
-        )
+        && lifecycle_emission_is_exact(&program.effects, base_count, binding.lifecycle_effect())
     {
         Ok(())
     } else {

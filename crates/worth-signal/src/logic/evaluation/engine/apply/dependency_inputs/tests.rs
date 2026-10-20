@@ -48,7 +48,7 @@ fn dependency_capture_preserves_snapshot_and_uses_one_exact_or_short_allowance()
     for stable in [false, true] {
         let (mut graph, node) = fixture(stable, "scope-λ");
         let before = graph.get_dep_snapshot(node).unwrap().clone();
-        let mut measured = Work::new(1_000_000);
+        let mut measured = Work::new(Some(1_000_000));
         let expected = resolve_effect_dependency_inputs(
             &mut graph,
             node,
@@ -68,7 +68,7 @@ fn dependency_capture_preserves_snapshot_and_uses_one_exact_or_short_allowance()
         let cost = measured.visits();
         for available in [cost - 1, cost] {
             let (mut twin, node) = fixture(stable, "scope-λ");
-            let mut work = Work::new(cost + 7);
+            let mut work = Work::new(Some(cost + 7));
             work.reserve_visits(cost + 7 - available).unwrap();
             let result = resolve_effect_dependency_inputs(
                 &mut twin,
@@ -99,7 +99,7 @@ fn dependency_capture_preserves_snapshot_and_uses_one_exact_or_short_allowance()
 fn dependency_capture_charges_scope_bytes_even_when_dependency_count_is_unchanged() {
     for stable in [false, true] {
         let (mut short, node) = fixture(stable, "x");
-        let mut measured = Work::new(1_000_000);
+        let mut measured = Work::new(Some(1_000_000));
         resolve_effect_dependency_inputs(
             &mut short,
             node,
@@ -113,7 +113,7 @@ fn dependency_capture_charges_scope_bytes_even_when_dependency_count_is_unchange
             &mut long,
             node,
             None,
-            &mut EvaluationWork::Conditional(&mut Work::new(measured.visits())),
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(measured.visits()))),
         );
         assert!(matches!(
             result,

@@ -39,7 +39,7 @@ fn exhausted_native_fact_reads_preserve_the_request_stop() {
                 .unwrap()
                 .revision();
             let endpoints = view
-                .bounded_incoming_relations_of_kind(execution, entity, relation_kind, 32)
+                .bounded_incoming_relations_of_kind(execution, entity, relation_kind, Some(32))
                 .unwrap()
                 .unwrap()
                 .into_records()
@@ -86,7 +86,7 @@ fn exhausted_native_fact_reads_preserve_the_request_stop() {
             )]))
             .unwrap();
             let (outcome, _) = execution
-                .run(ExecutionWorkCeiling::new(0), |_| {
+                .run(ExecutionWorkCeiling::new(Some(0)), |_| {
                     map.run(
                         None,
                         |_, context| -> Result<u64, MapKernelFailure<MapKernelStop>> {

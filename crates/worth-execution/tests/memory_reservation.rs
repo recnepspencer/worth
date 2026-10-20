@@ -40,7 +40,7 @@ fn policy(bytes: u64) -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, u64::MAX),
+        ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(u64::MAX)),
     )
 }
 
@@ -62,7 +62,7 @@ fn a_serial_budget_holds_the_policy_bytes_and_names_what_it_admits() {
     let mut first = budget.reserve(60).unwrap();
     assert_eq!(
         budget.reserve(41).unwrap_err(),
-        MemoryLimitDenial {
+        MemoryLimitDenial::Capacity {
             requested: 41,
             admitted: 40,
             level: MemoryLimitLevel::Policy { ancestor: 0 },
@@ -71,7 +71,7 @@ fn a_serial_budget_holds_the_policy_bytes_and_names_what_it_admits() {
     let second = budget.reserve(40).unwrap();
     assert_eq!(
         first.resize(61).unwrap_err(),
-        MemoryLimitDenial {
+        MemoryLimitDenial::Capacity {
             requested: 61,
             admitted: 60,
             level: MemoryLimitLevel::Policy { ancestor: 0 },
@@ -91,7 +91,7 @@ fn a_lease_reservation_is_bounded_by_its_lineage_and_released_on_drop() {
     let held = parent.reserve_memory(800).unwrap();
     assert_eq!(
         child.reserve_memory(201).unwrap_err(),
-        MemoryLimitDenial {
+        MemoryLimitDenial::Capacity {
             requested: 201,
             admitted: 200,
             level: MemoryLimitLevel::Policy { ancestor: 1 },
@@ -101,7 +101,7 @@ fn a_lease_reservation_is_bounded_by_its_lineage_and_released_on_drop() {
     let mut on_child = child.reserve_memory(200).unwrap();
     assert_eq!(
         on_child.resize(301).unwrap_err(),
-        MemoryLimitDenial {
+        MemoryLimitDenial::Capacity {
             requested: 301,
             admitted: 300,
             level: MemoryLimitLevel::Policy { ancestor: 0 },
@@ -112,7 +112,7 @@ fn a_lease_reservation_is_bounded_by_its_lineage_and_released_on_drop() {
     on_child.resize(300).unwrap();
     assert_eq!(
         child.reserve_memory(1).unwrap_err(),
-        MemoryLimitDenial {
+        MemoryLimitDenial::Capacity {
             requested: 1,
             admitted: 0,
             level: MemoryLimitLevel::Policy { ancestor: 0 },
@@ -154,7 +154,7 @@ fn serial_run_holding(bytes: u64, hold: Option<u64>) -> Option<bool> {
     let budget = SerialMemoryBudget::from_policy(&policy(bytes));
     let held = hold.map(|hold| budget.reserve(hold).unwrap());
     let request = serial_request(budget);
-    let ran = ExecutionWorkCeiling::new(u64::MAX).run_serial(&request, || {
+    let ran = ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(&request, || {
         let kernel =
             |value: &u64, _: &mut MapKernelContext<'_, '_>| Ok::<_, MapKernelFailure<()>>(*value);
         match held {
@@ -170,7 +170,7 @@ fn serial_run_holding(bytes: u64, hold: Option<u64>) -> Option<bool> {
         Ok((
             MapOutcome::Stopped {
                 reason:
-                    MapStop::Admission(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+                    MapStop::Admission(LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                         requested,
                         admitted,
                         level: MemoryLimitLevel::Policy { ancestor: 0 },
@@ -209,7 +209,7 @@ fn a_serial_run_with_a_policy_refuses_at_its_own_memory_boundary() {
     );
     assert_eq!(serial_run(admitted), Some(true));
 
-    let funded = ExecutionWorkCeiling::new(u64::MAX).run_serial(
+    let funded = ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(
         &serial_request(SerialMemoryBudget::from_policy(&policy(1 << 20))),
         || one_partition_map().run(None, |value, _| Ok::<_, MapKernelFailure<()>>(*value)),
     );
@@ -329,7 +329,7 @@ fn a_leased_run_takes_over_the_hold_on_its_inputs() {
     );
     assert_eq!(
         leased_run(run, hold, false),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: run,
             admitted: run - hold,
             level: MemoryLimitLevel::Policy { ancestor: 1 },
@@ -338,7 +338,7 @@ fn a_leased_run_takes_over_the_hold_on_its_inputs() {
     );
     assert_eq!(
         leased_run(run - 1, hold, true),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: run,
             admitted: run - 1,
             level: MemoryLimitLevel::Policy { ancestor: 0 },
@@ -385,7 +385,7 @@ fn a_reduced_tree_stays_held_on_the_callers_reservation() {
     assert!(kept > 0, "the tree's bytes stay held");
     assert_eq!(
         parent.reserve_memory(budget).map(|held| held.bytes()),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: budget,
             admitted: budget - kept,
             level: MemoryLimitLevel::Policy { ancestor: 0 },

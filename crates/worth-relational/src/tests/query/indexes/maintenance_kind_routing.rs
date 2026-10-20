@@ -263,9 +263,9 @@ fn assert_selected_rows(
 
 fn budget() -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 100_000,
-        maximum_cold_record_slots: 0,
-        maximum_derived_rows: 100_000,
+        maximum_work_units: Some(100_000),
+        maximum_cold_record_slots: Some(0),
+        maximum_derived_rows: Some(100_000),
     }
 }
 

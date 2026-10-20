@@ -33,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
     // The descriptive source clones one fixed schema identity and initializes
     // three scalar fields before it can probe the owner indexes.
     admission
-        .charge_external_work(4 + std::mem::size_of::<Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>>() as u64)
+        .charge_external_work(4)
         .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
     let mut lineage = owner
         .lock()
@@ -169,6 +169,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
     }
     // Every retained row pays an unconditional source and occurrence path.
     // Its token remains sound if an earlier row of the same source retires.
+    bytes = bytes.checked_add(crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::retention_storage_bytes().ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?)
+        .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
     let retained_bytes = bytes
         .checked_add(
             tree_insert_bytes::<
@@ -245,7 +247,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
         completed_decision_reuse: None,
         prepared_input_reuse_key: None,
         native_output_witness: None,
-        actual_resources: None,
+
         native_prior_checkpoint: None,
         computation: PreparedComputationCustody::Unassigned,
         computation_fork_scan_bound,

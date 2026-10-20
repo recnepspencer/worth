@@ -69,21 +69,6 @@ fn personal_account_creation_binding_declares_its_complete_fixed_shape() {
         descriptor.scope().field().locus().field(),
         "InstitutionIdentityField"
     );
-
-    let cardinality = descriptor.candidates().cardinality();
-    assert_eq!(cardinality.maximum_creates(), 1);
-    assert_eq!(cardinality.maximum_deletes(), 0);
-    assert_eq!(cardinality.maximum_links(), 2);
-    assert_eq!(cardinality.maximum_unlinks(), 0);
-    assert_eq!(cardinality.maximum_writes(), 5);
-    assert_eq!(cardinality.maximum_emits(), 0);
-    assert_eq!(
-        descriptor
-            .candidates()
-            .resources()
-            .maximum_retained_representation_bytes(),
-        1392
-    );
 }
 
 #[test]

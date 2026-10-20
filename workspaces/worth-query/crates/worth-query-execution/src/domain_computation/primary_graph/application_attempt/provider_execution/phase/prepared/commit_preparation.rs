@@ -31,8 +31,6 @@ where
     let WorthQueryApplicationEffectProgram {
         read_set,
         mut effects,
-        emission_retained_bytes,
-        emission_retained_bytes_ceiling,
         conditional_definition,
         effect_posture,
         output_correspondence,
@@ -164,7 +162,6 @@ where
             lease,
             provider: WorthQueryProviderAttemptPreparation {
                 local_action_settlement: read_set.local_action_settlement,
-                signing_lifecycle_memory: lifecycle.memory,
                 body_external_emission,
                 required_output_demand,
                 installed_read_scopes: read_set.installed_read_scopes,
@@ -172,8 +169,6 @@ where
                 consumed_outputs: read_set.consumed_outputs,
                 application_effect_count: effects.len(),
                 effects,
-                emission_retained_bytes,
-                emission_retained_bytes_ceiling,
                 preimage_demand,
                 conditional_definition,
                 effect_posture,

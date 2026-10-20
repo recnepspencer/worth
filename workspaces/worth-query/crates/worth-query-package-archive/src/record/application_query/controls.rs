@@ -1,7 +1,6 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryBasisSupport,
-    ApplicationQueryCardinality, ApplicationQueryDependencyCeiling,
-    ApplicationQueryLaneEligibility,
+    ApplicationQueryCardinality, ApplicationQueryLaneEligibility,
 };
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -10,7 +9,6 @@ use crate::denial::{
     WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
 };
 
-use crate::record::application_schema::wire_vocabulary::{decode_usize, write_usize};
 use crate::record::foundational_value;
 
 pub(super) fn write_cardinality(
@@ -33,25 +31,6 @@ pub(super) fn decode_cardinality(
         3 => Ok(ApplicationQueryCardinality::Many),
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
-}
-
-pub(super) fn write_dependency_ceiling(
-    output: &mut dyn BinaryEncodingSink,
-    value: ApplicationQueryDependencyCeiling,
-) -> Result<(), Denial> {
-    write_usize(output, value.maximum_traversal_depth())?;
-    write_usize(output, value.maximum_relation_count())?;
-    write_usize(output, value.maximum_projected_field_count())
-}
-
-pub(super) fn decode_dependency_ceiling(
-    input: &mut BinaryInput<'_>,
-) -> Result<ApplicationQueryDependencyCeiling, Denial> {
-    Ok(ApplicationQueryDependencyCeiling::bounded(
-        decode_usize(input)?,
-        decode_usize(input)?,
-        decode_usize(input)?,
-    ))
 }
 
 pub(super) fn write_authorization(

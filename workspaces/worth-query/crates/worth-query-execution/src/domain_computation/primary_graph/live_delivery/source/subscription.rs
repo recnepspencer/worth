@@ -40,7 +40,6 @@ impl WorthQueryLiveDeliverySource {
                     allocated_batch_capacity: batch_capacity,
                     next_sequence: 0,
                     last_product_commit: None,
-                    retained_payload_bytes: 0,
                     subscriber_count: 0,
                     reservation_live: false,
                     retired: false,

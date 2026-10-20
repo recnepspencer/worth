@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectValue, FieldKey, InternedString,
 };
-use worth_query_declaration::facade::application_schema::ApplicationRetainedEffectBinding;
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, RelationId};
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
@@ -24,7 +23,6 @@ pub(super) struct MixedEffectWorld {
     pub(super) alternate_effects: Vec<WorthQueryApplicationRealizedEffect>,
     pub(super) expected: LoweringObservation,
     pub(super) alternate_expected: LoweringObservation,
-    pub(super) retained_bytes: u64,
 }
 
 pub(super) struct MixedEffectAxes {
@@ -69,15 +67,12 @@ pub(super) fn mixed_effect_world(
     };
     let audit_payload = "sent".to_owned();
     let metric_payload = "counted".to_owned();
-    let retained_bytes = AccountActivityBinding::retained_bytes(&audit_payload)
-        + AccountActivityBinding::retained_bytes(&metric_payload);
     MixedEffectWorld {
         facts: observed.facts,
         effects: mixed_effects(&axes, &audit_payload, &metric_payload),
         alternate_effects: alternate_effects(&axes, audit_payload, metric_payload),
-        expected: expected_model(&axes, retained_bytes),
-        alternate_expected: expected_alternate_model(&axes, retained_bytes),
-        retained_bytes,
+        expected: expected_model(&axes),
+        alternate_expected: expected_alternate_model(&axes),
     }
 }
 

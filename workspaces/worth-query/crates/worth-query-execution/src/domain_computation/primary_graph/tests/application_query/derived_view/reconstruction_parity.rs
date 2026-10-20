@@ -100,7 +100,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
             let mut first = Some(first);
             let request = execution;
             let (answer, work) = request
-                .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+                .run(ExecutionWorkCeiling::new(None), |_| {
                     world
                         .application
                         .reconstruct_managed_derived_collection_pair(

@@ -87,7 +87,11 @@ impl Fixture {
             touches,
         }
     }
-    fn derive(&self, role: Role) -> SigningLifecycleClosure {
+    fn derive(
+        &self,
+        role: Role,
+        maximum_subjects: Option<std::num::NonZeroUsize>,
+    ) -> SigningLifecycleClosure {
         let creation = ApplicationOperationBodyCreation::from_untrusted(
             "Evidence".into(),
             "evidence".into(),
@@ -113,7 +117,7 @@ impl Fixture {
             consequence_field: Locus::new("Consequence", "ConsequenceFacts", "Record"),
             maximum_evidence: 2,
         }))
-        .with_untrusted_subject_impact_bound(std::num::NonZeroUsize::new(3));
+        .with_untrusted_subject_impact_bound(maximum_subjects);
         let members = vec![Member::OperationBody {
             operation: "Sign".into(),
             body: ApplicationOperationBodyProgram::from_untrusted_in_scope(
@@ -140,9 +144,7 @@ impl Fixture {
             &self.binding,
             &self.catalog,
             &members,
-            "WriteParent",
             &self.touches,
-            99,
             Some(&writer),
         )
         .unwrap()
@@ -151,22 +153,13 @@ impl Fixture {
 #[test]
 fn path_only_subject_writes_compile_lifecycle_consequences_but_audit_context_does_not() {
     let f = Fixture::new();
-    let subject = f.derive(Role::Subject);
+    let subject = f.derive(Role::Subject, std::num::NonZeroUsize::new(3));
     assert_eq!(subject.rules.len(), 1);
     assert_eq!(subject.rules[0].subjects(), [f.source.field.clone()]);
-    assert_eq!(subject.rules[0].maximum_subjects(), 3);
-    let ceiling = subject
-        .ceiling
-        .expect("actual consequence capacity")
-        .cardinality();
+    assert_eq!(subject.rules[0].maximum_subjects(), Some(3));
     assert_eq!(
-        (
-            ceiling.maximum_creates(),
-            ceiling.maximum_links(),
-            ceiling.maximum_unlinks(),
-            ceiling.maximum_writes()
-        ),
-        (6, 6, 6, 6)
+        f.derive(Role::Subject, None).rules[0].maximum_subjects(),
+        None
     );
     assert!(subject
         .publication_touches
@@ -186,8 +179,7 @@ fn path_only_subject_writes_compile_lifecycle_consequences_but_audit_context_doe
         .scopes()
         .iter()
         .any(|touch| matches!(touch,Touch::UnlinkRelation(scope) if scope.relation()=="Current")));
-    let audit = f.derive(Role::AuditContext);
+    let audit = f.derive(Role::AuditContext, None);
     assert!(audit.rules.is_empty());
-    assert!(audit.ceiling.is_none());
     assert_eq!(audit.publication_touches, f.touches);
 }

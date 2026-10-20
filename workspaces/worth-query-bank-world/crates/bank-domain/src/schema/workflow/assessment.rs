@@ -1,19 +1,18 @@
 use worth_query_decl::facade::{
     worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
+
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
         WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
-        WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
-        WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-        WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+        WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+        WorthQueryProducerOutputFamily, WorthQueryWorkflowAssessmentOutputFamily,
+        WorthQueryWorkflowAssessmentPosture,
     },
     declaration::{
         application_operation::{
-            ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-            ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
-            ApplicationMutationFieldScope, ApplicationMutationIntent,
+            ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
             ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
             ApplicationMutationOutputRoleFamilyDescriptor, ApplicationQueryMutationSource,
             WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
@@ -133,11 +132,6 @@ impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding
     const IDENTITY: &'static str = "worth.bank.approved-payment-assessment.binding.v1";
     const HANDLER_IDENTITY: &'static str = "worth.bank.approved-payment-assessment.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.bank.approved-payment-assessment.command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1_024),
-        );
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,
@@ -231,7 +225,6 @@ impl WorthQueryApplicationProducerBinding<BankSchema> for ApprovedPaymentAssessm
     const IDENTITY: &'static str = "worth.bank.approved-payment-assessment.producer.v1";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
 }
 
@@ -258,10 +251,6 @@ impl WorthQueryApplicationProducerProvider<BankSchema, ApprovedPaymentAssessment
             write!(value, "{byte:02x}").expect("writing into a string cannot fail");
         }
         BankIdempotencyKey::new(value).expect("assessment identity fits the bank key contract")
-    }
-
-    fn demand_resources(&self, _: &PaymentSummary) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(512, 1_024)
     }
 }
 

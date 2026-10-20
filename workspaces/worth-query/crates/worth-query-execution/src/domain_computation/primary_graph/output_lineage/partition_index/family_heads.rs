@@ -17,12 +17,13 @@ impl WorthQueryApplicationOutputLineage {
     #[allow(clippy::type_complexity)]
     pub(in crate::domain_computation::primary_graph::output_lineage) fn family_partition_heads_budgeted(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
     ) -> Result<(Vec<(Option<[u8; 32]>, FamilyPublicationHead<'_>)>, usize), CompanionPreflightStop>
     {
-        if maximum_work == 0 {
+        if maximum_work == Some(0) {
             return Err(CompanionPreflightStop::WorkExhausted {
                 required: 1,
                 maximum: 0,
@@ -31,10 +32,15 @@ impl WorthQueryApplicationOutputLineage {
         let mut heads = Vec::new();
         let mut work = 0usize;
         let charge = |work: &mut usize| {
+            execution
+                .consult()
+                .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
             *work = work
                 .checked_add(1)
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-            if *work > maximum_work {
+            if let Some(maximum_work) = maximum_work
+                && *work > maximum_work
+            {
                 return Err(CompanionPreflightStop::WorkExhausted {
                     required: u64::try_from(*work)
                         .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,

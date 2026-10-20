@@ -9,9 +9,7 @@ use bank_domain::schema::{
     PaymentIntent, PaymentStatusField, PrincipalIdentityField, RejectPayment,
     RejectPaymentMutationBinding,
 };
-use worth_query_host::facade::declaration::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
-};
+use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
 use worth_query_host::facade::domain::{
     OperationCreates, OperationLinks, OperationReads, OperationWrites,
 };
@@ -53,14 +51,6 @@ impl OperationHandler<BankSchema, ApprovePaymentMutationBinding> for ApprovePaym
             Ok(proposal) => HandlerResult::Completed(proposal),
             Err(denial) => HandlerResult::DomainDenied(denial),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &ApprovePayment,
-        _: &BankInvariantApprovedProposal,
-    ) -> ApplicationCandidateRequirements {
-        ApprovePaymentMutationBinding::CANDIDATES
     }
 
     fn build_candidate(
@@ -107,14 +97,6 @@ impl OperationHandler<BankSchema, RejectPaymentMutationBinding> for RejectPaymen
             Ok(proposal) => HandlerResult::Completed(proposal),
             Err(denial) => HandlerResult::DomainDenied(denial),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &RejectPayment,
-        _: &BankInvariantApprovedProposal,
-    ) -> ApplicationCandidateRequirements {
-        RejectPaymentMutationBinding::CANDIDATES
     }
 
     fn build_candidate(

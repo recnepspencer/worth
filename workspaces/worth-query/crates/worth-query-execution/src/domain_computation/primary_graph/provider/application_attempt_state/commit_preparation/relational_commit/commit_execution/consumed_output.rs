@@ -82,6 +82,7 @@ pub(super) fn verify(
                 super::stops::interruption_control_stopped(event),
             ),
             PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(cause)) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
+            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted(stop)) => capacity_denied(stop),
             other => {
                 let detail = match other {
                     PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(_)) => unreachable!("request execution routed above"),
@@ -91,7 +92,7 @@ pub(super) fn verify(
                     PrecommitOutputStop::Verification(
                         ConsumedOutputVerificationStop::WorkExhausted,
                     ) => "consumed output currentness exceeded publication work",
-                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted(_)) => "consumed output currentness exceeded publication capacity",
+                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted(_)) => unreachable!("capacity evidence retained above"),
                     PrecommitOutputStop::Verification(
                         ConsumedOutputVerificationStop::PendingUpstream,
                     ) => "consumed output has pending upstream source",
@@ -139,3 +140,18 @@ pub(super) fn verify(
         required_prerequisites,
     })
 }
+
+fn capacity_denied(
+    stop: crate::domain_computation::primary_graph::VerificationCapacityStop,
+) -> WorthQueryProviderSessionCommitStop {
+    WorthQueryProviderSessionCommitStop::PreEffectDenied(
+        provider_failure(
+            WorthQueryProviderSessionProtocolStage::Commit,
+            "consumed output currentness exceeded publication capacity",
+        )
+        .with_output_verification_capacity_stop(stop),
+    )
+}
+
+#[cfg(test)]
+mod capacity_tests;

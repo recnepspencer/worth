@@ -63,7 +63,7 @@ fn discovered_currentness_all_native_retired_keeps_original_discovery() {
         .recover_discovered_required_outputs::<MembershipProgram, FanoutRoot>(
             &world.application,
             &receipt,
-            WorthQueryOutputDemandControls::new(NonZeroUsize::new(4096).unwrap(), retained_bytes()),
+            WorthQueryOutputDemandControls::default(),
         )
         .unwrap();
     let aggregate = settle(

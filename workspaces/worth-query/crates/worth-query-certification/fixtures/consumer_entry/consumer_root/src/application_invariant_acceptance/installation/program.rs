@@ -2,7 +2,7 @@
 use super::*;
 
 pub(in crate::application_invariant_acceptance) fn install_selected_program<Program>(
-    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>, candidate_bytes: u64, query_bytes: usize,
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>, query_bytes: usize,
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
     program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
@@ -12,7 +12,6 @@ where Program: worth_query_decl::facade::application_program::ApplicationProgram
 Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
     install_selected_program_with_isolated_cycle(
         foreign,
-        candidate_bytes,
         query_bytes,
         roster,
         deployment_grants,
@@ -23,7 +22,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
 
 
 pub(in crate::application_invariant_acceptance) fn install_selected_program_with_isolated_cycle<Program>(
-    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>, candidate_bytes: u64, query_bytes: usize,
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>, query_bytes: usize,
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
     isolated_cycle: bool,
@@ -48,7 +47,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
         Arc::clone(&parameter_calls),
         (),
     );
-    let limits = resources::application_limits(candidate_bytes, query_bytes);
+    let limits = resources::application_limits(query_bytes);
     let deployment_scopes: std::collections::BTreeSet<_> = std::iter::once(*program.revision())
         .chain(deployment_grants.iter().map(|grant| grant.source()))
         .collect();

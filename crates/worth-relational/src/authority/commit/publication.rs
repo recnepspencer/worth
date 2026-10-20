@@ -68,10 +68,28 @@ fn prepare_patch_fragments(
     }
 
     let lease = lease.expect("serial path returns before packet preparation");
+    let preparation_bytes = crate::execution::packet_preparation_bytes::<(
+        usize,
+        &[FoundationalPatchFragment],
+    )>(packet_count)?
+    .checked_add(
+        (fragments.len() as u64)
+            .checked_mul(
+                (std::mem::size_of::<crate::identity::data::PartitionId>()
+                    + 4 * std::mem::size_of::<usize>()) as u64,
+            )
+            .ok_or(crate::execution::PacketExecutionStop::Admission(
+                crate::execution::PacketAdmissionDenial::MemoryOverflow,
+            ))?,
+    )
+    .ok_or(crate::execution::PacketExecutionStop::Admission(
+        crate::execution::PacketAdmissionDenial::MemoryOverflow,
+    ))?;
     let mut partition_count = None;
     let (inputs, _preparation_report) = crate::execution::prepare_borrowed_packets(
         lease,
         runtime.commit_work_budget.as_ref(),
+        preparation_bytes,
         |budget| {
             let mut partitions = BTreeSet::new();
             for fragment in &fragments {
@@ -100,8 +118,10 @@ fn prepare_patch_fragments(
                 inputs.push(crate::execution::ReadOnlyPacket {
                     identity: PartitionIdentity::new(packet_index_floor as u64),
                     input_bytes: 0,
-                    kernel_scratch_bytes: scratch_bytes,
-                    max_result_bytes: result_bytes,
+                    memory: crate::execution::PacketMemory::Declared {
+                        scratch: scratch_bytes,
+                        result: result_bytes,
+                    },
                     value: (packet_index_floor, chunk),
                 });
             }

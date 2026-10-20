@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
-use std::{num::NonZeroUsize, sync::OnceLock};
+use std::sync::OnceLock;
 
 use super::*;
 use crate::domain_computation::primary_graph::{
@@ -40,14 +40,13 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime(request_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let positioned = runtime.read_truth().positioned_snapshot(snapshot).unwrap();
-        let read = RetainedOutputCurrentnessRead {
-            _computation: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).certify_current().unwrap(),
+        let mut read = RetainedOutputCurrentnessRead {
             identity: Arc::clone(&identity),
-            facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([])).for_comparison().unwrap(),
+            facts: None,
+            consumed_outputs: Arc::from([]),
             native_output_witness: Some(account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity)),
             consumed_nothing: true,
             verification_requirement: None,
-            work: 0,
         };
         let recorded = || {
             matches!(
@@ -56,11 +55,28 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
             )
         };
         assert!(!recorded());
-        let least = (1..=owner.edit_admission().remaining_work())
+        // Neither absence nor an empty comparison may replace the original
+        // own-publication gate. These reads hold no receipt and cannot mark.
+        for facts in [None, RetainedSourceFacts::for_test(false, Arc::from([])).for_comparison()] {
+            read.facts = facts;
+            let stopped = selected.require_current_read(
+                &host_custody.borrowed_request_for_test(), runtime, &read, None,
+                &mut owner.edit_admission(),
+            ).unwrap_err();
+            assert_eq!(stopped.kind(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Superseded);
+            assert!(!recorded(), "factless refusal cannot establish a verified row");
+        }
+        let label = AccountLabel::reference();
+        let locator = graph.layout().field_locator(label.entity(), label.aspect(), label.field()).unwrap().clone();
+        let fact = field_fact(&host_custody.borrowed_request_for_test(), runtime, snapshot, entity, locator);
+        read.facts = RetainedSourceFacts::for_test(false, Arc::from([fact])).for_comparison();
+        // Search the smallest explicit caller restriction on the same row;
+        // the installed default has no finite upper bound.
+        let least = (1usize..)
             .find(|&work| {
-                let mut request = owner.edit_admission_within(NonZeroUsize::new(work).unwrap());
+                let mut request = owner.edit_admission_with_work_limit(Some(work));
                 selected
-                    .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, &mut request)
+                    .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, None, &mut request)
                     .is_ok()
             })
             .expect("some meter verifies the output");
@@ -69,7 +85,7 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
             "the least meter that answers ({least}) has nothing left to record the row"
         );
         assert!(selected
-            .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, &mut owner.edit_admission())
+            .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, None, &mut owner.edit_admission())
             .is_ok());
         assert!(recorded(), "a meter with room records the verified row");
     }) }).expect("the fixture read owns its installed host call");
@@ -133,9 +149,11 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
             )
         };
         assert!(!recorded());
-        let least = (1..=owner.edit_admission().remaining_work())
+        // Search the smallest explicit caller restriction on the same row;
+        // the installed default has no finite upper bound.
+        let least = (1usize..)
             .find(|&work| {
-                let mut request = owner.edit_admission_within(NonZeroUsize::new(work).unwrap());
+                let mut request = owner.edit_admission_with_work_limit(Some(work));
                 verify(&mut request) == Ok(ConsumedOutputVerification::Current)
             })
             .expect("some meter verifies the output");
@@ -173,10 +191,8 @@ fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
         Some(FullVerificationReason::CheckpointRestore),
         Arc::new(head),
     );
-    let mut exhausted = owner.edit_admission();
-    exhausted
-        .charge_external_work(exhausted.remaining_work_amount())
-        .unwrap();
+    let mut exhausted = owner.edit_admission_with_work_limit(Some(1));
+    exhausted.charge_external_work(1).unwrap();
     assert_eq!(
         restored.establish_restored_before_commit(
             request_execution,

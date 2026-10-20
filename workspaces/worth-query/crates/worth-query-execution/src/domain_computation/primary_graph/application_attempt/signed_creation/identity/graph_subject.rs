@@ -17,7 +17,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt::signed_cre
     scope: EntityId,
     dependencies: &[Dependency],
     selections: &[Selection],
-    maximum_bytes: usize,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), Denial> {
@@ -26,12 +25,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::signed_cre
     entries.fields("subject", fields, context)?;
     entries.number("certified-dependency-count", dependencies.len() as u64);
     for (index, dependency) in dependencies.iter().enumerate() {
-        super::admit_assembly(
-            context,
-            dependency
-                .maximum_encoded_bytes()
-                .ok_or(Denial::RepresentationCapacity)?,
-        )?;
+        super::check_interruption(context)?;
         let prefix = format!("certified-dependency.{index}");
         coordinates(&mut entries, &prefix, dependency.source);
         for (name, field) in [
@@ -62,12 +56,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::signed_cre
     }
     entries.number("certified-selection-count", selections.len() as u64);
     for (index, selection) in selections.iter().enumerate() {
-        super::admit_assembly(
-            context,
-            selection
-                .maximum_encoded_bytes()
-                .ok_or(Denial::RepresentationCapacity)?,
-        )?;
+        super::check_interruption(context)?;
         let prefix = format!("certified-selection.{index}");
         coordinates(&mut entries, &format!("{prefix}.anchor"), selection.anchor);
         coordinates(
@@ -102,7 +91,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt::signed_cre
     }
     entries.derive(
         "worth-query-signed-certified-graph-subject-v3",
-        maximum_bytes,
         request,
         context,
     )

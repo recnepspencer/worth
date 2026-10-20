@@ -177,15 +177,15 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
         .expect("installed host call opens");
     assert!(matches!(request.at(&unchanged)
-        .require_current_output_demand(&foreign_settlement, NonZeroUsize::new(4096).unwrap()),
+        .require_current_output_demand(&foreign_settlement, Some((NonZeroUsize::new(4096).unwrap()).get())),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::ForeignSettlement));
     drop(foreign_settlement);
     request
         .at(&unchanged)
-        .require_current_output_demand(&settled, NonZeroUsize::new(4096).unwrap())
+        .require_current_output_demand(&settled, Some((NonZeroUsize::new(4096).unwrap()).get()))
         .expect("receipt-free restored output has current native lineage");
     assert!(matches!(request.at(&unchanged)
-        .require_current_output_demand(&settled, NonZeroUsize::new(1).unwrap()),
+        .require_current_output_demand(&settled, Some((NonZeroUsize::new(1).unwrap()).get())),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::WorkBudgetExceeded));
     drop(handle);
 
@@ -197,7 +197,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
         .expect("installed host call opens");
     assert!(matches!(request.at(&current)
-        .require_current_output_demand(&settled, NonZeroUsize::new(4096).unwrap()),
+        .require_current_output_demand(&settled, Some((NonZeroUsize::new(4096).unwrap()).get())),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::Superseded));
     drop(settled);
     let mut changed = request
@@ -222,15 +222,15 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         .expect("installed host call opens");
     request
         .at(&current)
-        .require_current_output_demand(&refreshed, NonZeroUsize::new(4096).unwrap())
+        .require_current_output_demand(&refreshed, Some((NonZeroUsize::new(4096).unwrap()).get()))
         .expect("fresh producer settlement is current");
 }
 
 fn assert_captured_document_predicate(bytes: &[u8], accepted_bytes: usize, subject: EntityId) {
     // Inspect only Query's accepted-output section. The native payload remains opaque.
-    // This independent current v10 wire expectation fails if capture or readmission drops
+    // This independent current v11 wire expectation fails if capture or readmission drops
     // the predicate while retaining the document's ordinary field observations.
-    assert_eq!(&bytes[40..42], &10_u16.to_be_bytes());
+    assert_eq!(&bytes[40..42], &11_u16.to_be_bytes());
     assert_eq!(DOCUMENT_IDENTITY, "document-1");
     let value = br#"{"String":{"Raw":"document-1"}}"#;
     let mut expected = Vec::new();

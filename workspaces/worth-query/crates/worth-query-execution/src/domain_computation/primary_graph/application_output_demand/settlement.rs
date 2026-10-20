@@ -334,13 +334,24 @@ where
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut admission = self
+            .primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner
+            .edit_admission_with_work_limit(
+                self.output_demand_resource_profile()
+                    .limits()
+                    .source_currentness_work(),
+            );
         let facts = match settlement.application_commit_receipt() {
             Some(receipt) => lineage.source_facts_for_receipt(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
                 selected.product().observation(),
                 receipt,
-                usize::MAX,
+                execution,
+                &mut admission,
             ),
             None => match settlement.stable.as_ref() {
                 Some(stable) => lineage.source_facts_for_stable_output(
@@ -348,25 +359,28 @@ where
                     &self.installed_schema.binding_identity(),
                     selected.product().observation(),
                     stable,
-                    usize::MAX,
+                    execution,
+                    &mut admission,
                 ),
                 None => lineage.source_facts_for_restored_output(
                     self.runtime.authority_identity().as_u64(),
                     &self.installed_schema.binding_identity(),
                     selected.product().observation(),
                     settlement,
-                    usize::MAX,
+                    execution,
+                    &mut admission,
                 ),
             },
         };
         facts
-            .map_err(|()| {
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    "settled output currentness exceeded its lineage work budget",
+            .map_err(|stop| {
+                crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+                    crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+                    "settled output lineage read unavailable",
                 )
             })?
-            .map(|read| read.facts)
+            .and_then(|read| read.facts)
+            .filter(|facts| !facts.is_empty())
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::Superseded,

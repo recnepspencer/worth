@@ -104,7 +104,7 @@ mod tests {
         let mut retained = parent.fork_persistent();
         retained.release(id).unwrap();
         drop(parent);
-        let mut work = Preparation::new(1_000);
+        let mut work = Preparation::new(Some(1_000));
         let charge = retained.retained_heap_charge(&mut work).unwrap();
         assert!(
             charge.bytes() >= minimum_payload,
@@ -113,12 +113,12 @@ mod tests {
         let required = work.visits();
         assert_eq!(
             retained
-                .retained_heap_charge(&mut Preparation::new(required))
+                .retained_heap_charge(&mut Preparation::new(Some(required)))
                 .unwrap(),
             charge
         );
         assert!(matches!(
-            retained.retained_heap_charge(&mut Preparation::new(required - 1)),
+            retained.retained_heap_charge(&mut Preparation::new(Some(required - 1))),
             Err(Denial::WorkExhausted { .. })
         ));
     }

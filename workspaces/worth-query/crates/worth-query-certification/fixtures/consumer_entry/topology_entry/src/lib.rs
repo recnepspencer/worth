@@ -64,6 +64,7 @@ pub use readiness::InitialPlanarReadiness;
 pub use source_adjustment::*;
 
 pub trait TopologySchemaBinding: ApplicationSchema {
+    const PLANAR_EDIT_PROJECTION_WORK: Option<usize> = Some(8_192);
     fn planar_invariant_work() -> u64 {
         planar_topology::PLANAR_CHECKED_WORK
     }
@@ -116,6 +117,12 @@ worth_query_application_contribution! {
             let schema = source_adjustment::declare_planar_source_adjustment(schema);
             let schema = initial_adjustment::declare_initial_adjustment(schema);
             let schema = final_output::declare_final_output(schema);
+            let schema = match Schema::PLANAR_EDIT_PROJECTION_WORK {
+                Some(maximum_work) => schema.operation_projection_work_budget(
+                    EditPlanar::reference::<Schema>(), maximum_work,
+                ),
+                None => schema,
+            };
             schema
                 .entity(Body::reference::<Schema>())
                 .unit(Metre::reference::<Schema>())
@@ -169,7 +176,6 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<PlanarMutationBinding<Schema>>()
                 .operation(EditPlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
 
-                .operation_projection_work_budget(EditPlanar::reference::<Schema>(), 8_192)
                 .operation_read_entity(EditPlanar::reference::<Schema>(), Body::reference::<Schema>())
                 .operation_read_field(EditPlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
                 .operation_read_field(EditPlanar::reference::<Schema>(), PositionX::reference::<Schema>())

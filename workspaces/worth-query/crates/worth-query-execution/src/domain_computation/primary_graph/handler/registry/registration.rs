@@ -55,7 +55,6 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
                 value: Arc::new(TypedHandlerSlot::<Schema, Binding> {
                     handler: Arc::new(handler),
                 }),
-                candidates: installed.candidate_requirements(),
                 origin,
             },
         );

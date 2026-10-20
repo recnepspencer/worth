@@ -39,7 +39,7 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
             bound(None);
             let before = reads();
             current
-                .require_current_program_output(&settlement, maximum_work)
+                .require_current_program_output(&settlement, Some((maximum_work).get()))
                 .unwrap();
             assert!(
                 reads() > before,
@@ -48,19 +48,19 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
                 if zero_memory {
-                    0
+                    Some(0)
                 } else {
                     policy.charged_memory_bytes()
                 },
                 if zero_memory {
                     policy.work_ceiling()
                 } else {
-                    0
+                    Some(0)
                 },
             )));
             let before = reads();
             let WorthQueryOutputCurrentnessDenial::ExecutionRequest(cause) = current
-                .require_current_program_output(&settlement, maximum_work)
+                .require_current_program_output(&settlement, Some((maximum_work).get()))
                 .unwrap_err()
             else {
                 panic!("the opening refusal retains its own spelling")

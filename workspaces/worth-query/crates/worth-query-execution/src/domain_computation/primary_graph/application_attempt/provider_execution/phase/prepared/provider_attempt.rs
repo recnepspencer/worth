@@ -18,8 +18,6 @@ pub(super) fn prepare_application_provider_attempt(
         preparation.facts,
         preparation.consumed_outputs,
         preparation.effects,
-        preparation.emission_retained_bytes,
-        preparation.emission_retained_bytes_ceiling,
         preparation.preimage_demand,
         preparation.conditional_definition,
         preparation.output_correspondence,

@@ -21,7 +21,6 @@ fn discovered_installed_concrete_delivery_and_occurrence_are_exact() {
     ];
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),

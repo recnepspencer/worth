@@ -7,10 +7,11 @@ pub(super) fn rebase(
     prepared: PreparedSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer_output: bool,
-    maximum_indexed_rebase_work: usize,
+    maximum_indexed_rebase_work: Option<usize>,
     admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
     let PreparedSourceFactRebase {
+        retention,
         facts,
         moved_by_own_effect,
         endpoints,
@@ -21,11 +22,9 @@ pub(super) fn rebase(
     let mut endpoints = endpoints.into_iter().peekable();
     // The width the decision declared for its indexed selections, metered
     // across the walk.
-    let mut indexed_width = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
-        worth_relational::facade::mvcc::CompanionPreflightBudget {
-            maximum_work_visits: u64::try_from(maximum_indexed_rebase_work).unwrap_or(u64::MAX),
-            maximum_preparation_bytes: 0,
-        },
+    let mut indexed_width = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::with_work_limit(
+        maximum_indexed_rebase_work.map(|work| u64::try_from(work).expect("native work fits u64")),
+        None,
     );
     let mut failure = None;
     let mut own_effect = OwnEffectOnReads::NONE_ASKED;
@@ -105,11 +104,12 @@ pub(super) fn rebase(
         }
         rebased.push(action.apply(fact));
     }
+    let facts = FactPayload::from_prepared(rebased, retention);
     if superseded.is_empty() {
-        RebasedSourceFacts::Exact(rebased.into())
+        RebasedSourceFacts::Exact(facts)
     } else {
         RebasedSourceFacts::SupersededByOwnEffect {
-            facts: rebased.into(),
+            facts,
             ordinals: superseded.into(),
         }
     }

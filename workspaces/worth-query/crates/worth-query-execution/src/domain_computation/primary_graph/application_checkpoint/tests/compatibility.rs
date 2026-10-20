@@ -19,7 +19,12 @@ fn refusal(body: Vec<u8>, expected: Kind) {
 #[test]
 fn unsupported_checkpoint_header_refuses_before_malformed_current_body() {
     // Deliberately hostile framing cases, not authentic predecessor fixtures.
-    for observed in [0, 9, super::super::FORMAT_VERSION + 1] {
+    for observed in [
+        0,
+        9,
+        super::super::FORMAT_VERSION - 1,
+        super::super::FORMAT_VERSION + 1,
+    ] {
         let mut body = checkpoint_body(0, Vec::new());
         body[..2].copy_from_slice(&observed.to_be_bytes());
         body.truncate(2);

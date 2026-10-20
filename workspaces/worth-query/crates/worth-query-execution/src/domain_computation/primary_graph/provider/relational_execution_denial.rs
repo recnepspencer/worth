@@ -73,6 +73,7 @@ pub fn relational_execution_kind(
         Cause::NestedStopped => Kind::ExecutionNestedPatternStopped { partition_identity },
         Cause::ResultCapacityExceeded => resource(Resource::ResultCapacityExceeded, None),
         Cause::ScratchCapacityExceeded => resource(Resource::ScratchCapacityExceeded, None),
+        Cause::AllocationFailed => Kind::AllocationDenied,
         Cause::WorkerFailed => Kind::ExecutionWorkerPanicked { partition_identity },
         Cause::UncheckedCustomKernel => Kind::ExecutionUncheckedCustomKernel { partition_identity },
         Cause::ExpectedIdentitiesNotCanonical => {

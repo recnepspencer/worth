@@ -42,8 +42,11 @@ pub(super) fn exhaust_delivery_capacity(
     crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity,
 > {
     resources.take_delivery_exhaustion().then(|| {
-        let remaining =
-            resources.installation().maximum_retained_bytes - resources.retained_capacity_bytes();
+        let remaining = resources
+            .installation()
+            .maximum_retained_bytes
+            .expect("capacity-exhaustion control requires a finite installed ceiling")
+            - resources.retained_capacity_bytes();
         resources
             .reserve_retained_capacity(remaining)
             .expect("exact remaining ledger capacity")
@@ -53,6 +56,7 @@ impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
     /// Hold the ledger's remaining real capacity during one source delivery.
+    /// The test host must install an explicit finite retained-byte ceiling.
     #[doc(hidden)]
     pub fn exhaust_next_source_delivery_capacity_for_test(&self) {
         self.primary_provider

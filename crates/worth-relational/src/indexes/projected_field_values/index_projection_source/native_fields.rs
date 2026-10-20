@@ -13,7 +13,7 @@ impl IndexProjectionSource<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind: KindId,
         field: &AspectFieldLocator,
-        mut before: impl FnMut(u64) -> Result<(), E>,
+        mut before: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(EntityId, Option<&AspectValue>) -> Result<(), E>,
     ) -> Result<(), crate::visibility::materialization::read_records::read_stop::ReadStop<E>> {
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
@@ -29,11 +29,25 @@ impl IndexProjectionSource<'_> {
             let Some(partition) = root.get_partition(partition_id) else {
                 return Ok(());
             };
-            for slot in partition.entity_arena.live_bitset.set_slots() {
+            let mut navigation_bytes = 0;
+            let slots =
+                partition
+                    .entity_arena
+                    .live_bitset
+                    .try_set_slots(|_navigation, bytes| {
+                        before(0, bytes).map_err(ReadStop::Admission)?;
+                        navigation_bytes = bytes;
+                        Ok(())
+                    })?;
+            for slot in slots {
                 // Preserve each candidate's checkpoint. The pinned native value
                 // needs no read-record allocation, including unrelated kinds.
                 crate::execution::check_request(execution).map_err(ReadStop::Request)?;
-                before(0).map_err(ReadStop::Admission)?;
+                before(
+                    crate::visibility::materialization::read_records::read_prices::KEYED_RECORD,
+                    navigation_bytes,
+                )
+                .map_err(ReadStop::Admission)?;
                 let Some(record) = partition.entity_arena.get_slot(slot) else {
                     continue;
                 };
@@ -49,6 +63,8 @@ impl IndexProjectionSource<'_> {
                 )
                 .map_err(ReadStop::Admission)?;
             }
+            // The slot iterator has dropped; release only its temporary backing.
+            before(0, 0).map_err(ReadStop::Admission)?;
             Ok(())
         })
     }
@@ -58,7 +74,7 @@ impl IndexProjectionSource<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind: KindId,
         field: &AspectFieldLocator,
-        mut before: impl FnMut(u64) -> Result<(), E>,
+        mut before: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(RelationId, Option<&AspectValue>) -> Result<(), E>,
     ) -> Result<(), crate::visibility::materialization::read_records::read_stop::ReadStop<E>> {
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
@@ -77,9 +93,23 @@ impl IndexProjectionSource<'_> {
             let Some(partition) = root.get_partition(partition_id) else {
                 return Ok(());
             };
-            for slot in partition.relation_arena.live_bitset.set_slots() {
+            let mut navigation_bytes = 0;
+            let slots =
+                partition
+                    .relation_arena
+                    .live_bitset
+                    .try_set_slots(|_navigation, bytes| {
+                        before(0, bytes).map_err(ReadStop::Admission)?;
+                        navigation_bytes = bytes;
+                        Ok(())
+                    })?;
+            for slot in slots {
                 crate::execution::check_request(execution).map_err(ReadStop::Request)?;
-                before(0).map_err(ReadStop::Admission)?;
+                before(
+                    crate::visibility::materialization::read_records::read_prices::KEYED_RECORD,
+                    navigation_bytes,
+                )
+                .map_err(ReadStop::Admission)?;
                 let Some(record) = partition.relation_arena.get_slot(slot) else {
                     continue;
                 };
@@ -95,7 +125,12 @@ impl IndexProjectionSource<'_> {
                 )
                 .map_err(ReadStop::Admission)?;
             }
+            // The slot iterator has dropped; release only its temporary backing.
+            before(0, 0).map_err(ReadStop::Admission)?;
             Ok(())
         })
     }
 }
+
+#[cfg(test)]
+mod navigation_tests;

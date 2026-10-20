@@ -176,7 +176,7 @@ fn unrelated_and_cancelled_child_leases_cannot_edit_retained_routes() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 100_000, 100_000),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(100_000), Some(100_000)),
             ),
             deadline: None,
             cancellation: cancellation.token(),

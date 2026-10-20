@@ -55,7 +55,6 @@ where
         })?;
         let profile_kind = Family::profile_kind(&source);
         self.admit_output_demand_with_source::<Family>(execution,
-            source,
             observed_source,
             None,
             profile_kind,
@@ -89,7 +88,6 @@ where
         })?;
         let profile_kind = Family::profile_kind(&source);
         self.admit_output_demand_with_source::<Family>(execution,
-            source,
             observed_source,
             None,
             profile_kind,
@@ -155,7 +153,6 @@ where
         }
         let profile_kind = Family::profile_kind(&source);
         self.admit_output_demand_with_source::<Family>(execution,
-            source,
             observed_source,
             Some(&current_observed_source),
             profile_kind,
@@ -194,7 +191,6 @@ where
         )?;
         let profile_kind = Family::profile_kind(&source);
         self.admit_output_demand_with_source::<Family>(execution,
-            source,
             observed_source,
             None,
             profile_kind,
@@ -210,7 +206,6 @@ where
     pub(super) fn admit_output_demand_with_source<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: FamilySourceValue<Schema, Family>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
         selection_source: Option<&WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>>,
         profile_kind: &'static str,
@@ -234,7 +229,6 @@ where
         let result = self
             .admit_output_demand_with_source_admitted::<Family>(
                 execution,
-                &source,
                 observed_source,
                 selection_source,
                 profile_kind,

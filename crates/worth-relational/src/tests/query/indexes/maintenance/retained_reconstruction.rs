@@ -36,9 +36,9 @@ fn retained_commit_reconstruction_uses_its_own_root_and_finite_cold_budget() {
             execution,
             request.clone(),
             DerivedIndexMaintenanceBudget {
-                maximum_work_units: 100_000,
-                maximum_cold_record_slots: 1_000,
-                maximum_derived_rows: 1_000,
+                maximum_work_units: Some(100_000),
+                maximum_cold_record_slots: Some(1_000),
+                maximum_derived_rows: Some(1_000),
             },
         )
         .unwrap();
@@ -65,9 +65,9 @@ fn retained_commit_reconstruction_uses_its_own_root_and_finite_cold_budget() {
             &basis,
             None,
             DerivedIndexMaintenanceBudget {
-                maximum_work_units: 100_000,
-                maximum_cold_record_slots: 1_000,
-                maximum_derived_rows: 1_000,
+                maximum_work_units: Some(100_000),
+                maximum_cold_record_slots: Some(1_000),
+                maximum_derived_rows: Some(1_000),
             },
             execution,
         )

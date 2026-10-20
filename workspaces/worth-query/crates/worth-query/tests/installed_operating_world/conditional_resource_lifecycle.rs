@@ -18,7 +18,7 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 2,
             maximum_retained_bytes: 512 * 1024 * 1024,
-            maximum_attempt_visits: 8_000_000,
+            maximum_attempt_visits: None,
         },
     );
     let mut workspace = installed_operation_fixture::conditional_resource_workspace(

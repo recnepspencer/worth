@@ -171,7 +171,7 @@ pub fn assess(
     acceptance_key: u64,
 ) {
     use crate::document_retention_model::assessment_output::RetentionAssessmentDemand;
-    use std::num::NonZeroUsize;
+
     let runtime = application.runtime();
     let scope = request_scope();
     let actor = authenticate_operator(runtime.installed_schema(), &scope);
@@ -188,10 +188,6 @@ pub fn assess(
         .expect("fresh admission at the waiting assessment")
         .into_assessment_demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
         .expect("installed retention query and producer contract")
-        .controls(WorthQueryOutputDemandControls::new(
-            NonZeroUsize::new(512).unwrap(),
-            NonZeroUsize::new(1024).unwrap(),
-        ))
         .retain_operation(application.program_runtime())
         .expect("retain the actual assessment producer owner");
     let settlement = match owner

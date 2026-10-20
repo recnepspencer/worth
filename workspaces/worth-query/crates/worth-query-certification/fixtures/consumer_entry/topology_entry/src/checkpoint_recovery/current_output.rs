@@ -37,12 +37,16 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
             .advanced()
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: "anchor-a".into(),
-                operation: PlanarOperation::VerifyCurrentOutputs(vec![
-                    PlanarCurrentOutputExpectation {
-                        producer_key: "anchor-a".into(),
-                        output_key: "anchor-a".into(),
-                    },
-                ]),
+                // Every expectation resolves its source entity, consumes current_output,
+                // and reads the output field through the real decision reader.
+                operation: PlanarOperation::VerifyCurrentOutputs(
+                    (0..8_193)
+                        .map(|_| PlanarCurrentOutputExpectation {
+                            producer_key: "anchor-a".into(),
+                            output_key: "anchor-a".into(),
+                        })
+                        .collect(),
+                ),
             }))
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency(&command)
@@ -106,4 +110,18 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
         .expect("typed currentness cause");
     assert_eq!(cause.kind(), WorthQueryCurrentOutputDenialKind::StaleSource);
     assert_eq!(super::super::producer::provider_contacts(), 0);
+
+    drop(settle(&request, &restored));
+    assert!(super::super::producer::provider_contacts() > 0);
+    let refreshed = request
+        .query(PlanarOutputRead {
+            body_key: "anchor-a".into(),
+        })
+        .execute()
+        .expect("the refreshed producer output is readable");
+    assert_eq!(refreshed.rows()[0].value, length(3));
+    assert!(matches!(
+        verify(904_u64).expect("fresh output verifies after ordinary producer demand"),
+        WorthQueryApplicationMutationOutcome::Committed { .. }
+    ));
 }

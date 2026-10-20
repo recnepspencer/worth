@@ -3,31 +3,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
-pub(super) fn validate_progression_resources<Schema>(
-    retained: &mut Option<crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDemandResources>,
-    validated: &mut bool,
-    disclosed_value: &dyn std::any::Any,
-    entry: &InstalledProducerProvider<Schema>,
-    producer_identity: &str,
-    limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-) -> Result<(), WorthQueryOutputDemandDenial>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    if *validated {
-        return Ok(());
-    }
-    let resources = resources::validate_demand_resources(
-        entry.executor.as_ref(),
-        disclosed_value,
-        producer_identity,
-        limits,
-    )?;
-    *retained = Some(resources);
-    *validated = true;
-    Ok(())
-}
-
 /// Copy the actual executed mode into the Ready backing. A required successor
 /// already paid its separate admission copy before this effect boundary.
 pub(super) fn clone_published_mode(
@@ -54,33 +29,6 @@ pub(super) fn clone_published_mode(
         ));
     }
     Ok(mode.clone())
-}
-
-pub(super) fn validate_resources_after_begin<Schema>(
-    registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
-    interest: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest,
-    retained: &mut Option<crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDemandResources>,
-    validated: &mut bool,
-    disclosed_value: &dyn std::any::Any,
-    entry: &InstalledProducerProvider<Schema>,
-    producer_identity: &str,
-    limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-) -> Result<(), WorthQueryOutputDemandDenial>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    if let Err(denial) = validate_progression_resources(
-        retained,
-        validated,
-        disclosed_value,
-        entry,
-        producer_identity,
-        limits,
-    ) {
-        registry.relinquish_execution(interest);
-        return Err(denial);
-    }
-    Ok(())
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

@@ -238,7 +238,7 @@ fn readmission_slot_shortage_denies_before_disturbing_the_predecessor() {
     let budget = SignalConditionalEvaluationBudget {
         maximum_retained_slots: 1,
         maximum_retained_bytes: 512 * 1024 * 1024,
-        maximum_attempt_visits: 8_000_000,
+        maximum_attempt_visits: Some(8_000_000),
     };
     let (_runtime, service, contract, source_owner) = fixture(Some(budget));
     let predecessor = service

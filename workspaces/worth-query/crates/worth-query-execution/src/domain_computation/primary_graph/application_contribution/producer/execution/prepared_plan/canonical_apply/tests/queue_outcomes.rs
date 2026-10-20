@@ -21,7 +21,7 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
             );
             let policy = test_policy(
                 std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
-                1 << 20,
+                None,
             );
             let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
                 RuntimeWorldExecutionPlacement::Leased {
@@ -47,15 +47,15 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
             let (outcome, report) = execution
                 .execution_request()
                 .unwrap()
-                .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+                .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                     let cursor = CanonicalApplyCursor::compute(
                         CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1]).unwrap(),
                         vec![failed, succeeding],
                         &execution,
                     );
                     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                        maximum_work_visits: 0,
-                        maximum_preparation_bytes: 0,
+                        maximum_work_visits: Some(0),
+                        maximum_preparation_bytes: None,
                     });
                     cursor.apply(
                         &mut admission,
@@ -98,7 +98,7 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
         );
         let policy = test_policy(
             std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
-            1 << 20,
+            None,
         );
         let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
             RuntimeWorldExecutionPlacement::Leased {
@@ -128,15 +128,15 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
         let (outcome, report) = execution
             .execution_request()
             .unwrap()
-            .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+            .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                 let cursor = CanonicalApplyCursor::compute(
                     CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1]).unwrap(),
                     plans,
                     &execution,
                 );
                 let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                    maximum_work_visits: 0,
-                    maximum_preparation_bytes: 0,
+                    maximum_work_visits: Some(0),
+                    maximum_preparation_bytes: None,
                 });
                 cursor.apply(
                     &mut admission,

@@ -3,6 +3,9 @@ use std::{collections::BTreeSet, sync::Arc};
 use worth_relational::facade::{identity::EntityId, mvcc::CompanionPreflightStop};
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::{
+    FactPayload, FactRetentionStorage,
+};
 use crate::domain_computation::primary_graph::fact_verification_observation;
 
 mod adjacency;
@@ -11,13 +14,13 @@ mod retirement;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum RebasedSourceFacts {
-    Exact(Arc<[WorthQueryApplicationObservedFact]>),
+    Exact(FactPayload),
     /// Every fact is exact, and the committed effect moved the facts at these
     /// ordinals past what was read: a source query's read past its revision,
     /// or a field an owner call of the producer's partitioned computation
     /// read before the effect replaced it.
     SupersededByOwnEffect {
-        facts: Arc<[WorthQueryApplicationObservedFact]>,
+        facts: FactPayload,
         ordinals: Arc<[usize]>,
     },
     /// The rebase failed. It fails as a whole, so the commit retains none of
@@ -89,6 +92,7 @@ pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
 /// candidate is still pre-effect custody. The postcommit path only fills the
 /// already allocated action and result buffers.
 pub(in crate::domain_computation::primary_graph) struct PreparedSourceFactRebase {
+    retention: FactRetentionStorage,
     facts: Vec<WorthQueryApplicationObservedFact>,
     /// The ordinals, ascending, of the facts an owner call read that the
     /// commit's own effect replaced.
@@ -132,7 +136,12 @@ impl PreparedSourceFactRebase {
         rebased.try_reserve_exact(facts.len())?;
         let mut superseded = Vec::new();
         superseded.try_reserve_exact(facts.len())?;
+        // Arc metadata follows the existing native allocation policy; create it
+        // before effects even when this attempt has no output-lineage slot.
+        let retention = FactRetentionStorage::default();
+        control.check_live()?;
         Ok(Self {
+            retention,
             facts,
             moved_by_own_effect,
             endpoints,
@@ -189,11 +198,9 @@ impl OwnEffectOnReads {
 impl RebasedSourceFacts {
     /// The facts the commit retains, or the rebase that failed and left it
     /// none.
-    pub(super) fn retained(
-        &self,
-    ) -> Result<Arc<[WorthQueryApplicationObservedFact]>, FailedRebase> {
+    pub(super) fn retained(&self) -> Result<FactPayload, FailedRebase> {
         match self {
-            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => Ok(Arc::clone(facts)),
+            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => Ok(facts.clone()),
             Self::VerificationRequired { reason, own_effect } => Err(FailedRebase {
                 reason: *reason,
                 own_effect: *own_effect,
@@ -202,7 +209,7 @@ impl RebasedSourceFacts {
     }
 
     #[cfg(test)]
-    pub(super) fn retain_exact(&self) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
+    pub(super) fn retain_exact(&self) -> Option<FactPayload> {
         self.retained().ok()
     }
 
@@ -226,7 +233,7 @@ pub(super) fn rebase_output(
     correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     changed_records: &[worth_relational::facade::transactions::RecordRef],
     producer_output: bool,
-    maximum_indexed_rebase_work: usize,
+    maximum_indexed_rebase_work: Option<usize>,
     admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
     let changed_entities = changed_records

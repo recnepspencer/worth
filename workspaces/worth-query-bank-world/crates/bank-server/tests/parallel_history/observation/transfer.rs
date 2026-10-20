@@ -34,7 +34,7 @@ impl Observer<'_> {
             .controls(BankMutationControls::new(scope.clone(), key(input.command)))
             .retain_operation()
             .unwrap_or_else(|cause| panic!("transfer construction: {cause:?}"));
-        let result = result.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap());
+        let result = result.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()));
         self.last = observations();
         let expected_width = match posture {
             Posture::Serial => 1,
@@ -77,7 +77,7 @@ impl Observer<'_> {
                 Ok(outcome)
             }
             Advance::Progress(operation) if operation.posture() == worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture::RetainedDeliveryPending => {
-                let Advance::Completed(completed) = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap()) else { panic!("original native replay delivery") };
+                let Advance::Completed(completed) = operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap())) else { panic!("original native replay delivery") };
                 let Completion::Recovered { receipt, .. } = completed.evidence() else { panic!("replay evidence") };
                 assert!(receipt.is_same_authoritative_commit(&self.receipts[&input.command]));
                 let journal = self.bindings.commands[&input.command];

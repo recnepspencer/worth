@@ -89,7 +89,7 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Pare
         .result_shape(ApplicationQueryResultShapeBuilder::<Schema,Query,Journal,Value,ResultBinding>::new(Journal::reference()).field(name()).field(revision()).field(actor())
             .relation(details(),ApplicationQueryResultShapeBuilder::<Schema,Query,Detail,String,DetailResult>::new(Detail::reference()).field(label())).build())
         .cardinality(ApplicationQueryCardinality::Many)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(2,2,4))
+
         .disclosure(ApplicationQueryDisclosureContract::public()).basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot()).public()
         .root_path(ApplicationQueryRootPath::from(Parent::reference()).forward(ParentJournal::reference())).build().unwrap()

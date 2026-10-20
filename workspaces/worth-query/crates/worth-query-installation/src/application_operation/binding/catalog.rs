@@ -297,8 +297,6 @@ where
     Schema: ApplicationSchema,
 {
     let mut names = BTreeSet::new();
-    let mut creates = 0usize;
-    let mut retires = 0usize;
     for role in descriptor.output_roles() {
         if !valid_identity(role.name()) || !names.insert(role.name()) {
             return Err(denial(
@@ -316,11 +314,6 @@ where
                 DenialKind::MutationOutputEntityNotInstalled,
                 descriptor.identity(),
             ));
-        }
-        match role.posture() {
-            worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Create => creates += 1,
-            worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Retire => retires += 1,
-            worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Preserve => {}
         }
     }
     let mut family_prefixes = Vec::new();
@@ -349,13 +342,6 @@ where
             ));
         }
         family_prefixes.push(family.prefix());
-    }
-    let candidates = descriptor.candidates().cardinality();
-    if creates > candidates.maximum_creates() || retires > candidates.maximum_deletes() {
-        return Err(denial(
-            DenialKind::MutationOutputCandidateMismatch,
-            descriptor.identity(),
-        ));
     }
     Ok(())
 }

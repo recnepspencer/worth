@@ -1,6 +1,7 @@
 use super::*;
 use std::marker::PhantomData;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PlanarOperation};
+
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
@@ -63,7 +64,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.planar-mutation.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.planar-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.planar-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(16, 16, 16, 64, 8192);
+
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,
@@ -95,18 +96,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Planar
     fn scope_binding(&self) -> PlanarMutationScope<Schema> {
         PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
     }
-}
-pub const fn requirements(
-    creates: usize,
-    links: usize,
-    unlinks: usize,
-    writes: usize,
-    bytes: usize,
-) -> ApplicationCandidateRequirements {
-    ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(creates, 0, links, unlinks, writes, 0),
-        ApplicationCandidateResourceCeiling::representation_bytes(bytes),
-    )
 }
 
 /// The output contract of every planar mutation.

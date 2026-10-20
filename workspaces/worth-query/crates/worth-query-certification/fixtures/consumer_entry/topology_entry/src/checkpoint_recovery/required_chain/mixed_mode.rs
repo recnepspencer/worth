@@ -12,7 +12,10 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         profile,
         4_096,
         128 * 1_024 * 1_024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         source_world::seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -79,7 +82,10 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     request
         .at(&observation)
-        .require_current_program_output(&settled, NonZeroUsize::new(1_000_000).unwrap())
+        .require_current_program_output(
+            &settled,
+            Some((NonZeroUsize::new(1_000_000).unwrap()).get()),
+        )
         .unwrap();
     let reused = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
@@ -94,7 +100,7 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
     );
     request
         .at(&observation)
-        .require_current_output_demand(&reused, NonZeroUsize::new(1_000_000).unwrap())
+        .require_current_output_demand(&reused, Some((NonZeroUsize::new(1_000_000).unwrap()).get()))
         .unwrap();
     assert_ne!(
         reused.application_commit_receipt(),

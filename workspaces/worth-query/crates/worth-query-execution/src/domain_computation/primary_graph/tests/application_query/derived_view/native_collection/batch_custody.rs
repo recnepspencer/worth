@@ -105,7 +105,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
         crate::domain_computation::primary_graph::WorthQueryApplicationQueryBatchAdmission::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationQueryBatchLimits::new(
                 nz(2),
-                nz(100_000),
+                Some(nz(100_000)),
                 nz(262_144),
                 nz(4_096),
             ),

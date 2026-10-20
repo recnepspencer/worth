@@ -41,10 +41,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
     };
     let receipt = performed.receipt().clone();
     drop(performed);
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let denial = request
         .advanced()
         .recover_required_outputs::<ConsumerProgram, crate::ConsumerProgramRoot>(
@@ -161,10 +158,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn n
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
             &receipt,
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::new(4_096).unwrap(),
-                NonZeroUsize::new(8_192).unwrap(),
-            ),
+            WorthQueryOutputDemandControls::default(),
         )
         .expect("the unaffected sibling remains recoverable");
     let settled = settle(|| {
@@ -272,10 +266,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn f
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &other.application,
             &receipt,
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::new(4_096).unwrap(),
-                NonZeroUsize::new(8_192).unwrap(),
-            ),
+            WorthQueryOutputDemandControls::default(),
         )
         .err()
         .expect("another runtime cannot adopt owner custody");
@@ -328,10 +319,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication is fresh")
     };
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut started = performed
         .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("the two roots start: {:?}", failure.denial()));

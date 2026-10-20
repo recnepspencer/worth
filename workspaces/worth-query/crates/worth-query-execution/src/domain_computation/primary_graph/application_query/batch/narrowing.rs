@@ -35,7 +35,11 @@ impl WorthQueryApplicationQueryBatchAdmission {
                 maximum: limits.maximum_items(),
             });
         }
-        plan.work = plan.work.min(limits.maximum_read_work());
+        plan.work = plan
+            .work
+            .into_iter()
+            .chain(limits.maximum_read_work())
+            .min();
         plan.bytes = plan.bytes.min(limits.maximum_retained_bytes());
         plan.byte_ceiling = Some(limits.maximum_retained_bytes());
         plan.result = plan.result.min(limits.maximum_result_bytes_per_item());

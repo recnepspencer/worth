@@ -5,24 +5,24 @@ use worth_relational::facade::indexes::DerivedIndexMaintenanceBudget;
 pub(in crate::domain_computation) const fn ordinary_index_maintenance_budget(
 ) -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 4_000_000,
-        maximum_cold_record_slots: 0,
-        maximum_derived_rows: 100_000,
+        maximum_work_units: None,
+        maximum_cold_record_slots: Some(0),
+        maximum_derived_rows: None,
     }
 }
 
-/// Recovery after an interrupted publication has a separate, finite budget.
+/// Recovery after an interrupted publication has a separate reconstruction posture.
 /// Its counters are returned by Relational with typed exhaustion.
 pub(super) const fn cold_index_reconstruction_budget() -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 32_000_000,
-        maximum_cold_record_slots: 1_000_000,
-        maximum_derived_rows: 1_000_000,
+        maximum_work_units: None,
+        maximum_cold_record_slots: None,
+        maximum_derived_rows: None,
     }
 }
 
 /// Seal the exact candidate's primary indexes before World can publish it.
-/// Only a missing compatible prior generation may enter the finite cold lane.
+/// Only a missing compatible prior generation may enter the cold reconstruction lane.
 pub(super) fn prepare_candidate_with_cold_fallback(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -60,7 +60,7 @@ pub(super) fn prepare_candidate_with_cold_fallback(
 
 /// A captured pre-commit root does not prove that every index has a compatible
 /// prior generation. Retry only that specific absence through the explicit
-/// finite cold lane; ordinary work exhaustion never becomes an unbounded scan.
+/// cold lane; absence never grants reconstruction to the ordinary lane.
 pub(super) fn refresh_with_cold_fallback(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

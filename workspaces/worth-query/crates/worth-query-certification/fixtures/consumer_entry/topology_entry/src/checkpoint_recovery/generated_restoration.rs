@@ -121,7 +121,7 @@ fn an_output_whose_restoration_could_not_be_recorded_is_preserved_not_created_ag
         Default::default(),
         32,
         128 * 1_024 * 1_024,
-        RECORDING_STOPS,
+        Some(RECORDING_STOPS),
         support::seed_cycle,
     );
     let (scope, principal) = authenticate(&application);

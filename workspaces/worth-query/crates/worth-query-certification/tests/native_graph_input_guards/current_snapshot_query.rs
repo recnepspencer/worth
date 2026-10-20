@@ -36,7 +36,7 @@ fn field() -> ApplicationQueryResultFieldRef<
 pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference()).root(Snapshot::reference()).scope(Row::reference())
         .result_shape(ApplicationQueryResultShapeBuilder::<Schema,Query,Snapshot,Value,ResultBinding>::new(Snapshot::reference()).field(field()).build())
-        .cardinality(ApplicationQueryCardinality::ExactlyOne).dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1,1,12))
+        .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(ApplicationQueryDisclosureContract::public()).basis_support(ApplicationQueryBasisSupport::current_and_pinned()).lanes(ApplicationQueryLaneEligibility::one_shot()).public()
         .root_path(ApplicationQueryRootPath::from(Row::reference()).forward(CurrentSnapshot::reference())).build().unwrap()
 }

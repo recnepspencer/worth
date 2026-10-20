@@ -1,11 +1,10 @@
 use worth_query_declaration::facade::domain_computation::{
-    WorthQueryCancellationSafePointFamily, WorthQueryResourceDimension,
-    WorthQueryResourceLimitRequest, WorthQuerySemanticScaleAxis, WorthQuerySemanticScaleRequest,
+    WorthQueryCancellationSafePointFamily, WorthQueryResourceLimitRequest,
+    WorthQuerySemanticScaleRequest,
 };
 
 use super::compiled_contract::WorthQueryCompiledApplicationOperationContracts;
 use super::invariant_compilation::mutation_contracts;
-use crate::application_operation::WorthQueryApplicationCandidateDemand;
 use crate::application_operation::WorthQuerySealedOperationContractCompilation;
 use crate::domain_computation::{
     WorthQueryExecutionAccessProductFamily, WorthQueryExecutionAllocatorFamily,
@@ -34,7 +33,6 @@ impl WorthQueryCompiledApplicationOperationContracts {
             body,
             authorization,
             mut ability_requirements,
-            authored_program_width,
             projection_work_budget,
             additional_authorization_fact_count,
             mutation_preconditions,
@@ -45,7 +43,6 @@ impl WorthQueryCompiledApplicationOperationContracts {
             touches,
             emissions,
             graph_mutation_count,
-            candidate_demand,
             signing_lifecycle,
             invariant_invocations,
         ) = compilation.into_parts();
@@ -66,18 +63,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
             signing_lifecycle.publication_touches.scopes().to_vec(),
         );
         let decision_facts = application_decision_fact_contract(authorization_fact_count);
-        let candidate_demand = candidate_demand
-            .with_workflow_birth(
-                body.as_ref()
-                    .and_then(|body| body.creation())
-                    .and_then(|creation| creation.enrollment())
-                    .is_some(),
-            )?
-            .with_workflow_succession(
-                body.as_ref()
-                    .is_some_and(|body| body.succession().is_some()),
-            )?;
-        let resources = application_resource_contract(authored_program_width, candidate_demand)?;
+        let resources = application_resource_contract()?;
         Ok(Self {
             signing_lifecycle,
             body,
@@ -98,8 +84,6 @@ impl WorthQueryCompiledApplicationOperationContracts {
             external_effect,
             aftermath,
             overlap_index,
-            platform_candidate_ceiling: candidate_demand.candidate_ceiling(),
-            workflow_settlement_ceiling: candidate_demand.workflow_settlement_ceiling(),
         })
     }
 }
@@ -128,26 +112,13 @@ fn application_decision_fact_contract(
         .expect("application decision-fact families are valid")
 }
 
-fn application_resource_contract(
-    program_width: usize,
-    candidate_demand: WorthQueryApplicationCandidateDemand,
-) -> Result<WorthQueryExecutionResourceContract, ()> {
-    let program_width = u64::try_from(program_width).map_err(|_| ())?;
-    let scale = WorthQuerySemanticScaleRequest::selective()
-        .with(
-            WorthQuerySemanticScaleAxis::CandidateItems,
-            candidate_demand.candidate_items(),
-        )
-        .with(WorthQuerySemanticScaleAxis::BatchWidth, program_width);
+fn application_resource_contract() -> Result<WorthQueryExecutionResourceContract, ()> {
+    let scale = WorthQuerySemanticScaleRequest::selective();
+    let resources = WorthQueryResourceLimitRequest::selective();
 
     let envelope = WorthQueryExecutionResourceEnvelope::atomic(
         scale,
-        WorthQueryResourceLimitRequest::selective()
-            .with(
-                WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
-                candidate_demand.retained_representation_bytes(),
-            )
-            .with(WorthQueryResourceDimension::RetainedBytes, 262_144),
+        resources,
         WorthQueryCancellationSafePointFamily::new(APPLICATION_EXECUTION_SAFE_POINT_FAMILY)
             .expect("static application safe-point family is canonical"),
     );

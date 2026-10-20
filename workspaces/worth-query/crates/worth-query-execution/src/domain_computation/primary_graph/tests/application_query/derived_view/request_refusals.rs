@@ -95,7 +95,7 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request();
                 for index in 0..4 {
-                    let memory = if index == 0 { 0 } else { 1 << 20 };
+                    let memory = if index == 0 { Some(0) } else { None };
                     let lease = host_custody
                         .borrowed_request_for_test()
                         .in_scope(|parent| {
@@ -192,7 +192,7 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                         0 => assert!(matches!(
                             denial,
                             WorthQueryManagedDerivedViewDenial::PolicyMemoryExhausted(
-                                worth_execution::MemoryLimitDenial {
+                                worth_execution::MemoryLimitDenial::Capacity {
                                     admitted: 0,
                                     level: worth_execution::MemoryLimitLevel::Policy {
                                         ancestor: 0
@@ -213,7 +213,8 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                     }
                     assert_eq!(prepared, 0);
                     assert!(witness.observations().0.is_empty());
-                    drop(lease.reserve_memory(memory).unwrap());
+                    // Refusal releases actual credit even without a finite policy.
+                    assert_eq!(lease.charged_memory_bytes(), 0);
                 }
             })
             .expect("the fixture read owns its installed host call");

@@ -9,13 +9,12 @@ use worth_query_host::facade::{
     application_installation::{self, WorthQueryInMemoryApplicationLimits},
     declaration::{
         application_program::{
-            ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-            ApplicationArtifactRetention, ApplicationArtifactSuccession,
-            ApplicationDerivedArtifact, ApplicationFeature, ApplicationFeatureInputLeaf,
-            ApplicationFeatureSpec, ApplicationLocalityGranule, ApplicationLocalityScope,
-            ApplicationNoOutputGraph, ApplicationOutputPort, ApplicationProgramAuthoring,
-            ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
-            ApplicationRootComposition, ApplicationRuleLeaf,
+            ApplicationArtifactDependency, ApplicationArtifactRetention,
+            ApplicationArtifactSuccession, ApplicationDerivedArtifact, ApplicationFeature,
+            ApplicationFeatureInputLeaf, ApplicationFeatureSpec, ApplicationLocalityGranule,
+            ApplicationLocalityScope, ApplicationNoOutputGraph, ApplicationOutputPort,
+            ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
+            ApplicationProgramOutputs, ApplicationRootComposition, ApplicationRuleLeaf,
         },
         application_query::ApplicationQueryParameterSet,
         application_schema::ApplicationSchemaComposition,
@@ -72,8 +71,7 @@ impl ApplicationDerivedArtifact<TemporalHostSchema, TemporalInstallationFeature>
             "worth.query.host.temporal-intent.v1",
         )];
     const REUSE_RULE: &'static str = "worth.query.host.temporal-same-basis.v1";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(64, 1_024);
+
     const STOPPED_OUTCOME: &'static str = "worth.query.host.temporal-artifact-stopped.v1";
 }
 
@@ -257,10 +255,6 @@ pub(super) fn zero_route_installation_is_denied() {
         },),
         WorthQueryInMemoryApplicationLimits::new(
             product_world_resources(1_024),
-            runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-                5_120, 2_048,
-            )
-            .unwrap(),
             runtime::WorthQueryApplicationQueryResourceProfile::bounded(
                 5_120,
                 2_048,

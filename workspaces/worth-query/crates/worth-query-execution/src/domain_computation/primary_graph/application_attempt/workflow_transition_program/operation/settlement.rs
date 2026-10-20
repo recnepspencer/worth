@@ -98,19 +98,11 @@ where
                 (role, posture, entity, worth_relational::facade::transactions::EntityReference::Existing(target))),
             &mut effects,
         );
-        let mut demand = super::super::PlatformEffectDemand::default();
-        for effect in &effects {
-            demand.observe(effect)?;
-        }
-        let reservation = if self.required.local_action.is_some() {
-            super::super::super::effect_program::admit_workflow_settlement_effects(
-                &self.admitted.read_set().admission,
-                demand,
-            )?
-        } else {
-            super::super::admit_platform_effects(self.admitted.read_set(), demand)?
-        };
-        reservation.materialize(&effects)?;
+        self.admitted
+            .read_set()
+            .admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let transition_identity = self.admitted.identity().to_owned();
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let instance = self.admitted.instance();
@@ -125,8 +117,6 @@ where
         let program = WorthQueryApplicationEffectProgram {
             read_set,
             effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),

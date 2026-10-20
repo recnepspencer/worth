@@ -20,7 +20,7 @@ pub(super) fn exercise(fixture: &fixture::OrdinaryReadFixture) {
             .unwrap_or_else(|cause| panic!("money construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
-        ) = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        ) = operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
         else {
             panic!("fresh money completion")
         };
@@ -56,7 +56,7 @@ pub(super) fn exercise(fixture: &fixture::OrdinaryReadFixture) {
             .unwrap_or_else(|cause| panic!("money construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
-        ) = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        ) = operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
         else {
             panic!("fresh money completion")
         };
@@ -92,7 +92,7 @@ pub(super) fn exercise(fixture: &fixture::OrdinaryReadFixture) {
             .unwrap_or_else(|cause| panic!("money construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
-        ) = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        ) = operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
         else {
             panic!("fresh money completion")
         };
@@ -126,12 +126,12 @@ pub(super) fn exercise(fixture: &fixture::OrdinaryReadFixture) {
         .retain_operation()
         .unwrap_or_else(|cause| panic!("retry construction: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(retry) =
-        retry.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        retry.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("retained replay pending")
     };
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(retry) =
-        retry.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        retry.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("retained replay completion")
     };

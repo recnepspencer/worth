@@ -8,13 +8,11 @@ use worth_query_host::facade::declaration::application_program::ApplicationSeman
 use worth_query_host::facade::domain::WorthQueryProgramCustodyInventoryKind;
 use worth_query_host::facade::primary_graph::WorthQueryProgramCustodyDispositionKind;
 
-use crate::document_retention_model::host::{
-    publish_on_first_program, publish_on_first_resource_program,
-};
+use crate::document_retention_model::host::publish_on_first_program;
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
 use crate::document_retention_model::presented_request::set_retention;
 use crate::document_retention_model::programs::{
-    ChangedOperationRetentionProgram, RemovedOperationRetentionProgram, ResourceRetentionProgramP1,
+    ChangedOperationRetentionProgram, RemovedOperationRetentionProgram,
 };
 use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
@@ -160,60 +158,4 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
         RetentionVerdict::Performed(9),
         "the changed operation executes through a fresh request admitted by the active target"
     );
-}
-
-#[test]
-fn changed_resource_ceiling_derives_exact_source_reservation_disposition() {
-    let host = publish_on_first_resource_program();
-    let branch = host.current_world();
-    let target = *host
-        .supported_program::<ResourceRetentionProgramP1>()
-        .expect("the changed-resource target is rostered")
-        .owned_revision();
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let programs = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .programs();
-    let requirements = programs.compare(&target).expect("comparison succeeds");
-    let resource = requirements
-        .custody_inventory_requirements()
-        .iter()
-        .find(|requirement| {
-            requirement.kind() == WorthQueryProgramCustodyInventoryKind::ResourceCustody
-        })
-        .expect("a changed resource ceiling requires resource custody");
-    assert_eq!(resource.change(), ApplicationSemanticChangeKind::Changed);
-    let resource_change = requirements
-        .semantic_diff()
-        .changes()
-        .iter()
-        .find(|change| change.subject() == resource.subject())
-        .expect("the custody requirement retains its exact semantic change");
-    assert_eq!(
-        resource_change.source_meaning(),
-        Some("work=1:8|bytes=4:4096")
-    );
-    assert_eq!(
-        resource_change.target_meaning(),
-        Some("work=2:16|bytes=4:8192")
-    );
-
-    let prepared = programs
-        .adopt(&requirements)
-        .expect("declared adoption capability admits")
-        .prepare(64)
-        .expect("the resource owner supplies an exact-source disposition");
-    assert!(prepared.custody().dispositions().iter().any(|disposition| {
-        disposition.requirement() == resource
-            && disposition.kind()
-                == WorthQueryProgramCustodyDispositionKind::RetainExactSourceReservation
-    }));
-    let performed = prepared.publish(host.runtime(), &principal, &scope);
-    assert!(matches!(
-        performed,
-        WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
-    ));
 }

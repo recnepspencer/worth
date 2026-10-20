@@ -72,7 +72,6 @@ pub(super) fn assemble_commit_artifacts(
     validated: SnapshotValidatedCommitExecution,
 ) -> Result<AssembledCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::Artifact)?;
-    let lease = super::request_lease(execution);
     let (
         mut admitted,
         selected_branch_state,
@@ -114,7 +113,7 @@ pub(super) fn assemble_commit_artifacts(
             additional_diagnostics_entries,
             deferred_diagnostic_artifacts,
         },
-        lease,
+        execution,
     )?;
     let aspect_evaluation_traces = publication.aspect_evaluation_traces().to_vec();
     let aspect_emission_traces = publication.aspect_emission_traces().to_vec();

@@ -4,8 +4,8 @@ mod routing;
 mod selection;
 use super::consequences::Batch;
 use super::{
-    attempt, capacity, coordinates, resource, stopped, unavailable, Effect, EntityId, Fact, Lease,
-    Locus, Outcome, QueryRequestExecution, Rule,
+    attempt, capacity, coordinates, stopped, unavailable, Effect, EntityId, Fact, Lease, Locus,
+    Outcome, QueryRequestExecution, Rule,
 };
 pub(super) use routing::affected_subjects;
 pub(super) use selection::changed_selections;
@@ -20,10 +20,13 @@ fn add_subject(
     subjects: &mut BTreeSet<EntityId>,
     subject: EntityId,
 ) -> Result<(), Outcome> {
-    if !subjects.contains(&subject) && subjects.len() >= rule.maximum_subjects() {
+    if !subjects.contains(&subject)
+        && let Some(maximum) = rule.maximum_subjects()
+        && subjects.len() >= maximum
+    {
         return Err(super::refused(
             super::Kind::SigningLifecycleSubjectCapacity {
-                maximum_subjects: rule.maximum_subjects(),
+                maximum_subjects: maximum,
             },
         ));
     }

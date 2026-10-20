@@ -83,13 +83,17 @@ pub(super) fn evaluate<
                 held.push(observed);
             }
             let remaining = context.remaining_work();
-            if remaining == 0 {
-                return Err(exhausted());
-            }
-            let limit = remaining.min(Expression::PROFILE.limit(ExpressionResource::SemanticWork));
-            let profile = Expression::PROFILE
-                .narrowed(ExpressionResource::SemanticWork, limit)
-                .map_err(|cause| purpose.denial(cause))?;
+            let semantic_work = Expression::PROFILE.limit(ExpressionResource::SemanticWork);
+            let profile = match remaining {
+                Some(0) => return Err(exhausted()),
+                Some(remaining) => Expression::PROFILE
+                    .narrowed(
+                        ExpressionResource::SemanticWork,
+                        remaining.min(semantic_work),
+                    )
+                    .map_err(|cause| purpose.denial(cause))?,
+                None => Expression::PROFILE,
+            };
             let mut continuation = expression
                 .compiled()
                 .start(&inputs.build(), &profile)
@@ -115,7 +119,7 @@ pub(super) fn evaluate<
                     ExpressionStep::Suspended(next) => continuation = next,
                     ExpressionStep::Complete(result) => {
                         let result = result.into_result().map_err(|cause| {
-                            if limit < Expression::PROFILE.limit(ExpressionResource::SemanticWork)
+                            if remaining.is_some_and(|remaining| remaining < semantic_work)
                                 && matches!(
                                     cause.detail(),
                                     ExpressionDenialDetail::ResourceExceeded {

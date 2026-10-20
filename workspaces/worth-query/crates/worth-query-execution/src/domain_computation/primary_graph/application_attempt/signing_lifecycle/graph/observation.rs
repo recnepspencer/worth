@@ -1,20 +1,19 @@
 //! Native bounded inverse traversal retains the exact preimage used to route a source edit.
 use super::{
-    attempt, capacity, resource, stopped, unavailable, Batch, EntityId, Fact, KindId, Lease,
-    Outcome, PathDirection, QueryRequestExecution,
+    attempt, capacity, stopped, unavailable, Batch, EntityId, Fact, KindId, Lease, Outcome,
+    PathDirection, QueryRequestExecution,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     fact::WorthQueryApplicationObservedRelation as Edge,
     fact::{observe_adjacency_with_work, AdjacencyObservationDenial},
     WorthQueryApplicationAdjacencyDirection as Direction,
 };
-use crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation;
 pub(super) fn edges(
     lease: &Lease,
     anchor: EntityId,
     kind: KindId,
     direction: PathDirection,
-    execution: &QueryRequestExecution<'_>,
+    _execution: &QueryRequestExecution<'_>,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     batch: &mut Batch,
@@ -36,13 +35,13 @@ pub(super) fn edges(
             && *observed == anchor
             && *observed_direction == direction
         {
-            reserve(relations.len(), execution, &mut batch.memory)?;
             return Ok(relations.clone());
         }
     }
-    let maximum = usize::try_from(context.remaining_work())
-        .unwrap_or(usize::MAX - 1)
-        .min(usize::MAX - 1);
+    let maximum = context
+        .remaining_work()
+        .map(|work| usize::try_from(work).map_err(|_| capacity()))
+        .transpose()?;
     let (edges, work) = lease.handle().with_runtime(request, |runtime| {
         observe_adjacency_with_work(runtime, request, lease.snapshot(), kind, anchor, direction, maximum)
     }).map_err(|cause| match cause {
@@ -59,7 +58,6 @@ pub(super) fn edges(
     context
         .checkpoint(u64::try_from(work).map_err(|_| capacity())?)
         .map_err(stopped)?;
-    reserve(edges.len(), execution, &mut batch.memory)?;
     batch.facts.push(Fact::Adjacency {
         relation_kind: kind,
         anchor,
@@ -68,21 +66,4 @@ pub(super) fn edges(
         relations: edges.clone(),
     });
     Ok(edges)
-}
-fn reserve(
-    count: usize,
-    execution: &QueryRequestExecution<'_>,
-    memory: &mut Vec<QueryMemoryReservation>,
-) -> Result<(), Outcome> {
-    // Both retained adjacency and transient endpoint sets/copies remain funded until publication.
-    let bytes = count
-        .checked_add(1)
-        .and_then(|n| n.checked_mul(size_of::<Edge>() * 8 + size_of::<Fact>()))
-        .ok_or_else(capacity)?;
-    memory.push(
-        execution
-            .reserve(u64::try_from(bytes).map_err(|_| capacity())?)
-            .map_err(resource)?,
-    );
-    Ok(())
 }

@@ -149,8 +149,8 @@ mod tests {
     use worth_relational::facade::mvcc::CompanionPreflightBudget;
     fn admission(work: u64) -> InvalidationEditAdmission {
         InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: work,
-            maximum_preparation_bytes: 0,
+            maximum_work_visits: Some(work),
+            maximum_preparation_bytes: None,
         })
     }
     use super::super::super::progression::admission_denial as refusal;

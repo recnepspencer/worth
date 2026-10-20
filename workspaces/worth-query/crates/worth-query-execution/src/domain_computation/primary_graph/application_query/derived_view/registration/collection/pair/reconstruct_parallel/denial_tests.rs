@@ -48,7 +48,17 @@ fn reconstruction_denial_conversion_is_total_and_preserves_payloads() {
         MemoryLimitLevel::Process,
         MemoryLimitLevel::Declared,
     ] {
-        let memory = MemoryLimitDenial {
+        let overflow = LeaseDenial::MemoryExhausted(MemoryLimitDenial::CounterOverflow {
+            requested: 1,
+            charged: u64::MAX,
+            level,
+        });
+        assert_eq!(lease(overflow), Denial::ChargedBytesOverflow);
+        assert_eq!(
+            scope(WorkCeilingDenial::Admission(overflow)),
+            Denial::ChargedBytesOverflow
+        );
+        let memory = MemoryLimitDenial::Capacity {
             requested: 123,
             admitted: 45,
             level,

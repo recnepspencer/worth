@@ -354,9 +354,9 @@ Initialization may set read-only fields because those fields are being created,
 not edited later. The fixed key names a candidate-local symbolic creation slot;
 it is neither a business identity nor an idempotency key. Query creates the row
 in the existing admitted scope's context, checks that all required created
-fields are initialized, and charges creation and initializers to the same
-candidate. An operation's candidate ceiling must admit that creation and its
-writes. Creation is attached before the complete body is validated: a bare scope,
+fields are initialized, and places creation and initializers in the same
+candidate under declared create/write authority. Creation is attached before
+the complete body is validated: a bare scope,
 expectations, or requirements without a creation, scope assignment or output use cannot
 finish. `initialize_from_scope` requires a required scalar source field in the
 admitted scope with `OperationReads<Operation>`, a target with the same Rust value,
@@ -603,8 +603,8 @@ let body = EnterReview::reference().body()
 ```
 
 Here `AuditActor` has `OperationWrites<EnterReview>` and exactly the identity
-value/codec of `EnterReviewBinding`. Admit the creation, link and four writes in
-the binding's normal candidate ceiling. Query commits the old stage, new stage,
+value/codec of `EnterReviewBinding`. Declare authority for the creation, link and
+writes. Query commits the old stage, new stage,
 actor, and membership atomically. A governed audit query reads the persisted
 actor independently of the unit mutation result. The intent contains no actor
 selector. This is not a signed attestation; a workflow occurrence or signature
@@ -702,8 +702,8 @@ let body = CopyRound::reference().body()
     .finish()?;
 ```
 
-Declare the corresponding typed Read/Create/Write/Link/Unlink capabilities and
-ordinary candidate ceiling. The intent contains parent and fresh round identity
+Declare the corresponding typed Read/Create/Write/Link/Unlink capabilities.
+The intent contains parent and fresh round identity
 only. Query derives installed reads and publishes the new fields, history and
 current pointer together. Historical signature/provenance remains unchanged;
 the new subject has no evidence until it signs independently. The real runnable

@@ -39,9 +39,6 @@ pub(super) fn finish(
         execution::ProducerExecutionStop,
     >,
     selected_execution_finish: RunningSelectedExecution<'_>,
-    retained_resources: Option<crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDemandResources>,
-    control: &crate::domain_computation::primary_graph::application_runtime::WorthQueryApplicationAttemptOperationControl,
-    _request_admission: &mut InvalidationEditAdmission,
     performed: &std::cell::RefCell<PerformedMembers>,
     readiness: super::super::required_wave::performed::PublicationReadiness,
     runtime_identity: u64,
@@ -56,7 +53,6 @@ pub(super) fn finish(
                     crate::domain_computation::primary_graph::application_output_demand::WorthQueryCompletedOutputDemand {
                         authority: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Stable(stable),
                         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
-                        resources: retained_resources,
                     },
                 );
             let checkpoint = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint::Ready(completion);
@@ -86,9 +82,7 @@ pub(super) fn finish(
         .publication(readiness, receipt, |member| member.performed())
         .into_parts();
 
-    super::super::caller_pass_observation::exhaust_after_commit(
-        control,
-        _request_admission,
+    super::super::caller_pass_observation::observe_publication(
         receipt.published_in_this_advance(),
         *recorded,
         runtime_identity,

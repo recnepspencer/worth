@@ -98,17 +98,21 @@ impl std::fmt::Display for ApplicationProgramRevision {
     }
 }
 
-/// Refusal to identify declared program meaning that exceeds the canonical work
-/// this crate spends on one revision.
+/// Refusal to identify program meaning: an explicit canonical budget or actual
+/// canonical allocation/length failure.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::application_program) enum ApplicationProgramRevisionBudgetDenial {
     BasisEntries { maximum: u32, attempted: u32 },
     EncodedBytes { maximum: usize, attempted: usize },
+    Derivation(CanonicalDigestDerivationDenial),
 }
 
 impl std::fmt::Display for ApplicationProgramRevisionBudgetDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Derivation(cause) => {
+                write!(formatter, "canonical revision unavailable: {cause:?}")
+            }
             Self::BasisEntries { maximum, attempted } => write!(
                 formatter,
                 "canonical revision basis entries {attempted} exceed the declared maximum {maximum}"
@@ -173,7 +177,7 @@ fn revision_basis_entry(
     )
 }
 
-/// Names which declared canonical budget the presented meaning exceeded.
+/// Preserves actual construction failures separately from explicit budget refusals.
 ///
 /// The remaining slot refusals describe an algorithm, rule version, input shape
 /// or input domain that disagrees with the basis; this slot derives all four
@@ -182,6 +186,10 @@ fn exceeded_revision_budget(
     denial: CanonicalDigestDerivationDenial,
 ) -> ApplicationProgramRevisionBudgetDenial {
     match denial {
+        cause @ (CanonicalDigestDerivationDenial::AllocationUnavailable
+        | CanonicalDigestDerivationDenial::LengthOverflow) => {
+            ApplicationProgramRevisionBudgetDenial::Derivation(cause)
+        }
         CanonicalDigestDerivationDenial::EntryLimitExceeded { maximum, actual } => {
             ApplicationProgramRevisionBudgetDenial::BasisEntries {
                 maximum,

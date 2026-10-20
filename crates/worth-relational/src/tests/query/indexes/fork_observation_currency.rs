@@ -69,9 +69,9 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
             &fork_basis,
             None,
             DerivedIndexMaintenanceBudget {
-                maximum_work_units: 16,
-                maximum_cold_record_slots: 0,
-                maximum_derived_rows: 0,
+                maximum_work_units: Some(16),
+                maximum_cold_record_slots: Some(0),
+                maximum_derived_rows: Some(0),
             },
             execution,
         )
@@ -115,9 +115,9 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     let budget = DerivedIndexMaintenanceBudget {
-        maximum_work_units: 16,
-        maximum_cold_record_slots: 0,
-        maximum_derived_rows: 0,
+        maximum_work_units: Some(16),
+        maximum_cold_record_slots: Some(0),
+        maximum_derived_rows: Some(0),
     };
     let missing = runtime
         .index_authority()
@@ -140,7 +140,7 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
         .observe_branch(&runtime.branch_identity(&fork).unwrap())
         .unwrap();
     let (short, _) = execution
-        .run(ExecutionWorkCeiling::new(0), |_| {
+        .run(ExecutionWorkCeiling::new(Some(0)), |_| {
             runtime
                 .index_authority()
                 .ensure_field_index_for_basis(index, &basis, budget, execution)
@@ -155,7 +155,7 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
         .published_generation_for_observation(index, &basis.observation())
         .is_none());
     let (funded, report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime
                 .index_authority()
                 .ensure_field_index_for_basis(index, &basis, budget, execution)
@@ -170,7 +170,7 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
     assert_eq!(fork_generation.source_branch_id, fork);
     assert_eq!(fork_generation.entries, main_build.generations[0].entries);
     let (warm, report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime
                 .index_authority()
                 .ensure_field_index_for_basis(index, &basis, budget, execution)

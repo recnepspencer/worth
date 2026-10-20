@@ -142,10 +142,6 @@ pub fn settle_assessment_for(
         .expect("assessment-head workflow admission must succeed")
         .into_assessment_demand(RetentionAssessmentDemand::new(subject_identity))
         .expect("the typed demand must match the installed assessment contract")
-        .controls(WorthQueryOutputDemandControls::new(
-            std::num::NonZeroUsize::new(512).unwrap(),
-            std::num::NonZeroUsize::new(1024).unwrap(),
-        ))
         .retain_operation(application.program_runtime())
         .expect("the installed assessment output demand must start");
     drop(principal);

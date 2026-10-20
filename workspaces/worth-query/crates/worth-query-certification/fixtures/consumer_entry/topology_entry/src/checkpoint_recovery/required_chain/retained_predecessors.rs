@@ -105,7 +105,10 @@ fn fixed_tree_retains_exact_predecessors_through_cancel_reclaim_and_fresh_resume
             let current = fresh.retain_current_read().unwrap();
             fresh
                 .at(&current)
-                .require_current_program_output(&settled, NonZeroUsize::new(1_000_000).unwrap())
+                .require_current_program_output(
+                    &settled,
+                    Some((NonZeroUsize::new(1_000_000).unwrap()).get()),
+                )
                 .unwrap();
             for (key, expected) in [("anchor-a", 2), ("anchor-b", 2), ("anchor-c", 11)] {
                 let actual = fresh

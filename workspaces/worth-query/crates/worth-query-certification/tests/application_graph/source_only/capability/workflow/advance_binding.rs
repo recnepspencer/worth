@@ -1,5 +1,6 @@
 //! Distinct guarded/control contracts over existing retention and revocation request contexts.
 use super::super::super::{grants::*, schema::*};
+
 use worth_query_host::facade::{
     declaration::application_operation::*, declaration::application_schema::*, primary_graph,
 };
@@ -38,10 +39,6 @@ impl ApplicationMutationBinding<CapabilitySchema> for AdvanceBinding {
     const HANDLER_IDENTITY: &'static str = "capability-workflow.handler.AdvanceBinding";
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-workflow.key.AdvanceBinding";
     // Native progression/acceptance uses the existing finite workflow profile.
-    const CANDIDATES: ApplicationCandidateRequirements =
-        <crate::document_retention_model::workflow::WorkflowAdvanceBinding as ApplicationMutationBinding<
-            crate::document_retention_model::schema::DocumentRetentionSchema,
-        >>::CANDIDATES;
 
     fn scope_field() -> ApplicationFieldRef<
         CapabilitySchema,

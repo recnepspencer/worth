@@ -23,7 +23,11 @@ fn checked_lease(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), memory_bytes, work_ceiling),
+                ExecutionBudget::new(
+                    NonZeroUsize::new(4).unwrap(),
+                    Some(memory_bytes),
+                    Some(work_ceiling),
+                ),
             ),
             deadline: None,
             cancellation,
@@ -32,6 +36,7 @@ fn checked_lease(
 }
 
 struct CheckedCounterRule {
+    maximum_work_units: Option<NonZeroU64>,
     steps: usize,
     visits: Arc<AtomicUsize>,
     preparation_visits: Arc<AtomicUsize>,
@@ -47,14 +52,17 @@ impl CustomInvariantRule for CheckedCounterRule {
     fn descriptor(&self) -> CustomInvariantDescriptor {
         let mut descriptor = AlwaysViolatesCustomRule.descriptor();
         descriptor.identity.rule_id = CustomInvariantRuleId::new("test.custom.checked-counter");
-        descriptor.operational.maximum_work_units = NonZeroU64::new(100_000).unwrap();
+        descriptor.operational.maximum_work_units = self.maximum_work_units;
         descriptor
     }
 
     fn prepare_scope(
         &self,
-        _: &mut CustomInvariantScopePlanner<'_>,
+        planner: &mut CustomInvariantScopePlanner<'_>,
     ) -> Result<Self::Scope, CustomInvariantPreparationError> {
+        planner
+            .check_live()
+            .map_err(|stop| CustomInvariantPreparationError::new(format!("{stop:?}")))?;
         Ok(())
     }
 
@@ -91,9 +99,31 @@ impl CustomInvariantRule for CheckedCounterRule {
 
     fn evaluate(
         &self,
-        _: &CustomInvariantExecutionContext<'_>,
+        context: &CustomInvariantExecutionContext<'_>,
         _: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
+        if self
+            .target
+            .as_ref()
+            .is_some_and(|target| target.get().is_none())
+        {
+            return Ok(CustomInvariantVerdict::Pass);
+        }
+        let cancelled = || context.check_live().is_err();
+        for _ in 0..self.steps {
+            if cancelled() {
+                break;
+            }
+            if let Some(target) = self.target.as_ref().and_then(|target| target.get()) {
+                let _ = context.relations().entity_kind(*target);
+            }
+            let visits = self.visits.fetch_add(1, Ordering::SeqCst);
+            if visits == 1
+                && let Some(cancellation) = &self.cancellation
+            {
+                cancellation.cancel();
+            }
+        }
         Ok(CustomInvariantVerdict::Pass)
     }
 
@@ -104,6 +134,9 @@ impl CustomInvariantRule for CheckedCounterRule {
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<Result<CustomInvariantVerdict, CustomInvariantExecutionError>> {
         for _ in 0..self.steps {
+            if context.check_live().is_err() {
+                break;
+            }
             if let Some(target) = self.target.as_ref().and_then(|target| target.get()) {
                 let _ = context.relations().entity_kind(*target);
             }
@@ -128,6 +161,7 @@ impl CustomInvariantRule for CheckedCounterRule {
 fn execute(
     steps: usize,
     work_ceiling: u64,
+    maximum_work_units: Option<NonZeroU64>,
 ) -> (
     usize,
     Result<
@@ -141,6 +175,7 @@ fn execute(
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(
             CustomInvariantRegistration::new(CheckedCounterRule {
+                maximum_work_units,
                 steps,
                 visits: Arc::clone(&visits),
                 preparation_visits,
@@ -168,7 +203,7 @@ fn execute(
 
 #[test]
 fn checked_custom_rule_executes_under_lease() {
-    let (visits, result) = execute(3, 1_000);
+    let (visits, result) = execute(3, 1_000, NonZeroU64::new(100_000));
     assert_eq!(visits, 3);
     let result = result.expect("checked custom evaluator should run");
     assert!(matches!(
@@ -178,8 +213,19 @@ fn checked_custom_rule_executes_under_lease() {
 }
 
 #[test]
+fn checked_custom_rule_without_local_work_ceiling_executes_past_8192() {
+    let (visits, result) = execute(8_193, 1_000_000, None);
+    let result = result.expect("omitting a local invariant ceiling preserves lawful work");
+    assert_eq!(visits, 8_193);
+    assert!(matches!(
+        result.results()[0].verdict,
+        crate::validation::data::InvariantVerdict::Pass
+    ));
+}
+
+#[test]
 fn checked_custom_rule_stops_mid_scan_when_work_is_exhausted() {
-    let (visits, result) = execute(1_000, 100);
+    let (visits, result) = execute(1_000, 100, NonZeroU64::new(100_000));
     assert!(visits > 0 && visits < 1_000, "visited {visits}");
     assert!(matches!(
         result,
@@ -209,6 +255,7 @@ fn checked_custom_preparation_reads_declared_structural_state() {
         .schema_registry(crate::tests::support::test_schema_registry())
         .custom_invariant(
             CustomInvariantRegistration::new(CheckedCounterRule {
+                maximum_work_units: NonZeroU64::new(100_000),
                 steps: 1,
                 visits: Arc::clone(&evaluation_visits),
                 preparation_visits: Arc::clone(&preparation_visits),
@@ -257,6 +304,7 @@ fn checked_custom_preparation_observes_cancellation_mid_scan() {
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(
             CustomInvariantRegistration::new(CheckedCounterRule {
+                maximum_work_units: NonZeroU64::new(100_000),
                 steps: 1,
                 visits: Arc::clone(&evaluation_visits),
                 preparation_visits: Arc::clone(&preparation_visits),
@@ -306,6 +354,7 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(
             CustomInvariantRegistration::new(CheckedCounterRule {
+                maximum_work_units: NonZeroU64::new(100_000),
                 steps: 1,
                 visits: Arc::clone(&evaluation_visits),
                 preparation_visits: Arc::new(AtomicUsize::new(0)),

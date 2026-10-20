@@ -31,7 +31,9 @@ impl RequestWorkBudget {
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let policy = *lease.policy();
         let budget = policy.budget();
-        let remaining = budget.work_ceiling().saturating_sub(*charged);
+        let remaining = budget
+            .work_ceiling()
+            .map(|ceiling| ceiling.saturating_sub(*charged));
         let child = lease
             .child(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(

@@ -5,7 +5,7 @@ use super::*;
 fn narrow_limits() -> WorthQueryApplicationQueryBatchLimits {
     WorthQueryApplicationQueryBatchLimits::new(
         NonZeroUsize::new(8).unwrap(),
-        NonZeroUsize::new(1024).unwrap(),
+        None,
         NonZeroUsize::new(128 * 1024).unwrap(),
         NonZeroUsize::new(8 * 1024).unwrap(),
     )

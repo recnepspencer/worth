@@ -23,7 +23,7 @@ fn snapshot_insertion_preparation_is_read_only_until_consumed() {
         let query = snapshot(version, scope);
         let mut measured_store = source.fork_persistent();
         let mut measured_shapes = source_shapes.fork_persistent();
-        let mut measured = Work::new(100_000_000);
+        let mut measured = Work::new(Some(100_000_000));
         let prepared = measured_store
             .prepare_insertion(
                 query.clone(),
@@ -40,7 +40,7 @@ fn snapshot_insertion_preparation_is_read_only_until_consumed() {
         for available in [cost - 1, cost] {
             let mut candidate = source.fork_persistent();
             let mut candidate_shapes = source_shapes.fork_persistent();
-            let mut work = Work::new(cost + 17);
+            let mut work = Work::new(Some(cost + 17));
             work.reserve_visits(cost + 17 - available).unwrap();
             let result = candidate.prepare_insertion(
                 query.clone(),
@@ -82,7 +82,7 @@ fn snapshot_insertion_rejects_missing_indexes_and_charges_query_payload() {
     source.insert_with_shape_handle(snapshot(1, "seed"), &mut shapes);
     let mut short_store = source.fork_persistent();
     let mut short_shapes = shapes.fork_persistent();
-    let mut measured = Work::new(100_000_000);
+    let mut measured = Work::new(Some(100_000_000));
     short_store
         .prepare_insertion(
             snapshot(2, "x"),
@@ -96,7 +96,7 @@ fn snapshot_insertion_rejects_missing_indexes_and_charges_query_payload() {
         long_store.prepare_insertion(
             snapshot(2, &"x".repeat(4096)),
             &mut long_shapes,
-            &mut EvaluationWork::Conditional(&mut Work::new(measured.visits()))
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(measured.visits())))
         ),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));
@@ -109,7 +109,7 @@ fn snapshot_insertion_rejects_missing_indexes_and_charges_query_payload() {
         restored.prepare_insertion(
             snapshot(2, "seed"),
             &mut shapes,
-            &mut EvaluationWork::Conditional(&mut Work::new(100_000_000))
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(100_000_000)))
         ),
         Err(SignalError::SnapshotIndexUnavailable)
     ));

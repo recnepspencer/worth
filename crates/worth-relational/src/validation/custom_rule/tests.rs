@@ -48,7 +48,7 @@ fn prepared_scope_with_access(
         runtime.current_version_id(),
         merged_plan,
         access,
-        &super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(4096).unwrap()),
+        &super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
     )
 }
 
@@ -94,11 +94,12 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
     let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
     let planner = CustomInvariantScopePlanner::new_at_current_version(
         &view,
+        *execution,
         &observation,
         runtime.current_version_id(),
         runtime.current_version_id(),
         &prepared,
-        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(4096).unwrap()),
+        super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
         Arc::new(access),
     );
 
@@ -109,6 +110,9 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
 
 #[test]
 fn custom_scope_planner_preserves_owner_selected_current_version() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .build();
@@ -118,11 +122,12 @@ fn custom_scope_planner_preserves_owner_selected_current_version() {
     let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
     let planner = CustomInvariantScopePlanner::new_at_current_version(
         &view,
+        *execution,
         &observation,
         selected_version,
         selected_version,
         &prepared_scope,
-        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(u64::MAX).unwrap()),
+        super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(u64::MAX).unwrap())),
         std::sync::Arc::new(crate::validation::data::CustomInvariantAccessContract::default()),
     );
 
@@ -142,7 +147,7 @@ impl CustomInvariantRule for TestRule {
             },
             display_name: Arc::from("Test Rule"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(1).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(1).unwrap()),
                 access: crate::validation::data::CustomInvariantAccessContract::default(),
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
@@ -194,7 +199,7 @@ fn custom_registration_rejects_empty_ids() {
                 },
                 display_name: Arc::from("Empty"),
                 operational: CustomInvariantOperationalMetadata {
-                    maximum_work_units: std::num::NonZeroU64::new(1).unwrap(),
+                    maximum_work_units: Some(std::num::NonZeroU64::new(1).unwrap()),
                     access: crate::validation::data::CustomInvariantAccessContract::default(),
                     execution_point: InvariantExecutionPoint::CommitBoundary,
                     groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
@@ -226,6 +231,9 @@ fn custom_registration_rejects_empty_ids() {
 
 #[test]
 fn traversal_budget_is_session_wide() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .build();
@@ -234,12 +242,13 @@ fn traversal_budget_is_session_wide() {
     let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
     let context = CustomInvariantExecutionContext::new(
         &view,
+        *execution,
         &observation,
         runtime.current_version_id(),
         runtime.current_version_id(),
         &prepared_scope,
         None,
-        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(u64::MAX).unwrap()),
+        super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(u64::MAX).unwrap())),
         std::sync::Arc::new(crate::validation::data::CustomInvariantAccessContract::default()),
     );
 

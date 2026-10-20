@@ -48,9 +48,9 @@ fn candidate_for_update(
 
 fn budget(cold_slots: usize) -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
-        maximum_work_units: 100_000,
-        maximum_cold_record_slots: cold_slots,
-        maximum_derived_rows: 100_000,
+        maximum_work_units: Some(100_000),
+        maximum_cold_record_slots: Some(cold_slots),
+        maximum_derived_rows: Some(100_000),
     }
 }
 
@@ -221,9 +221,9 @@ fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryabl
             &[index_id],
             Some(&first.snapshot),
             DerivedIndexMaintenanceBudget {
-                maximum_work_units: 0,
-                maximum_cold_record_slots: 0,
-                maximum_derived_rows: 0,
+                maximum_work_units: Some(0),
+                maximum_cold_record_slots: Some(0),
+                maximum_derived_rows: Some(0),
             },
             execution,
         )

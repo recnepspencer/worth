@@ -57,6 +57,8 @@ mod verified_current;
 
 #[path = "native_journey_tests/consumed_custody.rs"]
 mod consumed_custody;
+#[path = "native_journey_tests/shared_fact_custody.rs"]
+mod shared_fact_custody;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{collections::BTreeMap, sync::Arc};

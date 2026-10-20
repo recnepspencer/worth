@@ -135,13 +135,17 @@ where
                 query.name(),
             )
         })?;
-        let remaining = NonZeroUsize::new(admission.remaining_work()).ok_or_else(|| {
-            WorthQueryApplicationQueryAdmissionDenial::new(
-                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-                query.name(),
-            )
-        })?;
-        let controls = controls.limit_maximum_work(remaining);
+        let controls = if let Some(remaining) = admission.remaining_work() {
+            let remaining = NonZeroUsize::new(remaining).ok_or_else(|| {
+                WorthQueryApplicationQueryAdmissionDenial::new(
+                    WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+                    query.name(),
+                )
+            })?;
+            controls.limit_maximum_work(remaining)
+        } else {
+            controls
+        };
         let parameters =
             readmit_application_query_parameters(query, retained).map_err(|denial| {
                 WorthQueryApplicationQueryAdmissionDenial::new(
@@ -172,11 +176,15 @@ where
         controls: &WorthQueryApplicationQueryControls<'_, Schema>,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
         validate_admission_request(controls.request_scope(), query.name())?;
-        if controls.maximum_work()
-            > self
-                .runtime
-                .application_query_resource_profile()
-                .maximum_work()
+        if self
+            .runtime
+            .application_query_resource_profile()
+            .maximum_work()
+            .is_some_and(|host| {
+                controls
+                    .maximum_work()
+                    .is_none_or(|requested| requested > host)
+            })
         {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,

@@ -39,8 +39,6 @@ impl ApplicationMutationBinding<MutationSchema> for SameIdentityBinding {
     const IDENTITY: &'static str = RenameBinding::IDENTITY;
     const HANDLER_IDENTITY: &'static str = RenameBinding::HANDLER_IDENTITY;
     const IDEMPOTENCY_IDENTITY: &'static str = RenameBinding::IDEMPOTENCY_IDENTITY;
-    const CANDIDATES: crate::application_operation::ApplicationCandidateRequirements =
-        RenameBinding::CANDIDATES;
 
     fn scope_field() -> crate::application_schema::ApplicationFieldRef<
         MutationSchema,

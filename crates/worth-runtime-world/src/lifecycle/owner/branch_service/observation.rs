@@ -107,18 +107,20 @@ where
 
     fn trace_product_branch_ancestry(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         occurrence: ProductBranchIncarnation,
-        maximum: NonZeroUsize,
+        maximum: Option<NonZeroUsize>,
     ) -> Result<ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial> {
-        super::history::trace(self, occurrence, maximum)
+        super::history::trace(self, execution, occurrence, maximum)
     }
 
     fn continue_product_branch_ancestry(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         previous: &ProductBranchHistoryTraversal,
-        maximum: NonZeroUsize,
+        maximum: Option<NonZeroUsize>,
     ) -> Result<ProductBranchHistoryTraversal, RuntimeWorldBranchAdmissionDenial> {
-        super::history::continue_trace(self, previous, maximum)
+        super::history::continue_trace(self, execution, previous, maximum)
     }
 
     fn observe_product_branch_history_entry(

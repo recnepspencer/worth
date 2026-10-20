@@ -67,7 +67,7 @@ fn conditional_artifact_storage_denies_before_materialization_and_moves_label_pa
                 }),
             };
             let limit = maximum - usize::from(!admitted);
-            let mut work = RetainedStoragePreparation::new(limit);
+            let mut work = RetainedStoragePreparation::new(Some(limit));
             let result = graph.prepare_effect_artifact_write(
                 Some(write),
                 &mut EvaluationWork::Conditional(&mut work),

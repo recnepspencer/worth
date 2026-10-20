@@ -6,9 +6,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestMutationDenial,
 };
 use worth_query_host::facade::declaration::application_operation::{
-    ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-    ApplicationCandidateResourceCeiling, ApplicationMutationBinding, ApplicationMutationFieldScope,
-    ApplicationMutationIntent, NoApplicationMutationOutputs, NoApplicationMutationSource,
+    ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
+    NoApplicationMutationOutputs, NoApplicationMutationSource,
 };
 use worth_query_host::facade::declaration::application_schema::{
     ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationRelationCardinality,
@@ -114,11 +113,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewRequirementBi
         "worth.query.certification.review-requirement-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.review-requirement-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 1, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1024),
-        );
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -192,13 +186,7 @@ impl OperationHandler<DocumentRetentionSchema, ReviewRequirementBinding>
         };
         HandlerResult::Completed(ReviewRequirementTargets { resource, related })
     }
-    fn candidate_requirements(
-        &self,
-        _: &ReviewRequirementInput,
-        _: &ReviewRequirementTargets,
-    ) -> ApplicationCandidateRequirements {
-        ReviewRequirementBinding::CANDIDATES
-    }
+
     fn build_candidate(
         &self,
         _: &ReviewRequirementInput,

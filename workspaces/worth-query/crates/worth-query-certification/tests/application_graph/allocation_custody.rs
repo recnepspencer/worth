@@ -39,7 +39,7 @@ fn lease_request(memory: u64, cancellation: CancellationToken) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, 1),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(memory), Some(1)),
         ),
         deadline: None,
         cancellation,
@@ -50,7 +50,7 @@ fn assert_memory_refusal(cause: &ExecutionAllocationDenial) {
     assert_eq!(
         cause.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial {
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
                 requested: cause.requested_payload_bytes().unwrap(),
                 admitted: 0,
                 level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
@@ -162,7 +162,7 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
     assert!(
         matches!(
             parent.reserve_memory(PAYLOAD_BUDGET),
-            Err(memory) if memory.requested == PAYLOAD_BUDGET && memory.admitted < PAYLOAD_BUDGET && memory.level == worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
+            Err(worth_query_host::facade::runtime::MemoryLimitDenial::Capacity { requested, admitted, level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 } }) if requested == PAYLOAD_BUDGET && admitted < PAYLOAD_BUDGET
         ),
         "the unpublished candidate owns the backing charge after child drop"
     );

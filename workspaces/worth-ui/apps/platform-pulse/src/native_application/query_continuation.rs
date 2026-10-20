@@ -32,7 +32,7 @@ impl PlatformPulseApplicationRuntime {
         if let Some(probe) = &self.query_probe {
             probe.borrow_mut().attempts += 1;
         }
-        let result = query.continue_mutation(std::num::NonZeroUsize::MAX);
+        let result = query.continue_mutation(None);
         match result {
             Err(PlatformPulseQueryLifecycleDenial::MutationPending) => false,
             Err(denial) => {

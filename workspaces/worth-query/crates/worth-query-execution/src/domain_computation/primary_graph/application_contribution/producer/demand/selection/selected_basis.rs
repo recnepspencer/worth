@@ -129,6 +129,27 @@ pub(super) fn charge(
         .map_err(|_| selection_budget_denial(family))
 }
 
+/// Candidate lookup uses the caller's selection admission. Its optional work
+/// ceiling can be changed on a fresh selection; recorded-fact bounds and every
+/// other native stop keep their own meaning.
+pub(super) fn selection_lookup_denial(
+    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+    family: &str,
+) -> WorthQueryOutputDemandDenial {
+    use crate::domain_computation::primary_graph::output_reuse;
+    use worth_relational::facade::mvcc::CompanionPreflightStop;
+    match stop {
+        CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } => {
+            selection_budget_denial(family)
+        }
+        other => output_reuse::retained_fact_denial(
+            output_reuse::preflight_stop(other),
+            "native retained output selection unavailable",
+        ),
+    }
+}
+
 pub(super) fn selection_budget_denial(family: &str) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,

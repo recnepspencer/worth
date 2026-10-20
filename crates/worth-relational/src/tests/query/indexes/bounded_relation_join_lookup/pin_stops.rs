@@ -15,7 +15,7 @@ fn relation_join_pin_keeps_the_cancelled_request_cause() {
     for leased in [false, true] {
         let cancellation = worth_execution::CancellationSource::new();
         let stopped = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             cancellation.token(),
             None,
         );
@@ -26,8 +26,8 @@ fn relation_join_pin_keeps_the_cancelled_request_cause() {
                     worth_foundational::DeterminismContract::CanonicalBitwise,
                     worth_foundational::ExecutionBudget::new(
                         std::num::NonZeroUsize::new(1).unwrap(),
-                        64 << 20,
-                        100_000,
+                        None,
+                        Some(100_000),
                     ),
                 ),
                 deadline: None,

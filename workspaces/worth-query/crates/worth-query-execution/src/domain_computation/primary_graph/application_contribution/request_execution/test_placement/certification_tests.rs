@@ -8,7 +8,7 @@ fn a_certification_mismatch_wins_over_coincident_cancellation() {
     let cancellation = worth_execution::CancellationSource::new();
     let lease = query_test_execution_authority_for_test()
         .request_lease(worth_execution::LeaseRequest {
-            policy: test_policy(NonZeroUsize::MIN, 1 << 24),
+            policy: test_policy(NonZeroUsize::MIN, None),
             cancellation: cancellation.token(),
             deadline: None,
         })
@@ -50,7 +50,7 @@ fn a_request_cancelled_during_certification_reports_cancellation() {
     let cancellation = worth_execution::CancellationSource::new();
     let lease = query_test_execution_authority_for_test()
         .request_lease(worth_execution::LeaseRequest {
-            policy: test_policy(NonZeroUsize::MIN, 1 << 24),
+            policy: test_policy(NonZeroUsize::MIN, None),
             cancellation: cancellation.token(),
             deadline: None,
         })
@@ -98,13 +98,13 @@ fn a_diagnostic_memory_reservation_cannot_refuse_the_request() {
     let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     let lease = query_test_execution_authority_for_test()
         .request_lease(worth_execution::LeaseRequest {
-            policy: test_policy(NonZeroUsize::MIN, 1024),
+            policy: test_policy(NonZeroUsize::MIN, Some(1024)),
             cancellation: worth_execution::CancellationToken::new(),
             deadline: None,
         })
         .unwrap();
     let _held = lease.reserve_memory(1024).unwrap();
-    let (diagnostic, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+    let (diagnostic, _) = worth_execution::ExecutionWorkCeiling::new(None)
         .run_detached_for_test(&lease, |diagnostic| {
             diagnostic.reserve_memory(4096).map(|hold| hold.bytes())
         })
@@ -126,7 +126,7 @@ fn a_certification_disagreement_keeps_its_own_panic_message() {
     let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     let lease = query_test_execution_authority_for_test()
         .request_lease(worth_execution::LeaseRequest {
-            policy: test_policy(NonZeroUsize::MIN, 1 << 24),
+            policy: test_policy(NonZeroUsize::MIN, None),
             cancellation: worth_execution::CancellationToken::new(),
             deadline: None,
         })
@@ -175,7 +175,7 @@ fn a_run_failure_coincident_with_cancellation_returns_the_request_stop() {
     let cancellation = worth_execution::CancellationSource::new();
     let lease = query_test_execution_authority_for_test()
         .request_lease(worth_execution::LeaseRequest {
-            policy: test_policy(NonZeroUsize::MIN, 1 << 24),
+            policy: test_policy(NonZeroUsize::MIN, None),
             cancellation: cancellation.token(),
             deadline: None,
         })

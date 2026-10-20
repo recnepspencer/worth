@@ -83,17 +83,22 @@ fn reconstruct(n: usize, expected: Option<(u64, bool)>) -> u64 {
     let advanced = test_owner_begin_transaction_for_main(&runtime)
         .commit(&execution, &runtime)
         .unwrap();
+    let reconstruction_host = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(Some(MEMORY)),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let result = runtime.index_authority().reconstruct_for_commit(
-        &execution,
+        &ExecutionRequest::serial(&reconstruction_host),
         DerivedIndexBuildRequest {
             source_commit_id: committed.commit.commit_id,
             branch_id: BranchId("main".into()),
             index_ids: vec![index],
         },
         DerivedIndexMaintenanceBudget {
-            maximum_work_units: 100_000_000,
-            maximum_cold_record_slots: 1_000_000,
-            maximum_derived_rows: 1_000_000,
+            maximum_work_units: Some(100_000_000),
+            maximum_cold_record_slots: Some(1_000_000),
+            maximum_derived_rows: Some(1_000_000),
         },
     );
     let charged = crate::indexes::last_allocation_bytes();

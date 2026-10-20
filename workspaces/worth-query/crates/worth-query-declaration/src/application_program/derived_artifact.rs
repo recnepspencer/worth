@@ -72,29 +72,6 @@ impl ApplicationArtifactDependency {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ApplicationArtifactResourceCeiling {
-    maximum_work: usize,
-    maximum_retained_bytes: usize,
-}
-
-impl ApplicationArtifactResourceCeiling {
-    pub const fn new(maximum_work: usize, maximum_retained_bytes: usize) -> Self {
-        Self {
-            maximum_work,
-            maximum_retained_bytes,
-        }
-    }
-
-    pub const fn maximum_work(self) -> usize {
-        self.maximum_work
-    }
-
-    pub const fn maximum_retained_bytes(self) -> usize {
-        self.maximum_retained_bytes
-    }
-}
-
 /// One derived product owned by a feature in the canonical application program.
 ///
 /// The declaration names dependency locality and lifecycle posture. Numerical
@@ -114,7 +91,7 @@ where
     const PRODUCER_FAMILY: &'static str;
     const DEPENDENCIES: &'static [ApplicationArtifactDependency];
     const REUSE_RULE: &'static str;
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling;
+
     const STOPPED_OUTCOME: &'static str;
 }
 
@@ -133,7 +110,7 @@ pub struct ApplicationDerivedArtifactDeclaration {
     producer_family: &'static str,
     dependencies: &'static [ApplicationArtifactDependency],
     reuse_rule: &'static str,
-    resource_ceiling: ApplicationArtifactResourceCeiling,
+
     stopped_outcome: &'static str,
 }
 
@@ -158,7 +135,7 @@ impl ApplicationDerivedArtifactDeclaration {
             producer_family: Artifact::PRODUCER_FAMILY,
             dependencies: Artifact::DEPENDENCIES,
             reuse_rule: Artifact::REUSE_RULE,
-            resource_ceiling: Artifact::RESOURCE_CEILING,
+
             stopped_outcome: Artifact::STOPPED_OUTCOME,
         }
     }
@@ -201,9 +178,6 @@ impl ApplicationDerivedArtifactDeclaration {
     }
     pub const fn reuse_rule(&self) -> &'static str {
         self.reuse_rule
-    }
-    pub const fn resource_ceiling(&self) -> ApplicationArtifactResourceCeiling {
-        self.resource_ceiling
     }
     pub const fn stopped_outcome(&self) -> &'static str {
         self.stopped_outcome

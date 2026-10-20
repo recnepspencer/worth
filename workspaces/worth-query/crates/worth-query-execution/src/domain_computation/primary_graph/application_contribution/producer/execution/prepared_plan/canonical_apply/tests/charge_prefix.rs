@@ -17,7 +17,7 @@ fn completion_failure_charges_the_whole_dispatched_wave() {
         let scope = WorthQueryRequestScope::new(None, cancellation.token());
         let policy = test_policy(
             std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
-            1 << 20,
+            None,
         );
         let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
             RuntimeWorldExecutionPlacement::Leased {
@@ -47,15 +47,15 @@ fn completion_failure_charges_the_whole_dispatched_wave() {
         let (result, report) = execution
             .execution_request()
             .unwrap()
-            .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+            .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                 let cursor = CanonicalApplyCursor::compute(
                     CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1, 2, 3]).unwrap(),
                     plans,
                     &execution,
                 );
                 let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                    maximum_work_visits: 0,
-                    maximum_preparation_bytes: 0,
+                    maximum_work_visits: Some(0),
+                    maximum_preparation_bytes: None,
                 });
                 cursor.apply(
                     &mut admission,

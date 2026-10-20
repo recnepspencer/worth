@@ -79,9 +79,9 @@ where
     ApplicationInvariantDefinition::new(
         reference,
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(
+        RelationalInvariantWorkBudget::new(Some(
             NonZeroU64::new(work_units).expect("non-zero work budget"),
-        ),
+        )),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::SchemaCompliance],

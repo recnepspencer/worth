@@ -51,12 +51,12 @@ impl ChangedRecords {
             .entity_slot_count()
             .saturating_add(root.relation_slot_count())
             .saturating_add(root.region_count());
-        if work.budget.maximum_cold_record_slots == 0
-            || slots
-                > work
-                    .budget
-                    .maximum_cold_record_slots
-                    .saturating_sub(work.counts().cold_record_slots)
+        if work
+            .budget
+            .maximum_cold_record_slots
+            .is_some_and(|maximum| {
+                maximum == 0 || slots > maximum.saturating_sub(work.counts().cold_record_slots)
+            })
         {
             return Err(Denial::ColdReconstructionRequired);
         }

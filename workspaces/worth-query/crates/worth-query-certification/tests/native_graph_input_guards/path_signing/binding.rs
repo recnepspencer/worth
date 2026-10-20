@@ -49,13 +49,6 @@ macro_rules! binding {
             const IDEMPOTENCY_IDENTITY: &'static str =
                 concat!("worth.query.signed-path.request.", stringify!($name));
             const REQUIRES_APPLICATION_PROGRAM: bool = true;
-            const CANDIDATES: ApplicationCandidateRequirements =
-                ApplicationCandidateRequirements::fixed_shape(
-                    ApplicationCandidateCardinalityCeiling::fixed(
-                        $creates, 0, $links, 0, $writes, 0,
-                    ),
-                    ApplicationCandidateResourceCeiling::representation_bytes(65536),
-                );
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }

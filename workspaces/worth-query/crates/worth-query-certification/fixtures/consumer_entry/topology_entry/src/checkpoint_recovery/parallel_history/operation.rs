@@ -2,6 +2,7 @@
 use super::{application::*, computation, expected_history::Partition};
 use crate::principal::*;
 use std::marker::PhantomData;
+
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_reads, worth_query_operation_writes,
@@ -65,11 +66,7 @@ impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
     const IDENTITY: &'static str = "neutral.apply";
     const HANDLER_IDENTITY: &'static str = "neutral.apply.handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "neutral.apply.command";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 1, 0, 0, 2, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(4096),
-        );
+
     fn scope_field() -> ApplicationFieldRef<
         S,
         Node,
@@ -190,13 +187,7 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
             Err(error) => WorthQueryDecisionPlan::immediate(finish(Err(error))),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &Input,
-        _: &Decision<Schema>,
-    ) -> ApplicationCandidateRequirements {
-        Binding::<Schema>::CANDIDATES
-    }
+
     fn build_candidate(
         &self,
         _: &Input,

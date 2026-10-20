@@ -1,6 +1,4 @@
 //! Bind complete body meaning and codecs once at native installation.
-#[cfg(test)]
-mod tests;
 use super::super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
@@ -12,85 +10,6 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationMutationBinding,
     WorthQueryInstalledApplicationSchema,
 };
-
-fn require_candidate_capacity(
-    body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
-    requirements: &worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements,
-    binding_identity: &str,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    let denied = || {
-        WorthQueryPrimaryGraphInstallationDenial::new(
-            WorthQueryPrimaryGraphInstallationDenialKind::OperationBodyUnavailable,
-            binding_identity,
-        )
-    };
-    let required_writes = body
-        .scope_fields()
-        .iter()
-        .filter(|step| step.write_target().is_some())
-        .count()
-        .checked_add(body.path_value_assignments().len())
-        .ok_or_else(denied)?
-        .checked_add(
-            body.creation()
-                .into_iter()
-                .flat_map(|c| c.initialization_sites())
-                .try_fold(0usize, |sum, site| sum.checked_add(site.fields().len()))
-                .ok_or_else(denied)?,
-        )
-        .ok_or_else(denied)?;
-    let cardinality = requirements.cardinality();
-    let retirement_capacity = body
-        .retirements()
-        .iter()
-        .try_fold(0usize, |sum, rule| {
-            sum.checked_add(rule.maximum_owners.get())
-        })
-        .ok_or_else(denied)?;
-    let required_unlinks = body.creation().map_or(0, |creation| {
-        creation
-            .links()
-            .iter()
-            .filter(|link| link.posture.replaces_selection())
-            .count()
-    });
-    let required_deletes = retirement_capacity
-        .checked_add(body.creation().map_or(0, |creation| {
-            creation
-                .links()
-                .iter()
-                .filter(|link| link.posture.retires_predecessor())
-                .count()
-        }))
-        .ok_or_else(denied)?;
-    let required_unlinks = required_unlinks
-        .checked_add(retirement_capacity)
-        .and_then(|count| count.checked_add(body.reference_inputs().len()))
-        .ok_or_else(denied)?;
-    if cardinality.maximum_emits() < usize::from(body.external_emission().is_some())
-        || cardinality.maximum_deletes() < required_deletes
-        || cardinality.maximum_unlinks() < required_unlinks
-        || cardinality.maximum_writes() < required_writes
-        || cardinality.maximum_creates()
-            < body
-                .creation()
-                .map_or(0, |c| c.initialization_sites().count())
-        || cardinality.maximum_links()
-            < body
-                .creation()
-                .into_iter()
-                .flat_map(|c| c.initialization_sites())
-                .try_fold(0usize, |sum, site| {
-                    sum.checked_add(site.links().len())?
-                        .checked_add(site.path_links().len())
-                })
-                .and_then(|count| count.checked_add(body.reference_inputs().len()))
-                .ok_or_else(denied)?
-    {
-        return Err(denied());
-    }
-    Ok(())
-}
 
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     OperationBodyHandler<Schema, Binding>
@@ -136,7 +55,6 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         }) {
             return Err(denied());
         }
-        require_candidate_capacity(body, &Binding::CANDIDATES, Binding::IDENTITY)?;
         let mut input_bindings = Vec::new();
         for source in body.observation_operands().map(|operand| operand.source()) {
             use worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource as Source;

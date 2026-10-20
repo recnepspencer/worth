@@ -62,8 +62,8 @@ fn actual_companion_cutover_resolves_only_its_prepared_observer() {
             .activate(
                 participant.clone(),
                 CompanionPreflightBudget {
-                    maximum_work_visits: 64,
-                    maximum_preparation_bytes: 8_192,
+                    maximum_work_visits: Some(64),
+                    maximum_preparation_bytes: None,
                 },
             )
             .unwrap();

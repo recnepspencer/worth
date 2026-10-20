@@ -51,7 +51,7 @@ where
     pub fn page(
         self,
         page_width: NonZeroUsize,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<NonZeroUsize>,
     ) -> Result<Page<Schema, Intent>, WorthQueryApplicationRequestQueryDenial> {
         let application = self.application;
         let request_scope = self.scope;
@@ -116,7 +116,7 @@ where
         self,
         continuation: Continuation<Schema, Intent>,
         page_width: NonZeroUsize,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<NonZeroUsize>,
     ) -> Result<Page<Schema, Intent>, WorthQueryApplicationRequestQueryDenial> {
         let application = self.application;
         let request_scope = self.scope;

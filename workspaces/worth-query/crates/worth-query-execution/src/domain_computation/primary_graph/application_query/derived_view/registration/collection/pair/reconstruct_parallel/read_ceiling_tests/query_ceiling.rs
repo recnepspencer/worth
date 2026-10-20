@@ -48,7 +48,7 @@ fn query_local_read_ceiling_preserves_the_ordinary_denial_and_releases_memory() 
                         ApplicationQueryParameterSet::new(),
                         WorthQueryProductQueryControls::new(
                             NonZeroUsize::new(10).unwrap(),
-                            NonZeroUsize::new(work).unwrap(),
+                            Some(NonZeroUsize::new(work).unwrap()),
                             &scope,
                         ),
                     )
@@ -87,7 +87,7 @@ fn query_local_read_ceiling_preserves_the_ordinary_denial_and_releases_memory() 
                 .in_scope(|lease| lease.unwrap().charged_memory_bytes())
                 .unwrap();
             let (outcome, _) = execution
-                .run(ExecutionWorkCeiling::new(u64::MAX), |lease| {
+                .run(ExecutionWorkCeiling::new(None), |lease| {
                     map.run_owned(lease, |pair, context| pair.run(execution, context))
                 })
                 .unwrap();

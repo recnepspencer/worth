@@ -92,15 +92,6 @@ where
         let transition_identity_bytes = *admitted.identity_bytes();
         let transition_instance = admitted.instance();
         let node_path = admitted.node_path().to_owned();
-        let mut demand = PlatformEffectDemand::default();
-        visit_workflow_transition_facts(
-            layout,
-            &admitted,
-            ApplicationWorkflowControlOutcome::NavigatedBack,
-            WorkflowInstanceState::Ready,
-            |effect| demand.observe(&effect),
-        )?;
-        let reservation = admit_platform_effects(admitted.read_set(), demand)?;
         let mut effects = Vec::new();
         visit_workflow_transition_facts(
             layout,
@@ -112,12 +103,10 @@ where
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
             },
         )?;
-        reservation.materialize(&effects)?;
+
         let program = WorthQueryApplicationEffectProgram {
             read_set: admitted.into_read_set(),
             effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),

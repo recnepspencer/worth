@@ -5,13 +5,8 @@ use bank_domain::{
         EstateMutationResult, OpenEstateCaseMutationBinding,
     },
 };
-use worth_query_host::facade::{
-    declaration::application_operation::{
-        ApplicationCandidateRequirements, ApplicationMutationBinding,
-    },
-    primary_graph::{
-        CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    },
+use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
 
 pub(crate) struct OpenEstateCaseHandler;
@@ -36,14 +31,6 @@ impl OperationHandler<BankSchema, OpenEstateCaseMutationBinding> for OpenEstateC
             Ok(()) => HandlerResult::Completed(*input),
             Err(denial) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial)),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &EstateAction,
-        _: &EstateAction,
-    ) -> ApplicationCandidateRequirements {
-        OpenEstateCaseMutationBinding::CANDIDATES
     }
 
     fn build_candidate(

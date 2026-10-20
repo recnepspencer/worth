@@ -66,8 +66,8 @@ fn removes_at(step: usize, removes: bool) -> bool {
 
 fn meter() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: u64::MAX,
-        maximum_preparation_bytes: u64::MAX,
+        maximum_work_visits: None,
+        maximum_preparation_bytes: None,
     })
 }
 

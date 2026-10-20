@@ -164,6 +164,17 @@ pub enum BoundedEntityFieldLookupAdmissionStop<Stop> {
     ExactBasisRequired,
 }
 
+impl<E: worth_execution::ChargedBytes> worth_execution::ChargedBytes
+    for BoundedEntityFieldLookupAdmissionStop<E>
+{
+    fn additional_charged_bytes(&self) -> u64 {
+        match self {
+            Self::Admission(error) => error.additional_charged_bytes(),
+            Self::Lookup(_) | Self::AccountingOverflow | Self::ExactBasisRequired => 0,
+        }
+    }
+}
+
 impl BoundedEntityFieldLookupDenial {
     pub(crate) const fn new(
         kind: BoundedEntityFieldLookupDenialKind,

@@ -28,7 +28,7 @@ pub(super) fn install(fanout: usize, unrelated: usize) -> Runtime {
         program,
         Schema::declaration().unwrap(),
         configuration,
-        resources::application_limits(8192, 4096),
+        resources::application_limits(8192),
         |phase, graph, installed| {
             let binding = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<Schema>())

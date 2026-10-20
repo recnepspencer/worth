@@ -108,7 +108,7 @@ where
             // The read's own work stays under the Query's declared limit;
             // its retained custody copies are reserved beside it.
             let (maximum, reserved) = selected_read_reservation(
-                plan.controls().maximum_work().get(),
+                plan.controls().maximum_work().map(NonZeroUsize::get),
                 admission.remaining_work_amount(),
                 retained_custody_work,
             )?;
@@ -122,7 +122,7 @@ where
                 plan,
                 result_buffer,
                 Some(spent),
-                maximum.get(),
+                maximum,
             ) {
                 Ok(raw) => raw,
                 Err(denial) => {
@@ -146,17 +146,28 @@ where
 /// Keep custody beside the read in the request's work amount, before taking
 /// the read's machine-word bound.
 fn selected_read_reservation(
-    declared: usize,
-    remaining: u64,
+    declared: Option<usize>,
+    remaining: Option<u64>,
     custody: usize,
-) -> Result<(NonZeroUsize, u64), SelectedAuthorizedReadStop<'static>> {
+) -> Result<(Option<usize>, Option<u64>), SelectedAuthorizedReadStop<'static>> {
     let overflow = || SelectedAuthorizedReadStop::WorkCounterOverflow;
     let custody = u64::try_from(custody).map_err(|_| overflow())?;
-    let declared = u64::try_from(declared).map_err(|_| overflow())?;
-    let maximum_amount = declared.min(remaining.saturating_sub(custody));
-    let maximum = usize::try_from(maximum_amount).map_err(|_| overflow())?;
-    let maximum = NonZeroUsize::new(maximum).ok_or(SelectedAuthorizedReadStop::WorkUnavailable)?;
-    let reserved = maximum_amount.checked_add(custody).ok_or_else(overflow)?;
+    let declared = declared
+        .map(|work| u64::try_from(work).map_err(|_| overflow()))
+        .transpose()?;
+    let maximum_amount = declared
+        .into_iter()
+        .chain(remaining.map(|remaining| remaining.saturating_sub(custody)))
+        .min();
+    if maximum_amount == Some(0) {
+        return Err(SelectedAuthorizedReadStop::WorkUnavailable);
+    }
+    let maximum = maximum_amount
+        .map(|work| usize::try_from(work).map_err(|_| overflow()))
+        .transpose()?;
+    let reserved = maximum_amount
+        .map(|work| work.checked_add(custody).ok_or_else(overflow))
+        .transpose()?;
     Ok((maximum, reserved))
 }
 
@@ -167,18 +178,22 @@ mod tests {
     #[test]
     fn custody_is_subtracted_from_the_amount_before_the_read_bound() {
         // Both counts fit on 32 bits; their sum is the exact 2^32 allowance.
-        let actual =
-            selected_read_reservation(1, 1_u64 << 32, usize::try_from(u32::MAX).unwrap()).ok();
+        let actual = selected_read_reservation(
+            Some(1),
+            Some(1_u64 << 32),
+            usize::try_from(u32::MAX).unwrap(),
+        )
+        .ok();
         assert_eq!(
             actual,
-            Some((NonZeroUsize::new(1).unwrap(), 1_u64 << 32)),
+            Some((Some(1), Some(1_u64 << 32))),
             "custody subtracts from the u64 amount before narrowing the read bound"
         );
         assert!(
             matches!(
                 selected_read_reservation(
-                    1,
-                    u64::from(u32::MAX),
+                    Some(1),
+                    Some(u64::from(u32::MAX)),
                     usize::try_from(u32::MAX).unwrap()
                 ),
                 Err(SelectedAuthorizedReadStop::WorkUnavailable)

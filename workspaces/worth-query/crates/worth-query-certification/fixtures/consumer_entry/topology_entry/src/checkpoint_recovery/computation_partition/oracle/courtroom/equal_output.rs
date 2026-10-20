@@ -62,7 +62,6 @@ impl WorthQueryApplicationProducerBinding<Schema> for Producer {
     const IDENTITY: &'static str = PRODUCER;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
@@ -79,12 +78,6 @@ impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
     }
     fn idempotency_key(&self, _: &source::SuccessorReadResult, identity: &[u8; 32]) -> u64 {
         planar_source_key(identity) ^ 0x0006_12e0
-    }
-    fn demand_resources(
-        &self,
-        _: &source::SuccessorReadResult,
-    ) -> WorthQueryProducerDemandResources {
-        planar_producer_resources()
     }
 }
 

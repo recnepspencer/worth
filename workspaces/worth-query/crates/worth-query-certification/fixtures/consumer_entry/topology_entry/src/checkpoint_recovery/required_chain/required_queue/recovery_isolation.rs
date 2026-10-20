@@ -106,10 +106,7 @@ fn scenario(direct: bool) {
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = changed else {
         panic!("source write commits")
     };
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4096).unwrap(),
-        NonZeroUsize::new(8192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut output = performed
         .start_required_outputs(&application, &request, controls)
         .unwrap_or_else(|failure| panic!("{:?}", failure.denial()));

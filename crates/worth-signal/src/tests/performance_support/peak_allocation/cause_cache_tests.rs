@@ -33,7 +33,7 @@ fn prepared_cache_allocates_no_scope_buffer_for_unscoped_causes() {
     let (_, peak) = measure(|| {
         PreparedInvalidationCache::from_causes(
             &[cause],
-            &mut EvaluationWork::Conditional(&mut Work::new(usize::MAX)),
+            &mut EvaluationWork::Conditional(&mut Work::new(None)),
         )
         .unwrap()
     });
@@ -58,9 +58,7 @@ fn prepared_cache_scoped_allocation_fits_owned_vec_and_path() {
         1,
         PartitionScopeSet::new([scope.clone()]),
     );
-    let path = scope
-        .retained_heap_charge(&mut Work::new(usize::MAX))
-        .unwrap();
+    let path = scope.retained_heap_charge(&mut Work::new(None)).unwrap();
     let bound = Charge::capacity::<(Aspect, PartitionSubscription)>(1)
         .unwrap()
         .checked_add(path)
@@ -69,7 +67,7 @@ fn prepared_cache_scoped_allocation_fits_owned_vec_and_path() {
     let (cache, peak) = measure(|| {
         PreparedInvalidationCache::from_causes(
             &[cause],
-            &mut EvaluationWork::Conditional(&mut Work::new(usize::MAX)),
+            &mut EvaluationWork::Conditional(&mut Work::new(None)),
         )
         .unwrap()
     });

@@ -1,5 +1,5 @@
 use super::*;
-use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
+
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerResult, OperationHandler,
 };
@@ -17,14 +17,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, VertexReplacementBi
         reader: &mut DecisionReader<'_, '_, '_, Schema, VertexReplacementBinding<Schema>>,
     ) -> HandlerResult<decision::ReplacementDecision<Schema>, PlanarReplacementDenial> {
         decision::observe_replacement(input, reader)
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &VertexReplacement,
-        _: &decision::ReplacementDecision<Schema>,
-    ) -> ApplicationCandidateRequirements {
-        super::binding::replacement_requirements()
     }
 
     fn build_candidate(

@@ -5,9 +5,9 @@ mod result_only;
 mod retained_validation;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultShapeBuilder,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldMarkerIdentity, ApplicationFieldPresence, ApplicationFieldRef,
@@ -188,7 +188,6 @@ fn principal_query_definition() -> ApplicationQueryDefinition<
         .scope(Principal::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -253,19 +252,19 @@ fn installed_query_binding_retains_exact_principal_scope_and_finite_limits() {
     assert_eq!(binding.limits().maximum_work().unwrap().get(), 256);
     assert!(binding
         .limits()
-        .resolve(std::num::NonZeroUsize::new(1024).unwrap())
+        .resolve(Some(std::num::NonZeroUsize::new(1024).unwrap()))
         .narrow(
             std::num::NonZeroUsize::new(1).unwrap(),
-            std::num::NonZeroUsize::new(128).unwrap(),
+            Some(std::num::NonZeroUsize::new(128).unwrap()),
         )
         .is_ok());
     assert_eq!(
         binding
             .limits()
-            .resolve(std::num::NonZeroUsize::new(1024).unwrap())
+            .resolve(Some(std::num::NonZeroUsize::new(1024).unwrap()))
             .narrow(
                 std::num::NonZeroUsize::new(9).unwrap(),
-                std::num::NonZeroUsize::new(128).unwrap(),
+                Some(std::num::NonZeroUsize::new(128).unwrap()),
             )
             .unwrap_err(),
         crate::facade::WorthQueryApplicationQueryLimitDenial::MaximumResultsWidened

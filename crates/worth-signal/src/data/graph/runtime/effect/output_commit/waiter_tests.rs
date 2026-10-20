@@ -93,7 +93,7 @@ fn exhausted_waiter_preparation_preserves_live_packet_state_and_retry_succeeds()
     let ordinal = graph.cause_sets.output_commit_ordinal_for_test();
     let artifacts = graph.telemetry().storage.hot_write_runtime_artifact_count;
     graph.set_runtime_policy(
-        SignalRuntimePolicy::development().with_maximum_waiter_resolution_visits(1),
+        SignalRuntimePolicy::development().with_maximum_waiter_resolution_visits(Some(1)),
     );
     let mut effect = super::super::tests::test_effect_with_labels(Vec::new());
     effect.operational.node = producer;
@@ -136,7 +136,7 @@ fn exhausted_waiter_preparation_preserves_live_packet_state_and_retry_succeeds()
         artifacts
     );
     graph.set_runtime_policy(
-        SignalRuntimePolicy::development().with_maximum_waiter_resolution_visits(10_000),
+        SignalRuntimePolicy::development().with_maximum_waiter_resolution_visits(None),
     );
     graph
         .apply_effect(

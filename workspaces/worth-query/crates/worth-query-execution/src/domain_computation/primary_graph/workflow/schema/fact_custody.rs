@@ -1,6 +1,5 @@
 //! Commit-boundary custody of immutable published workflow facts.
 
-use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use worth_relational::facade::identity::KindId;
@@ -32,16 +31,10 @@ struct WorkflowFactCustody {
 // semantic versions so diagnostics preserve the same rule lineage.
 const RULE_ID: &str = "worth-query.workflow.publication-immutability";
 const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 6);
-const MAXIMUM_WORK_UNITS: u64 = 2_000_000;
 
 pub(in crate::domain_computation::primary_graph) const fn fact_custody_receipt_contract(
-) -> (&'static str, u16, u16, u64) {
-    (
-        RULE_ID,
-        RULE_VERSION.major,
-        RULE_VERSION.minor,
-        MAXIMUM_WORK_UNITS,
-    )
+) -> (&'static str, u16, u16, Option<u64>) {
+    (RULE_ID, RULE_VERSION.major, RULE_VERSION.minor, None)
 }
 
 pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
@@ -124,8 +117,7 @@ impl CustomInvariantRule for WorkflowFactCustody {
             },
             display_name: Arc::from("Workflow publication and approval immutability"),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: NonZeroU64::new(MAXIMUM_WORK_UNITS)
-                    .expect("positive finite work"),
+                maximum_work_units: None,
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance)
                     .union(InvariantGroupSet::of(InvariantGroup::RelationIntegrity)),

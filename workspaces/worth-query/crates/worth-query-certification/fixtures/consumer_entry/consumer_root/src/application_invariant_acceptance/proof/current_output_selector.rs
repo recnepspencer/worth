@@ -1,5 +1,4 @@
 use std::error::Error;
-use std::num::NonZeroUsize;
 
 use worth_query_consumer_values::{
     PlanarCurrentOutputExpectation, PlanarMutationDenial, PlanarOperation,
@@ -114,10 +113,7 @@ fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scop
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             application,
             PlanarOutputDemand::new(scope_key),
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::new(4_096).unwrap(),
-                NonZeroUsize::new(8_192).unwrap(),
-            ),
+            WorthQueryOutputDemandControls::default(),
         )
         .expect("the declared root producer starts for the selected source");
     super::settle(|| {

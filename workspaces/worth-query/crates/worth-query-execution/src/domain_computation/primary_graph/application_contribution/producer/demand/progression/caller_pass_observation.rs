@@ -1,10 +1,9 @@
-//! A constructed writer interleaving at the owned-publication continuation.
+//! Receiver-owned interleavings and read-only caller-pass observations.
 use super::InvalidationEditAdmission;
 use std::cell::RefCell;
 thread_local! {
     static PUBLICATIONS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
     static PUBLICATION_RECORDS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
-    static READ_DEBITS: RefCell<Vec<(u64, u64)>> = const { RefCell::new(Vec::new()) };
     static REQUEST_NAVIGATION: RefCell<Vec<(u64,u64)>> = const { RefCell::new(Vec::new()) };
     static ADMISSION_WORK: RefCell<Vec<u64>> = const { RefCell::new(Vec::new()) };
     static REQUEST_WORK: RefCell<Vec<u64>> = const { RefCell::new(Vec::new()) };
@@ -25,9 +24,7 @@ pub(super) fn observe_request_work(admission: &InvalidationEditAdmission) {
     });
     REQUEST_WORK.with(|requests| requests.borrow_mut().push(work));
 }
-pub(super) fn exhaust_after_commit(
-    control: &crate::domain_computation::primary_graph::application_runtime::WorthQueryApplicationAttemptOperationControl,
-    admission: &mut InvalidationEditAdmission,
+pub(super) fn observe_publication(
     published: bool,
     recorded: bool,
     runtime: u64,
@@ -52,20 +49,6 @@ pub(super) fn exhaust_after_commit(
             });
         }
     }
-    if control.caller_pass.take_exhaustion() {
-        admission
-            .exhaust_work_for_test()
-            .expect("the constructed exhaustion consumes exactly the remaining allowance");
-    }
-}
-pub(super) fn observe_read_debit(executed: u64, debited: u64) {
-    if !crate::domain_computation::execution_observation::is_installed() {
-        return;
-    }
-    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
-        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
-    }
-    READ_DEBITS.with(|reads| reads.borrow_mut().push((executed, debited)));
 }
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -97,17 +80,6 @@ impl<Schema>
                 .copied()
                 .unwrap_or(0)
         })
-    }
-    #[doc(hidden)]
-    pub fn exhaust_request_at_performed_commit_for_test(&self) {
-        self.primary_provider
-            .application_attempt_operation_control
-            .caller_pass
-            .arm_exhaustion();
-    }
-    #[doc(hidden)]
-    pub fn retained_read_request_debits_for_test(&self) -> Vec<(u64, u64)> {
-        READ_DEBITS.with(|reads| std::mem::take(&mut *reads.borrow_mut()))
     }
     #[doc(hidden)]
     pub fn caller_request_navigation_for_test(&self) -> Vec<(u64, u64)> {
@@ -161,7 +133,6 @@ fn clear_observations() {
     CLEANUP_REGISTERED.with(|registered| registered.set(false));
     PUBLICATIONS.with(|records| *records.borrow_mut() = Default::default());
     PUBLICATION_RECORDS.with(|records| *records.borrow_mut() = Default::default());
-    READ_DEBITS.with(|records| *records.borrow_mut() = Default::default());
     REQUEST_NAVIGATION.with(|records| *records.borrow_mut() = Default::default());
     ADMISSION_WORK.with(|records| *records.borrow_mut() = Default::default());
     REQUEST_WORK.with(|records| *records.borrow_mut() = Default::default());
@@ -170,15 +141,12 @@ fn clear_observations() {
 #[cfg(test)]
 mod scope_tests {
     #[test]
-    fn dropping_the_arming_guard_clears_both_caller_pass_arms() {
+    fn dropping_the_arming_guard_clears_the_interleaving() {
         let guard = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
         let world =
             crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
                 true,
             );
-        world
-            .application
-            .exhaust_request_at_performed_commit_for_test();
         world
             .application
             .interleave_before_owned_reobservation_for_test(|| {
@@ -190,7 +158,6 @@ mod scope_tests {
             .primary_provider
             .application_attempt_operation_control
             .caller_pass;
-        assert!(!control.take_exhaustion());
         control.run_interleaving();
     }
 }

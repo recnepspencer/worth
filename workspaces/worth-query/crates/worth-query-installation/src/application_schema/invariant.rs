@@ -14,7 +14,7 @@ pub struct WorthQueryInstalledApplicationInvariantDescriptor {
     major: u16,
     minor: u16,
     execution_point: ApplicationInvariantExecutionPoint,
-    maximum_work_units: NonZeroU64,
+    maximum_work_units: Option<NonZeroU64>,
     enforcement: ApplicationInvariantEnforcement,
     required_groups: Vec<ApplicationInvariantGroup>,
     read_closure: Vec<ApplicationInvariantScopeTarget>,
@@ -29,7 +29,7 @@ impl WorthQueryInstalledApplicationInvariantDescriptor {
         major: u16,
         minor: u16,
         execution_point: ApplicationInvariantExecutionPoint,
-        maximum_work_units: NonZeroU64,
+        maximum_work_units: Option<NonZeroU64>,
         enforcement: ApplicationInvariantEnforcement,
         required_groups: Vec<ApplicationInvariantGroup>,
         read_closure: Vec<ApplicationInvariantScopeTarget>,
@@ -63,7 +63,7 @@ impl WorthQueryInstalledApplicationInvariantDescriptor {
     pub const fn execution_point(&self) -> ApplicationInvariantExecutionPoint {
         self.execution_point
     }
-    pub const fn maximum_work_units(&self) -> NonZeroU64 {
+    pub const fn maximum_work_units(&self) -> Option<NonZeroU64> {
         self.maximum_work_units
     }
     pub const fn enforcement(&self) -> ApplicationInvariantEnforcement {
@@ -90,7 +90,8 @@ impl WorthQueryInstalledApplicationInvariantDescriptor {
             self.major.to_string(),
             self.minor.to_string(),
             format!("{:?}", self.execution_point),
-            self.maximum_work_units.get().to_string(),
+            self.maximum_work_units
+                .map_or_else(|| "absent".to_owned(), |maximum| maximum.get().to_string()),
             format!("{:?}", self.enforcement),
             self.provider.clone(),
             format!("{:?}", self.cost_posture),

@@ -32,6 +32,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             | Stop::RegistrationChanged
             | Stop::PreparationMemoryExhausted { .. }
             | Stop::PreparationMemoryCounterOverflow
+            | Stop::RetainedCompanionCounterOverflow { .. }
             | Stop::RetainedCompanionCapacityExhausted { .. } => {
                 WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
             }
@@ -39,6 +40,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         subject,
     )
     .with_capacity_stop(VerificationCapacityStop::of_meter(stop))
+    .with_producer_admission_stop(Some(stop))
     .into()
 }
 
@@ -47,6 +49,13 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     stop: CurrentAcceptedStop,
 ) -> ProducerExecutionStop {
     use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
+    let native_stop = match &stop {
+        CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(stop))
+        | CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::CapacityExhausted(
+            VerificationCapacityStop::Meter(stop),
+        )) => Some(*stop),
+        CurrentAcceptedStop::Closure(_) | CurrentAcceptedStop::Registration(_) => None,
+    };
     let capacity = match &stop {
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::CapacityExhausted(cause)) => {
             Some(*cause)
@@ -58,7 +67,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     };
     let kind = match stop {
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::Execution(cause))
-        | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause))) => return crate::domain_computation::primary_graph::output_reuse::read_denial(cause).into(),
+        | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause))) => return crate::domain_computation::primary_graph::output_reuse::read_denial(cause)
+            .with_producer_admission_stop(native_stop).into(),
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::WorkExhausted)
         | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(
             worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
@@ -90,6 +100,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     };
     WorthQueryOutputDemandDenial::new(kind, subject)
         .with_capacity_stop(capacity)
+        .with_producer_admission_stop(native_stop)
         .into()
 }
 
@@ -115,30 +126,41 @@ mod tests {
             )
         };
         let allocation = ScratchAllocationRefused { bytes: 8 };
-        for (stop, kept) in [
+        for (stop, kept, native) in [
             (
                 CurrentAcceptedStop::Closure(Verification::CapacityExhausted(allocation)),
                 allocation,
+                None,
             ),
             (
                 CurrentAcceptedStop::Closure(Verification::CapacityExhausted(Meter(meter))),
                 Meter(meter),
+                Some(meter),
             ),
             (
                 CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(meter)),
                 Meter(meter),
+                Some(meter),
             ),
         ] {
+            let actual = ready_currentness_denial("producer", stop).into_output_denial();
+            assert_eq!(actual.producer_admission_stop(), native);
+            assert_eq!(actual.output_verification_capacity_stop(), Some(kept));
+            assert_eq!(actual.publication_companion_stop(), None);
             assert_eq!(
-                ready_currentness_denial("producer", stop).into_output_denial(),
-                refused().with_capacity_stop(Some(kept))
+                actual,
+                refused()
+                    .with_capacity_stop(Some(kept))
+                    .with_producer_admission_stop(native)
             );
         }
         assert_eq!(
             ready_resource_denial("producer", meter).into_output_denial(),
-            refused().with_capacity_stop(Some(Meter(meter)))
+            refused()
+                .with_capacity_stop(Some(Meter(meter)))
+                .with_producer_admission_stop(Some(meter))
         );
-        // A stop that shares the kind but is not a capacity stop keeps none.
+        // A non-capacity stop retains its native identity without a capacity quote.
         let pending = CompanionPreflightStop::TopologyPending;
         assert_eq!(
             ready_currentness_denial(
@@ -146,7 +168,93 @@ mod tests {
                 CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(pending)),
             )
             .into_output_denial(),
-            refused()
+            refused().with_producer_admission_stop(Some(pending))
+        );
+    }
+
+    #[test]
+    fn ready_readmission_keeps_native_structural_stops_and_their_origin() {
+        use worth_relational::facade::{history::CommitId, mvcc::RelationalInterruptionBoundary};
+        let cancelled =
+            worth_relational::facade::mvcc::RelationalInterruptionEvent::from_request_stop(
+                worth_execution::MapKernelStop::Cancelled,
+                RelationalInterruptionBoundary::PublicationPreflight,
+            )
+            .unwrap();
+        for (native, kind) in [
+            (
+                CompanionPreflightStop::TopologyPending,
+                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+            ),
+            (
+                CompanionPreflightStop::SelectedSourceMismatch,
+                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+            ),
+            (
+                CompanionPreflightStop::SelectedPositionUnavailable {
+                    commit_id: CommitId(7),
+                },
+                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+            ),
+            (
+                CompanionPreflightStop::ForeignCell,
+                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+            ),
+            (
+                CompanionPreflightStop::RegistrationChanged,
+                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+            ),
+            (
+                CompanionPreflightStop::Interrupted(cancelled),
+                WorthQueryOutputDemandDenialKind::Cancelled,
+            ),
+        ] {
+            let registration =
+                CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(native));
+            for actual in [
+                ready_resource_denial("producer", native).into_output_denial(),
+                ready_currentness_denial("producer", registration).into_output_denial(),
+            ] {
+                assert_eq!(actual.kind(), kind);
+                assert_eq!(actual.subject(), "producer");
+                assert_eq!(
+                    actual.recovery_posture(),
+                    crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
+                );
+                assert_eq!(actual.producer_admission_stop(), Some(native));
+                assert_eq!(actual.publication_companion_stop(), None);
+                assert_eq!(actual.clone(), actual);
+            }
+        }
+    }
+
+    #[test]
+    fn ready_execution_stop_keeps_its_original_mapping_and_native_origin() {
+        use worth_relational::facade::transactions::RelationalExecutionDenialCause;
+        let cause = RelationalExecutionDenialCause::WorkExhausted;
+        let native = CompanionPreflightStop::Execution(cause);
+        let registration =
+            CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(native));
+        let actual = ready_currentness_denial("producer", registration).into_output_denial();
+        let original = crate::domain_computation::primary_graph::output_reuse::read_denial(cause);
+        let resource = ready_resource_denial("producer", native).into_output_denial();
+        assert_eq!(resource.kind(), original.kind());
+        assert_eq!(resource.subject(), "producer");
+        assert_eq!(resource.producer_admission_stop(), Some(native));
+        assert_eq!(resource.publication_companion_stop(), None);
+        assert_eq!(
+            actual,
+            original.clone().with_producer_admission_stop(Some(native))
+        );
+        assert_eq!(actual.publication_companion_stop(), None);
+        assert_eq!(actual.producer_admission_stop(), Some(native));
+        assert_eq!(
+            ready_currentness_denial(
+                "producer",
+                CurrentAcceptedStop::Closure(Verification::Execution(cause))
+            )
+            .into_output_denial(),
+            original,
         );
     }
 }

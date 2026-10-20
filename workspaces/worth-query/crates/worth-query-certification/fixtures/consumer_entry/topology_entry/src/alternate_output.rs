@@ -11,8 +11,8 @@ use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
         WorthQueryDecisionContextDependencies, WorthQueryProducerApplicability,
-        WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
-        WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+        WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+        WorthQueryProducerLifecyclePosture,
     },
     domain,
     primary_graph::{
@@ -81,7 +81,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.alternate-planar-output-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.alternate-planar-output-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 2, 1024);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -175,14 +174,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         HandlerResult::Completed(y)
     }
 
-    fn candidate_requirements(
-        &self,
-        _: &AlternatePlanarOutput,
-        _: &worth_query_consumer_values::PositiveLength,
-    ) -> ApplicationCandidateRequirements {
-        AlternatePlanarOutputBinding::<Schema>::CANDIDATES
-    }
-
     fn build_candidate(
         &self,
         input: &AlternatePlanarOutput,
@@ -236,10 +227,6 @@ impl<Schema: TopologySchemaBinding>
     fn idempotency_key(&self, _: &PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
         super::planar_source_key(source_identity) ^ u64::MAX
     }
-
-    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(1024, 1024)
-    }
 }
 
 pub struct AlternatePlanarOutputProducer<Schema>(PhantomData<fn() -> Schema>);
@@ -256,7 +243,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] =
         &[ALTERNATE_OUTPUT_APPLICABILITY];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "manual-certification-only";
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(

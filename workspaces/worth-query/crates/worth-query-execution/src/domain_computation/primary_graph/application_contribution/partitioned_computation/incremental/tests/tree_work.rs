@@ -94,7 +94,7 @@ fn plan(keys: &[Id]) -> ReductionPlan {
 // admits the declared path-copy holds of the fixed mean-law workload.
 fn serial_placement() -> RuntimeWorldExecutionPlacement<'static> {
     use super::super::super::super::request_execution::test_policy;
-    RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, 1 << 36))
+    RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, None))
 }
 
 fn run(
