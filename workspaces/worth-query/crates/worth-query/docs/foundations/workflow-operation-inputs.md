@@ -23,6 +23,23 @@ currently no native proposal funnel for capturing a different input per target
 node. Do not pad unrelated inputs into one type or omit members from identity to
 make such a workflow pass.
 
+`graph.captured_operation_input(&proposal, &target)` now declares the separate
+target-specific profile. It is **declaration/transport only**, not native execution
+support. Validation requires an actual bound native control source, a bound
+guarded non-control target, and exactly one incoming input edge across both
+profiles. The same method is available inside components; expansion preserves
+the qualified correspondence. Ordinary `operation_input` retains its exact old
+type/identity meaning and cannot be mixed with a captured edge for one target.
+Control posture comes from typed binding metadata, never an untrusted boolean or
+a source operation's name. Archive readmission resolves the exact installed
+binding again; pure validation alone does not establish installed support.
+
+Installed binding and cold native reconstruction currently refuse that profile
+with `CapturedOperationInputsNotSupported`. Neither a validated definition,
+archive roundtrip nor `with_at` supplies the missing native proposal records,
+complete-contract replay binding or first-effect checks. Keep that execution path
+blocked until those owners implement it; do not fall back to homogeneous input.
+
 ## Stable Entry Points
 
 Import these through `worth_query_host::facade::application_entry`:

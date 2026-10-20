@@ -6,6 +6,7 @@ use crate::compatibility::{
 use crate::denial::WorthQueryPackageArchiveDenialKind as Kind;
 use crate::limits::WorthQueryPackageArchiveLimits;
 
+mod captured_inputs;
 mod condition;
 mod operation_requirements;
 
@@ -317,6 +318,7 @@ fn control_and_data_wire_tags_are_pinned() {
         (Flow::ApprovalAuthority, 4),
         (Flow::OperationInput, 5),
         (Flow::ConditionSubject, 6),
+        (Flow::CapturedOperationInput, 7),
     ];
     for (flow, tag) in flows {
         assert_eq!(data_tag(flow), tag, "{flow:?} keeps its v1 tag");
@@ -327,5 +329,5 @@ fn control_and_data_wire_tags_are_pinned() {
         control_outcome(10).is_err(),
         "business termination is not a portable authored control arm"
     );
-    assert!(data_flow(7).is_err());
+    assert!(data_flow(8).is_err());
 }

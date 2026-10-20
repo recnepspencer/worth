@@ -205,6 +205,37 @@ where
         self.connect_data(source, target, ApplicationWorkflowDataFlow::OperationInput)
     }
 
+    /// Declare target-specific original input capture from a native control node.
+    /// Pure meaning only: installation must support this profile before publication.
+    /// Validation requires a bound control source and a bound guarded target.
+    ///
+    /// ```
+    /// use worth_query_declaration::facade::application_program::{
+    ///     ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowSpec,
+    ///     ApplicationWorkflowNodeRef, ApplicationWorkflowOperationNode,
+    /// };
+    /// fn connect<S: ApplicationWorkflowSpec>(
+    ///     graph: &mut ApplicationWorkflowDefinitionBuilder<S>,
+    ///     proposal: &ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>,
+    ///     target: &ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>,
+    /// ) { graph.captured_operation_input(proposal, target); }
+    /// ```
+    pub fn captured_operation_input<Source, Target>(
+        &mut self,
+        source: &Source,
+        target: &Target,
+    ) -> &mut Self
+    where
+        Source: ApplicationWorkflowOutputBinding<ApplicationWorkflowOperationNode>,
+        Target: ApplicationWorkflowInputBinding<ApplicationWorkflowOperationNode>,
+    {
+        self.connect_data(
+            source,
+            target,
+            ApplicationWorkflowDataFlow::CapturedOperationInput,
+        )
+    }
+
     fn connect<SourceKind, TargetKind, Source, Target>(
         &mut self,
         source: &Source,

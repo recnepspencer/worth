@@ -121,6 +121,9 @@ impl WorkflowConnectionTag {
             (1, 4) => Some(Self::Data(ApplicationWorkflowDataFlow::ApprovalAuthority)),
             (1, 5) => Some(Self::Data(ApplicationWorkflowDataFlow::OperationInput)),
             (1, 6) => Some(Self::Data(ApplicationWorkflowDataFlow::ConditionSubject)),
+            (1, 7) => Some(Self::Data(
+                ApplicationWorkflowDataFlow::CapturedOperationInput,
+            )),
             (2, variant) => decode_control(variant).map(Self::Retry),
             (3, 0) => Some(Self::BackAction),
             _ => None,
@@ -157,6 +160,7 @@ impl WorkflowConnectionTag {
             Self::Control(ApplicationWorkflowControlOutcome::Returned) => 9,
             Self::Control(ApplicationWorkflowControlOutcome::Terminated) => 10,
             Self::Data(ApplicationWorkflowDataFlow::ConditionSubject) => 6,
+            Self::Data(ApplicationWorkflowDataFlow::CapturedOperationInput) => 7,
             Self::Retry(outcome) => control_variant(outcome),
         }
     }
@@ -196,6 +200,9 @@ impl WorkflowConnectionTag {
             Self::Data(ApplicationWorkflowDataFlow::ApprovalAuthority) => "data-approval-authority",
             Self::Data(ApplicationWorkflowDataFlow::OperationInput) => "data-operation-input",
             Self::Data(ApplicationWorkflowDataFlow::ConditionSubject) => "data-condition-subject",
+            Self::Data(ApplicationWorkflowDataFlow::CapturedOperationInput) => {
+                "data-captured-operation-input"
+            }
             Self::Retry(_) => "retry",
         }
     }

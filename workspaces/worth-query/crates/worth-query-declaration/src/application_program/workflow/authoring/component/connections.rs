@@ -122,6 +122,18 @@ where
         Ok(self)
     }
 
+    /// Preserve explicit captured-target correspondence inside a component.
+    pub fn captured_operation_input(
+        &mut self,
+        source: &ApplicationWorkflowComponentNodeRef<ApplicationWorkflowOperationNode>,
+        target: &ApplicationWorkflowComponentNodeRef<ApplicationWorkflowOperationNode>,
+    ) -> Result<&mut Self, ApplicationWorkflowAuthoringDenial> {
+        self.require_connection(source, target)?;
+        self.graph
+            .captured_operation_input(&source.inner, &target.inner);
+        Ok(self)
+    }
+
     fn require_connection<Source, Target>(
         &self,
         source: &ApplicationWorkflowComponentNodeRef<Source>,

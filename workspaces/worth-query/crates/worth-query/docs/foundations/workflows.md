@@ -1660,15 +1660,15 @@ authored definitions. It is not part of the `worth-query-decl` or
 `worth-query-host` facades. The in-repo users are certification and release
 tooling. This guide does not state that application crates may depend on it.
 
-- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `4`). It retains the exact optional operation evidence contract and inbound wait meaning. Only the current version is supported; predecessor versions are refused before body decoding, without migration or rewriting their bytes.
+- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream. Unchanged profiles retain version `7` and their original bytes. A definition with explicit `CapturedOperationInput` edges uses version `8` (`WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`). Both profiles retain exact execution-evidence, actor/observation policy and action meaning. Readers support versions 7–8; versions before that window or after it are refused without migration. A captured-input tag under version 7 is refused, not reinterpreted.
 - `decode_workflow_definition_draft(bytes, limits)` returns `WorthQueryUntrustedWorkflowDefinitionDraft`. Every count is checked against the draft's limits and the remaining bytes before allocation. Node identities must be in ascending order.
 - `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. Operation evidence must exactly match the installed binding: an old absent contract cannot silently acquire an explicit-empty or explicit-required floor. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
 - A draft carries no instances, approvals, or authority. Decoded bytes mint nothing. The rebuilt definition still validates, binds, and publishes through the ordinary path.
 
-The [Bank payment archive court](../../../../../worth-query-bank-world/crates/bank-courtroom/tests/payment_workflow_archive.rs)
-uses its actual installed workflow spec to reauthor and bind a version 4 wait.
-It also refuses a changed source, a missing operation, and a different Rust
-effect marker with the same portable name.
+The captured-input profile is currently declarable and portable only: installed
+binding and cold reconstruction refuse it with `CapturedOperationInputsNotSupported`.
+It does not yet publish per-target input records or issue heterogeneous operation
+requirements. See [workflow operation inputs](workflow-operation-inputs.md).
 
 ## Denials
 

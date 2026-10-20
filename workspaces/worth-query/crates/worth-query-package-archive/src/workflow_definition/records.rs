@@ -204,7 +204,13 @@ pub(super) fn decode_connection(
     let target = nonempty_text(input)?;
     let kind = match tag {
         1 => DraftConnectionKind::Control(control_outcome(input.u8()?)?),
-        2 => DraftConnectionKind::Data(data_flow(input.u8()?)?),
+        2 => {
+            let flow = data_flow(input.u8()?)?;
+            if version < 8 && flow == ApplicationWorkflowDataFlow::CapturedOperationInput {
+                return Err(Denial::new(Kind::UnsupportedRecordVariant));
+            }
+            DraftConnectionKind::Data(flow)
+        },
         3 => {
             let trigger = control_outcome(input.u8()?)?;
             let reason = input.text()?;
@@ -281,6 +287,7 @@ pub(super) const fn data_tag(flow: ApplicationWorkflowDataFlow) -> u8 {
         ApplicationWorkflowDataFlow::ApprovalAuthority => 4,
         ApplicationWorkflowDataFlow::OperationInput => 5,
         ApplicationWorkflowDataFlow::ConditionSubject => 6,
+        ApplicationWorkflowDataFlow::CapturedOperationInput => 7,
     }
 }
 
@@ -308,6 +315,7 @@ pub(super) fn data_flow(tag: u8) -> Result<ApplicationWorkflowDataFlow, Denial> 
         4 => ApplicationWorkflowDataFlow::ApprovalAuthority,
         5 => ApplicationWorkflowDataFlow::OperationInput,
         6 => ApplicationWorkflowDataFlow::ConditionSubject,
+        7 => ApplicationWorkflowDataFlow::CapturedOperationInput,
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
 }

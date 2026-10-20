@@ -81,6 +81,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowDefinitionCompilationUnavailable,
     /// Stored guarded operation meaning lacks exactly one input source.
     WorkflowDefinitionMissingOperationInput,
+    /// Captured-target meaning cannot execute before its native input producer exists.
+    CapturedOperationInputsNotSupported,
     /// A start named a definition its branch has since superseded. A retry
     /// of a recorded start still replays.
     WorkflowDefinitionSuperseded,

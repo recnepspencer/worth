@@ -22,6 +22,17 @@ pub(super) fn admit(
     for connection in connections {
         if matches!(
             connection.kind.as_ref(),
+            CompiledWorkflowConnectionKind::Data(
+                ApplicationWorkflowDataFlow::CapturedOperationInput
+            )
+        ) {
+            return Err(WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::CapturedOperationInputsNotSupported,
+                "captured-operation-input",
+            ));
+        }
+        if matches!(
+            connection.kind.as_ref(),
             CompiledWorkflowConnectionKind::Data(ApplicationWorkflowDataFlow::OperationInput)
         ) {
             *inputs.entry(connection.target).or_insert(0_usize) += 1;

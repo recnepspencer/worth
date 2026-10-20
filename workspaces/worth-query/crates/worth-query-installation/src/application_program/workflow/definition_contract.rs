@@ -258,6 +258,14 @@ where
     }
     assessment_bindings.sort_unstable_by(|left, right| left.0.cmp(&right.0));
     for edge in definition.connections() {
+        if matches!(edge.kind(), worth_query_declaration::facade::application_program::ApplicationWorkflowConnectionKind::Data(
+            worth_query_declaration::facade::application_program::ApplicationWorkflowDataFlow::CapturedOperationInput
+        )) {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::CapturedOperationInputsNotSupported,
+                edge.target().as_str(),
+            ));
+        }
         if let worth_query_declaration::facade::application_program::ApplicationWorkflowConnectionKind::BackAction(operation) = edge.kind()
             && installed.operations.iter().filter(|candidate| candidate.supports_local_workflow_action && candidate.matches_reference(&operation, true)).count() != 1 {
                 return Err(denial(WorthQueryApplicationWorkflowInstallationDenialKind::UnsupportedDefinitionMember, edge.source().as_str()));

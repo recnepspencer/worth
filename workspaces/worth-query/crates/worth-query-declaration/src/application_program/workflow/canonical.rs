@@ -7,10 +7,11 @@ use worth_foundational::facade::{
 
 use super::{
     ApplicationWorkflowCondition, ApplicationWorkflowConnection, ApplicationWorkflowConnectionKind,
-    ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow,
     ApplicationWorkflowDefinitionContentIdentity, ApplicationWorkflowDefinitionLimits,
     ApplicationWorkflowNode, ApplicationWorkflowNodeKind, ApplicationWorkflowSpec,
 };
+mod tags;
+use tags::{control_tag, data_tag};
 
 const RULE_VERSION: &str = "worth-query-authored-workflow-definition-v2";
 const BASIS_DOMAIN: CanonicalBasisDomain =
@@ -348,34 +349,6 @@ fn framed_record(kind: &str, fields: &[&str]) -> String {
         record.push_str(field);
     }
     record
-}
-
-const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u8 {
-    match outcome {
-        ApplicationWorkflowControlOutcome::Completed => 0,
-        ApplicationWorkflowControlOutcome::Approved => 1,
-        ApplicationWorkflowControlOutcome::Rejected => 2,
-        ApplicationWorkflowControlOutcome::EvidenceSatisfied => 3,
-        ApplicationWorkflowControlOutcome::EvidenceFailed => 4,
-        ApplicationWorkflowControlOutcome::RetryExhausted => 5,
-        ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
-        ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
-        ApplicationWorkflowControlOutcome::NavigatedBack => 8,
-        ApplicationWorkflowControlOutcome::Returned => 9,
-        ApplicationWorkflowControlOutcome::Terminated => 10,
-    }
-}
-
-const fn data_tag(flow: ApplicationWorkflowDataFlow) -> u8 {
-    match flow {
-        ApplicationWorkflowDataFlow::ProposalSubject => 0,
-        ApplicationWorkflowDataFlow::AssessmentSubject => 1,
-        ApplicationWorkflowDataFlow::AssessmentEvidence => 2,
-        ApplicationWorkflowDataFlow::JoinedEvidence => 3,
-        ApplicationWorkflowDataFlow::ApprovalAuthority => 4,
-        ApplicationWorkflowDataFlow::OperationInput => 5,
-        ApplicationWorkflowDataFlow::ConditionSubject => 6,
-    }
 }
 
 fn text_entry(locus: &str, value: &str) -> CanonicalBasisEntry {

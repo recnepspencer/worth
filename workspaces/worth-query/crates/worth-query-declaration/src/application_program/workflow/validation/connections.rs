@@ -61,7 +61,9 @@ pub(super) fn validate_requirements(
                     incoming(ApplicationWorkflowDataFlow::ApprovalAuthority),
                 )?;
                 if *requires_workflow_authority
-                    && incoming(ApplicationWorkflowDataFlow::OperationInput) != 1
+                    && incoming(ApplicationWorkflowDataFlow::OperationInput)
+                        + incoming(ApplicationWorkflowDataFlow::CapturedOperationInput)
+                        != 1
                 {
                     return Err(denial(
                         ApplicationWorkflowValidationDenialKind::MissingOperationInput,
@@ -206,6 +208,16 @@ fn validate_flow(
                 }),
             _ => false,
         },
+        ApplicationWorkflowDataFlow::CapturedOperationInput => matches!(
+            (source, target),
+            (
+                ApplicationWorkflowNodeKind::Operation { operation: source, requires_workflow_authority: false },
+                ApplicationWorkflowNodeKind::Operation { operation: target, requires_workflow_authority: true },
+            ) if source.binding().is_some()
+                && source.is_workflow_control()
+                && target.binding().is_some()
+                && !target.is_workflow_control()
+        ),
         ApplicationWorkflowDataFlow::OperationInput => match (source, target) {
             (
                 ApplicationWorkflowNodeKind::Operation {

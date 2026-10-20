@@ -50,6 +50,8 @@ pub enum WorthQueryApplicationWorkflowInstallationDenialKind {
     EmptyVocabulary,
     DefinitionLimitExceeded,
     UnsupportedDefinitionMember,
+    /// Authored captured-target inputs have no native proposal producer installed yet.
+    CapturedOperationInputsNotSupported,
     ForeignSchemaBinding,
     InvalidPolicy,
     ObservationNotImplemented,

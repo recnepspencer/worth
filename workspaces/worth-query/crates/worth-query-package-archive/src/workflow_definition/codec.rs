@@ -6,8 +6,9 @@
 use std::time::Duration;
 
 use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowComponentLimits, ApplicationWorkflowDefinitionLimits,
-    ApplicationWorkflowSpec, ValidatedWorkflowDefinition,
+    ApplicationWorkflowComponentLimits, ApplicationWorkflowConnectionKind,
+    ApplicationWorkflowDataFlow, ApplicationWorkflowDefinitionLimits, ApplicationWorkflowSpec,
+    ValidatedWorkflowDefinition,
 };
 
 use super::records::{self, MINIMUM_CONNECTION_BYTES, MINIMUM_NODE_BYTES};
@@ -25,10 +26,9 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 
 const MAGIC: &[u8; 4] = b"WQWD";
 
-/// Current deterministic draft protocol. Version 7 combines explicit execution,
-/// observation and actor policies with local Back and global termination actions.
-/// Earlier competing development layouts are refused without reinterpretation.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 7;
+/// Latest draft profile: version 8 adds explicit captured-target input edges.
+/// Definitions without those edges retain version 7 and their original bytes.
+pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 8;
 
 /// Encodes one validated definition's authored meaning. Only the draft
 /// travels: nothing about instances, approvals or publication is read.
@@ -42,7 +42,19 @@ where
     let limits = limits.narrowed();
     let mut output = BinaryOutput::with_capacity(256);
     output.raw_bytes(MAGIC);
-    let version = WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION;
+    let captured = definition.connections().iter().any(|edge| {
+        matches!(
+            edge.kind(),
+            ApplicationWorkflowConnectionKind::Data(
+                ApplicationWorkflowDataFlow::CapturedOperationInput
+            )
+        )
+    });
+    let version = if captured {
+        WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION
+    } else {
+        7
+    };
     output.u16(version);
     records::text(&mut output, Spec::IDENTITY.as_str())?;
     records::text(

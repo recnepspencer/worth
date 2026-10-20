@@ -6,7 +6,7 @@
 //! rebuilds the typed definition, which then validates, binds and publishes
 //! like any other; decoded bytes alone mint nothing.
 //!
-//! Only the current draft version is supported. It carries explicit operation
+//! Version 7 and the explicit captured-input successor 8 are supported. They carry operation
 //! evidence requirements and the authored observation and actor policies.
 //! Readmission compares those policies with the installed spec before rebuilding
 //! nodes. Unsupported drafts are refused intact; the codec never upgrades old
