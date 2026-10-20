@@ -130,7 +130,6 @@ where
         worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
         WorthQueryOutputDemandDenial,
     > {
-        let admitted = admission.is_some();
         if let Some(admission) = admission {
             readiness::admit_readiness_record(
                 <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
@@ -143,13 +142,7 @@ where
             .entity_for_binding_role::<Binding::Operation>(
                 <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
             )
-            .map_err(|error| {
-                if admitted {
-                    denial(WorthQueryOutputDemandDenialKind::ProducerUnavailable, "")
-                } else {
-                    failed(Binding::IDENTITY, error)
-                }
-            })?;
+            .map_err(|error| failed(Binding::IDENTITY, error))?;
         Ok(
             worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
                 entity.partition_id.0,
