@@ -12,6 +12,7 @@ mod lane_coordination;
 mod outcome;
 mod payload;
 mod plan;
+mod program_application_readiness;
 mod query_application_readiness;
 mod read_batch;
 mod registration;
@@ -62,6 +63,7 @@ pub use surface::{
 };
 
 pub(crate) use execution_pipeline::{build_durable_envelope, build_envelope};
+use program_application_readiness::program_application_readiness_provider;
 use query_application_readiness::{
     primary_graph_application_readiness_provider, WorthServerQueryApplicationReadinessProvider,
 };

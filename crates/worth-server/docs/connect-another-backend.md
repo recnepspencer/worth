@@ -29,6 +29,9 @@ without reimplementing:
 Same-process Rust integration:
 
 - `WorthServer::compat_http()`
+- `WorthServerProductOperationDeclaration::with_program_application(...)` for
+  an adapter backed by an existing native Query program. This retains its
+  authentic allocation for readiness, without extracting a raw runtime.
 
 HTTP-shaped integration:
 
@@ -85,6 +88,21 @@ app server into Worth truth:
 
 The payoff is that your backend does not have to become its own half-correct
 query handoff layer.
+
+For a native Query application, keep registration inside its entry/adaptation
+boundary. Attach its existing `WorthQueryProgramApplicationRuntime` with
+`declaration.with_program_application(program.clone())`, then return the finished
+`WorthServerProductApplicationAdapterRegistration` to your server composition
+root. That clone retains the same installed allocation; it does not install a
+second graph or cache a readiness snapshot. Ordinary operation execution must
+still enter Query with fresh authenticated authority and the verifier-bound
+request deadline/cancellation scope. Readiness never supplies operation grants.
+
+An adapter implementing only `execute` supports the ordinary scalar execution
+path. Its default `execute_with_lease` returns the explicit
+`product.checked_execution_unsupported` denial. To support checked shared-read
+batches, implement that method and propagate the exact lease into nested work;
+never call the unleased method as a fallback.
 
 ## Inspection and debugging
 
