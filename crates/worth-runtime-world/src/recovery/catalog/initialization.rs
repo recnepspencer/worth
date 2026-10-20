@@ -6,15 +6,14 @@ impl ProductUnpublishedRecoveryCatalog {
         owner: RuntimeWorldOwnerIdentity,
         maximum_slots: RuntimeWorldBudgetLimit,
     ) -> Self {
-        // R1b remains a shared serial-owner correction: this frozen
-        // constructor cannot receive RuntimeWorldBudgets' metadata limit.
-        // The lane still accounts every installed record with its real charge.
+        // This test constructor omits the metadata policy. The catalog still
+        // accounts every installed record with its real charge.
         Self {
             state: Arc::new(Mutex::new(RecoveryCatalogState {
                 costs: Default::default(),
                 owner,
                 maximum_slots: maximum_slots.get(),
-                maximum_metadata_bytes: usize::MAX,
+                maximum_metadata_bytes: None,
                 reserved_slots: 0,
                 abandoned_slots: 0,
                 slots: RecoveryRecordSlots::default(),

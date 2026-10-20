@@ -8,7 +8,7 @@ use super::{CustodyComponent, OwnerCreatedComponentCustodyRecord, OwnerRetiremen
 
 #[derive(Debug)]
 struct CustodyRegistryState {
-    maximum: usize,
+    maximum: Option<usize>,
     reserved: usize,
     installed: Vec<OwnerCreatedComponentCustodyRecord>,
 }
@@ -39,7 +39,12 @@ impl OwnerCreatedComponentCustodyRegistry {
         component: CustodyComponent,
     ) -> Result<ReservedCustodySlot, RuntimeWorldBranchAdmissionDenial> {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        if state.installed.len().saturating_add(state.reserved) >= state.maximum {
+        let occupied = state
+            .installed
+            .len()
+            .checked_add(state.reserved)
+            .ok_or(RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted)?;
+        if state.maximum.is_some_and(|maximum| occupied >= maximum) {
             return Err(RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted);
         }
         let reserved = state

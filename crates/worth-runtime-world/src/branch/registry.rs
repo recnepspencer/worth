@@ -43,7 +43,7 @@ pub(crate) enum ProductBranchCurrentnessLookupStop {
 #[derive(Debug)]
 struct ProductBranchRegistryState {
     owner: RuntimeWorldOwnerIdentity,
-    maximum_branches: usize,
+    maximum_branches: Option<usize>,
     reserved_branches: usize,
     reserved_names: HashSet<String>,
     /// Keyed by the owner-plus-normalized-name identity, so the installed name

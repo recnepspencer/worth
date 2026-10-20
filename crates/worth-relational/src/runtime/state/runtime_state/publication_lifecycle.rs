@@ -29,7 +29,7 @@ struct RegisteredCandidate {
 }
 
 pub(crate) enum RelationalCandidateRegistrationDenial {
-    CapacityExhausted,
+    CapacityExhausted { maximum_candidates: usize },
     IdentityExhausted,
 }
 
@@ -109,7 +109,7 @@ impl RelationalRuntimePublicationBinding {
     pub(crate) fn register_candidate(
         &self,
         expires_at: std::time::Instant,
-        maximum_candidates: usize,
+        maximum_candidates: Option<usize>,
         payload: &Arc<Mutex<Option<crate::mvcc::publication::CandidatePayload>>>,
     ) -> Result<u64, RelationalCandidateRegistrationDenial> {
         let mut candidates = self
@@ -117,8 +117,12 @@ impl RelationalRuntimePublicationBinding {
             .candidates
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if candidates.len() >= maximum_candidates {
-            return Err(RelationalCandidateRegistrationDenial::CapacityExhausted);
+        if let Some(maximum_candidates) =
+            maximum_candidates.filter(|maximum| candidates.len() >= *maximum)
+        {
+            return Err(RelationalCandidateRegistrationDenial::CapacityExhausted {
+                maximum_candidates,
+            });
         }
         let id = self
             .lifecycle

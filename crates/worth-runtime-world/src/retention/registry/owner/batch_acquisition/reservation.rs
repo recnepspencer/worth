@@ -80,11 +80,10 @@ where
 
         let reserved_unique =
             capacity_credit.map_or(Ok(state.reserved_unique_slots), |(unique, _)| {
-                state.reserved_unique_slots.checked_sub(unique).ok_or(
-                    RetentionObligationDenial::UniquePinCapacityExhausted {
-                        maximum_unique_component_pins: state.maximum_unique_pins,
-                    },
-                )
+                state
+                    .reserved_unique_slots
+                    .checked_sub(unique)
+                    .ok_or(RetentionObligationDenial::InvalidComponentPair)
             })?;
         let reserved_in_flight = capacity_credit.map_or(
             Ok(state.reserved_in_flight_reservations),
@@ -92,21 +91,18 @@ where
                 state
                     .reserved_in_flight_reservations
                     .checked_sub(in_flight)
-                    .ok_or(
-                        RetentionObligationDenial::InFlightAcquisitionCapacityExhausted {
-                            maximum_in_flight_reservations: state.maximum_in_flight_reservations,
-                        },
-                    )
+                    .ok_or(RetentionObligationDenial::DependencyCountExhausted)
             },
         )?;
         let unique_after = state
             .unique_slots
             .checked_add(reserved_unique)
             .and_then(|value| value.checked_add(additional_unique_entries))
-            .ok_or(RetentionObligationDenial::UniquePinCapacityExhausted {
-                maximum_unique_component_pins: state.maximum_unique_pins,
-            })?;
-        if unique_after > state.maximum_unique_pins {
+            .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
+        if state
+            .maximum_unique_pins
+            .is_some_and(|maximum| unique_after > maximum)
+        {
             return Err(RetentionObligationDenial::UniquePinCapacityExhausted {
                 maximum_unique_component_pins: state.maximum_unique_pins,
             });
@@ -116,12 +112,11 @@ where
             .active_reservations
             .checked_add(reserved_in_flight)
             .and_then(|value| value.checked_add(additional_flights))
-            .ok_or(
-                RetentionObligationDenial::InFlightAcquisitionCapacityExhausted {
-                    maximum_in_flight_reservations: state.maximum_in_flight_reservations,
-                },
-            )?;
-        if reservations_after > state.maximum_in_flight_reservations {
+            .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
+        if state
+            .maximum_in_flight_reservations
+            .is_some_and(|maximum| reservations_after > maximum)
+        {
             return Err(
                 RetentionObligationDenial::InFlightAcquisitionCapacityExhausted {
                     maximum_in_flight_reservations: state.maximum_in_flight_reservations,

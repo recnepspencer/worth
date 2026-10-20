@@ -55,10 +55,10 @@ fn patch_budget_failure_carries_artifact_phase_decision_trace() {
         .publication(PublicationConfig {
             coherent_publication_required: true,
             max_patch_records_per_commit: 0,
-            max_published_snapshot_handles: 8,
-            max_active_snapshot_handles: 4_096,
+            max_published_snapshot_handles: Some(8),
+            max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
-            max_prepared_candidates: 8,
+            max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
         .build();

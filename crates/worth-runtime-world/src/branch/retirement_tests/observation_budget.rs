@@ -115,3 +115,6 @@ fn close_reports_observations_that_remain_live_until_their_last_clone_drops() {
     drop((cloned, fresh, child));
     assert_eq!(owner.state.retention.active_observation_count(), 0);
 }
+
+#[path = "observation_budget/unrestricted.rs"]
+mod unrestricted;

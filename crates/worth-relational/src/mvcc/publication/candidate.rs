@@ -115,7 +115,7 @@ impl PreparedRelationalCommitCandidate {
         published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
         control: crate::mvcc::RelationalOperationControl,
         maximum_lifetime_millis: u64,
-        maximum_candidates: usize,
+        maximum_candidates: Option<usize>,
     ) -> Result<Self, PreparedRelationalCandidateAdmissionStop> {
         let expires_at = std::time::Instant::now()
             .checked_add(std::time::Duration::from_millis(maximum_lifetime_millis))
@@ -134,13 +134,13 @@ impl PreparedRelationalCommitCandidate {
         let candidate_id = publication_binding
             .register_candidate(expires_at, maximum_candidates, &payload)
             .map_err(|denial| match denial {
-                crate::runtime::RelationalCandidateRegistrationDenial::CapacityExhausted => {
-                    PreparedRelationalCandidateAdmissionStop::Deferred(
-                        super::RelationalPublicationDeferred::CandidateCapacityExhausted {
-                            maximum_candidates,
-                        },
-                    )
-                }
+                crate::runtime::RelationalCandidateRegistrationDenial::CapacityExhausted {
+                    maximum_candidates,
+                } => PreparedRelationalCandidateAdmissionStop::Deferred(
+                    super::RelationalPublicationDeferred::CandidateCapacityExhausted {
+                        maximum_candidates,
+                    },
+                ),
                 crate::runtime::RelationalCandidateRegistrationDenial::IdentityExhausted => {
                     PreparedRelationalCandidateAdmissionStop::Failed(
                         super::RelationalPublicationFailure::new(

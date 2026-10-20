@@ -4979,3 +4979,37 @@ Application schema identity uses the current v18 preimage; package archive recor
 protocol8 preserves the declared whole-aspect law in both schema and native
 contracts. Older record protocols are unsupported and are refused before
 reconstruction effects. This support does not convert older installed schemas.
+
+### Runtime World policy ceilings
+
+Use `host::runtime::WorthQueryProductWorldResources::new` with
+`host::runtime::RuntimeWorldBudgets::without_policy_limits()` when the application
+has no population or metadata quota. This omits World ceilings for branches,
+commits, history bytes, original observations, publication attempts, recovery
+records/bytes, exact component pins, acquisition reservations and owner-created
+custody records. Query's activation and cleanup owners preserve this absence.
+It reserves no storage and grants no authority: native allocation, checked
+accounting, component admission, currentness, interruption and exact custody
+remain in force. Observation clones share one original obligation; distinct
+observations retain their own obligations until final drop, including after
+owner close.
+
+For an actual caller policy, `RuntimeWorldBudgets::install` and
+`WorthQueryProductWorldResources::install` still require explicit nonzero finite
+installation values. `RuntimeWorldBudgetLimit::get()` returns `Some(maximum)`
+for those policies and `None` for absent ceilings. Keep clock, invalidation
+resources and the real execution request policy in the same resource constructor.
+Use `WorthQueryInvalidationResourceInstallation::new(None, None, None)` to omit
+marking byte and retained-position ceilings too. None retains the actual funded
+history; explicit `Some(positions)` still evicts and requires reconstruction when
+a reader is outside that window. Installation refuses an unlimited invalidation
+window alongside finite World commit history. Output-lineage retention receives
+the same optional position policy while keeping its existing byte accounting.
+
+Ordinary Relational profiles omit aggregate published-snapshot, active-snapshot
+and prepared-candidate quotas. Callers with a real finite policy use
+`Some(original_amount)` in `PublicationConfig`. Snapshot/candidate reservations,
+actual allocation and checked counters remain live without a quota. Candidate
+lifetime, exact owner/generation, stale/foreign-runtime refusals and native
+release obligations are unchanged. Do not invent zero/MAX sentinels,
+fit policy numbers to the workload, or discard original owners to admit work.

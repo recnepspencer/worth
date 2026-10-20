@@ -182,10 +182,13 @@ fn an_invalidation_window_past_the_world_history_is_refused_at_installation() {
         // One rule bounds both windows: invalidation keeps no position the World
         // no longer keeps a commit for.
         let (budgets, clock, defaults, execution) = test_product_world_resources().into_parts();
-        let commits = budgets.retained_composite_commits().get();
+        let commits = budgets
+            .retained_composite_commits()
+            .get()
+            .expect("explicit finite history policy");
         let invalidation =
             WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation {
-                maximum_retained_positions: commits + 1,
+                maximum_retained_positions: Some(commits + 1),
                 ..defaults.installation()
             })
             .unwrap();
@@ -199,7 +202,7 @@ fn an_invalidation_window_past_the_world_history_is_refused_at_installation() {
         assert_eq!(
             denial.kind(),
             WorthQueryPrimaryGraphInstallationDenialKind::InvalidationWindowExceedsHistory {
-                retained_positions: commits + 1,
+                retained_positions: Some(commits + 1),
                 retained_commits: commits,
             }
         );

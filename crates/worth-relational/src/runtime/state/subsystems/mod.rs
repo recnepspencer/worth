@@ -50,6 +50,7 @@ pub(crate) use storage::{
     PartitionEdition, PartitionEditionCopyLane, PartitionEditionWriter, StorageSubsystem,
 };
 pub(crate) use visibility::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotSlotReservation,
-    ReplayRetentionState, SnapshotHandleBinding, VisibilityResidency, VisibilitySubsystem,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
+    PublishedSnapshotSlotReservation, ReplayRetentionState, SnapshotHandleBinding,
+    VisibilityResidency, VisibilitySubsystem,
 };

@@ -74,7 +74,7 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
 
     lineage
         .retention
-        .install(1 << 30, std::num::NonZeroUsize::new(2).unwrap());
+        .install(1 << 30, Some(std::num::NonZeroUsize::new(2).unwrap()));
     lineage.register_fork(parent, &child);
     let record =
         |lineage: &mut WorthQueryApplicationOutputLineage,

@@ -36,7 +36,7 @@ fn an_expired_chain_detects_a_changed_output_with_an_unchanged_source() {
 fn chain_expiration(expire_terminal: bool, output_only: bool) {
     let world = super::marking_ceiling::world_installing(|defaults| {
         WorthQueryInvalidationResourceInstallation {
-            maximum_retained_positions: WINDOW,
+            maximum_retained_positions: Some(WINDOW),
             ..defaults
         }
     });

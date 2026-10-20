@@ -138,7 +138,11 @@ impl SourceInvalidationOwner {
         // retained position. That step is lost exactly when it lies after the
         // cursor and within the selected ceiling.
         if let Some((oldest, row)) = past.get_min()
-            && past.len() >= self.resources.installation().maximum_retained_positions
+            && self
+                .resources
+                .installation()
+                .maximum_retained_positions
+                .is_some_and(|maximum| past.len() >= maximum)
             && *oldest > cursor
             && within_ceiling(row.commit_id)
         {

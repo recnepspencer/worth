@@ -23,7 +23,7 @@ const WINDOW: usize = 4;
 fn a_full_ledger_still_publishes_retires_and_registers_again() {
     let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
         maximum_retained_bytes: Some(MAXIMUM_RETAINED_BYTES),
-        maximum_retained_positions: WINDOW,
+        maximum_retained_positions: Some(WINDOW),
         ..defaults
     });
     world.application.with_host_advancement(|phase| {

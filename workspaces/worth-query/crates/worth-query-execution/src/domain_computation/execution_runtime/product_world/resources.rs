@@ -80,10 +80,12 @@ impl WorthQueryProductWorldResources {
 
     /// The invalidation window's retained positions and the World's retained
     /// commits, when the window holds more than the World keeps.
-    pub(crate) fn invalidation_window_past_history(&self) -> Option<(usize, usize)> {
+    pub(crate) fn invalidation_window_past_history(&self) -> Option<(Option<usize>, usize)> {
         let positions = self.invalidation.installation().maximum_retained_positions;
-        let commits = self.budgets.retained_composite_commits().get();
-        (positions > commits).then_some((positions, commits))
+        let commits = self.budgets.retained_composite_commits().get()?;
+        positions
+            .is_none_or(|positions| positions > commits)
+            .then_some((positions, commits))
     }
 
     pub(crate) fn into_parts(
@@ -169,7 +171,7 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
                 maximum_marking_work: None,
                 maximum_preparation_bytes: None,
                 maximum_retained_bytes: None,
-                maximum_retained_positions: 128,
+                maximum_retained_positions: Some(128),
             },
         )
         .expect("the test invalidation resources are valid"),

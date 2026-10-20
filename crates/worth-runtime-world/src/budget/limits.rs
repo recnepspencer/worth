@@ -2,18 +2,21 @@ use std::num::NonZeroUsize;
 
 use super::{RuntimeWorldBudgetDenial, RuntimeWorldBudgetResource};
 
-/// A nonzero installed limit. It has no usage counter and cannot be used as a
-/// proof that capacity is currently available.
+/// An optional installed policy ceiling, independent of actual allocation and
+/// live custody. Absence grants neither storage nor authority.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RuntimeWorldBudgetLimit(NonZeroUsize);
+pub struct RuntimeWorldBudgetLimit(Option<NonZeroUsize>);
 
 impl RuntimeWorldBudgetLimit {
-    pub const fn get(self) -> usize {
-        self.0.get()
+    pub const fn get(self) -> Option<usize> {
+        match self.0 {
+            Some(value) => Some(value.get()),
+            None => None,
+        }
     }
 }
 
-/// All bounded Runtime World populations are installed together.
+/// All Runtime World population policies are installed together.
 ///
 /// There is intentionally no `Default`: omitting a bound must be a compile- or
 /// construction-time decision at the composition root.
@@ -91,6 +94,25 @@ pub struct RuntimeWorldBudgetInstallation {
 }
 
 impl RuntimeWorldBudgets {
+    /// Omit application policy ceilings for every World population and metadata
+    /// ledger. Real storage, checked accounting, exact ownership, cancellation
+    /// and component-owner admission still govern every operation.
+    pub const fn without_policy_limits() -> Self {
+        let absent = RuntimeWorldBudgetLimit(None);
+        Self {
+            live_product_branches: absent,
+            retained_composite_commits: absent,
+            history_metadata_bytes: absent,
+            active_observations: absent,
+            active_publication_attempts: absent,
+            retained_product_unpublished_records: absent,
+            retained_partial_metadata_bytes: absent,
+            unique_exact_component_pins: absent,
+            in_flight_pin_acquisition_reservations: absent,
+            owner_created_component_custody_records: absent,
+        }
+    }
+
     pub fn install(
         installation: RuntimeWorldBudgetInstallation,
     ) -> Result<Self, RuntimeWorldBudgetDenial> {
@@ -188,5 +210,5 @@ fn limit(
     let value = usize::try_from(value)
         .map_err(|_| RuntimeWorldBudgetDenial::SizeOverflow { resource, value })?;
     let value = NonZeroUsize::new(value).ok_or(RuntimeWorldBudgetDenial::ZeroLimit { resource })?;
-    Ok(RuntimeWorldBudgetLimit(value))
+    Ok(RuntimeWorldBudgetLimit(Some(value)))
 }

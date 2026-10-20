@@ -22,7 +22,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
     const WINDOW: usize = 4;
     let world = super::marking_ceiling::world_installing(|defaults| {
         WorthQueryInvalidationResourceInstallation {
-            maximum_retained_positions: WINDOW,
+            maximum_retained_positions: Some(WINDOW),
             ..defaults
         }
     });

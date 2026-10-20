@@ -111,10 +111,11 @@ where
             .unique_slots
             .checked_add(state.reserved_unique_slots)
             .and_then(|value| value.checked_add(2))
-            .ok_or(RetentionObligationDenial::UniquePinCapacityExhausted {
-                maximum_unique_component_pins: state.maximum_unique_pins,
-            })?;
-        if unique_after > state.maximum_unique_pins {
+            .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
+        if state
+            .maximum_unique_pins
+            .is_some_and(|maximum| unique_after > maximum)
+        {
             return Err(RetentionObligationDenial::UniquePinCapacityExhausted {
                 maximum_unique_component_pins: state.maximum_unique_pins,
             });
@@ -123,12 +124,11 @@ where
             .active_reservations
             .checked_add(state.reserved_in_flight_reservations)
             .and_then(|value| value.checked_add(2))
-            .ok_or(
-                RetentionObligationDenial::InFlightAcquisitionCapacityExhausted {
-                    maximum_in_flight_reservations: state.maximum_in_flight_reservations,
-                },
-            )?;
-        if in_flight_after > state.maximum_in_flight_reservations {
+            .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
+        if state
+            .maximum_in_flight_reservations
+            .is_some_and(|maximum| in_flight_after > maximum)
+        {
             return Err(
                 RetentionObligationDenial::InFlightAcquisitionCapacityExhausted {
                     maximum_in_flight_reservations: state.maximum_in_flight_reservations,
@@ -164,8 +164,12 @@ where
             .reserved_in_flight_reservations
             .checked_add(2)
             .expect("fixed pair capacity restoration cannot overflow");
-        assert!(state.reserved_unique_slots <= state.maximum_unique_pins);
-        assert!(state.reserved_in_flight_reservations <= state.maximum_in_flight_reservations);
+        assert!(state
+            .maximum_unique_pins
+            .is_none_or(|maximum| state.reserved_unique_slots <= maximum));
+        assert!(state
+            .maximum_in_flight_reservations
+            .is_none_or(|maximum| state.reserved_in_flight_reservations <= maximum));
     }
 }
 

@@ -97,7 +97,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// commits. A position past the World's history can never be read, so its
     /// retained marks would only hold capacity.
     InvalidationWindowExceedsHistory {
-        retained_positions: usize,
+        retained_positions: Option<usize>,
         retained_commits: usize,
     },
     /// The schema declares conditional nodes, so the runtime must be published

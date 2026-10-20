@@ -81,7 +81,9 @@ impl super::authority::VisibilityAuthority<'_> {
             .publication
             .policy
             .max_active_snapshot_handles;
-        if self.runtime.visibility.active_snapshot_count() >= maximum_active_snapshots {
+        if let Some(maximum_active_snapshots) = maximum_active_snapshots
+            .filter(|maximum| self.runtime.visibility.active_snapshot_count() >= *maximum)
+        {
             return Err(
                 RelationalSnapshotAdmissionDenial::ActiveSnapshotCapacityExhausted {
                     maximum_active_snapshots,

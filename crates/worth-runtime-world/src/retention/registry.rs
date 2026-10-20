@@ -19,10 +19,10 @@ pub(crate) enum RetentionObligationDenial {
     HistoryDependency(super::RetentionTransferDenial),
     ObservationCapacityExhausted,
     UniquePinCapacityExhausted {
-        maximum_unique_component_pins: usize,
+        maximum_unique_component_pins: Option<usize>,
     },
     InFlightAcquisitionCapacityExhausted {
-        maximum_in_flight_reservations: usize,
+        maximum_in_flight_reservations: Option<usize>,
     },
     DependencyCountExhausted,
     LeaseIdentityExhausted,

@@ -88,3 +88,6 @@ fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical
         });
     }).expect("the native court owns its installed host call");
 }
+
+#[path = "no_history_quota.rs"]
+mod no_history_quota;

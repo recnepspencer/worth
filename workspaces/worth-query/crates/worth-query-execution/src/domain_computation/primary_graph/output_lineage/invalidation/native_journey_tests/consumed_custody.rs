@@ -113,7 +113,8 @@ fn shared_fact_funding_is_ledger_affine_and_refunds_after_the_last_holder() {
         },
         primary_graph::application_checkpoint::facts::FactPayload,
     };
-    let installation = WorthQueryInvalidationResourceInstallation::new(None, Some(1 << 20), 4);
+    let installation =
+        WorthQueryInvalidationResourceInstallation::new(None, Some(1 << 20), Some(4));
     let local = WorthQueryInvalidationResources::install(installation).unwrap();
     let foreign = WorthQueryInvalidationResources::install(installation).unwrap();
     let mut admission = super::super::InvalidationEditAdmission::new(local.preflight_budget());

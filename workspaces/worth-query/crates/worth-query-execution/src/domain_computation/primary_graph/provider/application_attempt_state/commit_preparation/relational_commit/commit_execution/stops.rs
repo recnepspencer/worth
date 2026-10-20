@@ -201,7 +201,8 @@ fn publication_failure(
         Failure::RetentionIdentityExhausted => {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
         }
-        Failure::PreparedRootMismatch
+        Failure::SnapshotCountOverflow
+        | Failure::PreparedRootMismatch
         | Failure::PreparedBasisDescriptor(_)
         | Failure::NextBasisAdmission(_)
         | Failure::SelectedRootUnavailable

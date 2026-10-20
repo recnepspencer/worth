@@ -114,7 +114,12 @@ impl SourceInvalidationOwner {
             },
         );
         let mut left = None;
-        if root.past.len() > self.resources.installation().maximum_retained_positions {
+        if self
+            .resources
+            .installation()
+            .maximum_retained_positions
+            .is_some_and(|maximum| root.past.len() > maximum)
+        {
             context.ordered_remove::<Option<worth_relational::facade::publication::PatchStreamPosition>, HistoricalMarkState>(root.past.len())?;
             if let Some(oldest) = root.past.get_min().map(|(position, _)| *position) {
                 left = root.past.remove(&oldest);

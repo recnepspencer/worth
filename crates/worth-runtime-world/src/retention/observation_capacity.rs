@@ -11,7 +11,7 @@ use super::RetentionObligationDenial;
 #[derive(Debug)]
 pub(super) struct ObservationCapacity {
     owner: RuntimeWorldOwnerIdentity,
-    maximum: usize,
+    maximum: Option<usize>,
     active: AtomicUsize,
 }
 
@@ -36,7 +36,11 @@ impl ObservationCapacity {
     ) -> Result<ReservedObservationCapacity, RetentionObligationDenial> {
         self.active
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |active| {
-                (active < self.maximum).then(|| active + 1)
+                if self.maximum.is_some_and(|maximum| active >= maximum) {
+                    None
+                } else {
+                    active.checked_add(1)
+                }
             })
             .map_err(|_| RetentionObligationDenial::ObservationCapacityExhausted)?;
         Ok(ReservedObservationCapacity {
@@ -60,5 +64,31 @@ impl ReservedObservationCapacity {
 impl Drop for ReservedObservationCapacity {
     fn drop(&mut self) {
         self.capacity.active.fetch_sub(1, Ordering::AcqRel);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn absent_policy_still_refuses_counter_overflow_without_changing_custody() {
+        let authority =
+            crate::lifecycle::owner::RuntimeWorldOwnerConstructionContract::new().unwrap();
+        let capacity = ObservationCapacity::new(
+            authority.owner_identity(),
+            crate::budget::RuntimeWorldBudgets::without_policy_limits().active_observations(),
+        );
+        capacity.active.store(usize::MAX, Ordering::Release);
+        assert!(matches!(
+            capacity.reserve(),
+            Err(RetentionObligationDenial::ObservationCapacityExhausted)
+        ));
+        assert_eq!(capacity.active(), usize::MAX);
+        capacity.active.store(0, Ordering::Release);
+        let reservation = capacity.reserve().unwrap();
+        assert_eq!(capacity.active(), 1);
+        drop(reservation);
+        assert_eq!(capacity.active(), 0);
     }
 }

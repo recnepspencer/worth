@@ -35,6 +35,9 @@ fn retention_capacity_is_installed_by_its_named_group() {
     })
     .expect("named capacity installation should succeed");
 
-    assert_eq!(budgets.unique_exact_component_pins().get(), 17);
-    assert_eq!(budgets.in_flight_pin_acquisition_reservations().get(), 19);
+    assert_eq!(budgets.unique_exact_component_pins().get(), Some(17));
+    assert_eq!(
+        budgets.in_flight_pin_acquisition_reservations().get(),
+        Some(19)
+    );
 }

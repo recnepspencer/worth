@@ -317,6 +317,7 @@ pub enum RelationalPublicationDeferred {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationFailureKind {
     SnapshotIdentityExhausted,
+    SnapshotCountOverflow,
     CandidateIdentityExhausted,
     PreparedRootMismatch,
     PreparedBasisDescriptor(crate::branch::RelationalBranchBasisDenial),

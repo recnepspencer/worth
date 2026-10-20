@@ -301,7 +301,15 @@ impl ProductBranchRegistryReservation {
 pub(super) fn reserve_slot(
     state: &mut ProductBranchRegistryState,
 ) -> Result<(), ProductBranchRegistryDenial> {
-    if state.entries.len().saturating_add(state.reserved_branches) >= state.maximum_branches {
+    let occupied = state
+        .entries
+        .len()
+        .checked_add(state.reserved_branches)
+        .ok_or(ProductBranchRegistryDenial::CapacityExhausted)?;
+    if state
+        .maximum_branches
+        .is_some_and(|maximum| occupied >= maximum)
+    {
         return Err(ProductBranchRegistryDenial::CapacityExhausted);
     }
     let reserved = state

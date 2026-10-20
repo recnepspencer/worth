@@ -136,10 +136,10 @@ fn publication_handle_retention_is_bounded_by_policy() {
         .publication(PublicationConfig {
             coherent_publication_required: true,
             max_patch_records_per_commit: 4096,
-            max_published_snapshot_handles: 2,
-            max_active_snapshot_handles: 4_096,
+            max_published_snapshot_handles: Some(2),
+            max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
-            max_prepared_candidates: 8,
+            max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
         .build();
@@ -197,10 +197,10 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
         .publication(PublicationConfig {
             coherent_publication_required: true,
             max_patch_records_per_commit: 4096,
-            max_published_snapshot_handles: 4,
-            max_active_snapshot_handles: 4_096,
+            max_published_snapshot_handles: Some(4),
+            max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
-            max_prepared_candidates: 8,
+            max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
         .build();
@@ -240,10 +240,10 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
         .publication(PublicationConfig {
             coherent_publication_required: true,
             max_patch_records_per_commit: 4096,
-            max_published_snapshot_handles: 3,
-            max_active_snapshot_handles: 4_096,
+            max_published_snapshot_handles: Some(3),
+            max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
-            max_prepared_candidates: 8,
+            max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
         .build();
@@ -252,10 +252,10 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
         .publication(PublicationConfig {
             coherent_publication_required: true,
             max_patch_records_per_commit: 4096,
-            max_published_snapshot_handles: 3,
-            max_active_snapshot_handles: 4_096,
+            max_published_snapshot_handles: Some(3),
+            max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
-            max_prepared_candidates: 8,
+            max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
         .build();

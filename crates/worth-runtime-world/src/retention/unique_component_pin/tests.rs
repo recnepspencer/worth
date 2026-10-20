@@ -349,7 +349,7 @@ fn foreign_owner_and_owner_loss_are_pre_effect_and_terminally_safe() {
     assert_eq!(
         denial,
         RetentionObligationDenial::UniquePinCapacityExhausted {
-            maximum_unique_component_pins: 1,
+            maximum_unique_component_pins: Some(1),
         }
     );
     assert_eq!(

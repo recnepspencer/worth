@@ -199,9 +199,12 @@ pub(crate) struct MutationConfig {
 pub struct PublicationConfig {
     pub coherent_publication_required: bool,
     pub max_patch_records_per_commit: usize,
-    pub max_published_snapshot_handles: usize,
-    pub max_active_snapshot_handles: usize,
+    /// Optional aggregate custody policy; None preserves accounting without a quota.
+    pub max_published_snapshot_handles: Option<usize>,
+    /// Optional active snapshot population policy, independent of backing allocation.
+    pub max_active_snapshot_handles: Option<usize>,
     pub max_transaction_savepoints: usize,
-    pub max_prepared_candidates: usize,
+    /// Optional prepared-candidate population policy; lifetime validity is separate.
+    pub max_prepared_candidates: Option<usize>,
     pub candidate_max_lifetime_millis: u64,
 }

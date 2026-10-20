@@ -33,14 +33,15 @@ where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
     // Output-lineage history keeps the generations the invalidation window keeps.
-    let history_positions = std::num::NonZeroUsize::new(
-        graph
-            .product_world_resources
-            .invalidation_resources()
-            .installation()
-            .maximum_retained_positions,
-    )
-    .expect("installed invalidation resources retain at least one position");
+    let history_positions = graph
+        .product_world_resources
+        .invalidation_resources()
+        .installation()
+        .maximum_retained_positions
+        .map(|positions| {
+            std::num::NonZeroUsize::new(positions)
+                .expect("installed finite invalidation policy is nonzero")
+        });
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
         graph.primary_provider.graph.prepare_product_source(&phase.execution_request(), &graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(

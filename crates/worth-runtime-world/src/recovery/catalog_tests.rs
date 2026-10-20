@@ -56,7 +56,7 @@ fn recovery_slot_drop_restores_capacity_without_owner_contact() {
     assert_eq!(catalog.reserved_slots(), 1);
     drop(slot);
     assert_eq!(catalog.reserved_slots(), 0);
-    assert_eq!(catalog.maximum_slots(), 1);
+    assert_eq!(catalog.maximum_slots(), Some(1));
 }
 
 #[test]
@@ -73,7 +73,7 @@ fn recovery_slot_denials_preserve_the_real_counter() {
         .expect("the only recovery slot");
     assert!(matches!(
         catalog.reserve_product_unpublished(catalog_owner),
-        Err(RecoveryCatalogDenial::CapacityExhausted { maximum: 1 })
+        Err(RecoveryCatalogDenial::CapacityExhausted { maximum: Some(1) })
     ));
     assert_eq!(catalog.reserved_slots(), 1);
     drop(first);

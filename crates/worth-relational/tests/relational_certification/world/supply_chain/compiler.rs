@@ -149,10 +149,10 @@ fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
     let mut builder = RelationalRuntimeApi::builder().publication(PublicationConfig {
         coherent_publication_required: true,
         max_patch_records_per_commit,
-        max_published_snapshot_handles: 256,
-        max_active_snapshot_handles: 4_096,
+        max_published_snapshot_handles: Some(256),
+        max_active_snapshot_handles: Some(4_096),
         max_transaction_savepoints: 4_096,
-        max_prepared_candidates: 1_024,
+        max_prepared_candidates: Some(1_024),
         candidate_max_lifetime_millis: 30_000,
     });
     if let Some(invariant_catalog) = invariant_catalog {

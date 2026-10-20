@@ -7,7 +7,7 @@ use super::super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKin
 pub(super) struct LineageRetentionLedger {
     state: Arc<Mutex<LineageRetentionState>>,
     /// The invalidation window: how many of an occurrence's newest
-    /// generations its readers may still select. Unset until installation.
+    /// generations its readers may still select. None imposes no history policy.
     history_positions: Option<std::num::NonZeroUsize>,
 }
 
@@ -35,9 +35,9 @@ impl LineageRetentionLedger {
     pub(super) fn install(
         &mut self,
         maximum_bytes: u64,
-        history_positions: std::num::NonZeroUsize,
+        history_positions: Option<std::num::NonZeroUsize>,
     ) {
-        self.history_positions = Some(history_positions);
+        self.history_positions = history_positions;
         let mut state = self
             .state
             .lock()

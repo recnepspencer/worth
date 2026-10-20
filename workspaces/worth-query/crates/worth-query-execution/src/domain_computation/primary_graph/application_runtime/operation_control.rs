@@ -125,7 +125,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         let available = self
             .product_runtime
             .owner_cleanup
-            .available_capacity_for_test();
+            .available_capacity_for_test()
+            .expect("exhaustion control requires an explicitly finite cleanup policy");
         let mut held = Vec::with_capacity(available);
         for _ in 0..available {
             held.push(

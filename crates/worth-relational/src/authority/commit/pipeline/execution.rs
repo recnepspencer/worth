@@ -74,16 +74,21 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         return Err(TransactionCommitError::interrupted(interruption));
     }
     super::consult_stage(execution, super::CommitStage::CandidateRegistration)?;
-    let published_snapshot_slot =
-        runtime
-            .reserve_published_snapshot_slot()
-            .map_err(|maximum_handles| {
+    let published_snapshot_slot = runtime.reserve_published_snapshot_slot().map_err(|denial| {
+        match denial {
+            crate::runtime::PublishedSnapshotReservationDenial::Capacity { maximum_handles } => {
                 TransactionCommitError::publication_deferred(
-                crate::mvcc::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted {
-                    maximum_handles,
-                },
-            )
-            })?;
+                    crate::mvcc::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { maximum_handles },
+                )
+            }
+            crate::runtime::PublishedSnapshotReservationDenial::CounterOverflow => {
+                TransactionCommitError::publication_failed(crate::mvcc::RelationalPublicationFailure::new(
+                    crate::mvcc::RelationalPublicationFailureKind::SnapshotCountOverflow,
+                    "published snapshot custody counter overflow before effects",
+                ))
+            }
+        }
+    })?;
     let candidate_retention =
         crate::history::retention::RelationalCandidateRetentionObligation::acquire(
             &retention_binding,

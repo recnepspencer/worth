@@ -17,7 +17,8 @@ use active_registry::ActiveSnapshotHandleRegistry;
 use published_registry::PublishedSnapshotHandleRegistry;
 
 pub(crate) use published_capacity::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotSlotReservation,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
+    PublishedSnapshotSlotReservation,
 };
 pub(crate) use published_closeout::PublishedSnapshotCloseout;
 

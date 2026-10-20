@@ -47,7 +47,9 @@ pub fn in_memory_test_product_world_resources() -> WorthQueryProductWorldResourc
         WorthQueryProductWorldClock::start(),
         worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
             worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::new(
-                None, None, 128,
+                None,
+                None,
+                Some(128),
             ),
         )
         .expect("the Query invalidation installation is valid"),

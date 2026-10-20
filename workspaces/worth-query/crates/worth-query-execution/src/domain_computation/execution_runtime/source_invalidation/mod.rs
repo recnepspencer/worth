@@ -10,13 +10,14 @@ use std::sync::Arc;
 pub(in crate::domain_computation) use retention::InvalidationRetentionLedger;
 pub(in crate::domain_computation) use retention::RetainedInvalidationCapacity;
 
-/// Explicit capacities for canonical delivery and derived invalidation state.
+/// Optional policy ceilings for canonical delivery and funded derived invalidation state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvalidationResourceInstallation {
     pub maximum_marking_work: Option<u64>,
     pub maximum_preparation_bytes: Option<u64>,
     pub maximum_retained_bytes: Option<u64>,
-    pub maximum_retained_positions: usize,
+    /// None retains funded positions without an intrinsic history-window ceiling.
+    pub maximum_retained_positions: Option<usize>,
 }
 
 impl WorthQueryInvalidationResourceInstallation {
@@ -26,7 +27,7 @@ impl WorthQueryInvalidationResourceInstallation {
     pub const fn new(
         maximum_preparation_bytes: Option<u64>,
         maximum_retained_bytes: Option<u64>,
-        maximum_retained_positions: usize,
+        maximum_retained_positions: Option<usize>,
     ) -> Self {
         Self {
             maximum_marking_work: None,
@@ -46,7 +47,7 @@ impl WorthQueryInvalidationResourceInstallation {
             maximum_marking_work: Some(maximum_marking_work),
             maximum_preparation_bytes: Some(maximum_preparation_bytes),
             maximum_retained_bytes: Some(maximum_retained_bytes),
-            maximum_retained_positions,
+            maximum_retained_positions: Some(maximum_retained_positions),
         }
     }
 }
@@ -90,7 +91,7 @@ impl WorthQueryInvalidationResources {
         if installation.maximum_retained_bytes == Some(0) {
             return Err(Denial::ZeroRetentionCapacity);
         }
-        if installation.maximum_retained_positions == 0 {
+        if installation.maximum_retained_positions == Some(0) {
             return Err(Denial::ZeroPositionCapacity);
         }
         Ok(Self {
@@ -197,22 +198,22 @@ mod control_scope_tests {
     use crate::domain_computation::execution_observation::WorthQueryExecutionObservation;
     #[test]
     fn optional_byte_ceilings_preserve_absence_and_reject_explicit_zero() {
-        let installation = WorthQueryInvalidationResourceInstallation::new(None, None, 1);
+        let installation = WorthQueryInvalidationResourceInstallation::new(None, None, Some(1));
         let resources = WorthQueryInvalidationResources::install(installation).unwrap();
         assert_eq!(resources.installation(), installation);
         assert_eq!(resources.preflight_budget().maximum_preparation_bytes, None);
         assert_eq!(resources.preflight_budget().maximum_work_visits, None);
         for (installation, denial) in [
             (
-                WorthQueryInvalidationResourceInstallation::new(Some(0), None, 1),
+                WorthQueryInvalidationResourceInstallation::new(Some(0), None, Some(1)),
                 WorthQueryInvalidationResourceDenial::ZeroPreparationCapacity,
             ),
             (
-                WorthQueryInvalidationResourceInstallation::new(None, Some(0), 1),
+                WorthQueryInvalidationResourceInstallation::new(None, Some(0), Some(1)),
                 WorthQueryInvalidationResourceDenial::ZeroRetentionCapacity,
             ),
             (
-                WorthQueryInvalidationResourceInstallation::new(None, None, 0),
+                WorthQueryInvalidationResourceInstallation::new(None, None, Some(0)),
                 WorthQueryInvalidationResourceDenial::ZeroPositionCapacity,
             ),
         ] {

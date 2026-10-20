@@ -11,10 +11,10 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
         .publication(crate::facade::config::PublicationConfig {
             coherent_publication_required: true,
             max_patch_records_per_commit: 4_096,
-            max_published_snapshot_handles: 1,
-            max_active_snapshot_handles: 8,
+            max_published_snapshot_handles: Some(1),
+            max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: 8,
-            max_prepared_candidates: 1,
+            max_prepared_candidates: Some(1),
             candidate_max_lifetime_millis: 0,
         })
         .build();
@@ -83,10 +83,10 @@ fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference
         .publication(crate::facade::config::PublicationConfig {
             coherent_publication_required: true,
             max_patch_records_per_commit: 4_096,
-            max_published_snapshot_handles: 8,
-            max_active_snapshot_handles: 8,
+            max_published_snapshot_handles: Some(8),
+            max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: 8,
-            max_prepared_candidates: 1,
+            max_prepared_candidates: Some(1),
             candidate_max_lifetime_millis: 1_000,
         })
         .build();
@@ -199,10 +199,10 @@ fn candidate_population_exhaustion_is_typed_and_released_by_discard() {
         .publication(crate::facade::config::PublicationConfig {
             coherent_publication_required: true,
             max_patch_records_per_commit: 4_096,
-            max_published_snapshot_handles: 8,
-            max_active_snapshot_handles: 8,
+            max_published_snapshot_handles: Some(8),
+            max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: 8,
-            max_prepared_candidates: 1,
+            max_prepared_candidates: Some(1),
             candidate_max_lifetime_millis: 30_000,
         })
         .build();

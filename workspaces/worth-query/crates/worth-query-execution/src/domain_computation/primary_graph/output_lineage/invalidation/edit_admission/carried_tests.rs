@@ -167,7 +167,7 @@ fn retained_index_subtotal_is_shared_but_scratch_and_separate_tickets_are_not_in
 #[test]
 fn absent_byte_ceilings_share_original_accounting_and_still_deny_counter_overflow() {
     let resources = WorthQueryInvalidationResources::install(
-        WorthQueryInvalidationResourceInstallation::new(None, None, 1),
+        WorthQueryInvalidationResourceInstallation::new(None, None, Some(1)),
     )
     .unwrap();
     let owner = SourceInvalidationOwner::new(resources, 1);

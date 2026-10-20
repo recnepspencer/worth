@@ -53,7 +53,7 @@ let selected = world.selected_product(
             .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
             .unwrap()
             .clone();
-        let window = owner.resources.installation().maximum_retained_positions;
+        let window = owner.resources.installation().maximum_retained_positions.expect("explicit finite history policy");
         let retained = || owner.resources.retained_capacity_bytes();
         let covers_oldest = |runtime: &mut RelationalRuntime| {
             let (basis_handle, basis) = snapshot(runtime);

@@ -191,7 +191,7 @@ impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn install_lineage_retention(
         &mut self,
         maximum_bytes: usize,
-        history_positions: std::num::NonZeroUsize,
+        history_positions: Option<std::num::NonZeroUsize>,
     ) {
         self.retention
             .install(maximum_bytes as u64, history_positions);

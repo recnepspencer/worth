@@ -142,7 +142,7 @@ mod tests {
     fn source_bindings_share_capacity_and_rejection_preserves_custody() {
         for ceiling in [Some(17), None] {
             let resources = WorthQueryInvalidationResources::install(
-                WorthQueryInvalidationResourceInstallation::new(Some(1), ceiling, 1),
+                WorthQueryInvalidationResourceInstallation::new(Some(1), ceiling, Some(1)),
             )
             .unwrap();
             let other_source = resources.clone();
