@@ -9,11 +9,38 @@ Read the repository instructions, governing specification, and `docs/coding-guid
 
 Check consequential implementation claims using plausible inputs, boundary conditions, and execution sequences. Build a compact risk matrix connecting claims and invariants to failure cases and distinguishing evidence. Prioritize authority, correctness, recovery, and performance risks, including interactions between them. Reuse adequate evidence and investigate concrete uncertainty; avoid exhaustive combinations, speculative concerns, and repeated review without new evidence.
 
-## Budget review priority
+## Remove speculative resource accounting
 
-Budget scrutiny must remain a small minority of ordinary QA and repair time. Make it a focus only when diagnosing a demonstrated performance/resource issue or investigating a concrete concerning resource risk, such as runaway work, excessive allocation, or an ineffective limit. Otherwise, budget findings should be rare, including advisories. Do not raise findings merely because accounting could be finer, counters could be richer, or an exhaustion matrix could be broader; do not pursue speculative budget refinements or repeatedly reopen adequately bounded paths.
+Ordinary modeling and publication must not require work counters, candidate
+budgets, retained-byte estimates, mutation quotes, reservation ledgers, or
+per-publisher accounting of fields, links, copies, and allocations. Reject new
+mandatory resource bookkeeping and remove existing bookkeeping in the affected
+path when it has no demonstrated product need. Moving it into a typed carrier,
+shared calculator, or framework wrapper does not justify keeping it. Replacing
+an arbitrary ceiling with exact pre-accounting can preserve the same unnecessary
+obstacle.
 
-Preserve existing safeguards and run explicitly required checks without turning them into a separate budget-hardening project. When a concerning defect warrants work, state its concrete consequence, fix the responsible boundary, and use focused evidence sufficient to close it. Reuse that evidence and return to the requested product behavior; budget accounting and instrumentation must not displace functional correctness, integration, or user-experience progress.
+Resource accounting is a low-priority optimization, not a correctness foundation
+or a prerequisite for completing an authoring milestone. Prioritize working UI
+authoring, correct and local invalidation, reuse, partitioning, and useful
+parallelism. Retain or introduce resource admission only for an explicit product
+requirement or a measured resource failure whose correction needs it. Name the
+requirement or reproducer and explain why a simpler remedy is insufficient;
+hypothetical exhaustion, generic adversarial pressure, and more complete
+accounting are not findings or reasons to expand scope.
+
+Preserve geometry/topology validity, mutation authority, currentness, atomic
+publication, cancellation, checked size arithmetic, and ordinary allocation
+failure handling. These guarantees do not imply pre-budgeting. Semantic counts
+such as cardinality, revisions, and algorithm termination are not resource
+budgets merely because they use integers. Judge their actual purpose.
+
+An existing safeguard, test, or specification clause is not by itself evidence
+that accounting is worth retaining. When the user directs its removal, update
+causally affected contracts and tests coherently; do not preserve it under a new
+name or launch a replacement accounting framework. Keep unrelated work and
+accepted functional evidence. Close the smallest coherent removal and return
+to product behavior; do not turn this instruction into a repository-wide purge.
 
 ## Findings and closure
 
