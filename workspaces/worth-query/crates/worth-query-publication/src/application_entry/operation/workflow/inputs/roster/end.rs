@@ -8,8 +8,14 @@ impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>> WorthQueryWorkflo
     type Operation = Infallible;
     type Completed = Infallible;
     type Terminal = Infallible;
-    fn contains(&self, _: &str) -> bool {
-        false
+    fn registration_denial(
+        &self,
+        _: &str,
+        _: Option<
+            &worth_query_declaration::facade::application_program::ApplicationWorkflowNodeIdentity,
+        >,
+    ) -> Option<WorthQueryWorkflowInputDenial> {
+        None
     }
     fn select<Spec: ApplicationWorkflowSpec<Schema = S>>(
         &mut self,

@@ -8,7 +8,8 @@ use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
     application_program::{
         ApplicationAction, ApplicationActionDelivery, ApplicationProgramDefinition,
-        ApplicationSourceCompletion, ApplicationWorkflowSpec,
+        ApplicationSourceCompletion, ApplicationWorkflowInputBinding,
+        ApplicationWorkflowNodeIdentity, ApplicationWorkflowOperationNode, ApplicationWorkflowSpec,
     },
     application_schema::ApplicationSchema,
 };
@@ -24,6 +25,7 @@ use worth_query_execution::{
 #[derive(Debug)]
 pub enum WorthQueryWorkflowInputDenial {
     DuplicateBinding,
+    DuplicateTarget,
     NotGuarded,
     NotSupplied,
     AlreadyTransferred,
@@ -37,7 +39,7 @@ impl std::fmt::Display for WorthQueryWorkflowInputDenial {
 }
 impl std::error::Error for WorthQueryWorkflowInputDenial {}
 
-/// Original funded descriptions, at most one per binding in a finite submission.
+/// Original funded descriptions, one per qualified node or one unqualified entry per binding.
 /// Entries transfer once, only to the existing native owning workflow operation.
 /// Registration order never selects the next operation. Repeated operations in
 /// a workflow remain legal; a later logical submission supplies their new input.
@@ -84,8 +86,56 @@ impl<
         A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
         WorthQueryWorkflowInputNode<S, I, A, R>: WorthQueryWorkflowInputList<S, P>,
     {
-        let denial = if self.roster.contains(I::Binding::IDENTITY) {
-            Some(WorthQueryWorkflowInputDenial::DuplicateBinding)
+        self.register::<A, I>(None, description)
+    }
+    /// Retain input for an exact qualified authored node, not a binding-wide fallback.
+    /// This describes custody only: native selection still checks the actual pinned
+    /// requirement, exact input and installed action. It neither publishes target
+    /// inputs in a proposal nor grants workflow or mutation authority.
+    /// Refusal returns the original pack and incoming description unchanged.
+    pub fn with_at<A, I>(
+        self,
+        target: &impl ApplicationWorkflowInputBinding<ApplicationWorkflowOperationNode>,
+        description: WorthQueryOperationDescription<S, I>,
+    ) -> Result<
+        WorthQueryWorkflowOperationInputs<S, P, WorthQueryWorkflowInputNode<S, I, A, R>>,
+        (
+            Self,
+            WorthQueryOperationDescription<S, I>,
+            WorthQueryWorkflowInputDenial,
+        ),
+    >
+    where
+        I: ApplicationMutationIntent<S>,
+        A: ApplicationAction<S, I::Binding>,
+        A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
+        WorthQueryWorkflowInputNode<S, I, A, R>: WorthQueryWorkflowInputList<S, P>,
+    {
+        self.register::<A, I>(Some(target.workflow_node_identity().clone()), description)
+    }
+    fn register<A, I>(
+        self,
+        target: Option<ApplicationWorkflowNodeIdentity>,
+        description: WorthQueryOperationDescription<S, I>,
+    ) -> Result<
+        WorthQueryWorkflowOperationInputs<S, P, WorthQueryWorkflowInputNode<S, I, A, R>>,
+        (
+            Self,
+            WorthQueryOperationDescription<S, I>,
+            WorthQueryWorkflowInputDenial,
+        ),
+    >
+    where
+        I: ApplicationMutationIntent<S>,
+        A: ApplicationAction<S, I::Binding>,
+        A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
+        WorthQueryWorkflowInputNode<S, I, A, R>: WorthQueryWorkflowInputList<S, P>,
+    {
+        let denial = if let Some(cause) = self
+            .roster
+            .registration_denial(I::Binding::IDENTITY, target.as_ref())
+        {
+            Some(cause)
         } else if !I::Binding::REQUIRES_WORKFLOW_AUTHORITY || I::Binding::WORKFLOW_CONTROL {
             Some(WorthQueryWorkflowInputDenial::NotGuarded)
         } else if !self
@@ -115,6 +165,7 @@ impl<
             runtime: self.runtime,
             roster: WorthQueryWorkflowInputNode {
                 description: Some(description),
+                target,
                 tail: self.roster,
                 action: std::marker::PhantomData,
             },

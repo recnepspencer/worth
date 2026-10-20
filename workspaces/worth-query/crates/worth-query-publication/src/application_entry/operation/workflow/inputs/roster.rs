@@ -27,6 +27,9 @@ pub struct WorthQueryWorkflowInputEnd;
 pub struct WorthQueryWorkflowInputNode<S: ApplicationSchema, I: ApplicationMutationIntent<S>, A, T>
 {
     pub(super) description: Option<WorthQueryOperationDescription<S, I>>,
+    pub(super) target: Option<
+        worth_query_declaration::facade::application_program::ApplicationWorkflowNodeIdentity,
+    >,
     pub(super) tail: T,
     pub(super) action: std::marker::PhantomData<fn() -> A>,
 }
@@ -56,7 +59,13 @@ pub trait WorthQueryWorkflowInputList<S: ApplicationSchema, P: ApplicationProgra
     type Completed;
     type Terminal;
     #[doc(hidden)]
-    fn contains(&self, binding: &str) -> bool;
+    fn registration_denial(
+        &self,
+        binding: &str,
+        target: Option<
+            &worth_query_declaration::facade::application_program::ApplicationWorkflowNodeIdentity,
+        >,
+    ) -> Option<WorthQueryWorkflowInputDenial>;
     #[doc(hidden)]
     fn select<Spec: ApplicationWorkflowSpec<Schema = S>>(
         &mut self,

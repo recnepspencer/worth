@@ -29,6 +29,7 @@ Import these through `worth_query_host::facade::application_entry`:
 
 - `WorthQueryWorkflowOperationInputs::new(program_runtime)`.
 - `inputs.with::<InstalledAction, _>(original_description)`.
+- `inputs.with_at::<InstalledAction, _>(&qualified_input_node, original_description)`.
 - `inputs.select(workflow_vocabulary, &required)`.
 - Selected owner: `required`, `advance`, `close`, `into_operation`.
 - Completed owner: `required`, `close`, `into_operation`.
@@ -44,11 +45,19 @@ registration is not execution authorization.
 
 The graph owns order, occurrence and approval obligations. The original funded
 description owns input, preconditions, idempotency key and branch. The input pack
-is only custody bookkeeping: one entry per binding, transferred at most once in
-this finite submission. A sealed heterogeneous roster preserves actual Rust
-types without erasure or a consumer-provided dispatcher.
+is only custody bookkeeping: one unqualified entry per binding, or one entry per
+fully qualified operation node, transferred at most once in this finite submission.
+Distinct qualified nodes may retain the same binding. A qualified target cannot
+be registered twice, even with a different binding; a binding-wide entry cannot
+overlap a qualified entry for that binding. A sealed heterogeneous roster preserves
+actual Rust types without erasure or a consumer-provided dispatcher.
 
-Binding identity narrows the candidate. Native `for_workflow_operation` still
+Binding identity and an optional exact native node path narrow the candidate.
+Keep the node handle or qualified component input binding returned by authoring;
+do not derive it from a basename or rebuild a graph to recover it on each selection.
+Registration checks custody ambiguity and installed action membership, not whether
+that node is a valid target for this binding in a pinned definition. A descriptive
+node handle grants no permission. Native `for_workflow_operation` still
 checks the exact input identity, branch, requirements and issued occurrence;
 native `retain_operation` still constructs the real owning operation. Neither
 an inspected binding string nor an input pack grants permission.
@@ -68,7 +77,8 @@ an inspected binding string nor an input pack grants permission.
 5. Freshly advance the graph for its next need. Close actual completed owners
    under fresh authority; a refused close returns the same owner.
 
-`with` refusal returns the original pack, incoming description and typed reason.
+`with` or `with_at` refusal returns the original pack, incoming description and
+typed reason.
 An effect-free selection refusal restores the exact description. Once transferred,
 selection returns `AlreadyTransferred`; an execution refusal never puts the input
 back. Resume the returned operation, not a reconstructed description.
@@ -81,15 +91,16 @@ Given original funded descriptions and complete installed actions:
 ```rust,ignore
 // Illustrative: not compiled.
 let mut inputs = WorthQueryWorkflowOperationInputs::new(program_runtime)
-    .with::<SubmitAction, _>(original_submit)?
-    .with::<BeginAction, _>(original_begin)?;
+    .with_at::<SubmitAction, _>(&submit_input, original_submit)?
+    .with_at::<BeginAction, _>(&begin_input, original_begin)?;
 let selected = inputs.select(&workflow, &required)?;
 let progress = selected.advance(&fresh_request);
 ```
 
 These illustrative action types still need compatible native input-source
-contracts; registration alone does not provide them. The `?` paths here require caller errors that preserve the returned original
-owners. `with` prepends internally: Begin is physically first, but a Submit
+contracts; registration alone does not provide them. The `?` paths here require
+caller errors that preserve the returned original owners. Registration prepends
+internally: Begin is physically first, but a Submit
 requirement still selects Submit. Neither the order of registration nor the host
 names the next action.
 
@@ -144,8 +155,8 @@ Do not add a local execution counter or mint a new key on resumption.
 
 `required()` exposes the exact native requirement. Observe ordinary governed
 business reads and native history for actual effects. `NotSupplied` means this
-pack lacks that binding; `AlreadyTransferred` means its input is held by the
-returned operation. Binding and construction denials retain their typed native
+pack lacks that binding at the required node; `AlreadyTransferred` means its input
+is held by the returned operation. Binding and construction denials retain their typed native
 causes. A foreign runtime refuses before transferring any entry.
 
 `into_operation` returns the structural sum of the actual native owners for
@@ -167,15 +178,16 @@ process-crash continuation, whole-command replay endpoint or managed multi-opera
 runner. It does not automatically advance a graph, retry refusals, compensate a
 first commit, or collect and close all operation owners.
 
-One entry per binding applies to a pack, not to the workflow language. A loop or
-later occurrence of the same binding needs a new logical submission with its
-own original input. No scalar input is substituted from recorded digests.
+One unqualified entry per binding applies to a pack, not to the workflow language.
+Qualified entries may supply distinct nodes with the same binding. A later loop
+occurrence at a transferred node needs a new logical submission with its own
+original input. No scalar input is substituted from recorded digests.
 Action delivery must be source-completion; output-delivery composition is not
 generalized by this API.
 
-Per-target captured input publication, node-qualified registration and replay
-binding of those target contracts are not implemented by this API. A successful
-`with` call proves neither graph input compatibility nor proposal publication.
+Per-target captured input publication and replay binding of those target contracts
+are not implemented by this API. A successful `with` or `with_at` call proves
+neither graph input compatibility nor proposal publication.
 Keep missing native correspondence blocked instead of adding a host dispatcher
 or weakening final requirement identity checks.
 

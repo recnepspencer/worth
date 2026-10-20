@@ -47,8 +47,22 @@ where
         WorthQueryTerminalWorkflowOperation<S, I, P, A>,
         T::Terminal,
     >;
-    fn contains(&self, binding: &str) -> bool {
-        binding == I::Binding::IDENTITY || self.tail.contains(binding)
+    fn registration_denial(
+        &self,
+        binding: &str,
+        target: Option<
+            &worth_query_declaration::facade::application_program::ApplicationWorkflowNodeIdentity,
+        >,
+    ) -> Option<WorthQueryWorkflowInputDenial> {
+        match (self.target.as_ref(), target) {
+            (Some(existing), Some(incoming)) if existing == incoming => {
+                Some(WorthQueryWorkflowInputDenial::DuplicateTarget)
+            }
+            (None, _) | (_, None) if binding == I::Binding::IDENTITY => {
+                Some(WorthQueryWorkflowInputDenial::DuplicateBinding)
+            }
+            _ => self.tail.registration_denial(binding, target),
+        }
     }
     fn select<Spec: ApplicationWorkflowSpec<Schema = S>>(
         &mut self,
@@ -56,7 +70,12 @@ where
         workflow: WorthQueryWorkflowVocabulary<'_, S, Spec>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Self::Operation, WorthQueryWorkflowInputDenial> {
-        if required.binding() != Some(I::Binding::IDENTITY) {
+        if required.binding() != Some(I::Binding::IDENTITY)
+            || self
+                .target
+                .as_ref()
+                .is_some_and(|target| target.as_str() != required.node_path())
+        {
             return self
                 .tail
                 .select(runtime, workflow, required)
