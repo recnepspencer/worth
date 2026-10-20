@@ -6,11 +6,7 @@ use worth_foundational::{
 pub(crate) const CHECKPOINT_EXECUTION_POLICY: ExecutionRequestPolicy = ExecutionRequestPolicy::new(
     ExecutionPosture::Serial,
     DeterminismContract::CanonicalBitwise,
-    ExecutionBudget::new(
-        std::num::NonZeroUsize::MIN,
-        64 * 1024 * 1024,
-        Some(8_000_000),
-    ),
+    ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(8_000_000)),
 );
 
 /// Complete currentness includes retained output and original discovery facts.

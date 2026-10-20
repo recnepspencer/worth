@@ -60,6 +60,8 @@ impl OperationHandler<BankSchema, ReverseJournalMutationBinding> for ReverseJour
         _: &BankInvariantApprovedProposal,
     ) -> ApplicationCandidateRequirements {
         ReverseJournalMutationBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

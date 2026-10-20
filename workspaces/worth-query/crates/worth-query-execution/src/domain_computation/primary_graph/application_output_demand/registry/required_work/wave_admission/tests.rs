@@ -8,7 +8,7 @@ use worth_relational::facade::mvcc::CompanionPreflightBudget;
 fn admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(1_000_000),
-        maximum_preparation_bytes: 1 << 20,
+        maximum_preparation_bytes: None,
     })
 }
 fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {

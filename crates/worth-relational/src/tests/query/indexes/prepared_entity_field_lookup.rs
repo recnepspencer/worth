@@ -1,5 +1,6 @@
 use super::*;
 mod admitted_request_precedence;
+mod certification_memory;
 mod population;
 use crate::facade::indexes::{
     BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenialKind,
@@ -158,7 +159,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
 fn request_cancellation_precedes_the_callers_exhausted_admission() {
     let cancellation = worth_execution::CancellationSource::new();
     let host = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(1 << 26),
+        worth_execution::SerialMemoryBudget::new(None),
         cancellation.token(),
         None,
     );
@@ -223,7 +224,7 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
         );
         let cancellation = worth_execution::CancellationSource::new();
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(1 << 26),
+            worth_execution::SerialMemoryBudget::new(None),
             cancellation.token(),
             None,
         );
@@ -258,7 +259,7 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
             for exhaust_work in [false, true] {
                 let cancellation = worth_execution::CancellationSource::new();
                 let host = worth_execution::SerialRequest::from_memory(
-                    worth_execution::SerialMemoryBudget::new(1 << 26),
+                    worth_execution::SerialMemoryBudget::new(None),
                     cancellation.token(),
                     None,
                 );

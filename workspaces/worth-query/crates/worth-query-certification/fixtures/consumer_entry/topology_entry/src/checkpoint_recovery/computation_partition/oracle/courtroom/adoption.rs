@@ -68,9 +68,9 @@ pub(super) fn install_rostered(model: &Model) -> Application {
         producer_domain_denial: Arc::new(std::sync::atomic::AtomicBool::new(false)),
     };
     let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            8192,
-            1024 * 1024,
+        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::policy(
+            Some(8192),
+            Some(1024 * 1024),
         )
         .unwrap();
     let limits = support::limits_with_room(

@@ -299,7 +299,7 @@ impl<'a> World<'a> {
     pub fn admission(&self, ceiling: u64) -> Result<u64, WorthQueryOutputDemandDenial> {
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: Some(ceiling),
-            maximum_preparation_bytes: u64::MAX,
+            maximum_preparation_bytes: None,
         });
         let mut interest = self
             .registry

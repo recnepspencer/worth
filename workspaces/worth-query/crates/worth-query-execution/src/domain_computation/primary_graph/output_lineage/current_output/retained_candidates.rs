@@ -47,7 +47,7 @@ impl WorthQueryApplicationOutputLineage {
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
                 maximum_work_visits: Some(maximum_work as u64),
-                maximum_preparation_bytes: 0,
+                maximum_preparation_bytes: None,
             },
         );
         let candidates = self.retained_output_candidates_metered(

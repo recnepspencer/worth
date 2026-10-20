@@ -63,7 +63,7 @@ pub(super) fn assert_admitted_request_precedence(
         for exhaust_work in [false, true] {
             let cancellation = CancellationSource::new();
             let host = SerialRequest::from_memory(
-                SerialMemoryBudget::new(1 << 26),
+                SerialMemoryBudget::new(None),
                 cancellation.token(),
                 None,
             );

@@ -9,8 +9,10 @@ use worth_query_host::facade::application_contribution::{
 };
 
 use super::facts::{RegionEntry, RegionFault};
+#[cfg(target_pointer_width = "64")]
+use super::owner::UnboundedBytesOwner;
 use super::owner::{
-    with_region_totals, with_totals, RegionOutcome, RegionTotal, UnboundedBytesOwner,
+    with_region_totals, with_totals, OverPolicyBytesOwner, RegionOutcome, RegionTotal,
 };
 use super::*;
 
@@ -173,35 +175,62 @@ fn reordering_the_input_changes_neither_the_total_nor_the_charged_work() {
     });
 }
 
+#[cfg(target_pointer_width = "64")]
 #[test]
-fn partitions_whose_declared_bytes_pass_the_request_memory_are_denied_and_the_next_demand_is_answered(
-) {
-    // The owner declares usize bytes; its denial reports that value as u64.
-    const DECLARED_BYTES: u64 = usize::MAX as u64;
-    // The computation declares the largest byte count there is, and a gather
-    // holds its declared bytes before it runs. No request's memory admits
-    // that: the first gather is refused by the request's policy, with one
-    // region or two, and the demand after a refusal is answered the same way.
+fn unrepresentable_partition_storage_is_denied_and_the_next_demand_is_answered() {
+    // This fixture chooses no request-memory ceiling. A usize::MAX declaration
+    // cannot compose with the actual routing backing, so checked storage
+    // arithmetic refuses it. The adjacent explicit_partition_memory_policy
+    // case independently exercises a finite caller policy.
     let two_regions = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
     let one_region = [entry(1, 1, 2.0), entry(2, 1, 3.0)];
     let sets: facts::Sets<'_> = &[("two-regions", &two_regions), ("one-region", &one_region)];
     with_totals::<UnboundedBytesOwner>(sets, |demand| {
         for set in ["two-regions", "one-region", "two-regions"] {
+            super::owner::calls::take();
             let outcome = demand(set);
             assert!(
                 matches!(
                     outcome,
                     Err(WorthQueryPartitionedComputationDenial::Resource(
-                        WorthQueryManagedComputationResourceDenial::MemoryLimit {
-                            requested: DECLARED_BYTES,
-                            level: WorthQueryMemoryLimitLevel::Policy,
-                            ..
-                        }
+                        WorthQueryManagedComputationResourceDenial::ChargedBytesOverflow
                     ))
                 ),
                 "{set}: {outcome:?}"
             );
+            let calls = super::owner::calls::take();
+            assert!(calls[0] > 0, "the installed owner plans the demand");
+            assert_eq!(&calls[2..], &[0, 0], "no gather or kernel enters");
         }
+    });
+}
+
+#[test]
+fn explicit_partition_memory_policy_refuses_before_gather_and_later_demands_commit() {
+    super::worker_axis::serial_with_memory_policy(PARTITION_MEMORY_POLICY_BYTES, || {
+        let two_regions = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
+        let one_region = [entry(1, 1, 2.0), entry(2, 1, 3.0)];
+        let sets: facts::Sets<'_> = &[("two-regions", &two_regions), ("one-region", &one_region)];
+        with_totals::<OverPolicyBytesOwner>(sets, |demand| {
+            for set in ["two-regions", "one-region", "two-regions"] {
+                super::owner::calls::take();
+                let outcome = demand(set);
+                assert!(
+                    matches!(outcome,
+                        Err(WorthQueryPartitionedComputationDenial::Resource(
+                            WorthQueryManagedComputationResourceDenial::MemoryLimit {
+                                requested, admitted, level: WorthQueryMemoryLimitLevel::Policy,
+                            }
+                        )) if requested == OVER_POLICY_DECLARED_BYTES as u64
+                            && admitted <= PARTITION_MEMORY_POLICY_BYTES
+                    ),
+                    "{set}: {outcome:?}"
+                );
+                let calls = super::owner::calls::take();
+                assert!(calls[0] > 0, "the installed owner plans the demand");
+                assert_eq!(&calls[2..], &[0, 0], "no gather or kernel enters");
+            }
+        });
     });
 }
 

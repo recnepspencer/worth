@@ -154,20 +154,24 @@ pub(crate) fn ensure_historical_state(
         .services
         .instrumentation
         .count(|counters| counters.visibility_cache_miss_reconstructions += 1);
-    let state = crate::visibility::materialization::read_records::read_work::metered(
+    let state = crate::visibility::materialization::read_records::read_work::metered_with_memory(
         execution,
-        |context| {
+        |context, memory| {
+            crate::visibility::materialization::read_records::read_work::record_memory::claim(
+                memory,
+                basis.branch_id().0.len() as u64,
+            )?;
             crate::visibility::snapshot_states::build_historical_visibility_state(
                 runtime,
                 basis.clone(),
                 SnapshotId(0),
                 SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
                 &mut |units| context.checkpoint(units),
+                memory,
             )
         },
         |answer| answer.as_ref().map_or(0, historical_pin_bytes),
-    )?
-    .map_err(crate::execution::denial::kernel_stop)?;
+    )??;
     insert_state(runtime, state.clone());
     if recent_candidate {
         mark_recent_state_key(runtime, &key);
@@ -239,21 +243,25 @@ pub(crate) fn materialize_historical_visibility(
         .services
         .instrumentation
         .count(|counters| counters.visibility_cache_miss_reconstructions += 1);
-    crate::visibility::materialization::read_records::read_work::metered(
+    crate::visibility::materialization::read_records::read_work::metered_with_memory(
         execution,
-        |context| {
+        |context, memory| {
+            crate::visibility::materialization::read_records::read_work::record_memory::claim(
+                memory,
+                basis.branch_id().0.len() as u64,
+            )?;
             crate::visibility::snapshot_states::build_historical_visibility_state(
                 runtime,
                 basis.clone(),
                 SnapshotId(0),
                 SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
                 &mut |units| context.checkpoint(units),
+                memory,
             )
         },
         |answer| answer.as_ref().map_or(0, historical_pin_bytes),
     )?
     .map(Some)
-    .map_err(crate::execution::denial::kernel_stop)
 }
 
 pub(crate) fn is_protected(runtime: &RelationalRuntime, basis: &VisibilitySnapshotBasis) -> bool {
@@ -384,4 +392,6 @@ fn historical_pin_bytes(state: &SnapshotState) -> u64 {
     bytes
         .0
         .saturating_add(entries.saturating_mul(2).saturating_mul(node_bytes))
+        .saturating_add(state.handle.branch_id.0.capacity() as u64)
+        .saturating_add(state.basis.branch_id().0.capacity() as u64)
 }

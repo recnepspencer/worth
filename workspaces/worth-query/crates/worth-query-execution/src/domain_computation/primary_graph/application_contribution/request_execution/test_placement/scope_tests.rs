@@ -10,7 +10,7 @@ fn unwinding_clears_placement_and_budget_before_the_thread_is_reused() {
         );
         bound_advancement_requests_on_this_thread_for_test(Some(ExecutionBudget::new(
             NonZeroUsize::MIN,
-            7,
+            None,
             Some(9),
         )));
         panic!("exercise placement cleanup");

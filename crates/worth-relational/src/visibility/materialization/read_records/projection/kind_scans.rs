@@ -23,9 +23,9 @@ impl VisibilityProjectionView {
         Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_work::scan(
+        crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
-            |context| match &self.basis {
+            |context, memory| match &self.basis {
                 SnapshotStateBasis::Exact(basis) => {
                     self.reader().bounded_entities_of_kind_in_state(
                         basis.root().as_ref(),
@@ -34,6 +34,7 @@ impl VisibilityProjectionView {
                         KindScanVisibility::Live,
                         maximum_work_units,
                         &mut |units| context.checkpoint(units),
+                        memory,
                     )
                 }
                 SnapshotStateBasis::Historical(basis) => {
@@ -48,6 +49,7 @@ impl VisibilityProjectionView {
                         ),
                         maximum_work_units,
                         &mut |units| context.checkpoint(units),
+                        memory,
                     )
                 }
             },
@@ -66,9 +68,9 @@ impl VisibilityProjectionView {
         Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_work::scan(
+        crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
-            |context| match &self.basis {
+            |context, memory| match &self.basis {
                 SnapshotStateBasis::Exact(basis) => {
                     self.reader().bounded_relations_of_kind_in_state(
                         basis.root().as_ref(),
@@ -77,6 +79,7 @@ impl VisibilityProjectionView {
                         KindScanVisibility::Live,
                         maximum_work_units,
                         &mut |units| context.checkpoint(units),
+                        memory,
                     )
                 }
                 SnapshotStateBasis::Historical(basis) => {
@@ -91,6 +94,7 @@ impl VisibilityProjectionView {
                         ),
                         maximum_work_units,
                         &mut |units| context.checkpoint(units),
+                        memory,
                     )
                 }
             },

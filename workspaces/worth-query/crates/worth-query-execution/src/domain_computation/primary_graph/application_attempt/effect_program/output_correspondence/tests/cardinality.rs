@@ -125,7 +125,7 @@ fn a_write_whose_cardinality_differs_from_the_declaration_is_refused() {
 #[test]
 fn checkpoint_readmission_keeps_absence_a_value() {
     let host = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 << 20),
+        worth_execution::SerialMemoryBudget::new(None),
         worth_execution::CancellationToken::new(),
         None,
     );

@@ -180,7 +180,7 @@ fn a_closing_dependent_moves_its_claim_once_the_newest_row_is_ready() {
     // foreign transfer does: its refused quote must not refuse this admission.
     let mut small = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(1_000_000),
-        maximum_preparation_bytes: 0,
+        maximum_preparation_bytes: Some(0),
     });
     let _reader = registry
         .admit(

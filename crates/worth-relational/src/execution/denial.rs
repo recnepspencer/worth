@@ -12,7 +12,7 @@ pub(crate) fn lease_denial(denial: LeaseDenial) -> Cause {
         LeaseDenial::WorkerLimitExceedsParent => Cause::WorkerLimitExceedsParent,
         LeaseDenial::MemoryLimitExceedsParent => Cause::MemoryLimitExceedsParent,
         LeaseDenial::WorkLimitExceedsParent => Cause::WorkLimitExceedsParent,
-        LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+        LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
             requested,
             admitted,
             level,
@@ -31,7 +31,8 @@ pub(crate) fn lease_denial(denial: LeaseDenial) -> Cause {
                 admitted,
             },
         },
-        LeaseDenial::ChargedBytesOverflow => Cause::ChargedBytesOverflow,
+        LeaseDenial::MemoryExhausted(MemoryLimitDenial::CounterOverflow { .. })
+        | LeaseDenial::ChargedBytesOverflow => Cause::ChargedBytesOverflow,
         LeaseDenial::UnrelatedNestedLease => Cause::UnrelatedNestedLease,
         LeaseDenial::NoActiveExecutionScope => Cause::NoActiveExecutionScope,
         LeaseDenial::EquivalenceContractUnavailable => Cause::EquivalenceContractUnavailable,

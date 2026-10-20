@@ -26,7 +26,7 @@ fn zero_budgets_refuse_signal_evaluation_before_callback() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Serial,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(work)),
+                    ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), Some(work)),
                 ),
                 cancellation: CancellationToken::new(),
                 deadline: None,
@@ -61,9 +61,9 @@ fn zero_budgets_refuse_signal_evaluation_before_callback() {
             else {
                 panic!("native memory admission: {:?}", stop.reason());
             };
-            assert_eq!(memory.level, MemoryLimitLevel::Policy { ancestor: 0 });
-            assert_eq!(memory.admitted, 0);
-            assert!(memory.requested > 0);
+            assert!(
+                matches!(memory, worth_execution::MemoryLimitDenial::Capacity { admitted: 0, requested, level: MemoryLimitLevel::Policy { ancestor: 0 } } if *requested > 0)
+            );
         }
         assert_eq!(contacts.load(Ordering::SeqCst), 0);
         assert_eq!(graph.node_aspect_version(targets[0]).unwrap(), before);

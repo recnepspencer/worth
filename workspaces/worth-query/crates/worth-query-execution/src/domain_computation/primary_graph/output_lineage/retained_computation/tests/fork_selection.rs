@@ -109,7 +109,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
                     &mut InvalidationEditAdmission::new(
                         worth_relational::facade::mvcc::CompanionPreflightBudget {
                             maximum_work_visits: Some(4096),
-                            maximum_preparation_bytes: 4096,
+                            maximum_preparation_bytes: None,
                         },
                     ),
                 )
@@ -174,7 +174,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     let mut denied =
         InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
             maximum_work_visits: Some(0),
-            maximum_preparation_bytes: 4096,
+            maximum_preparation_bytes: None,
         });
     assert!(
         lineage.prepay_computation_fork_scan(&mut denied).is_err(),

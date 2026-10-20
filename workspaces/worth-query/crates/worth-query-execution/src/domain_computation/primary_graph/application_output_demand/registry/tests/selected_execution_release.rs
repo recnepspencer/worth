@@ -45,7 +45,7 @@ fn selected_release_refuses_before_running_then_releases_without_new_allowance()
         let budget = |work| {
             InvalidationEditAdmission::new(CompanionPreflightBudget {
                 maximum_work_visits: Some(work),
-                maximum_preparation_bytes: 8 * 1024 * 1024,
+                maximum_preparation_bytes: None,
             })
         };
         let mut short = budget(full_work - 1);

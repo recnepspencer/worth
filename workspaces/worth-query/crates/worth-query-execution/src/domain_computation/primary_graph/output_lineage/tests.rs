@@ -222,7 +222,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
             |_| None,
             &worth_execution::ExecutionRequest::serial(
                 &worth_execution::SerialRequest::from_memory(
-                    worth_execution::SerialMemoryBudget::new(64 << 20),
+                    worth_execution::SerialMemoryBudget::new(None),
                     worth_execution::CancellationToken::new(),
                     None,
                 ),

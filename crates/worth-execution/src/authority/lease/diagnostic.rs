@@ -34,7 +34,7 @@ impl ExecutionResourceLease<'_> {
                 parent: node.parent.as_deref().map(detached),
                 max_workers: node.max_workers,
                 posture: node.posture,
-                charged_memory_bytes: u64::MAX,
+                charged_memory_bytes: None,
                 deadline: node.deadline,
                 cancellation: node.cancellation.clone(),
             })
@@ -42,7 +42,7 @@ impl ExecutionResourceLease<'_> {
         let policy = ExecutionRequestPolicy::new(
             self.policy.posture(),
             self.policy.determinism(),
-            ExecutionBudget::new(self.policy.budget().max_workers(), u64::MAX, None),
+            ExecutionBudget::new(self.policy.budget().max_workers(), None, None),
         );
         DiagnosticResourcesForTest {
             authority: ExecutionAuthority {

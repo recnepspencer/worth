@@ -54,7 +54,7 @@ fn admitted_lane_denies_before_creating_a_weak_entry() {
     let owner = Coordinator::new(usize::MAX);
     let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(100),
-        maximum_preparation_bytes: 0,
+        maximum_preparation_bytes: Some(0),
     });
     assert!(matches!(
         owner.lane_for_admitted(observation, &mut short),
@@ -67,7 +67,7 @@ fn admitted_lane_denies_before_creating_a_weak_entry() {
 
     let mut funded = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(100),
-        maximum_preparation_bytes: 16 * 1024,
+        maximum_preparation_bytes: Some(16 * 1024),
     });
     let lane = owner.lane_for_admitted(observation, &mut funded).unwrap();
     assert!(funded.charged_work() > 0);

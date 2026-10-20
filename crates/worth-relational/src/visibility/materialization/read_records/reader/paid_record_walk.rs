@@ -10,21 +10,34 @@ impl ProjectionRecordReader<'_> {
         kind: Option<crate::identity::data::KindId>,
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let Some(partition) = state.get_partition(partition_id) else {
             return Ok(Vec::new());
         };
         let mut records = Vec::new();
         match visibility {
             KindScanVisibility::Live => {
-                for slot in partition.entity_arena.live_bitset.set_slots() {
-                    charge(EXAMINE_SLOT)?;
+                let (slots, held) = super::super::read_work::record_memory::slots(
+                    &partition.entity_arena.live_bitset,
+                    memory,
+                )?;
+                for slot in slots {
+                    charge(EXAMINE_SLOT).map_err(crate::execution::denial::kernel_stop)?;
                     if kind.is_some_and(|kind| {
                         !slot_kind_matches_current(&partition.entity_arena, slot, kind)
                     }) {
                         continue;
                     }
-                    charge(RESERVE_RECORD)?;
+                    charge(RESERVE_RECORD).map_err(crate::execution::denial::kernel_stop)?;
+                    let clone_bytes = super::super::read_work::record_quote::entity(
+                        registry, partition, slot, visibility,
+                    )?;
+                    super::super::read_work::record_memory::prepare_push(
+                        memory,
+                        &mut records,
+                        clone_bytes,
+                    )?;
                     if let Some(record) = materialize_current_authoritative_entity_record(
                         registry,
                         partition,
@@ -34,13 +47,25 @@ impl ProjectionRecordReader<'_> {
                         self.instrumentation.count(|counters| {
                             counters.visible_authoritative_entity_records_materialized += 1;
                         });
+                        super::super::read_work::record_memory::settle_clone(
+                            memory,
+                            clone_bytes,
+                            super::super::read_footprint::entity(&record),
+                        )?;
                         records.push(record);
+                    } else {
+                        super::super::read_work::record_memory::release(memory, clone_bytes)?;
                     }
                 }
+                super::super::read_work::record_memory::release(memory, held)?;
             }
             KindScanVisibility::AtVersion(version) => {
-                for slot in partition.entity_arena.occupied_slots_iter() {
-                    charge(EXAMINE_SLOT)?;
+                let (slots, held) = super::super::read_work::record_memory::occupied_slots(
+                    &partition.entity_arena,
+                    memory,
+                )?;
+                for slot in slots {
+                    charge(EXAMINE_SLOT).map_err(crate::execution::denial::kernel_stop)?;
                     self.instrumentation.count(|counters| {
                         counters.visibility_entity_slot_scans += 1;
                     });
@@ -63,7 +88,15 @@ impl ProjectionRecordReader<'_> {
                     if !visible {
                         continue;
                     }
-                    charge(RESERVE_RECORD)?;
+                    charge(RESERVE_RECORD).map_err(crate::execution::denial::kernel_stop)?;
+                    let clone_bytes = super::super::read_work::record_quote::entity(
+                        registry, partition, slot, visibility,
+                    )?;
+                    super::super::read_work::record_memory::prepare_push(
+                        memory,
+                        &mut records,
+                        clone_bytes,
+                    )?;
                     if let Some(record) = materialize_authoritative_entity_record_at_version(
                         registry,
                         partition,
@@ -74,9 +107,17 @@ impl ProjectionRecordReader<'_> {
                         self.instrumentation.count(|counters| {
                             counters.visible_authoritative_entity_records_materialized += 1;
                         });
+                        super::super::read_work::record_memory::settle_clone(
+                            memory,
+                            clone_bytes,
+                            super::super::read_footprint::entity(&record),
+                        )?;
                         records.push(record);
+                    } else {
+                        super::super::read_work::record_memory::release(memory, clone_bytes)?;
                     }
                 }
+                super::super::read_work::record_memory::release(memory, held)?;
             }
         }
         Ok(records)
@@ -89,21 +130,34 @@ impl ProjectionRecordReader<'_> {
         kind: Option<crate::identity::data::KindId>,
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let Some(partition) = state.get_partition(partition_id) else {
             return Ok(Vec::new());
         };
         let mut records = Vec::new();
         match visibility {
             KindScanVisibility::Live => {
-                for slot in partition.relation_arena.live_bitset.set_slots() {
-                    charge(EXAMINE_SLOT)?;
+                let (slots, held) = super::super::read_work::record_memory::slots(
+                    &partition.relation_arena.live_bitset,
+                    memory,
+                )?;
+                for slot in slots {
+                    charge(EXAMINE_SLOT).map_err(crate::execution::denial::kernel_stop)?;
                     if kind.is_some_and(|kind| {
                         !slot_kind_matches_current(&partition.relation_arena, slot, kind)
                     }) {
                         continue;
                     }
-                    charge(RESERVE_RECORD)?;
+                    charge(RESERVE_RECORD).map_err(crate::execution::denial::kernel_stop)?;
+                    let clone_bytes = super::super::read_work::record_quote::relation(
+                        registry, partition, slot, visibility,
+                    )?;
+                    super::super::read_work::record_memory::prepare_push(
+                        memory,
+                        &mut records,
+                        clone_bytes,
+                    )?;
                     if let Some(record) = materialize_current_authoritative_relation_record(
                         registry,
                         partition,
@@ -113,13 +167,25 @@ impl ProjectionRecordReader<'_> {
                         self.instrumentation.count(|counters| {
                             counters.visible_authoritative_relation_records_materialized += 1;
                         });
+                        super::super::read_work::record_memory::settle_clone(
+                            memory,
+                            clone_bytes,
+                            super::super::read_footprint::relation(&record),
+                        )?;
                         records.push(record);
+                    } else {
+                        super::super::read_work::record_memory::release(memory, clone_bytes)?;
                     }
                 }
+                super::super::read_work::record_memory::release(memory, held)?;
             }
             KindScanVisibility::AtVersion(version) => {
-                for slot in partition.relation_arena.occupied_slots_iter() {
-                    charge(EXAMINE_SLOT)?;
+                let (slots, held) = super::super::read_work::record_memory::occupied_slots(
+                    &partition.relation_arena,
+                    memory,
+                )?;
+                for slot in slots {
+                    charge(EXAMINE_SLOT).map_err(crate::execution::denial::kernel_stop)?;
                     self.instrumentation.count(|counters| {
                         counters.visibility_relation_slot_scans += 1;
                     });
@@ -142,7 +208,15 @@ impl ProjectionRecordReader<'_> {
                     if !visible {
                         continue;
                     }
-                    charge(RESERVE_RECORD)?;
+                    charge(RESERVE_RECORD).map_err(crate::execution::denial::kernel_stop)?;
+                    let clone_bytes = super::super::read_work::record_quote::relation(
+                        registry, partition, slot, visibility,
+                    )?;
+                    super::super::read_work::record_memory::prepare_push(
+                        memory,
+                        &mut records,
+                        clone_bytes,
+                    )?;
                     if let Some(record) = materialize_authoritative_relation_record_at_version(
                         registry,
                         partition,
@@ -153,9 +227,17 @@ impl ProjectionRecordReader<'_> {
                         self.instrumentation.count(|counters| {
                             counters.visible_authoritative_relation_records_materialized += 1;
                         });
+                        super::super::read_work::record_memory::settle_clone(
+                            memory,
+                            clone_bytes,
+                            super::super::read_footprint::relation(&record),
+                        )?;
                         records.push(record);
+                    } else {
+                        super::super::read_work::record_memory::release(memory, clone_bytes)?;
                     }
                 }
+                super::super::read_work::record_memory::release(memory, held)?;
             }
         }
         super::truth_record_access::sort_authoritative_relation_records(&mut records);
@@ -172,12 +254,13 @@ impl VisibilityReadContext<'_> {
         kind: Option<crate::identity::data::KindId>,
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
         )
-        .paid_entities_in_partition(state, registry, partition, kind, visibility, charge)
+        .paid_entities_in_partition(state, registry, partition, kind, visibility, charge, memory)
     }
     pub(crate) fn paid_relations_in_partition(
         &self,
@@ -187,12 +270,13 @@ impl VisibilityReadContext<'_> {
         kind: Option<crate::identity::data::KindId>,
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
         )
-        .paid_relations_in_partition(state, registry, partition, kind, visibility, charge)
+        .paid_relations_in_partition(state, registry, partition, kind, visibility, charge, memory)
     }
 }
 
@@ -244,3 +328,6 @@ mod tests {
         release_test_commit_snapshot(&runtime, &later);
     }
 }
+
+#[cfg(test)]
+mod preclaim_tests;

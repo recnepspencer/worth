@@ -77,7 +77,7 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
                     // This proof isolates memory admission; work has its own funded court.
-                    ExecutionBudget::new(NonZeroUsize::MIN, memory, None),
+                    ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), None),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),

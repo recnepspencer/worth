@@ -47,7 +47,7 @@ fn absent_waiter_limit_preserves_original_request_cancel_and_deadline() {
     for expired in [false, true] {
         let cancellation = CancellationSource::new();
         let serial = SerialRequest::from_memory(
-            SerialMemoryBudget::new(64 << 20),
+            SerialMemoryBudget::new(None),
             cancellation.token(),
             expired.then(std::time::Instant::now),
         );

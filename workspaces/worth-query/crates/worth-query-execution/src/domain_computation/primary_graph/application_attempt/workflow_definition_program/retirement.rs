@@ -165,6 +165,8 @@ where
         let reservation = admit_platform_effects(&self, demand)?;
         reservation.materialize(&effects)?;
         Ok(WorthQueryApplicationEffectProgram {
+            candidate_requirements: None,
+            effect_backing_memory: None,
             read_set: self,
             effects,
             emission_retained_bytes: 0,

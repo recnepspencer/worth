@@ -29,6 +29,7 @@ pub(super) enum ApplyAdmission<'tasks, 'request, 'authority> {
         // Keep checked publication within the originating request borrow.
         _request: worth_execution::ExecutionRequest<'request, 'authority>,
         apply: crate::logic::planner::precompute::graph_batch::CheckedApplyCapacity,
+        result_memory: Vec<worth_execution::ExecutionMemoryReservation>,
         prepared_map: PreparedSignalApplyMap<'request, 'authority>,
         candidates: crate::data::graph::PreparedCandidateEpoch<'request, 'authority>,
     },
@@ -64,6 +65,7 @@ where
         PreparedStageEpoch::Checked {
             metadata,
             proposals,
+            result_memory,
             batch,
             request,
             apply,
@@ -77,6 +79,7 @@ where
                 batch,
                 _request: request,
                 apply,
+                result_memory,
                 prepared_map,
                 candidates,
             },
@@ -212,6 +215,7 @@ where
                 apply,
                 prepared_map,
                 candidates,
+                result_memory,
                 ..
             } = admission
             else {
@@ -219,7 +223,7 @@ where
                     "generic apply lacked checked epoch authority",
                 ));
             };
-            concurrent::run_grouped_concurrent_apply_pass(
+            let outcome = concurrent::run_grouped_concurrent_apply_pass(
                 graph,
                 summary,
                 stage_index,
@@ -236,7 +240,10 @@ where
                 stage_record,
                 request_work,
                 preparation,
-            )
+            );
+            // The original precompute payload has now been consumed by apply.
+            drop(result_memory);
+            outcome
         }
     }
 }

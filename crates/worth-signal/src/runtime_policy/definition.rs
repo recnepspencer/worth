@@ -12,9 +12,9 @@ use worth_foundational::{ExecutionObjectiveProfile, ObservationActivationProfile
 /// diagnostics module only consumes its retention projection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignalRuntimePolicy {
-    /// Serial request memory ceiling; older records use the 64 MiB baseline.
-    #[serde(default = "default_serial_memory_bytes")]
-    pub serial_memory_bytes: u64,
+    /// Optional caller-authored serial request memory ceiling.
+    #[serde(default)]
+    pub serial_memory_bytes: Option<u64>,
     /// Optional caller limits; presets leave ordinary work unbounded.
     pub maximum_waiter_resolution_visits: Option<usize>,
     pub maximum_upstream_dependency_visits: Option<usize>,
@@ -43,8 +43,4 @@ fn default_execution_objective() -> ExecutionObjectiveProfile {
 
 fn default_observation_activation() -> ObservationActivationProfile {
     ObservationActivationProfile::Continuous
-}
-
-fn default_serial_memory_bytes() -> u64 {
-    64 << 20
 }

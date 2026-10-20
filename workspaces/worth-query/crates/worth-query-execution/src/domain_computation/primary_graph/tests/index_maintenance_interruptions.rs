@@ -22,11 +22,7 @@ fn index_currency_stop(cancelled: bool) {
             .observe_branch(&runtime.main_branch_identity())
             .unwrap();
         let source = CancellationSource::new();
-        let host = SerialRequest::from_memory(
-            SerialMemoryBudget::new(64 * 1024 * 1024),
-            source.token(),
-            None,
-        );
+        let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
         let execution = ExecutionRequest::serial(&host);
         if cancelled {
             source.cancel();
@@ -87,11 +83,7 @@ fn mutation_index_refresh_stop(cancelled: bool) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let source = CancellationSource::new();
-    let host = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
-        source.token(),
-        None,
-    );
+    let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&host);
     if cancelled {
         let denied = handle

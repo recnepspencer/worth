@@ -165,11 +165,12 @@ pub struct WorthQueryApplicationAttemptDenial {
     cause: AttemptDenialCause,
 }
 
-/// Every carrying variant owns one box for its native cause. Inspection
-/// borrows that same cause.
+/// Rich causes own their original box; native memory refusals stay inline.
+/// Inspection preserves the original owner cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
     None,
+    CandidateMemory(worth_execution::MemoryLimitDenial),
     RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
@@ -377,3 +378,5 @@ mod native_query_cause;
 mod request_read;
 
 mod capacity;
+
+mod candidate_backing;

@@ -151,9 +151,9 @@ pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime
     publish_on_first_program_with_limits(
         WorthQueryInMemoryApplicationLimits::new(
             world_resources::workflow_scale_resources(),
-            runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-                world_resources::WORKFLOW_SCALE_WIDTH,
-                128 * 1024 * 1024,
+            runtime::WorthQueryApplicationCandidateResourceProfile::policy(
+                Some(world_resources::WORKFLOW_SCALE_WIDTH),
+                Some(128 * 1024 * 1024),
             )
             .expect("finite workflow-scale candidate resources")
             .with_maximum_operation_width(world_resources::WORKFLOW_SCALE_WIDTH)

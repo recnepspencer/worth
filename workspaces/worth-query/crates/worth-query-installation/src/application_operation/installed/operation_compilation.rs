@@ -209,19 +209,16 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
         let emissions = super::super::contracts::install_portable_effect_emissions(
             self.portable_contract.emissions(),
         );
-        let maximum_records = self
-            .mutation_bindings
-            .iter()
+        let maximum_records = self.mutation_bindings.iter()
             .filter(|binding| binding.operation_name() == self.operation)
-            .map(|binding| {
-                binding
-                    .candidates()
-                    .cardinality()
-                    .maximum_writes()
-                    .saturating_add(binding.candidates().cardinality().maximum_deletes())
-            })
-            .max()
-            .unwrap_or(0);
+            .try_fold(Some(0usize), |maximum, binding| {
+                let Some(cardinality) = binding.candidates().cardinality() else {
+                    return Ok(None);
+                };
+                let records = cardinality.maximum_writes()
+                    .checked_add(cardinality.maximum_deletes()).ok_or(())?;
+                Ok::<_, ()>(maximum.map(|maximum| maximum.max(records)))
+            }).map_err(|()| operation_denial(WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract, &self.operation))?;
         let signing_lifecycle = super::super::contracts::SigningLifecycleClosure::derive(
             &self.binding, native_contracts, self.members, &self.operation, &touches, maximum_records, self.portable_contract.body(),
         ).map_err(|()| operation_denial(WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract, &self.operation))?;

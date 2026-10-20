@@ -121,7 +121,12 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
             WorkerIntentBatch,
         },
     };
-    let world = installed_authorization_world(true);
+    let world = super::marking_ceiling::world_installing(|defaults| {
+        crate::domain_computation::execution_runtime::WorthQueryInvalidationResourceInstallation {
+            maximum_retained_bytes: Some(128 * 1024 * 1024),
+            ..defaults
+        }
+    });
     let entity = world
         .application
         .with_host_advancement(|phase| {
@@ -150,7 +155,11 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
     let resources = &owner.resources;
     let held = resources
         .reserve_retained_capacity(
-            resources.installation().maximum_retained_bytes - resources.retained_capacity_bytes(),
+            resources
+                .installation()
+                .maximum_retained_bytes
+                .expect("this court installs a finite retained ceiling")
+                - resources.retained_capacity_bytes(),
         )
         .unwrap();
     handle.with_runtime_mut(request_execution, |runtime| {
@@ -192,7 +201,10 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
         // Fill that new headroom so the second publication also discards.
         let second_held = resources
             .reserve_retained_capacity(
-                resources.installation().maximum_retained_bytes
+                resources
+                    .installation()
+                    .maximum_retained_bytes
+                    .expect("this court installs a finite retained ceiling")
                     - resources.retained_capacity_bytes(),
             )
             .unwrap();

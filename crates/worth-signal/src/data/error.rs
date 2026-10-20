@@ -35,7 +35,7 @@ pub enum SignalError {
     ExecutionCheckpointStopped(SignalCheckpointDenial),
     PreparationMemoryExhausted {
         required: Option<u64>,
-        reserved: u64,
+        reserved: Option<u64>,
     },
     EvaluationStorageCapacityExhausted,
     CheckedResultCapacityExceeded {
@@ -223,7 +223,7 @@ impl fmt::Display for SignalError {
             }
             Self::PreparationMemoryExhausted { required, reserved } => write!(
                 f,
-                "Signal preparation memory exhausted: required {required:?}, reserved {reserved}"
+                "Signal preparation memory exhausted: required {required:?}, reserved {reserved:?}"
             ),
             Self::EvaluationStorageCapacityExhausted => {
                 write!(f, "evaluation storage capacity exhausted")

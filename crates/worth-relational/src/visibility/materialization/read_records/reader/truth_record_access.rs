@@ -117,15 +117,16 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         state: &(impl PartitionAccess + ?Sized),
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
     ) -> Result<
         Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
-        worth_execution::MapKernelStop,
+        crate::execution::RelationalExecutionDenialCause,
     > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
         )
-        .visible_entity_slots_from_state(state, version_id, charge)
+        .visible_entity_slots_from_state(state, version_id, charge, memory)
     }
     #[cfg(test)]
     pub(crate) fn visible_entity_slots_in_partition_from_state(
@@ -134,7 +135,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         partition_id: crate::identity::data::PartitionId,
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Option<DenseSlotBitSet>, crate::execution::RelationalExecutionDenialCause> {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
@@ -144,6 +146,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             partition_id,
             version_id,
             charge,
+            memory,
         )
     }
     pub(crate) fn visible_relation_slots_from_state(
@@ -151,15 +154,16 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         state: &(impl PartitionAccess + ?Sized),
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
     ) -> Result<
         Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
-        worth_execution::MapKernelStop,
+        crate::execution::RelationalExecutionDenialCause,
     > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
         )
-        .visible_relation_slots_from_state(state, version_id, charge)
+        .visible_relation_slots_from_state(state, version_id, charge, memory)
     }
     #[cfg(test)]
     pub(crate) fn visible_relation_slots_in_partition_from_state(
@@ -168,7 +172,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         partition_id: crate::identity::data::PartitionId,
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Option<DenseSlotBitSet>, crate::execution::RelationalExecutionDenialCause> {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
@@ -178,6 +183,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             partition_id,
             version_id,
             charge,
+            memory,
         )
     }
     /// Whether a relation is visible, resolved against a pinned edition.
@@ -197,7 +203,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 }
 
 pub(super) fn sort_authoritative_relation_records(records: &mut [RelationReadRecord]) {
-    records.sort_by_key(|record| {
+    records.sort_unstable_by_key(|record| {
         (
             record.source.partition_id.0,
             record.source.local_slot.0,

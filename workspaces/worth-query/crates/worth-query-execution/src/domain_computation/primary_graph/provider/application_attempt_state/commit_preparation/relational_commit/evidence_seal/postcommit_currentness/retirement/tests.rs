@@ -305,7 +305,7 @@ fn admission(
     crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
         worth_relational::facade::mvcc::CompanionPreflightBudget {
             maximum_work_visits: Some(64),
-            maximum_preparation_bytes: 1024 * 1024,
+            maximum_preparation_bytes: None,
         },
     )
 }

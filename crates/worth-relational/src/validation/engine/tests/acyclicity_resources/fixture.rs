@@ -165,7 +165,7 @@ pub(super) fn request(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(std::num::NonZeroUsize::MIN, bytes, Some(work)),
+                ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(bytes), Some(work)),
             ),
             cancellation,
             deadline,

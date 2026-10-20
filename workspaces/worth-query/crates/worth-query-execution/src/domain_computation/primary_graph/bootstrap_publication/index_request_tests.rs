@@ -35,7 +35,7 @@ fn bootstrap_index_build_keeps_the_serial_requests_cancellation() {
         .schema_registry(schema)
         .build();
     let plain = SerialRequest::from_memory(
-        SerialMemoryBudget::new(16 * 1024 * 1024),
+        SerialMemoryBudget::new(None),
         worth_execution::CancellationToken::new(),
         None,
     );
@@ -82,11 +82,7 @@ fn bootstrap_index_build_keeps_the_serial_requests_cancellation() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(
-                std::num::NonZeroUsize::MIN,
-                16 * 1024 * 1024,
-                Some(1_000_000),
-            ),
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(1_000_000)),
         ),
         cancellation: cancellation.token(),
         deadline: None,

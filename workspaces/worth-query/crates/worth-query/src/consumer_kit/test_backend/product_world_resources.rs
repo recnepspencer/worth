@@ -13,7 +13,7 @@ pub fn in_memory_test_product_world_resources() -> WorthQueryProductWorldResourc
         worth_foundational::DeterminismContract::CanonicalBitwise,
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
-            64 * 1024 * 1024,
+            None,
             Some(8_000_000),
         ),
     );
@@ -46,11 +46,8 @@ pub fn in_memory_test_product_world_resources() -> WorthQueryProductWorldResourc
         },
         WorthQueryProductWorldClock::start(),
         worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
-            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1_024 * 1_024,
-                128 * 1_024 * 1_024,
-                128,
+            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::new(
+                None, None, 128,
             ),
         )
         .expect("the Query invalidation installation is valid"),

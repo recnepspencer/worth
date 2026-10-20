@@ -42,7 +42,7 @@ impl OperationHandler<DocumentRetentionSchema, ActorLifecycleBinding> for ActorL
         _: &ActorLifecycleInput,
         _: &Targets,
     ) -> ApplicationCandidateRequirements {
-        <ActorLifecycleBinding as worth_query_decl::facade::application_operation::ApplicationMutationBinding<DocumentRetentionSchema>>::CANDIDATES
+        <ActorLifecycleBinding as worth_query_decl::facade::application_operation::ApplicationMutationBinding<DocumentRetentionSchema>>::CANDIDATES.finite_requirements().expect("fixed-shape handler declares finite candidate policy")
     }
     fn build_candidate(
         &self,

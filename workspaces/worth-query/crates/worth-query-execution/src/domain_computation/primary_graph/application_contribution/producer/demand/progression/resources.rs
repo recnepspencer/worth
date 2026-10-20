@@ -10,12 +10,20 @@ pub(super) fn validate_demand_resources<Schema>(
     producer_identity: &str,
     limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
 ) -> Result<super::super::super::WorthQueryProducerDemandResources, WorthQueryOutputDemandDenial> {
-    let resources = executor.resources(source).ok_or_else(|| {
-        denial(
-            WorthQueryOutputDemandDenialKind::ForeignSource,
-            producer_identity.to_owned(),
-        )
-    })?;
+    let resources = executor
+        .resources(source)
+        .map_err(|cause| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ProducerResourceQuote(cause),
+                producer_identity.to_owned(),
+            )
+        })?
+        .ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                producer_identity.to_owned(),
+            )
+        })?;
     validate_retained_resources(resources, producer_identity, limits)?;
     Ok(resources)
 }
@@ -56,7 +64,7 @@ mod tests {
     fn child_resource_admission_uses_producer_allowance_not_source_scan_allowance() {
         let child = WorthQueryOutputDemandResourceProfile::standard()
             .limits()
-            .for_artifact(Some(7), 11);
+            .for_artifact(Some(7), Some(11));
         assert!(validate_retained_resources(
             WorthQueryProducerDemandResources::new(Some(7), 11),
             "child",

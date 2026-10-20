@@ -231,7 +231,7 @@ fn framework_buffers_are_reserved_before_kernel_under_small_memory_caps() {
             outcome,
             MapOutcome::Stopped {
                 reason: MapStop::Admission(LeaseDenial::MemoryExhausted(
-                    MemoryLimitDenial { admitted, .. }
+                    MemoryLimitDenial::Capacity { admitted, .. }
                 )),
                 ..
             } if admitted == memory

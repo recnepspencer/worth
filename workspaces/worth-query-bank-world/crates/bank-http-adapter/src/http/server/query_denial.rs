@@ -216,6 +216,7 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
 }
 
 fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
+    use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial as Quote;
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
         Settlement::ManagedCleanupRequired(_) => {
@@ -235,6 +236,15 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         Settlement::Cancelled => cancelled(),
         Settlement::TimedOut => deadline(),
         Settlement::ProducerDomainDenied => malformed(),
+        Settlement::ProducerResourceQuote(Quote::SizeOverflow) => {
+            BankHttpDenial::new(Kind::ProducerSourceSizeOverflow, Next::CorrectRequest)
+        }
+        Settlement::ProducerResourceQuote(Quote::SourceNotEncodable) => {
+            BankHttpDenial::new(Kind::ProducerSourceNotEncodable, Next::CorrectRequest)
+        }
+        Settlement::ProducerResourceQuote(Quote::ScratchReservationRefused) => {
+            BankHttpDenial::new(Kind::Unavailable, Next::Retry)
+        }
         Settlement::Superseded
         | Settlement::PublicationStale
         | Settlement::ForeignSource
@@ -292,6 +302,9 @@ const fn internal_denied() -> BankHttpDenial {
 
 #[cfg(test)]
 mod entity_stop_tests;
+#[cfg(test)]
+#[path = "query_denial/producer_quote_tests.rs"]
+mod producer_quote_tests;
 #[cfg(test)]
 #[path = "query_denial/request_stop_tests.rs"]
 mod request_stop_tests;

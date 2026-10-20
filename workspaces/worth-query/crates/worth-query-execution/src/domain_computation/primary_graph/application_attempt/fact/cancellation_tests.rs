@@ -194,8 +194,7 @@ fn with_indexed_fact<R>(
         .unwrap()
         .kind;
     let source = CancellationSource::new();
-    let serial =
-        SerialRequest::from_memory(SerialMemoryBudget::new(64 << 20), source.token(), None);
+    let serial = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&serial);
     let outcome = graph
         .integration_handle()
@@ -242,7 +241,7 @@ fn source_currentness_keeps_a_stop_raised_inside_the_indexed_read() {
             crate::domain_computation::primary_graph::InvalidationEditAdmission::new(
                 worth_relational::facade::mvcc::CompanionPreflightBudget {
                     maximum_work_visits: Some(1_000_000),
-                    maximum_preparation_bytes: 64 << 20,
+                    maximum_preparation_bytes: None,
                 },
             );
         crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test();

@@ -14,6 +14,7 @@ pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCu
 mod computation_calls;
 mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;
+mod candidate_representation;
 mod decision_plan;
 mod decision_reads;
 mod prior_output;

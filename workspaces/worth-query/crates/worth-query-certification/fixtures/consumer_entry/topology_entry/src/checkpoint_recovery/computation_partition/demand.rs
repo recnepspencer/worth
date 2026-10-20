@@ -3,6 +3,7 @@
 //! through the deciding handler's reader.
 
 use std::marker::PhantomData;
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_decl::facade::{
@@ -73,7 +74,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.region-totals-demand-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.region-totals-demand-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024);
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(requirements(0, 0, 0, 1, 1024));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -198,6 +200,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         _: &WorthQueryInvariantMutationTarget<Schema, Body>,
     ) -> ApplicationCandidateRequirements {
         RegionTotalsDemandBinding::<Schema>::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

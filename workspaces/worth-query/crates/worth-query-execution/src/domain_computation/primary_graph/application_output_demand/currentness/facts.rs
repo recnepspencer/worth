@@ -29,7 +29,7 @@ pub(super) fn require_witnessed_output(
             Err(output_reuse::interruption_denial(event))
         }
         Err(CompanionPreflightStop::WorkCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)),
-        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
+        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. }) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
         Err(CompanionPreflightStop::PreparationMemoryExhausted { .. } | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => Err(output_reuse::memory_denial()),
         Err(CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
     }

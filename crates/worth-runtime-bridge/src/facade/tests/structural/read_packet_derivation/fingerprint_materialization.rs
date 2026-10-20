@@ -104,7 +104,10 @@ impl crate::snapshot::TruthSnapshotReader for RefusingSnapshotReader {
             .in_scope(|lease| {
                 let denial = worth_execution::ExecutionMemoryReservation::reserve_in_scope(
                     lease,
-                    execution.memory_limit() + 1,
+                    execution
+                        .memory_limit()
+                        .expect("refusal fixture has a finite policy")
+                        + 1,
                 )
                 .unwrap_err();
                 Err(crate::snapshot::BridgeSnapshotReadError::execution_denied(
@@ -135,8 +138,19 @@ impl crate::adapter::SnapshotReadSource for RefusingSnapshotSource {
 
 #[test]
 fn structural_read_adapter_preserves_resource_and_domain_refusals() {
-    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let serial_request = worth_execution::SerialRequest::from_policy(
+        &worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(64 << 20),
+                Some(8_000_000),
+            ),
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     for resource in [true, false] {

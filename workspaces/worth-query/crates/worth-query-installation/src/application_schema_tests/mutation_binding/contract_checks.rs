@@ -60,8 +60,9 @@ fn installed_mutation_binding_resolves_exact_callback_free_contracts() {
     );
     assert_eq!(
         binding
-            .candidate_requirements()
+            .candidate_policy()
             .resources()
+            .expect("fixture has a finite representation policy")
             .maximum_retained_representation_bytes(),
         128
     );

@@ -72,11 +72,7 @@ fn run(
     let _policy = Policy(
         place(Placement::Leased(std::num::NonZeroUsize::MIN)),
         bound(work.or_else(|| work_at.map(|_| u64::MAX - 1)).map(|work| {
-            worth_foundational::ExecutionBudget::new(
-                std::num::NonZeroUsize::MIN,
-                64 << 20,
-                Some(work),
-            )
+            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(work))
         })),
     );
     let probe = match work_at {

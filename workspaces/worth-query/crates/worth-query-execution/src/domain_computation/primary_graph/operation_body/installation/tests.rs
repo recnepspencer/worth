@@ -44,8 +44,22 @@ fn replacement_installation_capacity_requires_room_for_the_observed_old_edge() {
             Resources::representation_bytes(4096),
         )
     };
-    let denied = require_candidate_capacity(&body, &capacity(0), "test.replace").unwrap_err();
+    let denied = require_candidate_capacity(
+        &body,
+        &worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy::finite(
+            capacity(0),
+        ),
+        "test.replace",
+    )
+    .unwrap_err();
     assert_eq!(denied.kind(), Kind::OperationBodyUnavailable);
     assert_eq!(denied.subject(), "test.replace");
-    assert!(require_candidate_capacity(&body, &capacity(1), "test.replace").is_ok());
+    assert!(require_candidate_capacity(
+        &body,
+        &worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy::finite(
+            capacity(1)
+        ),
+        "test.replace"
+    )
+    .is_ok());
 }

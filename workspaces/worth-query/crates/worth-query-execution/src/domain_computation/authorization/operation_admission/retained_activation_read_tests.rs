@@ -49,7 +49,7 @@ impl<Schema, Operation, Input, Scope>
         for k in 1..=count {
             let cancel = CancellationSource::new();
             let serial = worth_execution::SerialRequest::from_memory(
-                worth_execution::SerialMemoryBudget::new(64 << 20),
+                worth_execution::SerialMemoryBudget::new(None),
                 cancel.token(),
                 None,
             );
@@ -63,7 +63,7 @@ impl<Schema, Operation, Input, Scope>
             assert!(probe.consults() >= k);
             drop(probe);
             let serial = worth_execution::SerialRequest::from_memory(
-                worth_execution::SerialMemoryBudget::new(64 << 20),
+                worth_execution::SerialMemoryBudget::new(None),
                 worth_execution::CancellationToken::new(),
                 None,
             );

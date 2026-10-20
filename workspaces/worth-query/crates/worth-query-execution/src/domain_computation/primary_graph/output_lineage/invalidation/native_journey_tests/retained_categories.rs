@@ -8,7 +8,12 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 fn late_capacity_fallback_does_not_accept_the_provisional_exact_marking() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let world = installed_authorization_world(true);
+    let world = super::marking_ceiling::world_installing(|defaults| {
+        crate::domain_computation::execution_runtime::WorthQueryInvalidationResourceInstallation {
+            maximum_retained_bytes: Some(128 * 1024 * 1024),
+            ..defaults
+        }
+    });
     world.application.with_host_advancement(|phase| {
         let custody = phase.test_host_request();
         let selected = world.selected_product(&custody);
@@ -45,7 +50,7 @@ fn late_capacity_fallback_does_not_accept_the_provisional_exact_marking() {
             let room = super::super::retention::state_bound(&image.payload().current)
                 .unwrap();
             let retained_before = owner.resources.retained_capacity_bytes();
-            let remaining = owner.resources.installation().maximum_retained_bytes - retained_before;
+            let remaining = owner.resources.installation().maximum_retained_bytes.expect("this court installs a finite retained ceiling") - retained_before;
             let competing = owner.resources.reserve_retained_capacity(remaining.checked_sub(room).unwrap()).unwrap();
             let _observation = crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
             super::super::marking_observation::native_marking_on_this_thread_for_test();
@@ -94,9 +99,9 @@ fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_be
 
     let world = super::marking_ceiling::world_installing(|defaults| {
         crate::domain_computation::execution_runtime::WorthQueryInvalidationResourceInstallation {
-            maximum_preparation_bytes: 256 * 1024 * 1024,
+            maximum_preparation_bytes: None,
             maximum_marking_work: Some(1_000_000),
-            maximum_retained_bytes: 256 * 1024,
+            maximum_retained_bytes: Some(256 * 1024),
             ..defaults
         }
     });

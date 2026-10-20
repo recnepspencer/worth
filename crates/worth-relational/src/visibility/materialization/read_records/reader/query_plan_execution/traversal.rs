@@ -7,9 +7,12 @@ impl RelationalPinnedRead {
         lease: Option<&ExecutionResourceLease<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> QueryReadResult {
-        let (packets, preparation) = prepare_query_packets(execution, lease, |budget| {
-            prepare_traversal_packets(&plan.packet, budget)
-        })?;
+        let declared_bytes =
+            super::super::query_preparation_extent::declared_bytes(&plan.packet, 0)?;
+        let (packets, preparation) =
+            prepare_query_packets(execution, lease, declared_bytes, |budget| {
+                prepare_traversal_packets(&plan.packet, budget)
+            })?;
         let metrics = PacketizedQueryMetrics::from_packets(&packets);
         record_query_packet_metrics(&self.performance_access(), &plan, &metrics);
         let basis = &self.basis;

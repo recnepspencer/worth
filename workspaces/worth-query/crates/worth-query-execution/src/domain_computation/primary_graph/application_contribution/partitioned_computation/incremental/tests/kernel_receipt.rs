@@ -9,7 +9,7 @@ fn a_tree_stop_keeps_no_kernel_completion_receipt_with_reuse_either_way() {
     let request = live_scope();
     let policy = super::super::super::super::request_execution::test_policy(
         std::num::NonZeroUsize::MIN,
-        1 << 30,
+        None,
     );
     let placement = RuntimeWorldExecutionPlacement::Serial(policy);
     let first = projected_attempt::attempt_billed(

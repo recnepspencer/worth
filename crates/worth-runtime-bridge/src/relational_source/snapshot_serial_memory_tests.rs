@@ -21,7 +21,7 @@ fn snapshot_serial_memory_is_refused_after_scope_admission() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 4096, Some(1000)),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(4096), None),
     );
     let serial = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
     let request = ExecutionRequest::serial(&serial);
@@ -32,14 +32,20 @@ fn snapshot_serial_memory_is_refused_after_scope_admission() {
             let worth_execution::LeaseDenial::MemoryExhausted(refusal) =
                 ExecutionMemoryReservation::reserve_in_scope(
                     lease,
-                    policy.budget().charged_memory_bytes(),
+                    policy.budget().charged_memory_bytes().unwrap(),
                 )
                 .unwrap_err()
             else {
                 panic!("scope metadata consumes some memory");
             };
-            let held =
-                ExecutionMemoryReservation::reserve_in_scope(lease, refusal.admitted).unwrap();
+            let held = ExecutionMemoryReservation::reserve_in_scope(
+                lease,
+                match refusal {
+                    worth_execution::MemoryLimitDenial::Capacity { admitted, .. } => admitted,
+                    other => panic!("capacity refusal required: {other:?}"),
+                },
+            )
+            .unwrap();
             // Read in the same scope so the denial is the records' reservation,
             // rather than a second scope's metadata admission.
             let denied = super::super::snapshot_reading::read_packet_for_serial_test(
@@ -55,9 +61,17 @@ fn snapshot_serial_memory_is_refused_after_scope_admission() {
     else {
         panic!("serial allocation must preserve its memory cause: {error:?}");
     };
-    assert_eq!(memory.admitted, 0);
+    let worth_execution::MemoryLimitDenial::Capacity {
+        requested,
+        admitted,
+        ..
+    } = memory
+    else {
+        panic!("capacity refusal required")
+    };
+    assert_eq!(admitted, 0);
     assert_eq!(
-        memory.requested,
+        requested,
         std::mem::size_of::<crate::facade::SnapshotReadRecord>() as u64
     );
 }

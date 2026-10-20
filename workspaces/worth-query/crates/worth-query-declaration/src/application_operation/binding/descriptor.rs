@@ -9,7 +9,7 @@ use super::{
 
 use crate::{
     application_operation::{
-        ApplicationCandidateRequirements, ApplicationMutationOutputContract,
+        ApplicationCandidatePolicy, ApplicationMutationOutputContract,
         ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
     },
     application_schema::ApplicationStructuredValueBinding,
@@ -90,7 +90,7 @@ pub struct ApplicationMutationBindingDescriptor {
     scope_entity: String,
     scope: ApplicationMutationScopeContract,
     principal: ApplicationMutationPrincipalBindingContract,
-    candidates: ApplicationCandidateRequirements,
+    candidates: ApplicationCandidatePolicy,
     source_query_identifier: Option<String>,
     requires_application_program: bool,
     requires_workflow_authority: bool,
@@ -119,7 +119,7 @@ impl ApplicationMutationBindingDescriptor {
         scope_entity: &'static str,
         scope: ApplicationMutationScopeContract,
         principal: ApplicationMutationPrincipalBindingContract,
-        candidates: ApplicationCandidateRequirements,
+        candidates: ApplicationCandidatePolicy,
         requires_application_program: bool,
         requires_workflow_authority: bool,
         workflow_control: bool,
@@ -281,7 +281,7 @@ impl ApplicationMutationBindingDescriptor {
         &self.principal
     }
 
-    pub const fn candidates(&self) -> ApplicationCandidateRequirements {
+    pub const fn candidates(&self) -> ApplicationCandidatePolicy {
         self.candidates
     }
 

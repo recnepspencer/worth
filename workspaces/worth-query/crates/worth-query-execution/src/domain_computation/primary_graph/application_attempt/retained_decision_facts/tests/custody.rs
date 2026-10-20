@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) fn request(bytes: u64) -> Lease
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, Some(1)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -73,7 +73,7 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
     assert_eq!(
         denied.kind(),
         Kind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial {
+            worth_execution::MemoryLimitDenial::Capacity {
                 requested: starting_quote(),
                 admitted: 0,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
@@ -108,7 +108,7 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
     assert_eq!(
         denied.kind(),
         Kind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial {
+            worth_execution::MemoryLimitDenial::Capacity {
                 requested: quote,
                 admitted: 0,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
@@ -129,7 +129,7 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
     assert_eq!(
         denied.kind(),
         Kind::Lease(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial {
+            worth_execution::MemoryLimitDenial::Capacity {
                 requested: directory_quote,
                 admitted: directory_quote - layout::<RefCell<Option<Run<Body>>>>(1),
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
@@ -182,7 +182,7 @@ fn final_array_and_key_charges_survive_child_drop_and_exhausted_iterator() {
     assert_eq!(records.charged_payload_bytes(), Some(final_quote));
     assert!(matches!(
         parent.reserve_memory(budget - final_quote - 2),
-        Err(memory) if memory == worth_execution::MemoryLimitDenial { requested: budget - final_quote - 2, admitted: budget - final_quote - 3, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
+        Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: budget - final_quote - 2, admitted: budget - final_quote - 3, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
     ));
     drop(parent.reserve_memory(budget - final_quote - 3).unwrap());
     let mut records = records.into_iter();
@@ -193,7 +193,7 @@ fn final_array_and_key_charges_survive_child_drop_and_exhausted_iterator() {
     assert_eq!(records.charged_payload_bytes(), Some(final_quote));
     assert!(matches!(
         parent.reserve_memory(budget - final_quote + 1),
-        Err(memory) if memory == worth_execution::MemoryLimitDenial { requested: budget - final_quote + 1, admitted: budget - final_quote, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
+        Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: budget - final_quote + 1, admitted: budget - final_quote, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
     ));
     drop(records);
     assert_eq!(parent.reserve_memory(budget).unwrap().bytes(), budget);

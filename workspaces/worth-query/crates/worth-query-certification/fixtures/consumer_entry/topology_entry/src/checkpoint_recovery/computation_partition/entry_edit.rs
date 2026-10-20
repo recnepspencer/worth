@@ -3,6 +3,7 @@
 //! trading numbers.
 
 use std::marker::PhantomData;
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
@@ -218,11 +219,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.entry-edit.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.entry-edit-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.entry-edit-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(160, 160, 320, 320, 800, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(1024 * 160 + 320 * 256),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

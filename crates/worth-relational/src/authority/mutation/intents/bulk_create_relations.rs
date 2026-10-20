@@ -267,11 +267,23 @@ fn stage_import_packets(
     let Some(lease) = lease else {
         return Ok(packets.into_iter().flat_map(|packet| packet.rows).collect());
     };
-    let packet_ceiling =
-        lease.policy().budget().charged_memory_bytes() / (packets.len() as u64).saturating_mul(8);
+    let packet_ceiling = lease
+        .policy()
+        .budget()
+        .charged_memory_bytes()
+        .map(|limit| limit / (packets.len() as u64).saturating_mul(8));
     let inputs = packets
         .into_iter()
-        .map(|packet| crate::execution::ReadOnlyPacket {
+        .map(|packet| {
+            let packet_ceiling = packet_ceiling.map_or_else(
+                || crate::authority::commit::preparation::packets::import::import_result_capacity_bytes(
+                    packet.rows.iter().map(ImportStagedRow::owned_allocation_capacity_bytes),
+                ).ok_or(crate::execution::PacketExecutionStop::Admission(
+                    crate::execution::PacketAdmissionDenial::MemoryOverflow,
+                )),
+                Ok,
+            )?;
+            Ok(crate::execution::ReadOnlyPacket {
             identity: PartitionIdentity::new(packet.header.packet_index_floor as u64),
             input_bytes: (packet.rows.capacity() as u64)
                 .saturating_mul(std::mem::size_of::<ImportStagedRow>() as u64)
@@ -282,11 +294,11 @@ fn stage_import_packets(
                         .map(ImportStagedRow::owned_allocation_capacity_bytes)
                         .sum::<u64>(),
                 ),
-            kernel_scratch_bytes: packet_ceiling,
-            max_result_bytes: packet_ceiling,
+            memory: crate::execution::PacketMemory::Declared { scratch: packet_ceiling, result: packet_ceiling },
             value: packet,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, crate::execution::PacketExecutionStop>>()?;
     let streams = crate::execution::execute_read_only_packets(
         inputs,
         lease,

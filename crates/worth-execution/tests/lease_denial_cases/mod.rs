@@ -25,7 +25,11 @@ fn request(workers: usize, memory: u64, work: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, Some(work)),
+            ExecutionBudget::new(
+                NonZeroUsize::new(workers).unwrap(),
+                Some(memory),
+                Some(work),
+            ),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,

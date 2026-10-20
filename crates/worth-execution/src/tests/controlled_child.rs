@@ -54,7 +54,7 @@ fn controlled_child_inherits_policy_and_exact_minimum_deadline_without_parent_mu
     assert_eq!(array.charged_payload_bytes(), Some(8));
     assert!(matches!(
         parent.reserve_memory(1),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 1,
             admitted: 0,
             level: MemoryLimitLevel::Policy { ancestor: 0 }

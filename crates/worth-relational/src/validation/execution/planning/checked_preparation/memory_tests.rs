@@ -14,7 +14,7 @@ fn the_checked_plan_ceiling_has_an_exact_scratch_and_retention_boundary() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, bytes, Some(100_000)),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(bytes), Some(100_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

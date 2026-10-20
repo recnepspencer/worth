@@ -83,7 +83,7 @@ fn predispatch_owner_bytes(graph: &SignalGraph, ids: &[NodeId], retained: bool) 
     let second_producer = ids[SELECTED / 2];
     let prior_producers = BTreeSet::from([producer]);
     let mut work = Work::new(None);
-    let mut budget = SignalPreparationBudget::new(u64::MAX);
+    let mut budget = SignalPreparationBudget::new(None);
     let root = graph
         .epoch_selected_node_root_growth_bound(
             &BTreeSet::new(),
@@ -177,7 +177,7 @@ fn ordinary_peak(shared: bool) {
                     &BTreeSet::from([ids[0]]),
                     ids[SELECTED / 2],
                     &mut Work::new(None),
-                    &mut SignalPreparationBudget::new(u64::MAX),
+                    &mut SignalPreparationBudget::new(None),
                 )
                 .unwrap(),
             0

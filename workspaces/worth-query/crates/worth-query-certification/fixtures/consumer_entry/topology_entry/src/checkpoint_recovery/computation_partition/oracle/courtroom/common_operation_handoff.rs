@@ -246,7 +246,7 @@ fn common_operation_handoff_completes_source_without_retained_observation() {
     }
     let budget = RestoreBudget(bound(Some(worth_foundational::ExecutionBudget::new(
         std::num::NonZeroUsize::MIN,
-        1,
+        Some(1),
         None,
     ))));
     let refused = operation.advance(&request);

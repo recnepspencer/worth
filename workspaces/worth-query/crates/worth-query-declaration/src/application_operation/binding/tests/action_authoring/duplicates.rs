@@ -1,5 +1,6 @@
 //! Portable resolution identity and native type identity share one validator.
 use super::*;
+use crate::application_operation::ApplicationCandidatePolicy;
 
 // This declaration shares valid domain contracts, not another intent impl.
 // Only its Rust binding type differs; the portable resolution key collides.
@@ -39,8 +40,7 @@ impl ApplicationMutationBinding<MutationSchema> for SameIdentityBinding {
     const IDENTITY: &'static str = RenameBinding::IDENTITY;
     const HANDLER_IDENTITY: &'static str = RenameBinding::HANDLER_IDENTITY;
     const IDEMPOTENCY_IDENTITY: &'static str = RenameBinding::IDEMPOTENCY_IDENTITY;
-    const CANDIDATES: crate::application_operation::ApplicationCandidateRequirements =
-        RenameBinding::CANDIDATES;
+    const CANDIDATES: ApplicationCandidatePolicy = RenameBinding::CANDIDATES;
 
     fn scope_field() -> crate::application_schema::ApplicationFieldRef<
         MutationSchema,

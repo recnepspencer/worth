@@ -73,7 +73,7 @@ fn runtime_bounded_index_law_keeps_cold_stop_limit_and_generation() {
                                 DeterminismContract::CanonicalBitwise,
                                 ExecutionBudget::new(
                                     std::num::NonZeroUsize::new(width).unwrap(),
-                                    MEMORY,
+                                    None,
                                     Some(100_000),
                                 ),
                             ),

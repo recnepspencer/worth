@@ -1,5 +1,10 @@
 use super::*;
-use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
+use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
+    WorthQueryInvariantMutationTarget,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct FinalPlanarPreserve {
@@ -90,8 +95,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.final-planar-preserve-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.final-planar-preserve-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        super::super::requirements(0, 0, 0, 6, 4096);
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(super::super::requirements(0, 0, 0, 6, 4096));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -268,6 +273,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarPreserve
         _: &[WorthQueryInvariantMutationTarget<Schema, Body>; 3],
     ) -> ApplicationCandidateRequirements {
         FinalPlanarPreserveBinding::<Schema>::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(
@@ -350,7 +357,10 @@ impl<Schema: TopologySchemaBinding>
         <Self as WorthQueryApplicationProducerProvider<Schema, PlanarFinalOutputProducer<Schema>>>::idempotency_key(self, source, identity)
     }
 
-    fn demand_resources(&self, source: &PlanarReadResult) -> WorthQueryProducerDemandResources {
+    fn demand_resources(
+        &self,
+        source: &PlanarReadResult,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
         <Self as WorthQueryApplicationProducerProvider<Schema, PlanarFinalOutputProducer<Schema>>>::demand_resources(self, source)
     }
 }

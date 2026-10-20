@@ -16,7 +16,7 @@ fn select(
 ) -> Result<Vec<NativePriorCheckpointOutput<'_>>, Denial> {
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(work),
-        maximum_preparation_bytes: bytes,
+        maximum_preparation_bytes: Some(bytes),
     });
     court.lineage.checkpoint_prior_outputs(
         &worth_execution::ExecutionRequest::serial(&court.request),

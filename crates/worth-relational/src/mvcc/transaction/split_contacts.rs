@@ -39,11 +39,8 @@ fn split_entries_consult_before_admission_and_currency_contacts() {
             .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
             .unwrap();
         let cancellation = CancellationSource::new();
-        let backing = SerialRequest::from_memory(
-            SerialMemoryBudget::new(64 * 1024 * 1024),
-            cancellation.token(),
-            None,
-        );
+        let backing =
+            SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
         let execution = ExecutionRequest::serial(&backing);
         let (proposal, transaction) = if entry == "prepare proposal" {
             (

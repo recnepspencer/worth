@@ -23,8 +23,9 @@ pub(super) fn installed_application(
         (configuration,),
         WorthQueryInMemoryApplicationLimits::new(
             product_world_resources(1_024),
-            runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-                5_120, 2_048,
+            runtime::WorthQueryApplicationCandidateResourceProfile::policy(
+                Some(5_120),
+                Some(2_048),
             )
             .unwrap(),
             runtime::WorthQueryApplicationQueryResourceProfile::bounded(

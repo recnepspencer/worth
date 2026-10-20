@@ -5,7 +5,7 @@ use super::super::super::InvalidationEditAdmission;
 use super::super::{index_capacity, IndexAdmission};
 use super::PreparedTreeEdits;
 
-fn meter(maximum_preparation_bytes: u64) -> InvalidationEditAdmission {
+fn meter(maximum_preparation_bytes: Option<u64>) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: None,
         maximum_preparation_bytes,
@@ -25,7 +25,7 @@ fn charges(meter: &InvalidationEditAdmission) -> (u64, u64, u64) {
 #[test]
 fn insertions_into_an_empty_tree_admit_what_a_fresh_build_admits() {
     for entries in [1, 31, 32, 64, 2048, 5000] {
-        let (mut sequence, mut fresh) = (meter(u64::MAX), meter(u64::MAX));
+        let (mut sequence, mut fresh) = (meter(None), meter(None));
         let mut edits = PreparedTreeEdits::<usize, ()>::new();
         for length in 0..entries {
             edits.insert(length, &mut sequence).unwrap();
@@ -50,7 +50,7 @@ fn a_shared_tree_admits_its_final_size_not_its_edit_count() {
             .try_for_each(|length| edits.insert(length, &mut meter));
         (ran, meter.charged_bytes())
     };
-    let (ran, admitted) = run(u64::MAX);
+    let (ran, admitted) = run(None);
     assert_eq!(ran, Ok(()));
     // A replacement passes its unchanged length, so it may still add one.
     let reach = prior + added + 1;
@@ -59,7 +59,7 @@ fn a_shared_tree_admits_its_final_size_not_its_edit_count() {
         index_capacity::ordered_edit_bytes::<usize, ()>(prior).unwrap() * (added + replaced) as u64;
     assert!(admitted <= whole && whole < paths);
     assert_eq!(
-        run(admitted - 1).0,
+        run(Some(admitted - 1)).0,
         Err(CompanionPreflightStop::PreparationMemoryExhausted {
             required: admitted,
             maximum: admitted - 1,
@@ -71,7 +71,7 @@ fn a_shared_tree_admits_its_final_size_not_its_edit_count() {
 /// admits its own path, and every later edit then admits its own path too.
 #[test]
 fn after_a_removal_every_edit_admits_its_own_copied_path() {
-    let (mut sequence, mut copied) = (meter(u64::MAX), meter(u64::MAX));
+    let (mut sequence, mut copied) = (meter(None), meter(None));
     let mut edits = PreparedTreeEdits::<usize, ()>::new();
     for length in 100..140 {
         edits.insert(length, &mut sequence).unwrap();

@@ -15,7 +15,7 @@ fn incremental_comparison_keeps_the_retained_fact_read_stop() {
     let request = WorthQueryRequestScope::new(None, source.token());
     let policy = crate::domain_computation::primary_graph::application_contribution::test_policy(
         std::num::NonZeroUsize::MIN,
-        64 << 20,
+        None,
     );
     let at_read = std::rc::Rc::new(std::cell::Cell::new(None));
     let fired = std::rc::Rc::clone(&at_read);

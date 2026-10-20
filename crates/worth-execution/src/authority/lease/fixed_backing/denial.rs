@@ -84,6 +84,19 @@ impl ExecutionAllocationDenial {
     }
 }
 
+impl crate::ChargedBytes for ExecutionAllocationDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self {
+            kind,
+            requested_payload_bytes,
+        } = self;
+        fn inline<T: Copy>(_: &T) {}
+        inline(kind);
+        inline(requested_payload_bytes);
+        0
+    }
+}
+
 impl std::fmt::Display for ExecutionAllocationDenial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

@@ -48,7 +48,7 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
                 if zero_memory {
-                    0
+                    Some(0)
                 } else {
                     policy.charged_memory_bytes()
                 },

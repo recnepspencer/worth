@@ -1,5 +1,7 @@
 //! Real output-demand producer used by workflow assessment certification.
 
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
@@ -151,11 +153,11 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for RetentionAssessment
         "worth.query.certification.retention-assessment.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.retention-assessment.command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(512),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -241,6 +243,8 @@ impl OperationHandler<DocumentRetentionSchema, RetentionAssessmentBinding>
         _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> ApplicationCandidateRequirements {
         RetentionAssessmentBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(
@@ -348,8 +352,11 @@ impl WorthQueryApplicationProducerProvider<DocumentRetentionSchema, RetentionAss
             .fold(0, u64::wrapping_add)
     }
 
-    fn demand_resources(&self, _: &DocumentRetentionRow) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(Some(256), 512)
+    fn demand_resources(
+        &self,
+        _: &DocumentRetentionRow,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({ WorthQueryProducerDemandResources::new(Some(256), 512) })
     }
 }
 

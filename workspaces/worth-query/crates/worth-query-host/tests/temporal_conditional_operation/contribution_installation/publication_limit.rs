@@ -201,7 +201,7 @@ fn configuration() -> TemporalContributionConfiguration {
 fn limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         product_world_resources(1_024),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(5_120, 2_048)
+        runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(5_120), Some(2_048))
             .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
             .unwrap(),
@@ -265,7 +265,7 @@ fn read_intent(application: &Application) -> IntentQueryResult {
                     ApplicationQueryParameterSet::new(),
                     primary_graph::WorthQueryProductQueryControls::new(
                         std::num::NonZeroUsize::new(8).unwrap(),
-                        std::num::NonZeroUsize::new(64).unwrap(),
+                        None,
                         &request,
                     ),
                 )

@@ -40,7 +40,7 @@ fn run(
         ), "the actual installed rule must be acyclicity");
         ReadOnlyPacket {
             identity: PartitionIdentity::new(packet.packet_index as u64), value: packet,
-            input_bytes: 0, kernel_scratch_bytes: scratch, max_result_bytes: 16 * 1024,
+            input_bytes: 0, memory: crate::execution::PacketMemory::Declared { scratch: scratch, result: 16 * 1024 },
         }
     }).collect();
     let (outcome, charges) = crate::execution::work_observation::capture(|| {

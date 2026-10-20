@@ -53,8 +53,7 @@ fn with_admitted_facts(
         })
         .unwrap();
     let source = CancellationSource::new();
-    let serial =
-        SerialRequest::from_memory(SerialMemoryBudget::new(64 << 20), source.token(), None);
+    let serial = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&serial);
     let outcome = world
         .application

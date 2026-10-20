@@ -19,7 +19,7 @@ fn admission(work: u64) -> super::super::invalidation::InvalidationEditAdmission
     super::super::invalidation::InvalidationEditAdmission::new(
         worth_relational::facade::mvcc::CompanionPreflightBudget {
             maximum_work_visits: Some(work),
-            maximum_preparation_bytes: 4096,
+            maximum_preparation_bytes: None,
         },
     )
 }

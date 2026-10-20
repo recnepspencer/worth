@@ -4,6 +4,7 @@
 //! Both are declared on the schema, so every court step goes through the same
 //! ordinary application entry an external consumer would use.
 
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_host::facade::{
     declaration::{
         application_operation::{
@@ -280,11 +281,11 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for SetRetentionBinding
         "worth.query.certification.document-retention.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.document-retention.command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(1024),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,

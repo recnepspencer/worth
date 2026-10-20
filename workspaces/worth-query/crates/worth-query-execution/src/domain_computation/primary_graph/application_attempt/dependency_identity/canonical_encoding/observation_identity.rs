@@ -77,11 +77,7 @@ mod tests {
         let policy = worth_foundational::ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,
             worth_foundational::DeterminismContract::CanonicalBitwise,
-            worth_foundational::ExecutionBudget::new(
-                std::num::NonZeroUsize::MIN,
-                1024 * 1024,
-                None,
-            ),
+            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
         );
         let execution = QueryRequestExecution::open(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy),

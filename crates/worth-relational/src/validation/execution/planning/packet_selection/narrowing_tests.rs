@@ -112,7 +112,7 @@ fn request(serial: bool) -> ExecutionResourceLease<'static> {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 16 * 1024 * 1024, Some(1_000_000)),
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1_000_000)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,

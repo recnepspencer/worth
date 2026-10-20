@@ -47,7 +47,7 @@ fn request(workers: usize, work: u64) -> LeaseRequest {
             DeterminismContract::CanonicalBitwise,
             ExecutionBudget::new(
                 NonZeroUsize::new(workers).unwrap(),
-                32 * 1024 * 1024,
+                Some(32 * 1024 * 1024),
                 Some(work),
             ),
         ),
@@ -63,7 +63,7 @@ fn competing_ticket(scratch_bytes: u64) -> Result<HostTicket, LeaseDenial> {
         host_request.policy.determinism(),
         ExecutionBudget::new(
             host_request.policy.budget().max_workers(),
-            HOST_MEMORY,
+            Some(HOST_MEMORY),
             Some(1_000_000),
         ),
     );

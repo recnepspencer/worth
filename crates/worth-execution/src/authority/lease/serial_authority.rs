@@ -36,13 +36,13 @@ mod tests {
         let policy = ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, Some(100)),
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(100)),
         );
         let authority = ExecutionAuthority::serial();
         let wide = ExecutionRequestPolicy::new(
             policy.posture(),
             policy.determinism(),
-            ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 1 << 20, Some(100)),
+            ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), None, Some(100)),
         );
         assert_eq!(
             authority.admits_policy(&wide),

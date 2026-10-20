@@ -3,6 +3,7 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 
 use worth_query_consumer_values::{
     PlanarCurrentOutputExpectation, PlanarDerivedOutput, PlanarMutationDenial, PlanarOperation,
@@ -126,10 +127,15 @@ impl<Schema: TopologySchemaBinding>
         planar_source_key(source_identity) | self.key_mask
     }
 
-    fn demand_resources(&self, _: &super::PlanarReadResult) -> WorthQueryProducerDemandResources {
-        #[cfg(test)]
-        PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
-        planar_producer_resources()
+    fn demand_resources(
+        &self,
+        _: &super::PlanarReadResult,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({
+            #[cfg(test)]
+            PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
+            planar_producer_resources()
+        })
     }
 }
 

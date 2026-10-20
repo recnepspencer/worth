@@ -164,9 +164,10 @@ fn response(
 
 pub(super) const fn response_status(kind: BankHttpDenialKind) -> StatusCode {
     match kind {
-        BankHttpDenialKind::MalformedRequest | BankHttpDenialKind::UnsupportedProtocol => {
-            StatusCode::BAD_REQUEST
-        }
+        BankHttpDenialKind::MalformedRequest
+        | BankHttpDenialKind::UnsupportedProtocol
+        | BankHttpDenialKind::ProducerSourceSizeOverflow
+        | BankHttpDenialKind::ProducerSourceNotEncodable => StatusCode::BAD_REQUEST,
         BankHttpDenialKind::Unauthenticated => StatusCode::UNAUTHORIZED,
         BankHttpDenialKind::PermissionDenied => StatusCode::FORBIDDEN,
         BankHttpDenialKind::NotFound => StatusCode::NOT_FOUND,

@@ -15,7 +15,7 @@ fn policy(memory: u64) -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, memory, Some(1_000)),
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), Some(1_000)),
     )
 }
 
@@ -35,9 +35,17 @@ fn sealed_serial_request_refuses_memory_before_running_the_operation() {
     let WorkCeilingDenial::Admission(LeaseDenial::MemoryExhausted(memory)) = denial else {
         panic!("required serial memory must produce its own resource cause")
     };
-    assert_eq!(memory.level, MemoryLimitLevel::Policy { ancestor: 0 });
-    assert!(memory.requested > memory.admitted);
-    assert_eq!(memory.admitted, 1);
+    let worth_execution::MemoryLimitDenial::Capacity {
+        requested,
+        admitted,
+        level,
+    } = memory
+    else {
+        panic!("finite memory policy must refuse capacity, not counter overflow")
+    };
+    assert_eq!(level, MemoryLimitLevel::Policy { ancestor: 0 });
+    assert!(requested > admitted);
+    assert_eq!(admitted, 1);
     assert!(!called.load(Ordering::Relaxed));
 }
 
@@ -69,7 +77,7 @@ fn serial_meter_preserves_counter_overflow() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, Some(u64::MAX)),
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(1 << 20), Some(u64::MAX)),
     );
     let serial = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
     let identity = PartitionIdentity::new(1);
@@ -100,7 +108,7 @@ fn one_unit_policy() -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, Some(1)),
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(1 << 20), Some(1)),
     )
 }
 

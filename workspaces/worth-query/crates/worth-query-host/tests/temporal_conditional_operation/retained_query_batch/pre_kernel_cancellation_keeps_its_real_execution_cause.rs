@@ -60,7 +60,7 @@ fn pre_kernel_cancellation_keeps_its_real_execution_cause() {
         })
         .expect("installed host call opens");
     let batch =
-        primary_graph::WorthQueryApplicationQueryBatchAdmission::new(limits(1024, 1_048_576));
+        primary_graph::WorthQueryApplicationQueryBatchAdmission::new(limits(None, 1_048_576));
     cancellation.cancel();
     let result = world
         .application

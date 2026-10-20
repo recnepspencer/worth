@@ -38,7 +38,7 @@ fn request(bytes: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, Some(1)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -88,7 +88,7 @@ fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
     assert_eq!(retained.charged_payload_bytes(), Some(quote));
     assert!(matches!(
         parent.reserve_memory(1),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 1,
             admitted: 0,
             level: MemoryLimitLevel::Policy { ancestor: 0 }
@@ -115,7 +115,7 @@ fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
     assert_eq!(consuming.charged_payload_bytes(), Some(quote));
     assert!(matches!(
         parent.reserve_memory(1),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 1,
             admitted: 0,
             level: MemoryLimitLevel::Policy { ancestor: 0 }
@@ -140,7 +140,7 @@ fn element_destruction_keeps_charge_until_partial_and_consuming_backings_drop() 
             self.drops.set(self.drops.get() + 1);
             if matches!(
                 self.parent.reserve_memory(1),
-                Err(MemoryLimitDenial {
+                Err(MemoryLimitDenial::Capacity {
                     requested: 1,
                     admitted: 0,
                     level: MemoryLimitLevel::Policy { ancestor: 0 }
@@ -249,7 +249,7 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
     let denied = ExecutionArrayBuilder::<u32>::allocate(2, Policy::Execution(&small)).unwrap_err();
     assert_eq!(
         denied.kind(),
-        Kind::Lease(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+        Kind::Lease(LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
             requested: 8,
             admitted: 7,
             level: MemoryLimitLevel::Policy { ancestor: 0 }
@@ -294,7 +294,7 @@ fn an_unbounded_process_still_refuses_counter_overflow_before_charging() {
     let held = first.reserve_memory(u64::MAX - 1).unwrap();
     assert_eq!(
         second.reserve_memory(2).unwrap_err(),
-        MemoryLimitDenial {
+        MemoryLimitDenial::Capacity {
             requested: 2,
             admitted: 1,
             level: MemoryLimitLevel::Process,

@@ -70,7 +70,7 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
                 policy: ExecutionRequestPolicy::new(
                     posture,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, 8 * 1024 * 1024, Some(work)),
+                    ExecutionBudget::new(NonZeroUsize::MIN, None, Some(work)),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),
@@ -81,8 +81,10 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
                 identity: PartitionIdentity::new(1),
                 value: (),
                 input_bytes: 0,
-                kernel_scratch_bytes: scratch,
-                max_result_bytes: 0,
+                memory: crate::execution::PacketMemory::Declared {
+                    scratch: scratch,
+                    result: 0,
+                },
             }],
             &lease,
             |_, packet_context| {

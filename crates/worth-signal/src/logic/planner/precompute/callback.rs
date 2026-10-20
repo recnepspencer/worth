@@ -8,8 +8,8 @@ use crate::logic::prepared::{ExecutionReadView, PreparedEvaluation};
 
 #[derive(Clone, Copy)]
 pub(crate) struct CheckedKernelCapacity {
-    pub(crate) scratch_bytes: u64,
-    pub(crate) result_bytes: u64,
+    pub(crate) scratch_bytes: Option<u64>,
+    pub(crate) result_bytes: Option<u64>,
 }
 
 pub(crate) trait SignalPrecompute: Sync {

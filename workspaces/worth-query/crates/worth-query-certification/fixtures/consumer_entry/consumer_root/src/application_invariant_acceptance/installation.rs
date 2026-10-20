@@ -49,7 +49,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+        runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(4096), Some(8192))
             .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
@@ -98,7 +98,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+        runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(4096), Some(8192))
             .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
@@ -148,7 +148,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+        runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(4096), Some(8192))
             .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),

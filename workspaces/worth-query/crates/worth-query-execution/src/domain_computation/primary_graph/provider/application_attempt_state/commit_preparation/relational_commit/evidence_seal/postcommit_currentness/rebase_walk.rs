@@ -24,7 +24,7 @@ pub(super) fn rebase(
     // across the walk.
     let mut indexed_width = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::with_work_limit(
         maximum_indexed_rebase_work.map(|work| u64::try_from(work).expect("native work fits u64")),
-        0,
+        None,
     );
     let mut failure = None;
     let mut own_effect = OwnEffectOnReads::NONE_ASKED;

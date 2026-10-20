@@ -68,8 +68,7 @@ construction returns `WorthQueryProgramApplicationRuntime<Schema, Program>`.
 `WorthQueryInMemoryApplicationLimits::new` accepts World resources, an application
 candidate profile, an application query profile, and a conditional evaluation
 budget. Candidate cardinality and retained representation bytes remain distinct
-bounds; `WorthQueryApplicationCandidateResourceProfile::physical_resources(items,
-bytes)` configures those existing capacities. Installed handlers implement `decide`,
+bounds; `WorthQueryApplicationCandidateResourceProfile::policy(Some(items), Some(bytes))` configures those existing capacities. Installed handlers implement `decide`,
 `candidate_requirements`, and `build_candidate`: decision reads retain facts,
 reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain

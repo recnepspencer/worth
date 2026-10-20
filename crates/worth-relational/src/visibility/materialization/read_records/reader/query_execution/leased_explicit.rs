@@ -4,7 +4,7 @@ use worth_execution::{MapKernelContext, MapKernelFailure};
 
 use super::super::query_packetization::PacketizedQueryWork;
 use super::super::RelationalPinnedRead;
-use super::leased_map::{QueryPacketBudget, QueryReadPacketDenial};
+use super::leased_map::{QueryPacketBudget, QueryPacketMemory, QueryReadPacketDenial};
 use crate::identity::data::VersionId;
 use crate::query::data::{PlannedQueryPacket, QueryFragmentCounters, QueryWorkerFragment};
 
@@ -23,7 +23,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
     packet: &PlannedQueryPacket,
     work: &PacketizedQueryWork,
     ordinal: u64,
-    ceiling: u64,
+    ceiling: &QueryPacketMemory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<QueryWorkerFragment, MapKernelFailure<QueryReadPacketDenial>> {
     let PacketizedQueryWork::ExplicitTargets(targets) = work else {

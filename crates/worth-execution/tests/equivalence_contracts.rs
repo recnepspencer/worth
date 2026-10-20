@@ -18,7 +18,7 @@ fn request(determinism: DeterminismContract) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             determinism,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 4096, Some(10)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(4096), Some(10)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

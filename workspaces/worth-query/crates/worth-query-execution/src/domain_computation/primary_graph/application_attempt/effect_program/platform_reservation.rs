@@ -1,10 +1,14 @@
 //! Exact reservation for platform-owned effects that do not pass through an
 //! application's typed candidate writer.
 
+mod host_capacity;
+pub(in crate::domain_computation::primary_graph::application_attempt) use host_capacity::{
+    check_combined_host_capacity, validate_candidate_extension,
+};
 use worth_query_declaration::facade::{
     application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling,
+        ApplicationCandidateCardinalityCeiling, ApplicationCandidatePolicy,
+        ApplicationCandidateRequirements, ApplicationCandidateResourceCeiling,
     },
     domain_computation::{WorthQueryResourceDimension, WorthQuerySemanticScaleAxis},
 };
@@ -53,25 +57,21 @@ pub(in crate::domain_computation::primary_graph) fn admit_workflow_settlement_ef
     demand: PlatformEffectDemand,
 ) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
     let contracts = admission.allowed_graph_contract();
-    admit_query_owned_effects(contracts, contracts.workflow_settlement_ceiling(), demand)
+    admit_query_owned_effects(
+        contracts,
+        contracts
+            .workflow_settlement_ceiling()
+            .map(ApplicationCandidatePolicy::finite),
+        demand,
+    )
 }
 
 fn admit_query_owned_effects(
     contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
-    declared: Option<ApplicationCandidateRequirements>,
+    declared: Option<ApplicationCandidatePolicy>,
     demand: PlatformEffectDemand,
 ) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
-    let requirements = ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(
-            demand.creates,
-            demand.deletes,
-            demand.links,
-            demand.unlinks,
-            demand.writes,
-            demand.emits,
-        ),
-        ApplicationCandidateResourceCeiling::representation_bytes(demand.retained_bytes),
-    );
+    let requirements = demand.requirements();
     let envelope = contracts
         .execution_strategy()
         .expect("installed application operation has exactly one execution strategy")
@@ -85,9 +85,10 @@ fn admit_query_owned_effects(
     let reservation = WorthQueryCandidateReservation::admit(
         requirements,
         declared,
-        envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
-        envelope
-            .resource_ceiling(WorthQueryResourceDimension::CandidateRetainedRepresentationBytes),
+        envelope.optional_scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
+        envelope.optional_resource_ceiling(
+            WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
+        ),
     )?;
     Ok(PlatformEffectReservation { reservation })
 }
@@ -107,7 +108,13 @@ pub(in crate::domain_computation::primary_graph) fn admit_signing_lifecycle_effe
     demand: PlatformEffectDemand,
 ) -> Result<PlatformEffectReservation, WorthQueryApplicationAttemptDenial> {
     let contracts = admission.allowed_graph_contract();
-    admit_query_owned_effects(contracts, contracts.signing_lifecycle_ceiling(), demand)
+    admit_query_owned_effects(
+        contracts,
+        contracts
+            .signing_lifecycle_ceiling()
+            .map(ApplicationCandidatePolicy::finite),
+        demand,
+    )
 }
 
 #[derive(Default)]
@@ -122,6 +129,22 @@ pub(in crate::domain_computation::primary_graph) struct PlatformEffectDemand {
 }
 
 impl PlatformEffectDemand {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn requirements(
+        &self,
+    ) -> ApplicationCandidateRequirements {
+        ApplicationCandidateRequirements::fixed_shape(
+            ApplicationCandidateCardinalityCeiling::fixed(
+                self.creates,
+                self.deletes,
+                self.links,
+                self.unlinks,
+                self.writes,
+                self.emits,
+            ),
+            ApplicationCandidateResourceCeiling::representation_bytes(self.retained_bytes),
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn observe(
         &mut self,
         effect: &WorthQueryApplicationRealizedEffect,

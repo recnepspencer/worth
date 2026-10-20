@@ -1,5 +1,6 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
+    ApplicationCandidateCardinalityCeiling, ApplicationCandidatePolicy,
+    ApplicationCandidateRequirements,
 };
 
 use super::super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
@@ -15,48 +16,73 @@ pub(super) enum CandidateItemKind {
 }
 
 pub(super) struct WorthQueryCandidateReservation {
+    requested: ApplicationCandidateRequirements,
     remaining: ApplicationCandidateCardinalityCeiling,
+    remaining_items: usize,
     remaining_retained_representation_bytes: usize,
 }
 
 impl WorthQueryCandidateReservation {
     pub(super) fn admit(
         requested: ApplicationCandidateRequirements,
-        ceiling: ApplicationCandidateRequirements,
-        candidate_item_capacity: u64,
-        retained_representation_byte_capacity: u64,
+        policy: ApplicationCandidatePolicy,
+        candidate_item_capacity: Option<u64>,
+        retained_representation_byte_capacity: Option<u64>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
         let requested_cardinality = requested.cardinality();
-        let ceiling_cardinality = ceiling.cardinality();
-        let requested_total = total(requested_cardinality).ok_or_else(capacity_denial)?;
-        let within_binding = requested_cardinality.maximum_creates()
-            <= ceiling_cardinality.maximum_creates()
-            && requested_cardinality.maximum_deletes() <= ceiling_cardinality.maximum_deletes()
-            && requested_cardinality.maximum_links() <= ceiling_cardinality.maximum_links()
-            && requested_cardinality.maximum_unlinks() <= ceiling_cardinality.maximum_unlinks()
-            && requested_cardinality.maximum_writes() <= ceiling_cardinality.maximum_writes()
-            && requested_cardinality.maximum_emits() <= ceiling_cardinality.maximum_emits()
-            && requested
+        let requested_total = Self::check_host_capacity(
+            requested,
+            candidate_item_capacity,
+            retained_representation_byte_capacity,
+        )?;
+        let within_binding = policy.cardinality().is_none_or(|ceiling| {
+            requested_cardinality.maximum_creates() <= ceiling.maximum_creates()
+                && requested_cardinality.maximum_deletes() <= ceiling.maximum_deletes()
+                && requested_cardinality.maximum_links() <= ceiling.maximum_links()
+                && requested_cardinality.maximum_unlinks() <= ceiling.maximum_unlinks()
+                && requested_cardinality.maximum_writes() <= ceiling.maximum_writes()
+                && requested_cardinality.maximum_emits() <= ceiling.maximum_emits()
+        }) && policy.resources().is_none_or(|ceiling| {
+            requested
                 .resources()
                 .maximum_retained_representation_bytes()
-                <= ceiling.resources().maximum_retained_representation_bytes();
-        let within_runtime = u64::try_from(requested_total)
-            .is_ok_and(|count| count <= candidate_item_capacity)
+                <= ceiling.maximum_retained_representation_bytes()
+        });
+        if !within_binding {
+            return Err(capacity_denial());
+        }
+        Ok(Self {
+            requested,
+            remaining: requested_cardinality,
+            remaining_items: requested_total,
+            remaining_retained_representation_bytes: requested
+                .resources()
+                .maximum_retained_representation_bytes(),
+        })
+    }
+
+    pub(super) fn requirements(&self) -> ApplicationCandidateRequirements {
+        self.requested
+    }
+
+    pub(super) fn check_host_capacity(
+        requested: ApplicationCandidateRequirements,
+        items: Option<u64>,
+        bytes: Option<u64>,
+    ) -> Result<usize, WorthQueryApplicationAttemptDenial> {
+        let count = total(requested.cardinality()).ok_or_else(capacity_denial)?;
+        let fits = u64::try_from(count)
+            .is_ok_and(|count| items.is_none_or(|maximum| count <= maximum))
             && u64::try_from(
                 requested
                     .resources()
                     .maximum_retained_representation_bytes(),
             )
-            .is_ok_and(|bytes| bytes <= retained_representation_byte_capacity);
-        if !within_binding || !within_runtime {
+            .is_ok_and(|bytes_requested| bytes.is_none_or(|maximum| bytes_requested <= maximum));
+        if !fits {
             return Err(capacity_denial());
         }
-        Ok(Self {
-            remaining: requested_cardinality,
-            remaining_retained_representation_bytes: requested
-                .resources()
-                .maximum_retained_representation_bytes(),
-        })
+        Ok(count)
     }
 
     /// Reserves a write and the remaining representation after ordinary effects.
@@ -69,7 +95,7 @@ impl WorthQueryCandidateReservation {
     }
 
     pub(super) fn total_items(&self) -> usize {
-        total(self.remaining).unwrap_or(usize::MAX)
+        self.remaining_items
     }
 
     pub(super) fn charge(
@@ -100,6 +126,10 @@ impl WorthQueryCandidateReservation {
         retained_representation_bytes: usize,
         replaced_representation_bytes: usize,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let remaining_items = self
+            .remaining_items
+            .checked_sub(count)
+            .ok_or_else(reservation_denial)?;
         let remaining = match kind {
             CandidateItemKind::Create => self.remaining.maximum_creates(),
             CandidateItemKind::Delete => self.remaining.maximum_deletes(),
@@ -169,6 +199,7 @@ impl WorthQueryCandidateReservation {
             .checked_sub(retained_representation_bytes)
             .ok_or_else(reservation_denial)?;
         self.remaining = next_cardinality;
+        self.remaining_items = remaining_items;
         self.remaining_retained_representation_bytes = remaining_retained_representation_bytes;
         Ok(())
     }

@@ -38,7 +38,7 @@ fn lease(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 4096, Some(work)),
+                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), Some(4096), Some(work)),
             ),
             deadline: None,
             cancellation,
@@ -169,7 +169,7 @@ fn identity_storage_is_admitted_before_scan_dispatch() {
         outcome,
         ScanOutcome::Stopped {
             reason: MapStop::Admission(LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial { admitted: 4096, .. }
+                worth_execution::MemoryLimitDenial::Capacity { admitted: 4096, .. }
             )),
             ..
         }

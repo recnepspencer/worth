@@ -112,10 +112,10 @@ fn run() {
         "branch-newest"
     );
 
-    let historical = application
+    let (historical, history) = application
         .runtime
         .with_host_advancement(|host_phase| {
-            application
+            let historical = application
                 .runtime
                 .request(&principal, &scope)
                 .on_branch(fork_relational)
@@ -125,16 +125,21 @@ fn run() {
                     identity: "intent-1".to_owned(),
                 })
                 .execute_in_advancement(&host_phase)
-                .expect("the historical read must use the retained application evidence")
+                .expect("the historical read must use the retained application evidence");
+            let history = application
+                .runtime
+                .branches()
+                .history(
+                    &host_phase,
+                    fork_relational,
+                    Some(NonZeroUsize::new(1).unwrap()),
+                )
+                .expect("the live product must expose bounded ancestry");
+            (historical, history)
         })
         .expect("installed host call opens");
     assert_eq!(historical.rows()[0].input, "branch-local-change");
 
-    let history = application
-        .runtime
-        .branches()
-        .history(fork_relational, NonZeroUsize::new(1).unwrap())
-        .expect("the live product must expose bounded ancestry");
     assert_eq!(history.visited_count(), 1);
     assert!(!history.is_complete());
     assert!(history.next_parent_commit().is_some());

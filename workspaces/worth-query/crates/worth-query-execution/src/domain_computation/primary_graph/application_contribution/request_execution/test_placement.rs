@@ -5,8 +5,8 @@
 //!
 //! Every lease is drawn from the one authority a process may construct. It
 //! admits twice the machine's width, so a lease may ask for more workers than
-//! the machine has. Each policy carries its own budget, far under the
-//! authority's, so tests running at once never meet on its memory.
+//! the machine has. Memory proofs declare a finite request budget; ordinary
+//! test requests keep memory accounting without imposing a fixture cap.
 
 use super::test_authority::query_test_execution_authority_for_test;
 pub use super::test_authority::test_execution_workers_for_test;
@@ -76,7 +76,7 @@ pub fn place_managed_computations_on_this_thread_for_test(
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) fn test_policy(
     workers: NonZeroUsize,
-    memory: u64,
+    memory: Option<u64>,
 ) -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,

@@ -34,12 +34,12 @@ fn rebuilt_under(memory: Option<u64>, leased: bool) -> Vec<(Outcome, usize)> {
         None => vec![Box::new(|| {
             RuntimeWorldExecutionPlacement::Serial(
         crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-            std::num::NonZeroUsize::MIN, 1 << 30,
+            std::num::NonZeroUsize::MIN, None,
         ),
     )
         })],
         Some(memory) => {
-            let policy = move || test_policy(NonZeroUsize::new(2).unwrap(), memory);
+            let policy = move || test_policy(NonZeroUsize::new(2).unwrap(), Some(memory));
             if leased {
                 vec![Box::new(move || RuntimeWorldExecutionPlacement::Leased {
                     authority: query_test_execution_authority_for_test(),
@@ -120,7 +120,7 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
     // Native width two and serial width one hold different worker contexts.
     // Each posture must refuse at its own physical-memory boundary.
     for leased in [false, true] {
-        let policy = test_policy(NonZeroUsize::new(2).unwrap(), 1 << 30);
+        let policy = test_policy(NonZeroUsize::new(2).unwrap(), None);
         let token = worth_execution::CancellationToken::new();
         let policy = if leased {
             policy

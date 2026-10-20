@@ -3,9 +3,9 @@ use std::time::Instant;
 use super::{CancellationToken, SerialMemoryBudget};
 use worth_foundational::ExecutionRequestPolicy;
 
-/// A reusable description of a lease-free request, built from policy-bounded memory.
-/// Policy work is optional; computation declarations still narrow the same request.
-/// It may outlive a scope; every use opens a bounded scope or draws from its parent.
+/// A reusable description of a lease-free request, built from the original optional memory policy.
+/// Memory and work ceilings are optional; computation declarations still constrain the same request.
+/// It may outlive a scope; every use opens an accounted scope or draws from its parent.
 /// The description grants no access to an absent lease outside that closure.
 #[derive(Debug, Clone)]
 pub struct SerialRequest {

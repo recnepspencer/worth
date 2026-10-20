@@ -75,7 +75,7 @@ fn pinned_population_keeps_nonempty_predecessor_and_admits_empty_successor() {
     ));
     let cancellation = worth_execution::CancellationSource::new();
     let stopped = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(1 << 26),
+        worth_execution::SerialMemoryBudget::new(None),
         cancellation.token(),
         None,
     );

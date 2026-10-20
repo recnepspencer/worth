@@ -11,7 +11,7 @@ fn a_queue_refusal_uses_its_advance_custody_not_the_rows_caller_tag() {
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
                 maximum_work_visits: Some(1_000_000),
-                maximum_preparation_bytes: 8 * 1024 * 1024,
+                maximum_preparation_bytes: None,
             },
         );
         frontier
@@ -61,7 +61,7 @@ fn a_queue_budget_refusal_returns_its_typed_end() {
     let mut admission =
         InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
             maximum_work_visits: Some(1_000_000),
-            maximum_preparation_bytes: 8 * 1024 * 1024,
+            maximum_preparation_bytes: None,
         });
     frontier.insert(ready, false, None, &mut admission).unwrap();
     let mut queue = QueuedRequiredRoots::new();
@@ -108,7 +108,7 @@ fn a_caller_refusal_returns_its_stop_even_for_a_queue_origin_row() {
     let mut admission =
         InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
             maximum_work_visits: Some(1_000_000),
-            maximum_preparation_bytes: 8 * 1024 * 1024,
+            maximum_preparation_bytes: None,
         });
     frontier.insert(ready, false, None, &mut admission).unwrap();
     let mut queue = QueuedRequiredRoots::new();

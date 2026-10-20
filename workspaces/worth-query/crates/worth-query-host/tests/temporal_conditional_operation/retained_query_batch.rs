@@ -21,10 +21,10 @@ fn read(identity: &str) -> TemporalIntentReadRequest {
         identity: identity.to_owned(),
     }
 }
-fn limits(work: usize, bytes: usize) -> WorthQueryApplicationQueryBatchLimits {
+fn limits(work: Option<NonZeroUsize>, bytes: usize) -> WorthQueryApplicationQueryBatchLimits {
     WorthQueryApplicationQueryBatchLimits::new(
         NonZeroUsize::new(8).unwrap(),
-        NonZeroUsize::new(work).unwrap(),
+        work,
         NonZeroUsize::new(bytes).unwrap(),
         NonZeroUsize::new(2048).unwrap(),
     )
@@ -57,7 +57,7 @@ fn retained_batch_orders_independent_scopes_and_bills_duplicates_at_one_basis() 
         .with_host_advancement(|phase| {
             request
                 .query_batch(vec![read("intent-1"), read("intent-2"), read("intent-1")])
-                .limits(limits(1024, 1_048_576))
+                .limits(limits(None, 1_048_576))
                 .execute(&phase)
                 .unwrap()
         })
@@ -130,7 +130,7 @@ fn late_missing_scope_publishes_no_collection_and_releases_staged_custody() {
                 .request(&external, &scope)
                 .at(&observation)
                 .query_batch(vec![read("intent-1"), read("absent")])
-                .limits(limits(1024, 1_048_576))
+                .limits(limits(None, 1_048_576))
                 .execute(&phase)
         })
         .expect("installed host call opens");
@@ -180,7 +180,7 @@ fn aggregate_work_refuses_second_read_without_returning_the_first() {
         .with_host_advancement(|phase| {
             request
                 .query_batch(vec![read("intent-1"), read("intent-1")])
-                .limits(limits(work, 1_048_576))
+                .limits(limits(Some(NonZeroUsize::new(work).unwrap()), 1_048_576))
                 .execute(&phase)
         })
         .expect("installed host call opens");
@@ -220,7 +220,7 @@ fn aggregate_custody_refusal_releases_every_earlier_item() {
         .with_host_advancement(|phase| {
             request
                 .query_batch(vec![read("intent-1")])
-                .limits(limits(1024, 1_048_576))
+                .limits(limits(None, 1_048_576))
                 .execute(&phase)
                 .unwrap()
         })
@@ -234,7 +234,7 @@ fn aggregate_custody_refusal_releases_every_earlier_item() {
         .with_host_advancement(|phase| {
             request
                 .query_batch(vec![read("intent-1"), read("intent-1")])
-                .limits(limits(1024, bytes))
+                .limits(limits(None, bytes))
                 .execute(&phase)
         })
         .expect("installed host call opens");
@@ -274,7 +274,7 @@ fn historical_batch_reads_original_data_but_current_revocation_still_refuses() {
                 .request(&external, &scope)
                 .at(&observation)
                 .query_batch(vec![read("intent-1"), read("intent-1")])
-                .limits(limits(1024, 1_048_576))
+                .limits(limits(None, 1_048_576))
                 .execute(&phase)
                 .unwrap()
         })
@@ -293,7 +293,7 @@ fn historical_batch_reads_original_data_but_current_revocation_still_refuses() {
                 .request(&external, &scope)
                 .at(&observation)
                 .query_batch(vec![read("intent-1")])
-                .limits(limits(1024, 1_048_576))
+                .limits(limits(None, 1_048_576))
                 .execute(&phase)
         })
         .expect("installed host call opens");
@@ -335,7 +335,7 @@ fn genuine_source_clone_keeps_custody_after_batch_drop_and_refunds_on_last_drop(
                 .request(&external, &scope)
                 .at(&observation)
                 .query_batch(vec![read("intent-1")])
-                .limits(limits(1024, 1_048_576))
+                .limits(limits(None, 1_048_576))
                 .execute(&phase)
                 .unwrap()
         })

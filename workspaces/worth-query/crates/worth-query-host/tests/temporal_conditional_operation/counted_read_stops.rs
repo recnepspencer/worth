@@ -80,7 +80,7 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
         let observer = super::test_read_stops::observe_consults_for_test(|_| {});
         let source = worth_execution::CancellationSource::new();
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+            worth_execution::SerialMemoryBudget::new(None),
             source.token(),
             None,
         );

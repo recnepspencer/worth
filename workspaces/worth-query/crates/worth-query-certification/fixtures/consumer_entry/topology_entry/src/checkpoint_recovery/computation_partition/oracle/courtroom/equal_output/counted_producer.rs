@@ -1,5 +1,6 @@
 //! The ordinary dependent uses the counted source with the existing operation.
 use super::*;
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 pub(super) struct Family;
 pub(super) struct Producer;
 pub(super) struct Provider;
@@ -53,7 +54,7 @@ impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
     fn demand_resources(
         &self,
         _: &counted_source::CountedReadResult,
-    ) -> WorthQueryProducerDemandResources {
-        planar_producer_resources()
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({ planar_producer_resources() })
     }
 }

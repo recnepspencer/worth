@@ -9,7 +9,12 @@ use crate::query::data::{QueryExecutionOutcome, QueryWorkerFragment};
 
 const RESULT_BUDGET_DIVISOR: u64 = 4;
 
+mod denial_memory;
+mod memory;
 mod packet_identity;
+mod result_growth;
+mod tracked;
+pub(super) use memory::QueryPacketMemory;
 
 #[cfg(test)]
 mod caller_lease_tests;
@@ -64,7 +69,10 @@ pub enum QueryReadPacketDenial {
 
 impl ChargedBytes for QueryReadPacketDenial {
     fn additional_charged_bytes(&self) -> u64 {
-        0
+        match self {
+            Self::ReadRequest(cause) => denial_memory::inline(cause),
+            Self::FragmentUnavailable => 0,
+        }
     }
 }
 
@@ -79,25 +87,28 @@ pub struct QueryLeasedReadOutcome {
 /// intermediate allocation before that settlement point.
 pub(super) struct QueryPacketBudget<'context, 'meter, 'lease> {
     context: &'context mut MapKernelContext<'meter, 'lease>,
-    ceiling: u64,
+    memory: &'context QueryPacketMemory,
     result_bytes: u64,
     scratch_bytes: u64,
+    temporary_bytes: std::cell::Cell<u64>,
 }
 
 impl<'context, 'meter, 'lease> QueryPacketBudget<'context, 'meter, 'lease> {
     pub(super) fn new(
         context: &'context mut MapKernelContext<'meter, 'lease>,
-        ceiling: u64,
+        memory: &'context QueryPacketMemory,
     ) -> Result<Self, MapKernelFailure<QueryReadPacketDenial>> {
         let result_bytes = std::mem::size_of::<QueryWorkerFragment>() as u64;
-        if result_bytes > ceiling {
+        if memory.ceiling.is_some_and(|ceiling| result_bytes > ceiling) {
             return Err(MapKernelFailure::ResultCapacityExceeded);
         }
+        memory.result(result_bytes)?;
         Ok(Self {
             context,
-            ceiling,
+            memory,
             result_bytes,
             scratch_bytes: 0,
+            temporary_bytes: std::cell::Cell::new(0),
         })
     }
 
@@ -114,11 +125,23 @@ impl<'context, 'meter, 'lease> QueryPacketBudget<'context, 'meter, 'lease> {
         &mut self,
         additional_bytes: u64,
     ) -> Result<(), MapKernelFailure<QueryReadPacketDenial>> {
-        self.scratch_bytes = self
-            .scratch_bytes
-            .checked_add(additional_bytes)
-            .filter(|total| *total <= self.ceiling)
-            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
+        let next = self.memory.add(self.scratch_bytes, additional_bytes)?;
+        self.memory
+            .scratch(self.memory.add(next, self.temporary_bytes.get())?)?;
+        self.scratch_bytes = next;
+        Ok(())
+    }
+
+    pub(super) fn settle_temporary_record(
+        &self,
+        bytes: u64,
+    ) -> Result<(), MapKernelFailure<QueryReadPacketDenial>> {
+        if self.memory.ceiling.is_some() {
+            return self.check_temporary_record(bytes);
+        }
+        self.memory
+            .settle_scratch(self.memory.add(self.scratch_bytes, bytes)?)?;
+        self.temporary_bytes.set(bytes);
         Ok(())
     }
 
@@ -126,10 +149,8 @@ impl<'context, 'meter, 'lease> QueryPacketBudget<'context, 'meter, 'lease> {
         &self,
         bytes: u64,
     ) -> Result<(), MapKernelFailure<QueryReadPacketDenial>> {
-        self.scratch_bytes
-            .checked_add(bytes)
-            .filter(|total| *total <= self.ceiling)
-            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
+        let peak = self.memory.add(self.scratch_bytes, bytes)?;
+        self.memory.scratch(peak)?;
         Ok(())
     }
 
@@ -158,32 +179,7 @@ impl<'context, 'meter, 'lease> QueryPacketBudget<'context, 'meter, 'lease> {
         records: &mut Vec<T>,
         record: &T,
     ) -> Result<(), MapKernelFailure<QueryReadPacketDenial>> {
-        let old_capacity = records.capacity();
-        let required_capacity = old_capacity.max(records.len().saturating_add(1));
-        let inline_growth = required_capacity
-            .saturating_sub(old_capacity)
-            .saturating_mul(std::mem::size_of::<T>()) as u64;
-        let projected = self
-            .result_bytes
-            .checked_add(inline_growth)
-            .and_then(|total| total.checked_add(record.additional_charged_bytes()))
-            .filter(|total| *total <= self.ceiling)
-            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
-        records
-            .try_reserve_exact(1)
-            .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
-        let actual_growth = records
-            .capacity()
-            .saturating_sub(old_capacity)
-            .saturating_mul(std::mem::size_of::<T>()) as u64;
-        self.result_bytes = self
-            .result_bytes
-            .checked_add(actual_growth)
-            .and_then(|total| total.checked_add(record.additional_charged_bytes()))
-            .filter(|total| *total <= self.ceiling)
-            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
-        debug_assert!(self.result_bytes >= projected);
-        Ok(())
+        result_growth::reserve_record(self.memory, &mut self.result_bytes, records, record)
     }
 }
 
@@ -194,7 +190,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
     execute: impl Fn(
             &PacketizedQueryWork,
             usize,
-            u64,
+            &QueryPacketMemory,
             &mut MapKernelContext<'_, '_>,
         ) -> Result<QueryWorkerFragment, MapKernelFailure<QueryReadPacketDenial>>
         + Sync,
@@ -210,21 +206,25 @@ fn schedule_query_packets(
     execute: impl Fn(
             &PacketizedQueryWork,
             usize,
-            u64,
+            &QueryPacketMemory,
             &mut MapKernelContext<'_, '_>,
         ) -> Result<QueryWorkerFragment, MapKernelFailure<QueryReadPacketDenial>>
         + Sync,
 ) -> Result<(Vec<QueryWorkerFragment>, ExecutionReport), QueryReadExecutionStop> {
     let packet_count = packets.len();
     let packet_count_u64 = u64::try_from(packet_count).unwrap_or(u64::MAX);
-    let per_packet_ceiling = execution.memory_limit()
+    let Some(limit) = execution.memory_limit() else {
+        return tracked::schedule(packets, lease, execute);
+    };
+    let per_packet_ceiling = limit
         / RESULT_BUDGET_DIVISOR
             .saturating_mul(packet_count_u64)
             .max(1);
+    let memory = QueryPacketMemory::declared(per_packet_ceiling);
     let map = packet_identity::declared_map(packets, per_packet_ceiling)?;
     match map.run(lease, |input, context| {
         context.checkpoint(0)?;
-        execute(&input.work, input.ordinal, per_packet_ceiling, context)
+        execute(&input.work, input.ordinal, &memory, context)
     }) {
         MapOutcome::Complete { values, report } => Ok((values, report)),
         MapOutcome::Stopped {

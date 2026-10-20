@@ -34,7 +34,7 @@ fn bounded_traversal_protects_chain_and_reuses_exact_history_leases() {
     let cancellation = worth_execution::CancellationSource::new();
     cancellation.cancel();
     let stopped = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::SerialMemoryBudget::new(None),
         cancellation.token(),
         None,
     );

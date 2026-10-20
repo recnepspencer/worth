@@ -4,6 +4,7 @@ use super::{application::*, computation, control::Control};
 use crate::principal::*;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_reads, worth_query_operation_writes,
@@ -68,11 +69,11 @@ impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
     const IDENTITY: &'static str = "matrix.apply";
     const HANDLER_IDENTITY: &'static str = "matrix.apply.handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "matrix.apply.command";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 1, 0, 0, 2, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(4096),
-        );
+        ));
     fn scope_field() -> ApplicationFieldRef<
         S,
         Node,
@@ -289,6 +290,8 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
         _: &Decision<Schema>,
     ) -> ApplicationCandidateRequirements {
         Binding::<Schema>::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
     fn build_candidate(
         &self,

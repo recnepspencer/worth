@@ -1,5 +1,6 @@
+pub(super) mod candidate_backing;
 mod candidate_reservation;
-mod candidate_retained_representation;
+pub(in crate::domain_computation::primary_graph) mod candidate_retained_representation;
 mod conditional_definition;
 mod emission;
 mod entity_creation;
@@ -69,9 +70,12 @@ pub(in crate::domain_computation::primary_graph) use platform_reservation::{
     admit_platform_effects, admit_signing_lifecycle_effects, admit_workflow_settlement_effects,
     PlatformEffectDemand,
 };
+pub(in crate::domain_computation::primary_graph::application_attempt) use platform_reservation::{
+    check_combined_host_capacity, validate_candidate_extension,
+};
 use target_admission::installed_contract_admits_program_target;
 use worth_query_declaration::facade::{
-    application_operation::ApplicationCandidateRequirements,
+    application_operation::{ApplicationCandidatePolicy, ApplicationCandidateRequirements},
     domain_computation::WorthQuerySemanticScaleAxis,
 };
 
@@ -115,6 +119,7 @@ impl<Schema, Operation, Input, Scope>
             layout,
             program: Arc::new(()),
             effects: Vec::new(),
+            effect_backing_memory: None,
             field_write_positions: FieldWriteIndex::default(),
             keys: BTreeSet::new(),
             emission_retained_bytes: 0,
@@ -129,7 +134,8 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation::primary_graph) fn begin_reserved_effect_program(
         self,
         requested: ApplicationCandidateRequirements,
-        ceiling: ApplicationCandidateRequirements,
+        policy: ApplicationCandidatePolicy,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -140,23 +146,38 @@ impl<Schema, Operation, Input, Scope>
             .execution_strategy()
             .expect("installed application operation has exactly one execution strategy")
             .envelope();
+        let host = self
+            .admission
+            .graph_work()
+            .candidate_host_envelope()
+            .ok_or_else(|| {
+                WorthQueryApplicationAttemptDenial::new(
+                    WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded,
+                    "candidate lost original host resource support",
+                )
+            })?;
         let reservation = WorthQueryCandidateReservation::admit(
             requested,
-            ceiling,
-            envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
-            envelope.resource_ceiling(
+            policy,
+            host.optional_scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
+            host.optional_resource_ceiling(
                 WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
             ),
         )?;
-        let capacity = reservation.total_items();
+        let (effects, effect_backing_memory) = candidate_backing::allocate(
+            reservation.total_items(),
+            allocation_policy,
+            self.admission.publication_request(),
+        )?;
         let layout = Arc::clone(&self.lease.layout);
         let emission_retained_bytes_ceiling =
             envelope.resource_ceiling(WorthQueryResourceDimension::RetainedBytes);
-        Ok(WorthQueryApplicationEffectProgramBuilder {
+        let candidate = WorthQueryApplicationEffectProgramBuilder {
             read_set: self,
             layout,
             program: Arc::new(()),
-            effects: Vec::with_capacity(capacity),
+            effects,
+            effect_backing_memory,
             field_write_positions: FieldWriteIndex::default(),
             keys: BTreeSet::new(),
             emission_retained_bytes: 0,
@@ -165,7 +186,9 @@ impl<Schema, Operation, Input, Scope>
             candidate_reservation: Some(reservation),
             output_correspondence: Default::default(),
             creation_partition: None,
-        })
+        };
+        candidate_backing::check_request(candidate.read_set.admission.publication_request())?;
+        Ok(candidate)
     }
 }
 
@@ -307,6 +330,8 @@ impl<Schema, Operation, Input, Scope>
         Ok(WorthQueryApplicationEffectProgram {
             read_set: self.read_set,
             effects: self.effects,
+            effect_backing_memory: self.effect_backing_memory,
+            candidate_requirements: self.candidate_reservation.as_ref().map(WorthQueryCandidateReservation::requirements),
             emission_retained_bytes: self.emission_retained_bytes,
             emission_retained_bytes_ceiling: self.emission_retained_bytes_ceiling,
             conditional_definition: self.conditional_definition,

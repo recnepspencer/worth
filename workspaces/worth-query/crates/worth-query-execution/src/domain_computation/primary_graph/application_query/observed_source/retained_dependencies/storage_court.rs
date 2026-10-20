@@ -30,7 +30,7 @@ impl WorthQueryRetainedQueryDependencies {
                     inherited.determinism(),
                     ExecutionBudget::new(
                         inherited.budget().max_workers(),
-                        quote - 1,
+                        Some(quote - 1),
                         inherited.budget().work_ceiling(),
                     ),
                 ),
@@ -56,7 +56,7 @@ impl WorthQueryRetainedQueryDependencies {
         assert_eq!(retained.sources.charged_payload_bytes(), Some(quote));
         let serial_stop = CancellationSource::new();
         let serial = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(quote),
+            worth_execution::SerialMemoryBudget::new(Some(quote)),
             serial_stop.token(),
             None,
         );
@@ -77,7 +77,7 @@ impl WorthQueryRetainedQueryDependencies {
         );
         assert_eq!(self.sources.len(), count);
         let fresh_serial = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(quote),
+            worth_execution::SerialMemoryBudget::new(Some(quote)),
             worth_execution::CancellationToken::new(),
             None,
         );

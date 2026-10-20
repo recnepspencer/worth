@@ -26,7 +26,7 @@
 //! # use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 //! # use worth_relational::facade::{mvcc::PreparedRelationalCommitCandidate, runtime::RelationalRuntimeApi, schema::RelationalSchemaRegistry};
 //! # fn with_host_policy<R>(body: impl for<'scope> FnOnce(&'scope ExecutionRequest<'scope, 'scope>) -> R) -> R {
-//! #     let backing = SerialRequest::from_memory(SerialMemoryBudget::new(64 * 1024 * 1024), CancellationSource::new().token(), None);
+//! #     let backing = SerialRequest::from_memory(SerialMemoryBudget::new(None), CancellationSource::new().token(), None);
 //! #     let request = ExecutionRequest::serial(&backing);
 //! #     body(&request)
 //! # }
@@ -55,7 +55,7 @@
 //! # use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 //! # use worth_relational::facade::{mvcc::PreparedRelationalCommitCandidate, runtime::RelationalRuntimeApi, schema::RelationalSchemaRegistry};
 //! # fn with_host_policy<R>(body: impl for<'scope> FnOnce(&'scope ExecutionRequest<'scope, 'scope>) -> R) -> R {
-//! #     let backing = SerialRequest::from_memory(SerialMemoryBudget::new(64 * 1024 * 1024), CancellationSource::new().token(), None);
+//! #     let backing = SerialRequest::from_memory(SerialMemoryBudget::new(None), CancellationSource::new().token(), None);
 //! #     let request = ExecutionRequest::serial(&backing);
 //! #     body(&request)
 //! # }

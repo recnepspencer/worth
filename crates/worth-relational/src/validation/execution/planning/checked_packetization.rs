@@ -30,11 +30,43 @@ pub(crate) fn prepare_checked_invariant_packets<'state>(
     work_budget: Option<&RequestWorkBudget>,
     retained_plan_bytes: u64,
 ) -> Result<CheckedPacketPlan<'state>, PacketExecutionStop> {
-    let packet_ceiling = lease.policy().budget().charged_memory_bytes()
-        / (planned.packets.len().max(1) as u64).saturating_mul(8);
+    let memory = lease.policy().budget().charged_memory_bytes().map_or(
+        crate::execution::PacketMemory::Tracked,
+        |limit| {
+            let ceiling = limit / (planned.packets.len().max(1) as u64).saturating_mul(8);
+            crate::execution::PacketMemory::Declared {
+                scratch: ceiling,
+                result: ceiling,
+            }
+        },
+    );
+    let preparation_bytes =
+        crate::execution::packet_preparation_bytes::<
+            crate::authority::commit::preparation::InvariantWorkPacket<'_>,
+        >(planned.packets.len())?
+        .checked_add((2 * size_of::<InvariantScopeWideningCause>()) as u64)
+        .and_then(|bytes| {
+            planned.packets.iter().try_fold(bytes, |bytes, packet| {
+                let partition_count = match &packet.locality.partition_scope {
+                    PreparationPartitionScope::AllObserved => 0,
+                    PreparationPartitionScope::TouchedPartitions(partitions) => partitions.len(),
+                };
+                bytes
+                    .checked_add((partition_count as u64).checked_mul(
+                        (2 * size_of::<PartitionId>() + 4 * size_of::<usize>()) as u64,
+                    )?)?
+                    .checked_add(
+                        (packet.reduction_key.partition_scope.len() as u64)
+                            .checked_mul(size_of::<PartitionId>() as u64)?,
+                    )
+            })
+        })
+        .ok_or(PacketExecutionStop::Admission(
+            crate::execution::PacketAdmissionDenial::MemoryOverflow,
+        ))?;
     let mut metadata = None;
     let (packets, _) =
-        prepare_borrowed_packets(lease, work_budget, |budget| {
+        prepare_borrowed_packets(lease, work_budget, preparation_bytes, |budget| {
             let (proof_boundary, scope_units) = fold_scope(&planned, budget)?;
             metadata = Some((proof_boundary, scope_units));
             let mut packets = Vec::new();
@@ -57,8 +89,7 @@ pub(crate) fn prepare_checked_invariant_packets<'state>(
                         (packet.reduction_key.partition_scope.len() as u64)
                             .saturating_mul(size_of::<PartitionId>() as u64),
                     ),
-                    kernel_scratch_bytes: packet_ceiling,
-                    max_result_bytes: packet_ceiling,
+                    memory,
                     value: packet,
                 });
             }
@@ -78,7 +109,7 @@ pub(crate) fn prepare_checked_invariant_packets<'state>(
 
 fn fold_scope(
     planned: &PreparedInvariantExecution<'_>,
-    budget: &mut PacketPreparationBudget<'_, '_, '_>,
+    budget: &mut PacketPreparationBudget<'_, '_, '_, '_>,
 ) -> Result<(InvariantProofBoundarySummary, usize), MapKernelFailure<PacketBudgetDenial>> {
     let mut touched = BTreeSet::new();
     let mut widened = Vec::new();

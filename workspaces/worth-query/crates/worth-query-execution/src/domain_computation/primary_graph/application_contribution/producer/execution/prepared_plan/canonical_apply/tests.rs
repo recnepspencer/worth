@@ -30,7 +30,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
         let execution = QueryRequestExecution::open(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
                 std::num::NonZeroUsize::MIN,
-                1 << 20,
+                None,
             )),
             &request,
         );
@@ -75,7 +75,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
         assert!(completed.borrow().is_empty());
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: Some(0),
-            maximum_preparation_bytes: 0,
+            maximum_preparation_bytes: None,
         });
         let mut applied = Vec::new();
         assert_eq!(

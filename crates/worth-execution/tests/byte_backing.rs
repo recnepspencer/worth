@@ -33,7 +33,7 @@ fn request(bytes: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, Some(1)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -73,7 +73,7 @@ fn fixed_backing_preserves_pointer_and_charge_through_shared_child_custody() {
     drop(retained);
     assert!(matches!(
         parent.reserve_memory(5),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 5,
             admitted: 4,
             level: MemoryLimitLevel::Policy { ancestor: 0 }
@@ -85,7 +85,7 @@ fn fixed_backing_preserves_pointer_and_charge_through_shared_child_custody() {
     let replacement = replacement.seal().unwrap();
     assert!(matches!(
         parent.reserve_memory(1),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 1,
             admitted: 0,
             level: MemoryLimitLevel::Policy { ancestor: 0 }

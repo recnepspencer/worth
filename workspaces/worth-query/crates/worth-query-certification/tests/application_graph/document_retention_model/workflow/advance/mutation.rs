@@ -1,3 +1,4 @@
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_host::facade::declaration::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
@@ -89,7 +90,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowAdvanceBind
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.workflow-advance.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = {
+    const CANDIDATES: ApplicationCandidatePolicy = ApplicationCandidatePolicy::finite({
         // Retain the six-source-fact allowance and the related-assessment
         // applicability's two endpoint kinds plus one adjacency revision.
         const DEPENDENCIES: usize = 6 + 3;
@@ -109,7 +110,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowAdvanceBind
             ),
             ApplicationCandidateResourceCeiling::representation_bytes(256 * 1024),
         )
-    };
+    });
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -170,7 +171,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowApprovalBin
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.workflow-approval.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = WorkflowAdvanceBinding::CANDIDATES;
+    const CANDIDATES: ApplicationCandidatePolicy = WorkflowAdvanceBinding::CANDIDATES;
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,

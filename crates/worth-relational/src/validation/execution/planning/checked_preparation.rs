@@ -29,6 +29,9 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
     request: &'state InvariantExecutionRequest<'state>,
     lease: &ExecutionResourceLease<'_>,
 ) -> Result<(PreparedInvariantExecution<'state>, u64, ExecutionReport), PacketExecutionStop> {
+    if lease.policy().budget().charged_memory_bytes().is_none() {
+        return tracked::prepare(runtime, execution, request, lease);
+    }
     let identity = PartitionIdentity::new(1);
     let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
     let outcome = crate::execution::run_with_remaining_request_work(
@@ -88,6 +91,11 @@ fn preparation_failure(stop: CustomPreparationStop) -> MapKernelFailure<PacketBu
             MapKernelFailure::Stop(MapKernelStop::DeadlineElapsed)
         }
         CustomPreparationStop::WorkExhausted => MapKernelFailure::Stop(MapKernelStop::WorkCeiling),
+        CustomPreparationStop::MemoryAdmission(denial) => MapKernelFailure::Domain(
+            PacketBudgetDenial::ReadRequest(crate::execution::denial::lease_denial(
+                worth_execution::LeaseDenial::MemoryExhausted(denial),
+            )),
+        ),
         CustomPreparationStop::MemoryExhausted => {
             MapKernelFailure::Domain(PacketBudgetDenial::ScratchCapacityExceeded)
         }
@@ -106,8 +114,14 @@ fn preparation_ceiling(
             lease, 0, 0, 0, 0,
         )
         .unwrap_or(u64::MAX);
-    lease.available_memory_bytes().saturating_sub(fixed) / 2
+    lease
+        .available_memory_bytes()
+        .expect("the explicit request ceiling supplies finite lineage room")
+        .saturating_sub(fixed)
+        / 2
 }
 
 #[cfg(test)]
 mod memory_tests;
+
+mod tracked;

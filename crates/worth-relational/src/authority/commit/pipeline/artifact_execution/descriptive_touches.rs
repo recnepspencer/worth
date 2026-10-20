@@ -26,12 +26,12 @@ pub(super) enum TouchPreparationMode {
     Unavailable,
 }
 
-enum TouchBudget<'a, 'b, 'c, 'd> {
-    Checked(&'a mut PacketPreparationBudget<'b, 'c, 'd>),
+enum TouchBudget<'a, 'b, 'c, 'd, 'e> {
+    Checked(&'a mut PacketPreparationBudget<'b, 'c, 'd, 'e>),
     Legacy,
 }
 
-impl TouchBudget<'_, '_, '_, '_> {
+impl TouchBudget<'_, '_, '_, '_, '_> {
     fn checkpoint(&mut self, units: u64) -> Result<(), Failure> {
         match self {
             Self::Checked(budget) => budget.checkpoint(units),
@@ -61,14 +61,14 @@ pub(super) fn prepare(
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
     mode: TouchPreparationMode,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Graph, TransactionCommitError> {
     // A descriptor transition or unmaterialized branch reference cannot
     // establish exact native record revisions from this selected working root.
     if matches!(mode, TouchPreparationMode::Unavailable) {
         return Ok(Graph::unavailable());
     }
-    match lease {
+    match super::super::request_lease(execution) {
         Some(lease) => {
             let maximum = crate::execution::prepare_borrowed_artifact(
                 lease,
@@ -89,23 +89,32 @@ pub(super) fn prepare(
             .map_err(|stop| TransactionCommitError::execution(stop.into()))?;
             let bound =
                 extent::memory_bound(runtime, selected, working, deltas, maximum, &mode, lease)?;
-            crate::execution::prepare_borrowed_artifact(
-                lease,
-                runtime.commit_work_budget.as_ref(),
-                bound,
-                |checked| {
-                    build(
-                        runtime,
-                        selected,
-                        working,
-                        deltas,
-                        adjacency,
-                        &mode,
-                        maximum,
-                        &mut TouchBudget::Checked(checked),
-                    )
-                },
-            )
+            let build = |checked: &mut PacketPreparationBudget<'_, '_, '_, '_>| {
+                build(
+                    runtime,
+                    selected,
+                    working,
+                    deltas,
+                    adjacency,
+                    &mode,
+                    maximum,
+                    &mut TouchBudget::Checked(checked),
+                )
+            };
+            match bound {
+                Some(bound) => crate::execution::prepare_borrowed_artifact(
+                    lease,
+                    runtime.commit_work_budget.as_ref(),
+                    bound,
+                    build,
+                ),
+                None => crate::execution::prepare_tracked_artifact(
+                    execution,
+                    lease,
+                    runtime.commit_work_budget.as_ref(),
+                    build,
+                ),
+            }
             .map_err(|stop| TransactionCommitError::execution(stop.into()))
         }
         None => build(
@@ -149,7 +158,7 @@ fn build(
     adjacency: &[AdjacencyDelta],
     mode: &TouchPreparationMode,
     maximum: usize,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<(Graph, u64), Failure> {
     let slots = (maximum as u64)
         .checked_mul(size_of::<Touch>() as u64)
@@ -203,7 +212,7 @@ fn maximum_touch_count(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<usize, Failure> {
     let mut total = adjacency
         .len()
@@ -248,7 +257,7 @@ fn append_delta(
     working: &crate::runtime::WorkingState,
     delta: &CanonicalRecordAspectDelta,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<(), Failure> {
     if !matches!(
         delta.structural_change,

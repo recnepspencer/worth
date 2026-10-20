@@ -47,6 +47,13 @@ fn a_commit_a_companion_has_no_room_for_stops_for_that_budget() {
             Kind::RetentionBudgetExceeded,
         ),
         (
+            Stop::RetainedCompanionCounterOverflow {
+                requested: 1,
+                retained: u64::MAX,
+            },
+            Kind::RetentionBudgetExceeded,
+        ),
+        (
             Stop::WorkExhausted {
                 required: 2,
                 maximum: 1,

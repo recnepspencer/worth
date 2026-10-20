@@ -132,6 +132,15 @@ impl RegionTotalsBinding for UnboundedBytesOwner {
     }
 }
 
+pub(super) struct OverPolicyBytesOwner;
+impl RegionTotalsBinding for OverPolicyBytesOwner {
+    type Computation = OverPolicyBytesTotals;
+
+    fn install(setup: &mut Setup<'_>) -> Installed {
+        running::<OverPolicyBytesTotals, _>(setup, RegionTotalsOwner)
+    }
+}
+
 pub(super) type Setup<'setup> = WorthQueryApplicationContributionSetup<'setup, CheckpointSchema>;
 pub(super) type Installed = Result<
     RegionTotalsHandler<CheckpointSchema>,

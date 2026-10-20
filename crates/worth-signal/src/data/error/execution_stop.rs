@@ -90,7 +90,7 @@ pub enum SignalExecutionStopReason {
     PreparationMemoryExhausted {
         identity: PartitionIdentity,
         required: Option<u64>,
-        reserved: u64,
+        reserved: Option<u64>,
     },
 }
 

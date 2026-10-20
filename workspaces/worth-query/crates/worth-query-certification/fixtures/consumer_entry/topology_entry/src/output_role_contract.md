@@ -674,7 +674,7 @@ contract:
 # use worth_query_host::facade::application_contribution::{
 #     WorthQueryApplicationContributionContracts, WorthQueryApplicationProducerBinding,
 #     WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
-#     WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
+#     WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial, WorthQueryProducerInvariantRequirement,
 # };
 # use worth_query_host::facade::declaration::application_schema::{
 #     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
@@ -700,7 +700,10 @@ contract:
 #     fn idempotency_key(&self, _: &PlanarReadResult, _: &[u8; 32]) -> u64 {
 #         unimplemented!()
 #     }
-#     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
+#     fn demand_resources(
+#         &self,
+#         _: &PlanarReadResult,
+#     ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
 #         unimplemented!()
 #     }
 # }
@@ -728,7 +731,7 @@ A producer whose role is at-most-one:
 ```compile_fail,E0271
 # use worth_query_host::facade::application_contribution::{
 #     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-#     WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+#     WorthQueryProducerApplicability, WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial,
 #     WorthQueryProducerInvariantRequirement,
 # };
 # use worth_query_host::facade::declaration::application_schema::{
@@ -755,7 +758,10 @@ A producer whose role is at-most-one:
 #     fn idempotency_key(&self, _: &PlanarReadResult, _: &[u8; 32]) -> u64 {
 #         unimplemented!()
 #     }
-#     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
+#     fn demand_resources(
+#         &self,
+#         _: &PlanarReadResult,
+#     ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
 #         unimplemented!()
 #     }
 # }
@@ -778,7 +784,7 @@ A producer whose role binds another entity than its family outputs:
 ```compile_fail,E0271
 # use worth_query_host::facade::application_contribution::{
 #     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-#     WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+#     WorthQueryProducerApplicability, WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial,
 #     WorthQueryProducerInvariantRequirement, WorthQueryProducerOutputFamily,
 # };
 # use worth_query_host::facade::declaration::application_schema::{
@@ -805,7 +811,10 @@ A producer whose role binds another entity than its family outputs:
 #     fn idempotency_key(&self, _: &PlanarReadResult, _: &[u8; 32]) -> u64 {
 #         unimplemented!()
 #     }
-#     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
+#     fn demand_resources(
+#         &self,
+#         _: &PlanarReadResult,
+#     ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
 #         unimplemented!()
 #     }
 # }
@@ -839,7 +848,7 @@ A producer whose role belongs to another operation's contract:
 ```compile_fail,E0271
 # use worth_query_host::facade::application_contribution::{
 #     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-#     WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+#     WorthQueryProducerApplicability, WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial,
 #     WorthQueryProducerInvariantRequirement,
 # };
 # use worth_query_host::facade::declaration::application_schema::{
@@ -866,7 +875,10 @@ A producer whose role belongs to another operation's contract:
 #     fn idempotency_key(&self, _: &PlanarReadResult, _: &[u8; 32]) -> u64 {
 #         unimplemented!()
 #     }
-#     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
+#     fn demand_resources(
+#         &self,
+#         _: &PlanarReadResult,
+#     ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
 #         unimplemented!()
 #     }
 # }
@@ -890,7 +902,7 @@ A producer whose role its contract does not declare:
 # use worth_query_host::facade::application_contribution::{
 #     WorthQueryApplicationContributionContracts, WorthQueryApplicationProducerBinding,
 #     WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
-#     WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
+#     WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial, WorthQueryProducerInvariantRequirement,
 # };
 # use worth_query_host::facade::declaration::application_operation::{
 #     WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
@@ -919,7 +931,10 @@ A producer whose role its contract does not declare:
 #     fn idempotency_key(&self, _: &PlanarReadResult, _: &[u8; 32]) -> u64 {
 #         unimplemented!()
 #     }
-#     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
+#     fn demand_resources(
+#         &self,
+#         _: &PlanarReadResult,
+#     ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
 #         unimplemented!()
 #     }
 # }

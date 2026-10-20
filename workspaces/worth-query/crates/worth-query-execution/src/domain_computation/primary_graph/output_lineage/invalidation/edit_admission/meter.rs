@@ -83,7 +83,9 @@ impl IndexAdmission for InvalidationEditAdmission {
                 .bytes
                 .checked_add(bytes)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            if required > maximum {
+            if let Some(maximum) = maximum
+                && required > maximum
+            {
                 return Err(CompanionPreflightStop::PreparationMemoryExhausted {
                     required,
                     maximum,

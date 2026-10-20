@@ -6,11 +6,8 @@ use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, 
 fn strategy_consults_before_its_stale_basis_check() {
     let (runtime, lowered) = crate::commit_strategies::facade::lowered_commit_fixture();
     let cancellation = CancellationSource::new();
-    let backing = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
-        cancellation.token(),
-        None,
-    );
+    let backing =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let execution = ExecutionRequest::serial(&backing);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())

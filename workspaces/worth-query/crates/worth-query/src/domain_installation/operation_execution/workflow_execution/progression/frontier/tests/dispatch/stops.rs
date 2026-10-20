@@ -19,7 +19,7 @@ fn zero_memory_public_frontier_refuses_without_retaining_start_receipts() {
     let mut prepared = Policy::width(0).workspace(request_execution, &probe);
     let held = start(&mut prepared);
     let mut workspace = Policy {
-        memory: 0,
+        memory: Some(0),
         ..Policy::width(0)
     }
     .workspace(request_execution, &probe);
@@ -64,7 +64,7 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
     // of its zero-work declaration. No measured or fitted budget is used.
     let bytes = super::reservation::start_reservation(request_execution, &probe);
     let mut workspace = Policy {
-        memory: bytes,
+        memory: Some(bytes),
         ..Policy::width(0)
     }
     .workspace(request_execution, &probe);
@@ -78,7 +78,7 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, Some(1024)),
+                ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1024)),
             ),
             cancellation: worth_execution::CancellationToken::new(),
             deadline: None,
@@ -104,7 +104,7 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
     assert_eq!(
         denial(&record),
         &Denial::ComputationAdmission(LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial {
+            worth_execution::MemoryLimitDenial::Capacity {
                 requested,
                 admitted,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
@@ -127,7 +127,7 @@ fn large_task_refusal_stays_typed_at_every_width() {
     // new declaration-derived minimum-budget case above.
     for workers in [0, 1, 2, 4] {
         let mut workspace = Policy {
-            memory: 64 * 1024,
+            memory: Some(64 * 1024),
             ..Policy::width(workers)
         }
         .workspace(request_execution, &probe);
@@ -139,7 +139,7 @@ fn large_task_refusal_stays_typed_at_every_width() {
         assert!(matches!(
             denial(&record),
             Denial::ComputationAdmission(LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial {
+                worth_execution::MemoryLimitDenial::Capacity {
                     level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
                     ..
                 }

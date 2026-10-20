@@ -26,7 +26,11 @@ fn policy(workers: usize, memory: u64, work: u64) -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, Some(work)),
+        ExecutionBudget::new(
+            NonZeroUsize::new(workers).unwrap(),
+            Some(memory),
+            Some(work),
+        ),
     )
 }
 fn serial(memory: u64, work: u64) -> SerialRequest {
@@ -110,9 +114,17 @@ fn assert_serial_scope_memory_refused(cause: BridgeExecutionDenial) {
     let BridgeExecutionDenial::MemoryExhausted(denial) = cause else {
         panic!("serial framework reservation must refuse memory: {cause:?}");
     };
-    assert_eq!(denial.level, MemoryLimitLevel::Policy { ancestor: 0 });
-    assert_eq!(denial.admitted, 0);
-    assert!(denial.requested > 0);
+    let worth_execution::MemoryLimitDenial::Capacity {
+        requested,
+        admitted,
+        level,
+    } = denial
+    else {
+        panic!("finite capacity refusal required");
+    };
+    assert_eq!(level, MemoryLimitLevel::Policy { ancestor: 0 });
+    assert_eq!(admitted, 0);
+    assert!(requested > 0);
 }
 
 #[test]

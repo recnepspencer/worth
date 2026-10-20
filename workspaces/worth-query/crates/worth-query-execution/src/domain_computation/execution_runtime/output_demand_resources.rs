@@ -151,14 +151,16 @@ impl WorthQueryOutputDemandLimits {
     pub fn for_artifact(
         self,
         producer_work: Option<usize>,
-        producer_retained_bytes: usize,
+        producer_retained_bytes: Option<usize>,
     ) -> Self {
-        self.restricted(
-            self.source_currentness_work,
-            producer_work,
-            producer_retained_bytes,
-            self.settlement_attempts,
-        )
+        Self {
+            producer_work: self.producer_work.into_iter().chain(producer_work).min(),
+            producer_retained_bytes: match producer_retained_bytes {
+                Some(maximum) => self.producer_retained_bytes.min(maximum),
+                None => self.producer_retained_bytes,
+            },
+            ..self
+        }
     }
 
     pub const fn source_currentness_work(self) -> Option<usize> {
@@ -182,7 +184,7 @@ mod tests {
     #[test]
     fn ordinary_work_is_absent_and_child_limits_do_not_shrink_source_proof() {
         let host = WorthQueryOutputDemandResourceProfile::default();
-        let child = host.limits().for_artifact(Some(17), 31);
+        let child = host.limits().for_artifact(Some(17), Some(31));
         assert_eq!(child.source_currentness_work(), None);
         assert_eq!(child.producer_work(), Some(17));
         assert_eq!(child.producer_retained_bytes(), 31);
@@ -201,7 +203,7 @@ mod tests {
             NonZeroUsize::new(1).unwrap(),
         );
         assert_eq!(small.constrain(standard.limits()), small.limits());
-        assert_eq!(narrow.for_artifact(Some(100), 100), narrow);
+        assert_eq!(narrow.for_artifact(Some(100), Some(100)), narrow);
     }
 
     #[test]
@@ -211,5 +213,24 @@ mod tests {
             host.with_registry_obligation_retained_bytes(NonZeroUsize::new(128).unwrap());
         assert_eq!(registry_limited.registry_obligation_retained_bytes(), 128);
         assert_eq!(registry_limited.limits(), host.limits());
+    }
+
+    #[test]
+    fn absent_artifact_retention_preserves_the_independent_host_and_zero_narrows() {
+        let host = WorthQueryOutputDemandResourceProfile::new(
+            NonZeroUsize::new(23).unwrap(),
+            NonZeroUsize::new(4).unwrap(),
+        )
+        .limits();
+        assert_eq!(host.for_artifact(None, None), host);
+        assert_eq!(host.for_artifact(None, Some(100)), host);
+        assert_eq!(
+            host.for_artifact(None, Some(7)).producer_retained_bytes(),
+            7
+        );
+        assert_eq!(
+            host.for_artifact(None, Some(0)).producer_retained_bytes(),
+            0
+        );
     }
 }

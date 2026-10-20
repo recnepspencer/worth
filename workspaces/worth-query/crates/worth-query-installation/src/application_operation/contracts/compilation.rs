@@ -128,21 +128,23 @@ fn application_resource_contract(
     candidate_demand: WorthQueryApplicationCandidateDemand,
 ) -> Result<WorthQueryExecutionResourceContract, ()> {
     let program_width = u64::try_from(program_width).map_err(|_| ())?;
-    let scale = WorthQuerySemanticScaleRequest::selective()
-        .with(
-            WorthQuerySemanticScaleAxis::CandidateItems,
-            candidate_demand.candidate_items(),
-        )
+    let mut scale = WorthQuerySemanticScaleRequest::selective()
         .with(WorthQuerySemanticScaleAxis::BatchWidth, program_width);
+    if let Some(items) = candidate_demand.candidate_items() {
+        scale = scale.with(WorthQuerySemanticScaleAxis::CandidateItems, items);
+    }
+    let mut resources = WorthQueryResourceLimitRequest::selective()
+        .with(WorthQueryResourceDimension::RetainedBytes, 262_144);
+    if let Some(bytes) = candidate_demand.retained_representation_bytes() {
+        resources = resources.with(
+            WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
+            bytes,
+        );
+    }
 
     let envelope = WorthQueryExecutionResourceEnvelope::atomic(
         scale,
-        WorthQueryResourceLimitRequest::selective()
-            .with(
-                WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
-                candidate_demand.retained_representation_bytes(),
-            )
-            .with(WorthQueryResourceDimension::RetainedBytes, 262_144),
+        resources,
         WorthQueryCancellationSafePointFamily::new(APPLICATION_EXECUTION_SAFE_POINT_FAMILY)
             .expect("static application safe-point family is canonical"),
     );

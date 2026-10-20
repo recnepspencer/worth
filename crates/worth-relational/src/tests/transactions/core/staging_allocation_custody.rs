@@ -17,7 +17,7 @@ fn request(memory: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, Some(1)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(memory), Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -76,11 +76,13 @@ fn native_staging_allocation_refusal_and_shared_footprint_custody() {
         >()) as u64;
     assert_eq!(
         cause.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
-            requested: staging_bytes,
-            admitted: 0,
-            level: MemoryLimitLevel::Policy { ancestor: 0 }
-        }))
+        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+            MemoryLimitDenial::Capacity {
+                requested: staging_bytes,
+                admitted: 0,
+                level: MemoryLimitLevel::Policy { ancestor: 0 }
+            }
+        ))
     );
     assert!(
         cause

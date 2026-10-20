@@ -83,7 +83,7 @@ fn run_locality(count: usize) -> LocalityRun {
             place(Placement::Serial),
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
-                64 * 1024 * 1024,
+                None,
                 None,
             ))),
         );

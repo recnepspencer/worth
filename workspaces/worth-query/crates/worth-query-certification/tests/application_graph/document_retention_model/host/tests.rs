@@ -56,6 +56,8 @@ impl primary_graph::OperationHandler<DocumentRetentionSchema, WorkflowAdvanceBin
         _: &primary_graph::WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> declaration::application_operation::ApplicationCandidateRequirements {
         WorkflowAdvanceBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

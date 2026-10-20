@@ -17,7 +17,11 @@ fn request(
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             determinism,
-            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, Some(work)),
+            ExecutionBudget::new(
+                NonZeroUsize::new(workers).unwrap(),
+                Some(memory),
+                Some(work),
+            ),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -126,8 +130,10 @@ fn actual_work_counter_overflow_survives_both_domain_doors() {
                     identity: PartitionIdentity::new(7),
                     value: (),
                     input_bytes: 0,
-                    kernel_scratch_bytes: 0,
-                    max_result_bytes: 0,
+                    memory: crate::execution::PacketMemory::Declared {
+                        scratch: 0,
+                        result: 0,
+                    },
                 }],
                 &lease,
                 |_, context| {
@@ -154,8 +160,10 @@ fn actual_unrelated_nested_lease_and_parent_stop_survive_both_domain_doors() {
                     identity: PartitionIdentity::new(7),
                     value: (),
                     input_bytes: 0,
-                    kernel_scratch_bytes: 0,
-                    max_result_bytes: 0,
+                    memory: crate::execution::PacketMemory::Declared {
+                        scratch: 0,
+                        result: 0,
+                    },
                 }],
                 &lease,
                 |_, _| {
@@ -185,8 +193,10 @@ fn actual_packet_scratch_and_result_refusals_survive_both_domain_doors() {
                         identity: PartitionIdentity::new(7),
                         value: (),
                         input_bytes: 0,
-                        kernel_scratch_bytes: 0,
-                        max_result_bytes: 0,
+                        memory: crate::execution::PacketMemory::Declared {
+                            scratch: 0,
+                            result: 0,
+                        },
                     }],
                     &lease,
                     |_, context| {
@@ -217,8 +227,10 @@ fn actual_packet_panic_survives_both_domain_doors() {
                     identity: PartitionIdentity::new(7),
                     value: (),
                     input_bytes: 0,
-                    kernel_scratch_bytes: 0,
-                    max_result_bytes: 0,
+                    memory: crate::execution::PacketMemory::Declared {
+                        scratch: 0,
+                        result: 0,
+                    },
                 }],
                 &lease,
                 |_, _| -> Result<(), MapKernelFailure<PacketBudgetDenial>> {

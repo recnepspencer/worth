@@ -32,7 +32,9 @@ pub(in crate::domain_computation::primary_graph) fn preflight_execution_cause(
                 admitted: maximum,
             })
         }
-        Stop::PreparationMemoryCounterOverflow => Ok(Cause::ChargedBytesOverflow),
+        Stop::PreparationMemoryCounterOverflow | Stop::RetainedCompanionCounterOverflow { .. } => {
+            Ok(Cause::ChargedBytesOverflow)
+        }
         Stop::Interrupted(event) => Ok(match event.interruption() {
             worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
                 Cause::Cancelled
@@ -78,6 +80,13 @@ mod tests {
             ),
             (
                 Stop::PreparationMemoryCounterOverflow,
+                Cause::ChargedBytesOverflow,
+            ),
+            (
+                Stop::RetainedCompanionCounterOverflow {
+                    requested: 1,
+                    retained: u64::MAX,
+                },
                 Cause::ChargedBytesOverflow,
             ),
             (Stop::WorkCounterOverflow, Cause::WorkCounterOverflow),

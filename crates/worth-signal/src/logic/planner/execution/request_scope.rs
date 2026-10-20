@@ -55,7 +55,7 @@ pub(crate) fn run_signal_preparation_request<R>(
 }
 
 fn run_signal_request_in_scope<R>(
-    memory: u64,
+    memory: Option<u64>,
     lease: Option<&ExecutionResourceLease<'_>>,
     execute: &mut impl FnMut(
         &mut MapKernelContext<'_, '_>,

@@ -17,7 +17,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
             let execution = QueryRequestExecution::open(
                 RuntimeWorldExecutionPlacement::Leased {
                     authority: test_authority(),
-                    policy: test_policy(std::num::NonZeroUsize::new(workers).unwrap(), 1 << 24),
+                    policy: test_policy(std::num::NonZeroUsize::new(workers).unwrap(), None),
                 },
                 &scope,
             );
@@ -48,7 +48,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                     );
                     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
                         maximum_work_visits: Some(0),
-                        maximum_preparation_bytes: 0,
+                        maximum_preparation_bytes: None,
                     });
                     cursor.apply(
                         &mut admission,

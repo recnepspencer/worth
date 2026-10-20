@@ -170,7 +170,7 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
         _: &OptionalOutputInput,
         _: &OptionalOutputInput,
     ) -> ApplicationCandidateRequirements {
-        <OptionalOutputMutationBinding as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES
+        <OptionalOutputMutationBinding as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES.finite_requirements().expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

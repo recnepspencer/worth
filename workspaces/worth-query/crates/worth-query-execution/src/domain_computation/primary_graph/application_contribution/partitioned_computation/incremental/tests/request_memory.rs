@@ -18,7 +18,7 @@ use super::*;
 /// A two-worker policy of `memory`. Its lease is drawn from the test
 /// process's one authority.
 fn policy(memory: u64) -> ExecutionRequestPolicy {
-    test_policy(NonZeroUsize::new(2).unwrap(), memory)
+    test_policy(NonZeroUsize::new(2).unwrap(), Some(memory))
 }
 
 /// What the routing of items 1 to 4 under two parities retains.

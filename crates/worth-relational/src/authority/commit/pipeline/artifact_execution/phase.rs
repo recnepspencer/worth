@@ -40,12 +40,13 @@ pub(super) fn assemble_authoritative_publication_phase(
     commit_log: &mut CommitLog,
     phase_timing: &mut CommitPhaseTiming,
     input: ArtifactAssemblyInput<'_>,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PublicationPreparation, TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::ArtifactAssembly);
     let phase_started = std::time::Instant::now();
     let mut effect = input.effect;
     let patch_fragments = std::mem::take(&mut effect.publication.patch_fragments);
+    let lease = super::super::request_lease(execution);
     let patch = assemble_patch(runtime, patch_fragments, lease)?;
     let patch_budget_summary = CommitPatchBudgetSummary {
         patch_record_count: patch.authoritative_record_patches.len(),
@@ -78,7 +79,7 @@ pub(super) fn assemble_authoritative_publication_phase(
             additional_diagnostics_entries: input.additional_diagnostics_entries,
             deferred_diagnostic_artifacts: input.deferred_diagnostic_artifacts,
         },
-        lease,
+        execution,
     )
     .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
     record_publication_phase_artifacts(commit_log, &publication);

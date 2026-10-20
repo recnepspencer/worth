@@ -45,6 +45,8 @@ impl OperationHandler<BankSchema, SendMoneyMutationBinding> for SendMoneyHandler
         _: &BankInvariantApprovedProposal,
     ) -> ApplicationCandidateRequirements {
         SendMoneyMutationBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

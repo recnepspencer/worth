@@ -20,11 +20,7 @@ fn admitted_lease(token: CancellationToken) -> worth_execution::ExecutionResourc
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(
-                    std::num::NonZeroUsize::new(1).unwrap(),
-                    MEMORY,
-                    Some(100_000),
-                ),
+                ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), None, Some(100_000)),
             ),
             deadline: None,
             cancellation: token,
@@ -66,7 +62,7 @@ fn runtime_read_law_plan_absence_and_stopped_request() {
     for leased in [false, true] {
         let cancellation = CancellationSource::new();
         let host =
-            SerialRequest::from_memory(SerialMemoryBudget::new(MEMORY), cancellation.token(), None);
+            SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
         let lease = admitted_lease(cancellation.token());
         let serial = ExecutionRequest::serial(&host);
         let request = if leased {

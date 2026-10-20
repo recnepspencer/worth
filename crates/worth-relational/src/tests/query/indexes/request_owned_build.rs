@@ -52,7 +52,7 @@ fn index_builds_use_the_memory_ceiling_of_their_request() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, 4096, Some(1_000_000)),
+                    ExecutionBudget::new(NonZeroUsize::MIN, Some(4096), Some(1_000_000)),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),
@@ -118,7 +118,7 @@ fn unleased_builds_keep_cancellation_and_deadline_without_publishing() {
                 source.cancel();
             }
             let host = SerialRequest::from_memory(
-                SerialMemoryBudget::new(64 * 1024 * 1024),
+                SerialMemoryBudget::new(None),
                 source.token(),
                 expired.then(std::time::Instant::now),
             );

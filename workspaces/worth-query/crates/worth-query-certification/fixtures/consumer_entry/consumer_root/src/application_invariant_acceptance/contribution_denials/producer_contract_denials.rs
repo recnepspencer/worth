@@ -3,6 +3,7 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,
 };
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationSchema, ApplicationSchemaComposition,
@@ -126,8 +127,11 @@ impl<Schema: TopologySchemaBinding>
         worth_query_topology_entry::planar_source_key(source_identity)
     }
 
-    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        worth_query_topology_entry::planar_producer_resources()
+    fn demand_resources(
+        &self,
+        _: &PlanarReadResult,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({ worth_query_topology_entry::planar_producer_resources() })
     }
 }
 
@@ -157,8 +161,11 @@ impl<Schema: TopologySchemaBinding>
         worth_query_topology_entry::planar_source_key(source_identity)
     }
 
-    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        worth_query_topology_entry::planar_producer_resources()
+    fn demand_resources(
+        &self,
+        _: &PlanarReadResult,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({ worth_query_topology_entry::planar_producer_resources() })
     }
 }
 

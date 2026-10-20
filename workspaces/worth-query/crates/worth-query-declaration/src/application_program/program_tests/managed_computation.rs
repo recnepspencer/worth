@@ -31,7 +31,7 @@ impl ApplicationDerivedArtifact<TestSchema, FlatFeature> for Artifact {
         &[ApplicationArtifactDependency::new(FlatFeature::IDENTITY)];
     const REUSE_RULE: &'static str = "worth.query.tests.computation-reuse.v1";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(Some(8), 4_096);
+        ApplicationArtifactResourceCeiling::new(Some(8), Some(4_096));
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.computation-artifact-stopped.v1";
 }
 

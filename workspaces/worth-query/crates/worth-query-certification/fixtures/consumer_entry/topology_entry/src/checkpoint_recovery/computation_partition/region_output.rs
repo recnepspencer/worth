@@ -5,6 +5,7 @@
 
 use std::marker::PhantomData;
 use std::sync::{Mutex, PoisonError};
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_decl::facade::{
@@ -103,7 +104,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.region-output.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.region-output-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.region-output-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(3, 3, 0, 14, 8192);
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(requirements(3, 3, 0, 14, 8192));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -290,6 +292,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionOutputBinding
         _: &RegionOutputDecision<Schema>,
     ) -> ApplicationCandidateRequirements {
         RegionOutputBinding::<Schema>::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

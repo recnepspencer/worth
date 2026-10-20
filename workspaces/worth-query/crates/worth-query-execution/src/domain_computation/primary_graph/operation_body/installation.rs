@@ -1,4 +1,5 @@
 //! Bind complete body meaning and codecs once at native installation.
+use worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy;
 #[cfg(test)]
 mod tests;
 use super::super::{
@@ -15,7 +16,7 @@ use worth_query_installation::facade::{
 
 fn require_candidate_capacity(
     body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
-    requirements: &worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements,
+    policy: &ApplicationCandidatePolicy,
     binding_identity: &str,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let denied = || {
@@ -24,6 +25,7 @@ fn require_candidate_capacity(
             binding_identity,
         )
     };
+    let requirements = policy.finite_requirements().ok_or_else(denied)?;
     let required_writes = body
         .scope_fields()
         .iter()

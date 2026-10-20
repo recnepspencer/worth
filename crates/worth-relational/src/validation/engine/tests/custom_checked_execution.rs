@@ -25,7 +25,7 @@ fn checked_lease(
                 DeterminismContract::CanonicalBitwise,
                 ExecutionBudget::new(
                     NonZeroUsize::new(4).unwrap(),
-                    memory_bytes,
+                    Some(memory_bytes),
                     Some(work_ceiling),
                 ),
             ),

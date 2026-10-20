@@ -129,7 +129,12 @@ impl ApplicationProgramManifest {
                                 .maximum_work()
                                 .map_or_else(|| "absent".to_owned(), |work| work.to_string()),
                         ),
-                        ("bytes", resources.maximum_retained_bytes().to_string()),
+                        (
+                            "bytes",
+                            resources
+                                .maximum_retained_bytes()
+                                .map_or_else(|| "absent".to_owned(), |bytes| bytes.to_string()),
+                        ),
                         ("stopped", artifact.stopped_outcome().to_owned()),
                     ]),
                 ));

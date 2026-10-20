@@ -50,7 +50,7 @@ fn lease_with_ceiling(
                 DeterminismContract::CanonicalBitwise,
                 ExecutionBudget::new(
                     NonZeroUsize::new(workers).unwrap(),
-                    8 << 20,
+                    None,
                     Some(work_ceiling),
                 ),
             ),

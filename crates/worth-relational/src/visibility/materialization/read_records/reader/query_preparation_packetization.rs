@@ -153,7 +153,7 @@ fn map_partitions(
     Ok(packets)
 }
 
-fn encoded_value_bound(value: &AspectValue) -> u64 {
+pub(super) fn encoded_value_bound(value: &AspectValue) -> u64 {
     // The canonical wire form adds fixed tags and lengths around at most two
     // owned strings. Vec growth can exceed initialized length, hence 4x.
     (value.owned_allocation_capacity_bytes() as u64)

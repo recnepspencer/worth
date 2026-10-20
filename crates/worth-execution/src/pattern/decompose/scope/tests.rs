@@ -96,7 +96,7 @@ fn lease_free_decomposition_entry_fits_its_serial_tree_quote_exactly() {
     fn combine(_: &(), _: &()) {}
     for short in [0, 1] {
         let request = SerialRequest::from_memory(
-            SerialMemoryBudget::new(1 << 20),
+            SerialMemoryBudget::new(Some(1 << 20)),
             CancellationToken::new(),
             None,
         );
@@ -114,7 +114,12 @@ fn lease_free_decomposition_entry_fits_its_serial_tree_quote_exactly() {
                 + RunLimits::framework_context_bytes_for_serial_scope(1).unwrap();
             let budget = request.memory();
             let _other = budget
-                .reserve(budget.limit() - budget.charged_memory_bytes() - quote + short)
+                .reserve(
+                    budget.limit().expect("explicit finite serial tree court")
+                        - budget.charged_memory_bytes()
+                        - quote
+                        + short,
+                )
                 .unwrap();
             let mut owner = ExecutionDecompose::<(), (), (), (), (), Combine>::try_new(
                 vec![PartitionIdentity::new(1)],

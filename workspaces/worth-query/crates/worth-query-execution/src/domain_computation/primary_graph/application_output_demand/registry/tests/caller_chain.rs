@@ -136,7 +136,7 @@ fn a_walk_the_request_cannot_pay_for_establishes_nothing() {
         .insert(dependent.clone(), record(occurrence(), ready(), 1));
     let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: Some(1),
-        maximum_preparation_bytes: 0,
+        maximum_preparation_bytes: None,
     });
     assert!(matches!(
         registry.another_demand_holds_custody(&dependent, &mut short),
@@ -181,7 +181,7 @@ fn closed_cached_population_does_not_make_a_lone_caller_retry_on_walk_exhaustion
         );
         let mut exhausted = InvalidationEditAdmission::new(CompanionPreflightBudget {
             maximum_work_visits: Some(0),
-            maximum_preparation_bytes: 0,
+            maximum_preparation_bytes: None,
         });
         assert!(
             matches!(

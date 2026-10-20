@@ -228,7 +228,7 @@ impl WorthQueryApplicationObservedFact {
                     u64::try_from(maximum_work)
                         .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?,
                 ),
-                maximum_preparation_bytes: 0,
+                maximum_preparation_bytes: None,
             },
         );
         let movement = self
@@ -240,7 +240,7 @@ impl WorthQueryApplicationObservedFact {
                     worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed,
                 }),
                 CompanionPreflightStop::WorkExhausted { .. } | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } | CompanionPreflightStop::WorkCounterOverflow => WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
-                CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged | CompanionPreflightStop::PreparationMemoryExhausted { .. } | CompanionPreflightStop::PreparationMemoryCounterOverflow | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => WorthQuerySourceCurrentnessFailure::Unavailable,
+                CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged | CompanionPreflightStop::PreparationMemoryExhausted { .. } | CompanionPreflightStop::PreparationMemoryCounterOverflow | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. } | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => WorthQuerySourceCurrentnessFailure::Unavailable,
             })??;
         let work = usize::try_from(admission.charged_work())
             .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
@@ -305,7 +305,7 @@ mod tests {
             let mut admission = InvalidationEditAdmission::new(
                 worth_relational::facade::mvcc::CompanionPreflightBudget {
                     maximum_work_visits: Some(maximum),
-                    maximum_preparation_bytes: 0,
+                    maximum_preparation_bytes: None,
                 },
             );
             admission.charge_external_work(prior).unwrap();

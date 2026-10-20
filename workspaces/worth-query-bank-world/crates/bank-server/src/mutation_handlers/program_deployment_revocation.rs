@@ -48,6 +48,8 @@ impl OperationHandler<BankSchema, ProgramDeploymentRevocationBinding>
         _: &WorthQueryInvariantMutationTarget<BankSchema, ProgramDeploymentGrant>,
     ) -> ApplicationCandidateRequirements {
         ProgramDeploymentRevocationBinding::CANDIDATES
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

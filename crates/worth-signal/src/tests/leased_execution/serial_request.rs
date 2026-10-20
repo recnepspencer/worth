@@ -4,7 +4,7 @@ use crate::facade::{SignalError, SignalLeaseDenial as Own};
 fn serial_planning_refuses_the_required_policy_memory() {
     let mut graph = crate::facade::SignalGraph::new();
     let mut policy = crate::facade::SignalRuntimePolicy::development();
-    policy.serial_memory_bytes = 1;
+    policy.serial_memory_bytes = Some(1);
     graph.set_runtime_policy(policy);
     let error = graph
         .build_evaluation_plan(&[], crate::facade::EvaluationRequestMode::Default)
@@ -12,11 +12,14 @@ fn serial_planning_refuses_the_required_policy_memory() {
     let SignalError::ExecutionAdmissionDenied(Own::MemoryExhausted(memory)) = error else {
         panic!("bounded serial preparation must preserve the memory cause");
     };
-    assert_eq!(memory.admitted, 1);
-    assert_eq!(
-        memory.level,
-        worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-    );
+    assert!(matches!(
+        memory,
+        worth_execution::MemoryLimitDenial::Capacity {
+            admitted: 1,
+            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+            ..
+        }
+    ));
 }
 
 #[test]
@@ -90,7 +93,7 @@ fn serial_three_hundred_tasks_still_refuse_insufficient_memory() {
     let mut graph = SignalGraph::new();
     let targets = (0..300).map(|_| graph.node().build()).collect::<Vec<_>>();
     let mut policy = graph.runtime_policy();
-    policy.serial_memory_bytes = 4096;
+    policy.serial_memory_bytes = Some(4096);
     graph.set_runtime_policy(policy);
     let error = graph
         .build_evaluation_plan(&targets, EvaluationRequestMode::Default)

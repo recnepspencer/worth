@@ -83,7 +83,7 @@ mod tests {
             admission.policy.determinism(),
             ExecutionBudget::new(
                 admission.policy.budget().max_workers(),
-                128 * 1024 * 1024,
+                Some(128 * 1024 * 1024),
                 Some(20_000_000),
             ),
         );
@@ -118,7 +118,7 @@ mod tests {
             1024 * 1024,
             1024 * 1024,
             |_, _, request_work| {
-                let mut budget = SignalPreparationBudget::new(capacity);
+                let mut budget = SignalPreparationBudget::new(Some(capacity));
                 graph
                     .prepare_epoch_topology_storage_readiness(
                         Some(&mut *request_work),

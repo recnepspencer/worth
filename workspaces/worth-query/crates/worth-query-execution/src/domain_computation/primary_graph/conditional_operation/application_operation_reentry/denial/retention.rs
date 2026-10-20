@@ -30,19 +30,28 @@ impl Denial {
                     Lease::UnrelatedNestedLease => Native::UnrelatedNestedLease,
                     Lease::NoActiveExecutionScope => Native::NoActiveExecutionScope,
                     Lease::EquivalenceContractUnavailable => Native::EquivalenceContractUnavailable,
-                    Lease::MemoryExhausted(memory) => match memory.level {
-                        Level::Policy { ancestor } => Native::PolicyMemoryExhausted {
-                            requested: memory.requested,
-                            admitted: memory.admitted,
-                            ancestor,
-                        },
-                        Level::Process => Native::ProcessMemoryExhausted {
-                            requested: memory.requested,
-                            admitted: memory.admitted,
-                        },
-                        Level::Declared => Native::DeclaredMemoryExhausted {
-                            requested: memory.requested,
-                            admitted: memory.admitted,
+                    Lease::MemoryExhausted(memory) => match memory {
+                        worth_execution::MemoryLimitDenial::CounterOverflow { .. } => {
+                            Native::ChargedBytesOverflow
+                        }
+                        worth_execution::MemoryLimitDenial::Capacity {
+                            requested,
+                            admitted,
+                            level,
+                        } => match level {
+                            Level::Policy { ancestor } => Native::PolicyMemoryExhausted {
+                                requested,
+                                admitted,
+                                ancestor,
+                            },
+                            Level::Process => Native::ProcessMemoryExhausted {
+                                requested,
+                                admitted,
+                            },
+                            Level::Declared => Native::DeclaredMemoryExhausted {
+                                requested,
+                                admitted,
+                            },
                         },
                     },
                 }))

@@ -12,11 +12,8 @@ fn split_publication_cancelled_request_releases_candidate_and_records_discard() 
         .published_snapshot_count();
     let candidates = runtime.publication_binding().prepared_candidate_count();
     let cancellation = CancellationSource::new();
-    let backing = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
-        cancellation.token(),
-        None,
-    );
+    let backing =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let execution = ExecutionRequest::serial(&backing);
     let mut transaction = runtime
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
