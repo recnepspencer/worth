@@ -59,6 +59,13 @@ Do all five steps, in order.
 
 ## Task index
 
+Server protocol projections preserve the catalog's exact result schema identity
+and numeric version. Generated TypeScript/Python decoders reject a successful
+envelope when either differs; they validate protocol correspondence, not product
+payload validity or native operation authority. Use `WorthServer::product_protocol_catalog()`
+and `worth-server-client-generation` rather than a consumer-maintained route or
+version table.
+
 External-input capture and original mutation description are distinct custody.
 For resumable provider-revision admission, use
 `WorthQueryCapturedExternalInput::admit_preserving(&provider)` and retain its

@@ -14,6 +14,7 @@ export interface WorthServerProductOperationDefinition {{
   route: string
   requestSchema: string
   resultSchema: string
+  resultSchemaVersion: number
   resultMaxInlineBytes: number
   requiresProductSession: boolean
   requiresBasis: boolean
@@ -93,7 +94,7 @@ export const worthProductOperations = {{
     );
     for operation in catalog.operations() {
         output.push_str(&format!(
-            "  {:?}: {{\n    name: {:?}, family: {:?}, method: {:?}, route: {:?},\n    requestSchema: {:?}, resultSchema: {:?}, resultMaxInlineBytes: {},\n    requiresProductSession: {}, requiresBasis: {}, requiresIdempotencyKey: {},\n  }},\n",
+            "  {:?}: {{\n    name: {:?}, family: {:?}, method: {:?}, route: {:?},\n    requestSchema: {:?}, resultSchema: {:?}, resultSchemaVersion: {}, resultMaxInlineBytes: {},\n    requiresProductSession: {}, requiresBasis: {}, requiresIdempotencyKey: {},\n  }},\n",
             operation.operation_name(),
             operation.operation_name(),
             client_family(operation.operation_family()),
@@ -101,6 +102,7 @@ export const worthProductOperations = {{
             operation.route(),
             operation.request_schema_identity(),
             operation.result_schema_identity(),
+            operation.result_schema_version(),
             operation.result_max_inline_bytes(),
             operation.requires_product_session(),
             operation.requires_basis(),
@@ -149,7 +151,7 @@ export function decodeWorthServerOperationOutcome<T>(
   const denial = value.denial
   const failure = value.failure
   if (value.envelope_kind === 'Success' && isResult(result) && denial == null && failure == null) {
-    if (result.schema_identity !== definition.resultSchema) {
+    if (result.schema_identity !== definition.resultSchema || result.schema_version !== definition.resultSchemaVersion) {
       throw new Error('worth_result_schema_mismatch')
     }
     return { kind: 'Success', envelope: value as unknown as WorthServerOperationEnvelope<T>, body: result.body as T }

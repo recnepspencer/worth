@@ -25,6 +25,7 @@ class WorthServerProductOperation:
     route_path: str
     request_schema: str
     result_schema: str
+    result_schema_version: int
     result_max_inline_bytes: int
     requires_product_session: bool
     requires_basis: bool
@@ -77,7 +78,7 @@ def _decode_product_operation_outcome(
     denial = value.get("denial")
     failure = value.get("failure")
     if value.get("envelope_kind") == "Success" and _is_result(result) and denial is None and failure is None:
-        if result.get("schema_identity") != operation.result_schema:
+        if result.get("schema_identity") != operation.result_schema or result.get("schema_version") != operation.result_schema_version:
             raise ValueError("worth_result_schema_mismatch")
         return WorthServerOperationOutcome(kind="Success", envelope=value)
     if value.get("envelope_kind") == "Denial" and result is None and _is_denial(denial) and failure is None:
@@ -169,13 +170,14 @@ PRODUCT_OPERATIONS: dict[str, WorthServerProductOperation] = {{
     );
     for operation in catalog.operations() {
         output.push_str(&format!(
-            "    {:?}: WorthServerProductOperation(\n        name={:?}, method=WorthServerHttpMethod.{}, route_path={:?},\n        request_schema={:?}, result_schema={:?}, result_max_inline_bytes={},\n        requires_product_session={}, requires_basis={}, requires_idempotency_key={},\n    ),\n",
+            "    {:?}: WorthServerProductOperation(\n        name={:?}, method=WorthServerHttpMethod.{}, route_path={:?},\n        request_schema={:?}, result_schema={:?}, result_schema_version={}, result_max_inline_bytes={},\n        requires_product_session={}, requires_basis={}, requires_idempotency_key={},\n    ),\n",
             operation.operation_name(),
             operation.operation_name(),
             operation.method(),
             operation.route(),
             operation.request_schema_identity(),
             operation.result_schema_identity(),
+            operation.result_schema_version(),
             operation.result_max_inline_bytes(),
             python_bool(operation.requires_product_session()),
             python_bool(operation.requires_basis()),
