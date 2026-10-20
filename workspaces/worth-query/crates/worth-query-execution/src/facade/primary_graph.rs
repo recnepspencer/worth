@@ -20,10 +20,12 @@ pub use crate::domain_computation::primary_graph::{
 };
 pub use crate::domain_computation::primary_graph::{
     fact_verification_on_this_thread_for_test, native_marking_on_this_thread_for_test,
-    WorthQueryFactVerificationForTest, WorthQueryInputCutoffForTest,
-    WorthQueryInputCutoffGateForTest, WorthQueryInputCutoffOutcomeForTest,
-    WorthQueryMarkedOutputForTest, WorthQueryNativeMarkingForTest,
-    WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
+    WorthQueryFactVerificationForTest, WorthQueryInputCutoffCandidateForTest,
+    WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
+    WorthQueryInputCutoffNativeBasisForTest, WorthQueryInputCutoffNoRowReasonForTest,
+    WorthQueryInputCutoffOutcomeForTest, WorthQueryInputCutoffSettlementForTest,
+    WorthQueryInputCutoffSettlementPostureForTest, WorthQueryMarkedOutputForTest,
+    WorthQueryNativeMarkingForTest, WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
     WorthQueryRegistryCustodyForTest, WorthQueryRegistryCustodyTransitionForTest,
 };
 pub use crate::domain_computation::primary_graph::{

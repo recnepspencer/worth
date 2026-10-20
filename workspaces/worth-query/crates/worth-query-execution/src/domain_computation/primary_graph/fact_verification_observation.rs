@@ -3,8 +3,10 @@ use std::cell::Cell;
 pub(super) mod input_cutoff;
 mod registry_custody;
 pub use input_cutoff::{
-    WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
-    WorthQueryInputCutoffOutcomeForTest,
+    WorthQueryInputCutoffCandidateForTest, WorthQueryInputCutoffForTest,
+    WorthQueryInputCutoffGateForTest, WorthQueryInputCutoffNativeBasisForTest,
+    WorthQueryInputCutoffNoRowReasonForTest, WorthQueryInputCutoffOutcomeForTest,
+    WorthQueryInputCutoffSettlementForTest, WorthQueryInputCutoffSettlementPostureForTest,
 };
 pub(super) use registry_custody::registry_custody;
 pub use registry_custody::{

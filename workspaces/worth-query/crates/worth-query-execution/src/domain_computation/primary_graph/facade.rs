@@ -229,9 +229,11 @@ pub use super::entity_resolution_denial::{
 pub use super::expression::WorthQueryWorkflowConditionSources;
 pub use super::fact_verification_observation::{
     fact_verification_on_this_thread_for_test, WorthQueryFactVerificationForTest,
-    WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
-    WorthQueryInputCutoffOutcomeForTest, WorthQueryRegistryCustodyForTest,
-    WorthQueryRegistryCustodyTransitionForTest,
+    WorthQueryInputCutoffCandidateForTest, WorthQueryInputCutoffForTest,
+    WorthQueryInputCutoffGateForTest, WorthQueryInputCutoffNativeBasisForTest,
+    WorthQueryInputCutoffNoRowReasonForTest, WorthQueryInputCutoffOutcomeForTest,
+    WorthQueryInputCutoffSettlementForTest, WorthQueryInputCutoffSettlementPostureForTest,
+    WorthQueryRegistryCustodyForTest, WorthQueryRegistryCustodyTransitionForTest,
 };
 pub use super::granular_invalidation::{
     WorthQueryBridgeGranularDeliveryCounters, WorthQueryGranularInvalidationCoverage,

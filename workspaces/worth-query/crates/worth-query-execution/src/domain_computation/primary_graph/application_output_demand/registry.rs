@@ -186,11 +186,13 @@ pub(in crate::domain_computation::primary_graph) use required_work::RequestedOut
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkClaim;
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedReadyReadmission;
-pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredRefreshClaim;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWork;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWorkKind;
 pub(in crate::domain_computation::primary_graph) use required_work::{
     AdmittedRequiredWave, PreparedRequiredInputs,
+};
+pub(in crate::domain_computation::primary_graph) use required_work::{
+    RequiredRefreshRejection, SelectedRequiredRefreshClaim,
 };
 mod restoration;
 pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRestoredAcceptedOutput;

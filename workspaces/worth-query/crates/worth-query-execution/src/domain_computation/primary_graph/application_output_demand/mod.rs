@@ -24,7 +24,6 @@ pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembe
 pub(in crate::domain_computation::primary_graph) use registry::RetainedOutputReadmissionSource;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedReadyReadmission;
-pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredRefreshClaim;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWork;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWorkKind;
 pub use registry::WorthQueryOutputDemandNotifications;
@@ -47,6 +46,9 @@ pub(super) use registry::{
 };
 pub(in crate::domain_computation) use registry::{
     RequiredOutputDemandContext, RequiredOutputExecution,
+};
+pub(in crate::domain_computation::primary_graph) use registry::{
+    RequiredRefreshRejection, SelectedRequiredRefreshClaim,
 };
 pub use settlement::{WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture};
 

@@ -27,6 +27,7 @@ pub(in crate::domain_computation::primary_graph) enum ProducerPublicationStale {
     ReadyCurrentnessRegistration(CompanionCellEditStop),
     ReadyRefreshClaimMoved {
         selected: ProductPublicationIdentity,
+        rejection: crate::domain_computation::primary_graph::application_output_demand::RequiredRefreshRejection,
     },
 }
 
@@ -74,9 +75,11 @@ impl ProducerPublicationStale {
 
     pub(in crate::domain_computation::primary_graph) fn ready_refresh_claim_moved(
         selected: &ProductBranchObservation,
+        rejection: crate::domain_computation::primary_graph::application_output_demand::RequiredRefreshRejection,
     ) -> Self {
         Self::ReadyRefreshClaimMoved {
             selected: ProductPublicationIdentity::selected(selected),
+            rejection,
         }
     }
 }

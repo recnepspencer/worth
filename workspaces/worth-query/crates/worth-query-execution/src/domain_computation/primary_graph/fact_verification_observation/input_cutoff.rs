@@ -1,5 +1,12 @@
 //! Bounded passive receipts for the existing producer input-cutoff path.
 use std::cell::Cell;
+mod settlement;
+pub(in crate::domain_computation::primary_graph) use settlement::settlement_decline;
+pub use settlement::{
+    WorthQueryInputCutoffCandidateForTest, WorthQueryInputCutoffNativeBasisForTest,
+    WorthQueryInputCutoffNoRowReasonForTest, WorthQueryInputCutoffSettlementForTest,
+    WorthQueryInputCutoffSettlementPostureForTest,
+};
 
 /// The existing gate reached immediately before a cutoff's result.
 /// These observations never authorize reuse or change a comparison.
@@ -58,6 +65,9 @@ pub struct WorthQueryInputCutoffForTest {
     pub producer: &'static str,
     pub gate: WorthQueryInputCutoffGateForTest,
     pub outcome: WorthQueryInputCutoffOutcomeForTest,
+    /// The original no-row answer at SettlementCurrentness, when observed.
+    /// None never certifies a clean row or successful mark re-establishment.
+    pub settlement_decline: Option<WorthQueryInputCutoffSettlementForTest>,
 }
 
 thread_local! {
@@ -85,6 +95,7 @@ impl Scope {
                 producer,
                 gate,
                 outcome: Outcome::Stopped,
+                settlement_decline: None,
             }))
         } else {
             None
@@ -113,6 +124,9 @@ impl Drop for Scope {
 }
 
 pub(in crate::domain_computation::primary_graph) fn reach(gate: Gate) {
+    if !super::execution_observation::is_installed() {
+        return;
+    }
     CURRENT.with(|current| {
         if let Some(mut receipt) = current.get() {
             receipt.gate = gate;
@@ -122,6 +136,9 @@ pub(in crate::domain_computation::primary_graph) fn reach(gate: Gate) {
 }
 
 pub(in crate::domain_computation::primary_graph) fn finish(outcome: Outcome) {
+    if !super::execution_observation::is_installed() {
+        return;
+    }
     CURRENT.with(|current| {
         if let Some(mut receipt) = current.get() {
             receipt.outcome = outcome;

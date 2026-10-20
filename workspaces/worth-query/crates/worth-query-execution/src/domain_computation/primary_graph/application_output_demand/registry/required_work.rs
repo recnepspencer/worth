@@ -20,7 +20,9 @@ mod subsumed;
 mod successor_join;
 
 pub(in crate::domain_computation::primary_graph) use pending_readmission::PendingUpstream;
-pub(in crate::domain_computation::primary_graph) use refresh_claim::SelectedRequiredRefreshClaim;
+pub(in crate::domain_computation::primary_graph) use refresh_claim::{
+    RequiredRefreshRejection, SelectedRequiredRefreshClaim,
+};
 pub(in crate::domain_computation::primary_graph) use requested_claim::RequestedOutputReadClaims;
 pub(in crate::domain_computation::primary_graph) use selection::SelectedReadyReadmission;
 

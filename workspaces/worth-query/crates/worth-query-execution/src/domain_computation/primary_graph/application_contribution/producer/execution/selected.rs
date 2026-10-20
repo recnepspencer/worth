@@ -229,7 +229,7 @@ where
                     .claim_required_ready_refresh(selected, admission)
                     .map_err(ProducerExecutionStop::ExecutionStopped)?
                     // A later wave must select the Ready row after this claim moved.
-                    .ok_or_else(|| {
+                    .map_err(|rejection| {
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::PublicationStale,
                             Binding::IDENTITY,
@@ -238,7 +238,7 @@ where
                             crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
                         )
                         .with_publication_stale(Some(ProducerPublicationStale::ready_refresh_claim_moved(
-                            shared.selected().product().observation(),
+                            shared.selected().product().observation(), rejection,
                         )))
                     })?;
                 let fresh = source_readmission::disclose_prepared_on_selected::<Schema, Binding>(

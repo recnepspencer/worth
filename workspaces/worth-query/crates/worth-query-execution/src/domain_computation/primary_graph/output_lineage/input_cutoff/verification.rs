@@ -179,6 +179,17 @@ impl RetainedInputCutoffCandidate {
         observation::reach(Gate::SettlementCurrentness);
         let settlement = owner.currentness(selected, self.settlement_identity(), admission)?;
         if cutoff_declines(requirement, Some(&settlement)) {
+            observation::settlement_decline(&settlement, selected, || {
+                let identity = self.settlement_identity();
+                let source = identity.source();
+                let (product_incarnation, publication_generation, _) = identity.address();
+                observation::WorthQueryInputCutoffCandidateForTest {
+                    runtime_authority: source.runtime_authority,
+                    scope: source.scope,
+                    product_incarnation,
+                    publication_generation,
+                }
+            });
             return Ok(None);
         }
         let verified_consumed = if let Some(matched) = &matched_predecessors {
