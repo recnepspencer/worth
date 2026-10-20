@@ -5,12 +5,12 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use crate::{
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality,
-        ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-        ApplicationQueryDisclosureContract, ApplicationQueryDisclosurePosture,
-        ApplicationQueryLaneEligibility, ApplicationQueryPredicate, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultRelation, ApplicationQueryResultShape,
-        ApplicationQueryResultShapeBuilder, ApplicationQueryResultTraversalDirection,
-        ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQueryDisclosureParts,
+        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+        ApplicationQueryDisclosurePosture, ApplicationQueryLaneEligibility,
+        ApplicationQueryPredicate, ApplicationQueryResultFieldRef, ApplicationQueryResultRelation,
+        ApplicationQueryResultShape, ApplicationQueryResultShapeBuilder,
+        ApplicationQueryResultTraversalDirection, ErasedApplicationQueryDefinition,
+        WorthQueryPortableApplicationQueryDisclosureParts,
         WorthQueryPortableApplicationQueryResultRelationParts,
         WorthQueryPortableApplicationQueryResultShapeParts,
     },
@@ -318,7 +318,6 @@ fn governed_query() -> ErasedApplicationQueryDefinition {
         .scope(account)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -372,7 +371,6 @@ fn build_query(
         .scope(account)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

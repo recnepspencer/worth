@@ -60,6 +60,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         .installed_schema()
         .certification_query(CrossRootQuery::reference())
         .unwrap();
+    assert_eq!(query.read_graph().maximum_traversal_depth(), 1);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
         .application

@@ -38,8 +38,7 @@ pub use continuation::{
 pub use definition::{
     ApplicationQueryAuthorizationAuthoring, ApplicationQueryBasisAuthoring,
     ApplicationQueryCardinality, ApplicationQueryCardinalityAuthoring, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyAuthoring,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureAuthoring,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureAuthoring,
     ApplicationQueryLaneAuthoring, ApplicationQueryPredicate, ApplicationQueryResultAuthoring,
     ApplicationQueryRootAuthoring, ApplicationQueryScopeAuthoring,
 };

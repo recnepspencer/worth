@@ -1,8 +1,8 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultShapeBuilder,
 };
 use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_declaration::{
@@ -92,7 +92,6 @@ fn record_query_definition() -> ApplicationQueryDefinition<
         .scope(Record::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

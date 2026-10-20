@@ -1,8 +1,7 @@
 use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultShapeBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
 use crate::application_schema::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationSchemaMember, EqualityPredicate,
@@ -77,7 +76,6 @@ pub(super) fn application_query(output_name: &'static str) -> ApplicationSchemaM
         .scope(entity)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

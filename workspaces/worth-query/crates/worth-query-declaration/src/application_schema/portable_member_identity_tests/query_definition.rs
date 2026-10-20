@@ -1,8 +1,8 @@
 use super::{QueryEntity, QueryParameters, Schema};
 use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultShapeBuilder,
 };
 use crate::application_schema::ApplicationEntityRef;
 
@@ -43,7 +43,6 @@ where
             .build(),
         )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 0))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

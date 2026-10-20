@@ -147,7 +147,6 @@ let definition = ApplicationQueryDefinitionBuilder::declare(AccountActivity::ref
 .scope(Account::reference())
 .result_shape(shape)
 .cardinality(ApplicationQueryCardinality::Many)
-.dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 3))
 .disclosure(ApplicationQueryDisclosureContract::installed_policy("account-holder"))
 .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
 .lanes(ApplicationQueryLaneEligibility::one_shot().with_historical())
@@ -234,7 +233,7 @@ The external public progression is exercised in
 Inspect:
 
 - installed query and canonical read-graph identities;
-- result fields, relation paths, cardinality, ordering, and dependency ceiling;
+- result fields, relation paths, cardinality and ordering;
 - graph-read obligation and selection identity;
 - requirement, cost, budget, and inventory review;
 - plan, session, branch, and basis identity;

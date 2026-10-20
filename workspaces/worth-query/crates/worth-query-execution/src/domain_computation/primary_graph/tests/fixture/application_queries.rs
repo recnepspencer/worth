@@ -6,10 +6,10 @@ use super::{
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryInfluenceContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection, ApplicationQueryReference,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder, ApplicationQueryRootPath,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOrderingDirection, ApplicationQueryReference, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultShapeBuilder, ApplicationQueryRootPath,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationEncodedScalarValue, ApplicationStructuredValueBinding, StringApplicationValueBinding,
@@ -194,7 +194,6 @@ pub(super) fn scoped_account_summary_definition() -> ApplicationQueryDefinition<
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 2))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -226,7 +225,6 @@ pub(in crate::domain_computation::primary_graph::tests) fn cross_root_definition
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::Many)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 3, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -358,7 +356,6 @@ where
             .scope(Account::reference())
             .result_shape(shape)
             .cardinality(ApplicationQueryCardinality::Many)
-            .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 2))
             .disclosure(disclosure)
             .basis_support(basis_support)
             .lanes(lanes)
@@ -369,7 +366,6 @@ where
             .scope(Account::reference())
             .result_shape(shape)
             .cardinality(ApplicationQueryCardinality::Many)
-            .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 2))
             .disclosure(disclosure)
             .basis_support(basis_support)
             .lanes(lanes)

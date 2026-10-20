@@ -53,7 +53,6 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 ordering: Vec::new(),
                 continuation: None,
                 live_cause: None,
-                dependency_ceiling: parts.dependency_ceiling,
                 disclosure: parts.disclosure,
                 authorization,
                 basis_support: parts.basis_support,

@@ -21,7 +21,6 @@ pub enum WorthQueryApplicationQueryInstallationDenialKind {
     PredicateNotInstalled,
     OrderingNotInstalled,
     ResultShapeDisconnected,
-    DependencyCeilingExceeded,
     ForeignRuntime,
     StaleGeneration,
     SchemaMeaningChanged,

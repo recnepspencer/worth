@@ -1,9 +1,8 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryOptionalResultFieldRef, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultShapeBuilder,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryOptionalResultFieldRef,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
 use worth_query_declaration::worth_query_application_query;
 
@@ -87,7 +86,6 @@ pub(super) fn optional_account_field_definition() -> ApplicationQueryDefinition<
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 4))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
