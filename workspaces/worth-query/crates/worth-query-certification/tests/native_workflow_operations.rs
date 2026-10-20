@@ -8,5 +8,7 @@ mod capability;
     reason = "This same reference application exposes ports used by the other graph and native-body targets."
 )]
 mod document_retention_model;
+#[path = "application_graph/source_only/authorization.rs"]
+mod source_authorization;
 #[path = "support/execution_policy.rs"]
 mod test_request_policy;

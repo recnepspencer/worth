@@ -190,6 +190,16 @@ delegates native close while retaining the configured wrapper and its installed
 workflow/signing companions on refusal. Close the actual operation owners and
 retry the same wrapper; consuming it into a program runtime is unnecessary.
 
+Before disclosing retained SourceOnly status, active, completed and terminal
+owners expose `assess_current_authorization(&fresh_request)`. It checks the exact
+installed action through the binding-selected conventional/capability owner,
+using frozen input and original workflow context without staging, claiming a key
+or advancing custody. Success is descriptive, not execution permission. See the
+[owning entry guide](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+and the native SourceOnly authorization tests in `native_workflow_operations`.
+Authentication or a cached command-owner match is
+not sufficient for current disclosure authorization.
+
 ---
 
 ## Consumer prohibitions

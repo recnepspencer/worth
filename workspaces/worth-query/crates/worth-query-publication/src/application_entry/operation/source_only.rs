@@ -7,6 +7,7 @@ use worth_query_execution::facade::primary_graph::{
 };
 
 mod advancement;
+mod authorization;
 pub(super) use advancement::Step as SourceStep;
 mod completion;
 mod entrance;

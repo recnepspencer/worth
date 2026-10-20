@@ -96,7 +96,7 @@ where
         .map(|authorized| authorized.admission)
 }
 
-fn authorize_capability_selected<Schema, Intent, SourcePreparation>(
+pub(super) fn authorize_capability_selected<Schema, Intent, SourcePreparation>(
     phase: &AdvancementPhase<'_>,
     request: &WorthQueryApplicationMutationRequest<'_, '_, '_, Schema, Intent, SourcePreparation>,
     input: ApplicationEncodedInput<

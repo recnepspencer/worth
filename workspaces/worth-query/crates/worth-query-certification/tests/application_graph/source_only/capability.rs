@@ -1,4 +1,6 @@
 //! Native capability admission and lifecycle commands preserve source publication custody.
+#[path = "capability/authorization.rs"]
+mod authorization;
 #[path = "capability/grant_commands.rs"]
 mod grant_commands;
 #[path = "capability/grants.rs"]
