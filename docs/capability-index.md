@@ -200,6 +200,13 @@ and the native SourceOnly authorization tests in `native_workflow_operations`.
 Authentication or a cached command-owner match is
 not sufficient for current disclosure authorization.
 
+Completed source owners also expose `original_input()` as a read-only borrow of
+the exact frozen encoded input, including recovered completion. It grants no
+read, publication or reconstruction authority. Server's typed `CompletionData`
+projection uses this only after completion and fresh authorization; active and
+terminal custody cannot claim a created locator through this metadata. See
+[source command custody](../crates/worth-server/docs/query-source-custody.md).
+
 Generic hosts constrain bindings with `WorthQuerySourceOperationBinding<Schema>`
 and call those ordinary owners directly. The sealed interface carries native
 dispatch, not an authorization witness or a consumer-replaceable callback.

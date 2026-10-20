@@ -141,4 +141,10 @@ impl<C: SourceCommand> Record<C> {
             self.close_refusal.as_ref(),
         )
     }
+    pub(super) fn completion_data(&self) -> Option<C::CompletionData> {
+        match &self.custody {
+            Custody::Completed(owner) => Some(C::completion_data(owner.original_input())),
+            _ => None,
+        }
+    }
 }

@@ -22,7 +22,7 @@ use std::{
 pub(super) enum Job {
     Execute {
         operation: Box<WorthServerScheduledProductOperation>,
-        reply: SyncSender<Result<Reply, Error>>,
+        reply: SyncSender<Result<WorthServerProductOperationSuccess, Error>>,
     },
     Finish {
         reply: SyncSender<bool>,
@@ -164,17 +164,10 @@ fn execute<C: SourceWire>(
             custody_id,
             reason: ControlRefusal::TransportUnavailable,
         },
-        Ok(()) => answer
-            .recv_timeout(deadline.saturating_duration_since(Instant::now()))
-            .unwrap_or(Ok(Reply::OutcomeUnknown { custody_id }))?,
-    };
-    WorthServerProductOperationSuccess::publish_json(
-        super::contract::operation::<C>(),
-        &protocol::result_contract(C::RESULT),
-        &protocol::PublishedReply {
-            value: &result,
-            identity: C::RESULT,
+        Ok(()) => match answer.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+            Ok(response) => return response,
+            Err(_) => Reply::OutcomeUnknown { custody_id },
         },
-    )
-    .map_err(Error::invalid_result_artifact)
+    };
+    protocol::publish::<C>(&result)
 }

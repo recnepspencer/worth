@@ -48,6 +48,20 @@ where
     ) -> &WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result> {
         self.operation.completion()
     }
+
+    /// Borrows the exact immutable input encoded for this completed operation.
+    /// This is data correspondence, not current read permission or authority to
+    /// publish again. A transport must authorize disclosure separately. Recovered
+    /// completion retains the same original input; it does not reconstruct it.
+    pub fn original_input(&self) -> &<I::Binding as ApplicationMutationBinding<S>>::Input {
+        self.operation
+            .admission
+            .description
+            .encoded_input
+            .as_ref()
+            .expect("completed native operation admitted its frozen input")
+            .input()
+    }
     pub fn close(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,

@@ -82,11 +82,13 @@ fn denied<C: SourceWire>(reason: &str) -> WorthServerProductOperationDenial {
 
 #[derive(Serialize, schemars::JsonSchema)]
 #[serde(tag = "kind")]
-pub enum WorthServerSourceReply {
+pub enum WorthServerSourceReply<CompletionData = ()> {
     Held {
         custody_id: String,
         next_sequence: Option<u64>,
         native: super::view::View,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        completion_data: Option<CompletionData>,
     },
     Closed {
         custody_id: String,
@@ -118,21 +120,36 @@ pub enum ControlRefusal {
     TransportUnavailable,
 }
 #[derive(Serialize, schemars::JsonSchema)]
-pub(super) struct PublishedReply<'a> {
+pub(super) struct PublishedReply<'a, CompletionData> {
     #[serde(flatten)]
-    pub(super) value: &'a Reply,
+    pub(super) value: &'a Reply<CompletionData>,
     #[serde(skip)]
     pub(super) identity: &'static str,
 }
-impl WorthServerProductResultValue for PublishedReply<'_> {
+impl<C: Serialize> WorthServerProductResultValue for PublishedReply<'_, C> {
     fn result_schema_identity(&self) -> &str {
         self.identity
     }
     fn result_schema_version(&self) -> u32 {
-        3
+        4
     }
 }
 pub(super) fn result_contract(identity: &str) -> WorthServerProductResultContract {
-    WorthServerProductResultContract::canonical_json(identity, 3, 16 * 1024)
+    WorthServerProductResultContract::canonical_json(identity, 4, 16 * 1024)
         .expect("fixed owning source result")
+}
+
+pub(super) fn publish<C: SourceWire>(
+    value: &Reply<C::CompletionData>,
+) -> Result<crate::WorthServerProductOperationSuccess, crate::WorthServerProductAdapterExecutionError>
+{
+    crate::WorthServerProductOperationSuccess::publish_json(
+        super::contract::operation::<C>(),
+        &result_contract(C::RESULT),
+        &PublishedReply {
+            value,
+            identity: C::RESULT,
+        },
+    )
+    .map_err(crate::WorthServerProductAdapterExecutionError::invalid_result_artifact)
 }

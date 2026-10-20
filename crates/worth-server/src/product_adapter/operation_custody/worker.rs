@@ -41,7 +41,7 @@ pub(super) fn run<C: SourceCommand>(
                     quiesced.load(Ordering::Acquire),
                 );
                 // Operation/refusal custody is back in records before a response can be lost.
-                let _ = reply.send(outcome);
+                let _ = reply.send(outcome.and_then(|value| protocol::publish::<C>(&value)));
             }
             Job::Finish { reply } => {
                 let empty = records.is_empty();
@@ -66,7 +66,7 @@ fn execute<C: SourceCommand>(
     records: &mut BTreeMap<String, Box<Record<C>>>,
     capacity: usize,
     quiesced: bool,
-) -> Result<Reply, Error> {
+) -> Result<Reply<C::CompletionData>, Error> {
     let caller = operation
         .plan()
         .operation_admission()
@@ -144,7 +144,7 @@ fn control<C: SourceCommand>(
     scope: &WorthQueryRequestScope,
     command: &Command<C::Input>,
     records: &mut BTreeMap<String, Box<Record<C>>>,
-) -> Reply {
+) -> Reply<C::CompletionData> {
     let id = command.custody_id().to_owned();
     let Some(record) = records
         .get(&id)
@@ -201,7 +201,7 @@ fn held<C: SourceCommand>(
         '_,
         C::Schema,
     >,
-) -> Reply {
+) -> Reply<C::CompletionData> {
     if let Err(cause) = record.assess(application, request) {
         return Reply::DisclosureRefused {
             custody_id: id.to_owned(),
@@ -212,6 +212,7 @@ fn held<C: SourceCommand>(
         custody_id: id.to_owned(),
         next_sequence: record.sequence.checked_add(1),
         native: record.view(),
+        completion_data: record.completion_data(),
     }
 }
 fn denied(reason: &str) -> Error {

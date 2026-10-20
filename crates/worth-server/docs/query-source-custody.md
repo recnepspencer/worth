@@ -18,17 +18,22 @@ implements preparation and installs another adapter, not another queue/worker.
 - `WorthServerQuerySourceAdapter`: typed input/preparation, installed program,
   existing authentication, metadata and safe domain diagnostic correspondence.
 - `mount_query_source` returns registration plus `WorthServerSourceContinuation`.
-- `WorthServerSourceCommand<Input>` and `WorthServerSourceReply` are the actual
-  Serde/JSON-schema protocol, with result version 3.
+- `WorthServerSourceCommand<Input>` and `WorthServerSourceReply<CompletionData>`
+  are the actual Serde/JSON-schema protocol, with result version 4.
 - `WorthQuerySourceOperationBinding<Schema>` is Query's sealed implementation
   interface. It allows generic hosts to call the ordinary native owner's
   `advance` and `assess_current_authorization` directly. It grants no permission.
 
 The adapter supplies Schema, Program, Binding, Intent, Action, Delivery, Input
-and Preparation types. Binding and Action are real Query declarations; Delivery
+and Preparation/CompletionData types. Binding and Action are real Query declarations; Delivery
 uses `ApplicationSourceCompletion`. `prepare` returns the actual
 `WorthServerSourceOperation<Self>` or the original preparation on refusal.
 Server, not a supplier callback, calls native advancement and inspection.
+`completion_data(&original_input)` is a pure, safe supplier projection, not a
+lifecycle callback. Query's completed owner exposes `original_input()` as a
+borrow of the exact frozen encoded input. Server projects this only after actual
+completion and fresh authorization; active, preparation and terminal replies do
+not claim a completed source. Do not project secrets or credentials.
 
 ## Core Mental Model
 
@@ -87,7 +92,7 @@ A browser deliberately creates one command and loses its first HTTP response:
 ```text
 Create { custody_id: "draft-a", logical_key: "request-a", intent: <typed input> }
 Inspect { custody_id: "draft-a" }
-    -> Held { next_sequence: 2, native: Completed { ... } }
+    -> Held { next_sequence: 2, native: Completed { ... }, completion_data: <safe data> }
 Close { custody_id: "draft-a", sequence: 2 }
     -> Closed
 ```
@@ -97,6 +102,10 @@ product session and use its actual basis/Server instance for each call. Keep
 the source owner until any downstream locator/persistence step has succeeded.
 If that step fails, reuse the same completed source rather than creating again.
 The source query/receipt establishes what landed; the custody ID alone does not.
+For example, a supplier may return the business identity it generated inside
+original preparation. The caller can read and bind that exact source even after
+losing the first reply. Recovered completion borrows the same original input;
+metadata is not fabricated from a latest-state lookup or a replacement intent.
 
 If Query currently denies inspection, retain the original command and present
 `DisclosureRefused`. Do not expose cached completion or treat it as no-effect.

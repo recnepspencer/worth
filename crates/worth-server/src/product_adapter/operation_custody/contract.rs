@@ -37,6 +37,9 @@ pub trait WorthServerQuerySourceAdapter: Send + Sync + 'static {
     >;
     type Action: ApplicationAction<Self::Schema, Self::Binding, Delivery = Self::Delivery>;
     type Input: serde::de::DeserializeOwned + schemars::JsonSchema;
+    /// Safe supplier data projected from the completed owner's exact original input.
+    /// It is not a native result, receipt or execution authority.
+    type CompletionData: serde::Serialize + schemars::JsonSchema;
     type Preparation;
     const INPUT: &'static str;
     const RESULT: &'static str;
@@ -81,6 +84,10 @@ pub trait WorthServerQuerySourceAdapter: Send + Sync + 'static {
     fn domain_diagnostic(
         denial: &<Self::Binding as ApplicationMutationBinding<Self::Schema>>::Denial,
     ) -> super::diagnostic::WorthServerSourceDiagnostic;
+
+    fn completion_data(
+        input: &<Self::Binding as ApplicationMutationBinding<Self::Schema>>::Input,
+    ) -> Self::CompletionData;
 }
 
 pub type WorthServerSourceOperation<C> = WorthQuerySourceOnlyOperation<
