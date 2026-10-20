@@ -2,7 +2,8 @@
 use super::pack::WorthQueryWorkflowInputDenial;
 use crate::application_entry::{
     WorthQueryApplicationRequest, WorthQueryClosedOperation, WorthQueryOperationCloseDenial,
-    WorthQueryOperationDescription, WorthQueryWorkflowOperationAdvance,
+    WorthQueryOperationDescription, WorthQueryWorkflowAcceptance, WorthQueryWorkflowAdvanceRequest,
+    WorthQueryWorkflowOperationAdvance, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
 };
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationIntent,
@@ -87,6 +88,22 @@ pub trait WorthQueryWorkflowInputList<S: ApplicationSchema, P: ApplicationProgra
     fn required(operation: &Self::Operation) -> &RequiredWorkflowOperation;
     #[doc(hidden)]
     fn completed_required(operation: &Self::Completed) -> &RequiredWorkflowOperation;
+    #[doc(hidden)]
+    fn accept_completed<Spec, O, Input, Scope>(
+        operation: Self::Completed,
+        advance: WorthQueryWorkflowAdvanceRequest<'_, '_, '_, S, Spec, O, Input, Scope>,
+    ) -> Result<
+        WorthQueryWorkflowAcceptance<Self::Completed>,
+        (
+            Self::Completed,
+            WorthQueryWorkflowOperationOwnerAcceptanceDenial,
+        ),
+    >
+    where
+        S: 'static,
+        Spec: ApplicationWorkflowSpec<Schema = S>,
+        O: 'static,
+        Input: Clone + Send + Sync + 'static;
     #[doc(hidden)]
     fn close(
         operation: Self::Operation,

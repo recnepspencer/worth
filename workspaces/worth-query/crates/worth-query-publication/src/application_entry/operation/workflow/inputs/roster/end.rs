@@ -43,6 +43,21 @@ impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>> WorthQueryWorkflo
     fn completed_required(owner: &Infallible) -> &RequiredWorkflowOperation {
         match *owner {}
     }
+    fn accept_completed<Spec, O, Input, Scope>(
+        owner: Infallible,
+        _: WorthQueryWorkflowAdvanceRequest<'_, '_, '_, S, Spec, O, Input, Scope>,
+    ) -> Result<
+        WorthQueryWorkflowAcceptance<Infallible>,
+        (Infallible, WorthQueryWorkflowOperationOwnerAcceptanceDenial),
+    >
+    where
+        S: 'static,
+        Spec: ApplicationWorkflowSpec<Schema = S>,
+        O: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        match owner {}
+    }
     fn close(
         owner: Infallible,
         _: &WorthQueryApplicationRequest<'_, '_, '_, S>,

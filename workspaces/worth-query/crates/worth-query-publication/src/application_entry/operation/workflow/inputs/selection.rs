@@ -1,4 +1,5 @@
 //! Structural wrappers preserve the actual native pending, completed and terminal owners.
+mod acceptance;
 use super::roster::WorthQueryWorkflowInputList;
 use crate::application_entry::{
     WorthQueryApplicationRequest, WorthQueryClosedOperation, WorthQueryOperationCloseDenial,

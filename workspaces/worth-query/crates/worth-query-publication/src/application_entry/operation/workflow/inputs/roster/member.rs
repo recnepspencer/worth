@@ -144,6 +144,37 @@ where
             WorthQueryWorkflowOperationChoice::Other(owner) => T::completed_required(owner),
         }
     }
+    fn accept_completed<Spec, O, Input, Scope>(
+        operation: Self::Completed,
+        advance: WorthQueryWorkflowAdvanceRequest<'_, '_, '_, S, Spec, O, Input, Scope>,
+    ) -> Result<
+        WorthQueryWorkflowAcceptance<Self::Completed>,
+        (
+            Self::Completed,
+            WorthQueryWorkflowOperationOwnerAcceptanceDenial,
+        ),
+    >
+    where
+        Spec: ApplicationWorkflowSpec<Schema = S>,
+        O: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        match operation {
+            WorthQueryWorkflowOperationChoice::Here(owner) => advance
+                .accept_owned_operation(owner)
+                .map(|accepted| WorthQueryWorkflowAcceptance {
+                    progress: accepted.progress,
+                    operation: WorthQueryWorkflowOperationChoice::Here(accepted.operation),
+                })
+                .map_err(|(owner, cause)| (WorthQueryWorkflowOperationChoice::Here(owner), cause)),
+            WorthQueryWorkflowOperationChoice::Other(owner) => T::accept_completed(owner, advance)
+                .map(|accepted| WorthQueryWorkflowAcceptance {
+                    progress: accepted.progress,
+                    operation: WorthQueryWorkflowOperationChoice::Other(accepted.operation),
+                })
+                .map_err(|(owner, cause)| (WorthQueryWorkflowOperationChoice::Other(owner), cause)),
+        }
+    }
     fn close(
         operation: Self::Operation,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,

@@ -58,6 +58,7 @@ Import these through `worth_query_host::facade::application_entry`:
 - `request.mutate(original_control)…prepare_workflow_proposal_with_inputs(workflow, instance, &inputs)`.
 - Selected owner: `required`, `advance`, `close`, `into_operation`.
 - Completed owner: `required`, `close`, `into_operation`.
+- `prepared_advance.accept_selected_operation(completed_selection)` accepts an opaque completion without unpacking its roster.
 - Terminal owner: `close`, `into_operation`; no execution entrance.
 
 The selected action must have an owning `ApplicationSourceCompletion` delivery
@@ -102,8 +103,12 @@ an inspected binding string nor an input pack grants permission.
 4. Retain `Progress` and `Refused` owners unchanged. `Completed` retains real
    result/recovery evidence and cleanup; `Terminal` retains stopped custody, not
    a successful effect. No outcome is automatically retried or closed.
-5. Freshly advance the graph for its next need. Close actual completed owners
-   under fresh authority; a refused close returns the same owner.
+5. Where workflow acceptance is owed, use a freshly prepared native Advance and
+   `accept_selected_operation(completed_selection)`. It delegates to the original
+   typed owner's `accept_owned_operation`; every refusal returns that same opaque
+   selection. Classify the returned native progress. Acceptance retains independent
+   cleanup and does not execute a successor. Freshly advance for the next need;
+   close actual completed owners under fresh authority.
 
 `with` or `with_at` refusal returns the original pack, incoming description and
 typed reason.
@@ -166,6 +171,33 @@ A cancellation before Begin's effect leaves the committed Submit intact. Resumin
 the same Begin owner under fresh authority does not execute Submit again. If
 closing Submit also refuses, retain that actual completed owner independently.
 Cleanup completion and workflow terminality are separate facts.
+
+Once the original selected owner completes, accept it without a consumer match on
+its action type or `Here`/`Other` position:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let accepted = prepared_advance.accept_selected_operation(completed_selection)
+    .map_err(|(original, denial)| retain_refusal(original, denial))?;
+match &accepted.progress {
+    WorkflowProgressOutcome::Completed(step) => observe_native_step(step),
+    other => retain_native_progress(other),
+}
+// Retain accepted.operation until its actual cleanup is discharged.
+```
+
+The sealed roster dispatches only to the occupied native owner. It does not infer
+an operation from a name, choose workflow order, authorize a request, reconstruct
+a receipt, or reinterpret native outcomes. Fresh original-action and control
+admission, exact receipt/currentness checks, and external custody remain in the
+existing native acceptance path. A source-only operation already settled jointly
+confirms its original replay; an effectful operation must actually complete first.
+Exact repeated acceptance retains its original settlement identity.
+
+Use this entrance for ordinary guarded forward completion. It does not supply
+local-action settlement for a business Back or ending; use their separate native
+`accept_local_action` contract rather than interpreting a wrapper as permission.
 
 The input pack does not derive logical command identities. Suppliers define
 stable native binding idempotency namespaces. If two distinct bindings use the
