@@ -155,6 +155,10 @@ pub enum WorthQueryProducerResourceQuoteDenial {
     SizeOverflow,
     /// Encoding needed to measure the original source failed.
     SourceNotEncodable,
+    /// Transient scratch needed to measure the original source could not be reserved.
+    /// The reservation may refuse allocation or capacity/layout; this is not a
+    /// receiving policy or an allocation grant.
+    ScratchReservationRefused,
 }
 
 impl WorthQueryProducerDemandResources {

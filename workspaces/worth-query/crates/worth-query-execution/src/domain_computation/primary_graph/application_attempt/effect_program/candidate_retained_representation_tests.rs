@@ -12,6 +12,8 @@ use super::{
     candidate_retained_representation as representation, CandidateItemKind,
     WorthQueryCandidateReservation,
 };
+#[path = "candidate_emission_quote_tests.rs"]
+mod candidate_emission_quote_tests;
 #[path = "candidate_quote_tests.rs"]
 mod candidate_quote_tests;
 #[path = "candidate_retained_representation_fixture.rs"]

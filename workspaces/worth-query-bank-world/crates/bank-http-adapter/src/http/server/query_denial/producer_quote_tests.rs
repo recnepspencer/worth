@@ -1,9 +1,9 @@
-//! Preserve intrinsic producer-source failures through the actual HTTP projection.
+//! Preserve producer quote causes and recovery through the actual HTTP projection.
 use super::*;
 use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial as Quote;
 
 #[test]
-fn producer_quote_causes_have_distinct_correctable_wire_values() {
+fn producer_quote_causes_preserve_wire_values_and_recovery_actions() {
     for (cause, kind, tag) in [
         (
             Quote::SizeOverflow,
@@ -36,6 +36,12 @@ fn producer_quote_causes_have_distinct_correctable_wire_values() {
     }
     for (cause, expected) in [
         (
+            BankApplicationOutputSettlementDenialKind::ProducerResourceQuote(
+                Quote::ScratchReservationRefused,
+            ),
+            BankHttpDenial::new(Kind::Unavailable, Next::Retry),
+        ),
+        (
             BankApplicationOutputSettlementDenialKind::RetentionBudgetExceeded,
             BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
         ),
@@ -49,6 +55,19 @@ fn producer_quote_causes_have_distinct_correctable_wire_values() {
             expected
         );
     }
+    assert_eq!(
+        super::super::routes::response_status(Kind::Unavailable),
+        axum::http::StatusCode::SERVICE_UNAVAILABLE
+    );
+    let scratch_refusal = query_denial(BankApplicationQueryDenial::OutputSettlement(
+        BankApplicationOutputSettlementDenialKind::ProducerResourceQuote(
+            Quote::ScratchReservationRefused,
+        ),
+    ));
+    assert_eq!(
+        serde_json::to_value(scratch_refusal).unwrap(),
+        serde_json::json!({"kind": "unavailable", "next_action": "retry"})
+    );
     assert_eq!(
         super::super::relational_execution_denial::denial(
             worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::AllocationFailed

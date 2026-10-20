@@ -2,6 +2,8 @@
 
 #[path = "candidate_retained_representation_fixture/bindings.rs"]
 mod bindings;
+#[path = "candidate_retained_representation_fixture/emitted.rs"]
+mod emitted;
 #[path = "candidate_retained_representation_fixture/measured.rs"]
 mod measured;
 #[path = "candidate_retained_representation_fixture/quoted.rs"]
@@ -18,6 +20,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationPrincipalKey, WorthQueryApplicationRelationSeed,
     WorthQueryAuthenticatedPrincipal, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode, WorthQuerySelectedProductOperation,
+};
+pub(super) use emitted::{
+    QuotedEmissionBinding, QuotedEmissionInput, QuotedEmissionOperation, QuotedRetainedEffect,
 };
 pub(super) use measured::{MeasuredBinding, MeasuredEmitOperation, MeasuredInput};
 pub(super) use quoted::{QuotedBinding, QuotedInput, QuotedOperation, QuotedWriteOrder};
@@ -136,6 +141,14 @@ pub(super) fn installed_world_with_candidate_policy(
                     .installed_mutation_binding::<QuotedBinding>()
                     .unwrap(),
                 quoted::QuotedHandler,
+            )
+            .unwrap();
+        bootstrap
+            .install_handler(
+                &schema
+                    .installed_mutation_binding::<QuotedEmissionBinding>()
+                    .unwrap(),
+                emitted::QuotedEmissionHandler,
             )
             .unwrap();
         let invariant = bootstrap.retain_invariant_projection_authority();

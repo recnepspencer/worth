@@ -1,6 +1,15 @@
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, PortableAspectContractBasis};
 use worth_relational::facade::transactions::EntityReference;
 
+pub(in crate::domain_computation::primary_graph) fn emission_bytes(
+    payload_retained_bytes: u64,
+    external_payload_bytes: usize,
+) -> Option<usize> {
+    usize::try_from(payload_retained_bytes)
+        .ok()?
+        .checked_add(external_payload_bytes)
+}
+
 pub(super) fn created_entity(key: &String, entity_name: &str) -> Option<usize> {
     created_entity_bytes(key.capacity(), key.len(), entity_name)
 }

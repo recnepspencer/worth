@@ -1,6 +1,7 @@
 //! The actual schema identity of the two retained-representation contracts.
 
 use super::bindings::{ReservedDeletionBinding, ReservedEmissionBinding};
+use super::emitted::{QuotedEmissionBinding, QuotedEmissionOperation, QuotedRetainedEffect};
 use super::measured::{MeasuredBinding, MeasuredEmitOperation};
 use super::quoted::{QuotedBinding, QuotedOperation};
 use crate::domain_computation::primary_graph::tests::fixture::MutationFreeNoticeBinding;
@@ -85,6 +86,11 @@ worth_query_application_schema! {
                         .forward(AccountOwner::reference()).allow(Account::reference()),
                 ])
                 .effect(MutationFreeExternalEffect::reference())
+                .effect(QuotedRetainedEffect::reference())
+                .operation(QuotedEmissionOperation::reference().definition()
+                    .no_external_effect().no_aftermath().finish())
+                .operation_emit(QuotedEmissionOperation::reference(), QuotedRetainedEffect::reference())
+                .application_mutation_binding::<QuotedEmissionBinding>()
                 .operation(TouchAccountOperation::reference().definition()
                     .no_external_effect().no_aftermath().finish())
                 .operation_projection_work_budget(TouchAccountOperation::reference(), 32)

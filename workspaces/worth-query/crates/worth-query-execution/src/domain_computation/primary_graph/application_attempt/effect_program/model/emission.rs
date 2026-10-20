@@ -108,7 +108,8 @@ impl WorthQueryApplicationEmission {
     pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn candidate_retained_representation_bytes(
         &self,
     ) -> Option<usize> {
-        usize::try_from(self.retained_bytes).ok()?.checked_add(
+        super::super::candidate_retained_representation::emission_bytes(
+            self.retained_bytes,
             self.external_payload
                 .as_ref()
                 .map_or(0, |payload| payload.bytes.len()),

@@ -1545,6 +1545,12 @@ representation before returning finite actual `candidate_requirements`:
 - `candidate_link_bytes(relation, &link_key, from_created, to_created)` measures
   the actual owned link key and endpoint references. Each endpoint is `Some(&key)`
   for a candidate-created entity or `None` for an existing entity.
+- `candidate_emit_bytes(effect, &payload)` validates and measures one ordinary
+  `emit` through that effect's original retained-payload binding. Carry the same
+  measured payload in the decision and move it to `writer.emit`. The operation
+  must declare `OperationEmits` for that effect. This quote excludes the encoded
+  projection retained by `emit_external`; the separate emission-retention ceiling
+  and writer payload validation still apply.
 - `candidate_output_contract_bytes()` counts declared role/family backing once.
   Add `candidate_output_bytes::<Role>(created_key)` for each actual fixed binding,
   or `candidate_output_member_bytes::<Family, Action>(suffix, created_key)` for
@@ -2363,8 +2369,13 @@ The existing producer `demand_resources(&source)` hook returns
 Use checked source-dependent sizing and return `SizeOverflow` if its concrete
 retained requirement is not representable. `SourceNotEncodable` reports an
 intrinsic encoding failure required for that measurement; it does not stand for
-a byte policy, cancellation or allocation refusal. Neither error supplies a
-successful quote. Execution preserves the typed cause and producer identity in
+a byte policy, cancellation or scratch reservation refusal.
+`ScratchReservationRefused` reports refused transient scratch needed to construct
+the quote, such as source-measurement deduplication storage. A fallible reservation
+may refuse allocation or capacity/layout; this cause does not specialize that
+refusal. It grants no allocation authority and supplies no successful quote.
+Execution preserves each typed cause
+and producer identity in
 `WorthQueryOutputDemandDenialKind::ProducerResourceQuote(cause)` before effects.
 Wrong-source erasure remains `ForeignSource`.
 

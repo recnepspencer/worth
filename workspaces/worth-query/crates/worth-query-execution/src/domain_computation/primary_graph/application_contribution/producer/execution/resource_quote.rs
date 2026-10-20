@@ -38,11 +38,11 @@ mod tests {
             from_source(&2usize, quote),
             Ok(Some(WorthQueryProducerDemandResources::new(None, 16))),
         );
-        assert_eq!(
-            from_source::<usize>(&2usize, |_| {
-                Err(WorthQueryProducerResourceQuoteDenial::SourceNotEncodable)
-            }),
-            Err(WorthQueryProducerResourceQuoteDenial::SourceNotEncodable),
-        );
+        for cause in [
+            WorthQueryProducerResourceQuoteDenial::SourceNotEncodable,
+            WorthQueryProducerResourceQuoteDenial::ScratchReservationRefused,
+        ] {
+            assert_eq!(from_source::<usize>(&2usize, |_| Err(cause)), Err(cause),);
+        }
     }
 }

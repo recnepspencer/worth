@@ -242,6 +242,9 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         Settlement::ProducerResourceQuote(Quote::SourceNotEncodable) => {
             BankHttpDenial::new(Kind::ProducerSourceNotEncodable, Next::CorrectRequest)
         }
+        Settlement::ProducerResourceQuote(Quote::ScratchReservationRefused) => {
+            BankHttpDenial::new(Kind::Unavailable, Next::Retry)
+        }
         Settlement::Superseded
         | Settlement::PublicationStale
         | Settlement::ForeignSource

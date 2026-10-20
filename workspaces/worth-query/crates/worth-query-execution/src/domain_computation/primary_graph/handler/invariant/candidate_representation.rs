@@ -7,6 +7,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityKey,
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationRetainedEffectBinding,
+    ApplicationStructuredValueBinding, OperationEmits,
+};
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
     ApplicationSchema, DeclaredApplicationFieldValue, OperationCreates, OperationLinks,
@@ -25,6 +29,53 @@ pub(super) fn checked(bytes: Option<usize>) -> Result<usize, Denial> {
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {
+    /// Measures one ordinary `emit` using the effect's original payload binding.
+    /// Move this same payload to the writer; validation and retained-effect limits
+    /// still apply there. This excludes `emit_external`'s encoded projection and
+    /// grants no effect or allocation authority. Cost is the binding's measurement.
+    ///
+    /// The operation must carry the same compile-time eligibility as the writer:
+    ///
+    /// ```compile_fail,E0277
+    /// use worth_query_declaration::facade::{
+    ///     application_operation::ApplicationMutationBinding,
+    ///     application_schema::{ApplicationEffectMarkerIdentity, ApplicationEffectRef,
+    ///         ApplicationRetainedEffectBinding, ApplicationSchema},
+    /// };
+    /// use worth_query_execution::facade::primary_graph::DecisionReader;
+    ///
+    /// fn cannot_quote_without_emit_capability<Schema, Binding, Effect, Payload>(
+    ///     reader: &DecisionReader<'_, '_, '_, Schema, Binding>,
+    ///     effect: ApplicationEffectRef<Schema, Effect, Payload>,
+    ///     payload: &Payload,
+    /// ) where
+    ///     Schema: ApplicationSchema,
+    ///     Binding: ApplicationMutationBinding<Schema>,
+    ///     Effect: ApplicationEffectMarkerIdentity<Schema>,
+    ///     Effect::PayloadBinding: ApplicationRetainedEffectBinding<Value = Payload>,
+    ///     Payload: Send + Sync + 'static,
+    /// {
+    ///     let _ = reader.candidate_emit_bytes(effect, payload);
+    /// }
+    /// ```
+    pub fn candidate_emit_bytes<Effect, Payload>(
+        &self,
+        effect: ApplicationEffectRef<Schema, Effect, Payload>,
+        payload: &Payload,
+    ) -> Result<usize, Denial>
+    where
+        Effect: ApplicationEffectMarkerIdentity<Schema> + OperationEmits<Binding::Operation>,
+        Effect::PayloadBinding: ApplicationRetainedEffectBinding<Value = Payload>,
+        Payload: Send + Sync + 'static,
+    {
+        Effect::PayloadBinding::validate(payload)
+            .map_err(|_| Denial::new(Kind::InvalidEffectValue, effect.name()))?;
+        checked(representation::emission_bytes(
+            Effect::PayloadBinding::retained_bytes(payload),
+            0,
+        ))
+    }
+
     /// Retained create/key metadata for this exact key, moved unchanged to the writer.
     /// This measures logical candidate representation, not a physical memory ticket.
     pub fn candidate_create_bytes<Entity>(
