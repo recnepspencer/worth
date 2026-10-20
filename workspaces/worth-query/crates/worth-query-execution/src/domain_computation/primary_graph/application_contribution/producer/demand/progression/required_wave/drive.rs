@@ -1,6 +1,7 @@
 //! Collect dependency-ready required members, then compute and apply one wave.
 use super::super::super::required_continuations::{
-    resume_held_upstream, ContinuationCustody, HeldUpstream, RequiredContinuations,
+    resume_held_upstream, resume_owned_refresh, ContinuationCustody, HeldUpstream,
+    OwnedRefreshStop, RequiredContinuations,
 };
 use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
@@ -18,6 +19,7 @@ use member_refusal::{RefusalRow, RefusingMember};
 mod frozen_collection;
 mod readiness_collection;
 mod requested_refusal;
+mod retained_refresh;
 mod wave_execution;
 
 #[allow(clippy::too_many_arguments)]
@@ -176,6 +178,14 @@ where
         }
         if result.moved {
             for member in &mut frontier.members {
+                if retained_refresh::preserves_selection(
+                    member,
+                    &demand.required_continuations,
+                    queue_custody,
+                    admission,
+                )? {
+                    continue;
+                }
                 if !member.resolved_successor
                     && matches!(
                         member.state,
@@ -183,6 +193,7 @@ where
                             | MemberState::Waiting(_)
                             | MemberState::WaitingDeclaration(_)
                             | MemberState::Held(_)
+                            | MemberState::RetainedRefresh
                     )
                     && let MemberInput::Queued { ready, .. } = &mut member.ready
                     && let Some(index) = member.queued
@@ -201,6 +212,86 @@ where
         {
             continue;
         }
+        // A Fresh attempt that requested an upstream already owns the
+        // predecessor's replacement. Resume that typed owner, not the stopped
+        // Ready pin from before its admission. No prepared plan remains here.
+        let refresh = (!wave.is_frozen())
+            .then(|| {
+                frontier
+                    .members
+                    .iter()
+                    .position(|member| matches!(member.state, MemberState::RetainedRefresh))
+            })
+            .flatten();
+        if let Some(index) = refresh {
+            let custody = retained_refresh::custody(
+                frontier.members[index].caller,
+                wave.target,
+                &mut demand.required_continuations,
+                &mut demand.producer_contacts_in_this_demand,
+                &mut *queue_custody,
+            );
+            let outcome = resume_owned_refresh(
+                phase,
+                runtime,
+                principal,
+                request,
+                wave.branch,
+                custody,
+                frontier.members[index].ready.selected(),
+                admission,
+                performed,
+            );
+            match outcome {
+                Ok(Some(HeldUpstream::Ready(ready))) => {
+                    let moved = super::selection::committed_ready(&ready, admission)?;
+                    let member = &mut frontier.members[index];
+                    member.ready.bind_inspected_native(ready);
+                    member.resolved_successor = true;
+                    member.caller_successor |= index == 0;
+                    member.state = MemberState::Inspect;
+                    if moved {
+                        wave = wave.reselect(execution, runtime, admission)?;
+                        resolved.clear();
+                        queue.wave_moved();
+                    }
+                }
+                Ok(Some(HeldUpstream::GaveBack) | None) => {
+                    frontier.members[index].state = MemberState::Inspect
+                }
+                Ok(Some(HeldUpstream::Unfinished)) => {
+                    frontier.members[index].state = MemberState::Pending
+                }
+                Err(OwnedRefreshStop::Selection(stop)) => return Err(stop),
+                Err(OwnedRefreshStop::Recorded(stop)) => {
+                    let ended = RefusingMember::from_driver(
+                        &runtime.output_demands,
+                        &mut frontier.members[index],
+                        RefusalRow::Member,
+                        &mut *queue_custody,
+                    )
+                    .end(
+                        stop,
+                        member_stop::StopRecording::successor(),
+                        queue,
+                        admission,
+                    )?;
+                    if let Some(outcome) = ended.finish(|| {
+                        canonical_apply::finish(
+                            runtime,
+                            demand,
+                            &wave,
+                            &mut frontier,
+                            queue,
+                            admission,
+                        )
+                    }) {
+                        return outcome;
+                    }
+                }
+            }
+            continue;
+        }
         // A held successor is resumed only after every prepared member has
         // left the selected basis. It retains the actual issued demand.
         let held = if wave.is_frozen() {
@@ -217,19 +308,13 @@ where
         };
         let resumed = held.is_some();
         if let Some((index, head)) = held {
-            let custody =
-                if frontier.members[index].caller && wave.target == RequiredWaveTarget::Caller {
-                    ContinuationCustody::Caller(
-                        &mut demand.required_continuations,
-                        &mut demand.producer_contacts_in_this_demand,
-                    )
-                } else if frontier.members[index].caller {
-                    // A Requested target belongs to the parent demand without
-                    // attributing the child's handler contacts to that parent.
-                    ContinuationCustody::Queue(&mut demand.required_continuations)
-                } else {
-                    ContinuationCustody::Queue(queue_custody)
-                };
+            let custody = retained_refresh::custody(
+                frontier.members[index].caller,
+                wave.target,
+                &mut demand.required_continuations,
+                &mut demand.producer_contacts_in_this_demand,
+                &mut *queue_custody,
+            );
             match resume_held_upstream(
                 phase,
                 runtime,

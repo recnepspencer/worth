@@ -1,12 +1,14 @@
 //! Resume an unfinished successor, and hand a queue frame's unfinished
 //! successors to registry custody on their own rows.
 
+mod local_resume;
 use super::super::progression::PerformedMembers;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::{
     HeldRequiredSuccessor, OutputRowStage, WorthQueryOutputDemandKey,
 };
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+pub(super) use local_resume::resume as resume_local;
 
 /// The registry's copy of one frame successor and the custody it is funded by.
 pub(super) struct HeldFrameSuccessor<Schema>
@@ -118,38 +120,20 @@ where
         ContinuationCustody::Queue(custody) => (custody, None),
     };
     if let Some(index) = custody.position_of(key, admission)? {
-        let result = custody.entries[index].resume(
-            phase, runtime, principal, request, branch, admission, performed,
+        return local_resume::resume(
+            phase,
+            runtime,
+            principal,
+            request,
+            branch,
+            custody,
+            caller_contacts,
+            index,
+            admission,
+            performed,
         );
-        custody.entries[index].report_caller_contacts(caller_contacts);
-        let finished = matches!(result, Ok(Some(_)));
-        if finished || result.is_err() {
-            let moved = (custody.entries.len() - index)
-                .checked_mul(std::mem::size_of::<RequiredFreshProgress<Schema>>())
-                .and_then(|work| u64::try_from(work).ok())
-                .ok_or_else(work_denial)?;
-            admission
-                .charge_external_work(moved)
-                .map_err(|_| work_denial())?;
-        }
-        if finished {
-            custody.entries[index..].rotate_left(1);
-        }
-        return match result {
-            Ok(Some(ready)) => Ok(HeldUpstream::Ready(ready)),
-            Ok(None) => Ok(HeldUpstream::Unfinished),
-            Err(stop)
-                if superseded(&stop)
-                    && runtime
-                        .output_demands
-                        .give_back_replaced_ready(key, admission)? =>
-            {
-                drop(custody.entries.remove(index));
-                Ok(HeldUpstream::GaveBack)
-            }
-            Err(stop) => Err(stop),
-        };
     }
+
     let Some(held) = runtime
         .output_demands
         .take_published_held_successor(key, admission)?

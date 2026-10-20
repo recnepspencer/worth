@@ -21,6 +21,17 @@ impl<Schema: ApplicationSchema + 'static> RequiredContinuations<Schema> {
 }
 
 impl<Schema: ApplicationSchema + 'static> PreparedContinuationWave<'_, Schema> {
+    /// Scheduling only: the actual successor must still resume and certify.
+    pub(in super::super) fn retains_refresh(
+        &self,
+        selected: &SelectedReadyReadmission,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        self.custody
+            .refresh_position(selected, admission)
+            .map(|index| index.is_some())
+    }
+
     pub(in super::super) fn awaited_delivery(
         &mut self,
         registry: &WorthQueryOutputDemandRegistry,

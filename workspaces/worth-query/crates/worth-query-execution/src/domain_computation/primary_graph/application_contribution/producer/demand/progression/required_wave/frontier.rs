@@ -19,6 +19,8 @@ pub(super) enum MemberState {
     AcceptedCaller,
     Pending,
     Held(WorthQueryOutputDemandKey),
+    /// The exact predecessor has an actual refresh retained by this caller.
+    RetainedRefresh,
 }
 
 impl MemberState {
@@ -32,7 +34,8 @@ impl MemberState {
             | Self::WaitingDeclaration(_)
             | Self::Prepared
             | Self::Pending
-            | Self::Held(_) => true,
+            | Self::Held(_)
+            | Self::RetainedRefresh => true,
             Self::Current(_) | Self::AcceptedCaller | Self::UnselectedClaim => false,
         }
     }

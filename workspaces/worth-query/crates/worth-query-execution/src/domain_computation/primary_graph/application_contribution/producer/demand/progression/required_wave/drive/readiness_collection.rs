@@ -110,6 +110,15 @@ where
                     continue;
                 }
             }
+            if super::retained_refresh::defer(
+                &mut frontier.members[index],
+                caller_storage,
+                queue_storage,
+                admission,
+            )? {
+                index += 1;
+                continue;
+            }
             let queued = frontier.members[index].queued;
             let successor = frontier.members[index].resolved_successor;
             if let Some(claim) = frontier.members[index].ready.claim_mut() {

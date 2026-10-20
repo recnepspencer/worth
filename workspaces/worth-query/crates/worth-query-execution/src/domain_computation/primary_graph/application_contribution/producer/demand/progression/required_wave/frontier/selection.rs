@@ -19,7 +19,7 @@ impl<Ready> MemberInput<Ready> {
         self.bound_ready()
             .expect("inspection must bind the claim first")
     }
-    pub(super) fn bound_ready(&self) -> Option<&Ready> {
+    pub(in super::super) fn bound_ready(&self) -> Option<&Ready> {
         match self {
             Self::Selected(ready) => Some(ready),
             Self::Queued { ready, .. } => ready.as_ref(),

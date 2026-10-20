@@ -22,6 +22,8 @@ use super::{
 mod awaited_delivery;
 mod contacts;
 mod held;
+mod owned_refresh;
+pub(super) use owned_refresh::{resume_owned_refresh, OwnedRefreshStop};
 mod registry_delivery;
 pub(super) use awaited_delivery::{AwaitedDelivery, DeliveredAwaited};
 pub(super) use registry_delivery::{RegistryDelivery, RequiredDelivery};
