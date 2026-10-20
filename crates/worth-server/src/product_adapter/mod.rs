@@ -9,6 +9,7 @@ mod envelope;
 mod execution;
 pub(crate) mod execution_pipeline;
 mod lane_coordination;
+mod operation_custody;
 mod outcome;
 mod payload;
 mod plan;
@@ -43,6 +44,7 @@ pub use denial::{
 };
 pub use envelope::{WorthServerProductOperationEnvelope, WorthServerProductOperationEnvelopeKind};
 pub use execution::WorthServerProductOperationRuntime;
+pub use operation_custody::*;
 pub use outcome::{
     WorthServerCompletedProductOperation, WorthServerProductOperationFailure,
     WorthServerProductOperationOutcome, WorthServerProductOperationRetryClass,

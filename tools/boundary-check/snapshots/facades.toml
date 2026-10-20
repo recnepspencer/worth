@@ -356,6 +356,7 @@ exports = [
     "WorthQuerySourceOnlyOperation",
     "WorthQuerySourceOnlyPosture",
     "WorthQuerySourceOperationAdmission",
+    "WorthQuerySourceOperationBinding",
     "WorthQueryStartedDiscoveredOutputs",
     "WorthQueryStartedRequiredOutputs",
     "WorthQueryStoppedBranchSetAdoption",

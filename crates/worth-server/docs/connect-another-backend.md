@@ -29,6 +29,8 @@ without reimplementing:
 Same-process Rust integration:
 
 - `WorthServer::compat_http()`
+- [`mount_query_source`](query-source-custody.md) for bounded transport custody
+  over actual native no-output Query owners, including fresh inspection and close.
 - `WorthServerProductOperationDeclaration::with_program_application(...)` for
   an adapter backed by an existing native Query program. This retains its
   authentic allocation for readiness, without extracting a raw runtime.

@@ -13,7 +13,7 @@ pub use source_admission::{WorthQuerySourceDeliveryMode, WorthQuerySourceOperati
 pub use source_only::{
     WorthQueryCompletedSourceOperation, WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance,
     WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture,
-    WorthQueryTerminalSourceOperation,
+    WorthQuerySourceOperationBinding, WorthQueryTerminalSourceOperation,
 };
 pub use workflow::{
     WorthQueryCompletedWorkflowOperation, WorthQueryCompletedWorkflowSelection,

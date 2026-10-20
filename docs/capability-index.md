@@ -200,6 +200,17 @@ and the native SourceOnly authorization tests in `native_workflow_operations`.
 Authentication or a cached command-owner match is
 not sufficient for current disclosure authorization.
 
+Generic hosts constrain bindings with `WorthQuerySourceOperationBinding<Schema>`
+and call those ordinary owners directly. The sealed interface carries native
+dispatch, not an authorization witness or a consumer-replaceable callback.
+For bounded HTTP custody, `worth-server::mount_query_source(adapter, limits)`
+retains real Query owners, rejects duplicate/key/capacity admission before
+preparation, stores returns before replies and freshly governs inspection.
+See [Query source custody](../crates/worth-server/docs/query-source-custody.md).
+It is process-local and currently selects SourceCompletion, not required outputs
+or an asynchronous signed-owner transport. Never serialize a live owner or copy
+the worker into a supplier.
+
 ---
 
 ## Consumer prohibitions

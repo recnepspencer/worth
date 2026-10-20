@@ -1339,6 +1339,14 @@ guidance = "9.17.6 Phase 5: provider-read managed runs and conditional operation
 
 # Milestone 9.17.6.3: exact production threading inventory. Legacy entries only shrink.
 [[threading_sites]]
+source = "crates/worth-server/src/product_adapter/operation_custody/transport.rs"
+item = "start"
+kind = "thread-builder"
+count = 1
+category = "async-runtime"
+reason = "Server owns one bounded ingress worker per installed Query source adapter; native move-only owners remain on that worker."
+
+[[threading_sites]]
 source = "crates/worth-server/src/transport/route_assembly/axum_projection.rs"
 item = "semantic_route_handler"
 kind = "async-blocking"
