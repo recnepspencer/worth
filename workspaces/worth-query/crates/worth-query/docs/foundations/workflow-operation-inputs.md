@@ -195,6 +195,11 @@ causes. A foreign runtime refuses before transferring any entry.
 deliberate lower-level integration. Its `Here`/`Other` position is a type-layout
 detail, not workflow state or a permission decision.
 
+On an extracted pending owner, `inspect_source(&fresh_request)` separately
+authorizes and borrows established source evidence and native custody posture.
+It does not advance delivery or replace the owner. See
+[source inspection](workflows.md#inspect-source-without-advancing-dispatch).
+
 ## Anti-Patterns
 
 - Matching stage or operation names to choose the next business operation.

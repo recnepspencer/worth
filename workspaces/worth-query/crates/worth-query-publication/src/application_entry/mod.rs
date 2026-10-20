@@ -50,7 +50,8 @@ pub use operation::{
     WorthQueryWorkflowInputEnd, WorthQueryWorkflowInputList, WorthQueryWorkflowInputNode,
     WorthQueryWorkflowOperation, WorthQueryWorkflowOperationAdvance,
     WorthQueryWorkflowOperationChoice, WorthQueryWorkflowOperationDenial,
-    WorthQueryWorkflowOperationInputs,
+    WorthQueryWorkflowOperationInputs, WorthQueryWorkflowSourceInspection,
+    WorthQueryWorkflowSourceInspectionDenial, WorthQueryWorkflowSourcePosture,
 };
 mod programs;
 mod query;

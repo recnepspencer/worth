@@ -23,7 +23,8 @@ pub use workflow::{
     WorthQueryWorkflowInputDenial, WorthQueryWorkflowInputEnd, WorthQueryWorkflowInputList,
     WorthQueryWorkflowInputNode, WorthQueryWorkflowOperation, WorthQueryWorkflowOperationAdvance,
     WorthQueryWorkflowOperationChoice, WorthQueryWorkflowOperationDenial,
-    WorthQueryWorkflowOperationInputs,
+    WorthQueryWorkflowOperationInputs, WorthQueryWorkflowSourceInspection,
+    WorthQueryWorkflowSourceInspectionDenial, WorthQueryWorkflowSourcePosture,
 };
 pub use workflow_birth::WorthQueryOwnedWorkflowBirthBinding;
 mod capture_refusal;

@@ -34,6 +34,18 @@ pub(super) fn retain_with_auth(
     GovernedRuntime,
     super::super::CertificationAuthenticationOwner,
 ) {
+    let (authentication, _clock) = super::super::install_certification_authentication_with_clock(
+        application.runtime().installed_schema(),
+    );
+    retain_with_signing_owner(application, authentication)
+}
+pub(super) fn retain_with_signing_owner(
+    application: super::super::super::host::DocumentRetentionRuntime<RetentionProgramP0>,
+    authentication: super::super::CertificationAuthenticationOwner,
+) -> (
+    GovernedRuntime,
+    super::super::CertificationAuthenticationOwner,
+) {
     let workflow = super::super::runtime::install_workflow_spec_for::<
         RetentionProgramP0,
         GovernedDocumentWorkflow,
@@ -41,9 +53,6 @@ pub(super) fn retain_with_auth(
         application.runtime().installed_schema(),
         application.installed_program(),
         super::super::runtime::workflow_resources(),
-    );
-    let (authentication, _clock) = super::super::install_certification_authentication_with_clock(
-        application.runtime().installed_schema(),
     );
     let runtime = application
         .retain_workflow_spec(workflow, authentication.signing_owner())

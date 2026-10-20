@@ -51,7 +51,11 @@ fn foreign_spec_present_and_unperformed_intents_are_both_undisclosed() {
     assert!(!performed.replayed());
     drop(performed);
     // Retain a genuine different Spec on the SAME runtime/schema/branch, not a fabricated vocabulary.
-    let application = super::super::runtime::retain(foreign.workflow.into_program_runtime());
+    let application = super::super::runtime::retain_with_signing_owner(
+        foreign.workflow.into_program_runtime(),
+        foreign.authentication,
+    )
+    .0;
     let operator = authenticate_operator(application.runtime().installed_schema(), &scope);
     let basis = application
         .runtime()

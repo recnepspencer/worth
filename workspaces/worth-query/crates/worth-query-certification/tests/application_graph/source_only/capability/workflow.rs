@@ -7,6 +7,8 @@ mod actor_program;
 pub(super) mod bindings;
 #[path = "workflow/captured_actor.rs"]
 mod captured_actor;
+#[path = "workflow/inspection.rs"]
+mod inspection;
 #[path = "workflow/program.rs"]
 mod program;
 use super::{grants::*, host, schema::*};
@@ -20,7 +22,7 @@ use program::*;
 use worth_query_host::facade::{
     admission::authenticated_principal::*, application_entry::*, application_installation::*,
     declaration::application_program::*, declaration::application_schema::*,
-    domain::WorthQueryApplicationWorkflowSpecInstallation, primary_graph::*,
+    domain::WorthQueryApplicationWorkflowSpecInstallation,
 };
 pub struct Spec;
 impl ApplicationWorkflowSpec for Spec {
@@ -214,6 +216,15 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
     let actor = host::authenticate(&host, 1, &scope);
     let completed = {
         let request = runtime.request(&actor, &scope).on_branch(instance.branch());
+        let inspector = host::authenticate(&host, 2, &scope);
+        inspection::assert_unperformed(
+            &owner,
+            &request,
+            &runtime
+                .request(&inspector, &scope)
+                .on_branch(instance.branch()),
+        );
+        assert_eq!(host.contacts.counts(), (0, 0));
         let completed = match owner.advance(&request) {
             WorthQueryWorkflowOperationAdvance::Completed(done) => done,
             WorthQueryWorkflowOperationAdvance::Progress(operation) => {
@@ -283,24 +294,7 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
     };
     drop(actor);
     drop(scope);
-    let denied_scope = request_scope();
-    let advancer = host::authenticate(&host, 2, &denied_scope);
-    let request = runtime
-        .request(&advancer, &denied_scope)
-        .on_branch(instance.branch());
-    let prepared = request
-        .mutate(Advance(advance_input()))
-        .without_source()
-        .idempotency(&0x9176ca05_u64)
-        .prepare_workflow_advance(&workflow, instance.clone())
-        .expect("actor2 has real advance capability");
-    let (completed, cause) = prepared
-        .accept_owned_operation(completed)
-        .err()
-        .expect("advance permission cannot authorize original effect acceptance");
-    assert!(
-        matches!(cause,WorthQueryWorkflowOperationOwnerAcceptanceDenial::Opening(WorthQueryApplicationRecoveryRequestDenial::Request(WorthQueryApplicationRequestMutationDenial::Authorization(ref denial))) if denial.kind()==WorthQueryOperationAuthorizationDenialKind::Refused(WorthQueryOperationAuthorizationRefusalKind::CapabilityAuthorizationMissing))
-    );
+    let completed = inspection::denied_acceptance(&workflow, &host, &instance, completed);
     assert_eq!(host.contacts.counts(), (1, 1));
     let scope = request_scope();
     let actor = host::authenticate(&host, 1, &scope);

@@ -968,6 +968,52 @@ retains custody. Assessment evidence acceptance and approval remain separate fro
 operation confirmation. Effect completion, workflow terminality and physical
 cleanup remain different facts. Drop performs no settlement.
 
+### Inspect source without advancing dispatch
+
+Use `owner.inspect_source(&fresh_request)` when a guarded operation has performed
+its source mutation but dispatch cannot progress yet. It borrows the retained
+`WorthQuerySourceCompletion` and reports native custody as `Committed`,
+`DispatchPending` or `ExternallySettled`. Fresh exact binding admission, selected
+program, runtime and branch checks precede disclosure, including disclosure that
+source evidence is unavailable. This does not mint a recovery handle, retry a
+transport, release cleanup, spend an occurrence or settle the workflow.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// The caller retains the original owner and newly authenticated request.
+let inspection = owner.inspect_source(&fresh_request)?;
+let posture = inspection.posture();
+let original_source = inspection.source(); // Borrowed, not a transferred performed witness.
+```
+
+For example, an Investigation-entry operation may have atomically committed a
+new stage, business audit and notification outbox while its notification adapter
+is unavailable. Observe the audit through an ordinary governed query; inspect the
+original receipt's outbox to explain the pending notification. Keep the actual
+returned owner for later fresh advancement:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Other progress variants also retain their native owners/evidence.
+let owner = match owner.advance(&fresh_request) {
+    WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
+        let view = operation.inspect_source(&fresh_request)?;
+        report_source(view.source(), view.posture(), &denial);
+        operation
+    }
+    other => return retain_progress(other),
+};
+```
+
+`SourceEvidenceUnavailable` is not proof of no mutation: an owner can retain
+unresolved publication or indeterminate custody before source completion is
+established. Other denials preserve fresh admission, native inspection or owner
+posture. Do not reconstruct evidence from business state, replace a refused owner,
+or report delivery/component exit from a `DispatchPending` inspection. This is an
+in-memory owning observation, not Store-backed process-crash recovery.
+
 ### Advanced native workflow execution
 
 Use the [ordinary workflow owner](#operations) for application operations. Deliberate

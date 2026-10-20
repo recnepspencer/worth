@@ -12,6 +12,11 @@ mod advance;
 mod completion;
 mod construction;
 mod inputs;
+mod inspection;
+pub use inspection::{
+    WorthQueryWorkflowSourceInspection, WorthQueryWorkflowSourceInspectionDenial,
+    WorthQueryWorkflowSourcePosture,
+};
 mod recovery;
 pub use inputs::{
     WorthQueryCompletedWorkflowSelection, WorthQuerySelectedWorkflowOperation,
