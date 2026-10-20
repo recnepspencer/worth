@@ -59,6 +59,14 @@ Do all five steps, in order.
 
 ## Task index
 
+External-input capture and original mutation description are distinct custody.
+For resumable provider-revision admission, use
+`WorthQueryCapturedExternalInput::admit_preserving(&provider)` and retain its
+returned `(original_capture, provider_denial)` on refusal. Retry that capture;
+do not refetch current data or reconstruct an admitted token from serialized
+values. The one-shot `admit` discards capture on refusal. Both admit data
+correspondence, never operation authority. See [external input on an action](build-an-application.md#32-attach-actions-to-features).
+
 Program validation admits finite canonicalization work through
 `ApplicationProgramDefinition::CANONICAL_REVISION_BUDGET` and the program facade's
 `CanonicalDigestWorkBudget`. The 4096-entry/1 MiB default is unchanged; override

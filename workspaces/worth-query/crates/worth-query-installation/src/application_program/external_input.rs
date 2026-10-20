@@ -85,7 +85,27 @@ where
         provider: &Provider,
     ) -> Result<WorthQueryAdmittedExternalInput<Schema, Operation, Provider>, Provider::Denial>
     {
-        provider.validate_revision(&self.selection, self.resolution.revision())?;
+        self.admit_preserving(provider)
+            .map_err(|(_, denial)| denial)
+    }
+
+    /// Validates the original capture without discarding it on refusal.
+    /// Retry with this returned capture; resolving again is a different observation.
+    /// This admits data correspondence, not permission to execute an operation.
+    /// # Errors
+    /// Returns the unchanged selection, values, revision and provenance alongside
+    /// the provider's actual validation denial.
+    pub fn admit_preserving(
+        self,
+        provider: &Provider,
+    ) -> Result<
+        WorthQueryAdmittedExternalInput<Schema, Operation, Provider>,
+        (Self, Provider::Denial),
+    > {
+        if let Err(denial) = provider.validate_revision(&self.selection, self.resolution.revision())
+        {
+            return Err((self, denial));
+        }
         Ok(WorthQueryAdmittedExternalInput {
             selection: self.selection,
             resolution: self.resolution,

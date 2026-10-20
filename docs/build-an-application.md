@@ -325,6 +325,14 @@ and submission enforcement; native authorization remains with its existing owner
 Resolve external input, admit its captured revision and pass the accepted values
 into the original mutation intent.
 
+If admission refusal must be resumable, use
+`WorthQueryCapturedExternalInput::admit_preserving(&provider)`. Its error returns
+the exact `(original_capture, provider_denial)`; retain that capture and retry
+validation against it. Selection, values, revision and provenance remain unchanged.
+Resolving the provider again produces a different observation, not recovery of
+the original one. The existing `admit` is the one-shot form: it intentionally
+discards the capture on refusal. Neither form grants mutation permission.
+
 The `worth_query_feature_spec!` macro on the decl facade lowers
 `action(Binding, Delivery) { ... };` and `native_action(Binding) { ... };`
 through that same builder. Clauses are `locality_and_change(Scope, Shape);`,
