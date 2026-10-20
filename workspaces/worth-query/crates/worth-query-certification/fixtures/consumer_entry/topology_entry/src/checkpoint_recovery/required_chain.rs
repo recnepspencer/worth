@@ -18,6 +18,7 @@ mod program;
 mod readiness;
 mod reopened_consumer;
 mod required_queue;
+mod restored_closed_predecessors;
 mod restored_currentness;
 mod retained_predecessors;
 mod ring_world;
