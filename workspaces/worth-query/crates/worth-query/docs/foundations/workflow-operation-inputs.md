@@ -9,10 +9,19 @@ workflow-operation owner. Registration order does not decide execution order.
 
 ## Why You Use It
 
-Use this when one user command needs several differently typed business
-operations, and the authored graph—not a host match on stage or binding name—must
-decide which operation is currently owed. Capture inputs before any effects,
-then keep the actual owners while execution, refusal, recovery and cleanup proceed.
+Use this to retain several typed business-operation descriptions while the
+authored graph—not a host match on stage or binding name—decides which operation
+is currently owed. Capture inputs before any effects, then keep the actual owners
+while execution, refusal, recovery and cleanup proceed.
+
+Different Rust action/intent types in this roster do **not** establish a native
+input source for different portable input contracts. Ordinary authored
+`OperationInput` edges require the source and target to have the same portable
+input type; the resulting target requirement also carries the source proposal's
+exact canonical input identity. A target description must match both. There is
+currently no native proposal funnel for capturing a different input per target
+node. Do not pad unrelated inputs into one type or omit members from identity to
+make such a workflow pass.
 
 ## Stable Entry Points
 
@@ -78,14 +87,19 @@ let selected = inputs.select(&workflow, &required)?;
 let progress = selected.advance(&fresh_request);
 ```
 
-The `?` paths here require caller errors that preserve the returned original
+These illustrative action types still need compatible native input-source
+contracts; registration alone does not provide them. The `?` paths here require caller errors that preserve the returned original
 owners. `with` prepends internally: Begin is physically first, but a Submit
 requirement still selects Submit. Neither the order of registration nor the host
 names the next action.
 
 ## Real Example
 
-Suppose a graph orders Submit then BeginReview. Submit publishes a Submitted
+Suppose a graph orders Submit then BeginReview, with both inputs lawfully supplied
+by its native proposal contracts. If BeginReview needs a separately captured
+audit time or another distinct portable input, that heterogeneous proposal path
+is currently unsupported; the input pack alone does not close it.
+Submit publishes a Submitted
 posture and its audit; BeginReview publishes Review and another audit. These are
 two business commits, not an atomic transaction. Capture both original descriptions
 before the first commit. Keep the completed Submit owner while the graph issues
@@ -158,6 +172,12 @@ later occurrence of the same binding needs a new logical submission with its
 own original input. No scalar input is substituted from recorded digests.
 Action delivery must be source-completion; output-delivery composition is not
 generalized by this API.
+
+Per-target captured input publication, node-qualified registration and replay
+binding of those target contracts are not implemented by this API. A successful
+`with` call proves neither graph input compatibility nor proposal publication.
+Keep missing native correspondence blocked instead of adding a host dispatcher
+or weakening final requirement identity checks.
 
 ## Related Docs
 
