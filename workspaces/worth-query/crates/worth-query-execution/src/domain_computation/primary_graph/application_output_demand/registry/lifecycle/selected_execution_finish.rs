@@ -81,9 +81,8 @@ impl WorthQueryOutputDemandRegistry {
             .admit_read_scratch(terminal as u64)
             .map_err(empty_admission_denial)?;
         // The largest later phase takes two record descents, one fixed
-        // checkpoint/state move, an empty retained denial, and an Arc key
-        // retain for deferred terminal cleanup. Its variable diagnostic
-        // stays with the immediate caller.
+        // checkpoint/state move and an Arc key retain for deferred terminal
+        // cleanup. A retained diagnostic never owns the caller's cleanup.
         let fixed = 2 * std::mem::size_of::<RunningSelectedExecution<'_>>()
             + 2 * std::mem::size_of::<DemandState>()
             + std::mem::size_of::<WorthQueryOutputProgress>()
@@ -179,7 +178,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             || !matches!(record.state, DemandState::Running)
         {
             let denial = match &record.state {
-                DemandState::Failed(denial) => retained_denial(denial),
+                DemandState::Failed(denial) => denial.clone(),
                 _ => empty_denial(WorthQueryOutputDemandDenialKind::SchedulingRejected),
             };
             return Err((denial, checkpoint));
@@ -232,7 +231,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             record.leave_refresh_unclaimed(DemandState::Scheduled);
             (0, Vec::new())
         } else {
-            record.state = DemandState::Failed(retained_denial(denial));
+            record.state = DemandState::Failed(denial.clone());
             let bytes = record.obligation_reserved_bytes();
             (bytes, std::mem::take(&mut record.performed_obligations))
         };
@@ -258,12 +257,6 @@ impl PreparedSelectedExecutionFinish<'_> {
 
 fn empty_denial(kind: WorthQueryOutputDemandDenialKind) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, "")
-}
-
-fn retained_denial(source: &WorthQueryOutputDemandDenial) -> WorthQueryOutputDemandDenial {
-    let mut retained = empty_denial(source.kind());
-    retained.recovery_posture = source.recovery_posture();
-    retained
 }
 
 pub(super) fn relinquish_record(record: &mut DemandRecord) {

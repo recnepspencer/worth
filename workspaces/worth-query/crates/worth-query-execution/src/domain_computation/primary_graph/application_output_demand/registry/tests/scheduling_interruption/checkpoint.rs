@@ -57,7 +57,11 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 };
                 (None, claim, checkpoint)
             };
-            let denial = WorthQueryOutputDemandDenial::new(kind.clone(), "caller stopped delivery");
+            let mut denial = WorthQueryOutputDemandDenial::new(
+                kind.clone(),
+                "caller stopped delivery".to_owned(),
+            );
+            denial.readmission_failure = Some("original delivery refusal");
             if let Some(prepared) = prepared {
                 assert!(prepared.finish(claim, checkpoint, Some(&denial)).is_ok());
             } else {
@@ -74,6 +78,13 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 };
                 assert!(output.checkpoint.is_some());
                 if fails_row {
+                    assert_eq!(
+                        super::super::super::required_stop::head_stop(
+                            &state.records,
+                            &fixture.interest.key,
+                        ),
+                        Some(denial.clone())
+                    );
                     assert!(
                         matches!(&output.advancement(), WorthQueryOutputAdvancement::Stopped { denial, .. }
                         if denial.kind() == kind)

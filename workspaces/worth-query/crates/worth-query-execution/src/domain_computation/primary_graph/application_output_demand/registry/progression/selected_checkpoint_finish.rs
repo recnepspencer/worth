@@ -162,12 +162,12 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 denial: stopped,
                 interrupted_claim: Some(active),
             } if *active == claim => {
-                let stopped = retained_denial(stopped);
+                let stopped = stopped.clone();
                 if output.checkpoint.is_some() {
                     return Err(SelectedCheckpointFinishStop::Returned(stopped, checkpoint));
                 }
                 output.install_checkpoint(checkpoint);
-                output.finish_stopped(retained_denial(&stopped));
+                output.finish_stopped(stopped.clone());
                 record.wake.notify();
                 record.finish();
                 state.defer_terminal_cleanup(self.member.key_arc(), 0);
@@ -181,7 +181,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 // row's checkpoint waits for a later claim.
                 let terminal = denial.is_some_and(super::super::required_stop::fails_row);
                 if terminal {
-                    output.finish_stopped(retained_denial(denial.expect("terminal cause exists")));
+                    output.finish_stopped(denial.expect("terminal cause exists").clone());
                 } else {
                     output.reopen();
                 }
@@ -201,12 +201,6 @@ impl PreparedSelectedCheckpointFinish<'_> {
             )),
         }
     }
-}
-
-fn retained_denial(source: &WorthQueryOutputDemandDenial) -> WorthQueryOutputDemandDenial {
-    let mut retained = empty_denial(source.kind());
-    retained.recovery_posture = source.recovery_posture();
-    retained
 }
 
 fn empty_denial(kind: WorthQueryOutputDemandDenialKind) -> WorthQueryOutputDemandDenial {
