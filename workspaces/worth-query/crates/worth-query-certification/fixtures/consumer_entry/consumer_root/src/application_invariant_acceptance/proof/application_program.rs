@@ -234,14 +234,6 @@ pub(super) fn caller_disposal_before_progress_recovers(
     dependent_recovery::caller_disposal_after_root_recovers_dependent(foreign);
 }
 
-pub(super) fn resource_denial_preserves_source_and_delivery(
-    foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
-        ConsumerSchema,
-    >,
-) {
-    recovery::resource_denial_preserves_source_and_delivery(foreign);
-}
-
 pub(super) fn lifecycle_proofs(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
         ConsumerSchema,

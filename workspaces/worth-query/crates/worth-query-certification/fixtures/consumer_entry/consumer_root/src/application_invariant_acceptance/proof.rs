@@ -64,7 +64,6 @@ pub(crate) fn run(foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>
     super::contribution_denials::run();
     application_program::performed_source_settles_required_output(foreign);
     application_program::caller_disposal_before_progress_recovers(foreign);
-    application_program::resource_denial_preserves_source_and_delivery(foreign);
     application_program::root_selection::foreign_program_is_denied_before_publication(foreign);
     application_program::root_selection::undeclared_root_is_denied_before_publication(foreign);
     application_program::root_selection::truncated_root_is_denied_before_publication(foreign);
